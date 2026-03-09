@@ -95,7 +95,7 @@ namespace System.Security.AccessControl
                 {
                     privilegeLock.ExitReadLock();
 
-                    if (false == Interop.Advapi32.LookupPrivilegeValue(null, privilege, out luid))
+                    if (!Interop.Advapi32.LookupPrivilegeValue(null, privilege, out luid))
                     {
                         int error = Marshal.GetLastPInvokeError();
 
@@ -169,7 +169,7 @@ namespace System.Security.AccessControl
                         if (processHandle.IsInvalid)
                         {
                             SafeTokenHandle localProcessHandle;
-                            if (false == Interop.Advapi32.OpenProcessToken(
+                            if (!Interop.Advapi32.OpenProcessToken(
                                             Interop.Kernel32.GetCurrentProcess(),
                                             TokenAccessLevels.Duplicate,
                                             out localProcessHandle))
@@ -207,12 +207,12 @@ namespace System.Security.AccessControl
                                 success = false;
                             }
 
-                            System.Diagnostics.Debug.Assert(this.isImpersonating == false, "Incorrect isImpersonating state");
+                            System.Diagnostics.Debug.Assert(!this.isImpersonating, "Incorrect isImpersonating state");
 
                             if (success)
                             {
                                 error = 0;
-                                if (false == Interop.Advapi32.DuplicateTokenEx(
+                                if (!Interop.Advapi32.DuplicateTokenEx(
                                                 processHandle,
                                                 TokenAccessLevels.Impersonate | TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges,
                                                 IntPtr.Zero,

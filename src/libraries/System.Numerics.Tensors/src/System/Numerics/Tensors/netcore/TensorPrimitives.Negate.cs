@@ -21,8 +21,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Negate<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IUnaryNegationOperators<T, T> =>
+            where T : IUnaryNegationOperators<T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, NegateOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, NegateOperator<T>>(x, destination);
+        }
 
         /// <summary>-x</summary>
         internal readonly struct NegateOperator<T> : IUnaryOperator<T, T> where T : IUnaryNegationOperators<T, T>

@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public override Assembly Assembly => typeof(object).Assembly;
         public override IEnumerable<CustomAttributeData> CustomAttributes => Array.Empty<CustomAttributeData>();
-        public override Type[] GetFunctionPointerCallingConventions() => Type.EmptyTypes;
+        public override Type[] GetFunctionPointerCallingConventions() => [];
 
         public override bool ContainsGenericParameters
         {
@@ -66,7 +66,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public override Type[] GetFunctionPointerParameterTypes()
         {
             if (_key.ParameterTypes.Length == 0)
-                return Type.EmptyTypes;
+                return [];
 
             Type[] result = new Type[_key.ParameterTypes.Length];
             Array.Copy(_key.ParameterTypes, result, result.Length);

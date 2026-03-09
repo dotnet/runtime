@@ -51,8 +51,6 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
                                       /* OUT */ emitLocation** ppStartLoc,
                                       /* OUT */ emitLocation** ppEndLoc)
 {
-    assert(UsesFunclets());
-
     if (func->funKind == FUNC_ROOT)
     {
         // Since all funclets are pulled out of line, the main code size is everything
@@ -176,28 +174,39 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Pop2CFI: Record  push/save of 2 registers simultaneously.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
+{
+    // ToDo: This is a placeholder till OS has unwind support for push2/pop2.
+    unwindPushPopCFI(reg1);
+    unwindPushPopCFI(reg2);
+}
+
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
 
 void Compiler::unwindBegPrologCFI()
 {
     assert(compGeneratingProlog);
 
-    if (UsesFunclets())
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // There is only one prolog for a function/funclet, and it comes first. So now is
+    // a good time to initialize all the unwind data structures.
+
+    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
+
+    if (fgFirstColdBlock != nullptr)
     {
-        FuncInfoDsc* func = funCurrentFunc();
-
-        // There is only one prolog for a function/funclet, and it comes first. So now is
-        // a good time to initialize all the unwind data structures.
-
-        unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
-
-        if (fgFirstColdBlock != nullptr)
-        {
-            unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
-        }
-
-        func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
+        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
     }
+
+    func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
 }
 
 void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)

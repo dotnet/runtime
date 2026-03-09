@@ -50,6 +50,8 @@ namespace System.Security.Cryptography.X509Certificates
             get { return _certContext.DangerousGetHandle(); }
         }
 
+        internal SafeCertContextHandle? SafeHandle => _certContext;
+
         public string Issuer => GetIssuerOrSubject(issuer: true, reverse: true);
 
         public string Subject => GetIssuerOrSubject(issuer: false, reverse: true);
@@ -418,7 +420,7 @@ namespace System.Security.Cryptography.X509Certificates
             CspKeyContainerInfo? cspKeyContainerInfo = null;
             try
             {
-                CspParameters? parameters = GetPrivateKeyCsp();
+                CspParameters? parameters = CertificateHelpers.GetPrivateKeyCsp(_certContext);
 
                 if (parameters != null)
                 {

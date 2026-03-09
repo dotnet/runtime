@@ -15,7 +15,7 @@ namespace System.IO.Packaging.Tests
     public class PartPieceTests : FileCleanupTestBase
     {
         private delegate byte[] FileContentsGenerator(PartConstructionParameters pcp, int totalLength);
-        private record class PartConstructionParameters (string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
+        private record class PartConstructionParameters(string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
         { }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -85,7 +85,7 @@ namespace System.IO.Packaging.Tests
         {
             var bytes = new byte[totalLength];
 
-            for(int i = 0; i < totalLength; i++)
+            for (int i = 0; i < totalLength; i++)
             {
                 bytes[i] = (byte)(i % 255);
             }
@@ -209,7 +209,7 @@ namespace System.IO.Packaging.Tests
 
             Assert.NotNull(s_ZipPackagePartPieceType);
             Assert.NotNull(s_TryParseZipPackagePartPiece);
-            Assert.False((bool)s_TryParseZipPackagePartPiece.Invoke(null, [ partPieceEntry, null ]));
+            Assert.False((bool)s_TryParseZipPackagePartPiece.Invoke(null, [partPieceEntry, null]));
         }
 
         [Theory]
@@ -324,6 +324,39 @@ namespace System.IO.Packaging.Tests
             using var zipPackage = Package.Open(ms);
 
             Assert.NotEmpty(zipPackage.GetParts());
+        }
+
+        [Fact]
+        public void PartNamesAreCaseInsensitive()
+        {
+            using var ms = new MemoryStream();
+
+            using (var zipPackage = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+            {
+                zipPackage.CreatePart(new Uri("/part", UriKind.Relative), "text/plain");
+            }
+            ms.Position = 0;
+            using (var zipPackage = Package.Open(ms, FileMode.Open, FileAccess.Read))
+            {
+                var lowerPart = zipPackage.GetPart(new Uri("/part", UriKind.Relative));
+                var upperPart = zipPackage.GetPart(new Uri("/PART", UriKind.Relative));
+
+                Assert.Same(lowerPart, upperPart);
+                Assert.Equal(lowerPart.Uri, upperPart.Uri);
+                Assert.Equal(lowerPart.ContentType, upperPart.ContentType);
+            }
+        }
+
+        [Fact]
+        public void DuplicatePartsDifferingOnlyByCaseAreNotAllowed()
+        {
+            using var ms = new MemoryStream();
+            using (var zipPackage = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+            {
+                zipPackage.CreatePart(new Uri("/part", UriKind.Relative), "text/plain");
+                Assert.Throws<InvalidOperationException>(() =>
+                    zipPackage.CreatePart(new Uri("/PART", UriKind.Relative), "text/plain"));
+            }
         }
 
         [Fact]
@@ -603,6 +636,22 @@ namespace System.IO.Packaging.Tests
             }
 
             zipArchive.Dispose();
+        }
+
+        [Fact]
+        public void InterleavedZipPackagePartStream_Length_ReturnsCorrectValueWhenCanSeekIsFalse()
+        {
+            using MemoryStream package = new(_partPieceSampleZipPackage);
+
+            using Package zipPackage = Package.Open(package, FileMode.Open, FileAccess.Read);
+            PackagePart partEntry = zipPackage.GetPart(new Uri("/ReadablePartPieceEntry.bin", UriKind.Relative));
+            using Stream stream = partEntry.GetStream(FileMode.Open);
+
+            // When the package is opened with FileAccess.Read, the underlying zip entry stream
+            // does not support seeking but Length should still return the correct value.
+            // ReadablePartPieceEntry.bin has 4 pieces of 16 bytes each = 64 bytes total.
+            Assert.False(stream.CanSeek);
+            Assert.Equal(64, stream.Length);
         }
     }
 }

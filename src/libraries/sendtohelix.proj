@@ -85,10 +85,10 @@
 
     <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and WasmEnableWebcil=true and WasmEnableWebcil=false-->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
-      <_TestUsingWorkloadsValues Include="true;false" />
-      <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
-      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
-      <_TestUsingJavascriptBundlerValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
+      <_TestUsingWorkloadsValues Include="false" />
+      <_TestUsingWorkloadsValues Include="true" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+      <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
+      <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
@@ -106,7 +106,7 @@
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
       
       <!-- Add combination for JavascriptBundler friendliness -->
-      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly">
+      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly" Condition="'$(RuntimeFlavor)' == 'Mono'">
         <Workloads>true</Workloads>
         <Webcil>true</Webcil>
         <Fingerprinting>true</Fingerprinting>

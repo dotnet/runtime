@@ -3,6 +3,9 @@
 
 namespace System.Diagnostics
 {
+    /// <summary>
+    /// Provides methods to register and configure tracing settings from configuration files to <see cref="TraceSource" /> and related classes.
+    /// </summary>
     public static class TraceConfiguration
     {
         private static volatile bool s_registered;

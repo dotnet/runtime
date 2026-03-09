@@ -10,12 +10,13 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 namespace System.Security.Cryptography.Cose.Tests
 {
     // Tests that apply to all [Try]Sign overloads using one single signer.
-    public abstract class CoseMessageTests_Sign<T> where T : AsymmetricAlgorithm
+    public abstract class CoseMessageTests_Sign<T> where T : IDisposable
     {
+        internal virtual bool SupportsHashAlgorithm => true;
         internal virtual bool OnlySupportsDetachedContent => false;
         internal CoseAlgorithm DefaultAlgorithm => CoseAlgorithms[CoseAlgorithms.Count - 1];
         internal T DefaultKey => GetKeyHashPaddingTriplet<T>(CoseAlgorithms[CoseAlgorithms.Count - 1]).Key;
-        internal HashAlgorithmName DefaultHash => GetKeyHashPaddingTriplet<T>(CoseAlgorithms[CoseAlgorithms.Count - 1]).Hash;
+        internal HashAlgorithmName? DefaultHash => GetKeyHashPaddingTriplet<T>(CoseAlgorithms[CoseAlgorithms.Count - 1]).Hash;
         internal abstract List<CoseAlgorithm> CoseAlgorithms { get; }
         internal abstract CoseMessageKind MessageKind { get; }
 
@@ -32,7 +33,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal abstract bool Verify(CoseMessage msg, T key, byte[] content, byte[]? associatedData = null);
 
-        internal IEnumerable<(T Key, HashAlgorithmName Hash, CoseAlgorithm Algorithm, RSASignaturePadding? Padding)> GetKeyHashAlgorithmPaddingQuadruplet(bool useNonPrivateKey = false)
+        internal IEnumerable<(T Key, HashAlgorithmName? Hash, CoseAlgorithm Algorithm, RSASignaturePadding? Padding)> GetKeyHashAlgorithmPaddingQuadruplet(bool useNonPrivateKey = false)
         {
             foreach (var algorithm in CoseAlgorithms)
             {
@@ -44,7 +45,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal void AssertCoseSignMessage(
             ReadOnlySpan<byte> encodedMsg,
             ReadOnlySpan<byte> expectedContent,
-            AsymmetricAlgorithm key,
+            IDisposable key,
             CoseAlgorithm algorithm,
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedProtectedHeaders = null,
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedUnprotectedHeaders = null,
@@ -94,7 +95,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerify()
         {
-            foreach ((T key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+            foreach ((T key, HashAlgorithmName? hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
                 in GetKeyHashAlgorithmPaddingQuadruplet())
             {
                 var signer = GetCoseSigner(key, hashAlgorithm, padding: padding);
@@ -127,7 +128,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithNonPrivateKey()
         {
-            foreach ((T nonPrivateKey, HashAlgorithmName hashAlgorithm, _, RSASignaturePadding? padding)
+            foreach ((T nonPrivateKey, HashAlgorithmName? hashAlgorithm, _, RSASignaturePadding? padding)
                 in GetKeyHashAlgorithmPaddingQuadruplet(useNonPrivateKey: true))
             {
                 Assert.ThrowsAny<CryptographicException>(() => Sign(s_sampleContent, GetCoseSigner(nonPrivateKey, hashAlgorithm, padding: padding)));
@@ -139,6 +140,11 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("FOO")]
         public void SignWithUnsupportedHashAlgorithm(string hashAlgorithm)
         {
+            if (!SupportsHashAlgorithm)
+            {
+                return;
+            }
+
             Assert.Throws<ArgumentException>("hashAlgorithm", () => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
         }
 

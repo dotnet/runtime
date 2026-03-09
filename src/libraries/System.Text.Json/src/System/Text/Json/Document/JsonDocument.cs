@@ -409,7 +409,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, out value);
             }
 
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!segment.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TryDecodeBase64(segment, out value);
         }
 
@@ -694,29 +694,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (segment.Length > JsonConstants.MaximumEscapedGuidLength)
-            {
-                value = default;
-                return false;
-            }
-
-            // Segment needs to be unescaped
-            if (row.HasComplexChildren)
-            {
-                return JsonReaderHelper.TryGetEscapedGuid(segment, out value);
-            }
-
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (segment.Length == JsonConstants.MaximumFormatGuidLength
-                && Utf8Parser.TryParse(segment, out Guid tmp, out _, 'D'))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(segment, row.HasComplexChildren, out value);
         }
 
         internal string GetRawValueAsString(int index)

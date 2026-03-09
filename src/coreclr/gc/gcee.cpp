@@ -250,8 +250,6 @@ size_t GCHeap::GetLastGCDuration(int generation)
     return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-uint64_t GetHighPrecisionTimeStamp();
-
 size_t GCHeap::GetNow()
 {
     return (size_t)(GetHighPrecisionTimeStamp() / 1000);

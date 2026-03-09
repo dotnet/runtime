@@ -36,6 +36,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Threading;
 
 namespace System.Runtime
 {
@@ -293,9 +294,12 @@ namespace System.Runtime
     {
         private static IntPtr[] s_currentlyMappedThunkBlocks = new IntPtr[Constants.NumThunkBlocksPerMapping];
         private static int s_currentlyMappedThunkBlocksIndex = Constants.NumThunkBlocksPerMapping;
+        private static Lock s_lock = new Lock(useTrivialWaits: true);
 
         public static unsafe IntPtr GetNewThunksBlock()
         {
+            using Lock.Scope scope = s_lock.EnterScope();
+
             IntPtr nextThunksBlock;
 
             // Check the most recently mapped thunks block. Each mapping consists of multiple

@@ -8,6 +8,9 @@
 // Debug: Outputs <255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255>
 // Release: Outputs <255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>
 
+
+namespace Runtime_114978;
+
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
@@ -29,26 +32,23 @@ public class C2
 public class Runtime_114978
 {
     public static IRuntime s_rt;
-	
-	[Fact]
+
+	[ConditionalFact(typeof(Avx512BW.VL), nameof(Avx512BW.VL.IsSupported))]
     public static void Problem()
     {
-		if (Avx512BW.VL.IsSupported)
-		{
-			s_rt = new Runtime();
-			var vr14 = new C1();
-			var vr16 = new C1();
-			var vr17 = (byte)0;
-			var vr18 = Vector512.CreateScalar(vr17);
-			var vr19 = new C2();
-			var vr20 = new C0();
-			var vr21 = M10(vr14, vr18, vr19, vr20);
-			s_rt.AssertEqual(Vector512<byte>.AllBitsSet, vr21);
-			var vr22 = new C2();
-			var vr23 = new C0();
-			var vr24 = M10(vr16, vr21, vr22, vr23);
-			s_rt.AssertEqual(Vector512<byte>.AllBitsSet, vr24);
-		}
+        s_rt = new Runtime();
+        var vr14 = new C1();
+        var vr16 = new C1();
+        var vr17 = (byte)0;
+        var vr18 = Vector512.CreateScalar(vr17);
+        var vr19 = new C2();
+        var vr20 = new C0();
+        var vr21 = M10(vr14, vr18, vr19, vr20);
+        s_rt.AssertEqual(Vector512<byte>.AllBitsSet, vr21);
+        var vr22 = new C2();
+        var vr23 = new C0();
+        var vr24 = M10(vr16, vr21, vr22, vr23);
+        s_rt.AssertEqual(Vector512<byte>.AllBitsSet, vr24);
     }
 
     public static Vector512<byte> M10(C1 argThis, Vector512<byte> arg0, C2 arg1, C0 arg2)

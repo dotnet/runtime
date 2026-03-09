@@ -34,9 +34,8 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type ReflectedType => _reflectedType;
 
-        public sealed override string Name => _lazyName ??= ComputeName();
+        public sealed override string Name => field ??= ComputeName();
         protected abstract string ComputeName();
-        private volatile string? _lazyName;
 
         public sealed override Module Module => GetRoModule();
         internal abstract RoModule GetRoModule();

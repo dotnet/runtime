@@ -20,6 +20,7 @@ namespace System.Net.Security
         internal const bool StartMutualAuthAsAnonymous = false;
         internal const bool CertValidationInCallback = true;
         internal const bool CanEncryptEmptyMessage = false;
+        internal const bool CanGenerateCustomAlerts = false;
 
         public static void VerifyPackageInfo()
         {
@@ -217,7 +218,7 @@ namespace System.Net.Security
 
                 token.Status = new SecurityStatusPal(errorCode);
             }
-            catch (Exception exc)
+            catch (Exception exc) when (exc is not ArgumentException)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
@@ -233,6 +234,7 @@ namespace System.Net.Security
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by
             // SSLHandshake.
+            Debug.Assert(CanGenerateCustomAlerts);
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 #pragma warning restore IDE0060

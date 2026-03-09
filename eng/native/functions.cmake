@@ -223,7 +223,7 @@ function(preprocess_file inputFilename outputFilename)
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename} /nologo
+        COMMAND "${CMAKE_CXX_COMPILER}" ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename} /nologo
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -233,7 +233,7 @@ function(preprocess_file inputFilename outputFilename)
     endif()
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
+        COMMAND "${CMAKE_CXX_COMPILER}" ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -268,42 +268,6 @@ function(set_exports_linker_option exports_filename)
         # Add linker exports file option
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${exports_filename} PARENT_SCOPE)
     endif()
-endfunction()
-
-# compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
-# CMake does not support the ARM or ARM64 assemblers on Windows when using the
-# MSBuild generator. When the MSBuild generator is in use, we manually compile the assembly files
-# using this function.
-function(compile_asm)
-  set(options "")
-  set(oneValueArgs TARGET OUTPUT_OBJECTS)
-  set(multiValueArgs ASM_FILES)
-  cmake_parse_arguments(COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
-
-  get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
-
-  set (ASSEMBLED_OBJECTS "")
-
-  foreach(ASM_FILE ${COMPILE_ASM_ASM_FILES})
-    get_filename_component(name ${ASM_FILE} NAME_WE)
-    # Produce object file where CMake would store .obj files for an OBJECT library.
-    # ex: artifacts\obj\coreclr\windows.arm64.Debug\src\vm\wks\cee_wks.dir\Debug\AsmHelpers.obj
-    set (OBJ_FILE "${CMAKE_CURRENT_BINARY_DIR}/${COMPILE_ASM_TARGET}.dir/${CMAKE_CFG_INTDIR}/${name}.obj")
-
-    # Need to compile asm file using custom command as include directories are not provided to asm compiler
-    add_custom_command(OUTPUT ${OBJ_FILE}
-                        COMMAND "${CMAKE_ASM_COMPILER}" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}
-                        DEPENDS ${ASM_FILE}
-                        COMMENT "Assembling ${ASM_FILE} ---> \"${CMAKE_ASM_COMPILER}\" -g ${ASM_INCLUDE_DIRECTORIES} -o ${OBJ_FILE} ${ASM_FILE}")
-
-    # mark obj as source that does not require compile
-    set_source_files_properties(${OBJ_FILE} PROPERTIES EXTERNAL_OBJECT TRUE)
-
-    # Add the generated OBJ in the dependency list so that it gets consumed during linkage
-    list(APPEND ASSEMBLED_OBJECTS ${OBJ_FILE})
-  endforeach()
-
-  set(${COMPILE_ASM_OUTPUT_OBJECTS} ${ASSEMBLED_OBJECTS} PARENT_SCOPE)
 endfunction()
 
 # add_component(componentName [targetName] [EXCLUDE_FROM_ALL])
@@ -351,7 +315,7 @@ function(generate_exports_file)
 
     add_custom_command(
       OUTPUT ${outputFilename}
-      COMMAND ${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
+      COMMAND "${SCRIPT_NAME}" ${INPUT_LIST} >${outputFilename}
       DEPENDS ${INPUT_LIST} ${SCRIPT_NAME}
       COMMENT "Generating exports file ${outputFilename}"
     )
@@ -387,7 +351,7 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
   else()
     add_custom_command(
       OUTPUT ${outputFilename}
-      COMMAND ${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+      COMMAND "${SCRIPT_NAME}" "${inputFilename}" ${EXTRA_ARGS} >${outputFilename}
       DEPENDS ${inputFilename} ${SCRIPT_NAME}
       COMMENT "Generating exports file ${outputFilename}"
     )
@@ -435,7 +399,7 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
-      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+      set(strip_command "${STRIP}" -no_code_signature_warning -S ${strip_source_file})
 
       if (CLR_CMAKE_TARGET_OSX)
         # codesign release build
@@ -446,7 +410,7 @@ function(strip_symbols targetName outputFilename)
       endif ()
 
       execute_process(
-        COMMAND ${DSYMUTIL} --help
+        COMMAND "${DSYMUTIL}" --help
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
@@ -462,7 +426,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
-        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
+        COMMAND "${DSYMUTIL}" ${DSYMUTIL_OPTS} "${strip_source_file}"
         COMMAND ${strip_command}
         )
     else (CLR_CMAKE_TARGET_APPLE)
@@ -473,9 +437,9 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM
           COMMAND powershell -C "echo Stripping symbols from $(Split-Path -Path '${strip_source_file}' -Leaf) into $(Split-Path -Path '${strip_destination_file}' -Leaf)"
-          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
-          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+          COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${strip_source_file}" "${strip_destination_file}"
+          COMMAND "${CMAKE_OBJCOPY}" --strip-debug --strip-unneeded "${strip_source_file}"
+          COMMAND "${CMAKE_OBJCOPY}" "--add-gnu-debuglink=${strip_destination_file}" "${strip_source_file}"
         )
       else()
         add_custom_command(
@@ -483,9 +447,9 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM
           COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
-          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
-          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+          COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${strip_source_file}" "${strip_destination_file}"
+          COMMAND "${CMAKE_OBJCOPY}" --strip-debug --strip-unneeded "${strip_source_file}"
+          COMMAND "${CMAKE_OBJCOPY}" "--add-gnu-debuglink=${strip_destination_file}" "${strip_source_file}"
         )
       endif()
     endif (CLR_CMAKE_TARGET_APPLE)
@@ -548,11 +512,11 @@ function(install_static_library targetName destination component)
   endif()
 endfunction()
 
-# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName])
+# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName] [OPTIONAL])
 function(install_clr)
   set(multiValueArgs TARGETS DESTINATIONS)
   set(singleValueArgs COMPONENT)
-  set(options "")
+  set(options OPTIONAL)
   cmake_parse_arguments(INSTALL_CLR "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
@@ -587,12 +551,36 @@ function(install_clr)
       get_symbol_file_name(${targetName} symbolFile)
     endif()
 
+    if (${INSTALL_CLR_OPTIONAL})
+      set(INSTALL_CLR_OPTIONAL "OPTIONAL")
+    else()
+      set(INSTALL_CLR_OPTIONAL "")
+    endif()
+
     foreach(destination ${destinations})
-      # We don't need to install the export libraries for our DLLs
-      # since they won't be directly linked against.
-      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      if (NOT "${symbolFile}" STREQUAL "")
-        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
+      if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
+        # Use install FILES since these are WASM assets that aren't executable.
+        install(FILES
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
+          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
+          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+
+        # Conditionally check for and copy any extra data file at install time.
+        install(CODE
+        "
+          if(EXISTS \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\")
+              file(INSTALL \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\" DESTINATION \"${CMAKE_INSTALL_PREFIX}/${destination}\")
+          endif()
+        "
+        COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+      else()
+        # We don't need to install the export libraries for our DLLs
+        # since they won't be directly linked against.
+        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        if (NOT "${symbolFile}" STREQUAL "")
+          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)
@@ -620,7 +608,7 @@ function(disable_pax_mprotect targetName)
   # Disabling PAX hardening only makes sense in systems that use Elf image formats. Particularly, looking
   # for paxctl in macOS is problematic as it collides with popular software for that OS that performs completely
   # unrelated functionality. Only look for it when we'll generate Elf images.
-  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # Try to locate the paxctl tool. Failure to find it is not fatal,
     # but the generated executables won't work on a system where PAX is set
     # to prevent applications to create executable memory mappings.
@@ -631,10 +619,10 @@ function(disable_pax_mprotect targetName)
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+        COMMAND "${PAXCTL}" -c -m $<TARGET_FILE:${targetName}>
         )
     endif()
-  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
 # add_linker_flag(Flag [Config1 Config2 ...])

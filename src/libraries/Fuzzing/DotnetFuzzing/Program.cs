@@ -64,6 +64,15 @@ public static class Program
             return;
         }
 
+        if (args.ElementAtOrDefault(1) == "--get-instrumented-assemblies")
+        {
+            foreach ((string assembly, string? prefixes) in GetInstrumentationTargets(fuzzer))
+            {
+                Console.WriteLine($"{assembly} {prefixes}");
+            }
+            return;
+        }
+
         RunFuzzer(fuzzer, inputFiles: args.Length > 1 ? args[1] : null);
     }
 
@@ -103,12 +112,21 @@ public static class Program
             throw new Exception($"Dictionary '{unusedDictionary}' is not referenced by any fuzzer.");
         }
 
+        string[] corpora = Directory.GetDirectories(Path.Combine(publishDirectory, "Corpora"))
+            .Select(Path.GetFileName)
+            .ToArray()!;
+
+        if (corpora.FirstOrDefault(corpus => !fuzzers.Any(f => f.Corpus == corpus)) is { } unusedCorpus)
+        {
+            throw new Exception($"Corpus '{unusedCorpus}' is not referenced by any fuzzer.");
+        }
+
         Directory.CreateDirectory(outputDirectory);
 
         await DownloadArtifactAsync(
             Path.Combine(publishDirectory, "libfuzzer-dotnet.exe"),
-            "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2023.06.26.1359/libfuzzer-dotnet-windows.exe",
-            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458").ConfigureAwait(false);
+            "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2025.05.02.0904/libfuzzer-dotnet-windows.exe",
+            "4da2a77d06229a43040f9841bc632a881389a0b8fdcc2d60c8d0b547ccbedee63e7b0a7eca8eeffdba1243d85bdcec3cfe763237650c2f46a1327f8ee401d9a2").ConfigureAwait(false);
 
         Console.WriteLine("Preparing fuzzers ...");
 
@@ -152,6 +170,20 @@ public static class Program
                 }
 
                 File.Copy(Path.Combine(publishDirectory, "Dictionaries", dict), Path.Combine(fuzzerDirectory, "dictionary"), overwrite: true);
+            }
+
+            if (fuzzer.Corpus is string corpus)
+            {
+                if (!corpora.Contains(corpus, StringComparer.Ordinal))
+                {
+                    throw new Exception($"Fuzzer '{fuzzer.Name}' is referencing a corpus '{fuzzer.Corpus}' that does not exist in the publish directory.");
+                }
+
+                Directory.CreateDirectory(Path.Combine(fuzzerDirectory, "corpus"));
+                foreach (string file in Directory.EnumerateFiles(Path.Combine(publishDirectory, "Corpora", corpus), "*", SearchOption.TopDirectoryOnly))
+                {
+                    File.Copy(file, Path.Combine(fuzzerDirectory, "corpus", Path.GetFileName(file)), overwrite: true);
+                }
             }
 
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
@@ -278,7 +310,7 @@ public static class Program
             using var client = new HttpClient();
             byte[] bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
 
-            if (!Convert.ToHexString(SHA256.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
+            if (!Convert.ToHexString(SHA512.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
             {
                 throw new Exception($"{path} checksum mismatch");
             }
@@ -291,7 +323,7 @@ public static class Program
     {
         // {setup_dir} is replaced by OneFuzz with the path to the fuzzer directory.
         string? dictionaryArgument = fuzzer.Dictionary is not null
-            ? "\"-dict={setup_dir}/dictionary\""
+            ? "\"-dict={setup_dir}/dictionary\","
             : null;
 
         // Make it easier to distinguish between long-running CI jobs and short-lived test submissions.
@@ -313,7 +345,7 @@ public static class Program
                     ],
                     "CheckFuzzerHelp": false
                   },
-                  "FuzzerTimeoutInSeconds": 60,
+                  "FuzzerTimeoutInSeconds": 120,
                   "OneFuzzJobs": [
                     {
                       "ProjectName": "DotnetFuzzing",
@@ -324,6 +356,7 @@ public static class Program
                       ],
                       "FuzzingTargetOptions": [
                         {{{dictionaryArgument}}}
+                        "-timeout=60"
                       ]
                     }
                   ],
@@ -367,6 +400,15 @@ public static class Program
 
         // Pass any additional arguments to the fuzzer.
         script += " %*";
+
+        // multiple corpus directories can be passed to the fuzzer, new test
+        // inputs are then added to the first one. We put the seed corpus after
+        // additional args so that if user specifies additional corpus dirs, the
+        // new inputs get added there instead.
+        if (fuzzer.Corpus is not null)
+        {
+            script += " %~dp0/corpus";
+        }
 
         return script;
     }

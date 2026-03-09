@@ -6,7 +6,7 @@
 
 namespace System.Numerics
 {
-    public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.IFormattable, System.IParsable<System.Numerics.BigInteger>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BigInteger>, System.Numerics.IAdditionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IBinaryInteger<System.Numerics.BigInteger>, System.Numerics.IBinaryNumber<System.Numerics.BigInteger>, System.Numerics.IBitwiseOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IComparisonOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, bool>, System.Numerics.IDecrementOperators<System.Numerics.BigInteger>, System.Numerics.IDivisionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IEqualityOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, bool>, System.Numerics.IIncrementOperators<System.Numerics.BigInteger>, System.Numerics.IModulusOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IMultiplyOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.INumber<System.Numerics.BigInteger>, System.Numerics.INumberBase<System.Numerics.BigInteger>, System.Numerics.IShiftOperators<System.Numerics.BigInteger, int, System.Numerics.BigInteger>, System.Numerics.ISignedNumber<System.Numerics.BigInteger>, System.Numerics.ISubtractionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IUnaryNegationOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IUnaryPlusOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>
+    public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.IFormattable, System.IParsable<System.Numerics.BigInteger>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BigInteger>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.BigInteger>, System.Numerics.IAdditionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IBinaryInteger<System.Numerics.BigInteger>, System.Numerics.IBinaryNumber<System.Numerics.BigInteger>, System.Numerics.IBitwiseOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IComparisonOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, bool>, System.Numerics.IDecrementOperators<System.Numerics.BigInteger>, System.Numerics.IDivisionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IEqualityOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, bool>, System.Numerics.IIncrementOperators<System.Numerics.BigInteger>, System.Numerics.IModulusOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IMultiplyOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.INumber<System.Numerics.BigInteger>, System.Numerics.INumberBase<System.Numerics.BigInteger>, System.Numerics.IShiftOperators<System.Numerics.BigInteger, int, System.Numerics.BigInteger>, System.Numerics.ISignedNumber<System.Numerics.BigInteger>, System.Numerics.ISubtractionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IUnaryNegationOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IUnaryPlusOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -93,12 +93,14 @@ namespace System.Numerics
         public static explicit operator System.Numerics.BigInteger (decimal value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (double value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (System.Half value) { throw null; }
+        public static explicit operator System.Numerics.BigInteger (System.Numerics.BFloat16 value) { throw null; }
         public static explicit operator byte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator char (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator decimal (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator double (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Half (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Int128 (System.Numerics.BigInteger value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16 (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator short (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator int (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator long (System.Numerics.BigInteger value) { throw null; }
@@ -182,6 +184,8 @@ namespace System.Numerics
         public static System.Numerics.BigInteger operator -(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger operator +(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger operator >>>(System.Numerics.BigInteger value, int shiftAmount) { throw null; }
+        public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
         public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger Parse(string value) { throw null; }
@@ -194,10 +198,10 @@ namespace System.Numerics
         public static System.Numerics.BigInteger RotateLeft(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger RotateRight(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger Subtract(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
-        static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
-        static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetShortestBitLength() { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsCanonical(System.Numerics.BigInteger value) { throw null; }
@@ -232,7 +236,11 @@ namespace System.Numerics
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger TrailingZeroCount(System.Numerics.BigInteger value) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
@@ -241,7 +249,7 @@ namespace System.Numerics
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
-    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable, System.IParsable<System.Numerics.Complex>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.Complex>, System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IDecrementOperators<System.Numerics.Complex>, System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IEqualityOperators<System.Numerics.Complex, System.Numerics.Complex, bool>, System.Numerics.IIncrementOperators<System.Numerics.Complex>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.INumberBase<System.Numerics.Complex>, System.Numerics.ISignedNumber<System.Numerics.Complex>, System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryPlusOperators<System.Numerics.Complex, System.Numerics.Complex>, System.IUtf8SpanFormattable
+    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable, System.IParsable<System.Numerics.Complex>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.Complex>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Numerics.Complex>, System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IDecrementOperators<System.Numerics.Complex>, System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IEqualityOperators<System.Numerics.Complex, System.Numerics.Complex, bool>, System.Numerics.IIncrementOperators<System.Numerics.Complex>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.INumberBase<System.Numerics.Complex>, System.Numerics.ISignedNumber<System.Numerics.Complex>, System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryPlusOperators<System.Numerics.Complex, System.Numerics.Complex>
     {
         private readonly int _dummyPrimitive;
         public static readonly System.Numerics.Complex ImaginaryOne;
@@ -322,6 +330,7 @@ namespace System.Numerics
         public static implicit operator System.Numerics.Complex (char value) { throw null; }
         public static implicit operator System.Numerics.Complex (double value) { throw null; }
         public static implicit operator System.Numerics.Complex (System.Half value) { throw null; }
+        public static implicit operator System.Numerics.Complex (System.Numerics.BFloat16 value) { throw null; }
         public static implicit operator System.Numerics.Complex (short value) { throw null; }
         public static implicit operator System.Numerics.Complex (int value) { throw null; }
         public static implicit operator System.Numerics.Complex (long value) { throw null; }
@@ -347,6 +356,8 @@ namespace System.Numerics
         public static System.Numerics.Complex operator -(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator -(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex operator +(System.Numerics.Complex value) { throw null; }
+        public static System.Numerics.Complex Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Complex Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Complex Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Complex Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Complex Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
@@ -378,8 +389,10 @@ namespace System.Numerics
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default, System.IFormatProvider? provider = null) { throw null; }
-        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default, System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }

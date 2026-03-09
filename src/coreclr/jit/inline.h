@@ -598,7 +598,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
     unsigned              likelihood;
-    bool                  arrayInterface;
+    bool                  needsMethodContext;
 
     CORINFO_METHOD_INFO methInfo;
 
@@ -610,9 +610,10 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     //
     CORINFO_CONTEXT_HANDLE exactContextHandle;
 
-    // Context handle of the call before any
+    // Method and context handle of the call before any
     // GDV/Inlining evaluation
     //
+    CORINFO_METHOD_HANDLE  originalMethodHandle;
     CORINFO_CONTEXT_HANDLE originalContextHandle;
 
     // The GT_RET_EXPR node linking back to the inline candidate.
@@ -633,8 +634,9 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 //
 struct LateDevirtualizationInfo
 {
+    CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    InlineContext*         inlinersContext;
+    ILLocation             ilLocation;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -953,7 +955,7 @@ public:
     // Compiler associated with this strategy
     Compiler* GetCompiler() const
     {
-        return m_Compiler;
+        return m_compiler;
     }
 
     // Root context
@@ -1120,7 +1122,7 @@ private:
     static CritSecObject s_XmlWriterLock;
 #endif // defined(DEBUG)
 
-    Compiler*         m_Compiler;
+    Compiler*         m_compiler;
     InlineContext*    m_RootContext;
     InlinePolicy*     m_LastSuccessfulPolicy;
     InlineContext*    m_LastContext;

@@ -47,6 +47,11 @@ namespace System.Text.Json.Serialization.Tests
         public NumberHandlingTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
     }
 
+    public class NumberHandlingTests_PipeWithSmallBuffer : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
+    }
+
     public abstract class NumberHandlingTests_OverloadSpecific
     {
         private JsonSerializerWrapper Serializer { get; }
@@ -74,58 +79,66 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""userPlayCount"": ""123"",
-                        ""name"": ""the name of the album"",
-                        ""artist"": ""the name of the artist"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        }
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "userPlayCount": "123",
+                                                "name": "the name of the album",
+                                                "artist": "the name of the artist",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                }
+                                            }
+                                        }
+                    """
             };
 
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""name"": ""the name of the album"",
-                        ""userPlayCount"": ""123"",
-                        ""artist"": ""the name of the artist"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        }
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "name": "the name of the album",
+                                                "userPlayCount": "123",
+                                                "artist": "the name of the artist",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                }
+                                            }
+                                        }
+                    """
             };
 
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""name"": ""the name of the album"",
-                        ""artist"": ""the name of the artist"",
-                        ""userPlayCount"": ""123"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        }
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "name": "the name of the album",
+                                                "artist": "the name of the artist",
+                                                "userPlayCount": "123",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                }
+                                            }
+                                        }
+                    """
             };
 
             yield return new object[]
             {
-                @"{
-                    ""album"": {
-                        ""name"": ""the name of the album"",
-                        ""artist"": ""the name of the artist"",
-                        ""wiki"": {
-                            ""summary"": ""a summary of the album""
-                        },
-                        ""userPlayCount"": ""123""
-                    }
-                }"
+                """
+                        {
+                                            "album": {
+                                                "name": "the name of the album",
+                                                "artist": "the name of the artist",
+                                                "wiki": {
+                                                    "summary": "a summary of the album"
+                                                },
+                                                "userPlayCount": "123"
+                                            }
+                                        }
+                    """
             };
         }
 

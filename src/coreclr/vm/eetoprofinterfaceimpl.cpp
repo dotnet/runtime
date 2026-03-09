@@ -587,7 +587,7 @@ HRESULT EEToProfInterfaceImpl::Init(
     }
     // Intentionally swallowing all exceptions, as we don't want a poorly-written
     // profiler that throws or AVs on attach to cause the entire process to go away.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 
     if (FAILED(hr))
@@ -1146,8 +1146,9 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
             // All ELT2 fast-path hooks are disabled since we cannot report correct FunctionID to the
             // profiler at this moment.
             m_fIsClientIDToFunctionIDMappingEnabled = FALSE;
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
 
         // If ELT2 is in use, FunctionID will be returned to the JIT to be embedded into the ELT3 probes
         // instead of using clientID because the profiler may map several functionIDs to a clientID to
@@ -2122,7 +2123,7 @@ HRESULT EEToProfInterfaceImpl::DetermineAndSetEnterLeaveFunctionHooksForJit()
     }
     // We need to swallow all exceptions, because we will lock otherwise (in addition to
     // the IA64-only lock while allocating stub space!).  For example, specifying
-    // RethrowTerminalExceptions forces us to test to see if the caught exception is
+    // RethrowTerminalExceptions() forces us to test to see if the caught exception is
     // terminal and Exception::IsTerminal() can lock if we get a handle table cache miss
     // while getting a handle for the exception.  It is good to minimize locks from
     // profiler Info functions (and their callees), and this is a dumb lock to have,
@@ -2132,7 +2133,7 @@ HRESULT EEToProfInterfaceImpl::DetermineAndSetEnterLeaveFunctionHooksForJit()
     // currently, an exception only gets thrown from SetEnterLeaveFunctionHooksForJit on
     // IA64.  But to keep consistent (and in case the world changes), we'll do this on
     // all platforms.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -2420,7 +2421,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
     if (fNeedToTurnOffConcurrentGC)
     {
         // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
-        g_profControlBlock.fConcurrentGCDisabledForAttach = TRUE;
+        g_profControlBlock.fConcurrentGCDisabledForAttach = true;
 
         // Turn off concurrent GC if it is on so that user can walk the heap safely in GC callbacks
         IGCHeap * pGCHeap = GCHeapUtilities::GetGCHeap();
@@ -2454,7 +2455,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
 
             // TODO: think about race conditions... I am pretty sure there is one
             // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
-            g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
+            g_profControlBlock.fConcurrentGCDisabledForAttach = false;
             pGCHeap->TemporaryEnableConcurrentGC();
 
             return hr;
@@ -2806,7 +2807,7 @@ HRESULT EEToProfInterfaceImpl::InitializeForAttach(void * pvClientData, UINT cbC
     }
     // Intentionally swallowing all exceptions, as we don't want a poorly-written
     // profiler that throws or AVs on attach to cause the entire process to go away.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -2855,7 +2856,7 @@ HRESULT EEToProfInterfaceImpl::ProfilerAttachComplete()
     }
     // Intentionally swallowing all exceptions, as we don't want a poorly-written
     // profiler that throws or AVs on attach to cause the entire process to go away.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }

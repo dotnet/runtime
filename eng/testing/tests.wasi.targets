@@ -13,8 +13,6 @@
                                         >true</InstallWasmtimeForTests>
 
     <!--<InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>-->
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
-    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
 
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasiBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
   </PropertyGroup>
@@ -97,9 +95,6 @@
   <Target Name="PrepareForWasiBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
-
-      <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
@@ -151,13 +146,9 @@
                       '$(Scenario)' != 'BuildWasmApps'"
                       Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
 
-    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="export PREPEND_PATH=$(WasmtimeDir)" />
-      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="export RuntimeIdentifier=wasi-wasm" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="set PREPEND_PATH=$(WasmtimeDir)" />
-      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="set RuntimeIdentifier=wasi-wasm" />
+    <ItemGroup >
+      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="$(EnvVarCommand) PREPEND_PATH=$(WasmtimeDir)" />
+      <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="$(EnvVarCommand) RuntimeIdentifier=wasi-wasm" />
     </ItemGroup>
   </Target>
 </Project>

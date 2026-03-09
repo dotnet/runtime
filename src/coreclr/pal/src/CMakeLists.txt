@@ -1,12 +1,12 @@
-if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_FREEBSD)
+elseif (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
@@ -86,6 +86,9 @@ endif(CLR_CMAKE_TARGET_APPLE)
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
+if(FEATURE_SINGLE_THREADED)
+  add_definitions(-DFEATURE_SINGLE_THREADED)
+endif(FEATURE_SINGLE_THREADED)
 add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
@@ -101,8 +104,6 @@ if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET
 endif(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
 if(CLR_CMAKE_TARGET_LINUX_MUSL)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
-  add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
@@ -154,7 +155,6 @@ set(SOURCES
   exception/signal.cpp
   file/directory.cpp
   file/file.cpp
-  file/filetime.cpp
   file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
@@ -179,13 +179,11 @@ set(SOURCES
   objmgr/palobjbase.cpp
   objmgr/listedobject.cpp
   objmgr/listedobjectmanager.cpp
-  safecrt/makepath_s.cpp
   safecrt/memcpy_s.cpp
   safecrt/memmove_s.cpp
   safecrt/mbusafecrt.cpp
   safecrt/safecrt_input_s.cpp
   safecrt/safecrt_winput_s.cpp
-  safecrt/splitpath_s.cpp
   safecrt/sprintf_s.cpp
   safecrt/sscanf_s.cpp
   safecrt/strcat_s.cpp
@@ -200,10 +198,8 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  sharedmemory/sharedmemory.cpp
   synchobj/event.cpp
   synchobj/semaphore.cpp
-  synchobj/mutex.cpp
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
   synchmgr/wait.cpp
@@ -293,6 +289,14 @@ if(CLR_CMAKE_TARGET_FREEBSD)
   )
 endif(CLR_CMAKE_TARGET_FREEBSD)
 
+if(CLR_CMAKE_TARGET_OPENBSD)
+  target_link_libraries(coreclrpal
+    PUBLIC
+    pthread
+    ${UNWIND_LIBS}
+  )
+endif(CLR_CMAKE_TARGET_OPENBSD)
+
 if(CLR_CMAKE_TARGET_HAIKU)
   target_link_libraries(coreclrpal
     PUBLIC
@@ -364,3 +368,7 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  install_clr(TARGETS coreclrpal DESTINATIONS sharedFramework COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_WASM)

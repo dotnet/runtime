@@ -10,7 +10,6 @@ using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
@@ -125,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3(ITestOutputHelper output) : base(output) { }
@@ -332,7 +331,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_DiagnosticsTest_Http3 : DiagnosticsTest
     {
         public SocketsHttpHandler_DiagnosticsTest_Http3(ITestOutputHelper output) : base(output) { }
@@ -593,7 +592,7 @@ namespace System.Net.Http.Functional.Tests
                     string response = LoopbackServer.GetContentModeResponse(mode, content);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
+                        await server.ListenSocket.CloseAsync(); // Shut down the listen socket so attempts at additional connections would fail on the client
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                     });
@@ -827,12 +826,186 @@ namespace System.Net.Http.Functional.Tests
 
         protected static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
+
+        [Fact]
+        public async Task GetAsync_NoTrailers_EmptyCollection()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.NotNull(response.TrailingHeaders);
+                Assert.Empty(response.TrailingHeaders);
+            }, server => server.AcceptConnectionSendResponseAndCloseAsync(content: "data"));
+        }
+
+        protected abstract Task AcceptConnectionAndSendResponseAsync(
+            GenericLoopbackServer server,
+            byte[] responseData,
+            IList<HttpHeaderData> headers,
+            IList<HttpHeaderData> trailers,
+            SemaphoreSlim writeDataAgain = null);
+
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task GetAsync_TrailingHeadersReceived(bool emptyContent, bool includeContentLength)
+        {
+            if (UseVersion.Major == 1 && includeContentLength)
+            {
+                throw new SkipTestException("HTTP/1.1 trailers are only supported with chunked encoding.");
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(uri);
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                byte[] content = await response.Content.ReadAsByteArrayAsync();
+                if (emptyContent)
+                {
+                    Assert.Empty(content);
+                }
+                else
+                {
+                    Assert.Equal(DataBytes, content);
+                }
+
+                Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
+                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+            }, async server =>
+            {
+                byte[] data = emptyContent ? [] : DataBytes;
+                HttpHeaderData[] headers = includeContentLength ? [new HttpHeaderData("Content-Length", DataBytes.Length.ToString())] : [];
+                await AcceptConnectionAndSendResponseAsync(server, data, headers, TrailingHeaders);
+            });
+        }
+
+        [InlineData(false)]
+        [InlineData(true)]
+        [ConditionalTheory]
+        public async Task GetAsync_UseResponseHeadersReadOption_TrailingHeadersReceived(bool includeContentLength)
+        {
+            if (UseVersion.Major == 1 && includeContentLength)
+            {
+                throw new SkipTestException("HTTP/1.1 trailers are only supported with chunked encoding.");
+            }
+
+            SemaphoreSlim sendDataAgain = new SemaphoreSlim(0);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Pending read on the response content.
+                Assert.Empty(response.TrailingHeaders);
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+                byte[] data = new byte[100];
+                await stream.ReadAsync(data);
+
+                // Haven't reached stream EOF yet, trailers are not received.
+                Assert.Empty(response.TrailingHeaders);
+
+                // Trigger sending the more data and the trailers.
+                sendDataAgain.Release();
+
+                // Read data until EOF is reached.
+                while (await stream.ReadAsync(data) != 0) ;
+
+                Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
+                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+            }, async server =>
+            {
+                HttpHeaderData[] headers = includeContentLength ? [new HttpHeaderData("Content-Length", DataBytes.Length.ToString())] : [];
+                await AcceptConnectionAndSendResponseAsync(server, DataBytes, headers, TrailingHeaders, sendDataAgain);
+            });
+        }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/54156", TestPlatforms.Browser)]
-    public class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
+    [SkipOnPlatform(TestPlatforms.Browser, "HTTP/1 trailers are not supported by most major browsers")]
+    public sealed class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http1_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
+
+        protected override async Task AcceptConnectionAndSendResponseAsync(
+            GenericLoopbackServer server,
+            byte[] responseData,
+            IList<HttpHeaderData> headers,
+            IList<HttpHeaderData> trailers,
+            SemaphoreSlim writeDataAgain = null)
+        {
+            Debug.Assert(!headers.Any(h => h.Name is "Content-Length"));
+
+            await using LoopbackServer.Connection connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync();
+            await connection.ReadRequestHeaderAsync();
+            await connection.ReadRequestBodyAsync();
+
+            StringBuilder bld = new StringBuilder();
+            bld.Append("HTTP/1.1 200 OK\r\n");
+            bld.Append(LoopbackServer.CorsHeaders);
+            bld.Append("Connection: close\r\n");
+
+            if (!headers.Any(h => h.Name is "Transfer-Encoding"))
+            {
+                bld.Append("Transfer-Encoding: chunked\r\n");
+            }
+
+            AppendHeaders(headers);
+            if (trailers.Any())
+            {
+                bld.Append($"Trailer: {string.Join(", ", trailers.Select(t => t.Name))}\r\n");
+            }
+
+            bld.Append("\r\n");
+
+            // Write the headers to the connection.
+            await connection.WriteStringAsync(bld.ToString());
+
+            // Write the data.
+            await WriteDataAsync();
+
+            if (writeDataAgain is not null)
+            {
+                // We were requested to wait and write more data.
+                await writeDataAgain.WaitAsync();
+                await WriteDataAsync();
+            }
+
+            // Reset the StringBuilder and write the trailers.
+            bld.Clear();
+            bld.Append("0\r\n");
+            AppendHeaders(trailers);
+            bld.Append("\r\n");
+            await connection.WriteStringAsync(bld.ToString());
+
+            async ValueTask WriteDataAsync()
+            {
+                if (responseData.Length > 0)
+                {
+                    await connection.WriteStringAsync($"{responseData.Length:X}\r\n");
+                    await connection.SendResponseAsync(responseData);
+                    await connection.WriteStringAsync("\r\n");
+                }
+            }
+
+            void AppendHeaders(IList<HttpHeaderData> theHeaders)
+            {
+                foreach (HttpHeaderData headerData in theHeaders)
+                {
+                    bld.Append($"{headerData.Name}: {headerData.Value}\r\n");
+                }
+            }
+        }
 
         [Theory]
         [InlineData(false)]
@@ -890,66 +1063,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
-        public async Task GetAsyncResponseHeadersReadOption_TrailingHeaders_Available()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
-                {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getResponseTask,
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            "HTTP/1.1 200 OK\r\n" +
-                            LoopbackServer.CorsHeaders +
-                            "Connection: close\r\n" +
-                            "Transfer-Encoding: chunked\r\n" +
-                            "Trailer: MyCoolTrailerHeader\r\n" +
-                            "\r\n" +
-                            "4\r\n" +
-                            "data\r\n" +
-                            "0\r\n" +
-                            "MyCoolTrailerHeader: amazingtrailer\r\n" +
-                            "Hello: World\r\n" +
-                            "\r\n"));
-
-                    using (HttpResponseMessage response = await getResponseTask)
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        Assert.Contains("chunked", response.Headers.GetValues("Transfer-Encoding"));
-                        Assert.Contains("MyCoolTrailerHeader", response.Headers.GetValues("Trailer"));
-
-                        // Pending read on the response content.
-                        var trailingHeaders = response.TrailingHeaders;
-                        Assert.Empty(trailingHeaders);
-
-                        Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
-                        Byte[] data = new Byte[100];
-                        // Read some data, preferably whole body.
-                        int readBytes = await stream.ReadAsync(data, 0, 4);
-
-                        // Intermediate test - haven't reached stream EOF yet.
-                        Assert.Empty(response.TrailingHeaders);
-                        if (readBytes == 4)
-                        {
-                            // If we consumed whole content, check content.
-                            Assert.Contains("data", System.Text.Encoding.Default.GetString(data));
-                        }
-
-                        // Read data until EOF is reached
-                        while (stream.Read(data, 0, data.Length) != 0)
-                            ;
-
-                        Assert.Same(trailingHeaders, response.TrailingHeaders);
-                        Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
-                        Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
-                    }
-                }
-            });
-        }
-
+        // TODO: Consider generalizing the the test cases below this line to HTTP/2 and HTTP/3.
         [Theory]
         [InlineData(1024, 1023)]
         [InlineData(1024, 1024)]
@@ -1072,115 +1186,46 @@ namespace System.Net.Http.Functional.Tests
                 $"{name}: {value}\r\n" +
                 "\r\n"));
         }
-
-        [Fact]
-        public async Task GetAsync_NoTrailingHeaders_EmptyCollection()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
-                {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getResponseTask,
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            "HTTP/1.1 200 OK\r\n" +
-                            "Connection: close\r\n" +
-                            LoopbackServer.CorsHeaders +
-                            "Transfer-Encoding: chunked\r\n" +
-                            "Trailer: MyCoolTrailerHeader\r\n" +
-                            "\r\n" +
-                            "4\r\n" +
-                            "data\r\n" +
-                            "0\r\n" +
-                            "\r\n"));
-
-                    using (HttpResponseMessage response = await getResponseTask)
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        Assert.Contains("chunked", response.Headers.GetValues("Transfer-Encoding"));
-
-                        Assert.NotNull(response.TrailingHeaders);
-                        Assert.Equal(0, response.TrailingHeaders.Count());
-                        Assert.Same(response.TrailingHeaders, response.TrailingHeaders);
-                    }
-                }
-            });
-        }
     }
 
-    // TODO: make generic to support HTTP/2 and HTTP/3.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class SocketsHttpHandler_Http2_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http2_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsync_NoTrailingHeaders_EmptyCollection()
+        protected override async Task AcceptConnectionAndSendResponseAsync(
+            GenericLoopbackServer server,
+            byte[] responseData,
+            IList<HttpHeaderData> headers,
+            IList<HttpHeaderData> trailers,
+            SemaphoreSlim writeDataAgain = null)
         {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
-            using (HttpClient client = CreateHttpClient())
+            await using Http2LoopbackConnection connection = (Http2LoopbackConnection)await server.EstablishGenericConnectionAsync();
+            (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync();
+            await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: headers);
+
+            // Response data
+            if (responseData.Length > 0)
             {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
-
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-
-                int streamId = await connection.ReadRequestHeaderAsync();
-
-                // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
-
-                // Response data.
-                await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes, endStream: true));
-
-                // Server doesn't send trailing header frame.
-                HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.NotNull(response.TrailingHeaders);
-                Assert.Equal(0, response.TrailingHeaders.Count());
-            }
-        }
-
-        [InlineData(false)]
-        [InlineData(true)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted(bool responseHasContentLength)
-        {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
-            using (HttpClient client = CreateHttpClient())
-            {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
-
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-
-                int streamId = await connection.ReadRequestHeaderAsync();
-
-                // Response header.
-                if (responseHasContentLength)
-                {
-                    await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: new[] { new HttpHeaderData("Content-Length", DataBytes.Length.ToString()) });
-                }
-                else
-                {
-                    await connection.SendDefaultResponseHeadersAsync(streamId);
-                }
-
-                // Response data, missing Trailers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
-
-                // Additional trailing header frame.
-                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: TrailingHeaders, endStream: true);
-
-                HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
-                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
-                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
             }
+
+            if (writeDataAgain is not null)
+            {
+                // We were requested to wait and write more data.
+                await writeDataAgain.WaitAsync();
+                if (responseData.Length > 0)
+                {
+                    await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
+                }
+            }
+
+            // Additional trailing header frame.
+            await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: TrailingHeaders, endStream: true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [Fact]
         public async Task Http2GetAsync_TrailerHeaders_TrailingPseudoHeadersThrow()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1201,116 +1246,121 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
         }
+    }
 
-        [InlineData(false)]
-        [InlineData(true)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available(bool responseHasContentLength)
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
+    public sealed class SocketsHttpHandler_Http3_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
+    {
+        public SocketsHttpHandler_Http3_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        protected override async Task AcceptConnectionAndSendResponseAsync(
+            GenericLoopbackServer server,
+            byte[] responseData,
+            IList<HttpHeaderData> headers,
+            IList<HttpHeaderData> trailers,
+            SemaphoreSlim writeDataAgain = null)
         {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
-            using (HttpClient client = CreateHttpClient())
+            await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+            await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+            _ = await stream.ReadRequestDataAsync();
+            await stream.SendResponseHeadersAsync(statusCode: HttpStatusCode.OK, headers: headers);
+            if (responseData.Length > 0)
             {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address, HttpCompletionOption.ResponseHeadersRead);
-
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-
-                int streamId = await connection.ReadRequestHeaderAsync();
-
-                // Response header.
-                if (responseHasContentLength)
-                {
-                    await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: new[] { new HttpHeaderData("Content-Length", DataBytes.Length.ToString()) });
-                }
-                else
-                {
-                    await connection.SendDefaultResponseHeadersAsync(streamId);
-                }
-
-                // Response data, missing Trailers.
-                await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
-
-                HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                // Pending read on the response content.
-                Assert.Empty(response.TrailingHeaders);
-
-                Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
-                Byte[] data = new Byte[100];
-                await stream.ReadAsync(data, 0, data.Length);
-
-                // Intermediate test - haven't reached stream EOF yet.
-                Assert.Empty(response.TrailingHeaders);
-
-                // Finish data stream and write out trailing headers.
-                await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
-                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: TrailingHeaders);
-
-                // Read data until EOF is reached
-                while (stream.Read(data, 0, data.Length) != 0) ;
-
-                Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
-                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
-                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+                await stream.SendResponseBodyAsync(responseData, isFinal: false);
             }
+
+            if (writeDataAgain is not null)
+            {
+                // We were requested to wait and write more data.
+                await writeDataAgain.WaitAsync();
+                if (responseData.Length > 0)
+                {
+                    await stream.SendResponseBodyAsync(responseData, isFinal: false);
+                }
+            }
+
+            await stream.SendResponseHeadersAsync(statusCode: null, headers: trailers);
+            stream.Stream.CompleteWrites();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsync_TrailerHeaders_TrailingHeaderNoBody()
+        [Theory]
+        [InlineData(false, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(false, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(true, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(true, HttpCompletionOption.ResponseHeadersRead)]
+        public async Task GetAsync_TrailersWithoutServerStreamClosure_Success(bool emptyResponse, HttpCompletionOption httpCompletionOption)
         {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
-            using (HttpClient client = CreateHttpClient())
+            SemaphoreSlim serverCompleted = new SemaphoreSlim(0);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+                HttpClientHandler handler = CreateHttpClientHandler();
 
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                // Avoid drain timeout if CI is slow.
+                GetUnderlyingSocketsHttpHandler(handler).ResponseDrainTimeout = TimeSpan.FromSeconds(10);
+                using HttpClient client = CreateHttpClient(handler);
 
-                int streamId = await connection.ReadRequestHeaderAsync();
+                using (HttpResponseMessage response = await client.GetAsync(uri, httpCompletionOption))
+                {
+                    if (httpCompletionOption == HttpCompletionOption.ResponseHeadersRead)
+                    {
+                        using Stream stream = await response.Content.ReadAsStreamAsync();
+                        byte[] buffer = new byte[512];
+                        // Consume the stream
+                        while ((await stream.ReadAsync(buffer)) > 0) ;
+                    }
 
-                // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
-                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: TrailingHeaders);
+                    Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
+                }
 
-                HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
-                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
-                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsync_TrailingHeaders_NoData_EmptyResponseObserved()
-        {
-            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
-            using (HttpClient client = CreateHttpClient())
+                await serverCompleted.WaitAsync();
+            },
+            async server =>
             {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+                try
+                {
+                    await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                    await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                    _ = await stream.ReadRequestDataAsync();
 
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                    HttpHeaderData[] headers = emptyResponse ? [new HttpHeaderData("Content-Length", "0")] : null;
 
-                int streamId = await connection.ReadRequestHeaderAsync();
+                    await stream.SendResponseHeadersAsync(statusCode: HttpStatusCode.OK, headers);
+                    if (!emptyResponse)
+                    {
+                        await stream.SendResponseBodyAsync(new byte[16384], isFinal: false);
+                    }
 
-                // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
+                    await stream.SendResponseHeadersAsync(statusCode: null, headers: TrailingHeaders);
 
-                // No data.
+                    // Small delay to make sure we do test if the client is waiting for EOS.
+                    await Task.Delay(15);
 
-                // Response trailing headers
-                await connection.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: TrailingHeaders);
-
-                HttpResponseMessage response = await sendTask;
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal<byte>(Array.Empty<byte>(), await response.Content.ReadAsByteArrayAsync());
-                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
-                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
-            }
+                    await stream.DisposeAsync();
+                    await stream.Stream.WritesClosed;
+                }
+                finally
+                {
+                    serverCompleted.Release();
+                }
+            }).WaitAsync(TimeSpan.FromSeconds(30));
         }
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task SendAsync_UriWithNonDnsNonAsciiHost_Throws()
+        {
+            using HttpClient client = CreateHttpClient();
+
+            HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://hőst{new string('a', 60)}"), UseVersion);
+
+            await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1354,7 +1404,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
         public SocketsHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
-        protected override bool SupportsIdna => true;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1662,11 +1711,16 @@ namespace System.Net.Http.Functional.Tests
 
         private delegate int StreamReadSpanDelegate(Span<byte> buffer);
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(TripleBoolValues))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77474", TestPlatforms.Android)]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
+            if (PlatformDetection.IsAndroid && PlatformDetection.Is32BitProcess)
+            {
+                // https://github.com/dotnet/runtime/issues/77474
+                throw new SkipTestException("This test runs out of memory on 32-bit Android devices");
+            }
+
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
                 ? "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nLong-Header: "
                 : "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nLong-Header: ");
@@ -1775,7 +1829,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
@@ -1897,7 +1951,7 @@ namespace System.Net.Http.Functional.Tests
 
                             string bigString = string.Concat(Enumerable.Repeat("abcdefghijklmnopqrstuvwxyz", 1000));
                             Task lotsOfDataSent = connection.SendResponseAsync(Encoding.ASCII.GetBytes(bigString));
-                            connection.Socket.Shutdown(SocketShutdown.Send);
+                            await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                             await copyTask;
                             await lotsOfDataSent;
                             Assert.Equal("ghijklmnopqrstuvwxyz" + bigString, Encoding.ASCII.GetString(ms.ToArray()));
@@ -2121,7 +2175,7 @@ namespace System.Net.Http.Functional.Tests
                     await request2;
 
                     // Close underlying socket from first connection.
-                    socket.Close();
+                    await socket.CloseAsync();
                 }
             });
         }
@@ -2495,7 +2549,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.True(options.AllowRenegotiation);
                 Assert.Null(options.ApplicationProtocols);
-                Assert.Equal(X509RevocationMode.Online, options.CertificateRevocationCheckMode);
+                Assert.Equal(X509RevocationMode.NoCheck, options.CertificateRevocationCheckMode);
                 Assert.Null(options.ClientCertificates);
                 Assert.Equal(SslProtocols.None, options.EnabledSslProtocols);
                 Assert.Equal(EncryptionPolicy.RequireEncryption, options.EncryptionPolicy);
@@ -2728,7 +2782,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
             const int MaxConcurrentStreams = 2;
@@ -2771,7 +2825,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
         {
             // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
@@ -2809,7 +2863,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2839,7 +2893,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
@@ -2910,7 +2964,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
@@ -3174,8 +3228,7 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44183", TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
@@ -3183,43 +3236,55 @@ namespace System.Net.Http.Functional.Tests
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), guid));
-            Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            string socketPath = Path.Combine(Path.GetTempPath(), guid);
+            UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
+            using Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(serverEP);
             listenSocket.Listen();
 
-            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
-            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-            socketsHandler.ConnectCallback = async (context, token) =>
+            try
             {
-                string hostname = context.DnsEndPoint.Host;
-                UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
-
-                Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                await clientSocket.ConnectAsync(clientEP);
-
-                return new NetworkStream(clientSocket, ownsSocket: true);
-            };
-
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-                Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
-
-                Socket serverSocket = await listenSocket.AcceptAsync();
-                await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHandler.ConnectCallback = async (context, token) =>
                 {
-                    await loopbackConnection.InitializeConnectionAsync();
+                    string hostname = context.DnsEndPoint.Host;
+                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
 
-                    HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                    Assert.Equal("/foo", requestData.Path);
+                    Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                    await clientSocket.ConnectAsync(clientEP);
 
-                    await loopbackConnection.SendResponseAsync(content: "foo");
+                    return new NetworkStream(clientSocket, ownsSocket: true);
+                };
 
-                    string response = await clientTask;
-                    Assert.Equal("foo", response);
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
+
+                    Socket serverSocket = await listenSocket.AcceptAsync();
+                    await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                    {
+                        await loopbackConnection.InitializeConnectionAsync();
+
+                        HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                        Assert.Equal("/foo", requestData.Path);
+
+                        await loopbackConnection.SendResponseAsync(content: "foo");
+
+                        string response = await clientTask;
+                        Assert.Equal("foo", response);
+
+                        // Dispose client before loopback connection to ensure clean HTTP/2 shutdown.
+                        client.Dispose();
+                        handler.Dispose();
+                    }
                 }
+            }
+            finally
+            {
+                try { File.Delete(socketPath); } catch { }
             }
         }
 
@@ -3345,7 +3410,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.GetAsync($"{(useSsl ? "https" : "http")}://nowhere.invalid/foo"));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_SslStream_OK(bool useSslStream)
@@ -3394,7 +3459,7 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new GenericLoopbackOptions { UseSsl = true });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public async Task ConnectCallback_DerivedSslStream_OK()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -4157,42 +4222,42 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3 : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3(ITestOutputHelper output) : base(output) { }
@@ -4349,7 +4414,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http3 : SocketsHttpHandler_RequestContentLengthMismatchTest
     {
         public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output) { }
@@ -4366,7 +4431,7 @@ namespace System.Net.Http.Functional.Tests
             _certificateSetup = certificateSetup;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public async Task SslOptions_CustomTrust_Ok()
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = true, Certificate = new X509Certificate2(_certificateSetup.ServerCert) };
@@ -4533,7 +4598,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest, IClassFixture<CertificateSetup>
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output, CertificateSetup certificateSetup) : base(output, certificateSetup) { }
@@ -4548,7 +4613,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         // On Windows7 DNS may return SocketError.NoData (WSANO_DATA), which we currently don't map to NameResolutionError.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();
@@ -4661,7 +4726,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http30 : SocketsHttpHandler_HttpRequestErrorTest
     {
         public SocketsHttpHandler_HttpRequestErrorTest_Http30(ITestOutputHelper output) : base(output) { }

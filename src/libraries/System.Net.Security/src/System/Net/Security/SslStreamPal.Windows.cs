@@ -46,6 +46,7 @@ namespace System.Net.Security
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CertValidationInCallback = false;
         internal const bool CanEncryptEmptyMessage = true;
+        internal const bool CanGenerateCustomAlerts = true;
 
         private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
 
@@ -289,7 +290,7 @@ namespace System.Net.Security
             return;
         }
 
-        // This is legacy crypto API used on .NET Framework and older Windows versions.
+        // This is legacy crypto API used on older Windows versions.
         // It only supports TLS up to 1.2
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
         {

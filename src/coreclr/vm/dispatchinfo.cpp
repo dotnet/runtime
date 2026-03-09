@@ -196,8 +196,9 @@ void DispatchMemberInfo::Init()
         // If we do throw an exception, then the status of the object
         // is in limbo - just neuter it.
         Neuter();
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
@@ -449,9 +450,9 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
             {
-                // TODO: (async) revisit and examine if this needs to be supported somehow
+                // We don't expose runtime-async methods via IDispatch.
                 if (pMeth->IsAsyncMethod())
-                    ThrowHR(COR_E_NOTSUPPORTED);
+                    RETURN NULL;
 
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
             }
@@ -719,7 +720,7 @@ void DispatchMemberInfo::DetermineCultureAwareness()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         GCPROTECT_BEGIN(CustomAttrArray)
         {
@@ -829,14 +830,11 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
     GCX_PREEMP();
-
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMD->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
 
     MetaSig         msig(pMD);
     LPCSTR          szName;
@@ -1557,8 +1555,8 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         {
             // If the method is culture aware, then set the specified culture on the thread.
             GetCultureInfoForLCID(lcid, &pObjs->CultureInfo);
-            pObjs->OldCultureInfo = Thread::GetCulture(FALSE);
-            Thread::SetCulture(&pObjs->CultureInfo, FALSE);
+            pObjs->OldCultureInfo = GetCurrentCulture(FALSE);
+            SetCurrentCulture(&pObjs->CultureInfo, FALSE);
         }
 
         // If the method has custom marshalers then we will need to call
@@ -2168,6 +2166,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
         DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         EX_TRY
         {
             InvokeMemberDebuggerWrapper(pDispMemberInfo,
@@ -2192,8 +2191,9 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         EX_CATCH
         {
             pThrowable = GET_THROWABLE();
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_END_CATCH
         catchFrame.Pop();
 
         if (pThrowable != NULL)
@@ -2284,7 +2284,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
 
         // If the culture was changed then restore it to the old culture.
         if (Objs.OldCultureInfo != NULL)
-            Thread::SetCulture(&Objs.OldCultureInfo, FALSE);
+            SetCurrentCulture(&Objs.OldCultureInfo, FALSE);
     }
     GCPROTECT_END();
     GCPROTECT_END();
@@ -2337,7 +2337,7 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
         {
             GCX_PREEMP();
-            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElementMT);
+            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
         }
         GCPROTECT_END();
 
@@ -2413,7 +2413,7 @@ void DispatchInfo::CleanUpNativeParam(DispatchMemberInfo *pDispMemberInfo, int i
     {
         // if the argument was totally corrupted and cleanup failed, just swallow it and continue
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID *pSrcArgNames, int NumNamedArgs, PTRARRAYREF *pNamedParamArray)
@@ -2581,7 +2581,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
-        // TODO: (async) revisit and examine if this needs to be supported somehow
+        // Runtime-async property accessors are not visible from COM
         if (pMDForProperty->IsAsyncVariantMethod())
         {
             return false;

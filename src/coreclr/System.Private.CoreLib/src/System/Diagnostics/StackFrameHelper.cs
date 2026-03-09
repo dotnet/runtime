@@ -90,12 +90,12 @@ namespace System.Diagnostics
         // rgiLineNumber and rgiColumnNumber fields using the portable PDB reader if not already
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
-
         internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
 
-            if (!fNeedFileInfo)
+
+            if (!StackTrace.IsLineNumberSupported || !fNeedFileInfo)
                 return;
 
             // Check if this function is being reentered because of an exception in the code below
@@ -118,7 +118,7 @@ namespace System.Diagnostics
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken![index] != 0)
                     {
-                        GetSourceLineInfo(s_stackTraceSymbolsCache!, rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
+                        GetSourceLineInfo(s_stackTraceSymbolsCache, rgAssembly![index], rgAssemblyPath![index], rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
                             rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
                             rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
                     }

@@ -31,11 +31,6 @@ namespace System.Collections.Generic
         private readonly IComparer<TPriority>? _comparer;
 
         /// <summary>
-        /// Lazily-initialized collection used to expose the contents of the queue.
-        /// </summary>
-        private UnorderedItemsCollection? _unorderedItems;
-
-        /// <summary>
         /// The number of nodes in the heap.
         /// </summary>
         private int _size;
@@ -188,7 +183,7 @@ namespace System.Collections.Generic
         ///  The enumeration does not order items by priority, since that would require N * log(N) time and N space.
         ///  Items are instead enumerated following the internal array heap layout.
         /// </remarks>
-        public UnorderedItemsCollection UnorderedItems => _unorderedItems ??= new UnorderedItemsCollection(this);
+        public UnorderedItemsCollection UnorderedItems => field ??= new UnorderedItemsCollection(this);
 
         /// <summary>
         ///  Adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>.
@@ -1017,25 +1012,20 @@ namespace System.Collections.Generic
                 {
                     PriorityQueue<TElement, TPriority> localQueue = _queue;
 
-                    if (_version == localQueue._version && ((uint)_index < (uint)localQueue._size))
+                    if (_version != localQueue._version)
+                    {
+                        ThrowHelper.ThrowVersionCheckFailed();
+                    }
+
+                    if ((uint)_index < (uint)localQueue._size)
                     {
                         _current = localQueue._nodes[_index];
                         _index++;
                         return true;
                     }
 
-                    return MoveNextRare();
-                }
-
-                private bool MoveNextRare()
-                {
-                    if (_version != _queue._version)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    }
-
-                    _index = _queue._size + 1;
                     _current = default;
+                    _index = -1;
                     return false;
                 }
 
@@ -1049,7 +1039,7 @@ namespace System.Collections.Generic
                 {
                     if (_version != _queue._version)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                        ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     _index = 0;

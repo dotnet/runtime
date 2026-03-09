@@ -1158,11 +1158,8 @@ namespace System.Data
                 {
                     // if and only if it is Expression column, we will cache LastChangedColumn, otherwise DO NOT
                     DataRow dr = GetDataRow(record);
-                    if (dr != null)
-                    {
-                        // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we won't have datarow)
-                        dr.LastChangedColumn = this;
-                    }
+                    // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we won't have datarow)
+                    dr?.LastChangedColumn = this;
                 }
             }
         }
@@ -1190,10 +1187,8 @@ namespace System.Data
             }
 
             DataRow dr = GetDataRow(record);
-            if (dr != null)
-            {  // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we won't have datarow)
-                dr.LastChangedColumn = this;
-            }
+            // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we won't have datarow)
+            dr?.LastChangedColumn = this;
         }
 
         internal void FreeRecord(int record)
@@ -1349,10 +1344,7 @@ namespace System.Data
                     if (value == MappingType.SimpleContent)
                     {
                         _columnUri = null;
-                        if (_table != null)
-                        {
-                            _table.XmlText = this;
-                        }
+                        _table?.XmlText = this;
                         SimpleType = null;
                     }
                 }

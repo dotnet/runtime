@@ -50,51 +50,16 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
 // helper function that will tell us if the IL instruction at the addr passed
 // by param consumes an address at the top of the stack. We use it to save
 // us lvAddrTaken
-bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
+bool Compiler::impILConsumesAddr(const BYTE* codeAddr, const BYTE* codeEndp)
 {
-    assert(!compIsForInlining());
-
-    OPCODE opcode;
-
-    opcode = (OPCODE)getU1LittleEndian(codeAddr);
-
+    OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
     switch (opcode)
     {
-            // case CEE_LDFLDA: We're taking this one out as if you have a sequence
-            // like
-            //
-            //          ldloca.0
-            //          ldflda whatever
-            //
-            // of a primitivelike struct, you end up after morphing with addr of a local
-            // that's not marked as addrtaken, which is wrong. Also ldflda is usually used
-            // for structs that contain other structs, which isnt a case we handle very
-            // well now for other reasons.
-
         case CEE_LDFLD:
         {
-            // We won't collapse small fields. This is probably not the right place to have this
-            // check, but we're only using the function for this purpose, and is easy to factor
-            // out if we need to do so.
-
-            CORINFO_RESOLVED_TOKEN resolvedToken;
-            impResolveToken(codeAddr + sizeof(int8_t), &resolvedToken, CORINFO_TOKENKIND_Field);
-
-            var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
-
-            // Preserve 'small' int types
-            if (!varTypeIsSmall(lclTyp))
-            {
-                lclTyp = genActualType(lclTyp);
-            }
-
-            if (varTypeIsSmall(lclTyp))
-            {
-                return false;
-            }
-
             return true;
         }
+
         default:
             break;
     }
@@ -278,7 +243,7 @@ void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement
 
     /* Store the tree list in the basic block */
 
-    block->bbStmtList = firstStmt;
+    block->SetFirstStmt(firstStmt);
 
     /* The block should not already be marked as imported */
     assert(!block->HasFlag(BBF_IMPORTED));
@@ -840,13 +805,14 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
 
-            if (!impIsLegalRetBuf(destAddr, srcCall))
+            // Return buffers cannot have volatile, unaligned, or initclass flags
+            if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, srcCall))
             {
-                unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
+                unsigned tmp =
+                    lvaGrabTemp(false DEBUGARG(printfAlloc("stack copy for value returned via return buffer")));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
 
                 GenTree* spilledCall = gtNewStoreLclVarNode(tmp, srcCall);
@@ -964,13 +930,14 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
 
-            if (!impIsLegalRetBuf(destAddr, call))
+            // Return buffers cannot have volatile, unaligned, or initclass flags
+            if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, call))
             {
-                unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
+                unsigned tmp =
+                    lvaGrabTemp(false DEBUGARG(printfAlloc("stack copy for value returned via return buffer")));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
                 destAddr = gtNewLclVarAddrNode(tmp, TYP_I_IMPL);
 
@@ -1131,35 +1098,38 @@ GenTree* Compiler::impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned
 // impGetNodeAddr: Get the address of a value.
 //
 // Arguments:
-//    val         - The value in question
-//    curLevel    - Stack level for spilling
-//    pDerefFlags - Flags to be used on dereference, nullptr when
-//                 the address won't be dereferenced. Returned flags
-//                 are included in the GTF_IND_COPYABLE_FLAGS mask.
+//    val                           - The value in question
+//    curLevel                      - Stack level for spilling
+//    allowedMustPreserveIndirFlags - If 'val' is an indirection and it has any must-preserve indir flags (like
+//                                    volatile), then those flags must be included in this mask to be allowed
+//                                    through without creating a temp.
+//    pIndirFlags                   - [out] Flags that indirs created based on this address can and should set.
+//                                    Returned flags are included in the GTF_IND_COPYABLE_FLAGS mask.
 //
 // Return Value:
 //    In case "val" represents a location (is an indirection/local),
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags)
+GenTree* Compiler::impGetNodeAddr(GenTree*      val,
+                                  unsigned      curLevel,
+                                  GenTreeFlags  allowedMustPreserveIndirFlags,
+                                  GenTreeFlags* pIndirFlags)
 {
-    if (pDerefFlags != nullptr)
-    {
-        *pDerefFlags = GTF_EMPTY;
-    }
+    *pIndirFlags = GTF_EMPTY;
     switch (val->OperGet())
     {
         case GT_BLK:
         case GT_IND:
         case GT_STOREIND:
         case GT_STORE_BLK:
-            if (pDerefFlags != nullptr)
+            if (((val->gtFlags & GTF_IND_MUST_PRESERVE_FLAGS & ~allowedMustPreserveIndirFlags) != 0))
             {
-                *pDerefFlags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
-                return val->AsIndir()->Addr();
+                break;
             }
-            break;
+
+            *pIndirFlags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            return val->AsIndir()->Addr();
 
         case GT_LCL_VAR:
         case GT_STORE_LCL_VAR:
@@ -1173,12 +1143,13 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 
         case GT_COMMA:
             impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
-            return impGetNodeAddr(val->AsOp()->gtGetOp2(), curLevel, pDerefFlags);
+            return impGetNodeAddr(val->AsOp()->gtGetOp2(), curLevel, allowedMustPreserveIndirFlags, pIndirFlags);
 
         default:
             break;
     }
 
+    assert(!val->OperIsStore());
     unsigned lclNum = lvaGrabTemp(true DEBUGARG("location for address-of(RValue)"));
     impStoreToTemp(lclNum, val, curLevel);
 
@@ -1204,7 +1175,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
 //    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 //
-var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* pSimdBaseJitType)
+var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
     assert(structHnd != NO_CLASS_HANDLE);
 
@@ -1221,14 +1192,14 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
         if (structSizeMightRepresentSIMDType(originalSize))
         {
             unsigned int sizeBytes;
-            CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+            if (simdBaseType != TYP_UNDEF)
             {
-                assert(sizeBytes == originalSize);
+                assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
                 structType = getSIMDTypeForSize(sizeBytes);
                 if (pSimdBaseJitType != nullptr)
                 {
-                    *pSimdBaseJitType = simdBaseJitType;
+                    *pSimdBaseJitType = simdBaseType;
                 }
                 // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
@@ -1368,7 +1339,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
     GenTreeFlags handleType = importParent ? GTF_ICON_CLASS_HDL : gtTokenToIconFlags(pResolvedToken->token);
-    GenTree*     result = impLookupToTree(pResolvedToken, &embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
+    GenTree*     result     = impLookupToTree(&embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
@@ -1379,10 +1350,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return result;
 }
 
-GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                   CORINFO_LOOKUP*         pLookup,
-                                   GenTreeFlags            handleFlags,
-                                   void*                   compileTimeHandle)
+GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -1437,41 +1405,10 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
-GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
-                                             GenTreeFlags          handleFlags,
-                                             void*                 compileTimeHandle)
-{
-    CORINFO_GENERIC_HANDLE handle       = nullptr;
-    void*                  pIndirection = nullptr;
-    assert(pLookup->accessType != IAT_PPVALUE && pLookup->accessType != IAT_RELPVALUE);
-
-    if (pLookup->accessType == IAT_VALUE)
-    {
-        handle = pLookup->handle;
-    }
-    else if (pLookup->accessType == IAT_PVALUE)
-    {
-        pIndirection = pLookup->addr;
-    }
-    GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
-#ifdef DEBUG
-    assert((handleFlags == GTF_ICON_CLASS_HDL) || (handleFlags == GTF_ICON_METHOD_HDL));
-    if (handle != nullptr)
-    {
-        addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-    else
-    {
-        addr->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-#endif //  DEBUG
-    return addr;
-}
-
 //------------------------------------------------------------------------
 // impIsCastHelperEligibleForClassProbe: Checks whether a tree is a cast helper eligible to
 //    to be profiled and then optimized with PGO data
@@ -1545,11 +1482,10 @@ bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                  CorInfoHelpFunc         helper,
                                                  var_types               type,
-                                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                                  GenTree*                arg1)
 {
     CORINFO_CONST_LOOKUP lookup;
-    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, info.compMethodHnd, &lookup))
+    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, info.compMethodHnd, &lookup))
     {
         return nullptr;
     }
@@ -1569,7 +1505,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
-GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
+GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* op1 = nullptr;
 
@@ -1587,7 +1523,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            op1 = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:
@@ -1687,9 +1623,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
           to lookup the handle.
  */
 
-GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                          CORINFO_LOOKUP*         pLookup,
-                                          void*                   compileTimeHandle)
+GenTree* Compiler::impRuntimeLookupToTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
 {
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
@@ -1697,13 +1631,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
     {
-#ifdef FEATURE_READYTORUN
-        if (IsAot())
-        {
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pLookup->lookupKind, ctxTree);
-        }
-#endif
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
@@ -1991,7 +1918,7 @@ void Compiler::impSpillSpecialSideEff()
 {
     // Only exception objects need to be carefully handled
 
-    if (!compCurBB->bbCatchTyp)
+    if (compCurBB->CatchTypeIs(BBCT_NONE))
     {
         return;
     }
@@ -2135,11 +2062,10 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         {
             // Report the debug info. impImportBlockCode won't treat the actual handler as exception block and thus
             // won't do it for us.
-            // TODO-DEBUGINFO: Previous code always set stack as non-empty
-            // here. Can we not just use impCurStmtOffsSet? Are we out of sync
-            // here with the stack?
-            impCurStmtDI = DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, false, false));
-            argStmt      = gtNewStmt(argStore, impCurStmtDI);
+            // TODO-Bug: Should be reported with ICorDebugInfo::CALL_SITE?
+            impCurStmtDI =
+                DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, ICorDebugInfo::SOURCE_TYPE_INVALID));
+            argStmt = gtNewStmt(argStore, impCurStmtDI);
         }
         else
         {
@@ -2210,8 +2136,18 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
 {
     assert(offs != BAD_IL_OFFSET);
 
-    bool isStackEmpty = stackState.esStackDepth <= 0;
-    return DebugInfo(compInlineContext, ILLocation(offs, isStackEmpty, isCall));
+    unsigned sourceTypes = 0;
+
+    if (isCall)
+    {
+        sourceTypes |= ICorDebugInfo::CALL_INSTRUCTION;
+    }
+    if (stackState.esStackDepth <= 0)
+    {
+        sourceTypes |= ICorDebugInfo::STACK_EMPTY;
+    }
+
+    return DebugInfo(compInlineContext, ILLocation(offs, (ICorDebugInfo::SourceTypes)sourceTypes));
 }
 
 //------------------------------------------------------------------------
@@ -2807,7 +2743,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
-            impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
+            impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
                                                         runtimeMethodHandle);
     }
@@ -2825,8 +2761,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
-            call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pCallInfo->codePointerLookup.lookupKind, ctxTree);
+            assert(pCallInfo->codePointerLookup.runtimeLookup.indirections == CORINFO_USEHELPER);
+            call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
 #endif
@@ -2941,7 +2877,7 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     CorInfoType corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
     var_types   valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
 
-    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
 
@@ -2998,11 +2934,9 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    var_types            valueType = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
 
     // We still make some assumptions about the layout of Nullable<T> in JIT
-    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
 
@@ -3010,10 +2944,14 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
     lvaSetStruct(resultTmp, nullableCls, false);
 
+    ClassLayout*         layout;
+    CORINFO_CLASS_HANDLE valueStructCls;
+    CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+
     // Now do two stores:
-    GenTree*     hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
-    ClassLayout* layout        = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
-    GenTree*     valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
+    GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+    GenTree* valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
 
     // ABI handling for struct values
     if (varTypeIsStruct(valueStore))
@@ -3043,11 +2981,13 @@ void Compiler::impLoadNullableFields(GenTree*             nullableObj,
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    var_types            valueType   = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
-    ClassLayout*         valueLayout = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
 
-    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    ClassLayout*         valueLayout;
+    CORINFO_CLASS_HANDLE valueStructCls;
+    CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &valueLayout);
+
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
 
@@ -3316,12 +3256,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 GenTree* objToBox = impPopStack().val;
 
                                 // Spill struct to get its address (to access hasValue field)
-                                // TODO-Bug?: verify if flags matter here
+                                // Transfer any volatile/unaligned flags to the indirection
                                 GenTreeFlags indirFlags = GTF_EMPTY;
-                                objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
+                                objToBox =
+                                    impGetNodeAddr(objToBox, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
 
-                                static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
+                                static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox, indirFlags), typeInfo(TYP_INT));
 
                                 JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                 return returnToken;
@@ -3382,6 +3323,108 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 //------------------------------------------------------------------------
+// impImportAndPushBoxForNullable: import a "box Nullable<>" as an inlined sequence:
+//    arg._hasValue == 0 ?
+//      null :
+//      (lcl = allocobj; *(lcl + sizeof(void*)) = arg._value; lcl)
+//
+// Arguments:
+//   pResolvedToken - resolved token from the box operation
+//
+// Return Value:
+//   true if inlined, false otherwise.
+//
+bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken)
+{
+    CORINFO_CLASS_HANDLE nullableCls = pResolvedToken->hClass;
+    assert(info.compCompHnd->getBoxHelper(nullableCls) == CORINFO_HELP_BOX_NULLABLE);
+
+    if (opts.OptimizationDisabled() || compCurBB->isRunRarely())
+    {
+        return false;
+    }
+
+    if (eeIsSharedInst(nullableCls) || IsReadyToRun())
+    {
+        // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
+        // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
+        // that we don't have).
+        return false;
+    }
+
+    GenTree* nullableObj = impPopStack().val;
+
+    // Decompose the Nullable<> arg into _hasValue and _value fields
+    // and calculate the type and layout of the 'value' field
+    //
+    // Boxing allows the "initclass" flag, but not volatile/unaligned flags
+    GenTreeFlags indirFlags = GTF_EMPTY;
+    nullableObj             = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, GTF_IND_INITCLASS, &indirFlags);
+    GenTree* nullableObjClone;
+    nullableObj = impCloneExpr(nullableObj, &nullableObjClone, CHECK_SPILL_ALL, nullptr DEBUGARG("nullable obj clone"));
+
+    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(nullableCls, 1);
+    CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    unsigned     cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+    ClassLayout* layout         = nullptr;
+    CorInfoType  corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+    GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
+    GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
+    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
+    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj);
+
+    // Create the allocation node for the box
+    //
+    CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
+    bool                 hasSideEffects;
+    CorInfoHelpFunc      helperTemp   = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+    GenTree*             typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
+    GenTreeAllocObj*     allocObj     = gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, typeToBoxHnd);
+
+    // Now we need to copy value into the allocated box
+    //
+    unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
+    GenTree*   storeAlloc = gtNewTempStore(objLclNum, allocObj);
+    GenTree*   objLcl     = gtNewLclvNode(objLclNum, TYP_REF);
+    GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+    GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
+    GenTree*   storeData  = gtNewStoreValueNode(valueType, layout, dataPtr, gtCloneExpr(value), GTF_IND_NONFAULTING);
+
+    // Wrap it all in two commas, it will look like:
+    //   lcl = allocobj
+    //   *(lcl + sizeof(void*)) = value
+    //   lcl
+    //
+    GenTreeOp* copyData  = gtNewOperNode(GT_COMMA, TYP_REF, storeData, gtCloneExpr(objLcl));
+    GenTreeOp* allocRoot = gtNewOperNode(GT_COMMA, TYP_REF, storeAlloc, copyData);
+
+    // QMARK expansion will propagate block flags properly.
+    compCurBB->SetFlags(BBF_HAS_NEWOBJ);
+    optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_QMARKS;
+
+    GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, hasValue, gtNewIconNode(0));
+    GenTreeColon* colon = gtNewColonNode(TYP_REF, gtNewNull(), allocRoot);
+    GenTreeQmark* qmark = gtNewQmarkNode(TYP_REF, cond, colon);
+
+    // We have to expand early since GT_ALLOCOBJ must be a top-level statement
+    qmark->SetEarlyExpandableQmark();
+
+    // QMARK has to be a top-level statement
+    const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
+    impStoreToTemp(result, qmark, CHECK_SPILL_ALL);
+    lvaSetClass(result, typeToBox, true);
+    lvaSetClass(objLclNum, typeToBox, true);
+    impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
+
+    JITDUMP(" inlined BOX(%s) as QMARK allocating box and copying fields:\n", eeGetClassName(nullableCls));
+    DISPTREE(qmark);
+    JITDUMP("\n");
+    return true;
+}
+
+//------------------------------------------------------------------------
 // impImportAndPushBox: build and import a value-type box
 //
 // Arguments:
@@ -3422,14 +3465,33 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // Spill any special side effects
     impSpillSpecialSideEff();
 
+    // In async methods, if the value to box contains an async call, we need to spill it
+    // before popping it from the stack. This is because we will later create a byref
+    // destination (box temp + offset) for storing the value, and we cannot have a
+    // byref live across an async call.
+    if (gtTreeContainsAsyncCall(impStackTop().val))
+    {
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("async box with call"));
+    }
+
+    // Look at what helper we should use.
+    CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+
+    // Expand nullable boxes inline in optimized code in hot paths, it's slightly different from
+    // other expansions since we have to use QMARK to return null for nullables with no value.
+    //
+    //  obj = nullable._hasValue == 0 ? null : (boxed underlying value)
+    //
+    if ((boxHelper == CORINFO_HELP_BOX_NULLABLE) && impImportAndPushBoxForNullable(pResolvedToken))
+    {
+        return;
+    }
+
     // Get get the expression to box from the stack.
     GenTree*   op1       = nullptr;
     GenTree*   op2       = nullptr;
     StackEntry se        = impPopStack();
     GenTree*   exprToBox = se.val;
-
-    // Look at what helper we should use.
-    CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
 
     // Determine what expansion to prefer.
     //
@@ -3692,9 +3754,10 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        // TODO-Bug?: verify if flags matter here
+        // Boxing helpers allow the "initclass" indir flag, but not volatile/unaligned flags
         GenTreeFlags indirFlags = GTF_EMPTY;
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags));
+        op1                     = gtNewHelperCallNode(boxHelper, TYP_REF, op2,
+                                                      impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, GTF_IND_INITCLASS, &indirFlags));
     }
 
     /* Push the result back on the stack, */
@@ -4199,7 +4262,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             else
             {
                 assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
-                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
             isHoistable     = true;
@@ -4600,305 +4663,8 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
 //   After this function, the BBJ_LEAVE block has been converted to a different type.
 //
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-void Compiler::impImportLeaveEHRegions(BasicBlock* block)
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nBefore import CEE_LEAVE:\n");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-#endif // DEBUG
-
-    unsigned const    blkAddr     = block->bbCodeOffs;
-    BasicBlock* const leaveTarget = block->GetTarget();
-    unsigned const    jmpAddr     = leaveTarget->bbCodeOffs;
-
-    // LEAVE clears the stack, spill side effects, and set stack to 0
-
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
-    stackState.esStackDepth = 0;
-
-    assert(block->KindIs(BBJ_LEAVE));
-    assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != NULL); // should be a BB boundary
-
-    BasicBlock* step         = DUMMY_INIT(NULL);
-    unsigned    encFinallies = 0; // Number of enclosing finallies.
-    GenTree*    endCatches   = NULL;
-    Statement*  endLFinStmt  = NULL; // The statement tree to indicate the end of locally-invoked finally.
-
-    unsigned  XTnum;
-    EHblkDsc* HBtab;
-
-    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
-    {
-        // Grab the handler offsets
-
-        IL_OFFSET tryBeg = HBtab->ebdTryBegOffs();
-        IL_OFFSET tryEnd = HBtab->ebdTryEndOffs();
-        IL_OFFSET hndBeg = HBtab->ebdHndBegOffs();
-        IL_OFFSET hndEnd = HBtab->ebdHndEndOffs();
-
-        // Is this a catch-handler we are CEE_LEAVE'ing out of? If so, we need to call CORINFO_HELP_ENDCATCH.
-
-        if (jitIsBetween(blkAddr, hndBeg, hndEnd) && !jitIsBetween(jmpAddr, hndBeg, hndEnd))
-        {
-            // Can't CEE_LEAVE out of a finally/fault handler
-            if (HBtab->HasFinallyOrFaultHandler())
-            {
-                BADCODE("leave out of fault/finally block");
-            }
-
-            // Create the call to CORINFO_HELP_ENDCATCH
-            GenTree* endCatch = gtNewHelperCallNode(CORINFO_HELP_ENDCATCH, TYP_VOID);
-
-            // Make a list of all the currently pending endCatches
-            if (endCatches)
-            {
-                endCatches = gtNewOperNode(GT_COMMA, TYP_VOID, endCatches, endCatch);
-            }
-            else
-            {
-                endCatches = endCatch;
-            }
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("impImportLeave - " FMT_BB " jumping out of catch handler EH#%u, adding call to "
-                       "CORINFO_HELP_ENDCATCH\n",
-                       block->bbNum, XTnum);
-            }
-#endif
-        }
-        else if (HBtab->HasFinallyHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
-                 !jitIsBetween(jmpAddr, tryBeg, tryEnd))
-        {
-            // This is a finally-protected try we are jumping out of.
-            //
-            // If there are any pending endCatches, and we have already jumped out of a finally-protected try,
-            // then the endCatches have to be put in a block in an outer try for async exceptions to work correctly.
-            // Else, just append to the original block.
-
-            BasicBlock* callBlock;
-
-            // If we have finallies, we better have an endLFin tree, and vice-versa.
-            assert(!encFinallies == !endLFinStmt);
-
-            if (encFinallies == 0)
-            {
-                assert(step == DUMMY_INIT(NULL));
-                callBlock = block;
-
-                // callBlock calls the finally handler
-                assert(callBlock->HasInitializedTarget());
-                fgRedirectTargetEdge(callBlock, HBtab->ebdHndBeg);
-                callBlock->SetKind(BBJ_CALLFINALLY);
-
-                if (endCatches)
-                {
-                    impAppendTree(endCatches, CHECK_SPILL_NONE, impCurStmtDI);
-                }
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("impImportLeave - jumping out of a finally-protected try, convert block to BBJ_CALLFINALLY "
-                           "block %s\n",
-                           callBlock->dspToString());
-                }
-#endif
-            }
-            else
-            {
-                assert(step != DUMMY_INIT(NULL));
-
-                // Calling the finally block.
-
-                // callBlock calls the finally handler
-                callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
-
-                {
-                    FlowEdge* const newEdge = fgAddRefPred(HBtab->ebdHndBeg, callBlock);
-                    callBlock->SetTargetEdge(newEdge);
-                }
-
-                // step's jump target shouldn't be set yet
-                assert(!step->HasInitializedTarget());
-
-                {
-                    // the previous call to a finally returns to this call (to the next finally in the chain)
-                    FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
-                    step->SetTargetEdge(newEdge);
-                }
-
-                // The new block will inherit this block's weight.
-                callBlock->inheritWeight(block);
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("impImportLeave - jumping out of a finally-protected try, new BBJ_CALLFINALLY block %s\n",
-                           callBlock->dspToString());
-                }
-#endif
-
-                Statement* lastStmt;
-
-                if (endCatches)
-                {
-                    lastStmt = gtNewStmt(endCatches);
-                    endLFinStmt->SetNextStmt(lastStmt);
-                    lastStmt->SetPrevStmt(endLFinStmt);
-                }
-                else
-                {
-                    lastStmt = endLFinStmt;
-                }
-
-                // note that this sets BBF_IMPORTED on the block
-                impEndTreeList(callBlock, endLFinStmt, lastStmt);
-            }
-
-            // callBlock should be set up at this point
-            assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-
-            // Note: we don't know the jump target yet
-            step = fgNewBBafter(BBJ_CALLFINALLYRET, callBlock, true);
-            // The new block will inherit this block's weight.
-            step->inheritWeight(block);
-            step->SetFlags(BBF_IMPORTED);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("impImportLeave - jumping out of a finally-protected try, created step (BBJ_CALLFINALLYRET) "
-                       "block %s\n",
-                       step->dspToString());
-            }
-#endif
-
-            // We now record the EH region ID on GT_END_LFIN instead of the finally nesting depth,
-            // as the later can change as we optimize the code.
-            //
-            unsigned const ehID = compHndBBtab[XTnum].ebdID;
-            assert(ehID <= impInlineRoot()->compEHID);
-
-            GenTree* const endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, ehID);
-            endLFinStmt            = gtNewStmt(endLFin);
-            endCatches             = NULL;
-
-            encFinallies++;
-        }
-    }
-
-    // Append any remaining endCatches, if any.
-
-    assert(!encFinallies == !endLFinStmt);
-
-    if (encFinallies == 0)
-    {
-        assert(step == DUMMY_INIT(NULL));
-        block->SetKind(BBJ_ALWAYS); // convert the BBJ_LEAVE to a BBJ_ALWAYS
-
-        if (endCatches)
-        {
-            impAppendTree(endCatches, CHECK_SPILL_NONE, impCurStmtDI);
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("impImportLeave - no enclosing finally-protected try blocks; convert CEE_LEAVE block to BBJ_ALWAYS "
-                   "block %s\n",
-                   block->dspToString());
-        }
-#endif
-    }
-    else
-    {
-        // If leaveTarget is the start of another try block, we want to make sure that
-        // we do not insert finalStep into that try block. Hence, we find the enclosing
-        // try block.
-        unsigned tryIndex = bbFindInnermostCommonTryRegion(step, leaveTarget);
-
-        // Insert a new BB either in the try region indicated by tryIndex or
-        // the handler region indicated by leaveTarget->bbHndIndex,
-        // depending on which is the inner region.
-        BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step);
-        finalStep->SetFlags(BBF_KEEP_BBJ_ALWAYS);
-
-        // step's jump target shouldn't be set yet
-        assert(!step->HasInitializedTarget());
-
-        {
-            FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
-            step->SetTargetEdge(newEdge);
-        }
-
-        // The new block will inherit this block's weight.
-        finalStep->inheritWeight(block);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("impImportLeave - finalStep block required (encFinallies(%d) > 0), new block %s\n", encFinallies,
-                   finalStep->dspToString());
-        }
-#endif
-
-        Statement* lastStmt;
-
-        if (endCatches)
-        {
-            lastStmt = gtNewStmt(endCatches);
-            endLFinStmt->SetNextStmt(lastStmt);
-            lastStmt->SetPrevStmt(endLFinStmt);
-        }
-        else
-        {
-            lastStmt = endLFinStmt;
-        }
-
-        impEndTreeList(finalStep, endLFinStmt, lastStmt);
-
-        // this is the ultimate destination of the LEAVE
-        {
-            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
-            finalStep->SetTargetEdge(newEdge);
-        }
-
-        // Queue up the jump target for importing
-
-        impImportBlockPending(leaveTarget);
-    }
-
-#ifdef DEBUG
-    fgVerifyHandlerTab();
-
-    if (verbose)
-    {
-        printf("\nAfter import CEE_LEAVE:\n");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-#endif // DEBUG
-}
-
-#endif // FEATURE_EH_WINDOWS_X86
-
 void Compiler::impImportLeave(BasicBlock* block)
 {
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        return impImportLeaveEHRegions(block);
-    }
-#endif
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -4990,7 +4756,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert((step == block) || !step->HasInitializedTarget());
                 if (step == block)
                 {
-                    fgRedirectTargetEdge(step, exitBlock);
+                    fgRedirectEdge(step->TargetEdgeRef(), exitBlock);
                 }
                 else
                 {
@@ -5024,7 +4790,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             BasicBlock* callBlock;
 
-            if (step == nullptr && UsesCallFinallyThunks())
+            if (step == nullptr)
             {
                 // Put the call to the finally in the enclosing region.
                 unsigned callFinallyTryIndex =
@@ -5037,7 +4803,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                fgRedirectTargetEdge(block, callBlock);
+                fgRedirectEdge(block->TargetEdgeRef(), callBlock);
                 block->SetKind(BBJ_ALWAYS);
 
                 // The new block will inherit this block's weight.
@@ -5054,24 +4820,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                     printf("impImportLeave - jumping out of a finally-protected try (EH#%u), convert block " FMT_BB
                            " to BBJ_ALWAYS, add BBJ_CALLFINALLY block " FMT_BB "\n",
                            XTnum, block->bbNum, callBlock->bbNum);
-                }
-#endif
-            }
-            else if (step == nullptr) // && !UsesCallFinallyThunks()
-            {
-                callBlock = block;
-
-                // callBlock calls the finally handler
-                assert(callBlock->HasInitializedTarget());
-                fgRedirectTargetEdge(callBlock, HBtab->ebdHndBeg);
-                callBlock->SetKind(BBJ_CALLFINALLY);
-
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("impImportLeave - jumping out of a finally-protected try (EH#%u), convert block " FMT_BB
-                           " to BBJ_CALLFINALLY block\n",
-                           XTnum, callBlock->bbNum);
                 }
 #endif
             }
@@ -5096,7 +4844,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
                 assert((step == block) || !step->HasInitializedTarget());
 
-                if (UsesCallFinallyThunks() && step->KindIs(BBJ_EHCATCHRET))
+                if (step->KindIs(BBJ_EHCATCHRET))
                 {
                     // Need to create another step block in the 'try' region that will actually branch to the
                     // call-to-finally thunk.
@@ -5104,7 +4852,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
                     if (step == block)
                     {
-                        fgRedirectTargetEdge(step, step2);
+                        fgRedirectEdge(step->TargetEdgeRef(), step2);
                     }
                     else
                     {
@@ -5113,7 +4861,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                     }
 
                     step2->inheritWeight(block);
-                    step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
@@ -5132,20 +4879,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                 unsigned callFinallyTryIndex;
                 unsigned callFinallyHndIndex;
 
-                if (UsesCallFinallyThunks())
-                {
-                    callFinallyTryIndex = (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                                              ? 0
-                                              : HBtab->ebdEnclosingTryIndex + 1;
-                    callFinallyHndIndex = (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                                              ? 0
-                                              : HBtab->ebdEnclosingHndIndex + 1;
-                }
-                else
-                {
-                    callFinallyTryIndex = XTnum + 1;
-                    callFinallyHndIndex = 0; // don't care
-                }
+                callFinallyTryIndex =
+                    (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingTryIndex + 1;
+                callFinallyHndIndex =
+                    (HBtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : HBtab->ebdEnclosingHndIndex + 1;
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
                 assert((step == block) || !step->HasInitializedTarget());
@@ -5154,7 +4891,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
                 if (step == block)
                 {
-                    fgRedirectTargetEdge(step, callBlock);
+                    fgRedirectEdge(step->TargetEdgeRef(), callBlock);
                 }
                 else
                 {
@@ -5264,7 +5001,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (step == block)
                 {
-                    fgRedirectTargetEdge(step, catchStep);
+                    fgRedirectEdge(step->TargetEdgeRef(), catchStep);
                 }
                 else
                 {
@@ -5322,7 +5059,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         // leaveTarget is the ultimate destination of the LEAVE
         if (step == block)
         {
-            fgRedirectTargetEdge(step, leaveTarget);
+            fgRedirectEdge(step->TargetEdgeRef(), leaveTarget);
         }
         else
         {
@@ -5382,24 +5119,23 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // work around this we will duplicate B0 (call it B0Dup) before resetting. B0Dup is marked as BBJ_CALLFINALLY and
     // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
     // will be treated as pair and handled correctly.
-    if (UsesFunclets() && block->KindIs(BBJ_CALLFINALLY))
+    if (block->KindIs(BBJ_CALLFINALLY))
     {
         BasicBlock* dupBlock = BasicBlock::New(this);
         dupBlock->CopyFlags(block);
         FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
         dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
-        dupBlock->bbCatchTyp = block->bbCatchTyp;
+        dupBlock->SetCatchType(block->GetCatchType());
 
         // Mark this block as
         //  a) not referenced by any other block to make sure that it gets deleted
         //  b) weight zero
         //  c) prevent from being imported
         //  d) as internal
-        //  e) as rarely run
-        dupBlock->bbRefs   = 0;
-        dupBlock->bbWeight = BB_ZERO_WEIGHT;
-        dupBlock->SetFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_RUN_RARELY);
+        dupBlock->bbRefs = 0;
+        dupBlock->bbSetRunRarely();
+        dupBlock->SetFlags(BBF_IMPORTED | BBF_INTERNAL);
 
         // Insert the block right after the block which is getting reset so that BBJ_CALLFINALLY and BBJ_ALWAYS
         // will be next to each other.
@@ -5415,7 +5151,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgInitBBLookup();
 
-    fgRedirectTargetEdge(block, fgLookupBB(jmpAddr));
+    fgRedirectEdge(block->TargetEdgeRef(), fgLookupBB(jmpAddr));
     block->SetKind(BBJ_LEAVE);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
@@ -6012,25 +5748,38 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// impMatchAwaitPattern: check if a method call starts an Await pattern
-//                       that can be optimized for runtime async
+// impMatchTaskAwaitPattern:
+//   Check if a method call starts an a task await pattern that can be
+//   optimized for runtime async
 //
 // Arguments:
-//   codeAddr - IL after call[virt]
-//   codeEndp - End of IL code stream
-//   configVal - [out] set to 0 or 1, accordingly, if we saw ConfigureAwait(0|1)
+//   codeAddr    - IL after call[virt]     NB: pointing at unconsumed token.
+//   codeEndp    - End of IL code stream
+//   configVal   - [out] set to 0 or 1, accordingly, if we saw ConfigureAwait(0|1)
+//   awaitOffset - [out] IL offset of await call
 //
 // Returns:
-//    true if this is an Await that we can optimize
+//    nullptr if we did not recognise an Await pattern that we can optimize
+//    Otherwise returns position at the end of the Await pattern with one token left unconsumed.
 //
-bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
+                                               const BYTE* codeEndp,
+                                               int*        configVal,
+                                               IL_OFFSET*  awaitOffset)
 {
     // If we see the following code pattern in runtime async methods:
     //
     //    call[virt] <Method>
     //    [ OPTIONAL ]
+    //    {
+    //       [ OPTIONAL ]
+    //       {
+    //         stloc X;
+    //         ldloca X
+    //       }
     //       ldc.i4.0 / ldc.i4.1
     //       call[virt] <ConfigureAwait>
+    //    }
     //    call       <Await>
     //
     // We emit an eqivalent of:
@@ -6047,11 +5796,85 @@ bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, 
     // There must be enough space after ldc for {call + tk + call + tk}
     if (nextOpcode + 2 * (1 + sizeof(mdToken)) < codeEndp)
     {
+        // ConfigureAwait on a ValueTask will start with stloc/ldloca.
+        // The longest encoding should fit in the length we asked for above.
+        uint8_t     maybeStLoc = getU1LittleEndian(nextOpcode);
+        const BYTE* nextTmp    = nextOpcode + 1;
+        int         stlocNum   = -1;
+        switch (maybeStLoc)
+        {
+            case CEE_STLOC_0:
+                stlocNum = 0;
+                break;
+            case CEE_STLOC_1:
+                stlocNum = 1;
+                break;
+            case CEE_STLOC_2:
+                stlocNum = 2;
+                break;
+            case CEE_STLOC_3:
+                stlocNum = 3;
+                break;
+            case CEE_STLOC_S:
+                stlocNum = getU1LittleEndian(nextTmp);
+                nextTmp += 1;
+                break;
+            case CEE_PREFIX1:
+                uint16_t maybeStLocWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
+                nextTmp += 1;
+                if (maybeStLocWide == CEE_STLOC)
+                {
+                    stlocNum = getU2LittleEndian(nextTmp);
+                    nextTmp += 2;
+                }
+                break;
+        }
+
+        // if it was a stloc, check for matching ldloca
+        if (stlocNum != -1)
+        {
+            uint8_t maybeLdLoca = getU1LittleEndian(nextTmp);
+            nextTmp += 1;
+            int ldlocaNum = -1;
+            switch (maybeLdLoca)
+            {
+                case CEE_LDLOCA_S:
+                    ldlocaNum = getU1LittleEndian(nextTmp);
+                    nextTmp += 1;
+                    break;
+                case CEE_PREFIX1:
+                    uint16_t maybeLdLocaWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
+                    nextTmp += 1;
+                    if (maybeLdLocaWide == CEE_LDLOCA)
+                    {
+                        ldlocaNum = getU2LittleEndian(nextTmp);
+                        nextTmp += 2;
+                    }
+                    break;
+            }
+
+            // no ldloca or locals did not match, this can't be await pattern
+            if (stlocNum != ldlocaNum)
+                return nullptr;
+
+            // locals match, but no space for ConfigureAwait call, this can't be await pattern
+            if (nextTmp + 2 * (1 + sizeof(mdToken)) >= codeEndp)
+                return nullptr;
+
+            nextOpcode = nextTmp;
+        }
+
         uint8_t nextOp     = getU1LittleEndian(nextOpcode);
         uint8_t nextNextOp = getU1LittleEndian(nextOpcode + 1);
         if ((nextOp != CEE_LDC_I4_0 && nextOp != CEE_LDC_I4_1) ||
             (nextNextOp != CEE_CALL && nextNextOp != CEE_CALLVIRT))
         {
+            if (stlocNum != -1)
+            {
+                // we had stloc/ldloca, we must see ConfigAwait
+                return nullptr;
+            }
+
             goto checkForAwait;
         }
 
@@ -6062,6 +5885,12 @@ bool Compiler::impMatchAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, 
         if (!eeIsIntrinsic(nextCallTok.hMethod) ||
             lookupNamedIntrinsic(nextCallTok.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
         {
+            if (stlocNum != -1)
+            {
+                // we had stloc/ldloca, we must see ConfigAwait
+                return nullptr;
+            }
+
             goto checkForAwait;
         }
 
@@ -6082,12 +5911,15 @@ checkForAwait:
         if (eeIsIntrinsic(nextCallTok.hMethod) &&
             lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
         {
+            *awaitOffset = (IL_OFFSET)(nextOpcode - info.compCode);
             // yes, this is an Await
-            return true;
+            // Consume the call opcode, but not the token.
+            // The call importer always consumes one token before moving to the next opcode.
+            return nextOpcode + 1;
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 /*****************************************************************************
@@ -6216,7 +6048,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             //
                             if (!mustUseTargetPatchpoint)
                             {
-                                for (BasicBlock* const succBlock : block->Succs(this))
+                                for (BasicBlock* const succBlock : block->Succs())
                                 {
                                     if ((succBlock->bbNum <= block->bbNum) && (succBlock->bbRefs > 1))
                                     {
@@ -6237,7 +6069,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We wanted a source patchpoint, but could not have one.
                         // So, add patchpoints to the backedge targets.
                         //
-                        for (BasicBlock* const succBlock : block->Succs(this))
+                        for (BasicBlock* const succBlock : block->Succs())
                         {
                             if (succBlock->bbNum <= block->bbNum)
                             {
@@ -6389,7 +6221,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Block will no longer flow to any of its successors.
             //
-            for (BasicBlock* const succ : block->Succs(this))
+            for (BasicBlock* const succ : block->Succs())
             {
                 // We may have degenerate flow, make sure to fully remove
                 fgRemoveAllRefPreds(succ, block);
@@ -6437,7 +6269,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     var_types callTyp    = TYP_COUNT;
     OPCODE    prevOpcode = CEE_ILLEGAL;
 
-    if (block->bbCatchTyp)
+    if (!block->CatchTypeIs(BBCT_NONE))
     {
         if (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES)
         {
@@ -6929,18 +6761,43 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     // If we see a local being assigned the result of a GDV-inlineable
-                    // IEnumerable<T>.GetEnumerator, keep track of both the local and the call.
+                    // GetEnumerator call, keep track of both the local and the call.
                     //
                     if (op1->OperIs(GT_RET_EXPR))
                     {
-                        JITDUMP(".... checking for GDV of IEnumerable<T>...\n");
+                        JITDUMP(".... checking for GDV returning IEnumerator<T>...\n");
 
-                        GenTreeCall* const   call = op1->AsRetExpr()->gtInlineCandidate;
-                        NamedIntrinsic const ni   = lookupNamedIntrinsic(call->gtCallMethHnd);
+                        bool                 isEnumeratorT = false;
+                        GenTreeCall* const   call          = op1->AsRetExpr()->gtInlineCandidate;
+                        bool                 isExact       = false;
+                        bool                 isNonNull     = false;
+                        CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
 
-                        if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)
+                        if ((retCls == NO_CLASS_HANDLE) && call->IsGuardedDevirtualizationCandidate())
                         {
-                            JITDUMP("V%02u value is GDV of IEnumerable<T>.GetEnumerator\n", lclNum);
+                            // Just check one of the GDV candidates (all should have the same original method handle)
+                            //
+                            InlineCandidateInfo* const inlineInfo = call->GetGDVCandidateInfo(0);
+                            CORINFO_SIG_INFO           sig;
+                            info.compCompHnd->getMethodSig(inlineInfo->originalMethodHandle, &sig);
+                            retCls = sig.retTypeClass;
+                        }
+
+                        if ((retCls != NO_CLASS_HANDLE) && info.compCompHnd->isIntrinsicType(retCls))
+                        {
+                            const char* namespaceName;
+                            const char* className = info.compCompHnd->getClassNameFromMetadata(retCls, &namespaceName);
+
+                            if ((strcmp(namespaceName, "System.Collections.Generic") == 0) &&
+                                (strcmp(className, "IEnumerator`1") == 0))
+                            {
+                                isEnumeratorT = true;
+                            }
+                        }
+
+                        if (isEnumeratorT)
+                        {
+                            JITDUMP("V%02u value is IEnumerator<T> via GDV\n", lclNum);
                             lvaTable[lclNum].lvIsEnumerator = true;
                             JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(call), lclNum);
                             getImpEnumeratorGdvLocalMap()->Set(call, lclNum);
@@ -7036,9 +6893,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
-                    op1->ChangeType(TYP_BYREF);
-                    op1->SetOper(GT_LCL_ADDR);
-                    op1->AsLclFld()->SetLclOffs(0);
+                    op1 = gtNewLclAddrNode(op1->AsLclVar()->GetLclNum(), 0, TYP_BYREF);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -7321,7 +7176,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7427,7 +7281,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Mark the block as containing an index expression
                 if (op3->OperIs(GT_LCL_VAR) && op1->OperIs(GT_LCL_VAR, GT_CNS_INT, GT_ADD))
                 {
-                    block->SetFlags(BBF_HAS_IDX_LEN);
                     optMethodFlags |= OMF_HAS_ARRAYREF;
                 }
 
@@ -7614,7 +7467,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1->gtFlags |= (GTF_EXCEPT | GTF_OVERFLOW);
                     if (uns)
                     {
-                        op1->gtFlags |= GTF_UNSIGNED;
+                        op1->SetUnsigned();
                     }
                 }
 
@@ -7905,7 +7758,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // TODO: setting both flags when only one is appropriate.
                 if (uns)
                 {
-                    op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
+                    op1->gtFlags |= GTF_RELOP_NAN_UN;
+                    op1->SetUnsigned();
                 }
 
                 // Fold result, if possible.
@@ -8050,7 +7904,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (uns)
                 {
-                    op1->gtFlags |= GTF_UNSIGNED;
+                    op1->SetUnsigned();
                 }
 
                 if (unordered)
@@ -8069,8 +7923,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     // Find the jump target
                     size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
                     Metrics.ImporterSwitchFold++;
 
@@ -8097,15 +7951,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     assert(foundVal);
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nSwitch folded at " FMT_BB "\n", block->bbNum);
-                        printf(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
-                        printf(" to " FMT_BB, block->GetTarget()->bbNum);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nSwitch folded at " FMT_BB "\n", block->bbNum);
+                    JITDUMP(FMT_BB " becomes a %s", block->bbNum, "BBJ_ALWAYS");
+                    JITDUMP(" to " FMT_BB, block->GetTarget()->bbNum);
+                    JITDUMP("\n");
+
                     if (block->hasProfileWeight())
                     {
                         // We are unlikely to be able to repair the profile.
@@ -8277,28 +8127,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto _CONV;
 
             _CONV:
-                // only converts from FLOAT or DOUBLE to an integer type
-                // and converts from  ULONG (or LONG on ARM) to DOUBLE are morphed to calls
-
-                if (varTypeIsFloating(lclTyp))
-                {
-                    callNode = varTypeIsLong(impStackTop().val) ||
-                               uns // uint->dbl gets turned into uint->long->dbl
-#ifdef TARGET_64BIT
-                                   // TODO-ARM64-Bug?: This was AMD64; I enabled it for ARM64 also. OK?
-                                   // TYP_BYREF could be used as TYP_I_IMPL which is long.
-                                   // TODO-CQ: remove this when we lower casts long/ulong --> float/double
-                                   // and generate SSE2 code instead of going through helper calls.
-                               || impStackTop().val->TypeIs(TYP_BYREF)
-#endif
-                        ;
-                }
-                else
-                {
-                    callNode = varTypeIsFloating(impStackTop().val->TypeGet());
-                }
-
-                op1 = impPopStack().val;
+                op1      = impPopStack().val;
+                callNode = fgCastRequiresHelper(op1->TypeGet(), lclTyp, ovfl);
 
                 impBashVarAddrsToI(op1);
 
@@ -8428,11 +8258,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // via an underlying address, just null check the address.
                         if (op1->OperIs(GT_IND, GT_BLK))
                         {
-                            gtChangeOperToNullCheck(op1, block);
+                            gtChangeOperToNullCheck(op1);
                         }
                         else
                         {
-                            op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, nullptr);
+                            GenTreeFlags indirFlags;
+                            op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_EMPTY, &indirFlags);
                         }
 
                         JITDUMP("\n ... optimized to ...\n");
@@ -8705,7 +8536,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN), &callInfo);
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
                 if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
@@ -8717,7 +8548,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&resolvedToken, &callInfo);
+                op1 = impMethodPointer(&callInfo);
 
                 if (compDonotInline())
                 {
@@ -8744,8 +8575,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef */,
-                              combine(combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN),
-                                      CORINFO_CALLINFO_CALLVIRT),
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
                               &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
@@ -8878,7 +8708,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 _impResolveToken(CORINFO_TOKENKIND_NewObj);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM), &callInfo);
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_ALLOWINSTPARAM, &callInfo);
 
                 mflags = callInfo.methodFlags;
 
@@ -9105,35 +8935,44 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    bool isAwait = false;
-                    // TODO: The configVal should be wired to the actual implementation
-                    //       that control the flow of sync context.
-                    //       We do not have that yet.
-                    int configVal = -1; // -1 not configured, 0/1 configured to false/true
+                    bool        isAwait            = false;
+                    int         configVal          = -1; // -1 not configured, 0/1 configured to false/true
+                    const BYTE* codeAddrAfterMatch = nullptr;
+                    IL_OFFSET   awaitOffset        = BAD_IL_OFFSET;
+#ifdef DEBUG
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
+#else
+                    if (compIsAsync())
+#endif
                     {
-                        isAwait = impMatchAwaitPattern(codeAddr, codeEndp, &configVal);
+                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
+                        if (codeAddrAfterMatch != nullptr)
+                        {
+                            JITDUMP("Recognized await%s\n", configVal == 0 ? " (with ConfigureAwait(false))" : "");
+
+                            isAwait = true;
+                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                            if (configVal != 0)
+                            {
+                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                            }
+                        }
                     }
 
                     if (isAwait)
                     {
                         _impResolveToken(CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod != NULL)
+                        if (resolvedToken.hMethod == nullptr)
                         {
-                            // There is a runtime async variant that is implicitly awaitable, just call that.
-                            // if configured, skip {ldc call ConfigureAwait}
-                            if (configVal >= 0)
-                                codeAddr += 2 + sizeof(mdToken);
-
-                            // Skip the call to `Await`
-                            codeAddr += 1 + sizeof(mdToken);
-                        }
-                        else
-                        {
-                            // This can happen in rare cases when the Task-returning method is not a runtime Async
-                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regualr call that is Awaited
+                            // This can happen in cases when the Task-returning method is not a runtime Async
+                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
+                            // It can also happen generally if the VM does not think using the async entry point
+                            // is worth it. Treat these as a regular call that is Awaited.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            isAwait = false;
+
+                            JITDUMP("No async variant provided by VM, treating as regular call that is awaited\n");
                         }
                     }
                     else
@@ -9141,12 +8980,45 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         _impResolveToken(CORINFO_TOKENKIND_Method);
                     }
 
+                    CORINFO_CALLINFO_FLAGS flags = CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS;
+                    if (opcode == CEE_CALLVIRT)
+                    {
+                        flags |= CORINFO_CALLINFO_CALLVIRT;
+                    }
+
                     eeGetCallInfo(&resolvedToken,
-                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  // this is how impImportCall invokes getCallInfo
-                                  combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
-                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
+                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
+
+                    if (isAwait && (callInfo.kind == CORINFO_CALL))
+                    {
+                        assert(callInfo.sig.isAsyncCall());
+                        bool isSyncCallThunk;
+                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
+                        if (!isSyncCallThunk)
+                        {
+                            // The async variant that we got is a thunk. Switch
+                            // back to the non-async task-returning call. There
+                            // is no reason to go through the thunk.
+                            _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            isAwait = false;
+
+                            JITDUMP(
+                                "Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
+                            eeGetCallInfo(&resolvedToken,
+                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                                          flags, &callInfo);
+                        }
+                    }
+
+                    if (isAwait)
+                    {
+                        // If the synchronous call is a thunk then it means the async variant is not a thunk and we
+                        // prefer to directly call it. Skip the await pattern to the last token.
+                        codeAddr   = codeAddrAfterMatch;
+                        opcodeOffs = awaitOffset;
+                    }
                 }
                 else
                 {
@@ -9434,9 +9306,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 BADCODE3("Unexpected opcode (has to be LDFLD)", ": %02X", (int)opcode);
                             }
 
-                            // TODO-Bug?: verify if flags matter here
-                            GenTreeFlags indirFlags = GTF_EMPTY;
-                            obj                     = impGetNodeAddr(obj, CHECK_SPILL_ALL, &indirFlags);
+                            // Get the address and any flags from the original access (volatile, unaligned, etc.)
+                            GenTreeFlags objAddrFlags = GTF_EMPTY;
+                            obj = impGetNodeAddr(obj, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &objAddrFlags);
+
+                            // Combine the flags from the object address with any prefix flags
+                            indirFlags |= objAddrFlags;
                         }
 
                         op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
@@ -9669,11 +9544,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
                         }
-                        else if (compIsAsync() && op1->TypeIs(TYP_BYREF))
+                        else if (op1->TypeIs(TYP_BYREF) && gtTreeContainsAsyncCall(impStackTop().val))
                         {
-                            // TODO-Async: We really only need to spill if
-                            // there is a possibility of an async call in op2.
-                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address in async method"));
+                            // Spill if we have a byref address and the value to store contains
+                            // an async call. This avoids keeping the byref live across an await.
+                            impSpillSideEffects(true,
+                                                CHECK_SPILL_ALL DEBUGARG("byref address with async call in value"));
                         }
                         break;
 
@@ -9927,7 +9803,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (IsAot() && !isFrozenAllocator)
                 {
                     helper                = CORINFO_HELP_READYTORUN_NEWARR_1;
-                    op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr, op2);
+                    op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
@@ -10080,13 +9956,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     impStoreToTemp(stackallocAsLocal, gtNewIconNode(0), CHECK_SPILL_ALL);
                                 }
 
-                                if (!this->opts.compDbgEnC)
-                                {
-                                    // Ensure we have stack security for this method.
-                                    // Reorder layout since the converted localloc is treated as an unsafe buffer.
-                                    setNeedsGSSecurityCookie();
-                                    compGSReorderStackLayout = true;
-                                }
+                                // Request stack security for this method.
+                                setNeedsGSSecurityCookie();
                             }
                         }
                     }
@@ -10110,7 +9981,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
                         op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
 
-                        // Ensure we have stack security for this method.
+                        // Request stack security for this method.
                         setNeedsGSSecurityCookie();
 
                         /* The FP register may not be back to the original value at the end
@@ -10165,7 +10036,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         GenTreeCall* opLookup =
                             impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
-                                                      nullptr, op1);
+                                                      op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
@@ -10245,7 +10116,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Get the address of the refany
                 GenTreeFlags indirFlags = GTF_EMPTY;
-                op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
+                op1 = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
 
                 // Fetch the type from the correct slot
                 op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
@@ -10386,16 +10257,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
-                                GenTree* nullcheck = gtNewNullCheck(op1, block);
-                                // Add an ordering dependency between the null
-                                // check and forming the byref; the JIT assumes
-                                // in many places that the only legal null
-                                // byref is literally 0, and since the byref
-                                // leaks out here, we need to ensure it is
-                                // nullchecked.
-                                nullcheck->SetHasOrderingSideEffect();
-                                boxPayloadAddress->SetHasOrderingSideEffect();
-                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+
+                                GenTree* result;
+                                if (fgAddrCouldBeNull(op1))
+                                {
+                                    GenTree* nullcheck = gtNewNullCheck(op1);
+                                    // Add an ordering dependency between the null
+                                    // check and forming the byref; the JIT assumes
+                                    // in many places that the only legal null
+                                    // byref is literally 0, and since the byref
+                                    // leaks out here, we need to ensure it is
+                                    // nullchecked.
+                                    nullcheck->SetHasOrderingSideEffect();
+                                    boxPayloadAddress->SetHasOrderingSideEffect();
+                                    result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                }
+                                else
+                                {
+                                    // We don't need a nullcheck if this is e.g. a preinitialized value
+                                    result = boxPayloadAddress;
+                                }
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }
@@ -10651,8 +10532,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (IsAot())
                     {
                         GenTreeCall* opLookup =
-                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, nullptr,
-                                                      op1);
+                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
@@ -10968,7 +10848,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
 
                     op1 = arrLen;
                 }
@@ -11321,10 +11201,40 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
 
+                // If the call we're inlining was flagged as part of an enumerator
+                // GDV, and we're replacing it with another call, flag that call instead.
+                //
+                // This handles cases like ReadOnlyArray where GetEnumerator is
+                // expressed via another GetEnumerator call.
+                //
+                if ((info.compRetType == TYP_REF) && hasImpEnumeratorGdvLocalMap())
+                {
+                    GenTree* const                     origCall      = impInlineInfo->iciCall;
+                    Compiler::NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
+                    unsigned                           enumeratorLcl = BAD_VAR_NUM;
+
+                    if (map->Lookup(origCall, &enumeratorLcl))
+                    {
+                        GenTree* returnValue = op2;
+                        if (returnValue->OperIs(GT_RET_EXPR))
+                        {
+                            returnValue = returnValue->AsRetExpr()->gtInlineCandidate;
+                        }
+
+                        if (returnValue->IsCall())
+                        {
+                            JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(returnValue),
+                                    enumeratorLcl);
+
+                            map->Remove(origCall);
+                            map->Set(returnValue, enumeratorLcl);
+                        }
+                    }
+                }
+
                 if (fgNeedReturnSpillTemp())
                 {
-                    assert(info.compRetNativeType != TYP_VOID &&
-                           (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
+                    assert(info.compRetNativeType != TYP_VOID);
 
                     // If this method returns a ref type, track the actual types seen in the returns.
                     if (info.compRetType == TYP_REF)
@@ -11400,7 +11310,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     // in this case we have to insert multiple struct copies to the temp
                     // and the retexpr is just the temp.
                     assert(info.compRetNativeType != TYP_VOID);
-                    assert(fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals());
 
                     impStoreToTemp(lvaInlineeReturnSpillTemp, op2, CHECK_SPILL_ALL);
                 }
@@ -11446,8 +11355,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             }
 
             // If gtSubstExpr is an arbitrary tree then we may need to
-            // propagate mandatory "IR presence" flags (e.g. BBF_HAS_IDX_LEN)
-            // to the BB it ends up in.
+            // propagate mandatory "IR presence" flags to the BB it ends up in.
             inlRetExpr->gtSubstBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
         }
     }
@@ -11638,7 +11546,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
     unsigned  tryIndex = block->getTryIndex();
     EHblkDsc* HBtab    = ehGetDsc(tryIndex);
 
-    if (bbIsTryBeg(block) && (block->bbStkDepth != 0))
+    if (bbIsTryBeg(block) && (block->bbStackDepthOnEntry() != 0))
     {
         BADCODE("Evaluation stack must be empty on entry into a try block");
     }
@@ -11661,7 +11569,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
             //
             stackState.esStackDepth = 0;
 
-            if (handlerGetsXcptnObj(hndBegBB->bbCatchTyp))
+            if (handlerGetsXcptnObj(hndBegBB->GetCatchType()))
             {
                 CORINFO_CLASS_HANDLE clsHnd;
 
@@ -11844,7 +11752,7 @@ SPILLSTACK:
                 addStmt = impExtractLastStmt();
                 assert(addStmt->GetRootNode()->OperIs(GT_SWITCH));
 
-                for (BasicBlock* const tgtBlock : block->SwitchTargets())
+                for (BasicBlock* const tgtBlock : block->SwitchSuccs())
                 {
                     multRef |= tgtBlock->bbRefs;
 
@@ -12096,28 +12004,26 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // If the block has not been imported, add to pending set.
     bool addToPending = !block->HasFlag(BBF_IMPORTED);
 
-    // Initialize bbEntryState just the first time we try to add this block to the pending list
-    // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
-    // We use NULL to indicate the 'common' state to avoid memory allocation
-    if ((block->bbEntryState == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
+    // Initialize bbEntryState the first time we try to add this block to the pending list.
+    // A nullptr bbEntryState means that the block does not yet have a recorded pre-state,
+    // which corresponds to having no established (i.e. empty) stack depth on entry.
+    if ((block->GetEntryState() == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
     {
         initBBEntryState(block, &stackState);
-        assert(block->bbStkDepth == 0);
-        block->bbStkDepth = static_cast<unsigned short>(stackState.esStackDepth);
         assert(addToPending);
         assert(impGetPendingBlockMember(block) == 0);
     }
     else
     {
         // The stack should have the same height on entry to the block from all its predecessors.
-        if (block->bbStkDepth != stackState.esStackDepth)
+        if (block->bbStackDepthOnEntry() != stackState.esStackDepth)
         {
 #ifdef DEBUG
             char buffer[400];
             sprintf_s(buffer, sizeof(buffer),
                       "Block at offset %4.4x to %4.4x in %0.200s entered with different stack depths.\n"
                       "Previous depth was %d, current depth is %d",
-                      block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStkDepth,
+                      block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStackDepthOnEntry(),
                       stackState.esStackDepth);
             buffer[400 - 1] = 0;
             NO_WAY(buffer);
@@ -12131,7 +12037,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
             return;
         }
 
-        if (block->bbStkDepth > 0)
+        if (block->bbStackDepthOnEntry() > 0)
         {
             // We need to fix the types of any spill temps that might have changed:
             //   int->native int, float->double, int->byref, etc.
@@ -12158,7 +12064,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     else
     {
         // We have to create a new dsc
-        dsc = new (this, CMK_Unknown) PendingDsc;
+        dsc = new (this, CMK_ImpStack) PendingDsc;
     }
 
     dsc->pdBB                 = block;
@@ -12225,10 +12131,10 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 
     dsc->pdBB = block;
 
-    if (block->bbEntryState)
+    if (block->GetEntryState())
     {
-        dsc->pdSavedStack.ssDepth = block->bbEntryState->esStackDepth;
-        dsc->pdSavedStack.ssTrees = block->bbEntryState->esStack;
+        dsc->pdSavedStack.ssDepth = block->GetEntryState()->esStackDepth;
+        dsc->pdSavedStack.ssTrees = block->GetEntryState()->esStack;
     }
     else
     {
@@ -12354,11 +12260,11 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
     // and re-type it/add a cast, but that is complicated and hopefully very rare, so
     // just re-import the whole block (just like we do for successors)
 
-    if (!blk->HasFlag(BBF_IMPORTED) && (m_pComp->impGetPendingBlockMember(blk) == 0))
+    if (!blk->HasFlag(BBF_IMPORTED) && (m_compiler->impGetPendingBlockMember(blk) == 0))
     {
         // If we haven't imported this block (EntryState == NULL) and we're not going to
         // (because it isn't on the pending list) then just ignore it for now.
-        assert(blk->bbEntryState == nullptr);
+        assert(blk->GetEntryState() == nullptr);
         return;
     }
 
@@ -12370,14 +12276,14 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
     // impImportBlockPending to fixup their entry state.
     if (predOrSucc == SpillCliqueSucc)
     {
-        m_pComp->impReimportMarkBlock(blk);
+        m_compiler->impReimportMarkBlock(blk);
 
         // Set the current stack state to that of the blk->bbEntryState
-        m_pComp->resetCurrentState(blk, &m_pComp->stackState);
+        m_compiler->resetCurrentState(blk, &m_compiler->stackState);
 
-        m_pComp->impImportBlockPending(blk);
+        m_compiler->impImportBlockPending(blk);
     }
-    else if ((blk != m_pComp->compCurBB) && blk->HasFlag(BBF_IMPORTED))
+    else if ((blk != m_compiler->compCurBB) && blk->HasFlag(BBF_IMPORTED))
     {
         // As described above, we are only visiting predecessors so they can
         // add the appropriate casts, since we have already done that for the current
@@ -12390,16 +12296,16 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
         // If the block is also a successor, it will get the EntryState properly
         // updated when it is visited as a successor in the above "if" block.
         assert(predOrSucc == SpillCliquePred);
-        m_pComp->impReimportBlockPending(blk);
+        m_compiler->impReimportBlockPending(blk);
     }
 }
 
 // Re-type the incoming lclVar nodes to match the varDsc.
 void Compiler::impRetypeEntryStateTemps(BasicBlock* blk)
 {
-    if (blk->bbEntryState != nullptr)
+    if (blk->GetEntryState() != nullptr)
     {
-        EntryState* es = blk->bbEntryState;
+        EntryState* es = blk->GetEntryState();
         for (unsigned level = 0; level < es->esStackDepth; level++)
         {
             GenTree* tree = es->esStack[level].val;
@@ -12465,26 +12371,24 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
 {
     if (srcState->esStackDepth == 0)
     {
-        block->bbEntryState = nullptr;
+        block->SetEntryState(nullptr);
         return;
     }
 
-    block->bbEntryState = getAllocator(CMK_Unknown).allocate<EntryState>(1);
+    block->SetEntryState(getAllocator(CMK_ImpStack).allocate<EntryState>(1));
 
-    // block->bbEntryState.esRefcount = 1;
-
-    block->bbEntryState->esStackDepth = srcState->esStackDepth;
+    block->GetEntryState()->esStackDepth = srcState->esStackDepth;
 
     if (srcState->esStackDepth > 0)
     {
-        block->bbSetStack(new (this, CMK_Unknown) StackEntry[srcState->esStackDepth]);
+        block->bbSetStack(new (this, CMK_ImpStack) StackEntry[srcState->esStackDepth]);
         unsigned stackSize = srcState->esStackDepth * sizeof(StackEntry);
 
-        memcpy(block->bbEntryState->esStack, srcState->esStack, stackSize);
+        memcpy(block->GetEntryState()->esStack, srcState->esStack, stackSize);
         for (unsigned level = 0; level < srcState->esStackDepth; level++)
         {
-            GenTree* tree                           = srcState->esStack[level].val;
-            block->bbEntryState->esStack[level].val = gtCloneExpr(tree);
+            GenTree* tree                              = srcState->esStack[level].val;
+            block->GetEntryState()->esStack[level].val = gtCloneExpr(tree);
         }
     }
 }
@@ -12494,13 +12398,13 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
  */
 void Compiler::resetCurrentState(BasicBlock* block, EntryState* destState)
 {
-    if (block->bbEntryState == nullptr)
+    if (block->GetEntryState() == nullptr)
     {
         destState->esStackDepth = 0;
         return;
     }
 
-    destState->esStackDepth = block->bbEntryState->esStackDepth;
+    destState->esStackDepth = block->GetEntryState()->esStackDepth;
 
     if (destState->esStackDepth > 0)
     {
@@ -12761,19 +12665,13 @@ void Compiler::impFixPredLists()
                     }
                 }
 
-                BBehfDesc* jumpEhf = new (this, CMK_BasicBlock) BBehfDesc;
+                BBJumpTable* jumpEhf;
 
-                // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
-                // has an unconditional `throw` (the finally will still be invoked in the exceptional
-                // case via the runtime). In that case, jumpEhf->bbeCount remains the default, zero,
-                // and jumpEhf->bbeSuccs remains the default, nullptr.
                 if (predCount > 0)
                 {
-                    jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
-
-                    unsigned predNum             = 0;
-                    weight_t remainingLikelihood = 1.0;
+                    FlowEdge** const succTab             = new (this, CMK_FlowEdge) FlowEdge*[predCount];
+                    unsigned         predNum             = 0;
+                    weight_t         remainingLikelihood = 1.0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
                     {
                         // We only care about preds that are callfinallies.
@@ -12802,8 +12700,7 @@ void Compiler::impFixPredLists()
                             newEdge->setLikelihood(1.0 / predCount);
                         }
 
-                        jumpEhf->bbeSuccs[predNum] = newEdge;
-                        ++predNum;
+                        succTab[predNum++] = newEdge;
 
                         if (!added)
                         {
@@ -12811,7 +12708,17 @@ void Compiler::impFixPredLists()
                             added = true;
                         }
                     }
+
                     assert(predNum == predCount);
+                    jumpEhf = new (this, CMK_FlowEdge) BBJumpTable(succTab, predCount);
+                }
+                else
+                {
+                    // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
+                    // has an unconditional `throw` (the finally will still be invoked in the exceptional
+                    // case via the runtime). In that case, jumpEhf->succCount remains the default, zero,
+                    // and jumpEhf->succs remains the default, nullptr.
+                    jumpEhf = new (this, CMK_FlowEdge) BBJumpTable();
                 }
 
                 finallyBlock->SetEhfTargets(jumpEhf);
@@ -13399,7 +13306,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 //   The method may make observations that lead to marking this candidate as
 //   a failed inline. If this happens the initialization is abandoned immediately
 //   to try and reduce the jit time cost for a failed inline.
-
+//
 void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 {
     assert(!compIsForInlining());
@@ -13422,6 +13329,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 // These do not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:
@@ -14127,7 +14036,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
 //    pointer to token into jit-allocated memory.
 methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained)
 {
-    methodPointerInfo* memory = getAllocator(CMK_Unknown).allocate<methodPointerInfo>(1);
+    methodPointerInfo* memory = getAllocator(CMK_ASTNode).allocate<methodPointerInfo>(1);
     memory->m_token           = token;
     memory->m_tokenConstraint = tokenConstrained;
     return memory;

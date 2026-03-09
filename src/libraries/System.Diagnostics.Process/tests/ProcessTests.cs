@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -77,6 +78,86 @@ namespace System.Diagnostics.Tests
             else
             {
                 Assert.NotEqual(0, value);
+            }
+        }
+
+        public static IEnumerable<object[]> SignalTestData()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // GenerateConsoleCtrlEvent only supports sending CTRL_C_EVENT and CTRL_BREAK_EVENT
+                yield return new object[] { PosixSignal.SIGINT };
+                yield return new object[] { PosixSignal.SIGQUIT };
+            }
+            else
+            {
+                foreach (PosixSignal signal in Enum.GetValues<PosixSignal>())
+                {
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be caught or ignored
+                    }
+                    yield return new object[] { signal };
+                }
+                // Test a few raw signals.
+                yield return new object[] { (PosixSignal)3 }; // SIGQUIT
+                yield return new object[] { (PosixSignal)15 }; // SIGTERM
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SignalTestData))]
+        public void TestCreateNewProcessGroup_HandlerReceivesExpectedSignal(PosixSignal signal)
+        {
+            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created...";
+
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                remoteInvokeOptions.StartInfo.CreateNewProcessGroup = true;
+            }
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (signalStr) =>
+                {
+                    PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
+                    using ManualResetEvent receivedSignalEvent = new ManualResetEvent(false);
+                    ReEnableCtrlCHandlerIfNeeded(expectedSignal);
+
+                    using PosixSignalRegistration p = PosixSignalRegistration.Create(expectedSignal, (ctx) =>
+                    {
+                        Assert.Equal(expectedSignal, ctx.Signal);
+                        receivedSignalEvent.Set();
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(PosixSignalRegistrationCreatedMessage);
+
+                    Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
+
+                    return 0;
+                },
+                arg: $"{signal}",
+                remoteInvokeOptions);
+
+            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
+            {
+                Thread.Sleep(20);
+            }
+
+            try
+            {
+                SendSignal(signal, remoteHandle.Process.Id);
+
+                Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
+                Assert.Equal(0, remoteHandle.Process.ExitCode);
+            }
+            finally
+            {
+                // If sending the signal fails, we want to kill the process ASAP
+                // to prevent RemoteExecutor's timeout from hiding it.
+                remoteHandle.Process.Kill();
             }
         }
 
@@ -328,7 +409,7 @@ namespace System.Diagnostics.Tests
 
         private static bool IsNotAppSandbox => PlatformDetection.IsNotAppSandbox;
 
-        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
+        [ConditionalFact(typeof(ProcessTests), nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {
@@ -575,7 +656,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -623,7 +704,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -919,7 +1000,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
-        public void PriviledgedProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
+        public void PrivilegedProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.PrivilegedProcessorTime);
@@ -1245,7 +1326,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
-        public void GetProcessesByName_NullEmpty_ReturnsAllProcesses(string name)
+        public void GetProcessesByName_NullEmpty_ReturnsAllProcesses(string? name)
         {
             Process currentProcess = Process.GetCurrentProcess();
             Process[] processes = Process.GetProcessesByName(name);

@@ -73,10 +73,7 @@ namespace System.Runtime.InteropServices
                     current = current._next;
                 }
 
-                if (current != null)
-                {
-                    current._next = sink._next;
-                }
+                current?._next = sink._next;
             }
 
             sink.Unadvise();

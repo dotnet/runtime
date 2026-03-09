@@ -13,6 +13,9 @@
 //    at Fuzzlyn.ExecutionServer.Program+<>c__DisplayClass0_0.<Main>b__0()
 //    at System.Threading.Thread+StartHelper.RunWorker()
 //
+
+namespace Runtime_112709;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

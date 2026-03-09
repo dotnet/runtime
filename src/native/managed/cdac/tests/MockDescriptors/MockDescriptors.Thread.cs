@@ -10,7 +10,6 @@ internal partial class MockDescriptors
 {
     public class Thread
     {
-        const bool UseFunclets = false;
         private const ulong DefaultAllocationRangeStart = 0x0003_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
 
@@ -68,19 +67,54 @@ internal partial class MockDescriptors
                 (nameof(Constants.Globals.ThreadStore), threadStoreGlobal.Address),
                 (nameof(Constants.Globals.FinalizerThread), finalizerThreadGlobal.Address),
                 (nameof(Constants.Globals.GCThread), gcThreadGlobal.Address),
-                (nameof(Constants.Globals.FeatureEHFunclets), UseFunclets ? 1 : 0),
             ];
         }
 
         private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
-            return GetTypesForTypeFields(
+            var types = GetTypesForTypeFields(
                 helpers,
                 [
                     ExceptionInfoFields,
                     ThreadFields,
                     ThreadStoreFields,
                 ]);
+
+            // Compute layouts for embedded struct types (GCAllocContext -> EEAllocContext -> RuntimeThreadLocals)
+            var gcAllocContextLayout = helpers.LayoutFields(
+            [
+                new(nameof(Data.GCAllocContext.Pointer), DataType.pointer),
+                new(nameof(Data.GCAllocContext.Limit), DataType.pointer),
+                new(nameof(Data.GCAllocContext.AllocBytes), DataType.int64),
+                new(nameof(Data.GCAllocContext.AllocBytesLoh), DataType.int64),
+            ]);
+            types[DataType.GCAllocContext] = new Target.TypeInfo()
+            {
+                Fields = gcAllocContextLayout.Fields,
+                Size = gcAllocContextLayout.Stride,
+            };
+
+            var eeAllocContextLayout = helpers.LayoutFields(
+            [
+                new(nameof(Data.EEAllocContext.GCAllocationContext), DataType.GCAllocContext, gcAllocContextLayout.Stride),
+            ]);
+            types[DataType.EEAllocContext] = new Target.TypeInfo()
+            {
+                Fields = eeAllocContextLayout.Fields,
+                Size = eeAllocContextLayout.Stride,
+            };
+
+            var runtimeThreadLocalsLayout = helpers.LayoutFields(
+            [
+                new(nameof(Data.RuntimeThreadLocals.AllocContext), DataType.EEAllocContext, eeAllocContextLayout.Stride),
+            ]);
+            types[DataType.RuntimeThreadLocals] = new Target.TypeInfo()
+            {
+                Fields = runtimeThreadLocalsLayout.Fields,
+                Size = runtimeThreadLocalsLayout.Stride,
+            };
+
+            return types;
         }
 
         internal void SetThreadCounts(int threadCount, int unstartedCount, int backgroundCount, int pendingCount, int deadCount)
@@ -106,30 +140,54 @@ internal partial class MockDescriptors
         }
 
         internal TargetPointer AddThread(uint id, TargetNUInt osId)
+            => AddThread(id, osId, allocBytes: 0, allocBytesLoh: 0);
+
+        internal TargetPointer AddThread(uint id, TargetNUInt osId, long allocBytes, long allocBytesLoh)
         {
             TargetTestHelpers helpers = Builder.TargetTestHelpers;
-            Target.TypeInfo typeInfo = Types[DataType.Thread];
-            if (UseFunclets)
-                throw new NotImplementedException("todo for funclets: allocate the ExceptionInfo separately");
-            ulong allocSize = typeInfo.Size.Value + (UseFunclets ? 0 : Types[DataType.ExceptionInfo].Size.Value);
-            MockMemorySpace.HeapFragment thread = _allocator.Allocate(allocSize, UseFunclets ? "Thread" : "Thread and ExceptionInfo");
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Target.TypeInfo exceptionInfoType = Types[DataType.ExceptionInfo];
+            Target.TypeInfo runtimeThreadLocalsType = Types[DataType.RuntimeThreadLocals];
+            Target.TypeInfo eeAllocContextType = Types[DataType.EEAllocContext];
+            Target.TypeInfo gcAllocContextType = Types[DataType.GCAllocContext];
+
+            MockMemorySpace.HeapFragment exceptionInfo = _allocator.Allocate(exceptionInfoType.Size.Value, "ExceptionInfo");
+            MockMemorySpace.HeapFragment runtimeThreadLocals = _allocator.Allocate(runtimeThreadLocalsType.Size.Value, "RuntimeThreadLocals");
+            MockMemorySpace.HeapFragment thread = _allocator.Allocate(threadType.Size.Value, "Thread");
             Span<byte> data = thread.Data.AsSpan();
             helpers.Write(
-                data.Slice(typeInfo.Fields[nameof(Data.Thread.Id)].Offset),
+                data.Slice(threadType.Fields[nameof(Data.Thread.Id)].Offset),
                 id);
             helpers.WriteNUInt(
-                data.Slice(typeInfo.Fields[nameof(Data.Thread.OSId)].Offset),
+                data.Slice(threadType.Fields[nameof(Data.Thread.OSId)].Offset),
                 osId);
-            Builder.AddHeapFragment(thread);
-
-            // Add exception info for the thread
-            // TODO: [cdac] Handle when UseFunclets is true - see NotImplementedException thrown above
-            TargetPointer exceptionInfoAddress = thread.Address + Types[DataType.ExceptionInfo].Size.Value;
             helpers.WritePointer(
-                data.Slice(typeInfo.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
-                exceptionInfoAddress);
+                data.Slice(threadType.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
+                exceptionInfo.Address);
+            helpers.WritePointer(
+                data.Slice(threadType.Fields[nameof(Data.Thread.RuntimeThreadLocals)].Offset),
+                runtimeThreadLocals.Address);
 
-            ulong threadLinkOffset = (ulong)typeInfo.Fields[nameof(Data.Thread.LinkNext)].Offset;
+            // Write alloc bytes into the GCAllocContext embedded within RuntimeThreadLocals
+            int allocContextOffset = runtimeThreadLocalsType.Fields[nameof(Data.RuntimeThreadLocals.AllocContext)].Offset;
+            int gcAllocationContextOffset = eeAllocContextType.Fields[nameof(Data.EEAllocContext.GCAllocationContext)].Offset;
+            int allocBytesOffset = gcAllocContextType.Fields[nameof(Data.GCAllocContext.AllocBytes)].Offset;
+            int allocBytesLohOffset = gcAllocContextType.Fields[nameof(Data.GCAllocContext.AllocBytesLoh)].Offset;
+
+            Span<byte> runtimeThreadLocalsData = runtimeThreadLocals.Data.AsSpan();
+            int baseOffset = allocContextOffset + gcAllocationContextOffset;
+            helpers.Write(
+                runtimeThreadLocalsData.Slice(baseOffset + allocBytesOffset),
+                (ulong)allocBytes);
+            helpers.Write(
+                runtimeThreadLocalsData.Slice(baseOffset + allocBytesLohOffset),
+                (ulong)allocBytesLoh);
+
+            Builder.AddHeapFragment(thread);
+            Builder.AddHeapFragment(exceptionInfo);
+            Builder.AddHeapFragment(runtimeThreadLocals);
+
+            ulong threadLinkOffset = (ulong)threadType.Fields[nameof(Data.Thread.LinkNext)].Offset;
             if (_previousThread != TargetPointer.Null)
             {
                 // Set the next link for the previously added thread to the newly added one
@@ -148,6 +206,15 @@ internal partial class MockDescriptors
 
             _previousThread = thread.Address;
             return thread.Address;
+        }
+
+        internal void SetStackLimits(TargetPointer threadAddress, TargetPointer stackBase, TargetPointer stackLimit)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Span<byte> data = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CachedStackBase)].Offset), stackBase);
+            helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CachedStackLimit)].Offset), stackLimit);
         }
     }
 }

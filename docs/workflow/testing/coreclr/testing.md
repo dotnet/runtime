@@ -145,7 +145,11 @@ Some tests need to be run in their own process as they interact with global proc
 
 Sometimes you may want to run a test with the least amount of code before actually executing the test. In addition to the merged test runner, we have another runner mode known as the "Standalone" runner. This runner is used by default in tests that require process isolation. This runner consists of a simple `try-catch` around executing each test sequentially, with no test results file or runtime test filtering.
 
+If you have a merged test runner that you want to run in the standalone mode, you can pass `-p:BuildAsStandalone=true` when building the merged test runner. This will build a project that runs all tests sequentially with no filtering or result file support.
+
 To filter tests on a merged test runner built as standalone, you can set the `TestFilter` property, like so: `./dotnet.sh build -c Checked src/tests/path/to/test.csproj -p:TestFilter=SubstringOfFullyQualifiedTestName`. This mechanism supports the same filtering as the runtime test filtering. Using this mechanism will allow you to skip individual test cases at build time instead of at runtime.
+
+The `TestFilter` property can also be used on a runner assembly in the merged runner mode.
 
 #### Building all tests with the Standalone Runner
 
@@ -173,6 +177,8 @@ The following are common reasons to mark a test as requiring process isolation:
 - The test requires special information, such as an app manifest, in its executable.
 - The test launches through a native executable.
 - The test sets one of the configuration properties that are checked in the test run scripts, such as those in [test-configuration.md](test-configuration.md#adding-test-guidelines).
+
+For a comprehensive list of rules, see [requiresprocessisolation.md](requiresprocessisolation.md).
 
 When a test is marked as `<RequiresProcessIsolation>true</RequiresProcessIsolation>`, it will be run in its own process and have its own `.cmd` and `.sh` scripts generated as test entrypoints. In CI, it will be executed as out of process by whichever merged test runner it is referenced by.
 

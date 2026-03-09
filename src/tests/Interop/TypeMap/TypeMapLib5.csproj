@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Lib5.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="TypeMapLib1.csproj" />
+  </ItemGroup>
+</Project>

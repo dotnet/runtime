@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -87,6 +89,9 @@ namespace System
 #endif
         internal static void OnUnhandledException(object e)
         {
+#if NATIVEAOT
+            RuntimeExceptionHelpers.SerializeCrashInfo(System.Runtime.RhFailFastReason.UnhandledException, (e as Exception)?.Message, e as Exception);
+#endif
             if (UnhandledException is UnhandledExceptionEventHandler handlers)
             {
                 UnhandledExceptionEventArgs args = new(e, isTerminating: true);
@@ -95,6 +100,24 @@ namespace System
                     try
                     {
                         handler(/* AppDomain */ null!, args);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private static void OnFirstChanceException(Exception e, object? sender)
+        {
+            if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
+            {
+                FirstChanceExceptionEventArgs args = new(e);
+                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                {
+                    try
+                    {
+                        handler(sender, args);
                     }
                     catch
                     {
@@ -173,13 +196,21 @@ namespace System
             }
         }
 #elif !NATIVEAOT
-        internal static unsafe void Setup(char** pNames, char** pValues, int count)
+        [UnmanagedCallersOnly]
+        internal static unsafe void Setup(char** pNames, char** pValues, int count, Exception* pException)
         {
-            Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
-            s_dataStore = new Dictionary<string, object?>(count);
-            for (int i = 0; i < count; i++)
+            try
             {
-                s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
+                Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
+                s_dataStore = new Dictionary<string, object?>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 #endif

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Tests
     {
         public sealed class Traits : IHmacTrait
         {
-            public static bool IsSupported => !PlatformDetection.IsAzureLinux && !PlatformDetection.IsBrowser;
+            public static bool IsSupported => !PlatformDetection.IsSymCryptOpenSsl && !PlatformDetection.IsBrowser;
             public static int HashSizeInBytes => HMACMD5.HashSizeInBytes;
         }
 
@@ -91,6 +91,34 @@ namespace System.Security.Cryptography.Tests
             byte[] key,
             Stream source,
             CancellationToken cancellationToken) => HMACMD5.HashDataAsync(key, source, cancellationToken);
+
+        protected override bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash) =>
+            HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, byte[] source, byte[] hash) => HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) =>
+            HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACMD5.Verify(key, source, hash);
+
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACMD5.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACMD5.VerifyAsync(key, source, hash, cancellationToken);
+        }
 
         [Fact]
         public void HmacMD5_Rfc2202_1()

@@ -11,7 +11,6 @@ namespace System.Security.Cryptography
     /// </summary>
     /// <seealso cref="MLKem" />
     [DebuggerDisplay("{Name,nq}")]
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class MLKemAlgorithm : IEquatable<MLKemAlgorithm>
     {
         private MLKemAlgorithm(
@@ -118,13 +117,16 @@ namespace System.Security.Cryptography
         ///   <see langword="true" /> if the objects are considered equal; otherwise, <see langword="false" />.
         /// </returns>
         // This is a closed type, so all we need to compare are the names.
-        public bool Equals(MLKemAlgorithm? other) => other is not null && other.Name == Name;
+        public bool Equals([NotNullWhen(true)] MLKemAlgorithm? other) => other is not null && other.Name == Name;
 
         /// <inheritdoc />
-        public override bool Equals(object? obj) => obj is MLKemAlgorithm alg && alg.Name == Name;
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is MLKemAlgorithm alg && alg.Name == Name;
 
         /// <inheritdoc />
         public override int GetHashCode() => Name.GetHashCode();
+
+        /// <inheritdoc />
+        public override string ToString() => Name;
 
         /// <summary>
         ///   Determines whether two <see cref="MLKemAlgorithm" /> objects specify the same algorithm name.

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -117,6 +119,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAsync
+        {
+            get
+            {
+                return _typicalMethodDef.IsAsync;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typicalMethodDef.HasCustomAttribute(attributeNamespace, attributeName);
@@ -143,7 +153,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {

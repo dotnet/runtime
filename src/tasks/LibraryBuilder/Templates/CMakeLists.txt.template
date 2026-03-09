@@ -42,6 +42,7 @@ if(TARGETS_ANDROID)
 elseif(TARGETS_APPLE_MOBILE)
     set(MOBILE_SYSTEM_LIBS
         "-framework Foundation"
+        "-framework Network"
         "-framework Security"
         "-framework CryptoKit"
         "-framework UIKit"

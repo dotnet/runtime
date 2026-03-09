@@ -35,12 +35,12 @@ export function wrap_as_cancelable<T> (inner: Promise<T>): ControllablePromise<T
     return promise;
 }
 
-export function mono_wasm_cancel_promise (task_holder_gc_handle: GCHandle): void {
-    // cancelation should not arrive earlier than the promise created by marshaling in mono_wasm_invoke_jsimport_MT
-    invoke_later_when_on_ui_thread_async(() => mono_wasm_cancel_promise_impl(task_holder_gc_handle));
+export function SystemInteropJS_CancelPromise (task_holder_gc_handle: GCHandle): void {
+    // cancelation should not arrive earlier than the promise created by marshaling in SystemInteropJS_InvokeJSImportSync
+    invoke_later_when_on_ui_thread_async(() => SystemInteropJS_CancelPromiseImpl(task_holder_gc_handle));
 }
 
-export function mono_wasm_cancel_promise_impl (task_holder_gc_handle: GCHandle): void {
+export function SystemInteropJS_CancelPromiseImpl (task_holder_gc_handle: GCHandle): void {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_debug("This promise can't be canceled, mono runtime already exited.");
         return;

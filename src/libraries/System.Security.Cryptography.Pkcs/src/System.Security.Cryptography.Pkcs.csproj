@@ -589,6 +589,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.MLDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.SlhDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSigner.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\SignedCms.cs" />

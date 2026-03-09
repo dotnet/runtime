@@ -44,7 +44,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             try
             {
                 // Certificates are DER encoded.
-                AsnValueReader reader = new AsnValueReader(extension.RawData, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(extension.RawData, AsnEncodingRules.DER);
 
                 if (reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> contents))
                 {
@@ -84,6 +84,8 @@ namespace Internal.Cryptography.Pal.AnyOS
             if (typeof(T) == typeof(DSA) && Internal.Cryptography.Helpers.IsDSASupported)
                 return (T?)(object?)certificate.GetDSAPrivateKey();
 #endif
+            if (typeof(T) == typeof(MLDsa) && MLDsa.IsSupported)
+                return (T?)(object?)certificate.GetMLDsaPrivateKey();
             if (typeof(T) == typeof(SlhDsa) && SlhDsa.IsSupported)
                 return (T?)(object?)certificate.GetSlhDsaPrivateKey();
 

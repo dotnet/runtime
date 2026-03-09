@@ -162,6 +162,7 @@ namespace A
             return sum + i;
         }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

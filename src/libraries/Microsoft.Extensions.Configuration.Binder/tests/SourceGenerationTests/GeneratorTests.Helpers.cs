@@ -68,7 +68,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         private static readonly Assembly[] s_compilationAssemblyRefs = new[] {
-            typeof(BitArray).Assembly,
             typeof(ConfigurationBinder).Assembly,
             typeof(ConfigurationBuilder).Assembly,
             typeof(CultureInfo).Assembly,
@@ -80,6 +79,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             typeof(IDictionary).Assembly,
             typeof(OptionsBuilder<>).Assembly,
             typeof(OptionsConfigurationServiceCollectionExtensions).Assembly,
+            typeof(Stack<>).Assembly,
             typeof(Uri).Assembly,
         };
 

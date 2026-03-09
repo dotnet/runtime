@@ -149,11 +149,9 @@ namespace System.Net.Http
 
         public bool EnableMultipleHttp3Connections => _enableMultipleHttp3Connections;
 
-        private byte[]? _http3SettingsFrame;
-
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
+        internal byte[] Http3SettingsFrame => field ??= Http3Connection.BuildSettingsFrame(this);
     }
 }

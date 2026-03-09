@@ -463,7 +463,12 @@ namespace System.IO.Compression
 
         private static FileStream GetFileStreamForOpen(ZipArchiveMode mode, string archiveFileName, bool useAsync)
         {
-            // Relies on FileStream's ctor for checking of archiveFileName
+            // Check if the path is a directory before attempting to open,
+            // to match the UnauthorizedAccessException thrown by FileStream's ctor.
+            if (Directory.Exists(archiveFileName))
+            {
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
+            }
 
             (FileMode fileMode, FileAccess access, FileShare fileShare) = mode switch
             {
@@ -473,6 +478,7 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             };
 
+            // Relies on FileStream's ctor for checking of archiveFileName
             return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
         }
 

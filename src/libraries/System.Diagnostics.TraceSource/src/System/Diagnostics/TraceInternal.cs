@@ -41,7 +41,6 @@ namespace System.Diagnostics
             public override void WriteLine(string? message) { TraceInternal.WriteLine(message); }
         }
 
-        private static volatile string? s_appName;
         private static volatile TraceListenerCollection? s_listeners;
         private static volatile bool s_autoFlush;
         private static volatile bool s_useGlobalLock;
@@ -81,7 +80,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal static string AppName => s_appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
+        internal static string AppName => field ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
 
         public static bool AutoFlush
         {

@@ -303,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CANON_ZAPSIG);
                     }
+                    else if (typeDesc is AsyncContinuationType act)
+                    {
+                        // We should never try to encode a continuation on this path
+                        throw new InvalidOperationException();
+                    }
                     else
                     {
                         ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
@@ -436,6 +441,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
+            if (method.Method.IsAsyncVariant())
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant;
+            }
 
             EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 
@@ -567,9 +576,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private ObjectDataBuilder _builder;
 
-        public ObjectDataSignatureBuilder()
+        public ObjectDataSignatureBuilder(NodeFactory factory, bool relocsOnly)
         {
-            _builder = new ObjectDataBuilder();
+            _builder = new ObjectDataBuilder(factory, relocsOnly);
         }
 
         public void AddSymbol(ISymbolDefinitionNode symbol)

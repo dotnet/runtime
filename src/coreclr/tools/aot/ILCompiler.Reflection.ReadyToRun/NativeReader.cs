@@ -2,122 +2,137 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
-    public class NativeReader
+    public class NativeReader(Stream backingStream, bool littleEndian = true)
     {
-        // TODO (refactoring) - all these Native* class should be private
         private const int BITS_PER_BYTE = 8;
         private const int BITS_PER_SIZE_T = 32;
+
+        private readonly Stream _backingStream = backingStream;
+        private readonly bool _littleEndian = littleEndian;
+
+        /// <summary>
+        /// Reads a byte from the image at the specified index
+        /// </summary>
+        public int this[int index]
+        {
+            get => ReadByte(ref index);
+        }
+
+        /// <summary>
+        /// Reads a span of bytes from the image at the specified start index
+        /// </summary>
+        /// <param name="start">Starting index of the value</param>
+        /// <param name="buffer">Span to be filled with the read bytes</param>
+        /// <remarks>
+        /// The <paramref name="start"/> gets incremented by the size of the buffer
+        /// </remarks>
+        public void ReadSpanAt(ref int start, Span<byte> buffer)
+        {
+            if (start < 0 || start + buffer.Length > _backingStream.Length)
+                throw new ArgumentOutOfRangeException(nameof(start), "Start index is out of bounds");
+
+            _backingStream.Seek(start, SeekOrigin.Begin);
+            _backingStream.ReadExactly(buffer);
+            start += buffer.Length;
+        }
 
         /// <summary>
         /// Extracts a 64bit value from the image byte array
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="start">Starting index of the value</param>
         /// <remarks>
         /// The <paramref name="start"/> gets incremented by the size of the value
         /// </remarks>
-        public static long ReadInt64(byte[] image, ref int start)
+        public long ReadInt64(ref int start)
         {
-            int size = sizeof(long);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return BitConverter.ToInt64(bytes, 0);
+            Span<byte> bytes = stackalloc byte[sizeof(long)];
+            ReadSpanAt(ref start, bytes);
+            return _littleEndian ? BinaryPrimitives.ReadInt64LittleEndian(bytes) : BinaryPrimitives.ReadInt64BigEndian(bytes);
         }
 
         // <summary>
         /// Extracts a 32bit value from the image byte array
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="start">Starting index of the value</param>
         /// <remarks>
         /// The <paramref name="start"/> gets incremented by the size of the value
         /// </remarks>
-        public static int ReadInt32(byte[] image, ref int start)
+        public int ReadInt32(ref int start)
         {
-            int size = sizeof(int);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return BitConverter.ToInt32(bytes, 0);
+            Span<byte> bytes = stackalloc byte[sizeof(int)];
+            ReadSpanAt(ref start, bytes);
+            return _littleEndian ? BinaryPrimitives.ReadInt32LittleEndian(bytes) : BinaryPrimitives.ReadInt32BigEndian(bytes);
         }
 
         // <summary>
         /// Extracts an unsigned 32bit value from the image byte array
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="start">Starting index of the value</param>
         /// <remarks>
         /// The <paramref name="start"/> gets incremented by the size of the value
         /// </remarks>
-        public static uint ReadUInt32(byte[] image, ref int start)
+        public uint ReadUInt32(ref int start)
         {
-            int size = sizeof(int);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return (uint)BitConverter.ToInt32(bytes, 0);
+            Span<byte> bytes = stackalloc byte[sizeof(uint)];
+            ReadSpanAt(ref start, bytes);
+            return _littleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(bytes) : BinaryPrimitives.ReadUInt32BigEndian(bytes);
         }
 
         // <summary>
         /// Extracts an unsigned 16bit value from the image byte array
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="start">Starting index of the value</param>
         /// <remarks>
         /// The <paramref name="start"/> gets incremented by the size of the value
         /// </remarks>
-        public static ushort ReadUInt16(byte[] image, ref int start)
+        public ushort ReadUInt16(ref int start)
         {
-            int size = sizeof(short);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return (ushort)BitConverter.ToInt16(bytes, 0);
+            Span<byte> bytes = stackalloc byte[sizeof(ushort)];
+            ReadSpanAt(ref start, bytes);
+            return _littleEndian ? BinaryPrimitives.ReadUInt16LittleEndian(bytes) : BinaryPrimitives.ReadUInt16BigEndian(bytes);
         }
 
         // <summary>
         /// Extracts byte from the image byte array
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="start">Start index of the value</param>
         /// <remarks>
         /// The <paramref name="start"/> gets incremented by the size of the value
         /// </remarks>
-        public static byte ReadByte(byte[] image, ref int start)
+        public byte ReadByte(ref int start)
         {
-            byte val = image[start];
-            start += sizeof(byte);
-            return val;
+            Span<byte> bytes = stackalloc byte[sizeof(byte)];
+            ReadSpanAt(ref start, bytes);
+            return bytes[0];
         }
 
         // <summary>
         /// Extracts bits from the image byte array
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="numBits">Number of bits to read</param>
         /// <param name="bitOffset">Start bit of the value</param>
         /// <remarks>
         /// The <paramref name="bitOffset"/> gets incremented by <paramref name="numBits">
         /// </remarks>
-        public static int ReadBits(byte[] image, int numBits, ref int bitOffset)
+        public int ReadBits(int numBits, ref int bitOffset)
         {
             int start = bitOffset / BITS_PER_BYTE;
             int bits = bitOffset % BITS_PER_BYTE;
-            int val = image[start] >> bits;
+            int val = ReadByte(ref start) >> bits;
             bits += numBits;
             while (bits > BITS_PER_BYTE)
             {
-                start++;
                 bits -= BITS_PER_BYTE;
                 if (bits > 0)
                 {
-                    int extraBits = image[start] << (numBits - bits);
+                    int extraBits = ReadByte(ref start) << (numBits - bits);
                     val ^= extraBits;
                 }
             }
@@ -130,19 +145,18 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Decode variable length numbers
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfodecoder.h">src\inc\gcinfodecoder.h</a> DecodeVarLengthUnsigned
         /// </summary>
-        /// <param name="image">PE image</param>
         /// <param name="len">Number of bits to read</param>
         /// <param name="bitOffset">Start bit of the value</param>
         /// <remarks>
         /// The <paramref name="bitOffset"/> gets incremented by the size of the value
         /// </remarks>
-        public static uint DecodeVarLengthUnsigned(byte[] image, int len, ref int bitOffset)
+        public uint DecodeVarLengthUnsigned(int len, ref int bitOffset)
         {
             uint numEncodings = (uint)(1 << len);
             uint result = 0;
             for (int shift = 0; ; shift += len)
             {
-                uint currentChunk = (uint)ReadBits(image, len + 1, ref bitOffset);
+                uint currentChunk = (uint)ReadBits(len + 1, ref bitOffset);
                 result |= (currentChunk & (numEncodings - 1)) << shift;
                 if ((currentChunk & numEncodings) == 0)
                 {
@@ -155,13 +169,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         // <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfodecoder.h">src\inc\gcinfodecoder.h</a> DecodeVarLengthSigned
         /// </summary>
-        public static int DecodeVarLengthSigned(byte[] image, int len, ref int bitOffset)
+        public int DecodeVarLengthSigned(int len, ref int bitOffset)
         {
             int numEncodings = (1 << len);
             int result = 0;
             for (int shift = 0; ; shift += len)
             {
-                int currentChunk = ReadBits(image, len + 1, ref bitOffset);
+                int currentChunk = ReadBits(len + 1, ref bitOffset);
                 result |= (currentChunk & (numEncodings - 1)) << shift;
                 if ((currentChunk & numEncodings) == 0)
                 {
@@ -177,13 +191,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         // <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/nativeformatreader.h">src\vm\nativeformatreader.h</a> DecodeUnsigned
         /// </summary>
-        public static uint DecodeUnsigned(byte[] image, uint offset, ref uint pValue)
+        public uint DecodeUnsigned(uint offset, ref uint pValue)
         {
-            if (offset >= image.Length)
+            if (offset >= _backingStream.Length)
                 throw new System.BadImageFormatException("offset out of bounds");
 
             int off = (int)offset;
-            uint val = ReadByte(image, ref off);
+            uint val = ReadByte(ref off);
 
             if ((val & 1) == 0)
             {
@@ -192,37 +206,37 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else if ((val & 2) == 0)
             {
-                if (offset + 1 >= image.Length)
+                if (offset + 1 >= _backingStream.Length)
                     throw new System.BadImageFormatException("offset out of bounds");
 
                 pValue = (val >> 2) |
-                      ((uint)ReadByte(image, ref off) << 6);
+                        ((uint)ReadByte(ref off) << 6);
                 offset += 2;
             }
             else if ((val & 4) == 0)
             {
-                if (offset + 2 >= image.Length)
+                if (offset + 2 >= _backingStream.Length)
                     throw new System.BadImageFormatException("offset out of bounds");
 
                 pValue = (val >> 3) |
-                      ((uint)ReadByte(image, ref off) << 5) |
-                      ((uint)ReadByte(image, ref off) << 13);
+                        ((uint)ReadByte(ref off) << 5) |
+                        ((uint)ReadByte(ref off) << 13);
                 offset += 3;
             }
             else if ((val & 8) == 0)
             {
-                if (offset + 3 >= image.Length)
+                if (offset + 3 >= _backingStream.Length)
                     throw new System.BadImageFormatException("offset out of bounds");
 
                 pValue = (val >> 4) |
-                      ((uint)ReadByte(image, ref off) << 4) |
-                      ((uint)ReadByte(image, ref off) << 12) |
-                      ((uint)ReadByte(image, ref off) << 20);
+                        ((uint)ReadByte(ref off) << 4) |
+                        ((uint)ReadByte(ref off) << 12) |
+                        ((uint)ReadByte(ref off) << 20);
                 offset += 4;
             }
             else if ((val & 16) == 0)
             {
-                pValue = ReadUInt32(image, ref off);
+                pValue = ReadUInt32(ref off);
                 offset += 5;
             }
             else
@@ -236,13 +250,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         // <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/nativeformatreader.h">src\vm\nativeformatreader.h</a> DecodeSigned
         /// </summary>
-        public static uint DecodeSigned(byte[] image, uint offset, ref int pValue)
+        public uint DecodeSigned(uint offset, ref int pValue)
         {
-            if (offset >= image.Length)
+            if (offset >= _backingStream.Length)
                 throw new System.BadImageFormatException("offset out of bounds");
 
             int off = (int)offset;
-            int val = ReadByte(image, ref off);
+            int val = ReadByte(ref off);
 
             if ((val & 1) == 0)
             {
@@ -251,37 +265,37 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else if ((val & 2) == 0)
             {
-                if (offset + 1 >= image.Length)
+                if (offset + 1 >= _backingStream.Length)
                     throw new System.BadImageFormatException("offset out of bounds");
 
                 pValue = (val >> 2) |
-                      (ReadByte(image, ref off) << 6);
+                        (ReadByte(ref off) << 6);
                 offset += 2;
             }
             else if ((val & 4) == 0)
             {
-                if (offset + 2 >= image.Length)
+                if (offset + 2 >= _backingStream.Length)
                     throw new System.BadImageFormatException("offset out of bounds");
 
                 pValue = (val >> 3) |
-                      (ReadByte(image, ref off) << 5) |
-                      (ReadByte(image, ref off) << 13);
+                        (ReadByte(ref off) << 5) |
+                        (ReadByte(ref off) << 13);
                 offset += 3;
             }
             else if ((val & 8) == 0)
             {
-                if (offset + 3 >= image.Length)
+                if (offset + 3 >= _backingStream.Length)
                     throw new System.BadImageFormatException("offset out of bounds");
 
                 pValue = (val >> 4) |
-                      (ReadByte(image, ref off) << 4) |
-                      (ReadByte(image, ref off) << 12) |
-                      (ReadByte(image, ref off) << 20);
+                        (ReadByte(ref off) << 4) |
+                        (ReadByte(ref off) << 12) |
+                        (ReadByte(ref off) << 20);
                 offset += 4;
             }
             else if ((val & 16) == 0)
             {
-                pValue = ReadInt32(image, ref off);
+                pValue = ReadInt32(ref off);
                 offset += 5;
             }
             else
@@ -295,10 +309,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         // <summary>
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/debug/daccess/nidump.cpp">src\debug\daccess\nidump.cpp</a> DacSigUncompressData and DacSigUncompressBigData
         /// </summary>
-        public static uint ReadCompressedData(byte[] image, ref int start)
+        public uint ReadCompressedData(ref int start)
         {
             int off = start;
-            uint data = ReadUInt32(image, ref off);
+            uint data = ReadUInt32(ref off);
             if ((data & 0x80) == 0x00)
             {
                 start++;
@@ -306,15 +320,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             if ((data & 0xC0) == 0x80)  // 10?? ????
             {
-                data = (uint)((ReadByte(image, ref start) & 0x3f) << 8);
-                data |= ReadByte(image, ref start);
+                data = (uint)((ReadByte(ref start) & 0x3f) << 8);
+                data |= ReadByte(ref start);
             }
             else // 110? ????
             {
-                data = (uint)(ReadByte(image, ref start) & 0x1f) << 24;
-                data |= (uint)ReadByte(image, ref start) << 16;
-                data |= (uint)ReadByte(image, ref start) << 8;
-                data |= ReadByte(image, ref start);
+                data = (uint)(ReadByte(ref start) & 0x1f) << 24;
+                data |= (uint)ReadByte(ref start) << 16;
+                data |= (uint)ReadByte(ref start) << 8;
+                data |= ReadByte(ref start);
             }
             return data;
         }
@@ -322,15 +336,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUnsigned
         /// </summary>
-        public static uint DecodeUnsignedGc(byte[] image, ref int start)
+        public uint DecodeUnsignedGc(ref int start)
         {
             int size = 1;
-            byte data = image[start++];
+            byte data = ReadByte(ref start);
             uint value = (uint)data & 0x7f;
             while ((data & 0x80) != 0)
             {
                 size++;
-                data = image[start++];
+                data = ReadByte(ref start);
                 value <<= 7;
                 value += (uint)data & 0x7f;
             }
@@ -340,16 +354,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeSigned
         /// </summary>
-        public static int DecodeSignedGc(byte[] image, ref int start)
+        public int DecodeSignedGc(ref int start)
         {
             int size = 1;
-            byte data  = image[start++];
+            byte data = ReadByte(ref start);
             byte first = data;
             int value = data & 0x3f;
             while ((data & 0x80) != 0)
             {
                 size++;
-                data = image[start++];
+                data = ReadByte(ref start);
                 value <<= 7;
                 value += data & 0x7f;
             }
@@ -362,9 +376,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUDelta
         /// </summary>
-        public static uint DecodeUDelta(byte[] image, ref int start, uint lastValue)
+        public uint DecodeUDelta(ref int start, uint lastValue)
         {
-            uint delta = DecodeUnsignedGc(image, ref start);
+            uint delta = DecodeUnsignedGc(ref start);
             return lastValue + delta;
         }
     }

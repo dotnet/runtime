@@ -13,6 +13,7 @@ using System.Net;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
@@ -1016,10 +1017,23 @@ internal static partial class Interop
             Debug.Assert(ssl != IntPtr.Zero);
             Debug.Assert(session != IntPtr.Zero);
 
-            // remember if the session used a certificate, this information is used after
-            // session resumption, the pointer is not being dereferenced and the refcount
+            // Remember if the session used a certificate, this information is used after
+            // session resumption. The pointer is not being dereferenced and the refcount
             // is not going to be manipulated.
             IntPtr cert = Interop.Ssl.SslGetCertificate(ssl);
+
+            // In TLS 1.3, new session tickets can be issued on resumed connections.
+            // When resuming, no certificate is set on the SSL object, so inherit
+            // the cert info from the current (resuming) session.
+            if (cert == IntPtr.Zero && Interop.Ssl.SslSessionReused(ssl))
+            {
+                IntPtr currentSession = Interop.Ssl.SslGetSession(ssl);
+                if (currentSession != IntPtr.Zero)
+                {
+                    cert = Interop.Ssl.SslSessionGetData(currentSession);
+                }
+            }
+
             Interop.Ssl.SslSessionSetData(session, cert);
 
             IntPtr ctx = Ssl.SslGetSslCtx(ssl);
@@ -1029,13 +1043,13 @@ internal static partial class Interop
             if (ptr != IntPtr.Zero)
             {
                 GCHandle gch = GCHandle.FromIntPtr(ptr);
+                byte* name = Ssl.SslGetServerName(ssl);
+                Debug.Assert(name != null);
+
                 SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
 
                 if (ctxHandle != null)
                 {
-                    IntPtr name = Ssl.SslGetServerName(ssl);
-                    Debug.Assert(name != IntPtr.Zero);
-
                     if (ctxHandle.TryAddSession(name, session))
                     {
                         // offered session was stored in our cache.
@@ -1067,8 +1081,8 @@ internal static partial class Interop
                 return;
             }
 
-            IntPtr name = Ssl.SessionGetHostname(session);
-            Debug.Assert(name != IntPtr.Zero);
+            byte* name = Ssl.SessionGetHostname(session);
+            Debug.Assert(name != null);
             ctxHandle.RemoveSession(name, session);
         }
 
@@ -1132,9 +1146,6 @@ internal static partial class Interop
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
         {
-            Debug.Assert(certPtr != null && !certPtr.IsInvalid);
-            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid);
-
             int retVal = Ssl.SslCtxUseCertificate(contextPtr, certPtr);
 
             if (1 != retVal)
@@ -1158,12 +1169,12 @@ internal static partial class Interop
             }
         }
 
-        internal static SslException CreateSslException(string message)
+        internal static unsafe SslException CreateSslException(string message)
         {
             // Capture last error to be consistent with CreateOpenSslCryptographicException
             ulong errorVal = Crypto.ErrPeekLastError();
             Crypto.ErrClearError();
-            string msg = SR.Format(message, Marshal.PtrToStringUTF8(Crypto.ErrReasonErrorString(errorVal)));
+            string msg = SR.Format(message, Utf8StringMarshaller.ConvertToManaged(Crypto.ErrReasonErrorString(errorVal)));
             return new SslException(msg, (int)errorVal);
         }
 

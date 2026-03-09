@@ -199,7 +199,7 @@ namespace System.Buffers
         private void CheckAndResizeBuffer(int sizeHint)
         {
             if (sizeHint < 0)
-                throw new ArgumentException(nameof(sizeHint));
+                throw new ArgumentException(null, nameof(sizeHint));
 
             if (sizeHint == 0)
             {
@@ -220,7 +220,7 @@ namespace System.Buffers
 
                 int newSize = currentLength + growBy;
 
-                if ((uint)newSize > int.MaxValue)
+                if ((uint)newSize > ArrayMaxLength)
                 {
                     // Attempt to grow to ArrayMaxLength.
                     uint needed = (uint)(currentLength - FreeCapacity + sizeHint);

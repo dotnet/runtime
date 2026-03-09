@@ -512,7 +512,7 @@ namespace System.Net.Tests
         [InlineData(null)]
         [InlineData("text/html; charset=utf-8")]
         [InlineData("text/html; charset=us-ascii")]
-        public async Task DownloadString_Success(string contentType)
+        public async Task DownloadString_Success(string? contentType)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {

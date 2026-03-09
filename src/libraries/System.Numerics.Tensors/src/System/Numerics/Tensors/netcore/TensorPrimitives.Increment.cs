@@ -18,8 +18,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Increment<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IIncrementOperators<T> =>
+            where T : IIncrementOperators<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, IncrementOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, IncrementOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Increment(x)</summary>
         private readonly struct IncrementOperator<T> : IUnaryOperator<T, T>

@@ -57,5 +57,12 @@ namespace System.Security.Cryptography.Tests
             Assert.True(MLKemAlgorithm.MLKem768 != MLKemAlgorithm.MLKem1024, "MLKemAlgorithm.MLKem768 != MLKemAlgorithm.MLKem1024");
             Assert.True(MLKemAlgorithm.MLKem1024 != MLKemAlgorithm.MLKem512, "MLKemAlgorithm.MLKem1024 != MLKemAlgorithm.MLKem512");
         }
+
+        [Theory]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
+        public static void Algorithms_ToString(MLKemAlgorithm algorithm)
+        {
+            Assert.Equal(algorithm.Name, algorithm.ToString());
+        }
     }
 }

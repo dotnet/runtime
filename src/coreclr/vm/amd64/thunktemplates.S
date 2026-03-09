@@ -57,7 +57,7 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
 // FixupPrecode
 // ----------
 
-#define FIXUP_PRECODE_CODESIZE 0x18 
+#define FIXUP_PRECODE_CODESIZE 0x18
 #define FIXUP_PRECODE_DATASIZE 0x18 // 3 qwords
 .set FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING,(THUNKS_MAP_SIZE / FIXUP_PRECODE_CODESIZE)
 
@@ -101,6 +101,7 @@ LEAF_ENTRY FixupPrecodeCodeTemplate
     int 3
 LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 
+#ifdef FEATURE_TIERED_COMPILATION
 // ----------
 // CallCountingStub
 // ----------
@@ -144,6 +145,7 @@ LEAF_ENTRY CallCountingStubCodeTemplate
     int 3
     int 3
 LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
+#endif // FEATURE_TIERED_COMPILATION
 
 #endif
 
@@ -168,6 +170,7 @@ PATCH_LABEL FixupPrecodeCode_Fixup
         jmp    [rip + DATA_SLOT(FixupPrecode, PrecodeFixupThunk)]
 LEAF_END_MARKED FixupPrecodeCode, _TEXT
 
+#ifdef FEATURE_TIERED_COMPILATION
 LEAF_ENTRY CallCountingStubCode, _TEXT
         mov    rax,QWORD PTR [rip + DATA_SLOT(CallCountingStub, RemainingCallCountCell)]
         dec    WORD PTR [rax]
@@ -176,3 +179,4 @@ LEAF_ENTRY CallCountingStubCode, _TEXT
     LOCAL_LABEL(CountReachedZero):
         jmp    QWORD PTR [rip + DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
 LEAF_END_MARKED CallCountingStubCode, _TEXT
+#endif // FEATURE_TIERED_COMPILATION

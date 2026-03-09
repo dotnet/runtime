@@ -16,8 +16,7 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers");
-            string methodName = method.Name;
+            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("RuntimeHelpers"u8));
 
             // All the methods handled below are per-instantiation generic methods
             if (method.Instantiation.Length != 1 || method.IsTypicalMethodDefinition)
@@ -30,7 +29,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (methodName == "IsBitwiseEquatable")
+            if (method.Name.SequenceEqual("IsBitwiseEquatable"u8))
             {
                 // Ideally we could detect automatically whether a type is trivially equatable
                 // (i.e., its operator == could be implemented via memcmp). But for now we'll
@@ -58,8 +57,8 @@ namespace Internal.IL.Stubs
                         if (elementType is MetadataType mdType)
                         {
                             if (mdType.Module == mdType.Context.SystemModule &&
-                                mdType.Namespace == "System.Text" &&
-                                mdType.Name == "Rune")
+                                mdType.Namespace.SequenceEqual("System.Text"u8) &&
+                                mdType.Name.SequenceEqual("Rune"u8))
                             {
                                 result = true;
                             }
@@ -70,7 +69,7 @@ namespace Internal.IL.Stubs
                                 if (equatable.HasValue && !equatable.Value)
                                 {
                                     // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
-                                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+                                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
                                     result =
                                         mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
                                         ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);

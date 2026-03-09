@@ -16,8 +16,7 @@ namespace Internal.Runtime.InteropServices
     internal static class InMemoryAssemblyLoader
     {
         [FeatureSwitchDefinition("System.Runtime.InteropServices.EnableCppCLIHostActivation")]
-        private static bool IsSupported { get; } = InitializeIsSupported();
-        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;
+        private static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Loads an assembly that has already been loaded into memory by the OS loader as a native module

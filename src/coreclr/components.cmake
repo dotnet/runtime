@@ -1,5 +1,6 @@
 # Define all the individually buildable components of the CoreCLR build and their respective targets
 add_component(jit)
+add_component(wasmjit)
 add_component(alljits)
 add_component(hosts)
 add_component(runtime)

@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: task.cpp
 //
-
-//
 // ClrDataTask.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -91,7 +89,7 @@ ClrDataTask::GetProcess(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -117,7 +115,7 @@ ClrDataTask::GetCurrentAppDomain(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -145,7 +143,7 @@ ClrDataTask::GetName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -171,7 +169,7 @@ ClrDataTask::GetUniqueID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -198,7 +196,7 @@ ClrDataTask::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -225,7 +223,7 @@ ClrDataTask::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -251,7 +249,7 @@ ClrDataTask::GetManagedObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -277,7 +275,7 @@ ClrDataTask::GetDesiredExecutionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -303,7 +301,7 @@ ClrDataTask::SetDesiredExecutionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -354,7 +352,7 @@ ClrDataTask::CreateStackWalk(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -389,7 +387,7 @@ ClrDataTask::GetOSThreadID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -438,7 +436,7 @@ ClrDataTask::GetContext(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -479,7 +477,7 @@ ClrDataTask::SetContext(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -507,7 +505,7 @@ ClrDataTask::GetCurrentExceptionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -547,7 +545,7 @@ ClrDataTask::GetLastExceptionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -595,7 +593,7 @@ ClrDataTask::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -681,7 +679,7 @@ ClrDataAppDomain::GetProcess(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -729,7 +727,7 @@ ClrDataAppDomain::GetName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -755,7 +753,7 @@ ClrDataAppDomain::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -782,7 +780,7 @@ ClrDataAppDomain::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -808,7 +806,7 @@ ClrDataAppDomain::GetManagedObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -852,7 +850,7 @@ ClrDataAppDomain::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -951,7 +949,7 @@ ClrDataAssembly::StartEnumModules(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -989,7 +987,7 @@ ClrDataAssembly::EnumModule(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1016,7 +1014,7 @@ ClrDataAssembly::EndEnumModules(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1042,7 +1040,7 @@ ClrDataAssembly::StartEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1069,7 +1067,7 @@ ClrDataAssembly::EnumAppDomain(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1095,7 +1093,7 @@ ClrDataAssembly::EndEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1123,7 +1121,7 @@ ClrDataAssembly::GetName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1164,7 +1162,7 @@ ClrDataAssembly::GetFileName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1192,7 +1190,7 @@ ClrDataAssembly::GetDisplayName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1218,7 +1216,7 @@ ClrDataAssembly::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1246,7 +1244,7 @@ ClrDataAssembly::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1294,7 +1292,7 @@ ClrDataAssembly::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1406,7 +1404,7 @@ ClrDataModule::StartEnumAssemblies(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1457,7 +1455,7 @@ ClrDataModule::EnumAssembly(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1484,7 +1482,7 @@ ClrDataModule::EndEnumAssemblies(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1510,7 +1508,7 @@ ClrDataModule::StartEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1537,7 +1535,7 @@ ClrDataModule::EnumAppDomain(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1563,7 +1561,7 @@ ClrDataModule::EndEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1593,7 +1591,7 @@ ClrDataModule::StartEnumTypeDefinitions(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1629,7 +1627,7 @@ ClrDataModule::EnumTypeDefinition(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1654,7 +1652,7 @@ ClrDataModule::EndEnumTypeDefinitions(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1685,7 +1683,7 @@ ClrDataModule::StartEnumTypeInstances(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1734,7 +1732,7 @@ ClrDataModule::EnumTypeInstance(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1759,7 +1757,7 @@ ClrDataModule::EndEnumTypeInstances(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1792,7 +1790,7 @@ ClrDataModule::StartEnumTypeDefinitionsByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1828,7 +1826,7 @@ ClrDataModule::EnumTypeDefinitionByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1853,7 +1851,7 @@ ClrDataModule::EndEnumTypeDefinitionsByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1887,7 +1885,7 @@ ClrDataModule::StartEnumTypeInstancesByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1938,7 +1936,7 @@ ClrDataModule::EnumTypeInstanceByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -1963,7 +1961,7 @@ ClrDataModule::EndEnumTypeInstancesByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2001,7 +1999,7 @@ ClrDataModule::GetTypeDefinitionByToken(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2035,7 +2033,7 @@ ClrDataModule::StartEnumMethodDefinitionsByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2071,7 +2069,7 @@ ClrDataModule::EnumMethodDefinitionByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2096,7 +2094,7 @@ ClrDataModule::EndEnumMethodDefinitionsByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2131,7 +2129,7 @@ ClrDataModule::StartEnumMethodInstancesByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2183,7 +2181,7 @@ ClrDataModule::EnumMethodInstanceByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2208,7 +2206,7 @@ ClrDataModule::EndEnumMethodInstancesByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2246,7 +2244,7 @@ ClrDataModule::GetMethodDefinitionByToken(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2288,7 +2286,7 @@ ClrDataModule::StartEnumDataByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2314,7 +2312,7 @@ ClrDataModule::EnumDataByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2339,7 +2337,7 @@ ClrDataModule::EndEnumDataByName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2367,7 +2365,7 @@ ClrDataModule::GetName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2412,7 +2410,7 @@ ClrDataModule::GetFileName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2442,7 +2440,7 @@ ClrDataModule::GetVersionId(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2479,7 +2477,7 @@ ClrDataModule::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2507,7 +2505,7 @@ ClrDataModule::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2559,7 +2557,7 @@ ClrDataModule::StartEnumExtents(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2602,7 +2600,7 @@ ClrDataModule::EnumExtent(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2628,7 +2626,7 @@ ClrDataModule::EndEnumExtents(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2763,7 +2761,7 @@ ClrDataModule::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2816,7 +2814,7 @@ ClrDataModule::SetJITCompilerFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return hr;
@@ -2877,7 +2875,7 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -2986,7 +2984,7 @@ ClrDataMethodDefinition::GetTypeDefinition(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3021,7 +3019,7 @@ ClrDataMethodDefinition::StartEnumInstances(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3047,7 +3045,7 @@ ClrDataMethodDefinition::EnumInstance(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3072,7 +3070,7 @@ ClrDataMethodDefinition::EndEnumInstances(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3122,7 +3120,7 @@ ClrDataMethodDefinition::GetName(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3160,7 +3158,7 @@ ClrDataMethodDefinition::GetTokenAndScope(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3185,7 +3183,7 @@ ClrDataMethodDefinition::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3224,7 +3222,7 @@ ClrDataMethodDefinition::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3251,7 +3249,7 @@ ClrDataMethodDefinition::GetLatestEnCVersion(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3278,7 +3276,7 @@ ClrDataMethodDefinition::StartEnumExtents(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3323,7 +3321,7 @@ ClrDataMethodDefinition::EnumExtent(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3349,7 +3347,7 @@ ClrDataMethodDefinition::EndEnumExtents(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3384,7 +3382,7 @@ ClrDataMethodDefinition::GetCodeNotification(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3445,7 +3443,7 @@ ClrDataMethodDefinition::SetCodeNotification(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3481,7 +3479,7 @@ ClrDataMethodDefinition::GetRepresentativeEntryAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3514,7 +3512,7 @@ ClrDataMethodDefinition::HasClassOrMethodInstantiation(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3562,7 +3560,7 @@ ClrDataMethodDefinition::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3573,13 +3571,13 @@ ClrDataMethodDefinition::GetIlMethod(void)
 {
     if (m_methodDesc)
     {
-        if (!m_methodDesc->HasILHeader())
+        if (m_methodDesc->MayHaveILHeader())
         {
-            return NULL;
+            return m_methodDesc->GetILHeader();
         }
         else
         {
-            return m_methodDesc->GetILHeader();
+            return NULL;
         }
     }
     else
@@ -3747,7 +3745,7 @@ ClrDataMethodInstance::GetTypeInstance(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3777,7 +3775,7 @@ ClrDataMethodInstance::GetDefinition(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3815,7 +3813,7 @@ ClrDataMethodInstance::GetTokenAndScope(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3858,7 +3856,7 @@ ClrDataMethodInstance::GetName(
             status = S_OK;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3884,7 +3882,7 @@ ClrDataMethodInstance::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3915,7 +3913,7 @@ ClrDataMethodInstance::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3942,7 +3940,7 @@ ClrDataMethodInstance::GetEnCVersion(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3968,7 +3966,7 @@ ClrDataMethodInstance::GetNumTypeArguments(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3995,7 +3993,7 @@ ClrDataMethodInstance::GetTypeArgumentByIndex(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4068,7 +4066,7 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (mapAllocated)
     {
@@ -4150,7 +4148,7 @@ ClrDataMethodInstance::GetAddressRangesByILOffset(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (mapAllocated)
     {
@@ -4225,7 +4223,7 @@ ClrDataMethodInstance::GetILAddressMap(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (mapAllocated)
     {
@@ -4261,7 +4259,7 @@ ClrDataMethodInstance::StartEnumExtents(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4299,7 +4297,7 @@ ClrDataMethodInstance::EnumExtent(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4325,7 +4323,7 @@ ClrDataMethodInstance::EndEnumExtents(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4358,7 +4356,7 @@ ClrDataMethodInstance::GetRepresentativeEntryAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4406,7 +4404,7 @@ ClrDataMethodInstance::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4543,7 +4541,7 @@ ClrDataExceptionState::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4584,7 +4582,7 @@ ClrDataExceptionState::GetPrevious(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4641,7 +4639,7 @@ ClrDataExceptionState::GetManagedObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4667,7 +4665,7 @@ ClrDataExceptionState::GetBaseType(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4693,7 +4691,7 @@ ClrDataExceptionState::GetCode(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4754,7 +4752,7 @@ ClrDataExceptionState::GetString(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4827,7 +4825,7 @@ ClrDataExceptionState::IsSameState2(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4855,7 +4853,7 @@ ClrDataExceptionState::GetTask(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4903,7 +4901,7 @@ ClrDataExceptionState::Request(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4923,11 +4921,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
     ClrDataExStateType* exState;
     ClrDataExceptionState* exIf;
 
-#ifdef FEATURE_EH_FUNCLETS
     exState = thread->GetExceptionState()->m_pCurrentTracker;
-#else
-    exState = &(thread->GetExceptionState()->m_currentExInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
@@ -4961,11 +4955,7 @@ ClrDataExceptionState::GetCurrentExceptionRecord()
 {
     PTR_EXCEPTION_RECORD pExRecord = NULL;
 
-#ifdef FEATURE_EH_FUNCLETS
     pExRecord = m_exInfo->m_ptrs.ExceptionRecord;
-#else // FEATURE_EH_FUNCLETS
-    pExRecord = m_exInfo->m_pExceptionRecord;
-#endif // FEATURE_EH_FUNCLETS
 
     return pExRecord;
 }
@@ -4975,11 +4965,7 @@ ClrDataExceptionState::GetCurrentContextRecord()
 {
     PTR_CONTEXT pContext = NULL;
 
-#ifdef FEATURE_EH_FUNCLETS
     pContext = m_exInfo->m_ptrs.ContextRecord;
-#else // FEATURE_EH_FUNCLETS
-    pContext = m_exInfo->m_pContext;
-#endif // FEATURE_EH_FUNCLETS
 
     return pContext;
 }

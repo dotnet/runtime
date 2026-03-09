@@ -1,17 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public partial class DSAImportExport
     {
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
-
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void ExportAutoKey()
         {
             DSAParameters privateParams;
@@ -73,7 +71,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
         public static void Import_2048()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -143,13 +141,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             // Ensure that the key got created, and then Dispose it.
             using (key)
             {
-                try
-                {
-                    key.CreateSignature(hash);
-                }
-                catch (PlatformNotSupportedException) when (!SupportsKeyGeneration)
-                {
-                }
+                key.CreateSignature(hash); // Assert.NoThrow
             }
 
             Assert.Throws<ObjectDisposedException>(() => key.ExportParameters(false));

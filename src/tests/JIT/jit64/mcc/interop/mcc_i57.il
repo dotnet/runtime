@@ -5,12 +5,10 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
-.assembly 'mcc_i57' {}
-
-
-.namespace MCCTest
+.namespace mcc_i57
 {
   .class public MyClass
   {
@@ -91,7 +89,7 @@
       ldc.i8     12
       conv.i2
       ldloc.s    v12
-      call       valuetype MCCTest.VType5 MCCTest.MyClass::GetSum2(	unsigned int64,	valuetype MCCTest.VType5,
+      call       valuetype MCCTest.VType5 mcc_i57.MyClass::GetSum2(	unsigned int64,	valuetype MCCTest.VType5,
                                                                 float64,		valuetype MCCTest.VType5,
                                                                 float32,		valuetype MCCTest.VType5,
                                                                 int32,			valuetype MCCTest.VType5,
@@ -111,7 +109,7 @@
                                     float32, valuetype MCCTest.VType5, int64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
                                     float64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5, int16, valuetype MCCTest.VType5)
     {
-      jmp   valuetype MCCTest.VType5 MCCTest.MyClass::Sum(unsigned int64, valuetype MCCTest.VType5, float64,	valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
+      jmp   valuetype MCCTest.VType5 mcc_i57.MyClass::Sum(unsigned int64, valuetype MCCTest.VType5, float64,	valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
                                     int32, valuetype MCCTest.VType5, unsigned int16, valuetype MCCTest.VType5, unsigned int32, valuetype MCCTest.VType5,
                                     float32, valuetype MCCTest.VType5, int64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5,
                                     float64, valuetype MCCTest.VType5, float32, valuetype MCCTest.VType5, int16, valuetype MCCTest.VType5)
@@ -127,18 +125,16 @@
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      .entrypoint
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+            int32 (1) // TestPlatforms.Windows
+        }
       .maxstack  1
-      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
-      brtrue.s   DoTest
-      ldc.i4     100
-      ret
 
     DoTest:
-      call       int32 MCCTest.MyClass::Test()
+      call       int32 mcc_i57.MyClass::Test()
       ret
     }
 
@@ -146,16 +142,16 @@
     {
       .maxstack  64
       .locals init	(
-        [0] class MCCTest.MyClass me,
+        [0] class mcc_i57.MyClass me,
         [1] valuetype MCCTest.VType5 res,
         [2] int32 rc
       )
 
-      newobj     instance void MCCTest.MyClass::.ctor()
+      newobj     instance void mcc_i57.MyClass::.ctor()
       stloc.s    me
 
       ldloc.s    me
-      call   instance valuetype MCCTest.VType5 MCCTest.MyClass::GetSum()
+      call   instance valuetype MCCTest.VType5 mcc_i57.MyClass::GetSum()
       stloc.s    res
 
       // Check Result
@@ -170,4 +166,7 @@
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i57
+
+
+

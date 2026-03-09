@@ -389,6 +389,7 @@ class PEDecoder
 
     enum
     {
+        // [cDAC] [Loader]: Contract depends on the value of FLAG_MAPPED.
         FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
         FLAG_CONTENTS           = 0x02, // the file has contents
         FLAG_RELOCATED          = 0x04, // relocs have been applied
@@ -431,12 +432,19 @@ class MethodSectionIterator
     BYTE *m_current;
 
   public:
+    MethodSectionIterator() = default;
 
     //If code is a target pointer, then GetMethodCode and FindMethodCode return
     //target pointers.  codeTable may be a pointer of either type, since it is
     //converted internally into a host pointer.
-    MethodSectionIterator(const void *code, SIZE_T codeSize,
-                          const void *codeTable, SIZE_T codeTableSize);
+    MethodSectionIterator(void *code, SIZE_T codeSize,
+                          void *codeTable, SIZE_T codeTableSize);
+
+    MethodSectionIterator(MethodSectionIterator const&) = delete;
+    MethodSectionIterator& operator=(MethodSectionIterator const&) = delete;
+    MethodSectionIterator(MethodSectionIterator&&) = default;
+    MethodSectionIterator& operator=(MethodSectionIterator&&) = default;
+
     BOOL Next();
     BYTE *GetMethodCode() { return m_current; } // Get the start of method code of the current method in the iterator
 };

@@ -3,10 +3,10 @@
 
 namespace Mono.Linker
 {
-	public enum WarnVersion
-	{
-		ILLink0 = 0,
-		ILLink5 = 5,
-		Latest = 9999,
-	}
+    public enum WarnVersion
+    {
+        ILLink0 = 0,
+        ILLink5 = 5,
+        Latest = 9999,
+    }
 }

@@ -332,11 +332,10 @@ namespace System.Net.Http
 
         private static HttpMessageHandler CreateNativeHandler()
         {
-            return (HttpMessageHandler)CallNative();
+            return CallNative(null);
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetHttpMessageHandler")]
-            [return: UnsafeAccessorType(NativeHandlerType)]
-            static extern object CallNative();
+            static extern HttpMessageHandler CallNative([UnsafeAccessorType(GetHttpMessageHandlerType)] object? _);
         }
     }
 }

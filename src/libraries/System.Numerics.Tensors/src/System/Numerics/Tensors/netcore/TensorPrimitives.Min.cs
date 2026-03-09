@@ -3,7 +3,6 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 
 namespace System.Numerics.Tensors
 {
@@ -24,8 +23,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T Min<T>(ReadOnlySpan<T> x)
-            where T : INumber<T> =>
-            MinMaxCore<T, MinOperator<T>>(x);
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MinOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MinOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -49,8 +55,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Min<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MinOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -72,8 +85,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Min<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MinOperator<T>>(x, y, destination);
+        }
 
         /// <summary>T.Min(x, y)</summary>
         internal readonly struct MinOperator<T> : IAggregationOperator<T>
@@ -87,7 +107,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector128.ConditionalSelect(
@@ -104,7 +124,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector256.ConditionalSelect(
@@ -121,7 +141,7 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if !NET9_0_OR_GREATER
+#if !NET
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector512.ConditionalSelect(

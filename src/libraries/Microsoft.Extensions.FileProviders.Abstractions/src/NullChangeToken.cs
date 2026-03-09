@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.FileProviders
     /// <summary>
     /// An empty change token that doesn't raise any change callbacks.
     /// </summary>
-    public class NullChangeToken : IChangeToken
+    public sealed class NullChangeToken : IChangeToken
     {
         /// <summary>
         /// Gets a singleton instance of <see cref="NullChangeToken"/>.

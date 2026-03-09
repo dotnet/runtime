@@ -77,7 +77,7 @@ namespace Internal.TypeSystem
             {
                 _typicalMethodDef = typicalMethodDef;
                 _rdType = rdType;
-                _hashcode = TypeHashingAlgorithms.ComputeMethodHashCode(rdType.CanonicalType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(typicalMethodDef.Name));
+                _hashcode = rdType.CanonicalType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(typicalMethodDef.Name);
             }
 
             public MethodDesc TypicalMethodDef

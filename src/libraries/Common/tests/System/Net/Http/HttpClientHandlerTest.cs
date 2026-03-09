@@ -76,9 +76,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
+                Assert.False(handler.CheckCertificateRevocationList);
 
                 // Changes from .NET Framework.
-                Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
@@ -226,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWinHttpHandler))]
+        [ConditionalTheory(typeof(HttpClientHandlerTest), nameof(IsNotWinHttpHandler))]
         [InlineData("[::1234]", "[::1234]")]
         [InlineData("[::1234]:8080", "[::1234]:8080")]
         [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
@@ -1526,22 +1526,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external servers")]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29424")]
-        public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
-        {
-            using (HttpClient client = CreateHttpClient())
-            {
-                // international version of the Starbucks website
-                // punycode: xn--oy2b35ckwhba574atvuzkc.com
-                string server = "http://\uc2a4\ud0c0\ubc85\uc2a4\ucf54\ub9ac\uc544.com";
-                using (HttpResponseMessage response = await client.GetAsync(server))
-                {
-                    response.EnsureSuccessStatusCode();
-                }
-            }
-        }
 
         #region Post Methods Tests
 
@@ -2136,7 +2120,7 @@ namespace System.Net.Http.Functional.Tests
         // HttpRequestMessage ctor guards against such Uris before .NET 6. We allow passing relative/unknown Uris to BrowserHttpHandler.
         public static bool InvalidRequestUriTest_IsSupported => PlatformDetection.IsNotNetFramework && PlatformDetection.IsNotBrowser;
 
-        [ConditionalFact(nameof(InvalidRequestUriTest_IsSupported))]
+        [ConditionalFact(typeof(HttpClientHandlerTest), nameof(InvalidRequestUriTest_IsSupported))]
         public async Task SendAsync_InvalidRequestUri_Throws()
         {
             using var invoker = new HttpMessageInvoker(CreateHttpClientHandler());
@@ -2149,6 +2133,228 @@ namespace System.Net.Http.Functional.Tests
 
             request = new HttpRequestMessage(HttpMethod.Get, new Uri("foo://foo.bar"));
             await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData('\r', HeaderType.Request)]
+        [InlineData('\n', HeaderType.Request)]
+        [InlineData('\0', HeaderType.Request)]
+        [InlineData('\u0100', HeaderType.Request)]
+        [InlineData('\u0080', HeaderType.Request)]
+        [InlineData('\u009F', HeaderType.Request)]
+        [InlineData('\r', HeaderType.Content)]
+        [InlineData('\n', HeaderType.Content)]
+        [InlineData('\0', HeaderType.Content)]
+        [InlineData('\u0100', HeaderType.Content)]
+        [InlineData('\u0080', HeaderType.Content)]
+        [InlineData('\u009F', HeaderType.Content)]
+        [InlineData('\r', HeaderType.Cookie)]
+        [InlineData('\n', HeaderType.Cookie)]
+        [InlineData('\0', HeaderType.Cookie)]
+        [InlineData('\u0100', HeaderType.Cookie)]
+        [InlineData('\u0080', HeaderType.Cookie)]
+        [InlineData('\u009F', HeaderType.Cookie)]
+        public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
+        {
+            TaskCompletionSource<bool> acceptConnection = new TaskCompletionSource<bool>();
+            SemaphoreSlim clientFinished = new SemaphoreSlim(0);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                var handler = CreateHttpClientHandler();
+
+                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                request.Version = UseVersion;
+                try
+                {
+                    switch (headerType)
+                    {
+                        case HeaderType.Request:
+                            request.Headers.Add("Custom-Header", $"HeaderValue{dangerousChar}WithControlChar");
+                            break;
+                        case HeaderType.Content:
+                            request.Content = new StringContent("test content");
+                            request.Content.Headers.Add("Custom-Content-Header", $"ContentValue{dangerousChar}WithControlChar");
+                            break;
+                        case HeaderType.Cookie:
+#if WINHTTPHANDLER_TEST
+                    handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+#endif
+                            handler.CookieContainer = new CookieContainer();
+                            handler.CookieContainer.Add(uri, new Cookie("CustomCookie", $"Value{dangerousChar}WithControlChar"));
+                            break;
+                    }
+                }
+                catch (FormatException fex) when (fex.Message.Contains("New-line or NUL") && dangerousChar != '\u0100')
+                {
+                    acceptConnection.SetResult(false);
+                    return;
+                }
+                catch (CookieException) when (dangerousChar != '\u0100')
+                {
+                    acceptConnection.SetResult(false);
+                    return;
+                }
+
+                using (var client = new HttpClient(handler))
+                {
+                    // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
+                    acceptConnection.SetResult(!IsWinHttpHandler);
+                    var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    clientFinished.Release();
+                    var hrex = Assert.IsType<HttpRequestException>(ex);
+                    if (IsWinHttpHandler)
+                    {
+                        Assert.Contains("Error 87", hrex.InnerException.Message);
+                    }
+                    else
+                    {
+                        var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
+                        Assert.Contains("ASCII", message);
+                    }
+                }
+            }, async server =>
+            {
+                if (await acceptConnection.Task)
+                {
+                    await IgnoreExceptions(() => server.AcceptConnectionAsync(_ => clientFinished.WaitAsync(TestHelper.PassingTestTimeout)));
+                }
+            });
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData('\u0001', HeaderType.Request)]
+        [InlineData('\u0007', HeaderType.Request)]
+        [InlineData('\u007F', HeaderType.Request)]
+        [InlineData('\u00A0', HeaderType.Request)]
+        [InlineData('\u00A9', HeaderType.Request)]
+        [InlineData('\u00FF', HeaderType.Request)]
+        [InlineData('\u0001', HeaderType.Content)]
+        [InlineData('\u0007', HeaderType.Content)]
+        [InlineData('\u007F', HeaderType.Content)]
+        [InlineData('\u00A0', HeaderType.Content)]
+        [InlineData('\u00A9', HeaderType.Content)]
+        [InlineData('\u00FF', HeaderType.Content)]
+        [InlineData('\u0001', HeaderType.Cookie)]
+        [InlineData('\u0007', HeaderType.Cookie)]
+        [InlineData('\u007F', HeaderType.Cookie)]
+        [InlineData('\u00A0', HeaderType.Cookie)]
+        [InlineData('\u00A9', HeaderType.Cookie)]
+        [InlineData('\u00FF', HeaderType.Cookie)]
+        public async Task SendAsync_RequestWithLatin1HeaderValue_Succeeds(char safeChar, HeaderType headerType)
+        {
+            if (!IsWinHttpHandler && safeChar > 0x7F)
+            {
+                return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
+            }
+            var headerValue = $"HeaderValue{safeChar}WithSafeChar";
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    var handler = CreateHttpClientHandler();
+                    using (var client = new HttpClient(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        request.Version = UseVersion;
+                        switch (headerType)
+                        {
+                            case HeaderType.Request:
+                                request.Headers.Add("Custom-Header", headerValue);
+                                break;
+                            case HeaderType.Content:
+                                request.Content = new StringContent("test content");
+                                request.Content.Headers.Add("Custom-Content-Header", headerValue);
+                                break;
+                            case HeaderType.Cookie:
+#if WINHTTPHANDLER_TEST
+                                handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+#endif
+                                handler.CookieContainer = new CookieContainer();
+                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
+                                break;
+                        }
+
+                        using (HttpResponseMessage response = await client.SendAsync(request))
+                        {
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        }
+                    }
+                }, async server =>
+                {
+                    var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    switch (headerType)
+                    {
+                        case HeaderType.Request:
+                        {
+                            var headerLine = DecodeHeaderValue("Custom-Header");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
+                        case HeaderType.Content:
+                        {
+                            var headerLine = DecodeHeaderValue("Custom-Content-Header");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
+                        case HeaderType.Cookie:
+                        {
+                            var headerLine = DecodeHeaderValue("cookie");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
+                    }
+
+                    string DecodeHeaderValue(string headerName)
+                    {
+                        var encoding = Encoding.GetEncoding("ISO-8859-1");
+                        HttpHeaderData headerData = data.GetSingleHeaderData(headerName);
+                        ReadOnlySpan<byte> raw = headerData.Raw.AsSpan().Slice(headerData.RawValueStart);
+                        if (headerData.HuffmanEncoded)
+                        {
+                            byte[] buffer = new byte[raw.Length * 2];
+                            int length = HuffmanDecoder.Decode(raw, buffer);
+                            raw = buffer.AsSpan().Slice(0, length);
+                        }
+                        return encoding.GetString(raw.ToArray());
+                    }
+                });
+        }
+
+        public enum HeaderType
+        {
+            Request,
+            Content,
+            Cookie
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task LargeUriAndHeaders_Works()
+        {
+            int length = IsWinHttpHandler ? 65_000 : 10_000_000;
+
+            string longPath = "/" + new string('X', length);
+            string longHeaderName = new string('Y', length);
+            string longHeaderValue = new string('Z', length);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, new UriBuilder(uri) { Path = longPath }.Uri, UseVersion);
+                    request.Headers.Add(longHeaderName, longHeaderValue);
+
+                    await client.SendAsync(request);
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+
+                    Assert.Equal(longPath, requestData.Path);
+                    Assert.Equal(longHeaderValue, requestData.GetSingleHeaderValue(longHeaderName));
+                });
         }
     }
 }

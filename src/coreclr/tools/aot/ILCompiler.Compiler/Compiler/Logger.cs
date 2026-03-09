@@ -37,9 +37,11 @@ namespace ILCompiler
         private readonly bool _treatWarningsAsErrors;
         private readonly Dictionary<int, bool> _warningsAsErrors;
 
-        public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), null, false);
+        public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), null, false, true);
 
         public bool IsVerbose { get; }
+
+        public bool HasLoggedErrors { get; private set; }
 
         public Logger(
             ILogWriter writer,
@@ -51,7 +53,8 @@ namespace ILCompiler
             IEnumerable<string> singleWarnDisabledModules,
             IEnumerable<string> suppressedCategories,
             bool treatWarningsAsErrors,
-            IDictionary<int, bool> warningsAsErrors)
+            IDictionary<int, bool> warningsAsErrors,
+            bool disableGeneratedCodeHeuristics)
         {
             _logWriter = writer;
             IsVerbose = isVerbose;
@@ -62,22 +65,22 @@ namespace ILCompiler
             _suppressedCategories = new HashSet<string>(suppressedCategories, StringComparer.Ordinal);
             _treatWarningsAsErrors = treatWarningsAsErrors;
             _warningsAsErrors = new Dictionary<int, bool>(warningsAsErrors);
-            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
+            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this, disableGeneratedCodeHeuristics);
             _unconditionalSuppressMessageAttributeState = new UnconditionalSuppressMessageAttributeState(_compilerGeneratedState, this);
         }
 
-        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories, bool treatWarningsAsErrors, IDictionary<int, bool> warningsAsErrors)
-            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules, suppressedCategories, treatWarningsAsErrors, warningsAsErrors)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories, bool treatWarningsAsErrors, IDictionary<int, bool> warningsAsErrors, bool disableGeneratedCodeHeuristics)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules, suppressedCategories, treatWarningsAsErrors, warningsAsErrors, disableGeneratedCodeHeuristics)
         {
         }
 
-        public Logger(ILogWriter writer, ILProvider ilProvider, bool isVerbose)
-            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), false, new Dictionary<int, bool>())
+        public Logger(ILogWriter writer, ILProvider ilProvider, bool isVerbose, bool disableGeneratedCodeHeuristics)
+            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), false, new Dictionary<int, bool>(), disableGeneratedCodeHeuristics)
         {
         }
 
-        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose)
-            : this(new TextLogWriter(writer), ilProvider, isVerbose)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, bool disableGeneratedCodeHeuristics)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose, disableGeneratedCodeHeuristics)
         {
         }
 
@@ -92,14 +95,22 @@ namespace ILCompiler
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, origin, subcategory);
             if (warning.HasValue)
+            {
+                if (warning.Value.Category == MessageCategory.WarningAsError)
+                    HasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
+            }
         }
 
         public void LogWarning(MessageOrigin origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, origin, id, args);
             if (warning.HasValue)
+            {
+                if (warning.Value.Category == MessageCategory.WarningAsError)
+                    HasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
+            }
         }
 
         public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
@@ -136,14 +147,20 @@ namespace ILCompiler
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
             if (error.HasValue)
+            {
+                HasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
+            }
         }
 
         public void LogError(MessageOrigin? origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
             if (error.HasValue)
+            {
+                HasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
+            }
         }
 
         public void LogError(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>

@@ -8,6 +8,7 @@
 
 #include "ep-rt.h"
 #include <minipal/utf8.h>
+#include <stdarg.h> // va_list, va_start, va_end
 
 static
 ep_char16_t *
@@ -131,6 +132,42 @@ ep_rt_utf16le_to_utf8_string_n (
 		return NULL;
 
 	return ep_utf16_to_utf8_string_impl(str, len, /*treat_as_le*/ true);
+}
+
+ep_char8_t *
+ep_rt_utf8_string_printf_alloc (const ep_char8_t *format, ...)
+{
+	if (!format)
+		return NULL;
+
+	va_list args;
+	va_start (args, format);
+
+	va_list args_copy;
+	va_copy (args_copy, args);
+	int len = vsnprintf (NULL, 0, format, args_copy);
+	va_end (args_copy);
+	if (len < 0) {
+		va_end (args);
+		return NULL;
+	}
+
+	size_t size = (size_t)len + 1;
+	ep_char8_t *buffer = ep_rt_utf8_string_alloc (size);
+	if (!buffer) {
+		va_end (args);
+		return NULL;
+	}
+
+	int written = vsnprintf (buffer, size, format, args);
+	va_end (args);
+
+	if (written < 0 || (size_t)written >= size) {
+		ep_rt_utf8_string_free (buffer);
+		return NULL;
+	}
+
+	return buffer;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

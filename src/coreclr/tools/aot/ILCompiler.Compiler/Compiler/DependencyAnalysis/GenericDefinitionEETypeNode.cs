@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             // Generic array enumerators use special variance rules recognized by the runtime
             // Runtime casting logic relies on all interface types implemented on arrays
             // to have the variant flag set.
-            if (_type == factory.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+            if (_type == factory.TypeSystemContext.ArrayOfTEnumeratorType || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
 
             if (_type.IsByRefLike)
@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
-            return factory.ConstructedTypeSymbol(_type).Marked;
+            return factory.MetadataTypeSymbol(_type).Marked;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
-            return factory.SerializedConstructedRuntimeTypeObject(_type);
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " reflection visible";

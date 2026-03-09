@@ -431,6 +431,12 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
     callConv = *pSig++;
     pSigBuilder->AppendData(callConv);
 
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        unsigned genericArgCount = *pSig++;
+        pSigBuilder->AppendData(genericArgCount);
+    }
+
     if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_DEFAULT) {
         // arg count
         argCount = *pSig++;
@@ -440,12 +446,6 @@ void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigB
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
             THROW_BAD_FORMAT(BFA_BAD_SIGNATURE, (ModuleBase*)NULL);
         argCount = 0;
-    }
-
-    if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
-    {
-        unsigned genericArgCount = *pSig++;
-        pSigBuilder->AppendData(genericArgCount);
     }
 
     // <= because we want to include the return value or the field
@@ -1045,7 +1045,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1068,7 +1068,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1091,7 +1091,7 @@ void CoreLibBinder::CheckExtended()
         {
             fError = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (fError)
         {
@@ -1150,7 +1150,7 @@ void CoreLibBinder::CheckExtended()
             }
             minipal_log_print_error("CheckExtended: Unable to load class from System.Private.CoreLib: %s.%s\n", pszNameSpace, pszClassName);
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         MethodDesc *pMD = MemberLoader::FindMethod(type.AsMethodTable(), td);
         _ASSERTE(pMD);
@@ -1170,10 +1170,10 @@ void CoreLibBinder::CheckExtended()
             }
         }
         else
-        if (pMD->IsNDirect())
+        if (pMD->IsPInvoke())
         {
-            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            NDirect::PopulateNDirectMethodDesc(pNMD);
+            PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
+            PInvoke::PopulatePInvokeMethodDesc(pNMD);
 
             if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
             {

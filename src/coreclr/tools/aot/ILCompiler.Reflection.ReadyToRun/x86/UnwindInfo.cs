@@ -14,10 +14,10 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
         public UnwindInfo() { }
 
-        public UnwindInfo(byte[] image, int offset)
+        public UnwindInfo(NativeReader imageReader, int offset)
         {
             int startOffset = offset;
-            FunctionLength = NativeReader.DecodeUnsignedGc(image, ref offset);
+            FunctionLength = imageReader.DecodeUnsignedGc(ref offset);
             Size = offset - startOffset;
         }
 

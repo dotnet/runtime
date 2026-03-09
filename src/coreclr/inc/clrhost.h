@@ -22,7 +22,6 @@ using std::nothrow;
 #include "staticcontract.h"
 #include "predeftlsslot.h"
 #include "safemath.h"
-#include "debugreturn.h"
 #include "yieldprocessornormalized.h"
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)

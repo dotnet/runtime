@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.AMD64;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -30,7 +31,7 @@ internal struct AMD64Context : IPlatformContext
     }
 
     public readonly uint Size => 0x4d0;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public TargetPointer StackPointer
     {
@@ -50,7 +51,8 @@ internal struct AMD64Context : IPlatformContext
 
     public void Unwind(Target target)
     {
-        Unwinder.AMD64Unwind(ref this, target);
+        AMD64Unwinder unwinder = new(target);
+        unwinder.Unwind(ref this);
     }
 
     [FieldOffset(0x0)]

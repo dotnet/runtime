@@ -5,15 +5,15 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Class)]
-	public class IgnoreTestCaseAttribute : Attribute
-	{
+    [AttributeUsage(AttributeTargets.Class)]
+    public class IgnoreTestCaseAttribute : Attribute
+    {
 
-		public IgnoreTestCaseAttribute (string reason)
-		{
-			ArgumentNullException.ThrowIfNull (reason);
-		}
+        public IgnoreTestCaseAttribute(string reason)
+        {
+            ArgumentNullException.ThrowIfNull(reason);
+        }
 
-		public Tool IgnoredBy { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
-	}
+        public Tool IgnoredBy { get; set; } = Tool.All;
+    }
 }

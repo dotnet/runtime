@@ -253,6 +253,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, UInt128 expected)
         {
             UInt128 result;
@@ -294,8 +295,7 @@ namespace System.Tests
             foreach (object[] objs in Int128Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
-                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                    (!BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
                      bi <= UInt128.MaxValue))
                 {
                     continue;
@@ -388,6 +388,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, UInt128 expected)
         {
             UInt128 result;
@@ -429,6 +430,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, UInt128 expected)
         {
             UInt128 result;
@@ -496,6 +498,48 @@ namespace System.Tests
 
             UInt128 b = (UInt128Tests_GenericMath.Int128MaxValue - 10u) * (UInt128)(Int128)(-100);
             Assert.Equal(b, 1100u);
+        }
+
+        public static IEnumerable<object[]> BigMul_TestData()
+        {
+            yield return new object[] { (UInt128)0, (UInt128)0, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)0, (UInt128)1, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)1, (UInt128)0, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)2, (UInt128)3, "0000000000000000000000000000000000000000000000000000000000000006" };
+            yield return new object[] { UInt128.MaxValue, (UInt128)2, "00000000000000000000000000000001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE" };
+            yield return new object[] { UInt128.MaxValue, (UInt128)1, "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" };
+            yield return new object[] { UInt128.MaxValue, UInt128.MaxValue, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000000000000000000000000000001" };
+            yield return new object[] { UInt128.MaxValue, (UInt128)3, "00000000000000000000000000000002FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD" };
+            yield return new object[] { new UInt128(0xE8FAF08929B46BB5, 0x26B442D59782BA17), new UInt128(0x26B442D59782BA17, 0xE8FAF08929B46BB5), "23394CF891529663F897F2180AA9D1F6EA183EE8D7CCD26D1EB6255F4A612F43" };
+        }
+
+        [Theory]
+        [MemberData(nameof(BigMul_TestData))]
+        public static void BigMul(UInt128 a, UInt128 b, string result)
+        {
+            UInt128 upper = UInt128.BigMul(a, b, out UInt128 lower);
+            Assert.Equal(result, $"{upper:X32}{lower:X32}");
+        }
+
+        [Fact]
+        public static void ExplicitConversionToDouble_LargeValue()
+        {
+            // Value: 309485009821345068741558271 (approx 2^88)
+            // This tests the path for values < 2^104 (after fix) or >= 2^88 (before fix)
+            UInt128 value = UInt128.Parse("309485009821345068741558271");
+            double d = (double)value;
+            Assert.Equal(309485009821345068741558271.0, d);
+
+            // Value >= 2^104
+            // 2^104 = 20282409603651670423947251286016
+            // The value is constructed as 2^104 + 2^24 + 1.
+            // This tests a value with a 1 at bit 104, a 1 at bit 24, and a 1 at bit 0.
+            // The lower bits (24 and 0) should contribute to the sticky bit calculation.
+            UInt128 value2 = new(0x0100_0000_0000, 0x0100_0001);
+            double d2 = (double)value2;
+            // Expected: 2^104. 2^24 is far below ULP (2^52).
+            double expected2 = 20282409603651670423947251286016.0;
+            Assert.Equal(expected2, d2);
         }
     }
 }

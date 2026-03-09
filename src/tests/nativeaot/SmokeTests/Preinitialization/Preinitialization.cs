@@ -89,9 +89,14 @@ class TestHardwareIntrinsics
         public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
     }
 
-    class Complex
+    class Simple3
     {
         public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsX86SerializeSupported = X86Serialize.IsSupported;
     }
 
     public static void Run()
@@ -102,11 +107,14 @@ class TestHardwareIntrinsics
         Assert.IsPreinitialized(typeof(Simple2));
         Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
 
+        Assert.IsPreinitialized(typeof(Simple3));
+        Assert.AreEqual(Popcnt.IsSupported, Simple3.IsPopcntSupported);
+
         if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
             Assert.IsLazyInitialized(typeof(Complex));
         else
             Assert.IsPreinitialized(typeof(Complex));
-        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
+        Assert.AreEqual(X86Serialize.IsSupported, Complex.IsX86SerializeSupported);
     }
 }
 
@@ -813,6 +821,7 @@ class TestSwitch
         public static int CaseMinus1 = Switch(-1);
         public static int Case0 = Switch(0);
         public static int Case6 = Switch(6);
+        public static int Case7 = Switch(7); // Boundary: value == case count (tests fix for https://github.com/dotnet/runtime/issues/123833)
         public static int Case100 = Switch(100);
 
         private static int Switch(int x)
@@ -837,6 +846,7 @@ class TestSwitch
         Assert.AreEqual(Switcher.CaseMinus1, 100000);
         Assert.AreEqual(Switcher.Case0, 100);
         Assert.AreEqual(Switcher.Case6, 700);
+        Assert.AreEqual(Switcher.Case7, 100000);
         Assert.AreEqual(Switcher.Case100, 100000);
     }
 }

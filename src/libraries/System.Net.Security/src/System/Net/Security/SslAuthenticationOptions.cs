@@ -9,15 +9,11 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    internal sealed class SslAuthenticationOptions
+    internal sealed class SslAuthenticationOptions : IDisposable
     {
         private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
 
-        internal static readonly X509RevocationMode DefaultRevocationMode =
-            AppContextSwitchHelper.GetBooleanConfig(
-                "System.Net.Security.NoRevocationCheckByDefault",
-                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT")
-                ? X509RevocationMode.NoCheck : X509RevocationMode.Online;
+        internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
 
         internal SslAuthenticationOptions()
         {
@@ -153,7 +149,7 @@ namespace System.Net.Security
                     bool ocspFetch = false;
                     _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: !ocspFetch);
+                    SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
                 }
                 else
                 {
@@ -165,7 +161,7 @@ namespace System.Net.Security
                         throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                     }
 
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
+                    SetCertificateContextFromCert(certificateWithKey);
                 }
             }
 
@@ -186,13 +182,17 @@ namespace System.Net.Security
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2
-                // On Windows10 SSL2 flag has no effect but on earlier versions of the OS
-                // opting into both SSL2 and >= TLS1.2 causes negotiation to always fail.
                 protocols &= ~SslProtocols.Ssl2;
 #pragma warning restore 0618
             }
 
             return protocols;
+        }
+
+        internal void SetCertificateContextFromCert(X509Certificate2 certificate, bool? noOcspFetch = null)
+        {
+            CertificateContext = SslStreamCertificateContext.Create(certificate, null, offline: false, null, noOcspFetch ?? true);
+            OwnsCertificateContext = true;
         }
 
         internal bool AllowRenegotiation { get; set; }
@@ -201,7 +201,10 @@ namespace System.Net.Security
         internal List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
         internal bool IsServer { get; set; }
         internal bool IsClient => !IsServer;
-        internal SslStreamCertificateContext? CertificateContext { get; set; }
+        internal SslStreamCertificateContext? CertificateContext { get; private set; }
+        // If true, the certificate context was created by the SslStream and
+        // certificates inside should be disposed when no longer needed.
+        internal bool OwnsCertificateContext { get; private set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
         internal EncryptionPolicy EncryptionPolicy { get; set; }
@@ -225,5 +228,17 @@ namespace System.Net.Security
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
         internal SslStream? SslStream { get; set; }
 #endif
+
+        public void Dispose()
+        {
+            if (OwnsCertificateContext && CertificateContext != null)
+            {
+                CertificateContext.ReleaseResources();
+            }
+
+#if TARGET_ANDROID
+            SslStreamProxy?.Dispose();
+#endif
+        }
     }
 }

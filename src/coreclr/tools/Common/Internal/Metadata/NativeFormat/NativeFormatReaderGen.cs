@@ -109,7 +109,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ArraySignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -188,7 +190,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ByReferenceSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -266,7 +270,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantBooleanArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -344,7 +350,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantBooleanValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -422,7 +430,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantByteArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -500,7 +510,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantByteValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -578,7 +590,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantCharArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -656,7 +670,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantCharValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -734,7 +750,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantDoubleArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -812,7 +830,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantDoubleValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -894,7 +914,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantEnumArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -976,7 +998,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantEnumValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1054,7 +1078,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantHandleArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1132,7 +1158,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt16ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1210,7 +1238,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt16ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1288,7 +1318,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt32ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1366,7 +1398,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt32ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1444,7 +1478,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt64ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1522,7 +1558,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantInt64ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1596,7 +1634,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantReferenceValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1674,7 +1714,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSByteArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1752,7 +1794,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSByteValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1830,7 +1874,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSingleArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1908,7 +1954,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantSingleValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -1987,7 +2035,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantStringArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2067,7 +2117,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantStringValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2145,7 +2197,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt16ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2223,7 +2277,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt16ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2301,7 +2357,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt32ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2379,7 +2437,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt32ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2457,7 +2517,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt64ArrayHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2535,7 +2597,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ConstantUInt64ValueHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2623,7 +2687,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // CustomAttributeHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2718,7 +2784,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // EventHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2817,7 +2885,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // FieldHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2896,7 +2966,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // FieldSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -2974,7 +3046,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // FunctionPointerSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3073,7 +3147,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // GenericParameterHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3161,7 +3237,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MemberReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3263,7 +3341,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3347,7 +3427,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodInstantiationHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3429,7 +3511,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodSemanticsHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3526,7 +3610,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3604,7 +3690,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // MethodTypeVariableSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3692,7 +3780,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ModifiedTypeHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3784,7 +3874,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // NamedArgumentHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3879,7 +3971,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // NamespaceDefinitionHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3962,7 +4056,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // NamespaceReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4057,7 +4153,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ParameterHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4136,7 +4234,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // PointerSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4235,7 +4335,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // PropertyHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4323,7 +4425,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // PropertySignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4405,7 +4509,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // QualifiedFieldHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4487,7 +4593,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // QualifiedMethodHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4566,7 +4674,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // SZArraySignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4704,7 +4814,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ScopeDefinitionHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4810,7 +4922,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // ScopeReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -4946,7 +5060,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeDefinitionHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5032,7 +5148,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeForwarderHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5116,7 +5234,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeInstantiationSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5199,7 +5319,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeReferenceHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5278,7 +5400,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeSpecificationHandle
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -5356,7 +5480,9 @@ namespace Internal.Metadata.NativeFormat
                 throw new ArgumentException();
         } // _Validate
 
+        #if DEBUG
         public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
     } // TypeVariableSignatureHandle
 
 #if SYSTEM_PRIVATE_CORELIB

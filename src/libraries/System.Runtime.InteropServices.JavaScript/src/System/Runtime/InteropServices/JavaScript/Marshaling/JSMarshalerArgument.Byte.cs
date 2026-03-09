@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public void ToManaged(out byte[]? value)
+        public unsafe void ToManaged(out byte[]? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             value = new byte[slot.Length];
             Marshal.Copy(slot.IntPtrValue, value, 0, slot.Length);
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public void ToJS(byte[]? value)
+        public unsafe void ToJS(byte[]? value)
         {
             if (value == null)
             {
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             slot.Length = value.Length;
             slot.Type = MarshalerType.Array;
-            slot.IntPtrValue = Marshal.AllocHGlobal(value.Length * sizeof(byte));
+            slot.IntPtrValue = (IntPtr)NativeMemory.Alloc((nuint)(value.Length * sizeof(byte)));
             slot.ElementType = MarshalerType.Byte;
             Marshal.Copy(value, 0, slot.IntPtrValue, slot.Length);
         }

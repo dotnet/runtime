@@ -26,7 +26,9 @@ namespace ComWrappersTests.GlobalInstance
             Assert.False(objWrapper is FakeWrapper, $"ComWrappers instance should not have been called");
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
+        [Xunit.SkipOnCoreClrAttribute("Depends on windows-only COM->CLR transitions flowing hidden parameter", RuntimeTestModes.InterpreterActive)]
         public static int TestEntryPoint()
         {
             try

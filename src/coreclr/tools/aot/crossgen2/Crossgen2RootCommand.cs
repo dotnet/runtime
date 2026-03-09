@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
@@ -29,6 +30,8 @@ namespace ILCompiler
             new("--mibc", "-m") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.MibcFiles };
         public Option<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = SR.OutputFilePath };
+        public Option<ReadyToRunContainerFormat> OutputFormat { get; } =
+            new("--obj-format", "-f") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
         public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
         public Option<bool> Optimize { get; } =
@@ -39,7 +42,7 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
@@ -160,6 +163,7 @@ namespace ILCompiler
             Options.Add(MaxVectorTBitWidth);
             Options.Add(MibcFilePaths);
             Options.Add(OutputFilePath);
+            Options.Add(OutputFormat);
             Options.Add(CompositeRootPath);
             Options.Add(Optimize);
             Options.Add(OptimizeDisabled);
@@ -292,8 +296,8 @@ namespace ILCompiler
             Console.WriteLine(SR.DashDashHelp);
             Console.WriteLine();
 
-            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+            string[] ValidArchitectures = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+            string[] ValidOS = ["windows", "linux", "osx", "ios", "iossimulator", "maccatalyst", "browser"];
 
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
             Console.WriteLine();
@@ -314,7 +318,7 @@ namespace ILCompiler
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
-                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch).DistinctBy((instructionSet) => instructionSet.Name, StringComparer.OrdinalIgnoreCase))
                 {
                     // Only instruction sets with are specifiable should be printed to the help text
                     if (instructionSet.Specifiable)
@@ -400,6 +404,20 @@ namespace ILCompiler
                 "defaultsort" => FileLayoutAlgorithm.DefaultSort,
                 "methodorder" => FileLayoutAlgorithm.MethodOrder,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
+            };
+        }
+
+        private static ReadyToRunContainerFormat MakeOutputFormat(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return ReadyToRunContainerFormat.PE;
+
+            return result.Tokens[0].Value.ToLowerInvariant() switch
+            {
+                "pe" => ReadyToRunContainerFormat.PE,
+                "macho" => ReadyToRunContainerFormat.MachO,
+                "wasm" => ReadyToRunContainerFormat.Wasm,
+                _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
         }
 

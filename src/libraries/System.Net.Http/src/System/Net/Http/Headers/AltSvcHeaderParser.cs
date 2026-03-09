@@ -279,7 +279,7 @@ namespace System.Net.Http.Headers
             }
 
             result = builder.ToString();
-            return !HttpRuleParser.ContainsNewLine(result);
+            return !HttpRuleParser.ContainsNewLineOrNull(result);
         }
 
         /// <summary>

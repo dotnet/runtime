@@ -4,6 +4,7 @@
 #include "common.h"
 #include "daccess.h"
 #include "rhassert.h"
+#include <minipal/utils.h>
 
 #define UNW_STEP_SUCCESS 1
 #define UNW_STEP_END     0
@@ -25,6 +26,15 @@
 #endif
 #include <external/llvm-libunwind/src/UnwindCursor.hpp>
 
+template <class To, class From>
+inline To unwindhelpers_bitcast(From from)
+{
+    static_assert(sizeof(From)==sizeof(To), "Sizes must match");
+
+    To to;
+    memcpy(&to, &from, sizeof(To));
+    return to;
+}
 
 #if defined(TARGET_AMD64)
 using libunwind::Registers_x86_64;
@@ -340,13 +350,13 @@ struct Registers_REGDISPLAY : REGDISPLAY
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) const;
-    bool        validVectorRegister(int num) const { return false; };
+    bool        validVectorRegister(int num) const { return false; }
 
     uint32_t    getRegister(int num) const;
     void        setRegister(int num, uint32_t value, uint32_t location);
 
-    double      getFloatRegister(int num) const;
-    void        setFloatRegister(int num, double value);
+    unw_fpreg_t getFloatRegister(int num) const;
+    void        setFloatRegister(int num, unw_fpreg_t value);
 
     libunwind::v128    getVectorRegister(int num) const { abort(); }
     void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
@@ -398,7 +408,7 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
 }
 
 inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
-    return num >= UNW_ARM_D0 && num <= UNW_ARM_D31;
+    return num >= UNW_ARM_D8 && num <= UNW_ARM_D15;
 }
 
 inline uint32_t Registers_REGDISPLAY::getRegister(int regNum) const {
@@ -507,22 +517,16 @@ void Registers_REGDISPLAY::setRegister(int num, uint32_t value, uint32_t locatio
     }
 }
 
-double Registers_REGDISPLAY::getFloatRegister(int num) const
+unw_fpreg_t Registers_REGDISPLAY::getFloatRegister(int num) const
 {
-    if (num >= UNW_ARM_D8 && num <= UNW_ARM_D15)
-    {
-        return D[num - UNW_ARM_D8];
-    }
-
-    PORTABILITY_ASSERT("unsupported arm register");
+    assert(validFloatRegister(num));
+    return unwindhelpers_bitcast<unw_fpreg_t>(D[num - UNW_ARM_D8]);
 }
 
-void Registers_REGDISPLAY::setFloatRegister(int num, double value)
+void Registers_REGDISPLAY::setFloatRegister(int num, unw_fpreg_t value)
 {
-    if (num >= UNW_ARM_D8 && num <= UNW_ARM_D15)
-    {
-        D[num - UNW_ARM_D8] = value;
-    }
+    assert(validFloatRegister(num));
+    D[num - UNW_ARM_D8] = unwindhelpers_bitcast<uint64_t>(value);
 }
 
 #endif // TARGET_ARM
@@ -536,17 +540,17 @@ struct Registers_REGDISPLAY : REGDISPLAY
     static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64; }
 
     bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) { return false; };
-    bool        validVectorRegister(int num) const;
+    bool        validFloatRegister(int num) const;
+    bool        validVectorRegister(int num) const { return false; }
 
     uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
 
-    double      getFloatRegister(int num) const { abort(); }
-    void        setFloatRegister(int num, double value) { abort(); }
+    double      getFloatRegister(int num) const;
+    void        setFloatRegister(int num, double value);
 
-    libunwind::v128    getVectorRegister(int num) const;
-    void        setVectorRegister(int num, libunwind::v128 value);
+    libunwind::v128    getVectorRegister(int num) const { abort(); }
+    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
 
     uint64_t    getSP() const         { return SP; }
     void        setSP(uint64_t value, uint64_t location) { SP = value; }
@@ -575,12 +579,9 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
     return false;
 }
 
-bool Registers_REGDISPLAY::validVectorRegister(int num) const
+bool Registers_REGDISPLAY::validFloatRegister(int num) const
 {
-    if (num >= UNW_ARM64_D8 && num <= UNW_ARM64_D15)
-        return true;
-
-    return false;
+    return num >= UNW_ARM64_D8 && num <= UNW_ARM64_D15;
 }
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
@@ -777,35 +778,16 @@ void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t locatio
     }
 }
 
-libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
+double Registers_REGDISPLAY::getFloatRegister(int num) const
 {
-    num -= UNW_ARM64_D8;
-
-    if (num < 0 || (size_t)num >= sizeof(D) / sizeof(uint64_t))
-    {
-        PORTABILITY_ASSERT("unsupported arm64 vector register");
-    }
-
-    libunwind::v128 result;
-
-    result.vec[0] = 0;
-    result.vec[1] = 0;
-    result.vec[2] = D[num] >> 32;
-    result.vec[3] = D[num] & 0xFFFFFFFF;
-
-    return result;
+    assert(validFloatRegister(num));
+    return unwindhelpers_bitcast<double>(D[num - UNW_ARM64_D8]);
 }
 
-void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
+void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 {
-    num -= UNW_ARM64_D8;
-
-    if (num < 0 || (size_t)num >= sizeof(D) / sizeof(uint64_t))
-    {
-        PORTABILITY_ASSERT("unsupported arm64 vector register");
-    }
-
-    D[num] = (uint64_t)value.vec[2] << 32 | (uint64_t)value.vec[3];
+    assert(validFloatRegister(num));
+    D[num - UNW_ARM64_D8] = unwindhelpers_bitcast<uint64_t>(value);
 }
 
 #endif // TARGET_ARM64
@@ -820,7 +802,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) const;
-    bool        validVectorRegister(int num) const { return false; };
+    bool        validVectorRegister(int num) const { return false; }
 
     uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
@@ -828,8 +810,8 @@ struct Registers_REGDISPLAY : REGDISPLAY
     double      getFloatRegister(int num) const;
     void        setFloatRegister(int num, double value);
 
-    libunwind::v128    getVectorRegister(int num) const { abort(); };
-    void        setVectorRegister(int num, libunwind::v128 value) { abort(); };
+    libunwind::v128    getVectorRegister(int num) const { abort(); }
+    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
 
     uint64_t    getSP() const         { return SP; }
     void        setSP(uint64_t value, uint64_t location) { SP = value; }
@@ -860,10 +842,7 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
 
 bool Registers_REGDISPLAY::validFloatRegister(int num) const
 {
-    if (num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31)
-        return true;
-
-    return false;
+    return num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31;
 }
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
@@ -1062,20 +1041,14 @@ void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t locatio
 
 double Registers_REGDISPLAY::getFloatRegister(int num) const
 {
-    if (num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31)
-    {
-        return F[num - UNW_LOONGARCH_F24];
-    }
-
-    PORTABILITY_ASSERT("unsupported LA freg");
+    assert(validFloatRegister(num));
+    return unwindhelpers_bitcast<double>(F[num - UNW_LOONGARCH_F24]);
 }
 
 void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 {
-    if (num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31)
-    {
-        F[num - UNW_LOONGARCH_F24] = value;
-    }
+    assert(validFloatRegister(num));
+    F[num - UNW_LOONGARCH_F24] = unwindhelpers_bitcast<uint64_t>(value);
 }
 
 #endif // TARGET_LOONGARCH64
@@ -1089,17 +1062,17 @@ struct Registers_REGDISPLAY : REGDISPLAY
     static constexpr int lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV; }
 
     bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) { return false; };
-    bool        validVectorRegister(int num) const;
+    bool        validFloatRegister(int num) const;
+    bool        validVectorRegister(int num) const { return false; }
 
     uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
 
-    double      getFloatRegister(int num) const { abort(); }
-    void        setFloatRegister(int num, double value) { abort(); }
+    double      getFloatRegister(int num) const;
+    void        setFloatRegister(int num, double value);
 
-    libunwind::v128    getVectorRegister(int num) const;
-    void        setVectorRegister(int num, libunwind::v128 value);
+    libunwind::v128    getVectorRegister(int num) const { abort(); }
+    void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
 
     uint64_t    getSP() const         { return SP; }
     void        setSP(uint64_t value, uint64_t location) { SP = value; }
@@ -1119,18 +1092,16 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
     if (num >= UNW_RISCV_X0 && num <= UNW_RISCV_X31)
         return true;
 
+    return false;
+}
+
+inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
     if (num == UNW_RISCV_F8 || num == UNW_RISCV_F9)
         return true;
 
     if (num >= UNW_RISCV_F18 && num <= UNW_RISCV_F27)
         return true;
 
-    return false;
-}
-
-bool Registers_REGDISPLAY::validVectorRegister(int num) const
-{
-    // Vector registers currently unsupported
     return false;
 }
 
@@ -1179,74 +1150,6 @@ inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
         return *pS6;
     case UNW_RISCV_X23:
         return *pS7;
-
-    case UNW_RISCV_F0:
-        return F[0];
-    case UNW_RISCV_F1:
-        return F[1];
-    case UNW_RISCV_F2:
-        return F[2];
-    case UNW_RISCV_F3:
-        return F[3];
-    case UNW_RISCV_F4:
-        return F[4];
-    case UNW_RISCV_F5:
-        return F[5];
-    case UNW_RISCV_F6:
-        return F[6];
-    case UNW_RISCV_F7:
-        return F[7];
-    case UNW_RISCV_F8:
-        return F[8];
-    case UNW_RISCV_F9:
-        return F[9];
-    case UNW_RISCV_F10:
-        return F[10];
-    case UNW_RISCV_F11:
-        return F[11];
-    case UNW_RISCV_F12:
-        return F[12];
-    case UNW_RISCV_F13:
-        return F[13];
-    case UNW_RISCV_F14:
-        return F[14];
-    case UNW_RISCV_F15:
-        return F[15];
-    case UNW_RISCV_F16:
-        return F[16];
-    case UNW_RISCV_F17:
-        return F[17];
-    case UNW_RISCV_F18:
-        return F[18];
-    case UNW_RISCV_F19:
-        return F[19];
-    case UNW_RISCV_F20:
-        return F[20];
-    case UNW_RISCV_F21:
-        return F[21];
-    case UNW_RISCV_F22:
-        return F[22];
-    case UNW_RISCV_F23:
-        return F[23];
-    case UNW_RISCV_F24:
-        return F[24];
-    case UNW_RISCV_F25:
-        return F[25];
-    case UNW_RISCV_F26:
-        return F[26];
-    case UNW_RISCV_F27:
-        return F[27];
-    case UNW_RISCV_F28:
-        return F[28];
-    case UNW_RISCV_F29:
-        return F[29];
-    case UNW_RISCV_F30:
-        return F[30];
-    case UNW_RISCV_F31:
-        return F[31];
-
-    case UNW_RISCV_VLENB:
-        return 0; // VLENB not used in REGDISPLAY, adjust if needed
 
     default:
         PORTABILITY_ASSERT("unsupported RISC-V register");
@@ -1331,122 +1234,24 @@ void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t loca
         pS11 = (PTR_uintptr_t)location;
         break;
 
-    // Add other general-purpose registers if needed
-
-    case UNW_RISCV_F0:
-        F[0] = value;
-        break;
-    case UNW_RISCV_F1:
-        F[1] = value;
-        break;
-    case UNW_RISCV_F2:
-        F[2] = value;
-        break;
-    case UNW_RISCV_F3:
-        F[3] = value;
-        break;
-    case UNW_RISCV_F4:
-        F[4] = value;
-        break;
-    case UNW_RISCV_F5:
-        F[5] = value;
-        break;
-    case UNW_RISCV_F6:
-        F[6] = value;
-        break;
-    case UNW_RISCV_F7:
-        F[7] = value;
-        break;
-    case UNW_RISCV_F8:
-        F[8] = value;
-        break;
-    case UNW_RISCV_F9:
-        F[9] = value;
-        break;
-    case UNW_RISCV_F10:
-        F[10] = value;
-        break;
-    case UNW_RISCV_F11:
-        F[11] = value;
-        break;
-    case UNW_RISCV_F12:
-        F[12] = value;
-        break;
-    case UNW_RISCV_F13:
-        F[13] = value;
-        break;
-    case UNW_RISCV_F14:
-        F[14] = value;
-        break;
-    case UNW_RISCV_F15:
-        F[15] = value;
-        break;
-    case UNW_RISCV_F16:
-        F[16] = value;
-        break;
-    case UNW_RISCV_F17:
-        F[17] = value;
-        break;
-    case UNW_RISCV_F18:
-        F[18] = value;
-        break;
-    case UNW_RISCV_F19:
-        F[19] = value;
-        break;
-    case UNW_RISCV_F20:
-        F[20] = value;
-        break;
-    case UNW_RISCV_F21:
-        F[21] = value;
-        break;
-    case UNW_RISCV_F22:
-        F[22] = value;
-        break;
-    case UNW_RISCV_F23:
-        F[23] = value;
-        break;
-    case UNW_RISCV_F24:
-        F[24] = value;
-        break;
-    case UNW_RISCV_F25:
-        F[25] = value;
-        break;
-    case UNW_RISCV_F26:
-        F[26] = value;
-        break;
-    case UNW_RISCV_F27:
-        F[27] = value;
-        break;
-    case UNW_RISCV_F28:
-        F[28] = value;
-        break;
-    case UNW_RISCV_F29:
-        F[29] = value;
-        break;
-    case UNW_RISCV_F30:
-        F[30] = value;
-        break;
-    case UNW_RISCV_F31:
-        F[31] = value;
-        break;
-
-    case UNW_RISCV_VLENB:
-        PORTABILITY_ASSERT("unsupported RISC-V VLENB register");
-        break;
 
     default:
         PORTABILITY_ASSERT("unsupported RISC-V register");
     }
 }
 
-libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
+double Registers_REGDISPLAY::getFloatRegister(int num) const
 {
-    PORTABILITY_ASSERT("Vector registers currently unsupported on RISC-V");
+    assert(validFloatRegister(num));
+    int index = (num < UNW_RISCV_F18) ? (num - UNW_RISCV_F8) : (num - UNW_RISCV_F18 + 2);
+    return unwindhelpers_bitcast<double>(F[index]);
 }
 
-void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
+void Registers_REGDISPLAY::setFloatRegister(int num, double value)
 {
-    PORTABILITY_ASSERT("Vector registers currently unsupported on RISC-V");
+    assert(validFloatRegister(num));
+    int index = (num < UNW_RISCV_F18) ? (num - UNW_RISCV_F8) : (num - UNW_RISCV_F18 + 2);
+    F[index] = unwindhelpers_bitcast<uint64_t>(value);
 }
 
 #endif // TARGET_RISCV64

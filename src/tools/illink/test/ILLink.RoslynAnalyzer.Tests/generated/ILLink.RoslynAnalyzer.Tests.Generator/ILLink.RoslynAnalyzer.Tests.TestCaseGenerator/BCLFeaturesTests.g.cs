@@ -4,16 +4,16 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class BCLFeaturesTests : LinkerTestBase
-	{
+    public sealed partial class BCLFeaturesTests : LinkerTestBase
+    {
 
-		protected override string TestSuiteName => "BCLFeatures";
+        protected override string TestSuiteName => "BCLFeatures";
 
-		[Fact]
-		public Task SerializationCtors ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task SerializationCtors()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-	}
+    }
 }

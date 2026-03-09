@@ -339,12 +339,9 @@ namespace System.Transactions
                         if (oldNextSetWeak != null)
                         {
                             BucketSet? oldSet = (BucketSet?)oldNextSetWeak.Target;
-                            if (oldSet != null)
-                            {
-                                // prev references are just there to root things for the GC.  If this object is
-                                // gone we don't really care.
-                                oldSet.prevSet = newBucketSet;
-                            }
+                            // prev references are just there to root things for the GC.  If this object is
+                            // gone we don't really care.
+                            oldSet?.prevSet = newBucketSet;
                         }
                         newBucketSet.prevSet = lastBucketSet;
                     }

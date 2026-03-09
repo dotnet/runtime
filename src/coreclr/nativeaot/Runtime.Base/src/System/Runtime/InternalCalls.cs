@@ -38,58 +38,29 @@ namespace System.Runtime
     {
         GetRuntimeException = 0,
         FailFast = 1,
-        // UnhandledExceptionHandler = 2, // unused
+        ThreadEntryPoint = 2,
         AppendExceptionStackFrame = 3,
         // unused = 4,
         GetSystemArrayEEType = 5,
         OnFirstChance = 6,
         OnUnhandledException = 7,
-        IDynamicCastableIsInterfaceImplemented = 8,
-        IDynamicCastableGetInterfaceImplementation = 9,
-        ObjectiveCMarshalTryGetTaggedMemory = 10,
-        ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
-        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
-        ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
+        ObjectiveCMarshalTryGetTaggedMemory = 8,
+        ObjectiveCMarshalGetIsTrackedReferenceCallback = 9,
+        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 10,
+        ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 11,
     }
 
     internal static class InternalCalls
     {
+        private const string RuntimeLibrary = "*";
+
         //
         // internalcalls for System.GC.
         //
 
-        private const string RuntimeLibrary = "*";
-
         // Force a garbage collection.
-        [RuntimeExport("RhCollect")]
-        internal static void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false)
-        {
-            RhpCollect(generation, mode, lowMemoryP ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-        }
-
         [DllImport(RuntimeLibrary)]
-        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP);
-
-        [RuntimeExport("RhGetGcTotalMemory")]
-        internal static long RhGetGcTotalMemory()
-        {
-            return RhpGetGcTotalMemory();
-        }
-
-        [DllImport(RuntimeLibrary)]
-        private static extern long RhpGetGcTotalMemory();
-
-        [RuntimeExport("RhStartNoGCRegion")]
-        internal static int RhStartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC)
-        {
-            return RhpStartNoGCRegion(totalSize, hasLohSize ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, lohSize, disallowFullBlockingGC ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-        }
-
-        [RuntimeExport("RhEndNoGCRegion")]
-        internal static int RhEndNoGCRegion()
-        {
-            return RhpEndNoGCRegion();
-        }
+        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP = Interop.BOOL.FALSE);
 
         //
         // internalcalls for System.Runtime.__Finalizer.
@@ -130,7 +101,7 @@ namespace System.Runtime
 
         [RuntimeImport(RuntimeLibrary, "RhpNewArrayFast")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, int length);
+        internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, nint length);
 
 #if FEATURE_64BIT_ALIGNMENT
         [RuntimeImport(RuntimeLibrary, "RhpNewFastAlign8")]
@@ -143,7 +114,7 @@ namespace System.Runtime
 
         [RuntimeImport(RuntimeLibrary, "RhpNewArrayFastAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewArrayFastAlign8(MethodTable* pEEType, int length);
+        internal static extern unsafe object RhpNewArrayFastAlign8(MethodTable* pEEType, nint length);
 
         [RuntimeImport(RuntimeLibrary, "RhpNewFastMisalign")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -261,10 +232,6 @@ namespace System.Runtime
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
 #endif
 
-        [RuntimeImport(RuntimeLibrary, "RhpGetThreadAbortException")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception RhpGetThreadAbortException();
-
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhCurrentNativeThreadId();
@@ -273,8 +240,7 @@ namespace System.Runtime
         // PInvoke-based internal calls
         //
         // These either do not need to be called in cooperative mode or, in some cases, MUST be called in preemptive
-        // mode.  Note that they must use the Cdecl calling convention due to a limitation in our .obj file linking
-        // support.
+        // mode.
         // We use DllImport here instead of DllImport as we don't want to add a dependency on source-generated
         // interop support to Test.CoreLib.
         //------------------------------------------------------------------------------------------------------------
@@ -287,15 +253,5 @@ namespace System.Runtime
         // Indicate that the current round of finalizations is complete.
         [DllImport(RuntimeLibrary)]
         internal static extern void RhpSignalFinalizationComplete(uint fCount, int observedFullGcCount);
-
-        // Enters a no GC region, possibly doing a blocking GC if there is not enough
-        // memory available to satisfy the caller's request.
-        [DllImport(RuntimeLibrary)]
-        internal static extern int RhpStartNoGCRegion(long totalSize, Interop.BOOL hasLohSize, long lohSize, Interop.BOOL disallowFullBlockingGC);
-
-        // Exits a no GC region, possibly doing a GC to clean up the garbage that
-        // the caller allocated.
-        [DllImport(RuntimeLibrary)]
-        internal static extern int RhpEndNoGCRegion();
     }
 }

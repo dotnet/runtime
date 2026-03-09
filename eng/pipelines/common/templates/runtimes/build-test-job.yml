@@ -14,6 +14,7 @@ parameters:
   dependsOn: []
   crossBuild: false
   isOfficialBuild: false
+  useNativeAOTRuntime: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -74,7 +75,7 @@ jobs:
         - name: runtimeFlavorArgs
           value: '-mono'
 
-      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.useNativeAOTRuntime, true), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
         - name: runtimeFlavorArgs
           value: '-nativeaot'
 
@@ -110,7 +111,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:

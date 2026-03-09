@@ -15,6 +15,9 @@
 // - Don't bother catching the exception in the outer method as the test
 //   infrastructure will handle it.
 
+
+namespace b08046cs;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -38,6 +41,7 @@ public class ExternalException : Exception
     public static int ExitCode { get; set; }
     public static int Ignored { get; set; }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

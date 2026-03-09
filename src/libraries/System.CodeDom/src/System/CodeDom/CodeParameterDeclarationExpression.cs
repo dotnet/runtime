@@ -5,10 +5,6 @@ namespace System.CodeDom
 {
     public class CodeParameterDeclarationExpression : CodeExpression
     {
-        private CodeTypeReference _type;
-        private string _name;
-        private CodeAttributeDeclarationCollection _customAttributes;
-
         public CodeParameterDeclarationExpression() { }
 
         public CodeParameterDeclarationExpression(CodeTypeReference type, string name)
@@ -31,22 +27,22 @@ namespace System.CodeDom
 
         public CodeAttributeDeclarationCollection CustomAttributes
         {
-            get => _customAttributes ??= new CodeAttributeDeclarationCollection();
-            set => _customAttributes = value;
+            get => field ??= new CodeAttributeDeclarationCollection();
+            set => field = value;
         }
 
         public FieldDirection Direction { get; set; } = FieldDirection.In;
 
         public CodeTypeReference Type
         {
-            get => _type ??= new CodeTypeReference("");
-            set => _type = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
 
         public string Name
         {
-            get => _name ?? string.Empty;
-            set => _name = value;
+            get => field ?? string.Empty;
+            set => field = value;
         }
     }
 }

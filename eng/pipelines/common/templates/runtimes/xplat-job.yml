@@ -107,5 +107,8 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
+
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
     - ${{ parameters.steps }}

@@ -377,7 +377,7 @@ class RefInfoListNodePool final
     static const unsigned defaultPreallocation = 8;
 
 public:
-    RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
+    RefInfoListNodePool(Compiler* m_compiler, unsigned preallocate = defaultPreallocation);
     RefInfoListNode* GetNode(RefPosition* r, GenTree* t);
     void             ReturnNode(RefInfoListNode* listNode);
 };
@@ -622,7 +622,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
-class LinearScan : public LinearScanInterface
+class LinearScan : public RegAllocInterface
 {
     friend class RefPosition;
     friend class Interval;
@@ -634,7 +634,7 @@ public:
     LinearScan(Compiler* theCompiler);
 
     // This is the main driver
-    virtual PhaseStatus doLinearScan();
+    virtual PhaseStatus doRegisterAllocation();
 
     static bool isSingleRegister(SingleTypeRegSet regMask)
     {
@@ -917,7 +917,7 @@ private:
 
     bool stressInitialParamReg()
     {
-        return compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
+        return m_compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
     }
 
     // Dump support
@@ -1053,7 +1053,7 @@ private:
     {
         if (tree->IsLocal())
         {
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(tree->AsLclVarCommon());
+            const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
             return isCandidateVar(varDsc);
         }
         return false;
@@ -1066,7 +1066,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -1101,7 +1101,7 @@ private:
         {
             assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
             GenTreeLclVar* lclVar = tree->AsLclVar();
-            LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+            LclVarDsc*     varDsc = m_compiler->lvaGetDesc(lclVar);
             type                  = varDsc->GetRegisterType(lclVar);
         }
         assert(type != TYP_UNDEF && type != TYP_STRUCT);
@@ -1130,19 +1130,20 @@ private:
 
     Interval* getIntervalForLocalVar(unsigned varIndex)
     {
-        assert(varIndex < compiler->lvaTrackedCount);
+        assert(varIndex < m_compiler->lvaTrackedCount);
         assert(localVarIntervals[varIndex] != nullptr);
         return localVarIntervals[varIndex];
     }
 
     Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
     {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
         assert(varDsc->lvTracked);
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
 
-    RegRecord* getRegisterRecord(regNumber regNum);
+    RegRecord*       getRegisterRecord(regNumber regNum);
+    SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
@@ -1392,7 +1393,7 @@ private:
         if (splitBBNumToTargetBBNumMap == nullptr)
         {
             splitBBNumToTargetBBNumMap =
-                new (getAllocator(compiler)) SplitBBNumToTargetBBNumMap(getAllocator(compiler));
+                new (getAllocator(m_compiler)) SplitBBNumToTargetBBNumMap(getAllocator(m_compiler));
         }
         return splitBBNumToTargetBBNumMap;
     }
@@ -1423,11 +1424,12 @@ private:
         if (nextConsecutiveRefPositionMap == nullptr)
         {
             nextConsecutiveRefPositionMap =
-                new (getAllocator(compiler)) NextConsecutiveRefPositionsMap(getAllocator(compiler));
+                new (getAllocator(m_compiler)) NextConsecutiveRefPositionsMap(getAllocator(m_compiler));
         }
         return nextConsecutiveRefPositionMap;
     }
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+    FORCEINLINE regNumber    getNextFPRegWraparound(regNumber reg);
     SingleTypeRegSet         getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum);
     GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded = false);
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
@@ -1603,7 +1605,7 @@ public:
 #endif // !TRACK_LSRA_STATS
 
 private:
-    Compiler*     compiler;
+    Compiler*     m_compiler;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
@@ -1935,6 +1937,7 @@ private:
     // 'tgtPrefUse' to that RefPosition.
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
+    RefPosition* tgtPrefUse3 = nullptr;
 
 public:
     // The following keep track of information about internal (temporary register) intervals
@@ -1957,6 +1960,7 @@ private:
     {
         tgtPrefUse               = nullptr;
         tgtPrefUse2              = nullptr;
+        tgtPrefUse3              = nullptr;
         internalCount            = 0;
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;
@@ -2196,6 +2200,8 @@ private:
     }
 };
 
+using RegAllocImpl = LinearScan;
+
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -2252,7 +2258,7 @@ public:
     void microDump();
 #endif // DEBUG
 
-    void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
+    void setLocalNumber(Compiler* m_compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
     SingleTypeRegSet registerPreferences;

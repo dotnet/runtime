@@ -606,7 +606,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 
     // get the code address (may jit the fcn if not already jitted)
     EX_TRY {
-        if (pMD->IsPointingToNativeCode())
+        if (!pMD->ShouldCallPrestub())
         {
             LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction %p already JITed\n", pMD));
         }
@@ -635,7 +635,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
         }
 #endif
-    } EX_END_CATCH(SwallowAllExceptions)
+    } EX_END_CATCH
 
     resFrame.Pop(pCurThread);
 
@@ -1750,7 +1750,7 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     // Either it's been fixed up so we can use it, or we're the Debugger RC thread, we can't fix it up,

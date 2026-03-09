@@ -23,6 +23,7 @@ CompMemKindMacro(Loops)
 CompMemKindMacro(TreeStatementList)
 CompMemKindMacro(SiScope)
 CompMemKindMacro(DominatorMemory)
+CompMemKindMacro(Lower)
 CompMemKindMacro(LSRA)
 CompMemKindMacro(LSRA_Interval)
 CompMemKindMacro(LSRA_RefPosition)
@@ -68,6 +69,8 @@ CompMemKindMacro(MaskConversionOpt)
 CompMemKindMacro(TryRegionClone)
 CompMemKindMacro(Async)
 CompMemKindMacro(RangeCheckCloning)
+CompMemKindMacro(WasmSccTransform)
+CompMemKindMacro(WasmCfgLowering)
 //clang-format on
 
 #undef CompMemKindMacro

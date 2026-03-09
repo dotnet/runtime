@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Uri = compilation.GetBestTypeByMetadataName(typeof(Uri));
             Version = compilation.GetBestTypeByMetadataName(typeof(Version));
 
-            // Used to verify input configuation binding API calls.
+            // Used to verify input configuration binding API calls.
             INamedTypeSymbol? binderOptions = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.BinderOptions");
             ActionOfBinderOptions = binderOptions is null ? null : compilation.GetBestTypeByMetadataName(typeof(Action<>))?.Construct(binderOptions);
             ConfigurationBinder = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationBinder");

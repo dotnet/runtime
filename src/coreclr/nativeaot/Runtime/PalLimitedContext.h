@@ -6,14 +6,7 @@
 #define PAL_LIMITED_CONTEXT_INCLUDED
 
 #include "rhassert.h"
-
-#ifndef DECLSPEC_ALIGN
-#ifdef _MSC_VER
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
-#endif
-#endif // DECLSPEC_ALIGN
+#include <minipal/utils.h>
 
 #ifdef HOST_AMD64
 #define AMD64_ALIGN_16 DECLSPEC_ALIGN(16)

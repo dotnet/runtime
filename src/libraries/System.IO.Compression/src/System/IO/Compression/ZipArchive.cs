@@ -4,6 +4,7 @@
 
 // Zip Spec here: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,6 +16,8 @@ namespace System.IO.Compression
 {
     public partial class ZipArchive : IDisposable, IAsyncDisposable
     {
+        private const int ReadCentralDirectoryReadBufferSize = 4096;
+
         private readonly Stream _archiveStream;
         private ZipArchiveEntry? _archiveStreamOwner;
         private readonly ZipArchiveMode _mode;
@@ -297,10 +300,24 @@ namespace System.IO.Compression
                         case ZipArchiveMode.Read:
                             break;
                         case ZipArchiveMode.Create:
+                            WriteFile();
+                            break;
                         case ZipArchiveMode.Update:
                         default:
-                            Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
-                            WriteFile();
+                            Debug.Assert(_mode == ZipArchiveMode.Update);
+                            // Only write if the archive has been modified
+                            if (IsModified)
+                            {
+                                WriteFile();
+                            }
+                            else
+                            {
+                                // Even if we didn't write, unload any entry buffers that may have been loaded
+                                foreach (ZipArchiveEntry entry in _entries)
+                                {
+                                    entry.UnloadStreams();
+                                }
+                            }
                             break;
                     }
                 }
@@ -311,7 +328,6 @@ namespace System.IO.Compression
                 }
             }
         }
-
         /// <summary>
         /// Finishes writing the archive and releases all resources used by the ZipArchive object, unless the object was constructed with leaveOpen as true. Any streams from opened entries in the ZipArchive still open will throw exceptions on subsequent writes, as the underlying streams will have been closed.
         /// </summary>
@@ -378,6 +394,39 @@ namespace System.IO.Compression
         // This property's value only relates to the top-level fields of the archive (such as the archive comment.)
         // New entries in the archive won't change its state.
         internal ChangeState Changed { get; private set; }
+
+        /// <summary>
+        /// Determines whether the archive has been modified and needs to be written.
+        /// </summary>
+        private bool IsModified
+        {
+            get
+            {
+                // A new archive (created on empty stream) always needs to write the structure
+                if (_archiveStream.Length == 0)
+                {
+                    return true;
+                }
+                // Archive-level changes (e.g., comment)
+                if (Changed != ChangeState.Unchanged)
+                {
+                    return true;
+                }
+                // Any deleted entries
+                if (_firstDeletedEntryOffset != long.MaxValue)
+                {
+                    return true;
+                }
+                // Check if any entry was modified or added
+                foreach (ZipArchiveEntry entry in _entries)
+                {
+                    if (!entry.OriginallyInArchive || entry.Changes != ChangeState.Unchanged)
+                        return true;
+                }
+
+                return false;
+            }
+        }
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
@@ -475,12 +524,8 @@ namespace System.IO.Compression
             }
         }
 
-        private void ReadCentralDirectoryInitialize(out byte[] fileBuffer, out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed)
+        private void ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed)
         {
-            const int ReadCentralDirectoryReadBufferSize = 4096;
-
-            fileBuffer = new byte[ReadCentralDirectoryReadBufferSize];
-
             // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart
 
             _archiveStream.Seek(_centralDirectoryStart, SeekOrigin.Begin);
@@ -550,19 +595,20 @@ namespace System.IO.Compression
 
         private void ReadCentralDirectory()
         {
+            byte[] arrayPoolArray = ArrayPool<byte>.Shared.Rent(ReadCentralDirectoryReadBufferSize);
             try
             {
-                ReadCentralDirectoryInitialize(out byte[] fileBuffer, out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
+                Span<byte> fileBuffer = arrayPoolArray.AsSpan();
 
-                Span<byte> fileBufferSpan = fileBuffer.AsSpan();
+                ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
 
                 // read the central directory
                 while (continueReadingCentralDirectory)
                 {
                     // the buffer read must always be large enough to fit the constant section size of at least one header
-                    int currBytesRead = _archiveStream.ReadAtLeast(fileBufferSpan, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
+                    int currBytesRead = _archiveStream.ReadAtLeast(fileBuffer, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
 
-                    ReadOnlySpan<byte> sizedFileBuffer = fileBufferSpan.Slice(0, currBytesRead);
+                    ReadOnlySpan<byte> sizedFileBuffer = fileBuffer.Slice(0, currBytesRead);
                     continueReadingCentralDirectory = currBytesRead >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
                     while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= currBytesRead)
@@ -583,14 +629,16 @@ namespace System.IO.Compression
             }
             catch (EndOfStreamException ex)
             {
-                throw new InvalidDataException(SR.Format(SR.CentralDirectoryInvalid, ex));
+                throw new InvalidDataException(SR.CentralDirectoryInvalid, ex);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(arrayPoolArray);
             }
         }
 
-        private void ReadEndOfCentralDirectoryInnerWork(ZipEndOfCentralDirectoryBlock eocd, out long eocdStart)
+        private void ReadEndOfCentralDirectoryInnerWork(ZipEndOfCentralDirectoryBlock eocd)
         {
-            eocdStart = _archiveStream.Position;
-
             if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
                 throw new InvalidDataException(SR.SplitSpanned);
 
@@ -624,10 +672,12 @@ namespace System.IO.Compression
                         ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
+                long eocdStart = _archiveStream.Position;
+
                 // read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd = ZipEndOfCentralDirectoryBlock.ReadBlock(_archiveStream);
 
-                ReadEndOfCentralDirectoryInnerWork(eocd, out long eocdStart);
+                ReadEndOfCentralDirectoryInnerWork(eocd);
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 
@@ -652,6 +702,9 @@ namespace System.IO.Compression
                 throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
 
             long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
+
+            if (zip64EOCDOffset < 0 || zip64EOCDOffset > _archiveStream.Length)
+                throw new InvalidDataException(SR.InvalidOffsetToZip64EOCD);
 
             _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
         }
@@ -686,6 +739,12 @@ namespace System.IO.Compression
             {
                 // Read Zip64 End of Central Directory Locator
 
+                // Check if there's enough space before the EOCD to look for the Zip64 EOCDL
+                if (eocdStart < Zip64EndOfCentralDirectoryLocator.TotalSize)
+                {
+                    throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+                }
+
                 // This seeks forwards almost to the beginning of the Zip64-EOCDL, one byte after where the signature would be located
                 _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);
 
@@ -701,7 +760,6 @@ namespace System.IO.Compression
 
                     // Read Zip64 End of Central Directory Record
                     Zip64EndOfCentralDirectoryRecord record = Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveStream);
-
                     TryReadZip64EndOfCentralDirectoryInnerFinalWork(record);
                 }
             }

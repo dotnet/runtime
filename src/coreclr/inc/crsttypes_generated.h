@@ -18,43 +18,43 @@ enum CrstType
     CrstAppDomainCache = 0,
     CrstAssemblyList = 1,
     CrstAssemblyLoader = 2,
-    CrstAvailableClass = 3,
-    CrstAvailableParamTypes = 4,
-    CrstCallStubCache = 5,
-    CrstCCompRC = 6,
-    CrstClassFactInfoHash = 7,
-    CrstClassInit = 8,
-    CrstClrNotification = 9,
-    CrstCodeFragmentHeap = 10,
-    CrstCodeVersioning = 11,
-    CrstCOMCallWrapper = 12,
-    CrstCOMWrapperCache = 13,
-    CrstDataTest1 = 14,
-    CrstDataTest2 = 15,
-    CrstDbgTransport = 16,
-    CrstDeadlockDetection = 17,
-    CrstDebuggerController = 18,
-    CrstDebuggerFavorLock = 19,
-    CrstDebuggerHeapExecMemLock = 20,
-    CrstDebuggerHeapLock = 21,
-    CrstDebuggerJitInfo = 22,
-    CrstDebuggerMutex = 23,
-    CrstDynamicIL = 24,
-    CrstDynamicMT = 25,
-    CrstEtwTypeLogHash = 26,
-    CrstEventPipe = 27,
-    CrstEventStore = 28,
-    CrstException = 29,
-    CrstExecutableAllocatorLock = 30,
-    CrstFCall = 31,
-    CrstFrozenObjectHeap = 32,
-    CrstFuncPtrStubs = 33,
-    CrstFusionAppCtx = 34,
-    CrstGCCover = 35,
-    CrstGenericDictionaryExpansion = 36,
-    CrstGlobalStrLiteralMap = 37,
-    CrstHandleTable = 38,
-    CrstIbcProfile = 39,
+    CrstAsyncContinuations = 3,
+    CrstAvailableClass = 4,
+    CrstAvailableParamTypes = 5,
+    CrstCallStubCache = 6,
+    CrstCCompRC = 7,
+    CrstClassFactInfoHash = 8,
+    CrstClassInit = 9,
+    CrstClrNotification = 10,
+    CrstCodeFragmentHeap = 11,
+    CrstCodeVersioning = 12,
+    CrstCOMCallWrapper = 13,
+    CrstCOMWrapperCache = 14,
+    CrstDataTest1 = 15,
+    CrstDataTest2 = 16,
+    CrstDbgTransport = 17,
+    CrstDeadlockDetection = 18,
+    CrstDebuggerController = 19,
+    CrstDebuggerFavorLock = 20,
+    CrstDebuggerHeapExecMemLock = 21,
+    CrstDebuggerHeapLock = 22,
+    CrstDebuggerJitInfo = 23,
+    CrstDebuggerMutex = 24,
+    CrstDynamicIL = 25,
+    CrstDynamicMT = 26,
+    CrstEtwTypeLogHash = 27,
+    CrstEventPipe = 28,
+    CrstEventStore = 29,
+    CrstException = 30,
+    CrstExecutableAllocatorLock = 31,
+    CrstFCall = 32,
+    CrstFrozenObjectHeap = 33,
+    CrstFuncPtrStubs = 34,
+    CrstFusionAppCtx = 35,
+    CrstGCCover = 36,
+    CrstGenericDictionaryExpansion = 37,
+    CrstGlobalStrLiteralMap = 38,
+    CrstHandleTable = 39,
     CrstIJWFixupData = 40,
     CrstIJWHash = 41,
     CrstILStubGen = 42,
@@ -133,6 +133,7 @@ int g_rgCrstLevelMap[] =
     9,          // CrstAppDomainCache
     2,          // CrstAssemblyList
     13,         // CrstAssemblyLoader
+    2,          // CrstAsyncContinuations
     3,          // CrstAvailableClass
     4,          // CrstAvailableParamTypes
     3,          // CrstCallStubCache
@@ -169,11 +170,10 @@ int g_rgCrstLevelMap[] =
     17,         // CrstGenericDictionaryExpansion
     16,         // CrstGlobalStrLiteralMap
     1,          // CrstHandleTable
-    0,          // CrstIbcProfile
     7,          // CrstIJWFixupData
     0,          // CrstIJWHash
-    6,          // CrstILStubGen
-    2,          // CrstInlineTrackingMap
+    14,         // CrstILStubGen
+    0,          // CrstInlineTrackingMap
     18,         // CrstInstMethodHashTable
     0,          // CrstInterfaceDispatchGlobalLists
     21,         // CrstInterop
@@ -242,6 +242,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstAppDomainCache",
     "CrstAssemblyList",
     "CrstAssemblyLoader",
+    "CrstAsyncContinuations",
     "CrstAvailableClass",
     "CrstAvailableParamTypes",
     "CrstCallStubCache",
@@ -278,7 +279,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstGenericDictionaryExpansion",
     "CrstGlobalStrLiteralMap",
     "CrstHandleTable",
-    "CrstIbcProfile",
     "CrstIJWFixupData",
     "CrstIJWHash",
     "CrstILStubGen",

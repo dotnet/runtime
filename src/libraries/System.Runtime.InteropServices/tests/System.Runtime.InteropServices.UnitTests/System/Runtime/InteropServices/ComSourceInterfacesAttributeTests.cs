@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("SourceInterfaces")]
-        public void Ctor_SourceInterfaces(string sourceInterfaces)
+        public void Ctor_SourceInterfaces(string? sourceInterfaces)
         {
             var attribute = new ComSourceInterfacesAttribute(sourceInterfaces);
             Assert.Equal(sourceInterfaces, attribute.Value);

@@ -12,8 +12,7 @@ typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 enum class TrapThreadsFlags
 {
     None = 0,
-    AbortInProgress = 1,
-    TrapThreads = 2
+    TrapThreads = 1,
 };
 
 extern "C" void PopulateDebugHeaders();
@@ -48,14 +47,15 @@ public:
     static Thread *         RawGetCurrentThread();
     static Thread *         GetCurrentThread();
     static Thread *         GetCurrentThreadIfAvailable();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    static Thread *         GetCurrentThreadIfAvailableAsyncSafe();
+#endif
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
     static void             DetachCurrentThread();
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
-    void                    InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort);
-    void                    CancelThreadAbort(Thread* targetThread);
 #else
     static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
 #endif

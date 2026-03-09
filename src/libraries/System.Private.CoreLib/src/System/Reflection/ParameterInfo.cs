@@ -41,17 +41,17 @@ namespace System.Reflection
         public virtual IEnumerable<CustomAttributeData> CustomAttributes => GetCustomAttributesData();
         public virtual IList<CustomAttributeData> GetCustomAttributesData() { throw NotImplemented.ByDesign; }
 
-        public virtual object[] GetCustomAttributes(bool inherit) => Array.Empty<object>();
+        public virtual object[] GetCustomAttributes(bool inherit) => [];
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return Array.Empty<object>();
+            return [];
         }
 
         public virtual Type GetModifiedParameterType() => throw new NotSupportedException();
 
-        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
-        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetOptionalCustomModifiers() => [];
+        public virtual Type[] GetRequiredCustomModifiers() => [];
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 

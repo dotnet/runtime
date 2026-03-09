@@ -441,7 +441,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
     // Java only supports Weierstrass and characteristic-2 type curves.
     if (curveType != PrimeShortWeierstrass && curveType != Characteristic2)
     {
-        LOG_ERROR("Unuspported curve type specified: %d", curveType);
+        LOG_ERROR("Unsupported curve type specified: %u", curveType);
         return NULL;
     }
 

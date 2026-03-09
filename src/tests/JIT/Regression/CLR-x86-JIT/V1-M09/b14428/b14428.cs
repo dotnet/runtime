@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace DefaultNamespace
+namespace b14428
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames
@@ -12,6 +12,7 @@ namespace DefaultNamespace
     public class DateTimeCompare
     {
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

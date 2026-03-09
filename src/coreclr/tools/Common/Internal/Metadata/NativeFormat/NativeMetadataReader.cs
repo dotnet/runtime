@@ -220,13 +220,20 @@ namespace Internal.Metadata.NativeFormat
         {
             return _streamReader.StringEquals((uint)handle.Offset, value);
         }
+
+        public ReadOnlySpan<byte> ReadStringAsBytes(ConstantStringValueHandle handle)
+        {
+            if (handle.IsNil)
+            {
+                return [];
+            }
+
+            return _streamReader.ReadStringAsBytes((uint)handle.Offset);
+        }
     }
 
     internal sealed partial class MetadataHeader
     {
-        /// <todo>
-        /// Signature should be updated every time the metadata schema changes.
-        /// </todo>
         public const uint Signature = 0xDEADDFFD;
 
         /// <summary>

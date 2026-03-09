@@ -42,8 +42,10 @@ CordbFunction::CordbFunction(CordbModule * m,
     m_fIsNativeImpl(kUnknownImpl),
     m_fCachedMethodValuesValid(FALSE),
     m_argCountCached(0),
-    m_fIsStaticCached(FALSE),
-    m_reJitILCodes(1)
+    m_fIsStaticCached(FALSE)
+#ifdef FEATURE_CODE_VERSIONING
+    , m_reJitILCodes(1)
+#endif // FEATURE_CODE_VERSIONING
 {
     m_methodSigParserCached = SigParser(NULL, 0);
 
@@ -108,7 +110,9 @@ void CordbFunction::Neuter()
     m_pClass = NULL;
 
     m_nativeCode.Clear();
+#ifdef FEATURE_CODE_VERSIONING
     m_reJitILCodes.NeuterAndClear(GetProcess()->GetProcessLock());
+#endif // FEATURE_CODE_VERSIONING
 
     CordbBase::Neuter();
 }
@@ -559,6 +563,7 @@ HRESULT CordbFunction::GetVersionNumber(ULONG32 *pnVersion)
 //-----------------------------------------------------------------------------
 HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedILCode)
 {
+#ifdef FEATURE_CODE_VERSIONING
     HRESULT hr = S_OK;
     VALIDATE_POINTER_TO_OBJECT(ppReJitedILCode, ICorDebugILCode **);
     PUBLIC_API_BEGIN(this);
@@ -566,7 +571,7 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
         *ppReJitedILCode = NULL;
 
         VMPTR_ILCodeVersionNode vmILCodeVersionNode = VMPTR_ILCodeVersionNode::NullPtr();
-        GetProcess()->GetDAC()->GetActiveRejitILCodeVersionNode(GetModule()->m_vmModule, m_MDToken, &vmILCodeVersionNode);
+        IfFailThrow(GetProcess()->GetDAC()->GetActiveRejitILCodeVersionNode(GetModule()->m_vmModule, m_MDToken, &vmILCodeVersionNode));
         if (!vmILCodeVersionNode.IsNull())
         {
             RSSmartPtr<CordbReJitILCode> pILCode;
@@ -576,6 +581,9 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
     }
     PUBLIC_API_END(hr);
     return hr;
+#else
+    return E_NOTIMPL;
+#endif // FEATURE_CODE_VERSIONING
 }
 
 //-----------------------------------------------------------------------------
@@ -780,10 +788,10 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 // and we also fallback on creating an empty ILCode object.
                 // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
                 ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
-                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainAssembly(),
+                    IfFailThrow(pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainAssembly(),
                                                             m_MDToken,
                                                             &codeInfo,
-                                                            &localVarSigToken);
+                                                            &localVarSigToken));
                 );
 
                 currentEnCVersion = m_pModule->LookupFunctionLatestVersion(m_MDToken)->m_dwEnCVersionNumber;
@@ -925,7 +933,7 @@ HRESULT CordbFunction::InitNativeCodeInfo()
             // All we actually need is the start address and method desc which are cheap to get relative
             // to some of the other members. So far this doesn't appear to be a perf hotspot, but if it
             // shows up in some scenario it wouldn't be too hard to improve it
-            pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeDomainAssembly(), m_MDToken, &codeInfo);
+            IfFailThrow(pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeDomainAssembly(), m_MDToken, &codeInfo));
         }
 
         // populate the m_nativeCode pointer with the code info we found
@@ -1274,6 +1282,7 @@ VOID CordbFunction::NotifyCodeCreated(CordbNativeCode* nativeCode)
 // If the CordbReJitILCode doesn't exist, it creates it.
 //
 //
+#ifdef FEATURE_CODE_VERSIONING
 HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode, CordbReJitILCode** ppILCode)
 {
     INTERNAL_API_ENTRY(this);
@@ -1298,3 +1307,4 @@ HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCod
     *ppILCode = pILCode;
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING

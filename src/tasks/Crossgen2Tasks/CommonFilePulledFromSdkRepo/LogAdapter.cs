@@ -1,26 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Build.Tasks
 {
-    internal sealed class LogAdapter : Logger
+    internal sealed class LogAdapter(TaskLoggingHelper taskLogger) : Logger
     {
-        private TaskLoggingHelper _taskLogger;
-
-        public LogAdapter(TaskLoggingHelper taskLogger)
-        {
-            _taskLogger = taskLogger;
-        }
-
         protected override void LogCore(in Message message)
         {
             switch (message.Level)
             {
                 case MessageLevel.Error:
-                    _taskLogger.LogError(
+                    taskLogger.LogError(
                         subcategory: default,
                         errorCode: message.Code,
                         helpKeyword: default,
@@ -33,7 +25,7 @@ namespace Microsoft.NET.Build.Tasks
                     break;
 
                 case MessageLevel.Warning:
-                    _taskLogger.LogWarning(
+                    taskLogger.LogWarning(
                         subcategory: default,
                         warningCode: message.Code,
                         helpKeyword: default,
@@ -53,12 +45,12 @@ namespace Microsoft.NET.Build.Tasks
                         // use shorter overload when there is no code and no file. Otherwise, msbuild
                         // will display:
                         //
-                        // <project file>(<line>,<colunmn>): message : <text>
-                        _taskLogger.LogMessage(message.Level.ToImportance(), message.Text);
+                        // <project file>(<line>,<column>): message : <text>
+                        taskLogger.LogMessage(message.Level.ToImportance(), message.Text);
                     }
                     else
                     {
-                        _taskLogger.LogMessage(
+                        taskLogger.LogMessage(
                             subcategory: default,
                             code: message.Code,
                             helpKeyword: default,

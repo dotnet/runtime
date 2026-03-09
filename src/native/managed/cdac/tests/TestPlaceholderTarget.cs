@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Moq;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -30,7 +30,7 @@ internal class TestPlaceholderTarget : Target
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        _contractRegistry = new Mock<ContractRegistry>().Object;
+        _contractRegistry = new TestContractRegistry();
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
         _dataReader = reader;
@@ -41,6 +41,71 @@ internal class TestPlaceholderTarget : Target
     internal void SetContracts(ContractRegistry contracts)
     {
         _contractRegistry = contracts;
+    }
+
+    /// <summary>
+    /// Fluent builder for <see cref="TestPlaceholderTarget"/>. Accumulates types,
+    /// globals, and contract factories from mock descriptors, then materializes the
+    /// target and wires contracts in <see cref="Build"/>.
+    /// </summary>
+    internal class Builder
+    {
+        private readonly MockTarget.Architecture _arch;
+        private readonly MockMemorySpace.Builder _memBuilder;
+        private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
+        private readonly List<(string Name, ulong Value)> _globals = new();
+        private readonly List<(string Name, string Value)> _globalStrings = new();
+        private readonly List<(Type Type, Func<Target, IContract> Factory)> _contractFactories = new();
+
+        public Builder(MockTarget.Architecture arch)
+        {
+            _arch = arch;
+            _memBuilder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
+        }
+
+        internal MockMemorySpace.Builder MemoryBuilder => _memBuilder;
+
+        public Builder AddTypes(Dictionary<DataType, Target.TypeInfo> types)
+        {
+            foreach (var kvp in types)
+                _types[kvp.Key] = kvp.Value;
+            return this;
+        }
+
+        public Builder AddGlobals(params (string Name, ulong Value)[] globals)
+        {
+            _globals.AddRange(globals);
+            return this;
+        }
+
+        public Builder AddGlobalStrings(params (string Name, string Value)[] globalStrings)
+        {
+            _globalStrings.AddRange(globalStrings);
+            return this;
+        }
+
+        public Builder AddContract<TContract>(Func<Target, TContract> factory) where TContract : IContract
+        {
+            _contractFactories.Add((typeof(TContract), target => factory(target)));
+            return this;
+        }
+
+        public TestPlaceholderTarget Build()
+        {
+            var target = new TestPlaceholderTarget(
+                _arch,
+                _memBuilder.GetMemoryContext().ReadFromTarget,
+                _types,
+                _globals.ToArray(),
+                _globalStrings.ToArray());
+
+            var registry = new TestContractRegistry();
+            foreach (var (type, factory) in _contractFactories)
+                registry.Add(type, new Lazy<IContract>(() => factory(target)));
+            target.SetContracts(registry);
+
+            return target;
+        }
     }
 
     public override int PointerSize { get; }
@@ -77,12 +142,22 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
+    public override bool TryReadPointer(ulong address, out TargetPointer value) => DefaultTryReadPointer(address, out value);
     public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
+    public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
+    {
+        value = default;
+        if (!DefaultTryReadPointer(address, out TargetPointer ptr))
+            return false;
+        value = new TargetCodePointer(ptr);
+        return true;
+    }
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (_dataReader(address, buffer) < 0)
-            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
+    public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
     public override string ReadUtf16String(ulong address)
@@ -161,7 +236,33 @@ internal class TestPlaceholderTarget : Target
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
 
-#region subclass reader helpers
+    public override T ReadLittleEndian<T>(ulong address)
+    {
+        T value = default;
+        unsafe
+        {
+            Span<byte> buffer = stackalloc byte[sizeof(T)];
+            if (_dataReader(address, buffer) < 0)
+                throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+
+            T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
+    public override bool TryRead<T>(ulong address, out T value)
+    {
+        value = default;
+        if (!DefaultTryRead(address, out T readValue))
+            return false;
+
+        value = readValue;
+        return true;
+    }
+
+    public override void Write<T>(ulong address, T value) => throw new NotImplementedException();
+
+    #region subclass reader helpers
 
     /// <summary>
     /// Basic utility to read a value from memory, all the DefaultReadXXX methods call this.
@@ -218,14 +319,14 @@ internal class TestPlaceholderTarget : Target
     protected T DefaultRead<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!DefaultTryRead(address, out T value))
-            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
         return value;
     }
 
-    protected TargetPointer DefaultReadPointer (ulong address)
+    protected TargetPointer DefaultReadPointer(ulong address)
     {
         if (!DefaultTryReadPointer(address, out TargetPointer pointer))
-            throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
@@ -262,7 +363,7 @@ internal class TestPlaceholderTarget : Target
     protected TargetNUInt DefaultReadNUInt(ulong address)
     {
         if (!DefaultTryReadNUInt(address, out ulong value))
-            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
     }
@@ -271,7 +372,7 @@ internal class TestPlaceholderTarget : Target
     {
         return new TargetCodePointer(DefaultReadPointer(address));
     }
-#endregion subclass reader helpers
+    #endregion subclass reader helpers
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
@@ -309,7 +410,8 @@ internal class TestPlaceholderTarget : Target
                 return constructed;
 
             bool found = TryGet(address, out result);
-            if (!found) {
+            if (!found)
+            {
                 throw new InvalidOperationException($"Failed to add {typeof(T)} at 0x{address:x8}.");
             }
             return result!;
@@ -332,6 +434,21 @@ internal class TestPlaceholderTarget : Target
         public void Clear()
         {
             _readDataByAddress.Clear();
+        }
+    }
+
+    private sealed class TestContractRegistry : ContractRegistry
+    {
+        private readonly Dictionary<Type, Lazy<IContract>> _contracts = new();
+
+        public void Add(Type type, Lazy<IContract> contract) => _contracts[type] = contract;
+
+        public override TContract GetContract<TContract>()
+        {
+            if (_contracts.TryGetValue(typeof(TContract), out var lazy))
+                return (TContract)lazy.Value;
+
+            throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered.");
         }
     }
 

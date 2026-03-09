@@ -8,6 +8,7 @@
 
 Commonly Used Types:
 System.Net.ServerSentEvents.SseParser</PackageDescription>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,10 +36,10 @@ System.Net.ServerSentEvents.SseParser</PackageDescription>
   </ItemGroup>
 
    <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
 
 </Project>

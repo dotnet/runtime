@@ -341,7 +341,7 @@ namespace System.Management
                     //The only flags not valid for enumerations are EnsureLocatable & PrototypeOnly.
                     enumOptions.EnsureLocatable = false; enumOptions.PrototypeOnly = false;
 
-                    if (((SelectQuery)query).IsSchemaQuery == false) //deep instance enumeration
+                    if (!((SelectQuery)query).IsSchemaQuery) //deep instance enumeration
                     {
                         status = scope.GetSecuredIWbemServicesHandler(scope.GetIWbemServices()).CreateInstanceEnum_(
                             ((SelectQuery)query).ClassName,
@@ -434,7 +434,7 @@ namespace System.Management
                     //The only flags not valid for enumerations are EnsureLocatable & PrototypeOnly.
                     enumOptions.EnsureLocatable = false; enumOptions.PrototypeOnly = false;
 
-                    if (((SelectQuery)query).IsSchemaQuery == false) //deep instance enumeration
+                    if (!((SelectQuery)query).IsSchemaQuery) //deep instance enumeration
                     {
                         status = scope.GetSecuredIWbemServicesHandler(wbemServices).CreateInstanceEnumAsync_(((SelectQuery)query).ClassName,
                             enumOptions.Flags,

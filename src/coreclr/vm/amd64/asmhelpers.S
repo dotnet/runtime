@@ -382,18 +382,19 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         //
         // RDI = throwable
         // RSI = PC to invoke
-        // RDX = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        // RDX = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
         // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         //
 
         FUNCLET_CALL_PROLOGUE 0, 1
 
         //  Restore RBX, RBP, R12, R13, R14, R15 from CONTEXT
-        mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
-        mov     r12, [rdx + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
-        mov     r13, [rdx + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
-        mov     r14, [rdx + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
-        mov     r15, [rdx + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+        mov     rbx, [rdx + OFFSETOF__CONTEXT__Rbx]
+        mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp]
+        mov     r12, [rdx + OFFSETOF__CONTEXT__R12]
+        mov     r13, [rdx + OFFSETOF__CONTEXT__R13]
+        mov     r14, [rdx + OFFSETOF__CONTEXT__R14]
+        mov     r15, [rdx + OFFSETOF__CONTEXT__R15]
 
         // Save the SP of this function.
         mov     [rcx], rsp
@@ -442,10 +443,25 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
         INLINE_GETTHREAD // result in rax, it can thrash all argument registers as it can call a helper
         mov             r10, rax
+        test            rax, rax
+        jz              LOCAL_LABEL(NoManagedThreadOrCallStub)
 
+        mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
+        test            rax, rax
+        jnz             LOCAL_LABEL(HaveInterpThreadContext)
+
+LOCAL_LABEL(NoManagedThreadOrCallStub):
+        lea             rdi, [rsp + __PWTB_TransitionBlock]
+        mov             rsi, rbx
+        call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
+
+LOCAL_LABEL(HaveInterpThreadContext):
+        mov             r10, qword ptr [rax + OFFSETOF__InterpThreadContext__pStackPointer]
         // Load the InterpMethod pointer from the IR bytecode
         mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
+        test            rax, rax
+        jz              LOCAL_LABEL(NoManagedThreadOrCallStub)
         // Reload the argument registers, the macro to get the thread have likely overwritten them
         mov             rdi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset]
         mov             rsi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 8]
@@ -462,54 +478,54 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         movsd           xmm6, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x60]
         movsd           xmm7, real8 ptr [rsp + __PWTB_FloatArgumentRegisters + 0x70]
         lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
-        mov             r10, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
-        mov             r10, qword ptr [r10 + OFFSETOF__InterpThreadContext__pStackPointer]
         lea             rax, [rsp + __PWTB_TransitionBlock]
         // rbx contains IR bytecode address
         // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         call            qword ptr [r11]
+        // Fill in the ContinuationContext register
+        mov             rcx, [rsp + __PWTB_ArgumentRegisters + 3*8]
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
         xor             rdx, rdx
         call            C_FUNC(ExecuteInterpretedMethod)
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
         xor             rdx, rdx
         call            C_FUNC(ExecuteInterpretedMethod)
         mov             rax, qword ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetI8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
         xor             rdx, rdx
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8I8, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -517,12 +533,12 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         mov             rdx, qword ptr [rax + 8]
         mov             rax, qword ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetI8I8, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDoubleDouble, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -530,12 +546,12 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax]
         movsd           xmm1, real8 ptr [rax + 8]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetDoubleDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8Double, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -543,12 +559,12 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax + 8]
         mov             rax, qword ptr [rax]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetI8Double, _TEXT
 
 NESTED_ENTRY InterpreterStubRetDoubleI8, _TEXT, NoHandler
-        push_register   rax // stack alignment
+        push_register   rcx // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
         mov             rsi, rbx // the IR bytecode pointer
@@ -556,11 +572,11 @@ END_PROLOGUE
         call            C_FUNC(ExecuteInterpretedMethod)
         movsd           xmm0, real8 ptr [rax]
         mov             rax, qword ptr [rax + 8]
-        pop_register    rax
+        pop_register    rcx
         ret
 NESTED_END InterpreterStubRetDoubleI8, _TEXT
 
-NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
+NESTED_ENTRY InterpreterStubRetBuffRDI, _TEXT, NoHandler
         push_register   rax // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
@@ -569,9 +585,24 @@ END_PROLOGUE
         // The 8 + 8 is for the push and the return address slot
         mov             rdx, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
         call            C_FUNC(ExecuteInterpretedMethod)
-        pop_register    rax
+        mov             rax, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
+        pop_register    rcx
         ret
-NESTED_END InterpreterStubRetBuff, _TEXT
+NESTED_END InterpreterStubRetBuffRDI, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffRSI, _TEXT, NoHandler
+        push_register   rax // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        // Load the return buffer address
+        // The 8 + 8 is for the push and the return address slot
+        mov             rdx, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset + 8]
+        call            C_FUNC(ExecuteInterpretedMethod)
+        mov             rax, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset + 8]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetBuffRSI, _TEXT
 
 // Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 // from native code to the interpreter
@@ -1136,6 +1167,12 @@ LEAF_END Store_XMM7, _TEXT
 // Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 // from the interpreter to native code
 
+LEAF_ENTRY InjectInterpStackAlign, _TEXT
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END InjectInterpStackAlign, _TEXT
+
 // Copy arguments from the the interpreter stack to the CPU stack.
 // The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack, _TEXT
@@ -1698,82 +1735,197 @@ LEAF_END Load_XMM7, _TEXT
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        alloc_stack 0x10
-        save_reg_postrsp r10, 0 
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov r10, [rsp]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
         mov rsp, rbp
         pop rbp
         ret
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetBuffRDI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        alloc_stack 0x10
-        save_reg_postrsp r10, 0
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         mov rdi, rdx // return buffer
         call qword ptr [r11]
-        mov r10, [rsp]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
         mov rsp, rbp
         pop rbp
         ret
-NESTED_END CallJittedMethodRetBuff, _TEXT
+NESTED_END CallJittedMethodRetBuffRDI, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetBuffRSI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        push_register rdx
+        set_cfa_register rbp, 0
+        push_register r8
         push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
+        mov rsi, rdx // return buffer
         call qword ptr [r11]
-        //pop rdx
-        mov rdx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetBuffRSI, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
         movsd real8 ptr [rdx], xmm0
         mov rsp, rbp
         pop rbp
         ret
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rdx, [rbp - 8]
+        movsx rax, al  // Sign extend 1 byte to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        movsx rax, ax  // Sign extend 2 bytes to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
         mov qword ptr [rdx], rax
         mov rsp, rbp
         pop rbp
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI8I8, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        movzx rax, al  // Zero extend 1 byte to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        movzx rax, ax  // Zero extend 2 bytes to 64 bit
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
+        mov qword ptr [rdx], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI8I8, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
+        push_register rdx
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        call qword ptr [r11]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         mov qword ptr [rcx], rax
         mov qword ptr [rcx + 8], rdx
         mov rsp, rbp
@@ -1784,14 +1936,17 @@ NESTED_END CallJittedMethodRetI8I8, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8Double, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         mov qword ptr [rcx], rax
         movsd real8 ptr [rcx + 8], xmm0
         mov rsp, rbp
@@ -1802,14 +1957,17 @@ NESTED_END CallJittedMethodRetI8Double, _TEXT
 NESTED_ENTRY CallJittedMethodRetDoubleI8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         movsd real8 ptr [rcx], xmm0
         mov qword ptr [rcx + 8], rax
         mov rsp, rbp
@@ -1820,14 +1978,17 @@ NESTED_END CallJittedMethodRetDoubleI8, _TEXT
 NESTED_ENTRY CallJittedMethodRetDoubleDouble, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         movsd real8 ptr [rcx], xmm0
         movsd real8 ptr [rcx + 8], xmm1
         mov rsp, rbp
@@ -1835,4 +1996,89 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
 
+//==========================================================================
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // rdi
+//     void* pHandler,             // rsi
+//     REGDISPLAY *pRD,            // rdx
+//     ExInfo *pExInfo,            // rcx
+//     bool isFilter               // r8
+// );
+//==========================================================================
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        // Pass TransitionBlock* as last (6th) argument
+        // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+        // Original args: rdi=throwable, rsi=pHandler, rdx=pRD, rcx=pExInfo, r8=isFilter
+
+        lea     r9, [rsp + __PWTB_TransitionBlock]         // TransitionBlock* as 6th param (r9)
+
+        // rdi, rsi, rdx, rcx, r8 remain unchanged (throwable, pHandler, pRD, pExInfo, isFilter)
+
+        call    C_FUNC(CallInterpreterFuncletWorker)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea rdx, [rsp + __PWTB_TransitionBlock]
+        call C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+
 #endif // FEATURE_INTERPRETER
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   rdi = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+        // rdi already contains exception object
+        lea     rsi, [rsp + __PWTB_TransitionBlock]
+        call    C_FUNC(IL_Throw_Impl)
+        // Should never return
+        int3
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   rdi = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+        // rdi already contains exception object
+        lea     rsi, [rsp + __PWTB_TransitionBlock]
+        call    C_FUNC(IL_ThrowExact_Impl)
+        // Should never return
+        int3
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+        lea     rdi, [rsp + __PWTB_TransitionBlock]
+        call    C_FUNC(IL_Rethrow_Impl)
+        // Should never return
+        int3
+NESTED_END IL_Rethrow, _TEXT
+

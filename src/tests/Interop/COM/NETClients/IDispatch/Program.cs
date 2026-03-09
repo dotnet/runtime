@@ -19,7 +19,7 @@ namespace NetClient
     {
         static void Validate_Numeric_In_ReturnByRef()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             byte b1 = 1;
             byte b2 = b1;
@@ -74,7 +74,7 @@ namespace NetClient
 
         static void Validate_Float_In_ReturnAndUpdateByRef()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             float a = .1f;
             float b = .2f;
@@ -91,7 +91,7 @@ namespace NetClient
 
         static void Validate_Double_In_ReturnAndUpdateByRef()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             double a = .1;
             double b = .2;
@@ -108,15 +108,15 @@ namespace NetClient
 
         static int GetErrorCodeFromHResult(int hresult)
         {
-            // https://msdn.microsoft.com/en-us/library/cc231198.aspx
+            // https://msdn.microsoft.com/library/cc231198.aspx
             return hresult & 0xffff;
         }
 
         static void Validate_Exception()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
-            int errorCode = 127;
+            int errorCode = 1127;
             string resultString = errorCode.ToString("x");
             try
             {
@@ -127,6 +127,19 @@ namespace NetClient
             catch (COMException e)
             {
                 Assert.Equal(GetErrorCodeFromHResult(e.HResult), errorCode);
+                Assert.Equal(e.Message, resultString);
+            }
+
+            try
+            {
+                Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.DispLegacy)} {errorCode}...");
+                dispatchTesting.TriggerException(IDispatchTesting_Exception.DispLegacy, errorCode);
+                Assert.Fail("DISP exception not thrown properly");
+            }
+            catch (COMException e)
+            {
+                Assert.Equal(e.ErrorCode, errorCode); // The legacy DISP exception returns the error code unmodified.
+                Assert.Equal(e.HResult, errorCode);
                 Assert.Equal(e.Message, resultString);
             }
 
@@ -161,7 +174,7 @@ namespace NetClient
         static void Validate_StructNotSupported()
         {
             Console.WriteLine($"IDispatch with structs not supported...");
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
 
             var input = new HFA_4() { x = 1f, y = 2f, z = 3f, w = 4f };
             Assert.Throws<NotSupportedException>(() => dispatchTesting.DoubleHVAValues(ref input));
@@ -169,7 +182,7 @@ namespace NetClient
 
         static void Validate_LCID_Marshaled()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
             CultureInfo oldCulture = CultureInfo.CurrentCulture;
             CultureInfo newCulture = new CultureInfo("es-ES", false);
             try
@@ -187,7 +200,7 @@ namespace NetClient
 
         static void Validate_Enumerator()
         {
-            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            var dispatchTesting = new DispatchTesting();
             var expected = System.Linq.Enumerable.Range(0, 10);
 
             {
@@ -238,7 +251,7 @@ namespace NetClient
 
         static void Validate_ValueCoerce_ReturnToManaged()
         {
-            var dispatchCoerceTesting = (DispatchCoerceTesting)new DispatchCoerceTestingClass();
+            var dispatchCoerceTesting = new DispatchCoerceTesting();
 
             Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
 
@@ -337,7 +350,7 @@ namespace NetClient
         public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano
-            if (Utilities.IsWindowsNanoServer)
+            if (Utilities.IsWindowsNanoServer || Utilities.IsCoreClrInterpreter)
             {
                 return 100;
             }

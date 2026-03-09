@@ -90,7 +90,7 @@ ds_rt_auto_trace_init (void)
 		auto_trace_init ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -106,7 +106,7 @@ ds_rt_auto_trace_launch (void)
 		auto_trace_launch ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -122,7 +122,7 @@ ds_rt_auto_trace_signal (void)
 		auto_trace_signal ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -138,7 +138,7 @@ ds_rt_auto_trace_wait (void)
 		auto_trace_wait ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 #endif
 }
 
@@ -210,7 +210,7 @@ ds_rt_generate_core_dump (
 		}
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 	return result;
 }
 
@@ -362,12 +362,8 @@ ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
 			GCX_COOP();
 
 			// Load and call startup hook since managed execution is already running.
-			MethodDescCallSite callStartupHook(METHOD__STARTUP_HOOK_PROVIDER__CALL_STARTUP_HOOK);
-
-			ARG_SLOT args[1];
-			args[0] = PtrToArgSlot(startup_hook_path);
-
-			callStartupHook.Call(args);
+			UnmanagedCallersOnlyCaller callStartupHook(METHOD__STARTUP_HOOK_PROVIDER__CALL_STARTUP_HOOK);
+			callStartupHook.InvokeThrowing(startup_hook_path);
 		}
 		EX_CATCH_HRESULT (hr);
 

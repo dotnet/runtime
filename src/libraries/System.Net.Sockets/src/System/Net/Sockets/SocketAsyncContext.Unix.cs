@@ -1388,7 +1388,7 @@ namespace System.Net.Sockets
                 bool timeoutExpired = false;
                 while (true)
                 {
-                    DateTime waitStart = DateTime.UtcNow;
+                    long waitStart = Stopwatch.GetTimestamp();
 
                     if (!e.Wait(timeout))
                     {
@@ -1411,7 +1411,7 @@ namespace System.Net.Sockets
                     // Adjust timeout and try again.
                     if (timeout > 0)
                     {
-                        timeout -= (DateTime.UtcNow - waitStart).Milliseconds;
+                        timeout -= (int)Stopwatch.GetElapsedTime(waitStart).TotalMilliseconds;
 
                         if (timeout <= 0)
                         {
@@ -1536,7 +1536,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError ConnectAsync(Memory<byte> socketAddress, Action<int, Memory<byte>, SocketFlags, SocketError> callback, Memory<byte> buffer, out int sentBytes)
+        public SocketError ConnectAsync(Memory<byte> socketAddress, Action<int, Memory<byte>, SocketFlags, SocketError> callback, Memory<byte> buffer, out int sentBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             Debug.Assert(callback != null, "Expected non-null callback");
@@ -1574,7 +1574,7 @@ namespace System.Net.Sockets
                 BytesTransferred = sentBytes,
             };
 
-            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
+            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 if (operation.ErrorCode == SocketError.Success)
                 {

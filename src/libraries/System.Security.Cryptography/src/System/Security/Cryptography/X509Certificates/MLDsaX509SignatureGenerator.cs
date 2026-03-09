@@ -43,18 +43,13 @@ namespace System.Security.Cryptography.X509Certificates
             // This generator only supports ML-DSA "Pure" signatures, but the overall design of
             // CertificateRequest makes it easy for a hashAlgorithm value to get here.
 
-            byte[] signature = new byte[_key.Algorithm.SignatureSizeInBytes];
-            int written = _key.SignData(data, signature);
-            Debug.Assert(written == signature.Length);
-            return signature;
+            return _key.SignData(data);
         }
 
         protected override PublicKey BuildPublicKey()
         {
             Oid oid = new Oid(_key.Algorithm.Oid, null);
-            byte[] pkBytes = new byte[_key.Algorithm.PublicKeySizeInBytes];
-            int written = _key.ExportMLDsaPublicKey(pkBytes);
-            Debug.Assert(written == pkBytes.Length);
+            byte[] pkBytes = _key.ExportMLDsaPublicKey();
 
             return new PublicKey(
                 oid,

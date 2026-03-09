@@ -60,11 +60,11 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Intrinsics" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

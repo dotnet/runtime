@@ -181,10 +181,7 @@ namespace System.Speech.Internal
         {
             if (node.Parent == null)
             {
-                if (newNode != null)
-                {
-                    newNode.Parent = null;
-                }
+                newNode?.Parent = null;
             }
             else if (node.Parent.Left == node)
             {
@@ -599,10 +596,7 @@ namespace System.Speech.Internal
                     _node = _root != null ? FindMinSubTree(_root) : null;
                     _moved = true;
 #if DEBUG
-                    if (_root != null)
-                    {
-                        _root._inEnumaration = true;
-                    }
+                    _root?._inEnumaration = true;
 #endif
                 }
                 else
@@ -610,10 +604,7 @@ namespace System.Speech.Internal
                     _node = _node != null ? FindSuccessor(_node) : null;
                 }
 #if DEBUG
-                if (_root != null)
-                {
-                    _root._inEnumaration = _node != null;
-                }
+                _root?._inEnumaration = _node != null;
 #endif
                 return _node != null;
             }
@@ -648,10 +639,7 @@ namespace System.Speech.Internal
                 set
                 {
                     _leftChild = value;
-                    if (_leftChild != null)
-                    {
-                        _leftChild._parent = this;
-                    }
+                    _leftChild?._parent = this;
                 }
             }
 
@@ -664,10 +652,7 @@ namespace System.Speech.Internal
                 set
                 {
                     _rightChild = value;
-                    if (_rightChild != null)
-                    {
-                        _rightChild._parent = this;
-                    }
+                    _rightChild?._parent = this;
                 }
             }
 

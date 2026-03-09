@@ -355,14 +355,18 @@ namespace InteropLibImports
                 return TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
         }
 
+        // Switch to Cooperative mode since object references
+        // are being manipulated and the catchFrame needs that so that it can push
+        // itself to the explicit frame stack.
+        GCX_COOP();
+        // Indicate to the debugger and exception handling that managed exceptions are being caught
+        // here.
+        DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         HRESULT hr;
         auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
         EX_TRY_THREAD(CURRENT_THREAD)
         {
-            // Switch to Cooperative mode since object references
-            // are being manipulated.
-            GCX_COOP();
-
             struct
             {
                 OBJECTREF objRef;
@@ -379,6 +383,8 @@ namespace InteropLibImports
             GCPROTECT_END();
         }
         EX_CATCH_HRESULT(hr);
+
+        catchFrame.Pop();
 
         // Assert valid value.
         _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result

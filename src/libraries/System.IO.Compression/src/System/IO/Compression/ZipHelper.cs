@@ -32,19 +32,6 @@ internal static partial class ZipHelper
         return Encoding.ASCII;
     }
 
-    /// <summary>
-    /// Reads exactly bytesToRead out of stream, unless it is out of bytes
-    /// </summary>
-    internal static int ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
-    {
-        int bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: false);
-        if (bytesRead < bytesToRead)
-        {
-            throw new IOException(SR.UnexpectedEndOfStream);
-        }
-        return bytesRead;
-    }
-
     // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
     internal static DateTime DosTimeToDateTime(uint dateTime)
     {
@@ -124,11 +111,18 @@ internal static partial class ZipHelper
             bool signatureFound = false;
 
             int totalBytesRead = 0;
-            int duplicateBytesRead = 0;
 
-            while (!signatureFound && !outOfBytes && totalBytesRead <= maxBytesToRead)
+            while (!signatureFound && !outOfBytes && totalBytesRead < maxBytesToRead)
             {
-                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, signatureToFind.Length);
+                int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
+
+                if (maxBytesToRead - totalBytesRead + overlap < bufferSpan.Length)
+                {
+                    // If we have less than a full buffer left to read, we adjust the buffer size.
+                    bufferSpan = bufferSpan.Slice(0, maxBytesToRead - totalBytesRead + overlap);
+                }
+
+                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, overlap);
 
                 outOfBytes = bytesRead < bufferSpan.Length;
                 if (bytesRead < bufferSpan.Length)
@@ -139,15 +133,13 @@ internal static partial class ZipHelper
                 bufferPointer = bufferSpan.LastIndexOf(signatureToFind);
                 Debug.Assert(bufferPointer < bufferSpan.Length);
 
-                totalBytesRead += (bufferSpan.Length - duplicateBytesRead);
+                totalBytesRead += bytesRead - overlap;
 
                 if (bufferPointer != -1)
                 {
                     signatureFound = true;
                     break;
                 }
-
-                duplicateBytesRead = signatureToFind.Length;
             }
 
             if (!signatureFound)
@@ -178,14 +170,14 @@ internal static partial class ZipHelper
         {
             Debug.Assert(overlap <= buffer.Length);
             stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-            bytesRead = ReadBytes(stream, buffer, buffer.Length);
+            bytesRead = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: true);
             stream.Seek(-buffer.Length, SeekOrigin.Current);
         }
         else
         {
             int bytesToRead = (int)stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            bytesRead = ReadBytes(stream, buffer, bytesToRead);
+            bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: true);
             stream.Seek(0, SeekOrigin.Begin);
         }
 
@@ -197,6 +189,8 @@ internal static partial class ZipHelper
     // number of characters whose bytes do not add up to more than that number.
     internal static byte[] GetEncodedTruncatedBytesFromString(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
     {
+        Debug.Assert(maxBytes >= 0, "maxBytes must be non-negative");
+
         if (string.IsNullOrEmpty(text))
         {
             isUTF8 = false;
@@ -206,35 +200,26 @@ internal static partial class ZipHelper
         encoding ??= GetEncoding(text);
         isUTF8 = encoding.CodePage == 65001;
 
-        if (maxBytes == 0) // No truncation
+        if (maxBytes == 0)
         {
             return encoding.GetBytes(text);
         }
 
-        byte[] bytes;
-        if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
+        byte[] bytes = encoding.GetBytes(text);
+
+        if (maxBytes < bytes.Length)
         {
-            int totalCodePoints = 0;
-            foreach (Rune rune in text.EnumerateRunes())
+            if (isUTF8)
             {
-                if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                while ((bytes[maxBytes] & 0xC0) == 0x80)
                 {
-                    break;
+                    maxBytes--;
                 }
-                totalCodePoints += rune.Utf8SequenceLength;
             }
 
-            bytes = encoding.GetBytes(text);
-
-            Debug.Assert(totalCodePoints > 0);
-            Debug.Assert(totalCodePoints <= bytes.Length);
-
-            return bytes[0..totalCodePoints];
+            bytes = bytes[0..maxBytes];
         }
 
-        bytes = encoding.GetBytes(text);
-        return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
+        return bytes;
     }
-
-
 }

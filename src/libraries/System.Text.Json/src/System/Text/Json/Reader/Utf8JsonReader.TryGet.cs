@@ -43,7 +43,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.GetUnescapedString(span);
             }
 
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!span.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TranscodeHelper(span);
         }
 
@@ -838,7 +838,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.TryGetUnescapedBase64Bytes(span, out value);
             }
 
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!span.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TryDecodeBase64(span, out value);
         }
 
@@ -1351,31 +1351,10 @@ namespace System.Text.Json
             }
             else
             {
-                if (ValueSpan.Length > JsonConstants.MaximumEscapedGuidLength)
-                {
-                    value = default;
-                    return false;
-                }
-
                 span = ValueSpan;
             }
 
-            if (ValueIsEscaped)
-            {
-                return JsonReaderHelper.TryGetEscapedGuid(span, out value);
-            }
-
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (span.Length == JsonConstants.MaximumFormatGuidLength
-                && Utf8Parser.TryParse(span, out Guid tmp, out _, 'D'))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(span, ValueIsEscaped, out value);
         }
     }
 }

@@ -20,7 +20,7 @@ public class ReJITTests
         MockReJIT builder,
         Mock<ICodeVersions> mockCodeVersions = null)
     {
-        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types, builder.Globals);
+        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetMemoryContext().ReadFromTarget, builder.Types, builder.Globals);
 
         mockCodeVersions ??= new Mock<ICodeVersions>();
 
@@ -31,6 +31,30 @@ public class ReJITTests
                 && c.CodeVersions == mockCodeVersions.Object);
         target.SetContracts(reg);
         return target;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsEnabled_RejitOnAttachEnabled_ReturnsTrue(MockTarget.Architecture arch)
+    {
+        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: true);
+        var target = CreateTarget(arch, mockRejit);
+
+        var rejit = target.Contracts.ReJIT;
+        Assert.NotNull(rejit);
+        Assert.True(rejit.IsEnabled());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsEnabled_RejitOnAttachDisabled_NoProfiler_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: false);
+        var target = CreateTarget(arch, mockRejit);
+
+        var rejit = target.Contracts.ReJIT;
+        Assert.NotNull(rejit);
+        Assert.False(rejit.IsEnabled());
     }
 
     [Theory]
@@ -74,7 +98,6 @@ public class ReJITTests
             { ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), RejitState.Requested },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kSuppressParams | MockReJIT.RejitFlags.kStateRequested), RejitState.Requested }
         };
 
         var target = CreateTarget(arch, mockRejit);

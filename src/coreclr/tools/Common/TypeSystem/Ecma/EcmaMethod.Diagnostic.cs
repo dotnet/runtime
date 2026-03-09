@@ -13,7 +13,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 try
                 {
-                    return Name;
+                    return GetName();
                 }
                 catch
                 {

@@ -97,33 +97,11 @@ namespace System.Net.Sockets
 
             saea.RemoteEndPoint = remoteEP;
 
-            ValueTask connectTask = saea.ConnectAsync(this, saeaCancelable: cancellationToken.CanBeCanceled);
-            if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
-            {
-                // Avoid async invocation overhead
-                return connectTask;
-            }
-            else
-            {
-                return WaitForConnectWithCancellation(saea, connectTask, cancellationToken);
-            }
+            // Clear any buffer from a previous operation (e.g. ReceiveAsync) so that
+            // DoOperationConnectEx doesn't pass stale data to ConnectEx's lpSendBuffer.
+            saea.SetBuffer(default);
 
-            static async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
-            {
-                Debug.Assert(cancellationToken.CanBeCanceled);
-                try
-                {
-                    using (cancellationToken.UnsafeRegister(o => CancelConnectAsync((SocketAsyncEventArgs)o!), saea))
-                    {
-                        await connectTask.ConfigureAwait(false);
-                    }
-                }
-                catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw;
-                }
-            }
+            return saea.ConnectAsync(this, cancellationToken);
         }
 
         /// <summary>
@@ -757,7 +735,7 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                var ex = new NotSupportedException(SR.net_notconnected);
+                var ex = ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_notconnected));
                 return ValueTask.FromException(ex);
             }
 
@@ -1210,12 +1188,13 @@ namespace System.Net.Sockets
                     ValueTask.FromException<int>(CreateException(error));
             }
 
-            public ValueTask ConnectAsync(Socket socket, bool saeaCancelable)
+            public ValueTask ConnectAsync(Socket socket, CancellationToken cancellationToken)
             {
                 try
                 {
-                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: saeaCancelable))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaMultiConnectCancelable: false, cancellationToken))
                     {
+                        _cancellationToken = cancellationToken;
                         return new ValueTask(this, _mrvtsc.Version);
                     }
                 }

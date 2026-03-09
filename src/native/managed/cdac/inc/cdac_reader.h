@@ -18,6 +18,7 @@ extern "C"
 int cdac_reader_init(
     uint64_t descriptor,
     int(*read_from_target)(uint64_t, uint8_t*, uint32_t, void*),
+    int(*write_to_target)(uint64_t, const uint8_t*, uint32_t, void*),
     int(*read_thread_context)(uint32_t, uint32_t, uint32_t, uint8_t*, void*),
     void* read_context,
     /*out*/ intptr_t* handle);

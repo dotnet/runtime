@@ -70,11 +70,11 @@ namespace System.Net.Http.Headers
             // that concurrent modifications of different properties don't interfere with each other.
             if (value)
             {
-                Interlocked.Or(ref Unsafe.As<Flags, int>(ref _flags), (int)flag);
+                Interlocked.Or(ref _flags, flag);
             }
             else
             {
-                Interlocked.And(ref Unsafe.As<Flags, int>(ref _flags), (int)~flag);
+                Interlocked.And(ref _flags, ~flag);
             }
         }
 

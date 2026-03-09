@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
     <!-- Enabling this rule will cause build failures on undocumented public APIs.
@@ -6,10 +7,6 @@
          we only enable it in specific projects. so to avoid duplicating this property in coreclr, we can first scope it to src/libraries.
          This property needs to be declared before the ..\..\Directory.Build.props import. -->
     <SkipArcadeNoWarnCS1591>true</SkipArcadeNoWarnCS1591>
-
-    <!-- Prevent native-binplace.proj from being treated as a source project, to avoid importing illink targets
-         and thereby avoid hitting a static graph restore bug: https://github.com/dotnet/runtime/issues/92194 -->
-    <IsSourceProject Condition="'$(MSBuildProjectFile)' == 'native-binplace.proj'">false</IsSourceProject>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
@@ -35,6 +32,7 @@
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <UseDefaultTestHost>false</UseDefaultTestHost>
   </PropertyGroup>
 
   <!-- Language configuration -->
@@ -48,8 +46,8 @@
     <!-- Nullability is enabled by default except for test projects, which instead default to annotations. -->
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' != 'true'">enable</Nullable>
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' == 'true'">annotations</Nullable>
-    <!-- EnableAOTAnalyzer is enabled by default for src projects. -->
-    <EnableAOTAnalyzer Condition="'$(EnableAOTAnalyzer)' == '' and '$(IsSourceProject)' == 'true'">true</EnableAOTAnalyzer>
+    <!-- AOT compatibility is enabled by default for src/ref projects. -->
+    <IsAotCompatible Condition="'$(IsAotCompatible)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true')">true</IsAotCompatible>
   </PropertyGroup>
 
   <!-- Set up common paths -->

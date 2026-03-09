@@ -32,10 +32,9 @@
 //-----------------------------------------------------------------------------
 // In v1.0, we declared that mscordbi was a "shared" component, which means
 // that we promised to provide it from now until the end of time. So every CLR implementation
-// needs an Mscordbi that implements the everett guids for CorDebug + CorPublish.
+// needs an Mscordbi that implements the everett guids for CorDebug
 //
-// This works fine for CorPublish, which is truly shared.
-// CorDebug however is "versioned" not "shared" - each version of the CLR has its own disjoint copy.
+// CorDebug is "versioned" not "shared" - each version of the CLR has its own disjoint copy.
 //
 // Thus creating a CorDebug object requires a version parameter.
 // CoCreateInstance doesn't have a the version param, so we use the new (v2.0+)
@@ -233,11 +232,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 #endif
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-            g_pDbgTransportTarget = new (nothrow) DbgTransportTarget();
-            if (g_pDbgTransportTarget == NULL)
-                return FALSE;
-
-            if (FAILED(g_pDbgTransportTarget->Init()))
+            if (FAILED(g_DbgTransportTarget.Init()))
                 return FALSE;
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
         }
@@ -263,12 +258,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_PROCESS_DETACH:
         {
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-            if (g_pDbgTransportTarget != NULL)
-            {
-                g_pDbgTransportTarget->Shutdown();
-                delete g_pDbgTransportTarget;
-                g_pDbgTransportTarget = NULL;
-            }
+            g_DbgTransportTarget.Shutdown();
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
         }
         break;
@@ -307,14 +297,6 @@ STDAPI DLLEXPORT DllGetClassObjectInternal(               // Return code.
     CClassFactory   *pClassFactory;         // To create class factory object.
     PFN_CREATE_OBJ  pfnCreateObject = NULL;
 
-
-#if defined(FEATURE_DBG_PUBLISH)
-    if (rclsid == CLSID_CorpubPublish)
-    {
-        pfnCreateObject = CorpubPublish::CreateObject;
-    }
-    else
-#endif
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     if (rclsid == CLSID_CorDebug_Telesto)
     {

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public class Test
 {
@@ -68,6 +69,7 @@ public class Test
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Validate_Explicit1()
     {
@@ -80,6 +82,7 @@ public class Test
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Validate_Explicit2()
     {
@@ -92,6 +95,7 @@ public class Test
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Validate_Explicit3()
     {
@@ -104,6 +108,7 @@ public class Test
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Validate_Explicit4()
     {
@@ -155,6 +160,7 @@ public class Test
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void Validate_Explicit5_Invalid()
     {
         if (Environment.Is64BitProcess)

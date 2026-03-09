@@ -32,7 +32,6 @@
  * Forward Declarations
  */
 class    AppDomain;
-class    ArrayClass;
 class    ArrayMethodDesc;
 class ClassLoader;
 class FCallMethodDesc;
@@ -316,15 +315,13 @@ typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 struct MethodTableAuxiliaryData
 {
     friend class MethodTable;
-#if defined(DACCESS_COMPILE)
-    friend class NativeImageDumper;
-#endif
 
     enum
     {
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_Initialized, enum_flag_IsInitError, and enum_flag_IsNotFullyLoaded.
 
         enum_flag_Initialized               = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
@@ -801,9 +798,9 @@ struct SystemVStructRegisterPassingHelper
     unsigned int                    structSize;
 
     // These fields are the output; these are what is computed by the classification algorithm.
-    unsigned int                    eightByteCount;
+    uint8_t                         eightByteCount;
     SystemVClassificationType       eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
-    unsigned int                    eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    uint8_t                         eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
     unsigned int                    eightByteOffsets[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 
     // Helper members to track state.
@@ -875,6 +872,53 @@ struct FpStructInRegistersInfo
 };
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
+#ifdef UNIX_AMD64_ABI_ITF
+struct SystemVEightByteRegistersInfo
+{
+private:
+    uint8_t NumEightBytes; // Number of eightbytes used by the struct passed in registers
+    SystemVClassificationType EightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    uint8_t EightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+public:
+
+    SystemVEightByteRegistersInfo()
+    {
+        InitEmpty();
+    }
+
+    SystemVEightByteRegistersInfo(const SystemVStructRegisterPassingHelper& helper)
+    {
+        NumEightBytes = helper.eightByteCount;
+        _ASSERTE(NumEightBytes <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+        for (unsigned i = 0; i < NumEightBytes; i++)
+        {
+            EightByteClassifications[i] = helper.eightByteClassifications[i];
+            EightByteSizes[i] = helper.eightByteSizes[i];
+        }
+    }
+
+    void InitEmpty()
+    {
+        NumEightBytes = 0;
+    }
+
+    uint8_t GetNumEightBytes() const
+    {
+        return NumEightBytes;
+    }
+    SystemVClassificationType GetEightByteClassification(unsigned index) const
+    {
+        _ASSERTE(index < NumEightBytes);
+        return EightByteClassifications[index];
+    }
+    uint8_t GetEightByteSize(unsigned index) const
+    {
+        _ASSERTE(index < NumEightBytes);
+        return EightByteSizes[index];
+    }
+};
+#endif
+
 //===============================================================================================
 //
 // GC data appears before the beginning of the MethodTable
@@ -922,9 +966,6 @@ class MethodTable
     friend class EEClass;
     friend class MethodTableBuilder;
     friend class CheckAsmOffsets;
-#if defined(DACCESS_COMPILE)
-    friend class NativeImageDumper;
-#endif
 
 public:
     // Do some sanity checking to make sure it's a method table
@@ -939,6 +980,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!IsContinuation());
         return m_pModule;
     }
 
@@ -1090,12 +1132,15 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // All ComObjects except for __ComObject
-        // have dynamic Interface maps
-        return GetNumInterfaces() > 0
-            && IsComObjectType()
-            && !ParentEquals(g_pObjectClass)
-            && this != g_pBaseCOMObject;
+        // All ComObjects except for __ComObject have dynamic Interface maps
+        // to avoid costly QIs on required managed interfaces. The __ComObject
+        // type is inserted automatically when a COM object enters the runtime.
+        // For example, an incoming COM interface pointer or activation via a
+        // COM coclass. See ComObject::SupportsInterface() for relevant use of
+        // the dynamic interface map.
+        return IsComObjectType()
+            && GetNumInterfaces() > g_pBaseCOMObject->GetNumInterfaces()
+            && !ParentEquals(g_pObjectClass);
     }
 #endif // FEATURE_COMINTEROP
 
@@ -1135,8 +1180,8 @@ public:
 
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
-    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
+    bool ClassifyEightBytes(SystemVStructRegisterPassingHelper *helperPtr, bool isNativeStruct, MethodTable** pByValueClassCache = NULL);
+    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if !defined(DACCESS_COMPILE)
@@ -1211,9 +1256,9 @@ public:
 private:
 
 #if defined(UNIX_AMD64_ABI_ITF)
-    void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const;
+    void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel) const;
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache);
+    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct, MethodTable** pByValueClassCache);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     // called from CheckRunClassInitThrowing().  The type wasn't marked as
@@ -1432,13 +1477,29 @@ public:
     // of the fully loaded type. This is to reduce the amount of type loading
     // performed at process startup.
     //
+    // When placed on a valuetype or a non-generic interface, the special marker will indicate that the interface should be considered instantiated over the valuetype
+    // When placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
+    //
     // The current rule is that these interfaces can only appear
-    // on valuetypes that are not shared generic, and that the special
+    // on valuetypes and interfaces that are not shared generic, and that the special
     // marker type is the open generic type.
     //
     inline bool IsSpecialMarkerTypeForGenericCasting()
     {
         return IsGenericTypeDefinition();
+    }
+
+    // See comment on IsSpecialMarkerTypeForGenericCasting for details
+    inline TypeHandle GetSpecialInstantiationType()
+    {
+        if (IsInterface() && HasInstantiation())
+        {
+            return GetInstantiation()[0];
+        }
+        else
+        {
+            return TypeHandle(this);
+        }
     }
 
     static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
@@ -1744,8 +1805,6 @@ public:
     // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
     MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
-
-    static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
 
     PCODE GetRestoredSlot(DWORD slot);
 
@@ -2282,7 +2341,7 @@ public:
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
-                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner->GetSpecialInstantiationType()))
                 {
                     exactMatch = true;
 #ifndef DACCESS_COMPILE
@@ -2297,6 +2356,8 @@ public:
 
             RETURN (exactMatch);
         }
+
+        bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
@@ -2398,8 +2459,8 @@ public:
     static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
 
 #ifdef FEATURE_COMINTEROP
-    // get the method desc given the interface method desc on a COM implemented server (if fNullOk is set then NULL is an allowable return value)
-    MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
+    // get the method desc given the interface method desc on a COM implemented server
+    MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD);
 #endif // FEATURE_COMINTEROP
 
     // Resolve virtual static interface method pInterfaceMD on this type.
@@ -2790,6 +2851,8 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
+    inline BOOL IsContinuation();
+
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
     {
@@ -3122,6 +3185,14 @@ public:
         static void HolderRelease(MethodData *pEntry)
             { WRAPPER_NO_CONTRACT; if (pEntry != NULL) pEntry->Release(); }
 
+        static void* operator new(size_t size)
+        {
+            return ::operator new(size);
+        }
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
       protected:
         ULONG m_cRef;
         MethodTable *const m_pImplMT;
@@ -3357,6 +3428,12 @@ protected:
             _ASSERTE(size <= GetObjectSize(targetMT.pMT, computeOptions));
             return ::operator new(GetObjectSize(targetMT.pMT, computeOptions));
         }
+
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static void* operator new(size_t size) = delete;
     };  // class MethodDataObject
 
@@ -3630,7 +3707,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
-        //
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, and enum_flag_GenericsMask_TypicalInst.
 
         // We are overloading the low 2 bytes of m_dwFlags to be a component size for Strings
         // and Arrays and some set of flags which we can be assured are of a specified state
@@ -3704,40 +3781,41 @@ private:
 
         // The following bits describe mutually exclusive locations of the type
         // in the type hierarchy.
-        enum_flag_Category_Mask             = 0x000F0000,
+
+        enum_flag_Category_Mask             = 0x000F0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_Category_Class            = 0x00000000,
         enum_flag_Category_Unused_1         = 0x00010000,
         enum_flag_Category_Unused_2         = 0x00020000,
         enum_flag_Category_Unused_3         = 0x00030000,
 
-        enum_flag_Category_ValueType        = 0x00040000,
+        enum_flag_Category_ValueType        = 0x00040000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_ValueType_Mask   = 0x000C0000,
-        enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType
-        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type
-        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
-        enum_flag_Category_Array            = 0x00080000,
-        enum_flag_Category_Array_Mask       = 0x000C0000,
+        enum_flag_Category_Array            = 0x00080000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_Array_Mask       = 0x000C0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // enum_flag_Category_IfArrayThenUnused                 = 0x00010000, // sub-category of Array
-        enum_flag_Category_IfArrayThenSzArray                   = 0x00020000, // sub-category of Array
+        enum_flag_Category_IfArrayThenSzArray                   = 0x00020000, // sub-category of Array. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
-        enum_flag_Category_Interface        = 0x000C0000,
+        enum_flag_Category_Interface        = 0x000C0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_Unused_4         = 0x000D0000,
         enum_flag_Category_Unused_5         = 0x000E0000,
         enum_flag_Category_Unused_6         = 0x000F0000,
 
-        enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
+        enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization. GC depends on this bit.
-        enum_flag_Collectible                 = 0x00200000, // GC depends on this bit.
+        enum_flag_Collectible                 = 0x00200000, // GC depends on this bit. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 #endif
 
-        enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references
+        enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
         enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
         // unused                             = 0x08000000,
@@ -3746,7 +3824,7 @@ private:
         enum_flag_ContainsGenericVariables    = 0x20000000, // we cache this flag to help detect these efficiently and
                                                             // to detect this condition when restoring
         enum_flag_ComObject                   = 0x40000000, // class is a com object
-        enum_flag_HasComponentSize            = 0x80000000, // This is set if component size is used for flags.
+        enum_flag_HasComponentSize            = 0x80000000, // This is set if component size is used for flags. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         // Types that require non-trivial interface cast have this bit set in the category
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
@@ -3768,6 +3846,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the value of enum_flag_DynamicStatics.
 
         enum_flag_HasPerInstInfo            = 0x0001,
         enum_flag_DynamicStatics            = 0x0002,
@@ -3782,61 +3861,61 @@ private:
         enum_flag_TokenMask                 = 0xFFFFFF00,
     };  // enum WFLAGS2_ENUM
 
-    __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
         m_dwFlags &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS_LOW_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS_LOW_ENUM flag)
     {
         _ASSERTE(!IsStringOrArray());
         m_dwFlags |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
     {
         SUPPORTS_DAC;
         return (IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag));
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (IsStringOrArray() ? (((DWORD)enum_flag_StringArrayValues & (DWORD)mask) == (DWORD)flag) :
             ((m_dwFlags & (DWORD)mask) == (DWORD)flag));
     }
 
-    __forceinline void ClearFlag(WFLAGS_HIGH_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS_HIGH_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS_HIGH_ENUM flag)
     {
         m_dwFlags |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS_HIGH_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwFlags & flag;
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ((m_dwFlags & (DWORD)mask) == (DWORD)flag);
     }
 
-    __forceinline void ClearFlag(WFLAGS2_ENUM flag)
+    FORCEINLINE void ClearFlag(WFLAGS2_ENUM flag)
     {
         m_dwFlags2 &= ~flag;
     }
-    __forceinline void SetFlag(WFLAGS2_ENUM flag)
+    FORCEINLINE void SetFlag(WFLAGS2_ENUM flag)
     {
         m_dwFlags2 |= flag;
     }
-    __forceinline DWORD GetFlag(WFLAGS2_ENUM flag) const
+    FORCEINLINE DWORD GetFlag(WFLAGS2_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwFlags2 & flag;
     }
-    __forceinline BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
+    FORCEINLINE BOOL TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag) const
     {
         return (m_dwFlags2 & (DWORD)mask) == (DWORD)flag;
     }
@@ -3894,6 +3973,7 @@ private:
     PTR_MethodTableAuxiliaryData m_pAuxiliaryData;
 
     // The value of lowest two bits describe what the union contains
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of UNION_EECLASS and UNION_METHODTABLE.
     enum LowBits {
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
         UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.
@@ -3905,12 +3985,12 @@ private:
         TADDR m_pCanonMT;
     };
 
-    __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
+    FORCEINLINE static LowBits union_getLowBits(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return LowBits(pCanonMT & UNION_MASK);
     }
-    __forceinline static TADDR   union_getPointer(TADDR pCanonMT)
+    FORCEINLINE static TADDR   union_getPointer(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (pCanonMT & ~UNION_MASK);
@@ -4071,7 +4151,7 @@ template<> struct cdac_data<MethodTable>
 };
 
 #ifndef CROSSBITNESS_COMPILE
-static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
+static_assert(sizeof(MethodTable) == SIZEOF__MethodTable_);
 #endif
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);

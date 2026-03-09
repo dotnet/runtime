@@ -8,11 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Collections\Concurrent\BlockingCollection.cs" />
     <Compile Include="System\Collections\Concurrent\CDSCollectionETWBCLProvider.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentBag.cs" />
-    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary.cs" />
     <Compile Include="System\Collections\Concurrent\ConcurrentStack.cs" />
     <Compile Include="System\Collections\Concurrent\OrderablePartitioner.cs" />
     <Compile Include="System\Collections\Concurrent\Partitioner.cs" />

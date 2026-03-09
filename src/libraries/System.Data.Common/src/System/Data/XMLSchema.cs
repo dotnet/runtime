@@ -98,12 +98,12 @@ namespace System.Data
 
         internal static string GenUniqueColumnName(string proposedName, DataTable table)
         {
-            if (table.Columns.IndexOf(proposedName) >= 0)
+            if (table.Columns.Contains(proposedName))
             {
                 for (int i = 0; i <= table.Columns.Count; i++)
                 {
                     string tempName = proposedName + "_" + (i).ToString(CultureInfo.InvariantCulture);
-                    if (table.Columns.IndexOf(tempName) >= 0)
+                    if (table.Columns.Contains(tempName))
                     {
                         continue;
                     }
@@ -278,10 +278,7 @@ namespace System.Data
                     if (name == "DataType")
                     {
                         DataColumn? col = instance as DataColumn;
-                        if (col != null)
-                        {
-                            col.DataType = DataStorage.GetType(value);
-                        }
+                        col?.DataType = DataStorage.GetType(value);
 
                         continue;
                     }
@@ -826,9 +823,8 @@ namespace System.Data
             }
 
             DataTable? tmpTable = ds.Tables[ds.DataSetName, ds.Namespace];
-            if (tmpTable != null) // this fix is done to support round-trip problem in case if there is one table with same name and NS
-                tmpTable._fNestedInDataset = true;
-
+            // this fix is done to support round-trip problem in case if there is one table with same name and NS
+            tmpTable?._fNestedInDataset = true;
 
             // this fix is for backward compatibility with old inference engine
             if (FromInference && ds.Tables.Count == 0 && string.Equals(ds.DataSetName, "NewDataSet", StringComparison.Ordinal))
@@ -2660,10 +2656,7 @@ namespace System.Data
                         }
 
                         DataTable? child = HandleTable((XmlSchemaElement)el);
-                        if (child != null)
-                        {
-                            child._fNestedInDataset = true;
-                        }
+                        child?._fNestedInDataset = true;
                         if (FromInference)
                         {
                             tableSequenceList.Add(child!);
@@ -2688,10 +2681,7 @@ namespace System.Data
                                 {
                                     tableSequenceList.Add(child);
                                 }
-                                if (child != null)
-                                {
-                                    child._fNestedInDataset = true;
-                                }
+                                child?._fNestedInDataset = true;
                             }
                         }
                     }
@@ -2844,7 +2834,7 @@ namespace System.Data
         }
 
         //        internal bool IsTopLevelElement (XmlSchemaElement node) {
-        //            return (elements.IndexOf(node) != -1);
+        //            return (elements.Contains(node));
         //        }
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]

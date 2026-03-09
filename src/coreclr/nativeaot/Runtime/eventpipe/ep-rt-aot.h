@@ -226,6 +226,16 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern int64_t ep_rt_aot_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value);
+    return ep_rt_aot_atomic_compare_exchange_int64_t (target, expected, value);
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -346,6 +356,8 @@ void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
     STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_aot_provider_config_init (EventPipeProviderConfiguration *provider_config);
+    ep_rt_aot_provider_config_init(provider_config);
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -707,7 +719,9 @@ ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // NativeAOT does not currently support rundown
+    extern void
+    ep_rt_aot_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
+    ep_rt_aot_execute_rundown (execution_checkpoints);
 }
 
 /*
@@ -1445,8 +1459,8 @@ void
 ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    // Likely not needed and do nothing until testing shows to be required
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    ep_rt_aot_setup_thread ();
 }
 
 static

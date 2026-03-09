@@ -87,107 +87,146 @@ instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compil
 #endif // TARGET_X86
 
 #if defined(TARGET_XARCH)
-    instruction evexIns = ins;
-
-    switch (ins)
+    if (comp != nullptr)
     {
-        case INS_movdqa32:
+        instruction evexIns = ins;
+
+        switch (ins)
         {
-            if (varTypeIsLong(type))
+            case INS_movdqa32:
             {
-                evexIns = INS_vmovdqa64;
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vmovdqa64;
+                }
+                break;
             }
-            break;
+
+            case INS_movdqu32:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vmovdqu64;
+                }
+                break;
+            }
+
+            case INS_pandd:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpandq;
+                }
+                break;
+            }
+
+            case INS_pandnd:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpandnq;
+                }
+                break;
+            }
+
+            case INS_pord:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vporq;
+                }
+                break;
+            }
+
+            case INS_pxord:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpxorq;
+                }
+                break;
+            }
+
+            case INS_vbroadcastf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vbroadcastf64x2;
+                }
+                break;
+            }
+
+            case INS_vbroadcasti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vbroadcasti64x2;
+                }
+                break;
+            }
+
+            case INS_vextractf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vextractf64x2;
+                }
+                else if (varTypeIsInt(type))
+                {
+                    evexIns = INS_vextracti32x4;
+                }
+                else if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vextracti64x2;
+                }
+                break;
+            }
+
+            case INS_vextracti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vextracti64x2;
+                }
+                break;
+            }
+
+            case INS_vinsertf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vinsertf64x2;
+                }
+                else if (varTypeIsInt(type))
+                {
+                    evexIns = INS_vinserti32x4;
+                }
+                else if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vinserti64x2;
+                }
+                break;
+            }
+
+            case INS_vinserti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vinserti64x2;
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
 
-        case INS_movdqu32:
+        if ((evexIns != ins) && comp->canUseEvexEncoding())
         {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vmovdqu64;
-            }
-            break;
+            ins = evexIns;
         }
-
-        case INS_vbroadcastf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vbroadcastf64x2;
-            }
-            break;
-        }
-
-        case INS_vbroadcasti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vbroadcasti64x2;
-            }
-            break;
-        }
-
-        case INS_vextractf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vextractf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vextracti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vextracti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vinsertf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vinsertf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vinserti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        case INS_vinserti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    if ((evexIns != ins) && (comp != nullptr) && comp->canUseEvexEncoding())
-    {
-        ins = evexIns;
     }
 #endif // TARGET_XARCH
 
@@ -861,9 +900,7 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, ui
 // Return Value:
 //    The basetype of intrinsic of it can be fetched from 1st or 2nd argument, else return baseType unmodified.
 //
-CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic    intrinsic,
-                                                    CORINFO_SIG_INFO* sig,
-                                                    CorInfoType       simdBaseJitType)
+var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig, var_types simdBaseType)
 {
     if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
@@ -875,22 +912,24 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic    intrinsic,
         }
 
         CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
-        simdBaseJitType               = getBaseJitTypeAndSizeOfSIMDType(argClass);
+        simdBaseType                  = getBaseTypeAndSizeOfSIMDType(argClass);
 
-        if (simdBaseJitType == CORINFO_TYPE_UNDEF) // the argument is not a vector
+        if (simdBaseType == TYP_UNDEF) // the argument is not a vector
         {
             CORINFO_CLASS_HANDLE tmpClass;
-            simdBaseJitType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
+            CorInfoType          simdBaseJitType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
 
             if (simdBaseJitType == CORINFO_TYPE_PTR)
             {
                 simdBaseJitType = info.compCompHnd->getChildType(argClass, &tmpClass);
             }
+
+            simdBaseType = JitType2PreciseVarType(simdBaseJitType);
         }
-        assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+        assert(simdBaseType != TYP_UNDEF);
     }
 
-    return simdBaseJitType;
+    return simdBaseType;
 }
 
 struct HWIntrinsicIsaRange
@@ -903,7 +942,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
     { FIRST_NI_X86Base, LAST_NI_X86Base },                      // X86Base
-    { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
@@ -918,6 +956,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
     { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
+    { FIRST_NI_AVX512BMM, LAST_NI_AVX512BMM },                  // AVX512BMM
     { FIRST_NI_GFNI, LAST_NI_GFNI },                            // GFNI
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
@@ -930,16 +969,17 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
     { NI_Illegal, NI_Illegal },                                 //      VectorT256
     { NI_Illegal, NI_Illegal },                                 //      VectorT512
+    { FIRST_NI_AVXVNNIINT, LAST_NI_AVXVNNIINT },                // AVXVNNIINT
+    { FIRST_NI_AVXVNNIINT_V512, LAST_NI_AVXVNNIINT_V512 },      // AVXVNNIINT_V512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
-    { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
     { FIRST_NI_AVX2_X64, LAST_NI_AVX2_X64 },                    // AVX2_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX10v2_X64
+    { FIRST_NI_AVX10v2_X64, LAST_NI_AVX10v2_X64 },              // AVX10v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AES_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
@@ -960,6 +1000,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    { NI_Illegal, NI_Illegal },                                 // VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
@@ -1180,7 +1221,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    CORINFO_InstructionSet isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
+    CORINFO_InstructionSet isa = comp->lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
@@ -1344,7 +1385,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             return ni;
         }
-        return binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
+
+        ni = binarySearchId(InstructionSet_AVX512v2, sig, methodName, isLimitedVector256Isa);
+
+        if (ni != NI_Illegal)
+        {
+            return ni;
+        }
+
+        return binarySearchId(InstructionSet_AVX512v3, sig, methodName, isLimitedVector256Isa);
     }
     else if (isa == InstructionSet_AVX10v1_X64)
     {
@@ -1394,8 +1443,8 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
         typeHnd = sig->retTypeSigClass;
     }
 
-    CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
-    assert((simdSize > 0) && (simdBaseJitType != CORINFO_TYPE_UNDEF));
+    var_types simdBaseType = comp->getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
+    assert((simdSize > 0) && (simdBaseType != TYP_UNDEF));
     return simdSize;
 }
 
@@ -1456,7 +1505,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
         if (!varTypeIsSIMD(argType))
         {
             unsigned int argSizeBytes;
-            (void)getBaseJitTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
+            (void)getBaseTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
             argType = getSIMDTypeForSize(argSizeBytes);
         }
         assert(varTypeIsSIMD(argType));
@@ -1629,6 +1678,34 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
     return false;
 }
 
+static bool isSupportedBaseType(NamedIntrinsic intrinsic, var_types baseType)
+{
+    if (baseType == TYP_UNDEF)
+    {
+        return false;
+    }
+
+    // We don't actually check the intrinsic outside of the false case as we expect
+    // the exposed managed signatures are either generic and support all types
+    // or they are explicit and support the type indicated.
+
+    if (varTypeIsArithmetic(baseType))
+    {
+        return true;
+    }
+
+#ifdef DEBUG
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
+#ifdef TARGET_XARCH
+    assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM64
+    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
+#endif // TARGET_ARM64
+#endif // DEBUG
+    return false;
+}
+
 // HWIntrinsicSignatureReader: a helper class that "reads" a list of hardware intrinsic arguments and stores
 // the corresponding argument type descriptors as the fields of the class instance.
 //
@@ -1697,6 +1774,26 @@ struct HWIntrinsicSignatureReader final
     {
         return JITtype2varType(op4JitType);
     }
+
+    var_types GetOp1TypeAsPrecise() const
+    {
+        return JitType2PreciseVarType(op1JitType);
+    }
+
+    var_types GetOp2TypeAsPrecise() const
+    {
+        return JitType2PreciseVarType(op2JitType);
+    }
+
+    var_types GetOp3TypeAsPrecise() const
+    {
+        return JitType2PreciseVarType(op3JitType);
+    }
+
+    var_types GetOp4TypeAsPrecise() const
+    {
+        return JitType2PreciseVarType(op4JitType);
+    }
 };
 
 //------------------------------------------------------------------------
@@ -1716,7 +1813,7 @@ struct HWIntrinsicSignatureReader final
 //    returns true if immOp is within range. Otherwise false.
 //
 bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
-                                        CorInfoType    simdBaseJitType,
+                                        var_types      simdBaseType,
                                         GenTree*       immOp,
                                         bool           mustExpand,
                                         int            immLowerBound,
@@ -1779,7 +1876,6 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
         else if (HWIntrinsicInfo::MaybeNoJmpTableImm(intrinsic))
         {
 #if defined(TARGET_X86)
-            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
             if (varTypeIsLong(simdBaseType))
             {
@@ -1835,17 +1931,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
-    CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
-    int                    numArgs         = sig->numArgs;
-    var_types              retType         = genActualType(JITtype2varType(sig->retType));
-    CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
-    GenTree*               retNode         = nullptr;
+    HWIntrinsicCategory    category     = HWIntrinsicInfo::lookupCategory(intrinsic);
+    CORINFO_InstructionSet isa          = HWIntrinsicInfo::lookupIsa(intrinsic);
+    int                    numArgs      = sig->numArgs;
+    var_types              retType      = genActualType(JITtype2varType(sig->retType));
+    var_types              simdBaseType = TYP_UNDEF;
+    GenTree*               retNode      = nullptr;
 
     if (retType == TYP_STRUCT)
     {
         unsigned int sizeBytes;
-        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
+        simdBaseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
@@ -1855,8 +1951,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
         {
-            CorInfoType pSimdBaseJitType = CORINFO_TYPE_UNDEF;
-            var_types   retFieldType     = impNormStructType(sig->retTypeSigClass, &pSimdBaseJitType);
+            var_types retFieldBaseType = TYP_UNDEF;
+
+            var_types retFieldType = impNormStructType(sig->retTypeSigClass, &retFieldBaseType);
 
             if (retFieldType == TYP_STRUCT)
             {
@@ -1864,12 +1961,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 unsigned int         sizeBytes = 0;
 
                 // LoadAndInsertScalar that returns 2,3 or 4 vectors
-                assert(pSimdBaseJitType == CORINFO_TYPE_UNDEF);
+                assert(retFieldBaseType == TYP_UNDEF);
                 unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
                 assert(fieldCount > 1);
                 CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
                 CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
-                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+                simdBaseType                     = getBaseTypeAndSizeOfSIMDType(structType, &sizeBytes);
                 switch (fieldCount)
                 {
                     case 2:
@@ -1885,13 +1982,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                                    : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
                         break;
                     default:
-                        assert("unsupported");
+                        assert(!"unsupported");
                 }
             }
             else
             {
                 assert((retFieldType == TYP_SIMD8) || (retFieldType == TYP_SIMD16));
-                assert(isSupportedBaseType(intrinsic, simdBaseJitType));
+                assert(isSupportedBaseType(intrinsic, simdBaseType));
                 retType = getSIMDTypeForSize(sizeBytes);
             }
         }
@@ -1900,7 +1997,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
             // rather than deferring the decision after getting the simdBaseJitType of arg.
-            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
+            if (!isSupportedBaseType(intrinsic, simdBaseType))
             {
                 return nullptr;
             }
@@ -1910,28 +2007,28 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    simdBaseJitType   = getBaseJitTypeFromArgIfNeeded(intrinsic, sig, simdBaseJitType);
+    simdBaseType      = getBaseTypeFromArgIfNeeded(intrinsic, sig, simdBaseType);
     unsigned simdSize = 0;
 
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+    if (simdBaseType == TYP_UNDEF)
     {
         if ((category == HW_Category_Scalar) || (category == HW_Category_Special))
         {
-            simdBaseJitType = sig->retType;
+            simdBaseType = JitType2PreciseVarType(sig->retType);
 
-            if (simdBaseJitType == CORINFO_TYPE_VOID)
+            if (simdBaseType == TYP_VOID)
             {
-                simdBaseJitType = CORINFO_TYPE_UNDEF;
+                simdBaseType = TYP_UNDEF;
             }
         }
         else
         {
             unsigned int sizeBytes;
 
-            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            simdBaseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
 
 #ifdef TARGET_ARM64
-            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
+            if (simdBaseType == TYP_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
             {
                 // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
 
@@ -1940,10 +2037,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 category  = HWIntrinsicInfo::lookupCategory(intrinsic);
                 isa       = HWIntrinsicInfo::lookupIsa(intrinsic);
 
-                simdBaseJitType = sig->retType;
-                assert(simdBaseJitType != CORINFO_TYPE_VOID);
-                assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
-                assert(simdBaseJitType != CORINFO_TYPE_VALUECLASS);
+                simdBaseType = JitType2PreciseVarType(sig->retType);
+                assert(simdBaseType != TYP_VOID);
+                assert(simdBaseType != TYP_UNDEF);
+                assert(simdBaseType != TYP_STRUCT);
             }
             else
 #endif // TARGET_ARM64
@@ -1953,7 +2050,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 #ifdef TARGET_ARM64
-    else if ((simdBaseJitType == CORINFO_TYPE_VALUECLASS) && (HWIntrinsicInfo::BaseTypeFromValueTupleArg(intrinsic)))
+    else if ((simdBaseType == TYP_STRUCT) && (HWIntrinsicInfo::BaseTypeFromValueTupleArg(intrinsic)))
     {
         // If HW_Flag_BaseTypeFromValueTupleArg is set, one of the base type position flags must be set.
         assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic));
@@ -1974,29 +2071,24 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &classHnd);
         assert(isIntrinsicType(classHnd));
 
-        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(classHnd, &simdSize);
+        simdBaseType = getBaseTypeAndSizeOfSIMDType(classHnd, &simdSize);
         assert(simdSize > 0);
     }
 #endif // TARGET_ARM64
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
     if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
-        !isSupportedBaseType(intrinsic, simdBaseJitType))
+        !isSupportedBaseType(intrinsic, simdBaseType))
     {
         return nullptr;
     }
 
-    var_types simdBaseType = TYP_UNKNOWN;
-
-    if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+    if (simdBaseType != TYP_UNDEF)
     {
-        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-
 #ifdef TARGET_XARCH
         if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
         {
-            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
-            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
+            simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT;
         }
 #endif // TARGET_XARCH
     }
@@ -2004,9 +2096,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // We may have already determined simdSize for intrinsics that require special handling.
     // If so, skip the lookup.
     simdSize = (simdSize == 0) ? HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig) : simdSize;
-
-    HWIntrinsicSignatureReader sigReader;
-    sigReader.Read(info.compCompHnd, sig);
 
     GenTree* immOp1          = nullptr;
     GenTree* immOp2          = nullptr;
@@ -2024,16 +2113,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
-                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
-        if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
-                                      false, &useFallback))
+        if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp2, mustExpand, immLowerBound, immUpperBound, false,
+                                      &useFallback))
         {
             if (useFallback)
             {
-                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+                return impNonConstFallback(intrinsic, retType, simdBaseType);
             }
             else if (immOp2->IsCnsIntOrI())
             {
@@ -2072,20 +2160,19 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
-                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
 #else
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
         hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
 #endif
 
-        if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
+        if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp1, mustExpand, immLowerBound, immUpperBound,
                                       hasFullRangeImm, &useFallback))
         {
             if (useFallback)
             {
-                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+                return impNonConstFallback(intrinsic, retType, simdBaseType);
             }
             else if (immOp1->IsCnsIntOrI())
             {
@@ -2157,10 +2244,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        GenTree* op1 = nullptr;
-        GenTree* op2 = nullptr;
-        GenTree* op3 = nullptr;
-        GenTree* op4 = nullptr;
+        GenTree*                   op1 = nullptr;
+        GenTree*                   op2 = nullptr;
+        GenTree*                   op3 = nullptr;
+        GenTree*                   op4 = nullptr;
+        HWIntrinsicSignatureReader sigReader;
+        sigReader.Read(info.compCompHnd, sig);
 
         switch (numArgs)
         {
@@ -2197,7 +2286,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case 0:
             {
                 assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseType, simdSize);
                 break;
             }
 
@@ -2214,14 +2303,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseJitType, simdSize);
+                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseType, simdSize);
 
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
                 {
-                    case NI_SSE42_ConvertToVector128Int16:
-                    case NI_SSE42_ConvertToVector128Int32:
-                    case NI_SSE42_ConvertToVector128Int64:
+                    case NI_X86Base_ConvertToVector128Int16:
+                    case NI_X86Base_ConvertToVector128Int32:
+                    case NI_X86Base_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
                     case NI_AVX2_ConvertToVector256Int16:
@@ -2272,16 +2361,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 2:
             {
-                retNode = isScalar
-                              ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic)
-                              : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseType, simdSize);
 
 #ifdef TARGET_XARCH
-                if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
+                if ((intrinsic == NI_X86Base_Crc32) || (intrinsic == NI_X86Base_X64_Crc32))
                 {
                     // TODO-XArch-Cleanup: currently we use the simdBaseJitType to bring the type of the second argument
                     // to the code generator. May encode the overload info in other way.
-                    retNode->AsHWIntrinsic()->SetSimdBaseJitType(sigReader.op2JitType);
+                    retNode->AsHWIntrinsic()->SetSimdBaseType(sigReader.GetOp2TypeAsPrecise());
                 }
 #elif defined(TARGET_ARM64)
                 switch (intrinsic)
@@ -2290,7 +2378,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Crc32_ComputeCrc32C:
                     case NI_Crc32_Arm64_ComputeCrc32:
                     case NI_Crc32_Arm64_ComputeCrc32C:
-                        retNode->AsHWIntrinsic()->SetSimdBaseJitType(sigReader.op2JitType);
+                        retNode->AsHWIntrinsic()->SetSimdBaseType(sigReader.GetOp2TypeAsPrecise());
                         break;
 
                     case NI_AdvSimd_AddWideningUpper:
@@ -2307,12 +2395,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_ArmBase_Arm64_MultiplyHigh:
                         if (sig->retType == CORINFO_TYPE_ULONG)
                         {
-                            retNode->AsHWIntrinsic()->SetSimdBaseJitType(CORINFO_TYPE_ULONG);
+                            retNode->AsHWIntrinsic()->SetSimdBaseType(TYP_ULONG);
                         }
                         else
                         {
                             assert(sig->retType == CORINFO_TYPE_LONG);
-                            retNode->AsHWIntrinsic()->SetSimdBaseJitType(CORINFO_TYPE_LONG);
+                            retNode->AsHWIntrinsic()->SetSimdBaseType(TYP_LONG);
                         }
                         break;
 
@@ -2367,9 +2455,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
                 }
 
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType,
-                                                              simdSize);
+                retNode = isScalar
+                              ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic)
+                              : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseType, simdSize);
 
                 switch (intrinsic)
                 {
@@ -2424,8 +2512,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case 4:
             {
                 assert(!isScalar);
-                retNode =
-                    gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseType, simdSize);
 
                 switch (intrinsic)
                 {
@@ -2452,8 +2539,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, nodeRetType,
                                       simdSize, mustExpand);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+        if (retNode != nullptr)
+        {
+            // The special import may have switched the type of the node.
+            nodeRetType = retNode->gtType;
+        }
+#endif
     }
 
     if (setMethodHandle && (retNode != nullptr))
@@ -2473,7 +2568,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op3
                 GenTree*& op = retNode->AsHWIntrinsic()->Op(3);
-                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseType, simdSize);
                 FALLTHROUGH;
             }
             case NI_Sve_CreateBreakAfterMask:
@@ -2487,14 +2582,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op2
                 GenTree*& op = retNode->AsHWIntrinsic()->Op(2);
-                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseType, simdSize);
                 FALLTHROUGH;
             }
             default:
             {
                 // HWInstrinsic requires a mask for op1
                 GenTree*& op = retNode->AsHWIntrinsic()->Op(1);
-                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseType, simdSize);
                 break;
             }
         }
@@ -2516,8 +2611,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 GenTree*& op1 = retNode->AsHWIntrinsic()->Op(1);
                 GenTree*& op2 = retNode->AsHWIntrinsic()->Op(2);
-                op1           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
-                op2           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+                op1           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseType, simdSize);
+                op2           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseType, simdSize);
                 break;
             }
 
@@ -2526,18 +2621,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (retType != nodeRetType)
+    if (nodeRetType == TYP_MASK)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
-        assert(nodeRetType == TYP_MASK);
-
-        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
-
-        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
-        unsigned    simdSize        = op->GetSimdSize();
-
-        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseType, simdSize);
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 

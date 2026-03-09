@@ -27,7 +27,7 @@ namespace System.Net.Mime.Tests
         [InlineData("text/plain; boundary=hello; charset=us-ascii; name=world", "text/plain", "us-ascii", "hello", "world")]
         [InlineData("text/plain; charset=us-ascii; name=world", "text/plain", "us-ascii", null, "world")]
         public static void Ctor_ContentString_ParsedValueMatchesExpected(
-            string contentType, string expectedMediaType, string expectedCharSet, string expectedBoundary, string expectedName)
+            string contentType, string expectedMediaType, string? expectedCharSet, string? expectedBoundary, string? expectedName)
         {
             var ct = new ContentType(contentType);
             Assert.Equal(expectedMediaType, ct.MediaType);
@@ -58,7 +58,7 @@ namespace System.Net.Mime.Tests
         [InlineData(typeof(FormatException), "text/plain; charset=iso-8859-1; q=1.0, */xml; charset=utf-8; q=0.5")]
         [InlineData(typeof(FormatException), " , */xml; charset=utf-8; q=0.5 ")]
         [InlineData(typeof(FormatException), "text/plain; charset=iso-8859-1; q=1.0 , ")]
-        public static void Ctor_InvalidContentType_Throws(Type exceptionType, string contentType)
+        public static void Ctor_InvalidContentType_Throws(Type exceptionType, string? contentType)
         {
             Assert.Throws(exceptionType, () => new ContentType(contentType));
         }

@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Multiply<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T> =>
+            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MultiplyOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MultiplyOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise product of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -43,8 +50,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Multiply<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T> =>
+            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MultiplyOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MultiplyOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x * y</summary>
         internal readonly struct MultiplyOperator<T> : IAggregationOperator<T> where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>

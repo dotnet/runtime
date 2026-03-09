@@ -491,7 +491,7 @@ namespace
         trace::verbose(_X("Executing as a %s app as per config file [%s]"),
             (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
 
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_fullpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -629,7 +629,7 @@ namespace
         trace::verbose(_X("Libhost loading occurring for a framework-dependent component per config file [%s]"), app_config.get_path().c_str());
 
         const pal::string_t deps_file;
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_fullpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -1103,7 +1103,7 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), false /*skip_sdk_info_output*/);
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), false /*skip_sdk_info_output*/);
             return StatusCode::Success;
         }
 
@@ -1160,7 +1160,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), result == 0 /*skip_sdk_info_output*/);
+        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), result == 0 /*skip_sdk_info_output*/);
     }
 
     return result;

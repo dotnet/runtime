@@ -1,5 +1,6 @@
 include(CheckSymbolExists)
 include(CheckIncludeFile)
+include(CheckIncludeFiles)
 
 check_include_file(
     sys/socket.h
@@ -16,6 +17,47 @@ if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
   set(FEATURE_PERFTRACING_PAL_TCP 1)
   set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
 endif()
+
+check_include_file(
+    linux/user_events.h
+    HAVE_LINUX_USER_EVENTS_H
+)
+
+check_include_file(
+    sys/ioctl.h
+    HAVE_SYS_IOCTL_H
+)
+
+check_include_file(
+    sys/syscall.h
+    HAVE_SYS_SYSCALL_H
+)
+
+check_include_file(
+    unistd.h
+    HAVE_UNISTD_H
+)
+
+check_include_file(
+    "sys/uio.h"
+    HAVE_SYS_UIO_H
+)
+
+check_include_file(
+    errno.h
+    HAVE_ERRNO_H
+)
+
+check_include_file(
+    sys/mman.h
+    HAVE_SYS_MMAN_H
+)
+
+check_symbol_exists(
+    __NR_memfd_create
+    sys/syscall.h
+    HAVE_MEMFD_CREATE
+)
 
 if (NOT DEFINED EP_GENERATED_HEADER_PATH)
     message(FATAL_ERROR "Required configuration EP_GENERATED_HEADER_PATH not set.")

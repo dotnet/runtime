@@ -14,9 +14,17 @@ if (CLR_CMAKE_TARGET_APPLE)
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
     add_compile_options(-Wno-poison-system-directories)
+elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND CLR_CMAKE_TARGET_BROWSER)
+    # When cross-compiling for browser-wasm on macOS, suppress warnings about
+    # /usr/local/include which may be added by the toolchain (e.g., brew's clang)
+    add_compile_options(-Wno-poison-system-directories)
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+elseif (CLR_CMAKE_TARGET_OPENBSD)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/heimdal/include)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -82,6 +90,18 @@ check_c_source_compiles(
     "
     HAVE_IP_MREQN)
 
+check_c_source_compiles(
+    "
+    #include <sys/socket.h>
+    #include <${SOCKET_INCLUDES}>
+    int main(void)
+    {
+        int opt = IP_MULTICAST_IFINDEX;
+        return 0;
+    }
+    "
+    HAVE_IP_MULTICAST_IFINDEX)
+
 # /in_pktinfo
 
 check_c_source_compiles(
@@ -97,6 +117,7 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/types.h>
     #include <sys/mount.h>
     int main(void)
     {
@@ -131,11 +152,6 @@ check_symbol_exists(
     F_DUPFD
     fcntl.h
     HAVE_F_DUPFD)
-
-check_symbol_exists(
-    F_FULLFSYNC
-    fcntl.h
-    HAVE_F_FULLFSYNC)
 
 check_function_exists(
     getifaddrs
@@ -195,6 +211,11 @@ check_symbol_exists(
     strcpy_s
     string.h
     HAVE_STRCPY_S)
+
+check_symbol_exists(
+    strlcpy
+    string.h
+    HAVE_STRLCPY)
 
 check_symbol_exists(
     strlcat
@@ -315,7 +336,7 @@ check_struct_has_member(
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
@@ -323,6 +344,12 @@ check_struct_has_member(
     f_fstypename
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
+
+check_struct_has_member(
+    "struct statvfs"
+    f_basetype
+    "sys/statvfs.h"
+    HAVE_STATVFS_BASETYPE)
 
 set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
 
@@ -368,21 +395,6 @@ check_c_source_compiles(
     }
     "
     HAVE_GNU_STRERROR_R)
-
-check_c_source_compiles(
-    "
-    #include <dirent.h>
-    #include <stddef.h>
-    int main(void)
-    {
-        DIR* dir = NULL;
-        struct dirent* entry = NULL;
-        struct dirent* result;
-        readdir_r(dir, entry, &result);
-        return 0;
-    }
-    "
-    HAVE_READDIR_R)
 
 check_c_source_compiles(
     "
@@ -551,28 +563,24 @@ if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
@@ -610,21 +618,6 @@ else()
         "
         HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
 
-    check_c_source_runs(
-        "
-        #include <stdlib.h>
-        #include <time.h>
-        #include <sys/time.h>
-        int main(void)
-        {
-            int ret;
-            struct timespec ts;
-            ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-            exit(ret);
-            return 0;
-        }
-        "
-        HAVE_CLOCK_MONOTONIC)
 
     check_c_source_runs(
         "
@@ -659,6 +652,7 @@ endif()
 
 if (NOT CLR_CMAKE_TARGET_WASI)
     check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    check_library_exists(${PTHREAD_LIBRARY} pthread_mutex_clocklock "" HAVE_PTHREAD_MUTEX_CLOCKLOCK)
 endif()
 
 check_symbol_exists(
@@ -883,6 +877,10 @@ check_include_files(
     HAVE_DLFCN_H)
 
 check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
+check_include_files(
     "sys/statvfs.h"
     HAVE_SYS_STATVFS_H)
 
@@ -956,6 +954,10 @@ check_include_files(
     HAVE_SYS_MNTENT_H)
 
 check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
+
+check_include_files(
     "stdint.h;net/if_media.h"
     HAVE_NET_IFMEDIA_H)
 
@@ -1001,7 +1003,7 @@ check_c_source_compiles(
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
+if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))
     set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
 endif()
 
@@ -1029,6 +1031,9 @@ elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAK
 endif()
 
 option(HeimdalGssApi "use heimdal implementation of GssApi" OFF)
+if (CLR_CMAKE_TARGET_OPENBSD)
+    set(HeimdalGssApi ON)
+endif()
 
 if (HeimdalGssApi)
    check_include_files(

@@ -803,10 +803,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.ForceDictionaryLookupsAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.StaticClassConstructionContext</Target>
   </Suppression>
   <Suppression>
@@ -824,5 +820,9 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Diagnostics.DiagnosticMethodInfo.#ctor(System.String,System.String,System.String)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.NativeFormat.TypeHashingAlgorithms</Target>
   </Suppression>
 </Suppressions>

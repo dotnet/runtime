@@ -40,10 +40,13 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 
 #ifdef TARGET_LINUX
 #include <sys/syscall.h>
+#include <link.h>
+#include <elf.h>
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
@@ -93,6 +96,98 @@ void RhFailFast()
 
     // Aborts the process
     abort();
+}
+
+#if TARGET_LINUX
+
+struct PalGetPDBInfoPhdrCallbackData
+{
+    void* Base;
+    void* BuildID;
+    uint32_t BuildIDLength;
+};
+
+static int PalGetPDBInfoPhdrCallback(struct dl_phdr_info *info, size_t size, void* pData)
+{
+    struct PalGetPDBInfoPhdrCallbackData* pCallbackData = (struct PalGetPDBInfoPhdrCallbackData*)pData;
+
+    // Find the module of interest
+    void* loadAddress = NULL;
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        if (info->dlpi_phdr[i].p_type == PT_LOAD)
+        {
+            loadAddress = (void*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+            if (loadAddress == pCallbackData->Base)
+                break;
+        }
+    }
+
+    if (loadAddress != pCallbackData->Base)
+    {
+        return 0;
+    }
+
+    // Got the module of interest. Now iterate program headers and try to find the GNU build ID note
+    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
+    {
+        // Must be a note section. We don't check the name because while there's a convention for the name,
+        // the convention is not mandatory.
+        if (info->dlpi_phdr[i].p_type != PT_NOTE)
+            continue;
+
+        // Got a note section, iterate over the contents and find the GNU build id one
+        ElfW(Nhdr) *note = (ElfW(Nhdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
+        ElfW(Addr) align = info->dlpi_phdr[i].p_align;
+        ElfW(Addr) size = info->dlpi_phdr[i].p_memsz;
+        ElfW(Addr) start = (ElfW(Addr))note;
+
+        while ((ElfW(Addr)) (note + 1) - start < size)
+        {
+            if (note->n_namesz == 4
+                && note->n_type == NT_GNU_BUILD_ID
+                && memcmp(note + 1, "GNU", 4) == 0)
+            {
+                // Got the note, fill out the callback data and return.
+                pCallbackData->BuildID = (uint8_t*)note + sizeof(ElfW(Nhdr)) + ALIGN_UP(note->n_namesz, align);
+                pCallbackData->BuildIDLength = note->n_descsz;
+                return 1;
+            }
+
+            // Skip over the note. Size of the note is determined by the header and payload (aligned)
+            size_t offset = sizeof(ElfW(Nhdr))
+                + ALIGN_UP(note->n_namesz, align)
+                + ALIGN_UP(note->n_descsz, align);
+            note = (ElfW(Nhdr)*)((uint8_t*)note + offset);
+        }
+    }
+
+    return 0;
+}
+#endif
+
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) WCHAR * wszPath, int32_t cchPath, _Out_ uint32_t * pcbBuildId, _Out_ void ** ppBuildId)
+{
+    memset(pGuidSignature, 0, sizeof(*pGuidSignature));
+    *pdwAge = 0;
+    *ppBuildId = NULL;
+    *pcbBuildId = 0;
+    if (cchPath <= 0)
+        return;
+    wszPath[0] = L'\0';
+
+#if TARGET_LINUX
+    struct PalGetPDBInfoPhdrCallbackData data;
+    data.Base = hOsHandle;
+
+    if (!dl_iterate_phdr(&PalGetPDBInfoPhdrCallback, &data))
+    {
+        return;
+    }
+
+    *pcbBuildId = data.BuildIDLength;
+    *ppBuildId = data.BuildID;
+#endif
 }
 
 static void UnmaskActivationSignal()
@@ -382,24 +477,6 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-static uint32_t g_RhPageSize;
-
-void InitializeOsPageSize()
-{
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
-
-#if defined(HOST_AMD64)
-    ASSERT(g_RhPageSize == 0x1000);
-#elif defined(HOST_APPLE)
-    ASSERT(g_RhPageSize == 0x4000);
-#endif
-}
-
-uint32_t PalGetOsPageSize()
-{
-    return g_RhPageSize;
-}
-
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 static pthread_key_t key;
 #endif
@@ -412,12 +489,12 @@ bool InitializeSignalHandling();
 // initialization and false on failure.
 bool PalInit()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
     ConfigureSignals();
 
@@ -436,8 +513,6 @@ bool PalInit()
     InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
-
-    InitializeOsPageSize();
 
 #ifdef FEATURE_HIJACK
     if (!InitializeSignalHandling())
@@ -515,7 +590,7 @@ void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
@@ -576,7 +651,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -671,6 +746,13 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
+
+    size_t stacksize = GetDefaultStackSizeSetting();
+    if (stacksize != 0)
+    {
+        st = pthread_attr_setstacksize(&attrs, stacksize);
+        ASSERT(st == 0);
+    }
 
     static const int NormalPriority = 0;
     static const int HighestPriority = -20;
@@ -915,24 +997,24 @@ static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
-#ifdef HOST_APPLE
-        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
-        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
-        || siginfo->si_pid == 0
-#endif
-        )
-    {
-        // Make sure that errno is not modified
-        int savedErrNo = errno;
-        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
-        errno = savedErrNo;
-    }
-
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
         pThread->SetActivationPending(false);
     }
 
@@ -986,6 +1068,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
@@ -1130,26 +1217,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-void PalFlushProcessWriteBuffers()
-{
-    GCToOSInterface::FlushProcessWriteBuffers();
-}
-
-static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
-
-void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
-{
-    struct timeval time = { 0 };
-    gettimeofday(&time, NULL);
-
-    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
-        (time.tv_usec * 10);
-
-    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
-    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
 uint64_t PalGetCurrentOSThreadId()

@@ -25,6 +25,7 @@ namespace ILCompiler
         private IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         private MetadataManager _metadataManager;
         private InteropStubManager _interopStubManager = new EmptyInteropStubManager();
+        private TypeMapManager _typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
         private int _parallelism = -1;
 
         internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler, ILProvider ilProvider, PreinitializationManager preinitializationManager)
@@ -61,6 +62,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ILScannerBuilder UseTypeMapManager(TypeMapManager typeMapManager)
+        {
+            _typeMapManager = typeMapManager;
+            return this;
+        }
+
         public ILScannerBuilder UseParallelism(int parallelism)
         {
             _parallelism = parallelism;
@@ -75,10 +82,10 @@ namespace ILCompiler
 
         public IILScanner ToILScanner()
         {
-            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _preinitializationManager);
+            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _preinitializationManager, _typeMapManager);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
-            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _logger, _parallelism);
+            return new ILScanner(graph, nodeFactory, [.._compilationRoots, _typeMapManager], _ilProvider, new NullDebugInformationProvider(), _logger, _parallelism);
         }
     }
 }

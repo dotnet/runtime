@@ -7,6 +7,17 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+internal enum KnownPrecodeType
+{
+    Stub = 1,
+    PInvokeImport,
+    Fixup,
+    ThisPtrRetBuf,
+    UMEntry,
+    Interpreter,
+    DynamicHelper
+}
+
 // Interface used to abstract behavior which may be different between multiple versions of the precode stub implementations
 internal interface IPrecodeStubsContractCommonApi<TStubPrecodeData>
 {
@@ -14,6 +25,7 @@ internal interface IPrecodeStubsContractCommonApi<TStubPrecodeData>
     public static abstract TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer FixupPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract byte StubPrecodeData_GetType(TStubPrecodeData stubPrecodeData);
+    public static abstract KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
 }
 
 internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData> : IPrecodeStubs where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi<TStubPrecodeData> where TStubPrecodeData : IData<TStubPrecodeData>
@@ -21,14 +33,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     private readonly Target _target;
     private readonly CodePointerFlags _codePointerFlags;
     internal readonly Data.PrecodeMachineDescriptor MachineDescriptor;
-
-    internal enum KnownPrecodeType
-    {
-        Stub = 1,
-        PInvokeImport, // also known as NDirectImport in the runtime
-        Fixup,
-        ThisPtrRetBuf,
-    }
 
     internal abstract class ValidPrecode
     {
@@ -42,7 +46,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         }
 
         internal abstract TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
-
     }
 
     internal class StubPrecode : ValidPrecode
@@ -81,24 +84,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     private bool IsAlignedInstrPointer(TargetPointer instrPointer) => _target.IsAlignedToPointerSize(instrPointer);
 
-    private byte ReadPrecodeType(TargetPointer instrPointer)
-    {
-        if (MachineDescriptor.ReadWidthOfPrecodeType == 1)
-        {
-            byte precodeType = _target.Read<byte>(instrPointer + MachineDescriptor.OffsetOfPrecodeType);
-            return (byte)(precodeType >> MachineDescriptor.ShiftOfPrecodeType);
-        }
-        else if (MachineDescriptor.ReadWidthOfPrecodeType == 2)
-        {
-            ushort precodeType = _target.Read<ushort>(instrPointer + MachineDescriptor.OffsetOfPrecodeType);
-            return (byte)(precodeType >> MachineDescriptor.ShiftOfPrecodeType);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Invalid precode type width {MachineDescriptor.ReadWidthOfPrecodeType}");
-        }
-    }
-
     private TStubPrecodeData GetStubPrecodeData(TargetPointer stubInstrPointer)
     {
         TargetPointer stubPrecodeDataAddress = stubInstrPointer + MachineDescriptor.StubCodePageSize;
@@ -107,44 +92,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {
-        // We get the precode type in two phases:
-        // 1. Read the precode type from the intruction address.
-        // 2. If it's "stub", look at the stub data and get the actual precode type - it could be stub,
-        //    but it could also be a pinvoke precode or a ThisPtrRetBufPrecode
-        // precode.h Precode::GetType()
-        byte approxPrecodeType = ReadPrecodeType(instrAddress);
-        byte exactPrecodeType;
-        if (approxPrecodeType == MachineDescriptor.StubPrecodeType)
-        {
-            // get the actual type from the StubPrecodeData
-            TStubPrecodeData stubPrecodeData = GetStubPrecodeData(instrAddress);
-            exactPrecodeType = TPrecodeStubsImplementation.StubPrecodeData_GetType(stubPrecodeData);
-        }
-        else
-        {
-            exactPrecodeType = approxPrecodeType;
-        }
-
-        if (exactPrecodeType == MachineDescriptor.StubPrecodeType)
-        {
-            return KnownPrecodeType.Stub;
-        }
-        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && exactPrecodeType == ndType)
-        {
-            return KnownPrecodeType.PInvokeImport;
-        }
-        else if (MachineDescriptor.FixupPrecodeType is byte fixupType && exactPrecodeType == fixupType)
-        {
-            return KnownPrecodeType.Fixup;
-        }
-        else if (MachineDescriptor.ThisPointerRetBufPrecodeType is byte thisPtrRetBufType && exactPrecodeType == thisPtrRetBufType)
-        {
-            return KnownPrecodeType.ThisPtrRetBuf;
-        }
-        else
-        {
-            return null;
-        }
+        return TPrecodeStubsImplementation.TryGetKnownPrecodeType(instrAddress, _target, MachineDescriptor);
     }
 
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)

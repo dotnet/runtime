@@ -4,7 +4,7 @@
 #ifndef _INTERPEXEC_H_
 #define _INTERPEXEC_H_
 
-#include "../interpreter/interpretershared.h"
+#include <interpretershared.h>
 #include "interpframeallocator.h"
 
 #define INTERP_STACK_SIZE 1024*1024
@@ -50,16 +50,49 @@ struct InterpMethodContextFrame
 
 struct InterpThreadContext
 {
-    int8_t *pStackStart;
-    int8_t *pStackEnd;
+    PTR_INT8 pStackStart;
+    PTR_INT8 pStackEnd;
 
     // This stack pointer is the highest stack memory that can be used by the current frame. This does not
     // change throughout the execution of a frame and it is essentially the upper limit of the execution
     // stack pointer. It is needed when re-entering interp, to know from which address we can start using
     // stack, and also needed for the GC to be able to scan the stack.
-    int8_t *pStackPointer;
+    PTR_INT8 pStackPointer;
 
     FrameDataAllocator frameDataAllocator;
+
+#ifdef DEBUGGING_SUPPORTED
+    // Breakpoint bypass state. When the debugger wants the interpreter to skip
+    // a breakpoint and execute the original opcode, it sets these fields.
+    // Stored on thread context rather than frame context to avoid bloating
+    // the hot InterpMethodContextFrame struct with debug-only fields.
+    const int32_t *m_bypassAddress;   // Address of breakpoint to bypass (NULL = no bypass)
+    int32_t        m_bypassOpcode;    // Original opcode to execute instead of INTOP_BREAKPOINT
+
+    void SetBypass(const int32_t* address, int32_t opcode)
+    {
+        _ASSERTE(m_bypassAddress == NULL);
+        m_bypassAddress = address;
+        m_bypassOpcode = opcode;
+    }
+
+    void ClearBypass()
+    {
+        m_bypassAddress = NULL;
+        m_bypassOpcode = 0;
+    }
+
+    bool HasBypass(const int32_t* address, int32_t* pOpcode) const
+    {
+        if (m_bypassAddress == address)
+        {
+            if (pOpcode != NULL)
+                *pOpcode = m_bypassOpcode;
+            return true;
+        }
+        return false;
+    }
+#endif // DEBUGGING_SUPPORTED
 
     InterpThreadContext();
     ~InterpThreadContext();
@@ -78,7 +111,54 @@ struct ExceptionClauseArgs
 };
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
+EXTERN_C FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+
+extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 
 CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
 
-#endif
+// Arguments are bundled in a struct to force register passing on ARM32.
+// This ensures the current SP value saved by the SAVE_THE_LOWEST_SP into the InterpreterFrame precisely matches the SP that stack walking reports for the InterpExecMethod.
+// Passing arguments on stack on ARM32 would result in reporting SP after the arguments were pushed, which is different.
+struct ManagedMethodParam
+{
+    MethodDesc *pMD;
+    int8_t *pArgs;
+    int8_t *pRet;
+    PCODE target;
+    Object** pContinuationRet;
+};
+
+struct CalliStubParam
+{
+    PCODE ftn;
+    void* cookie;
+    int8_t *pArgs;
+    int8_t *pRet;
+    Object** pContinuationRet;
+};
+
+struct DelegateInvokeMethodParam
+{
+    MethodDesc *pMDDelegateInvoke;
+    int8_t *pArgs;
+    int8_t *pRet;
+    PCODE target;
+    Object** pContinuationRet;
+};
+
+struct UnmanagedMethodWithTransitionParam
+{
+    MethodDesc *targetMethod;
+    int8_t *stack;
+    InterpMethodContextFrame *pFrame;
+    int8_t *pArgs;
+    int8_t *pRet;
+    PCODE callTarget;
+};
+
+void InterpDispatchCache_ReclaimAll();
+void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
+
+#endif // _INTERPEXEC_H_

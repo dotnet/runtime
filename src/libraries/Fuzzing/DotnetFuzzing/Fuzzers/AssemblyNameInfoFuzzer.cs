@@ -68,11 +68,13 @@ namespace DotnetFuzzing.Fuzzers
                     // When converting to AssemblyName, the culture name is lower-cased
                     // by the CultureInfo ctor that calls CultureData.GetCultureData
                     // which lowers the name for caching and normalization purposes.
+                    // It lowers only the part before the `-` character, but we lower
+                    // the whole string for the sake of simplicity of this test.
 
                     string lowerCase = fromTryParse.CultureName.ToLower();
                     if (lowerCase != "c")
                     {
-                        Assert.Equal(lowerCase, fromParse.ToAssemblyName().CultureName);
+                        Assert.Equal(lowerCase, fromParse.ToAssemblyName().CultureName!.ToLower());
                     }
                     else
                     {

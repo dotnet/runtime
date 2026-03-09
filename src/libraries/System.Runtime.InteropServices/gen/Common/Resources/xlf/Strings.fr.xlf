@@ -394,7 +394,7 @@
       </trans-unit>
       <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
+        <target state="translated">Le type « {0} » spécifié en tant que « GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarsalloer » n’est pas accessible par le code généré. Le type doit avoir au moins une accessibilité « interne ». {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
@@ -439,7 +439,7 @@
       </trans-unit>
       <trans-unit id="GenericDelegatesNotSupported">
         <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
-        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <target state="translated">Le marshaling d’un délégué générique n’est pas pris en charge. Envisagez plutôt d’utiliser un pointeur de fonction.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -624,7 +624,7 @@
       </trans-unit>
       <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
         <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
-        <target state="new">The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</target>
+        <target state="translated">Le type spécifié en tant que « GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarsfecteur » n’est pas un type de marshaleur valide.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

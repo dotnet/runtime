@@ -46,7 +46,7 @@ public class EmbeddedLoads
         //ARM6-FULL-LINE: ldnf1w  { {{z[0-9]+}}.s }, {{p[0-9]+}}/m, [{{x[0-9]+}}]
         fixed (int* arr_ptr = array)
         {
-            var result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt32(), op1, Sve.LoadVectorNonFaulting(arr_ptr));
+            var result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt32(), op1, Sve.LoadVectorNonFaulting(Sve.CreateTrueMaskInt32(), arr_ptr));
             Consume(result);
         }
     }
@@ -56,7 +56,7 @@ public class EmbeddedLoads
         //ARM6-FULL-LINE: ldnf1w  { {{z[0-9]+}}.s }, {{p[0-9]+}}/m, [{{x[0-9]+}}]
         fixed (int* arr_ptr = array)
         {
-            var result = Sve.ConditionalSelect(Vector<int>.AllBitsSet, op1, Sve.LoadVectorNonFaulting(arr_ptr));
+            var result = Sve.ConditionalSelect(Vector<int>.AllBitsSet, op1, Sve.LoadVectorNonFaulting(Vector<int>.AllBitsSet, arr_ptr));
             Consume(result);
         }
     }
@@ -66,7 +66,7 @@ public class EmbeddedLoads
         //ARM6-FULL-LINE: ldnf1w  { {{z[0-9]+}}.s }, {{p[0-9]+}}/m, [{{x[0-9]+}}]
         fixed (int* arr_ptr = array)
         {
-            var result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), op1, Sve.LoadVectorNonFaulting(arr_ptr));
+            var result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), op1, Sve.LoadVectorNonFaulting(Sve.CreateFalseMaskInt32(), arr_ptr));
             Consume(result);
         }
     }
@@ -76,7 +76,7 @@ public class EmbeddedLoads
         //ARM6-FULL-LINE: ldnf1w  { {{z[0-9]+}}.s }, {{p[0-9]+}}/m, [{{x[0-9]+}}]
         fixed (int* arr_ptr = array)
         {
-            var result = Sve.ConditionalSelect(Vector<int>.Zero, op1, Sve.LoadVectorNonFaulting(arr_ptr));
+            var result = Sve.ConditionalSelect(Vector<int>.Zero, op1, Sve.LoadVectorNonFaulting(Vector<int>.Zero, arr_ptr));
             Consume(result);
         }
     }

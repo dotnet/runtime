@@ -54,7 +54,7 @@ namespace System.Threading.Channels
 
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
         private volatile
-#if NET9_0_OR_GREATER
+#if NET
             bool
 #else
             int
@@ -179,11 +179,10 @@ namespace System.Threading.Channels
         /// </remarks>
         public bool TryReserveCompletionIfCancelable() =>
             !CancellationToken.CanBeCanceled ||
-            Interlocked.Exchange(ref _completionReserved,
-#if NET9_0_OR_GREATER
-                true) == false;
+#if NET
+            !Interlocked.Exchange(ref _completionReserved, true);
 #else
-                1) == 0;
+            Interlocked.Exchange(ref _completionReserved, 1) == 0;
 #endif
 
         /// <summary>Signals to a registered continuation that the operation has now completed.</summary>
@@ -191,7 +190,7 @@ namespace System.Threading.Channels
         {
             Debug.Assert(
                 !CancellationToken.CanBeCanceled ||
-#if NET9_0_OR_GREATER
+#if NET
                 _completionReserved);
 #else
                 _completionReserved == 1);
@@ -267,11 +266,14 @@ namespace System.Threading.Channels
                 ctx as ExecutionContext ??
                 (ctx as CapturedSchedulerAndExecutionContext)?._executionContext;
 
+            _capturedContext = null;
             if (ec is null)
             {
                 Action<object?> c = _continuation!;
                 _continuation = s_completedSentinel;
-                c(_continuationState);
+                object? state = _continuationState;
+                _continuationState = null;
+                c(state);
             }
             else
             {
@@ -280,7 +282,9 @@ namespace System.Threading.Channels
                     var thisRef = (AsyncOperation)s!;
                     Action<object?> c = thisRef._continuation!;
                     thisRef._continuation = s_completedSentinel;
-                    c(thisRef._continuationState);
+                    object? state = thisRef._continuationState;
+                    thisRef._continuationState = null;
+                    c(state);
                 }, this);
             }
         }

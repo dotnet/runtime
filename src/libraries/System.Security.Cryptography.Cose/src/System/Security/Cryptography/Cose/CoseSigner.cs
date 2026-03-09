@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Cose
         /// Gets the private key to use during signing.
         /// </summary>
         /// <value>The private key to use during signing.</value>
-        public AsymmetricAlgorithm? Key { get; }
+        public AsymmetricAlgorithm? Key => CoseKey.AsymmetricAlgorithm;
 
         /// <summary>
         /// Gets the private key to use during signing.
@@ -78,10 +78,7 @@ namespace System.Security.Cryptography.Cose
             if (key is not ECDsa)
                 throw new ArgumentException(SR.Format(SR.Sign1UnsupportedKey, key.GetType().Name), nameof(key));
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            Key = key;
-#pragma warning restore CS0618 // Type or member is obsolete
-            CoseKey = CoseKey.FromKey((ECDsa)key, hashAlgorithm);
+            CoseKey = new CoseKey((ECDsa)key, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
@@ -115,10 +112,7 @@ namespace System.Security.Cryptography.Cose
             ArgumentNullException.ThrowIfNull(key);
             ArgumentNullException.ThrowIfNull(signaturePadding);
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            Key = key;
-#pragma warning restore CS0618 // Type or member is obsolete
-            CoseKey = CoseKey.FromKey(key, signaturePadding, hashAlgorithm);
+            CoseKey = new CoseKey(key, signaturePadding, hashAlgorithm);
 
             _protectedHeaders = protectedHeaders;
             _unprotectedHeaders = unprotectedHeaders;
@@ -137,9 +131,6 @@ namespace System.Security.Cryptography.Cose
             if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            Key = null;
-#pragma warning restore CS0618 // Type or member is obsolete
             CoseKey = key;
 
             _protectedHeaders = protectedHeaders;

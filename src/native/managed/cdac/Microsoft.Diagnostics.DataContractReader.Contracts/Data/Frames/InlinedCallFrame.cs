@@ -14,6 +14,9 @@ internal class InlinedCallFrame : IData<InlinedCallFrame>
         CallSiteSP = target.ReadPointer(address + (ulong)type.Fields[nameof(CallSiteSP)].Offset);
         CallerReturnAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerReturnAddress)].Offset);
         CalleeSavedFP = target.ReadPointer(address + (ulong)type.Fields[nameof(CalleeSavedFP)].Offset);
+        if (type.Fields.ContainsKey(nameof(SPAfterProlog)))
+            SPAfterProlog = target.ReadPointer(address + (ulong)type.Fields[nameof(SPAfterProlog)].Offset);
+        Datum = target.ReadPointer(address + (ulong)type.Fields[nameof(Datum)].Offset);
         Address = address;
     }
 
@@ -21,4 +24,6 @@ internal class InlinedCallFrame : IData<InlinedCallFrame>
     public TargetPointer CallSiteSP { get; }
     public TargetPointer CallerReturnAddress { get; }
     public TargetPointer CalleeSavedFP { get; }
+    public TargetPointer? SPAfterProlog { get; }
+    public TargetPointer Datum { get; }
 }

@@ -628,8 +628,8 @@ namespace System.Text.Json.Serialization.Converters
                 out bool useExtensionProperty,
                 createExtensionProperty: false);
 
-            // Mark the property as read from the payload if required.
-            if (!useExtensionProperty)
+            // Mark the property as read from the payload if it is mapped to a non-extension member.
+            if (!useExtensionProperty && jsonPropertyInfo != JsonPropertyInfo.s_missingProperty)
             {
                 state.Current.MarkPropertyAsRead(jsonPropertyInfo);
             }

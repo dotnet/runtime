@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
@@ -395,6 +396,22 @@ namespace R2RDump
 
         public int Run()
         {
+            NativeLibrary.SetDllImportResolver(typeof(PdbWriter).Assembly,
+                (string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath) =>
+                {
+                    IntPtr libraryHandle = IntPtr.Zero;
+                    if (libraryName == "Microsoft.DiaSymReader.Native")
+                    {
+                        string archSuffix = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                        if (archSuffix == "x64")
+                        {
+                            archSuffix = "amd64";
+                        }
+                        libraryHandle = NativeLibrary.Load(libraryName + "." + archSuffix + ".dll", assembly, searchPath);
+                    }
+                    return libraryHandle;
+                });
+
             Disassembler disassembler = null;
             List<string> inputs = Get(_command.In);
             bool inlineSignatureBinary = Get(_command.InlineSignatureBinary);
@@ -499,9 +516,12 @@ namespace R2RDump
         private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
-            new CommandLineConfiguration(new R2RDumpRootCommand().UseVersion())
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+            new R2RDumpRootCommand().UseVersion()
+            .Parse(args,
+                new ParserConfiguration()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                })
+            .Invoke();
     }
 }

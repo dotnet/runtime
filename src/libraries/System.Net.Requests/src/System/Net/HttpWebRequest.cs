@@ -1089,10 +1089,16 @@ namespace System.Net
 
         private async Task<Stream> InternalGetRequestStream()
         {
+            // Ensure that we only create the request stream once.
+            if (_requestStream != null)
+            {
+                return _requestStream;
+            }
+
             // If we aren't buffering we need to open the connection right away.
             // Because we need to send the data as soon as possible when it's available from the RequestStream.
             // Making this allows us to keep the sync send request path for buffering cases.
-            if (AllowWriteStreamBuffering is false)
+            if (!AllowWriteStreamBuffering)
             {
                 // We're calling SendRequest with async, because we need to open the connection and send the request
                 // Otherwise, sync path will block the current thread until the request is sent.
@@ -1146,6 +1152,8 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_repcall);
             }
 
+            Interlocked.Exchange(ref _endGetRequestStreamCalled, false);
+
             CheckRequestStream();
 
             _requestStreamCallback = callback;
@@ -1177,6 +1185,8 @@ namespace System.Net
             {
                 throw WebException.CreateCompatibleException(ex);
             }
+
+            Interlocked.Exchange(ref _beginGetRequestStreamCalled, false);
 
             return stream;
         }

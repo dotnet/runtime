@@ -61,7 +61,7 @@ namespace Microsoft.Extensions
             var list = new List<string>();
             config.GetSection("StringList").Bind(list);
 
-            Assert.Empty(list);
+            Assert.Equal([ null, null, null, null ], list);
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
@@ -2182,9 +2182,10 @@ namespace Microsoft.Extensions
 
             var options = config.Get<ComplexOptions>()!;
 
-            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
-            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
-            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+            Assert.Equal(3, options.InstantiatedIEnumerable.Count());
+            Assert.Null(options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(1));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(2));
         }
 
         [Fact]

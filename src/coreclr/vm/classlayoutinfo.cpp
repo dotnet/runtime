@@ -95,13 +95,7 @@ namespace
                 placementInfo.m_alignment = DATA_ALIGNMENT;
             }
             else
-#elif defined(FEATURE_64BIT_ALIGNMENT)
-            if (pNestedType.RequiresAlign8())
-            {
-                placementInfo.m_alignment = 8;
-            }
-            else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // !TARGET_64BIT && (DATA_ALIGNMENT > 4)
             if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
@@ -111,6 +105,12 @@ namespace
             {
                 placementInfo.m_alignment = pNestedType.GetMethodTable()->GetFieldAlignmentRequirement();
             }
+#ifdef FEATURE_64BIT_ALIGNMENT
+            if (pNestedType.RequiresAlign8())
+            {
+                placementInfo.m_alignment = max(8u, placementInfo.m_alignment);
+            }
+#endif // FEATURE_64BIT_ALIGNMENT
         }
 
         // No other type permitted for ManagedSequential.
@@ -213,7 +213,7 @@ namespace
         LayoutRawFieldInfo* pfwalk = pFieldInfoArray;
         mdFieldDef fd;
         ULONG ulOffset;
-        UINT32 calcTotalSize = 0;
+        UINT32 calcTotalSize = parentSize;
         while (SUCCEEDED(hr = pInternalImport->GetClassLayoutNext(
             &classlayout,
             &fd,
@@ -607,6 +607,74 @@ ULONG EEClassLayoutInfo::InitializeExplicitFieldLayout(
     return SetInstanceBytesSize(managedSize);
 }
 
+ULONG EEClassLayoutInfo::InitializeCStructFieldLayout(
+    FieldDesc* pFields,
+    MethodTable** pByValueClassCache,
+    ULONG cFields
+)
+{
+    STANDARD_VM_CONTRACT;
+
+    SetLayoutType(LayoutType::CStruct);
+
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    UINT32 numInstanceFields;
+    BYTE fieldsAlignmentRequirement;
+    InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
+
+    BYTE alignmentRequirement = max<BYTE>(1, fieldsAlignmentRequirement);
+
+    SetAlignmentRequirement(alignmentRequirement);
+    SetPackingSize(DEFAULT_PACKING_SIZE);
+
+    UINT32 lastFieldEnd = CalculateOffsetsForSequentialLayout(pInfoArray, numInstanceFields, 0, DEFAULT_PACKING_SIZE);
+
+    SetFieldOffsets(pFields, cFields, pInfoArray, numInstanceFields);
+
+    UINT32 managedSize = AlignSize(lastFieldEnd, alignmentRequirement);
+
+    return SetInstanceBytesSize(managedSize);
+}
+
+ULONG EEClassLayoutInfo::InitializeCUnionFieldLayout(
+    FieldDesc* pFields,
+    MethodTable** pByValueClassCache,
+    ULONG cFields
+)
+{
+    STANDARD_VM_CONTRACT;
+
+    SetLayoutType(LayoutType::CUnion);
+
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    UINT32 numInstanceFields;
+    BYTE fieldsAlignmentRequirement;
+    InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
+
+    BYTE alignmentRequirement = max<BYTE>(1, fieldsAlignmentRequirement);
+
+    SetAlignmentRequirement(alignmentRequirement);
+    SetPackingSize(DEFAULT_PACKING_SIZE);
+
+    // For a union, all fields are placed at offset 0
+    // and the size is the maximum of all field sizes
+    UINT32 maxFieldSize = 0;
+    for (UINT32 i = 0; i < numInstanceFields; i++)
+    {
+        pInfoArray[i].m_placement.m_offset = 0;
+        if (pInfoArray[i].m_placement.m_size > maxFieldSize)
+        {
+            maxFieldSize = pInfoArray[i].m_placement.m_size;
+        }
+    }
+
+    SetFieldOffsets(pFields, cFields, pInfoArray, numInstanceFields);
+
+    UINT32 managedSize = AlignSize(maxFieldSize, alignmentRequirement);
+
+    return SetInstanceBytesSize(managedSize);
+}
+
 namespace
 {
     #ifdef UNIX_AMD64_ABI
@@ -891,10 +959,17 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
     pNativeLayoutInfo->m_numFields = numTotalInstanceFields;
 
-    BYTE parentAlignmentRequirement = 0;
+    // If there's no parent, pretend that the parent alignment requirement is 1.
+    BYTE parentAlignmentRequirement = 1;
     if (pParentLayoutInfo != nullptr)
     {
         parentAlignmentRequirement = pParentLayoutInfo->GetLargestAlignmentRequirement();
+    }
+
+    BYTE packingSize = pMT->GetLayoutInfo()->GetPackingSize();
+    if (packingSize == 0)
+    {
+        packingSize = DEFAULT_PACKING_SIZE;
     }
 
     BYTE fieldAlignmentRequirement = 0;
@@ -902,14 +977,19 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_token != mdFieldDefNil; pfwalk++)
     {
         pfwalk->m_placement.m_size = pfwalk->m_nfd.NativeSize();
-        pfwalk->m_placement.m_alignment = pfwalk->m_nfd.AlignmentRequirement();
+        // Allow the packing size to override a looser alignment requirement.
+        pfwalk->m_placement.m_alignment = min(packingSize, (BYTE)pfwalk->m_nfd.AlignmentRequirement());
         if (pfwalk->m_placement.m_alignment > fieldAlignmentRequirement)
         {
             fieldAlignmentRequirement = (BYTE)pfwalk->m_placement.m_alignment;
         }
     }
 
-    pNativeLayoutInfo->m_alignmentRequirement = max(max<BYTE>(1, parentAlignmentRequirement), fieldAlignmentRequirement);
+    // Allow the packing size to require less alignment than the parent's alignment requirement.
+    BYTE initialAlignmentRequirement = min(packingSize, parentAlignmentRequirement);
+
+    // The alignment of the native layout is the stricter of the initial alignment requirement or the alignment requirements of the fields.
+    pNativeLayoutInfo->m_alignmentRequirement = max(initialAlignmentRequirement, fieldAlignmentRequirement);
 
     BOOL fExplicitOffsets = pMT->GetClass()->HasExplicitFieldOffsetLayout();
 
@@ -920,11 +1000,6 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     }
     else
     {
-        BYTE packingSize = pMT->GetLayoutInfo()->GetPackingSize();
-        if (packingSize == 0)
-        {
-            packingSize = DEFAULT_PACKING_SIZE;
-        }
         lastFieldEnd = CalculateOffsetsForSequentialLayout(pInfoArray, cInstanceFields, cbAdjustedParentLayoutNativeSize, packingSize);
     }
 
