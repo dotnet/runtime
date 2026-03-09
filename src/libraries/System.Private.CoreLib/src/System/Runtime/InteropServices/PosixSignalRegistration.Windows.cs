@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices
         private static readonly Dictionary<int, List<Token>> s_registrations = new();
 
         /// <summary>
-        /// Lock object for critical section ensurring that only one of register and unregister happen at time.
+        /// Lock object for critical section ensuring that only one of register and unregister happens at a time.
         /// </summary>
         private static readonly object s_oneOfRegisterUnregisterLock = new();
 
