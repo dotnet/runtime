@@ -3901,15 +3901,15 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
         return false;
     }
 
-    NewHolder<PInvokeStubLinker> slIL(new PInvokeStubLinker(PINVOKESTUB_FL_STRUCT_MARSHAL, pMD->GetModule(), pMD->GetSignature(), &genericContext, nullptr, -1));
-    slIL->SetStubMethodDesc(pMD);
+    PInvokeStubLinker slIL{PINVOKESTUB_FL_STRUCT_MARSHAL, pMD->GetModule(), pMD->GetSignature(), &genericContext, nullptr, -1};
+    slIL.SetStubMethodDesc(pMD);
 
-    CreateStructMarshalIL(pStructMT, slIL, marshalFlags);
+    CreateStructMarshalIL(pStructMT, &slIL, marshalFlags);
 
     NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
     ilResolver->SetStubMethodDesc(pMD);
 
-    *methodILDecoder = ilResolver->FinalizeILStub(slIL);
+    *methodILDecoder = ilResolver->FinalizeILStub(&slIL);
     *resolver = ilResolver.Extract();
     return true;
 }
@@ -5335,9 +5335,9 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
 
     bool generatedNewStub = false;
 
-    NewHolder<PInvokeStubLinker> pLinker = new PInvokeStubLinker(dwStubFlags, pMT->GetModule(), Signature(szMetaSig, cbMetaSigSize), &typeContext, NULL, -1);
+    PInvokeStubLinker pLinker{dwStubFlags, pMT->GetModule(), Signature(szMetaSig, cbMetaSigSize), &typeContext, NULL, -1};
 
-    CreateLayoutClassStub(pMT, dwStubFlags, pLinker, operation);
+    CreateLayoutClassStub(pMT, dwStubFlags, &pLinker, operation);
 
     MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
         pMT->GetLoaderAllocator(),
@@ -5347,7 +5347,7 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
         szMetaSig,
         cbMetaSigSize,
         &typeContext,
-        pLinker
+        &pLinker
     );
 
 #if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
