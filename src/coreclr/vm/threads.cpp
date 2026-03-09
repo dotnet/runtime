@@ -2297,6 +2297,7 @@ Thread::~Thread()
         // Destroy any handles that we're using to hold onto exception objects
         SafeSetThrowables(NULL);
 
+        GCX_COOP();
         DestroyShortWeakHandle(m_ExposedObject);
         DestroyStrongHandle(m_StrongHndToExposedObject);
     }

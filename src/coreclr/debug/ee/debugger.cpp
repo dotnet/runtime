@@ -10984,6 +10984,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
             CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
+            GCX_COOP();
             switch (handleType)
             {
             case HANDLE_STRONG:
@@ -12304,6 +12305,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         }
         else
         {
+            GCX_COOP();
             DestroyLongWeakHandle(objHandle);
         }
     }
@@ -12313,6 +12315,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         {
             m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
         }
+        GCX_COOP();
         DestroyLongWeakHandle(objHandle);
     }
     return S_OK;

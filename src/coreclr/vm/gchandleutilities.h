@@ -247,7 +247,7 @@ inline void DestroyHandleCommon(OBJECTHANDLE handle, HandleType type)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;

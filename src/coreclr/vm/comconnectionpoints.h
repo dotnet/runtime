@@ -50,6 +50,7 @@ struct ConnectionCookie
     ~ConnectionCookie()
     {
         WRAPPER_NO_CONTRACT;
+        GCX_COOP();
         DestroyHandle(m_hndEventProvObj);
     }
 

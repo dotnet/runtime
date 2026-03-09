@@ -267,6 +267,7 @@ namespace InteropLibImports
         CONTRACTL_END;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
+        GCX_COOP();
         DestroyRefcountedHandle(objectHandle);
     }
 

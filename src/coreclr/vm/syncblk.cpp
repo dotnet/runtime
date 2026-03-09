@@ -789,6 +789,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     psb->m_thinLock.StoreWithoutBarrier(0);
     if (psb->m_Lock)
     {
+        GCX_COOP();
         DestroyHandle(psb->m_Lock);
         psb->m_Lock = NULL;
     }

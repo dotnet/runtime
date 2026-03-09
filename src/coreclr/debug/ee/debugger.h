@@ -535,6 +535,7 @@ class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTr
         }
         static void OnRemovePerEntryCleanupAction(const OBJECTHANDLE &e)
         {
+            GCX_COOP();
             DestroyLongWeakHandle(e);
         }
 };

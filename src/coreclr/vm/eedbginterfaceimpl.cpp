@@ -211,6 +211,7 @@ void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
     CONTRACTL
     {
         NOTHROW;
+        MODE_ANY;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
@@ -218,6 +219,7 @@ void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
     LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle 0x%x,"
         "fStrong: 0x%x!\n", oh, fStrongNewRef));
 
+    GCX_COOP();
     if (fStrongNewRef)
     {
         DestroyStrongHandle(oh);

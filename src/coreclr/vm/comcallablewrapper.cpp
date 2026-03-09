@@ -2014,6 +2014,7 @@ void ComCallWrapper::ClearHandle()
     OBJECTHANDLE pThis = m_ppThis;
     if (InterlockedCompareExchangeT(&m_ppThis, NULL, pThis) == pThis)
     {
+        GCX_COOP();
         DestroyRefcountedHandle(pThis);
     }
 }

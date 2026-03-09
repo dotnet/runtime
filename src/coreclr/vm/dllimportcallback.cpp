@@ -319,6 +319,7 @@ void UMEntryThunkData::Terminate()
 
     if (pObjectHandle != NULL)
     {
+        GCX_COOP();
         DestroyLongWeakHandle(pObjectHandle);
     }
 
