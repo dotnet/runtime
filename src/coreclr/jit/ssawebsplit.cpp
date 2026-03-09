@@ -114,6 +114,11 @@ struct LivenessCopyPair
 //
 PhaseStatus Compiler::fgSsaWebSplit()
 {
+    if (JitConfig.JitDoSsaWebSplit() == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     CompAllocator alloc = getAllocator(CMK_SSA);
 
     // Capture lvaCount before we start adding new locals.

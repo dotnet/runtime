@@ -583,6 +583,8 @@ OPT_CONFIG_STRING(JitEnableLocalAddrPropagationRange, "JitEnableLocalAddrPropaga
 OPT_CONFIG_INTEGER(JitDoSsa, "JitDoSsa", 1) // Perform Static Single Assignment (SSA) numbering on the variables
 OPT_CONFIG_INTEGER(JitDoValueNumber, "JitDoValueNumber", 1) // Perform value numbering on method expressions
 
+RELEASE_CONFIG_INTEGER(JitDoSsaWebSplit, "JitDoSsaWebSplit", 1) // Perform SSA web splitting to improve register allocation
+
 OPT_CONFIG_STRING(JitOptRepeatRange, "JitOptRepeatRange") // Enable JitOptRepeat based on method hash range
 
 OPT_CONFIG_INTEGER(JitDoIfConversion, "JitDoIfConversion", 1)                       // Perform If conversion
