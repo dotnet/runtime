@@ -290,7 +290,10 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 // If background services faulted and caused the host to stop, rethrow the exceptions
                 // so they propagate and cause a non-zero exit code.
-                exceptions.AddRange(_backgroundServiceExceptions);
+                lock (_backgroundServiceExceptions)
+                {
+                    exceptions.AddRange(_backgroundServiceExceptions);
+                }
 
                 if (exceptions.Count > 0)
                 {
