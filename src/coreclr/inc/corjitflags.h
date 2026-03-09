@@ -39,7 +39,7 @@ public:
         CORJIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        // CORJIT_FLAG_UNUSED               = 10,
+        CORJIT_FLAG_PORTABLE_ENTRY_POINTS   = 10,
         CORJIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         CORJIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
@@ -64,7 +64,6 @@ public:
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
         CORJIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
-        CORJIT_FLAG_PORTABLE_ENTRY_POINTS   = 32,
     };
 
     CORJIT_FLAGS()

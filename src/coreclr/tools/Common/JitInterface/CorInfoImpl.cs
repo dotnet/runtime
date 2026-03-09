@@ -4507,10 +4507,12 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
 
+#if READYTORUN
             if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
             }
+#endif
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
