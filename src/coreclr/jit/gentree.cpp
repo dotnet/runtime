@@ -2749,6 +2749,22 @@ AGAIN:
                 }
                 return true;
 
+            case GT_PHI_ARG:
+                if ((op1->AsLclVarCommon()->GetLclNum() != op2->AsLclVarCommon()->GetLclNum()) ||
+                    (op1->AsPhiArg()->gtPredBB != op2->AsPhiArg()->gtPredBB) ||
+                    (op1->AsLclVarCommon()->GetSsaNum() != op2->AsLclVarCommon()->GetSsaNum()))
+                {
+                    break;
+                }
+                return true;
+
+            case GT_FTN_ADDR:
+                if (op1->AsFptrVal()->gtFptrMethod != op2->AsFptrVal()->gtFptrMethod)
+                {
+                    break;
+                }
+                return true;
+
             case GT_NOP:
             case GT_LABEL:
             case GT_ASYNC_RESUME_INFO:
@@ -2908,7 +2924,10 @@ AGAIN:
                     }
                     break;
                 case GT_INDEX_ADDR:
-                    if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
+                    if ((op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize) ||
+                        (op1->AsIndexAddr()->gtElemType != op2->AsIndexAddr()->gtElemType) ||
+                        (op1->AsIndexAddr()->gtLenOffset != op2->AsIndexAddr()->gtLenOffset) ||
+                        (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset))
                     {
                         return false;
                     }
