@@ -275,12 +275,12 @@ namespace Microsoft.Win32.SafeHandles
                 return FileHandleType.Pipe;
             }
 
-            return Marshal.GetLastPInvokeError() switch
+            int error = Marshal.GetLastPInvokeError();
+            return error switch
             {
                 Interop.Errors.ERROR_PIPE_NOT_CONNECTED => FileHandleType.Pipe,
-                // Since we got here, it means the handle itself is valid.
-                // So treat all other errors as an indication that it's not a pipe, and thus a socket.
-                _ => FileHandleType.Socket,
+                Interop.Errors.ERROR_INVALID_FUNCTION => FileHandleType.Socket,
+                _ => throw Win32Marshal.GetExceptionForWin32Error(error, Path)
             };
         }
 
