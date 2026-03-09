@@ -5,19 +5,19 @@ dotnet/runtime. Referenced from the main [SKILL.md](../SKILL.md) during Step 5.
 
 For issues that are questions rather than bugs or feature requests, attempt to
 provide a helpful answer before recommending closure. This adds value beyond
-just closing the issue — the author gets an answer, and the response demonstrates
+just closing the issue -- the author gets an answer, and the response demonstrates
 that the issue was thoughtfully reviewed.
 
 ## How to Answer
 
-1. **Research the question** — Search the .NET documentation, API reference, and
+1. **Research the question** -- Search the .NET documentation, API reference, and
    existing GitHub issues/discussions for relevant information.
-2. **Draft an answer** — Write a clear, concise answer with code examples where
+2. **Draft an answer** -- Write a clear, concise answer with code examples where
    appropriate.
 3. **Assess your confidence** in the answer:
-   - **High confidence** — The answer is based on well-documented behavior, you've
+   - **High confidence** -- The answer is based on well-documented behavior, you've
      used this API before, or the docs clearly cover this scenario.
-   - **Low confidence** — The answer is based on inference, you're unsure about
+   - **Low confidence** -- The answer is based on inference, you're unsure about
      edge cases, or the behavior isn't clearly documented.
 
 ## Verify Low-Confidence Answers

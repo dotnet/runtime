@@ -7,12 +7,12 @@ A performance regression is a report that something got measurably slower (or
 uses more memory/allocations) compared to a previous .NET version or a recent
 commit. These reports come from several sources:
 
-- **Automated bot issues** — filed by `performanceautofiler[bot]` with
+- **Automated bot issues** -- filed by `performanceautofiler[bot]` with
   baseline/compare commits, regression tables, and repro commands.
-- **Customer reports** — a user reports that an operation became slower after
+- **Customer reports** -- a user reports that an operation became slower after
   upgrading to a new .NET version, often with sample code or a reproduction
   project.
-- **Cross-release regressions** — a regression observed between two stable
+- **Cross-release regressions** -- a regression observed between two stable
   releases (e.g., .NET 9 → .NET 10) without a specific commit range.
 
 The goals of this triage are to:
@@ -29,31 +29,31 @@ regression.
 
 Issues from `performanceautofiler[bot]` follow a standard format:
 
-- **Run Information** — Baseline commit, Compare commit, diff link, OS, arch,
+- **Run Information** -- Baseline commit, Compare commit, diff link, OS, arch,
   and configuration (e.g., `CompilationMode:tiered`, `RunKind:micro`).
-- **Regression tables** — Each table shows benchmark name, Baseline time,
+- **Regression tables** -- Each table shows benchmark name, Baseline time,
   Test time, and Test/Base ratio. A ratio >1.0 indicates a regression.
-- **Repro commands** — Typically:
+- **Repro commands** -- Typically:
   ```
   git clone https://github.com/dotnet/performance.git
   python3 .\performance\scripts\benchmarks_ci.py -f net10.0 --filter 'SomeBenchmark*'
   ```
-- **Graphs** — Time-series graphs showing when the regression appeared.
+- **Graphs** -- Time-series graphs showing when the regression appeared.
 
 Key fields to extract:
 
-- The **Baseline** and **Compare** commit SHAs — these define the bisect range.
-- The **benchmark filter** — the `--filter` argument to reproduce the benchmark.
-- The **Test/Base ratio** — how severe the regression is (>1.5× is significant).
+- The **Baseline** and **Compare** commit SHAs -- these define the bisect range.
+- The **benchmark filter** -- the `--filter` argument to reproduce the benchmark.
+- The **Test/Base ratio** -- how severe the regression is (>1.5× is significant).
 
 ### Customer reports
 
 When a customer reports a regression (e.g., "X is slower on .NET 10 than
 .NET 9"), there are no pre-defined commit SHAs. You need to determine the
-bisect range yourself — see [Cross-release regressions](#cross-release-regressions)
+bisect range yourself -- see [Cross-release regressions](#cross-release-regressions)
 below.
 
-Also identify the **scenario to benchmark** from the customer's report — the
+Also identify the **scenario to benchmark** from the customer's report -- the
 specific API call, code pattern, or workload that regressed.
 
 ### Cross-release regressions
@@ -89,7 +89,7 @@ easier to iterate on, and more reliable during `git bisect`.
 
 ### Creating the benchmark project
 
-**From an automated bot issue** — copy the relevant benchmark class and its
+**From an automated bot issue** -- copy the relevant benchmark class and its
 dependencies from the `dotnet/performance` repo into a new standalone project:
 
 1. Clone `dotnet/performance` and locate the benchmark class referenced in the
@@ -110,7 +110,7 @@ dependencies from the `dotnet/performance` repo into a new standalone project:
        .Run(args);
    ```
 
-**From a customer report** — write a minimal BenchmarkDotNet benchmark that
+**From a customer report** -- write a minimal BenchmarkDotNet benchmark that
 exercises the reported code path:
 
 1. Create a new console project with `BenchmarkDotNet` as above.
@@ -173,7 +173,7 @@ or `Same`.
 |---------|---------|-----------|
 | `Slower` with ratio >1.10 | Regression confirmed | Proceed to Phase 2 |
 | `Same` or within noise | Not reproduced locally | Check environment differences (OS, arch, CPU). Note in the report. |
-| `Slower` but ratio <1.05 | Marginal — may be noise | Re-run with more iterations (`--iterationCount 30`). If still marginal, note as inconclusive. |
+| `Slower` but ratio <1.05 | Marginal -- may be noise | Re-run with more iterations (`--iterationCount 30`). If still marginal, note as inconclusive. |
 
 For a thorough comparison of saved BDN result files, use the
 [ResultsComparer](https://github.com/dotnet/performance/tree/main/src/tools/ResultsComparer)
@@ -191,12 +191,12 @@ dotnet run --project performance/src/tools/ResultsComparer \
 If the bisect range spans many commits, narrow it before running a full
 bisect:
 
-1. **Check `git log --oneline {good}..{bad}`** — how many commits are in the
+1. **Check `git log --oneline {good}..{bad}`** -- how many commits are in the
    range? If it is more than ~200, try to narrow it first.
-2. **Test midpoint commits manually** — pick a commit in the middle of the
+2. **Test midpoint commits manually** -- pick a commit in the middle of the
    range, build, run the benchmark, and determine if it is good or bad.
    This halves the range in one step.
-3. **For cross-release regressions** — use the `git merge-base` snap points
+3. **For cross-release regressions** -- use the `git merge-base` snap points
    described above. If the range between two release snap points is still
    large, test at intermediate release preview tags to narrow further.
 
@@ -209,7 +209,7 @@ Once you have a manageable commit range (good commit and bad commit), use
 
 At each step of the bisect, you need to:
 
-1. **Rebuild the affected component** — use incremental builds where possible
+1. **Rebuild the affected component** -- use incremental builds where possible
    (see [Incremental Rebuilds](#incremental-rebuilds-during-bisect) below).
 2. **Run the standalone benchmark** with the freshly-built CoreRun:
    ```
@@ -218,12 +218,12 @@ At each step of the bisect, you need to:
        --filter '*' \
        --coreRun {runtime}/artifacts/bin/testhost/.../CoreRun
    ```
-3. **Determine good or bad** — compare the result against your threshold.
+3. **Determine good or bad** -- compare the result against your threshold.
 
 **Exit codes for `git bisect run`:**
-- `0` — good (no regression at this commit)
-- `1`–`124` — bad (regression present)
-- `125` — skip (build failure or untestable commit)
+- `0` -- good (no regression at this commit)
+- `1`–`124` -- bad (regression present)
+- `125` -- skip (build failure or untestable commit)
 
 The standalone benchmark project must be **outside the dotnet/runtime tree**
 since `git bisect` checks out different commits, which would overwrite
@@ -250,12 +250,12 @@ return to the original branch.
 
 Include the following in the triage report:
 
-1. **The culprit commit or PR** — link to the specific commit SHA and its
+1. **The culprit commit or PR** -- link to the specific commit SHA and its
    associated PR. Explain how the change relates to the regressing benchmark.
-2. **Root cause analysis** — describe *why* the change caused the regression
+2. **Root cause analysis** -- describe *why* the change caused the regression
    (e.g., an algorithm change, a removed optimization, additional validation
    overhead).
-3. **If the root cause spans multiple PRs** — sometimes a regression results
+3. **If the root cause spans multiple PRs** -- sometimes a regression results
    from the combined effect of several changes and `git bisect` lands on a
    commit that is only one contributing factor. In this case, report the
    narrowest commit range that introduced the regression and list the PRs or
@@ -284,15 +284,15 @@ Use exit code `125` (skip) to handle this gracefully.
 
 When assessing a performance regression in Step 6, consider:
 
-- **Severity** — What is the Test/Base ratio? >2× is severe; 1.1–1.2× may be
+- **Severity** -- What is the Test/Base ratio? >2× is severe; 1.1–1.2× may be
   noise or acceptable.
-- **Breadth** — How many benchmarks regressed? A single narrow benchmark vs.
+- **Breadth** -- How many benchmarks regressed? A single narrow benchmark vs.
   hundreds of benchmarks suggests different root causes.
-- **Affected component** — Is it JIT (codegen), GC, a specific library, or
+- **Affected component** -- Is it JIT (codegen), GC, a specific library, or
   cross-cutting?
-- **User impact** — Does the regressing benchmark represent a real-world hot
+- **User impact** -- Does the regressing benchmark represent a real-world hot
   path, or is it a synthetic microbenchmark?
-- **Trade-off** — Was the regression an intentional trade-off for correctness,
+- **Trade-off** -- Was the regression an intentional trade-off for correctness,
   security, or another dimension? Check the PR description of the culprit
   commit.
 
@@ -312,7 +312,7 @@ When assessing a performance regression in Step 6, consider:
 
 ### NEEDS INFO
 
-- Regression is marginal (Test/Base <1.05) and could be noise — request a
+- Regression is marginal (Test/Base <1.05) and could be noise -- request a
   re-run on the performance infrastructure
-- Environment-specific regression that cannot be reproduced locally — note the
+- Environment-specific regression that cannot be reproduced locally -- note the
   environment mismatch

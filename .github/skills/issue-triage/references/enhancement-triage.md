@@ -16,7 +16,7 @@ issue first, because each subcategory has different evaluation criteria.
 | Subcategory | Indicators | Examples |
 |-------------|-----------|----------|
 | **Performance improvement** | Requests faster execution, lower allocations, reduced memory, better throughput; may cite benchmarks or profiling data | SIMD for JSON parsing, io_uring for sockets, compact string representation |
-| **Behavioral improvement** | Requests better defaults, improved error messages, more consistent behavior, or smarter handling of edge cases — all without new API | `HttpClient` throwing `TaskCanceledException` instead of `TimeoutException` on timeout, `BackgroundService` blocking host startup, readable stack traces |
+| **Behavioral improvement** | Requests better defaults, improved error messages, more consistent behavior, or smarter handling of edge cases -- all without new API | `HttpClient` throwing `TaskCanceledException` instead of `TimeoutException` on timeout, `BackgroundService` blocking host startup, readable stack traces |
 | **Infrastructure / tooling** | Improvements to internal tooling, source generators, diagnostics, cDAC, build system, or test infrastructure | Source generator fixes, cDAC API support, code coverage improvements |
 | **Platform support** | Requests support for a new OS, architecture, or platform-specific feature | FreeBSD support, Linux kernel TLS offload, ARM64 optimizations |
 | **Porting / parity** | Requests porting a .NET Framework component or achieving feature parity across platforms | Port System.Xaml, DirectoryServices on Linux, EventLog on .NET Core |
@@ -28,21 +28,21 @@ overlap.
 
 For each enhancement, conduct a planning-level feasibility analysis. The goal
 is to determine whether the enhancement is architecturally viable and worth
-pursuing — **not** to prototype or implement anything.
+pursuing -- **not** to prototype or implement anything.
 
 ### Questions to investigate
 
-1. **Scope** — How much of the codebase would this touch? Is it isolated to
+1. **Scope** -- How much of the codebase would this touch? Is it isolated to
    one library/component, or does it cut across multiple areas?
-2. **Backward compatibility** — Could this change break existing consumers?
+2. **Backward compatibility** -- Could this change break existing consumers?
    Even behavioral improvements without API changes can break code that depends
    on current behavior (intentionally or accidentally).
-3. **Architecture fit** — Does this align with the current architecture of the
+3. **Architecture fit** -- Does this align with the current architecture of the
    affected component? Or would it require significant restructuring?
-4. **Maintenance burden** — What is the ongoing cost of maintaining this
+4. **Maintenance burden** -- What is the ongoing cost of maintaining this
    change? Platform-specific features and porting efforts carry perpetual
    maintenance obligations.
-5. **Dependencies** — Does this depend on external factors (OS features, third-
+5. **Dependencies** -- Does this depend on external factors (OS features, third-
    party libraries, specification stability)?
 
 ### Subcategory-specific evaluation
@@ -87,7 +87,7 @@ pursuing — **not** to prototype or implement anything.
 - Is the component being requested actively maintained in .NET Framework?
 - Are there licensing or IP considerations?
 - Is there a community-maintained alternative that could be promoted instead?
-- What is the realistic scope — is this a bounded port or an open-ended
+- What is the realistic scope -- is this a bounded port or an open-ended
   compatibility commitment?
 
 ## Trade-off Assessment
@@ -131,14 +131,14 @@ Summarize the trade-offs in the triage report:
 
 ### NEEDS INFO
 
-- **Performance improvement without data** — Ask for benchmark results,
+- **Performance improvement without data** -- Ask for benchmark results,
   profiling output, or a reproducible scenario that demonstrates the problem.
-- **Behavioral change with unclear impact** — Ask whether any code depends
+- **Behavioral change with unclear impact** -- Ask whether any code depends
   on the current behavior; request a concrete scenario where the current
   behavior causes problems.
-- **Vague scope** — The enhancement is reasonable in principle but too vague
+- **Vague scope** -- The enhancement is reasonable in principle but too vague
   to assess feasibility. Ask for a more specific description of the desired
   change.
-- **Platform support without demand signal** — Ask about the target audience
+- **Platform support without demand signal** -- Ask about the target audience
   size and whether there are community contributors willing to help maintain
   the platform-specific code.

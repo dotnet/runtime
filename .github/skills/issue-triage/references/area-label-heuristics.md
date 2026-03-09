@@ -83,12 +83,12 @@ with the authoritative [`docs/area-owners.md`](../../../docs/area-owners.md).
 Some issues are genuinely borderline. In these cases, prefer keeping the issue
 in dotnet/runtime and noting the ambiguity rather than suggesting a move.
 
-- **`HttpClient` behavior in ASP.NET context** — Keep in runtime (`area-System.Net.Http`)
+- **`HttpClient` behavior in ASP.NET context** -- Keep in runtime (`area-System.Net.Http`)
   unless the issue is specifically about `IHttpClientFactory` middleware configuration.
-- **`System.Text.Json` with ASP.NET model binding** — If the issue is about the
+- **`System.Text.Json` with ASP.NET model binding** -- If the issue is about the
   serializer behavior itself, keep in runtime. If it's about ASP.NET integration
   (e.g., `AddJsonOptions`), suggest `dotnet/aspnetcore`.
-- **Build/test infrastructure** — If it's about the runtime repo's CI/build system,
+- **Build/test infrastructure** -- If it's about the runtime repo's CI/build system,
   use `area-Infrastructure`. If it's about `dotnet build` itself, suggest `dotnet/sdk`.
-- **`System.Runtime.Serialization`** — Check the specific type. `DataContractSerializer`
+- **`System.Runtime.Serialization`** -- Check the specific type. `DataContractSerializer`
   → `area-Serialization`. `BinaryFormatter` → `area-System.Runtime` (it's deprecated).

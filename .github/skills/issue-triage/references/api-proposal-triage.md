@@ -18,30 +18,30 @@ proposals require deeper investigation.
 
 ### .NET ecosystem
 
-1. **Check the API review backlog** — Search for related `api-ready-for-review`
+1. **Check the API review backlog** -- Search for related `api-ready-for-review`
    or `api-approved` issues.
-2. **Research usage volume** — Search [grep.app](https://grep.app) for .NET
+2. **Research usage volume** -- Search [grep.app](https://grep.app) for .NET
    code patterns related to the proposed API to gauge real-world demand:
    - How many codebases manually implement the workaround the proposal would
      replace
    - How widely the affected APIs are used today
    - Common consumption patterns that would benefit from the proposed API
-3. **Document concrete workarounds** — If an existing package or BCL pattern
+3. **Document concrete workarounds** -- If an existing package or BCL pattern
    covers the proposed scenario, write a concrete, functional code workaround
-   using it — not a generic "use package X" dismissal. This workaround is
+   using it -- not a generic "use package X" dismissal. This workaround is
    included in the triage report and may determine the recommendation.
 
 ### Other ecosystems (limited web search)
 
 Do a brief web search to see how other platforms handle similar functionality:
 
-- **Java** — JDK standard library, Guava
-- **Python** — standard library, popular packages
-- **Rust** — standard library, popular crates
-- **Go** — standard library
+- **Java** -- JDK standard library, Guava
+- **Python** -- standard library, popular packages
+- **Rust** -- standard library, popular crates
+- **Go** -- standard library
 
 This provides useful context (e.g., "Java's `java.util.X` provides similar
-functionality, which suggests community demand"). Keep it brief — 1–2 paragraphs
+functionality, which suggests community demand"). Keep it brief -- 1–2 paragraphs
 max.
 
 ## Merit Evaluation
@@ -50,45 +50,45 @@ Evaluate the **merits of the idea**, not just the quality of the proposal
 document. The goal is to determine whether the initial request can inspire an
 actual workable solution worth maintaining.
 
-- **Concrete motivation** — Can a real-world user problem be inferred from the
+- **Concrete motivation** -- Can a real-world user problem be inferred from the
   issue? At least one concrete scenario (who needs it, how they'd use it) must
   be present or inferable. Speculative "this would be nice" proposals without a
   demonstrable use case should lean toward NEEDS INFO or CLOSE.
-- **Existing workarounds** — If research found an existing package or BCL
+- **Existing workarounds** -- If research found an existing package or BCL
   pattern that covers the scenario, evaluate whether it genuinely falls short.
   - Workaround is fully adequate → lean CLOSE (share the workaround)
   - Workaround might suffice but uncertain → lean NEEDS INFO (ask user)
   - Workaround has clear limitations that matter → lean KEEP
-- **Concept count and API cruft** — Does the BCL already provide multiple ways
+- **Concept count and API cruft** -- Does the BCL already provide multiple ways
   to accomplish the same thing? Adding yet another approach increases
   conceptual overhead for all .NET developers. Evaluate whether the proposal
   introduces a genuinely distinct capability or merely duplicates existing
   patterns.
-- **Triviality of user implementation** — Can the user trivially implement this
+- **Triviality of user implementation** -- Can the user trivially implement this
   themselves (e.g., a simple extension method, a thin wrapper)? Whether this
   counts against a proposal depends on breadth of impact: if thousands of
   codebases would write the same extension method independently, there's value
   in standardizing; if only a handful would need it, it doesn't clear the bar.
   Use the grep.app usage data to inform this assessment.
-- **Obsolescence risk** — Is the proposal targeting a technology, format, or
+- **Obsolescence risk** -- Is the proposal targeting a technology, format, or
   protocol with strong signals of being obsoleted or superseded? APIs targeting
   unstable standards (pre-RFC, draft specifications) or technologies losing
   adoption should lean toward CLOSE. The BCL should not enshrine transient
   technology in a permanent API.
-- **Naming check** — Validate proposed API names against the
+- **Naming check** -- Validate proposed API names against the
   [Framework Design Guidelines](../../../../docs/coding-guidelines/framework-design-guidelines-digest.md).
   Flag violations (wrong casing, abbreviations, missing patterns like `TryX`
-  or `XAsync`), but don't let naming issues overshadow a good idea — names can
+  or `XAsync`), but don't let naming issues overshadow a good idea -- names can
   be fixed later.
-- **Breaking changes** — Only consider breaking changes a reason to CLOSE if
+- **Breaking changes** -- Only consider breaking changes a reason to CLOSE if
   they are fundamentally unavoidable. Focus on the higher-level intent: users
   may be inexperienced with API proposals and may not realize that adding a
   parameter to an existing method is breaking when a new overload would work.
   The question is whether the underlying idea can be shaped into something that
   doesn't break existing code.
-- **Prior art** — Ecosystem precedent (Java, Python, Rust, Go) is useful
+- **Prior art** -- Ecosystem precedent (Java, Python, Rust, Go) is useful
   context but should not drive the recommendation in either direction.
-- **Microsoft vs. community maintenance** — Does this need to be maintained by
+- **Microsoft vs. community maintenance** -- Does this need to be maintained by
   the dotnet/runtime team, or is it better served by a community package? APIs
   that require runtime internals, JIT intrinsics, or deep framework integration
   need to be Microsoft-maintained. Domain-specific APIs with narrow audiences
@@ -122,17 +122,17 @@ actual workable solution worth maintaining.
 
 | Signal | Action |
 |--------|--------|
-| **Speculative motivation** — no concrete scenario can be inferred | Ask for concrete usage scenarios showing who needs it and how |
-| **Existing package might suffice** — unclear if it covers the specific scenario | Share the workaround and ask the user if they've tried it |
-| **Trivial to implement in user code** — but unclear how many people need it | Ask about the breadth of the scenario; how common is the pattern? |
-| **Motivation is reasonable but vague** — the "what" is clear but the "how" is not | Ask for a more concrete API sketch or usage examples |
+| **Speculative motivation** -- no concrete scenario can be inferred | Ask for concrete usage scenarios showing who needs it and how |
+| **Existing package might suffice** -- unclear if it covers the specific scenario | Share the workaround and ask the user if they've tried it |
+| **Trivial to implement in user code** -- but unclear how many people need it | Ask about the breadth of the scenario; how common is the pattern? |
+| **Motivation is reasonable but vague** -- the "what" is clear but the "how" is not | Ask for a more concrete API sketch or usage examples |
 
 ## Workaround Evaluation
 
 When an existing solution is found (community or Microsoft package, simple
 extension method, existing BCL pattern), the triage response must include a
 **concrete, functional code workaround** covering the specific scenario from
-the issue — not a generic "use package X" dismissal.
+the issue -- not a generic "use package X" dismissal.
 
 - **Clear-cut**: The workaround fully addresses the scenario → CLOSE with the
   workaround in the response.
@@ -169,7 +169,7 @@ Flag proposed names that violate the
 - Verb or verb phrase for method names; noun or noun phrase for types
 
 Note: flag violations but focus on the substance of the idea. A great idea
-with a bad name is still a great idea — the name can be fixed later.
+with a bad name is still a great idea -- the name can be fixed later.
 
 ## Complexity Estimation
 
@@ -201,27 +201,27 @@ KEEP signals that the idea has merit and could inspire a workable API design:
 
 ### CLOSE
 
-- **Existing workaround covers the scenario** — A concrete workaround using an
+- **Existing workaround covers the scenario** -- A concrete workaround using an
   existing package or BCL pattern fully addresses the stated problem. Include the
   functional workaround code in the response so the author gets immediate value.
-- **Targeting obsolescent technology** — The proposal depends on a format,
+- **Targeting obsolescent technology** -- The proposal depends on a format,
   protocol, or technology with strong signals of being obsoleted or superseded
   (e.g., pre-RFC draft, declining adoption). The BCL should not enshrine
   transient technology in a permanent API.
-- **Concept duplication / API cruft** — The BCL already provides functionally
+- **Concept duplication / API cruft** -- The BCL already provides functionally
   equivalent capability. Adding another way to do the same thing increases
   conceptual overhead without proportionate benefit.
-- **Unavoidable breaking changes** — The idea fundamentally cannot be
+- **Unavoidable breaking changes** -- The idea fundamentally cannot be
   implemented without breaking existing API contracts. (Only apply this when the
   break is inherent to the concept, not when the proposal's specific approach
   happens to be breaking but a different approach could work.)
 
 ### NEEDS INFO
 
-- **Speculative motivation** — No concrete user scenario can be inferred from
+- **Speculative motivation** -- No concrete user scenario can be inferred from
   the issue. Ask for specific examples of who needs this and how they'd use it.
-- **Existing workaround might suffice** — An existing package or pattern was
+- **Existing workaround might suffice** -- An existing package or pattern was
   found that may cover the scenario, but it's unclear whether it meets the
   author's needs. Share the workaround and ask if they've tried it.
-- **Motivation is reasonable but vague** — The problem area is clear but the
+- **Motivation is reasonable but vague** -- The problem area is clear but the
   desired API behavior is too ambiguous to evaluate feasibility.

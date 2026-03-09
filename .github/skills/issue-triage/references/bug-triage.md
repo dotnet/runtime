@@ -5,7 +5,7 @@ the main [SKILL.md](../SKILL.md) during Step 5.
 
 ## Reproduction
 
-> ⚠️ **Safety gate:** If Step 0a of the main workflow flagged any safety
+> [!] **Safety gate:** If Step 0a of the main workflow flagged any safety
 > concerns with the reproduction code, **skip reproduction entirely**. Do not
 > execute code that was flagged as suspicious, even partially.
 
@@ -30,8 +30,8 @@ minimal dependencies, specific TFM, expected vs. actual behavior).
 | Scenario | Action |
 |----------|--------|
 | Bug in released .NET version (e.g., .NET 10) | Create a temp console app with `dotnet new console`, add repro code, `dotnet run` |
-| Bug in preview/nightly bits | May require a full repo build — warn the user about time cost first |
-| Environment mismatch (e.g., macOS-only bug, running on Windows) | **Do NOT attempt.** State: "Unable to independently verify — this issue reports a [macOS/Linux/ARM64]-specific problem and the current environment is [Windows/x64]." |
+| Bug in preview/nightly bits | May require a full repo build -- warn the user about time cost first |
+| Environment mismatch (e.g., macOS-only bug, running on Windows) | **Do NOT attempt.** State: "Unable to independently verify -- this issue reports a [macOS/Linux/ARM64]-specific problem and the current environment is [Windows/x64]." |
 | No repro steps provided | Note the missing information in the NEEDS INFO recommendation |
 | Repro requires external services, hardware, or complex setup | **Do not attempt.** Note the limitation. |
 
@@ -47,7 +47,7 @@ minimal dependencies, specific TFM, expected vs. actual behavior).
 ### Interpreting results
 
 - **Reproduced**: Confirms the bug is real. Note the .NET version and environment.
-- **Could not reproduce**: Doesn't mean the bug doesn't exist — note your environment
+- **Could not reproduce**: Doesn't mean the bug doesn't exist -- note your environment
   and .NET version. The bug may be environment-specific.
 - **Not reproducible with good repro**: If a good-quality reproduction was provided but
   the bug cannot be reproduced on the current environment and .NET version, this is a
@@ -58,11 +58,11 @@ minimal dependencies, specific TFM, expected vs. actual behavior).
 ## Regression Validation
 
 If the bug reproduces (or the issue claims it's a regression), verify whether it
-worked in a previous .NET release. This is critical — regressions are treated with
+worked in a previous .NET release. This is critical -- regressions are treated with
 higher priority by maintainers.
 
-1. **Check the issue text** — does the author say "this worked in .NET X"?
-2. **Test against the previous release** — create the same repro project targeting
+1. **Check the issue text** -- does the author say "this worked in .NET X"?
+2. **Test against the previous release** -- create the same repro project targeting
    the prior TFM (e.g., `net9.0` vs `net10.0`). Edit the `.csproj` to change
    `<TargetFramework>` and re-run. If the prior SDK isn't installed, use
    `global.json` to pin to an older SDK version, or use a Docker image.
@@ -71,9 +71,9 @@ higher priority by maintainers.
    - Works on .NET 10 GA, fails on .NET 10.x servicing → servicing regression
    - Fails on both .NET 9 and .NET 10 → long-standing bug, not a regression
 4. **Report findings clearly** in the Reproduction section of the triage report:
-   - ✅ **Confirmed regression** from .NET {old} → .NET {new}.
-   - ❌ **Not a regression** — also fails on .NET {old}.
-   - ⚠️ **Unable to verify regression** — {reason, e.g., prior SDK not available}.
+   - [ok] **Confirmed regression** from .NET {old} → .NET {new}.
+   - [x] **Not a regression** -- also fails on .NET {old}.
+   - [!] **Unable to verify regression** -- {reason, e.g., prior SDK not available}.
 
 > Regressions should generally be recommended as **KEEP** with elevated priority.
 
@@ -136,17 +136,17 @@ to its minimal form:
 
 When minimizing, prioritize reducing these dimensions (in order):
 
-1. **Model complexity** — Reduce the number of types/classes first. Fewer types
+1. **Model complexity** -- Reduce the number of types/classes first. Fewer types
    is the single biggest readability win. Explore whether the same bug triggers
    with a simpler model by varying other parameters (e.g., different buffer
    sizes, different input shapes).
-2. **Input data** — Shrink input data (JSON, XML, payloads) to the smallest
+2. **Input data** -- Shrink input data (JSON, XML, payloads) to the smallest
    string or value that still triggers the bug. Try both shortening values and
    removing fields.
-3. **Code constructs** — Simplify types: prefer `class` over `record`,
-   `get; set;` over `get; init;`, drop `required`, `readonly`, etc. — unless
+3. **Code constructs** -- Simplify types: prefer `class` over `record`,
+   `get; set;` over `get; init;`, drop `required`, `readonly`, etc. -- unless
    the construct itself is essential to triggering the bug.
-4. **Dependencies and configuration** — Remove NuGet packages, project
+4. **Dependencies and configuration** -- Remove NuGet packages, project
    configuration, and API options that aren't required.
 
 ### Stabilizing the reproduction
@@ -155,23 +155,23 @@ Some bugs do not trigger reliably under default conditions. Before minimizing,
 you must first make the reproduction deterministic. Common sources of
 instability and how to address them:
 
-- **Buffer or chunk boundaries** — The bug only triggers when data crosses an
+- **Buffer or chunk boundaries** -- The bug only triggers when data crosses an
   internal boundary at a specific offset. Vary parameters that control
-  boundaries (buffer sizes, chunk sizes, stream read lengths, etc.) — a
+  boundaries (buffer sizes, chunk sizes, stream read lengths, etc.) -- a
   different value may allow a simpler model or shorter input. Document which
   parameter values trigger the bug and which don't.
-- **Input size sensitivity** — When shrinking a value causes the bug to
+- **Input size sensitivity** -- When shrinking a value causes the bug to
   disappear, it may be a boundary-alignment issue rather than a value-content
   issue. Try padding with different approaches to find the shortest overall
   reproduction.
-- **Thread scheduling and race conditions** — The bug manifests
+- **Thread scheduling and race conditions** -- The bug manifests
   nondeterministically due to interleaving. Wrap the scenario in a loop that
   repeats many times and exits on first failure. Use synchronization primitives
   (`ManualResetEventSlim`, `Barrier`, `SemaphoreSlim`) to force specific
   thread orderings. Increase the number of concurrent tasks beyond what the
   original reproduction uses and eliminate delays that accidentally serialize
   operations.
-- **Timing-dependent behavior** — The bug depends on timeouts, clock
+- **Timing-dependent behavior** -- The bug depends on timeouts, clock
   resolution, or operation ordering. Pin the relevant timing parameters to
   values that trigger the bug consistently.
 
@@ -183,17 +183,17 @@ document the failure rate and provide the best harness you can.
 ## Root Cause Analysis
 
 After reproducing the bug (and optionally minimizing the reproduction), attempt
-a lightweight root cause analysis. This is not a full debugging session — the
+a lightweight root cause analysis. This is not a full debugging session -- the
 goal is to identify the likely area of code responsible, to help maintainers
 prioritize and assign the issue.
 
 Include in the report:
 
-- **Likely mechanism** — A 1-3 sentence hypothesis of what goes wrong.
-- **Related code changes** — If `git log` revealed a relevant commit in the
+- **Likely mechanism** -- A 1-3 sentence hypothesis of what goes wrong.
+- **Related code changes** -- If `git log` revealed a relevant commit in the
   regression window, link to it.
 
-If root cause analysis is inconclusive, say so — a failed investigation is still
+If root cause analysis is inconclusive, say so -- a failed investigation is still
 useful context ("examined X and Y, but the root cause is not obvious from static
 analysis alone").
 
@@ -202,7 +202,7 @@ analysis alone").
 When assessing a bug report in Step 6, consider:
 
 - Is this a regression from a previous .NET version?
-- How many users are likely affected? (Check 👍 reactions, linked issues, external references)
+- How many users are likely affected? (Check +1 reactions, linked issues, external references)
 - Is there a workaround?
 - How severe is the impact? (crash vs. cosmetic vs. silent data corruption)
 
@@ -215,7 +215,7 @@ When assessing a bug report in Step 6, consider:
 
 ### CLOSE
 
-- **Not reproducible** — Bug report includes a good-quality repro, but the issue
+- **Not reproducible** -- Bug report includes a good-quality repro, but the issue
   cannot be reproduced on current .NET version. May already be fixed.
 
 ### NEEDS INFO

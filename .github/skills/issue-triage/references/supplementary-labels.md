@@ -18,8 +18,8 @@ multiple tenet labels.
 | `tenet-performance` | Issue involves measurable performance (throughput, latency, memory, allocations). Applies to both regressions and improvement requests. | "Make JSON deserialization faster", "Memory leak in HttpClient", autofiler regression reports |
 | `tenet-performance-benchmarks` | Issue was filed by the `performanceautofiler[bot]` from the benchmark infrastructure. | Automated regression issues with baseline/compare commits and regression tables |
 | `tenet-compatibility` | Issue reports a breaking change, behavioral incompatibility with a previous .NET version, or .NET Framework migration difficulty. | "API behaves differently in .NET 10 vs .NET 9", "breaking change in serialization behavior" |
-| `tenet-reliability` | Issue involves crashes, hangs, resource leaks, race conditions, or failures under stress/load — problems with stability rather than correctness of output. | "Segfault under high load", "deadlock in async code path", "memory leak under stress" |
-| `tenet-build-performance` | Issue impacts build time — official builds, developer inner loop, or CI. | "Source generator slows build by 10s", "incremental build regression" |
+| `tenet-reliability` | Issue involves crashes, hangs, resource leaks, race conditions, or failures under stress/load -- problems with stability rather than correctness of output. | "Segfault under high load", "deadlock in async code path", "memory leak under stress" |
+| `tenet-build-performance` | Issue impacts build time -- official builds, developer inner loop, or CI. | "Source generator slows build by 10s", "incremental build regression" |
 | `tenet-acquisition` | Issue affects the experience of acquiring, installing, or setting up .NET. | "Confusing SDK install experience", "global.json resolution issues" |
 
 ## Runtime and Technology Labels
@@ -50,7 +50,7 @@ Qualifier labels add context that affects prioritization or routing.
 | `optimization` | Issue specifically requests a JIT, GC, or low-level runtime optimization (as opposed to library-level performance improvements). | "RyuJIT should inline this pattern", "GC compaction improvement" |
 | `source-build` | Issue relates to building .NET from source. | Source-build failures, missing source-build patches |
 | `packaging` | Issue relates to NuGet packaging, shipping, or package content. | "Wrong DLL in NuGet package", "missing ref assembly" |
-| `design-discussion` | Issue requires ongoing design discussion before implementation can proceed — no consensus on approach yet. | API shape debates, architectural trade-off discussions |
+| `design-discussion` | Issue requires ongoing design discussion before implementation can proceed -- no consensus on approach yet. | API shape debates, architectural trade-off discussions |
 | `binaryformatter-migration` | Issue relates to the removal of BinaryFormatter and migration away from it. | "Need migration path for BinaryFormatter usage in X" |
 
 ## Workflow Labels
@@ -63,7 +63,7 @@ These labels track issue lifecycle and triage state.
 | `needs-further-triage` | Issue has been initially triaged but needs deeper consideration or reconsideration by the area owner. | Complex issue needing domain expert input |
 | `needs-area-label` | Issue is missing an `area-*` label and needs one assigned. | New issue with no area label |
 | `untriaged` | Issue has not yet been triaged by the area owner. | Newly filed issue |
-| `blocked` | Issue or PR is blocked on something — see comments for details. | Waiting on a dependency, blocked by design decision |
+| `blocked` | Issue or PR is blocked on something -- see comments for details. | Waiting on a dependency, blocked by design decision |
 
 ## Test-Related Labels
 
@@ -83,4 +83,4 @@ product code.
 |-------|-------------------|----------|
 | `tracking` | Issue is a meta-issue that tracks completion of multiple sub-issues. | "Umbrella: improve System.Text.Json performance" with linked sub-issues |
 | `tracking-external-issue` | Issue is caused by an external dependency (OS, third-party library) and cannot be directly fixed in dotnet/runtime. | "Blocked on kernel bug", "waiting for OpenSSL fix" |
-| `investigate` | Issue needs investigation before it can be classified or acted on — root cause is unclear. | Unclear crash report, ambiguous behavior that could be by-design or a bug |
+| `investigate` | Issue needs investigation before it can be classified or acted on -- root cause is unclear. | Unclear crash report, ambiguous behavior that could be by-design or a bug |
