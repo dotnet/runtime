@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="managed">A managed string to convert.</param>
         /// <returns>The converted unmanaged string.</returns>
-        [RequiresUnsafe]
         public static ushort* ConvertToUnmanaged(string? managed)
             => (ushort*)Marshal.StringToBSTR(managed);
 

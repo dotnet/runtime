@@ -30,7 +30,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="managed">The managed array to marshal.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The unmanaged pointer to the allocated memory.</returns>
-        [RequiresUnsafe]
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements)
         {
             if (managed is null)

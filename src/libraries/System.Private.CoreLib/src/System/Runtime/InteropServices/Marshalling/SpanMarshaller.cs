@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="managed">The managed span.</param>
         /// <param name="numElements">The number of elements in the span.</param>
         /// <returns>A pointer to the block of memory for the unmanaged elements.</returns>
-        [RequiresUnsafe]
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(Span<T> managed, out int numElements)
         {
             // Emulate the pinning behavior:

@@ -18,7 +18,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="managed">The managed string to convert.</param>
         /// <returns>An unmanaged string.</returns>
-        [RequiresUnsafe]
         public static ushort* ConvertToUnmanaged(string? managed)
             => (ushort*)Marshal.StringToCoTaskMemUni(managed);
 

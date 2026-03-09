@@ -22,7 +22,6 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is not compatible with <see cref="Free" /> or <see cref="Realloc" />, instead <see cref="AlignedFree" /> or <see cref="AlignedRealloc" /> should be called.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void* AlignedAlloc(nuint byteCount, nuint alignment)
         {
             if (!BitOperations.IsPow2(alignment))
