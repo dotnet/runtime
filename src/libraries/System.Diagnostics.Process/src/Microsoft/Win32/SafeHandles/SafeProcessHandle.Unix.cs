@@ -27,6 +27,7 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private readonly bool _isGroupLeader;
+        private readonly bool _usesTerminal;
 
         internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
             this(handle.DangerousGetHandle(), ownsHandle: true)
@@ -36,11 +37,12 @@ namespace Microsoft.Win32.SafeHandles
             handle.DangerousAddRef(ref _releaseRef);
         }
 
-        private SafeProcessHandle(int pidfd, int pid, bool isGroupLeader)
+        private SafeProcessHandle(int pidfd, int pid, bool isGroupLeader, bool usesTerminal)
             : this(existingHandle: (IntPtr)pidfd, ownsHandle: true)
         {
             ProcessId = pid;
             _isGroupLeader = isGroupLeader;
+            _usesTerminal = usesTerminal;
         }
 
         protected override bool ReleaseHandle()
@@ -68,7 +70,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception();
             }
 
-            return new SafeProcessHandle(pidfd, processId, isGroupLeader: isGroupLeader != 0);
+            return new SafeProcessHandle(pidfd, processId, isGroupLeader: isGroupLeader != 0, usesTerminal: false);
         }
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
@@ -79,6 +81,12 @@ namespace Microsoft.Win32.SafeHandles
             // Prepare environment array (envp) only if the user has accessed it
             // If not accessed, pass null to use the current environment (environ)
             string[]? envp = options.HasEnvironmentBeenAccessed ? ProcessUtils.CreateEnvp(options.Environment) : null;
+
+            // .NET applications don't echo characters unless there is a Console.Read operation.
+            // Unix applications expect the terminal to be in an echoing state by default.
+            // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
+            // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
+            bool usesTerminal = Interop.Sys.IsATty(inputHandle) || Interop.Sys.IsATty(outputHandle) || Interop.Sys.IsATty(errorHandle);
 
             byte** argvPtr = null;
             byte** envpPtr = null;
@@ -112,29 +120,54 @@ namespace Microsoft.Win32.SafeHandles
                     }
                 }
 
-                // Call native library to spawn process
-                int result = Interop.Sys.SpawnProcess(
-                    options.FileName,
-                    argvPtr,
-                    envpPtr,
-                    options.WorkingDirectory,
-                    inheritedHandlesPtr,
-                    inheritedHandlesCount,
-                    inputHandle,
-                    outputHandle,
-                    errorHandle,
-                    options.KillOnParentExit ? 1 : 0,
-                    createSuspended ? 1 : 0,
-                    options.CreateNewProcessGroup ? 1 : 0,
-                    out int pid,
-                    out int pidfd);
-
-                if (result == -1)
+                // Lock to avoid races with OnSigChild
+                // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+                bool spawnSucceeded = false;
+                ProcessUtils.s_processStartLock.EnterReadLock();
+                try
                 {
-                    throw new Win32Exception();
-                }
+                    if (usesTerminal)
+                    {
+                        ProcessUtils.ConfigureTerminalForChildProcesses(1);
+                    }
 
-                return new SafeProcessHandle(pidfd, pid, options.CreateNewProcessGroup);
+                    // Call native library to spawn process
+                    int result = Interop.Sys.SpawnProcess(
+                        options.FileName,
+                        argvPtr,
+                        envpPtr,
+                        options.WorkingDirectory,
+                        inheritedHandlesPtr,
+                        inheritedHandlesCount,
+                        inputHandle,
+                        outputHandle,
+                        errorHandle,
+                        options.KillOnParentExit ? 1 : 0,
+                        createSuspended ? 1 : 0,
+                        options.CreateNewProcessGroup ? 1 : 0,
+                        out int pid,
+                        out int pidfd);
+
+                    if (result == -1)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    spawnSucceeded = true;
+                    return new SafeProcessHandle(pidfd, pid, options.CreateNewProcessGroup, usesTerminal);
+                }
+                finally
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+
+                    if (!spawnSucceeded && usesTerminal)
+                    {
+                        // We failed to launch a child that could use the terminal.
+                        ProcessUtils.s_processStartLock.EnterWriteLock();
+                        ProcessUtils.ConfigureTerminalForChildProcesses(-1);
+                        ProcessUtils.s_processStartLock.ExitWriteLock();
+                    }
+                }
             }
             finally
             {
@@ -159,7 +192,9 @@ namespace Microsoft.Win32.SafeHandles
                 case -1:
                     throw new Win32Exception();
                 default:
-                    return new(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    ProcessExitStatus status = new(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    OnProcessExited();
+                    return status;
             }
         }
 
@@ -174,6 +209,7 @@ namespace Microsoft.Win32.SafeHandles
                     return false;
                 default:
                     exitStatus = new(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    OnProcessExited();
                     return true;
             }
         }
@@ -187,7 +223,9 @@ namespace Microsoft.Win32.SafeHandles
                 case -1:
                     throw new Win32Exception();
                 default:
-                    return new(exitCode, hasTimedout == 1, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    ProcessExitStatus status = new(exitCode, hasTimedout == 1, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    OnProcessExited();
+                    return status;
             }
         }
 
@@ -217,7 +255,9 @@ namespace Microsoft.Win32.SafeHandles
                         case 1: // canceled
                             throw new OperationCanceledException(cancellationToken);
                         default:
-                            return new ProcessExitStatus(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                            ProcessExitStatus status = new(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                            OnProcessExited();
+                            return status;
                     }
                 }, cancellationToken).ConfigureAwait(false);
             }
@@ -251,7 +291,9 @@ namespace Microsoft.Win32.SafeHandles
                             ProcessExitStatus status = WaitForExitCore();
                             return new ProcessExitStatus(status.ExitCode, wasKilled, status.Signal);
                         default:
-                            return new ProcessExitStatus(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                            ProcessExitStatus exitStatus = new(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                            OnProcessExited();
+                            return exitStatus;
                     }
                 }, cancellationToken).ConfigureAwait(false);
             }
@@ -267,6 +309,16 @@ namespace Microsoft.Win32.SafeHandles
 
             readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
             writeHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], ownsHandle: true);
+        }
+
+        private void OnProcessExited()
+        {
+            if (_usesTerminal)
+            {
+                ProcessUtils.s_processStartLock.EnterWriteLock();
+                ProcessUtils.ConfigureTerminalForChildProcesses(-1);
+                ProcessUtils.s_processStartLock.ExitWriteLock();
+            }
         }
 
         internal bool KillCore(bool throwOnError, bool entireProcessGroup = false)
