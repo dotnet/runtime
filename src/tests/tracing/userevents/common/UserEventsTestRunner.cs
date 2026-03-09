@@ -17,6 +17,9 @@ namespace Tracing.UserEvents.Tests.Common
     public class UserEventsTestRunner
     {
         private const int SIGINT = 2;
+
+        // The tracee must JIT compile, receive IPC enable, and emit events before exiting.
+        // Under JitStress on ARM64, this can take significantly longer than normal.
         private const int DefaultTraceeExitTimeoutMs = 60000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
@@ -65,6 +68,7 @@ namespace Tracing.UserEvents.Tests.Common
                 Console.WriteLine("Tracee EventSource enabled, emitting events.");
 
                 traceeAction();
+                Console.WriteLine("Tracee finished emitting events.");
                 return 0;
             }
 
@@ -225,6 +229,7 @@ namespace Tracing.UserEvents.Tests.Common
                 traceeProcess.Kill();
             }
             traceeProcess.WaitForExit(); // flush async output
+            Console.WriteLine($"Tracee process exited with code {traceeProcess.ExitCode}.");
 
             if (!recordTraceProcess.HasExited)
             {
