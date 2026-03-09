@@ -9,6 +9,32 @@ namespace System
     public static partial class AppContext
     {
         [UnmanagedCallersOnly]
+        private static unsafe void OnProcessExit(Exception* pException)
+        {
+            try
+            {
+                OnProcessExit();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnUnhandledException(object* pException, Exception* pOutException)
+        {
+            try
+            {
+                OnUnhandledException(*pException);
+            }
+            catch
+            {
+                // The VM does not expect exceptions to propagate out of this callback
+            }
+        }
+
+        [UnmanagedCallersOnly]
         internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try
