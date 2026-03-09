@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -100,14 +101,35 @@ namespace System.IO.Tests
 
             using (readHandle)
             using (writeHandle)
-            using (FileStream readStream = new(readHandle, FileAccess.Read, bufferSize: 1, isAsync: asyncRead))
-            using (FileStream writeStream = new(writeHandle, FileAccess.Write, bufferSize: 1, isAsync: asyncWrite))
+            using (Stream readStream = CreatePipeReadStream(readHandle, asyncRead))
+            using (Stream writeStream = CreatePipeWriteStream(writeHandle, asyncWrite))
             {
                 byte[] buffer = new byte[message.Length];
 
-                await Task.WhenAll(writeStream.WriteAsync(message, 0, message.Length), readStream.ReadAsync(buffer, 0, buffer.Length));
+                Task writeTask = writeStream.WriteAsync(message, 0, message.Length);
+                Task readTask = readStream.ReadAsync(buffer, 0, buffer.Length);
+
+                await Task.WhenAll(writeTask, readTask);
 
                 Assert.Equal(message, buffer);
+            }
+
+            static Stream CreatePipeReadStream(SafeFileHandle readHandle, bool asyncRead)
+                => !OperatingSystem.IsWindows() && asyncRead
+                ? new AnonymousPipeClientStream(PipeDirection.In, TransferOwnershipToPipeHandle(readHandle))
+                : new FileStream(readHandle, FileAccess.Read, 1, asyncRead);
+
+            static Stream CreatePipeWriteStream(SafeFileHandle writeHandle, bool asyncWrite)
+                => !OperatingSystem.IsWindows() && asyncWrite
+                ? new AnonymousPipeClientStream(PipeDirection.Out, TransferOwnershipToPipeHandle(writeHandle))
+                : new FileStream(writeHandle, FileAccess.Write, 1, asyncWrite);
+
+            static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
+            {
+                SafePipeHandle pipeHandle = new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: true);
+                handle.SetHandleAsInvalid();
+                handle.Dispose();
+                return pipeHandle;
             }
         }
 
