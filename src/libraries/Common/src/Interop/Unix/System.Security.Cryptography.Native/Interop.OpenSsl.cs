@@ -904,7 +904,7 @@ internal static partial class Interop
                 }
             }
 
-            Debug.Assert(certificate != null, "Certificate should not be null here.");
+            Debug.Assert(certificate != null, "OpenSSL only calls the callback if the certificate is present.");
 
             SslCertificateTrust? trust = options.CertificateContext?.Trust;
 

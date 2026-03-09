@@ -466,15 +466,6 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
     return result;
 }
 
-static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
-{
-    (void)preverify_ok;
-    (void)store;
-    printf("Store: %p, preverify_ok: %d\n", (void*)store, preverify_ok);
-    // We don't care. Real verification happens in managed code.
-    return 1;
-}
-
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
