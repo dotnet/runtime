@@ -7860,7 +7860,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
 doValidation:
     _ASSERTE(pWBTracker != NULL);
 
-    // Incase of an OOM, we may not have an IP in the Watson bucket tracker.
+    // In case of an OOM, we may not have an IP in the Watson bucket tracker.
     if (pWBTracker->RetrieveWatsonBucketIp() != NULL)
     {
         // Check if the buckets exist or not..
