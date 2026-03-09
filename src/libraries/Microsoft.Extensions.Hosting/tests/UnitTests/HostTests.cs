@@ -430,7 +430,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public async Task BackgroundService_Restart_ThrowsException()
+        public async Task Host_Restart_ThrowsException()
         {
             using var host = new HostBuilder().Build();
 

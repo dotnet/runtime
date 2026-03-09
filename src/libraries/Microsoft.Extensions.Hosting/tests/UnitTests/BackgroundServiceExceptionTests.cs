@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     services.AddHostedService<AsynchronousFailureService>();
                 });
 
-            var host = builder.Build();
+            using var host = builder.Build();
             await host.StartAsync();
 
             // Wait for the background service to fail
@@ -87,6 +87,10 @@ namespace Microsoft.Extensions.Hosting.Tests
             });
         }
 
+        /// <summary>
+        /// Tests that when a BackgroundService throws an exception asynchronously,
+        /// calling StopAsync twice propagates the exception both times when StopHost behavior is configured.
+        /// </summary>
         [Fact]
         public async Task BackgroundService_AsynchronousException_StopTwiceAsync_ThrowsException()
         {
@@ -100,7 +104,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     services.AddHostedService<AsynchronousFailureService>();
                 });
 
-            var host = builder.Build();
+            using var host = builder.Build();
             await host.StartAsync();
 
             // Wait for the background service to fail
@@ -147,6 +151,10 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.IsType<InvalidOperationException>(ex));
         }
 
+        /// <summary>
+        /// Tests that when a BackgroundService throws an exception during execution
+        /// and another service throws during StopAsync, the host aggregates them into an AggregateException.
+        /// </summary>
         [Fact]
         public async Task BackgroundServiceExceptionAndStopException_ThrowsAggregateException()
         {
@@ -211,7 +219,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     services.AddHostedService<AsynchronousFailureService>();
                 });
 
-            var host = builder.Build();
+            using var host = builder.Build();
             await host.StartAsync();
 
             // Wait a bit for the background service to fail
