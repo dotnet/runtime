@@ -1278,17 +1278,16 @@ DONE:
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
 
-        // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
-        // Also record the generics context if there is any.
+        // If the call is virtual, extra information for possible use during late devirt inlining.
         //
         if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
-            JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
-                    dspPtr(compInlineContext), dspTreeID(call->AsCall()));
+            JITDUMP("\nSaving late devirtualization info for call [%06u]\n", dspTreeID(call->AsCall()));
+            assert(call->AsCall()->gtInlineContext == impCurStmtDI.GetInlineContext());
             LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
-            info->inlinersContext                      = compInlineContext;
+            info->ilLocation                           = impCurStmtDI.GetLocation();
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
@@ -6934,6 +6933,20 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries() && (call->gtCallType == CT_USER_FUNC))
+    {
+        // Query the async variants (twice, to get both directions)
+        CORINFO_METHOD_HANDLE method = call->gtCallMethHnd;
+        bool                  variantIsThunk;
+        method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+        if (method != NO_METHOD_HANDLE)
+        {
+            method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------

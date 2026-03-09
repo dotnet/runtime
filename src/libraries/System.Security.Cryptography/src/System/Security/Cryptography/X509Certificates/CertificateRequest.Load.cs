@@ -138,10 +138,10 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader outer = new AsnValueReader(pkcs10, AsnEncodingRules.DER);
+                ValueAsnReader outer = new ValueAsnReader(pkcs10, AsnEncodingRules.DER);
                 int encodedLength = outer.PeekEncodedValue().Length;
 
-                AsnValueReader pkcs10Asn = outer.ReadSequence();
+                ValueAsnReader pkcs10Asn = outer.ReadSequence();
                 CertificateRequest req;
 
                 if (!permitTrailingData)
@@ -230,11 +230,11 @@ namespace System.Security.Cryptography.X509Certificates
                                             SR.Cryptography_CertReq_Load_DuplicateExtensionRequests);
                                     }
 
-                                    AsnValueReader extsReader = new AsnValueReader(
+                                    ValueAsnReader extsReader = new ValueAsnReader(
                                         attr.AttrValues[0].Span,
                                         AsnEncodingRules.DER);
 
-                                    AsnValueReader exts = extsReader.ReadSequence();
+                                    ValueAsnReader exts = extsReader.ReadSequence();
                                     extsReader.ThrowIfNotEmpty();
 
                                     // Minimum length is 1, so do..while

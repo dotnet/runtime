@@ -13,6 +13,10 @@
 #include <sospriv.h>
 #include "cdacplatformmetadata.hpp"
 #include "interoplibinterface_comwrappers.h"
+#include "comcallablewrapper.h"
+#ifdef FEATURE_COMINTEROP
+#include "runtimecallablewrapper.h"
+#endif // FEATURE_COMINTEROP
 #include "methodtable.h"
 #include "threads.h"
 #include "vars.hpp"

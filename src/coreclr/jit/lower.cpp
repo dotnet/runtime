@@ -2867,6 +2867,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 #endif
 
+    call->gtDirectCallAddress = nullptr; // Clear out any stale data from the union.
     call->ClearOtherRegs();
 
 #if HAS_FIXED_REGISTER_SET
@@ -3279,12 +3280,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         // incoming args that live in that area. If we have later uses of those args, this
         // is a problem. We introduce a defensive copy into a temp here of those args that
         // potentially may cause problems.
-        for (int i = 0; i < putargs.Height(); i++)
+        for (GenTree* const put : putargs.BottomUpOrder())
         {
-            GenTreePutArgStk* put = putargs.Bottom(i)->AsPutArgStk();
+            GenTreePutArgStk* putArgStk = put->AsPutArgStk();
 
-            unsigned int overwrittenStart = put->getArgOffset();
-            unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
+            unsigned int overwrittenStart = putArgStk->getArgOffset();
+            unsigned int overwrittenEnd   = overwrittenStart + putArgStk->GetStackByteSize();
 
             for (unsigned callerArgLclNum = 0; callerArgLclNum < m_compiler->info.compArgsCount; callerArgLclNum++)
             {
@@ -3974,7 +3975,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //
 void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
-    assert(node->OperIsPutArg() || node->OperIsFieldList());
+    assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
 
     if (node->OperIsFieldList())
     {
@@ -3985,7 +3986,7 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
             MovePutArgUpToCall(call, operand.GetNode());
         }
     }
-    else
+    else if (node->OperIsPutArg())
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
@@ -4000,6 +4001,12 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
         {
             JITDUMP("...no, operand has side effects or is not invariant\n");
         }
+    }
+    else
+    {
+        assert(!HAS_FIXED_REGISTER_SET);
+        // No moving necessary
+        return;
     }
 
     JITDUMP("Moving\n");
@@ -4024,14 +4031,14 @@ void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 }
@@ -4615,7 +4622,30 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         BlockRange().Remove(op2);
 
         GenCondition cmpCondition = GenCondition::FromRelop(cmp);
-        GenTreeCC*   setcc        = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
+
+        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
+        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
+        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
+        // Rewrite the condition to use Z/N where possible, or bail out.
+        if (cmp->IsUnsigned() && op2->IsIntegralConst(0) && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        {
+            if (cmp->OperIs(GT_GT))
+            {
+                // x > 0U  <=> x != 0
+                cmpCondition = GenCondition::NE;
+            }
+            else if (cmp->OperIs(GT_LE))
+            {
+                // x <= 0U <=> x == 0
+                cmpCondition = GenCondition::EQ;
+            }
+            else
+            {
+                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
+                return cmp;
+            }
+        }
+        GenTreeCC* setcc = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
         BlockRange().InsertAfter(op1, setcc);
 
         use.ReplaceWith(setcc);
@@ -8014,6 +8044,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     }
 #endif
 
+#if defined(TARGET_WASM)
+    if (node->OperIs(GT_ADD))
+    {
+        LowerBinaryArithmetic(node);
+    }
+#endif
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
@@ -8888,6 +8925,8 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    AfterLowerBlocks();
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -9009,9 +9048,8 @@ void Lowering::MapParameterRegisterLocals()
     if (m_compiler->verbose)
     {
         printf("%d parameter register to local mappings\n", m_compiler->m_paramRegLocalMappings->Height());
-        for (int i = 0; i < m_compiler->m_paramRegLocalMappings->Height(); i++)
+        for (const ParameterRegisterLocalMapping& mapping : m_compiler->m_paramRegLocalMappings->BottomUpOrder())
         {
-            const ParameterRegisterLocalMapping& mapping = m_compiler->m_paramRegLocalMappings->BottomRef(i);
             printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum,
                    mapping.Offset);
         }
@@ -9523,16 +9561,15 @@ void Lowering::LowerBlock(BasicBlock* block)
     {
         node = LowerNode(node);
     }
-    AfterLowerBlock();
 
     assert(CheckBlock(m_compiler, block));
 }
 
 #ifndef TARGET_WASM
 //------------------------------------------------------------------------
-// AfterLowerBlock: target-specific post-processing of the lowered block.
+// AfterLowerBlocks: target-specific post-processing of the lowered blocks.
 //
-void Lowering::AfterLowerBlock()
+void Lowering::AfterLowerBlocks()
 {
 }
 #endif // !TARGET_WASM
@@ -10857,7 +10894,11 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#if defined(TARGET_WASM)
+        return LowerStoreIndir(ind);
+#else
         return ind->gtNext;
+#endif
     }
 
 #ifndef TARGET_XARCH

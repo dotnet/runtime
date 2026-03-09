@@ -61,16 +61,6 @@ internal partial class MockDescriptors
         ]
     };
 
-    private static readonly TypeFields ArrayClassFields = new TypeFields()
-    {
-        DataType = DataType.ArrayClass,
-        Fields =
-        [
-            new(nameof(Data.ArrayClass.Rank), DataType.uint8),
-        ],
-        BaseTypeFields = EEClassFields
-    };
-
     private static readonly TypeFields ObjectFields = new TypeFields()
     {
         DataType = DataType.Object,
@@ -101,12 +91,23 @@ internal partial class MockDescriptors
         BaseTypeFields = ObjectFields
     };
 
+    private static readonly TypeFields SyncBlockCacheFields = new TypeFields()
+    {
+        DataType = DataType.SyncBlockCache,
+        Fields =
+        [
+            new(nameof(Data.SyncBlockCache.FreeSyncTableIndex), DataType.uint32),
+            new(nameof(Data.SyncBlockCache.CleanupBlockList), DataType.pointer),
+        ]
+    };
+
     private static readonly TypeFields SyncTableEntryFields = new TypeFields()
     {
         DataType = DataType.SyncTableEntry,
         Fields =
         [
             new(nameof(Data.SyncTableEntry.SyncBlock), DataType.pointer),
+            new(nameof(Data.SyncTableEntry.Object), DataType.pointer),
         ]
     };
 
@@ -116,6 +117,9 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.SyncBlock.InteropInfo), DataType.pointer),
+            new(nameof(Data.SyncBlock.Lock), DataType.pointer),
+            new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
+            new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
         ]
     };
 
@@ -126,6 +130,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.InteropSyncBlockInfo.RCW), DataType.pointer),
             new(nameof(Data.InteropSyncBlockInfo.CCW), DataType.pointer),
+            new(nameof(Data.InteropSyncBlockInfo.CCF), DataType.pointer),
         ]
     };
 
