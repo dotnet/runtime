@@ -1983,10 +1983,10 @@ void emitter::emitIns_R_C(
     assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
 
     // when id->idIns == bl, for reloc! 4-ins.
-    //   pcaddu12i reg, off-hi-20bits
+    //   pcalau12i reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     // when id->idIns == load-ins, for reloc! 4-ins.
-    //   pcaddu12i reg, off-hi-20bits
+    //   pcalau12i reg, off-hi-20bits
     //   load  reg, offs_lo-12bits(reg)
     //
     // INS_OPTS_RC: ins == bl placeholders.  3-ins:
@@ -3377,10 +3377,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Reference to JIT data
 
             // when id->idIns == bl, for reloc!
-            //   pcaddu12i r21, off-hi-20bits
+            //   pcalau12i r21, off-hi-20bits
             //   addi_d  reg, r21, off-lo-12bits
             // when id->idIns == load-ins
-            //   pcaddu12i r21, off-hi-20bits
+            //   pcalau12i r21, off-hi-20bits
             //   load  reg, offs_lo-12bits(r21)    #when ins is load ins.
             //
             // when id->idIns == bl
@@ -3405,27 +3405,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             assert(dataOffs < emitDataSize());
 
+            BYTE* dstAddr  = emitDataOffsetToPtr(dataOffs);
             ins            = id->idIns();
             regNumber reg1 = id->idReg1();
 
             if (id->idIsReloc())
             {
                 // get the addr-offset of the data.
-                imm = (ssize_t)emitDataOffsetToPtr(dataOffs) - (ssize_t)(dstRW - writeableOffset);
+                imm = (ssize_t)dstAddr - ((ssize_t)(dstRW - writeableOffset) & (~0xfff)) + (((ssize_t)dstAddr & 0x800) << 1);
                 assert(imm > 0);
                 assert(!(imm & 3));
-
-                doff = (int)(imm & 0x800);
-                imm += doff;
                 assert(isValidSimm20(imm >> 12));
 
-                doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+                doff = (imm & 0xfff); // addr-lo-12bit.
 
 #ifdef DEBUG
-                code = emitInsCode(INS_pcaddu12i);
-                assert(code == 0x1c000000);
+                code = emitInsCode(INS_pcalau12i);
+                assert(code == 0x1a000000);
 #endif
-                code            = 0x1c000000 | 21;
+                code            = 0x1a000000 | 21;
                 *(code_t*)dstRW = code | (((code_t)imm & 0xfffff000) >> 7);
                 dstRW += 4;
 
@@ -3449,11 +3447,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     *(code_t*)dstRW = code;
                 }
                 dstRW += 4;
+                emitRecordRelocation(dstRW - 8 - writeableOffset, dstAddr, CorInfoReloc::LOONGARCH64_PC);
             }
             else
             {
                 // get the addr of the data.
-                imm = (ssize_t)emitDataOffsetToPtr(dataOffs);
+                imm = (ssize_t)dstAddr;
 
                 code = emitInsCode(INS_lu12i_w);
                 if (ins == INS_bl)

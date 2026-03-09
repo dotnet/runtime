@@ -2185,6 +2185,7 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm)
 
     _ASSERTE((pcInstr & 0xFE000000) == 0x1a000000); // Must be pcalau12i
 
+    pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
     // Assemble the pc-relative high 20 bits of 'imm' into the pcalau12i instruction
     pcInstr |= (UINT32)((imm >> 7) & 0x1FFFFE0);
 
@@ -2192,6 +2193,7 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm)
 
     pcInstr = *(pCode + 1);
 
+    pcInstr &= 0xFFC003FF; // keep bits 31-22, 9-0
     // Assemble the pc-relative low 12 bits of 'imm' into the addid or ld instruction
     pcInstr |= (UINT32)((imm & 0xFFF) << 10);
 
@@ -2221,10 +2223,12 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
     // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu18i instruction
     pcInstr |= (UINT32)(((imm >> 18) & 0xFFFFF) << 5);
 
+    pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
     *pCode = pcInstr; // write the assembled instruction
 
     pcInstr = *(pCode + 1);
 
+    pcInstr &= 0xFC0003FF; // keep bits 31-26, 9-0
     // Assemble the pc-relative low 18 bits of 'imm38' into the jirl instruction
     pcInstr |= (UINT32)(relOff << 10);
 
