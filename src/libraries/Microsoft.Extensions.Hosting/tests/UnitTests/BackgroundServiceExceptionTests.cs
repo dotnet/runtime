@@ -87,6 +87,36 @@ namespace Microsoft.Extensions.Hosting.Tests
             });
         }
 
+        [Fact]
+        public async Task BackgroundService_AsynchronousException_StopTwiceAsync_ThrowsException()
+        {
+            var builder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<HostOptions>(options =>
+                    {
+                        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+                    });
+                    services.AddHostedService<AsynchronousFailureService>();
+                });
+
+            var host = builder.Build();
+            await host.StartAsync();
+
+            // Wait for the background service to fail
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await host.StopAsync();
+            });
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await host.StopAsync();
+            });
+        }
+
         /// <summary>
         /// Tests that when multiple BackgroundServices throw exceptions,
         /// the host aggregates them into an AggregateException.
