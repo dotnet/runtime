@@ -192,6 +192,20 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void MarshalHelperConvertObjectToVariantUco(object* pObject, ComVariant* pOle, Exception* pException)
+        {
+            try
+            {
+                MarshalHelperConvertObjectToVariant(*pObject, out ComVariant tmp);
+                *pOle = tmp;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // Helper code for marshaling VARIANTS to managed objects
         internal static unsafe object? MarshalHelperConvertVariantToObject(ref readonly ComVariant pOle)
         {
@@ -320,6 +334,19 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void MarshalHelperConvertVariantToObjectUco(ComVariant* pOle, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = MarshalHelperConvertVariantToObject(in *pOle);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // Helper code: on the back propagation path where a VT_BYREF VARIANT*
         // is marshaled to a "ref Object", we use this helper to force the
         // updated object back to the original type.
@@ -394,6 +421,20 @@ namespace System
                     VarEnum.VT_UINT => ComVariant.Create(iv.ToUInt32(provider)),
                     _ => throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant),
                 };
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MarshalHelperCastVariantUco(object* pValue, int vt, ComVariant* pOle, Exception* pException)
+        {
+            try
+            {
+                MarshalHelperCastVariant(*pValue!, vt, out ComVariant tmp);
+                *pOle = tmp;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
     }

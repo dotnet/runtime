@@ -160,6 +160,7 @@ DEFINE_METHOD(CLASS,                CTOR,                   .ctor,              
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
+DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE_UCO, ForwardCallToInvokeMemberUco, SM_PtrObj_PtrObj_Int_PtrObj_PtrObj_PtrObj_PtrObj_PtrObj_PtrObj_PtrObj_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
@@ -179,15 +180,15 @@ DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
 DEFINE_CLASS(COM_OBJECT,            System,                 __ComObject)
 DEFINE_METHOD(COM_OBJECT,           RELEASE_ALL_DATA,       ReleaseAllData,             IM_RetVoid)
-DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           IM_Class_RetObj)
+DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER_UCO, GetEventProviderUco,        SM_PtrObj_PtrObj_PtrObj_PtrException_RetVoid)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK
 
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   IM_RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE_UCO,              CreateUco,               SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO_UCO, GetCurrentContextInfoUco, SM_PtrObj_PtrObj_PtrInt_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT_UCO, SaveKeyInCurrentContextUco, SM_PtrObj_IntPtr_PtrException_RetVoid)
 
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
@@ -384,9 +385,9 @@ DEFINE_CLASS(GUID,                  System,                 Guid)
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT,               System,                 Variant)
-DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT,MarshalHelperConvertObjectToVariant,SM_Obj_RefComVariant_RetVoid)
-DEFINE_METHOD(VARIANT,              CAST_VARIANT,           MarshalHelperCastVariant,   SM_Obj_Int_RefComVariant_RetVoid)
-DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT,MarshalHelperConvertVariantToObject,SM_RefComVariant_RetObject)
+DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT_UCO, MarshalHelperConvertObjectToVariantUco, SM_PtrObj_PtrComVariant_PtrException_RetVoid)
+DEFINE_METHOD(VARIANT,              CAST_VARIANT_UCO,      MarshalHelperCastVariantUco, SM_PtrObj_Int_PtrComVariant_PtrException_RetVoid)
+DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT_UCO, MarshalHelperConvertVariantToObjectUco, SM_PtrComVariant_PtrObj_PtrException_RetVoid)
 
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
@@ -1045,7 +1046,7 @@ DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObjec
 DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExceptionObject,      SM_RetException)
 DEFINE_METHOD(STUBHELPERS,          CREATE_CUSTOM_MARSHALER, CreateCustomMarshaler, SM_IntPtr_Int_IntPtr_RetObj)
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, GetIEnumeratorToEnumVariantMarshaler, SM_RetObj)
+DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER_UCO, GetIEnumeratorToEnumVariantMarshalerUco, SM_PtrObj_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)

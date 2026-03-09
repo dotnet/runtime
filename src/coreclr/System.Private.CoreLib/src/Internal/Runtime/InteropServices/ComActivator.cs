@@ -768,6 +768,19 @@ namespace Internal.Runtime.InteropServices
             return new LicenseInteropProxy();
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void CreateUco(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = Create();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // Determine if the type supports licensing
         public static bool HasLicense(Type type)
         {
@@ -877,6 +890,23 @@ namespace Internal.Runtime.InteropServices
             bstrKey = Marshal.StringToBSTR((string)key!);
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void GetCurrentContextInfoUco(object* pProxy, object* pType, int* pIsDesignTime, IntPtr* pBstrKey, Exception* pException)
+        {
+            try
+            {
+                LicenseInteropProxy proxy = (LicenseInteropProxy)(*pProxy)!;
+                Type type = (Type)(*pType)!;
+                proxy.GetCurrentContextInfo(type.TypeHandle, out bool isDesignTime, out IntPtr bstrKey);
+                *pIsDesignTime = isDesignTime ? 1 : 0;
+                *pBstrKey = bstrKey;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // The CLR invokes this when instantiating a licensed COM
         // object inside a designtime license context.
         // It's purpose is to save away the license key that the CLR
@@ -891,6 +921,19 @@ namespace Internal.Runtime.InteropServices
             string key = Marshal.PtrToStringBSTR(bstrKey);
 
             SetSavedLicenseKey(_licContext!, _targetRcwType!, key);
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void SaveKeyInCurrentContextUco(object* pProxy, IntPtr bstrKey, Exception* pException)
+        {
+            try
+            {
+                ((LicenseInteropProxy)(*pProxy)!).SaveKeyInCurrentContext(bstrKey);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }
