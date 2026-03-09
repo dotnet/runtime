@@ -482,8 +482,8 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
-                if (CompilationModuleGroup.IsCompositeBuildMode &&
-                    (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
+                if ((CompilationModuleGroup.IsCompositeBuildMode || Target.Architecture == TargetArchitecture.ARM)
+                    && (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
                 {
                     continue;
                 }

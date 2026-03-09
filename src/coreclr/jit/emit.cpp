@@ -8442,18 +8442,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
                 if (m_compiler->opts.compReloc)
                 {
-#ifdef TARGET_ARM
-                    // ARM Thumb-2 requires bit 0 set on code pointers to indicate Thumb mode.
-                    // CorInfoReloc::DIRECT maps to IMAGE_REL_BASED_HIGHLOW which does not add
-                    // the Thumb bit, so we must include it in the relocation addend.
-                    int32_t codeDelta = 1;
-#else
-                    int32_t codeDelta = 0;
-#endif
-                    emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT, codeDelta);
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
-                        emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, codeDelta);
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                     }
                 }
 
