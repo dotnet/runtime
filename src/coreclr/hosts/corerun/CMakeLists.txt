@@ -70,8 +70,13 @@ else()
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
             set(JS_CORE_RUN_EXTPOST
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
-            set(JS_CORE_RUN
-                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.js")
+            if (CORERUN_IN_BROWSER)
+                set(JS_CORE_RUN
+                    "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.browser.js")
+            else()
+                set(JS_CORE_RUN
+                    "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.js")
+            endif()
             set_target_properties(corerun PROPERTIES
                 LINK_DEPENDS "${JS_CORE_RUN};${JS_CORE_RUN_EXTPOST};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
                 LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
@@ -84,7 +89,7 @@ else()
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
-                -sEXPORTED_RUNTIME_METHODS=CORERUN,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
