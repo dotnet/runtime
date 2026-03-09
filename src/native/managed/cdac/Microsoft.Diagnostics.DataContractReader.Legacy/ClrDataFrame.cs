@@ -91,7 +91,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             uint numArgsLocal;
             int hrLocal = _legacyImpl.GetNumArguments(&numArgsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*numArgs == numArgsLocal, $"cDAC: {*numArgs}, DAC: {numArgsLocal}");
         }
@@ -101,7 +101,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetArgumentByIndex(
         uint index,
-        void** arg,
+        DacComNullableByRef<IXCLRDataValue> arg,
         uint bufLen,
         uint* nameLen,
         char* name)
@@ -162,7 +162,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             uint numLocalsLocal;
             int hrLocal = _legacyImpl.GetNumLocalVariables(&numLocalsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*numLocals == numLocalsLocal, $"cDAC: {*numLocals}, DAC: {numLocalsLocal}");
         }
@@ -172,7 +172,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetLocalVariableByIndex(
         uint index,
-        void** localVariable,
+        DacComNullableByRef<IXCLRDataValue> localVariable,
         uint bufLen,
         uint* nameLen,
         char* name)
@@ -185,16 +185,17 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         char* nameBuf)
         => _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
 
-    int IXCLRDataFrame.GetMethodInstance(out IXCLRDataMethodInstance? method)
+    int IXCLRDataFrame.GetMethodInstance(DacComNullableByRef<IXCLRDataMethodInstance> method)
     {
         int hr = HResults.S_OK;
-        method = null;
 
         int hrLocal = HResults.S_OK;
         IXCLRDataMethodInstance? legacyMethod = null;
         if (_legacyImpl is not null)
         {
-            hrLocal = _legacyImpl.GetMethodInstance(out legacyMethod);
+            DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetMethodInstance(legacyMethodOut);
+            legacyMethod = legacyMethodOut.Interface;
         }
 
         try
@@ -211,7 +212,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             TargetPointer appDomain = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.AppDomain));
 
-            method = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
+            method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
         }
         catch (System.Exception ex)
         {
@@ -221,7 +222,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
 
@@ -239,10 +240,10 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)
         => _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
 
-    int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, void** typeArg)
+    int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
         => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
 
     // IXCLRDataFrame2 implementation
-    int IXCLRDataFrame2.GetExactGenericArgsToken(void** genericToken)
+    int IXCLRDataFrame2.GetExactGenericArgsToken(DacComNullableByRef<IXCLRDataValue> genericToken)
         => _legacyImpl2 is not null ? _legacyImpl2.GetExactGenericArgsToken(genericToken) : HResults.E_NOTIMPL;
 }

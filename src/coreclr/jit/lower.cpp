@@ -2867,6 +2867,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 #endif
 
+    call->gtDirectCallAddress = nullptr; // Clear out any stale data from the union.
     call->ClearOtherRegs();
 
 #if HAS_FIXED_REGISTER_SET
@@ -3974,7 +3975,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //
 void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
-    assert(node->OperIsPutArg() || node->OperIsFieldList());
+    assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
 
     if (node->OperIsFieldList())
     {
@@ -3985,7 +3986,7 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
             MovePutArgUpToCall(call, operand.GetNode());
         }
     }
-    else
+    else if (node->OperIsPutArg())
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
@@ -4000,6 +4001,12 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
         {
             JITDUMP("...no, operand has side effects or is not invariant\n");
         }
+    }
+    else
+    {
+        assert(!HAS_FIXED_REGISTER_SET);
+        // No moving necessary
+        return;
     }
 
     JITDUMP("Moving\n");
@@ -4024,14 +4031,14 @@ void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 }
@@ -8037,6 +8044,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     }
 #endif
 
+#if defined(TARGET_WASM)
+    if (node->OperIs(GT_ADD))
+    {
+        LowerBinaryArithmetic(node);
+    }
+#endif
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
@@ -10880,7 +10894,11 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#if defined(TARGET_WASM)
+        return LowerStoreIndir(ind);
+#else
         return ind->gtNext;
+#endif
     }
 
 #ifndef TARGET_XARCH
