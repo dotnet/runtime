@@ -1125,7 +1125,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // all base system classes are loaded.  Profilers are not allowed to call any type-loading
         // APIs until g_profControlBlock.fBaseSystemClassesLoaded is TRUE.  It is important that
         // all base system classes need to be loaded before profilers can trigger the type loading.
-        g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
+        g_profControlBlock.fBaseSystemClassesLoaded = true;
     #endif // PROFILING_SUPPORTED
 
     #if defined(_DEBUG)
@@ -3396,12 +3396,8 @@ void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 
     EX_TRY
     {
-        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(*pThrowable)
-        };
-        raiseEvent.Call(args);
+        UnmanagedCallersOnlyCaller raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
+        raiseEvent.InvokeThrowing(pThrowable);
     }
     EX_CATCH
     {
@@ -3423,8 +3419,8 @@ void AppDomain::RaiseExitProcessEvent()
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 
-    MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
-    onProcessExit.Call(NULL);
+    UnmanagedCallersOnlyCaller onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
+    onProcessExit.InvokeThrowing();
 }
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()

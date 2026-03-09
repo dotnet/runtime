@@ -28,15 +28,17 @@ public class WebcilConverter
         ImmutableArray<DebugDirectoryEntry> DebugDirectoryEntries
         );
 
-    // Intersting stuff we know about the webcil file we're writing
+    // Interesting stuff we know about the Webcil file we're writing
     public record WCFileInfo(
-        // The header of the webcil file
+        // The header of the Webcil file
         WebcilHeader Header,
-        // The section directory of the webcil file
+        // The section directory of the Webcil file
         ImmutableArray<WebcilSectionHeader> SectionHeaders,
         // The file offset of the sections, following the section directory
         FilePosition SectionStart
     );
+
+    private const int SectionAlignment = 16;
 
     private readonly string _inputPath;
     private readonly string _outputPath;
@@ -71,9 +73,9 @@ public class WebcilConverter
         }
         else
         {
-            // if wrapping in WASM, write the webcil payload to memory because we need to discover the length
+            // if wrapping in WASM, write the Webcil payload to memory because we need to discover the length
 
-            // webcil is about the same size as the PE file
+            // Webcil is about the same size as the PE file
             using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
             WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
             memoryStream.Flush();
@@ -87,8 +89,8 @@ public class WebcilConverter
     {
         WriteHeader(outputStream, wcInfo.Header);
         WriteSectionHeaders(outputStream, wcInfo.SectionHeaders);
-        CopySections(outputStream, inputStream, peInfo.SectionHeaders);
-        if (wcInfo.Header.pe_debug_size != 0 && wcInfo.Header.pe_debug_rva != 0)
+        CopySections(outputStream, inputStream, peInfo.SectionHeaders, wcInfo.SectionHeaders);
+        if (wcInfo.Header.PeDebugSize != 0 && wcInfo.Header.PeDebugRva != 0)
         {
             var wcDebugDirectoryEntries = FixupDebugDirectoryEntries(peInfo, wcInfo);
             OverwriteDebugDirectoryEntries(outputStream, wcInfo, wcDebugDirectoryEntries);
@@ -114,25 +116,25 @@ public class WebcilConverter
         var coffHeader = headers.CoffHeader!;
         var sections = headers.SectionHeaders;
         WebcilHeader header;
-        header.id[0] = (byte)'W';
-        header.id[1] = (byte)'b';
-        header.id[2] = (byte)'I';
-        header.id[3] = (byte)'L';
-        header.version_major = Internal.Constants.WC_VERSION_MAJOR;
-        header.version_minor = Internal.Constants.WC_VERSION_MINOR;
-        header.coff_sections = (ushort)coffHeader.NumberOfSections;
-        header.reserved0 = 0;
-        header.pe_cli_header_rva = (uint)peHeader.CorHeaderTableDirectory.RelativeVirtualAddress;
-        header.pe_cli_header_size = (uint)peHeader.CorHeaderTableDirectory.Size;
-        header.pe_debug_rva = (uint)peHeader.DebugTableDirectory.RelativeVirtualAddress;
-        header.pe_debug_size = (uint)peHeader.DebugTableDirectory.Size;
+        header.Id[0] = (byte)'W';
+        header.Id[1] = (byte)'b';
+        header.Id[2] = (byte)'I';
+        header.Id[3] = (byte)'L';
+        header.VersionMajor = Internal.Constants.WC_VERSION_MAJOR;
+        header.VersionMinor = Internal.Constants.WC_VERSION_MINOR;
+        header.CoffSections = (ushort)coffHeader.NumberOfSections;
+        header.Reserved0 = 0;
+        header.PeCliHeaderRva = (uint)peHeader.CorHeaderTableDirectory.RelativeVirtualAddress;
+        header.PeCliHeaderSize = (uint)peHeader.CorHeaderTableDirectory.Size;
+        header.PeDebugRva = (uint)peHeader.DebugTableDirectory.RelativeVirtualAddress;
+        header.PeDebugSize = (uint)peHeader.DebugTableDirectory.Size;
 
         // current logical position in the output file
         FilePosition pos = SizeOfHeader();
         // position of the current section in the output file
-        // initially it's after all the section headers
-        FilePosition curSectionPos = pos + sizeof(WebcilSectionHeader) * coffHeader.NumberOfSections;
-        // The first WC section is immediately after the section directory
+        // initially it's after all the section headers, aligned to 16-byte boundary
+        FilePosition curSectionPos = AlignTo((pos + sizeof(WebcilSectionHeader) * coffHeader.NumberOfSections).Position, SectionAlignment);
+        // The first WC section is at the aligned position after the section directory
         FilePosition firstWCSection = curSectionPos;
 
         FilePosition firstPESection = 0;
@@ -159,7 +161,7 @@ public class WebcilConverter
             );
 
             pos += sizeof(WebcilSectionHeader);
-            curSectionPos += sectionHeader.SizeOfRawData;
+            curSectionPos = AlignTo((curSectionPos + sectionHeader.SizeOfRawData).Position, SectionAlignment);
             headerBuilder.Add(newHeader);
         }
 
@@ -179,13 +181,13 @@ public class WebcilConverter
     {
         if (!BitConverter.IsLittleEndian)
         {
-            webcilHeader.version_major = BinaryPrimitives.ReverseEndianness(webcilHeader.version_major);
-            webcilHeader.version_minor = BinaryPrimitives.ReverseEndianness(webcilHeader.version_minor);
-            webcilHeader.coff_sections = BinaryPrimitives.ReverseEndianness(webcilHeader.coff_sections);
-            webcilHeader.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_rva);
-            webcilHeader.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_size);
-            webcilHeader.pe_debug_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_rva);
-            webcilHeader.pe_debug_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_size);
+            webcilHeader.VersionMajor = BinaryPrimitives.ReverseEndianness(webcilHeader.VersionMajor);
+            webcilHeader.VersionMinor = BinaryPrimitives.ReverseEndianness(webcilHeader.VersionMinor);
+            webcilHeader.CoffSections = BinaryPrimitives.ReverseEndianness(webcilHeader.CoffSections);
+            webcilHeader.PeCliHeaderRva = BinaryPrimitives.ReverseEndianness(webcilHeader.PeCliHeaderRva);
+            webcilHeader.PeCliHeaderSize = BinaryPrimitives.ReverseEndianness(webcilHeader.PeCliHeaderSize);
+            webcilHeader.PeDebugRva = BinaryPrimitives.ReverseEndianness(webcilHeader.PeDebugRva);
+            webcilHeader.PeDebugSize = BinaryPrimitives.ReverseEndianness(webcilHeader.PeDebugSize);
         }
         WriteStructure(s, webcilHeader);
     }
@@ -244,13 +246,19 @@ public class WebcilConverter
     }
 #endif
 
-    private static void CopySections(Stream outStream, FileStream inputStream, ImmutableArray<SectionHeader> peSections)
+    private static void CopySections(Stream outStream, FileStream inputStream, ImmutableArray<SectionHeader> peSections, ImmutableArray<WebcilSectionHeader> wcSections)
     {
         // endianness: ok, we're just copying from one stream to another
-        foreach (var peHeader in peSections)
+        for (int i = 0; i < peSections.Length; i++)
         {
-            var buffer = new byte[peHeader.SizeOfRawData];
-            inputStream.Seek(peHeader.PointerToRawData, SeekOrigin.Begin);
+            // Write zero padding to reach the aligned section position
+            int paddingNeeded = wcSections[i].PointerToRawData - (int)outStream.Position;
+            if (paddingNeeded > 0)
+            {
+                outStream.Write(new byte[paddingNeeded], 0, paddingNeeded);
+            }
+            var buffer = new byte[peSections[i].SizeOfRawData];
+            inputStream.Seek(peSections[i].PointerToRawData, SeekOrigin.Begin);
             ReadExactly(inputStream, buffer);
             outStream.Write(buffer, 0, buffer.Length);
         }
@@ -281,7 +289,13 @@ public class WebcilConverter
         {
             if (relativeVirtualAddress >= section.VirtualAddress && relativeVirtualAddress < section.VirtualAddress + section.VirtualSize)
             {
-                FilePosition pos = section.PointerToRawData + ((int)relativeVirtualAddress - section.VirtualAddress);
+                uint offsetInSection = relativeVirtualAddress - (uint)section.VirtualAddress;
+                if (offsetInSection >= (uint)section.SizeOfRawData)
+                {
+                    throw new InvalidOperationException(
+                        $"relative virtual address 0x{relativeVirtualAddress:X} is in virtual tail of section (offset {offsetInSection} >= SizeOfRawData {section.SizeOfRawData})");
+                }
+                FilePosition pos = section.PointerToRawData + (int)offsetInSection;
                 return pos;
             }
         }
@@ -289,40 +303,12 @@ public class WebcilConverter
         throw new InvalidOperationException("relative virtual address not in any section");
     }
 
-    // Given a physical file offset, return the section and the offset within the section.
-    private (WebcilSectionHeader section, int offset) GetSectionFromFileOffset(ImmutableArray<WebcilSectionHeader> peSections, FilePosition fileOffset)
-    {
-        foreach (var section in peSections)
-        {
-            if (fileOffset.Position >= section.PointerToRawData && fileOffset.Position < section.PointerToRawData + section.SizeOfRawData)
-            {
-                return (section, fileOffset.Position - section.PointerToRawData);
-            }
-        }
-
-        throw new InvalidOperationException($"file offset not in any section (Webcil) for {InputPath}");
-    }
-
-    private void GetSectionFromFileOffset(ImmutableArray<SectionHeader> sections, FilePosition fileOffset)
-    {
-        foreach (var section in sections)
-        {
-            if (fileOffset.Position >= section.PointerToRawData && fileOffset.Position < section.PointerToRawData + section.SizeOfRawData)
-            {
-                return;
-            }
-        }
-
-        throw new InvalidOperationException($"file offset {fileOffset.Position} not in any section (PE) for {InputPath}");
-    }
-
     // Make a new set of debug directory entries that
-    // have their data pointers adjusted to be relative to the start of the webcil file.
-    // This is necessary because the debug directory entires in the PE file are relative to the start of the PE file,
-    // and a PE header is bigger than a webcil header.
-    private ImmutableArray<DebugDirectoryEntry> FixupDebugDirectoryEntries(PEFileInfo peInfo, WCFileInfo wcInfo)
+    // have their data pointers adjusted to be relative to the start of the Webcil file.
+    // This is necessary because the debug directory entries in the PE file are relative to the start of the PE file,
+    // and section offsets may differ between PE and Webcil due to header sizes and alignment.
+    private static ImmutableArray<DebugDirectoryEntry> FixupDebugDirectoryEntries(PEFileInfo peInfo, WCFileInfo wcInfo)
     {
-        int dataPointerAdjustment = peInfo.SectionStart.Position - wcInfo.SectionStart.Position;
         ImmutableArray<DebugDirectoryEntry> entries = peInfo.DebugDirectoryEntries;
         ImmutableArray<DebugDirectoryEntry>.Builder newEntries = ImmutableArray.CreateBuilder<DebugDirectoryEntry>(entries.Length);
         foreach (var entry in entries)
@@ -335,28 +321,48 @@ public class WebcilConverter
             }
             else
             {
-                // the "DataPointer" field is a file offset in the PE file, adjust the entry wit the corresponding offset in the Webcil file
-                var newDataPointer = entry.DataPointer - dataPointerAdjustment;
+                // the "DataPointer" field is a file offset in the PE file, translate it to the corresponding offset in the Webcil file
+                var newDataPointer = TranslateFileOffset(peInfo.SectionHeaders, wcInfo.SectionHeaders, entry.DataPointer);
                 newEntry = new DebugDirectoryEntry(entry.Stamp, entry.MajorVersion, entry.MinorVersion, entry.Type, entry.DataSize, entry.DataRelativeVirtualAddress, newDataPointer);
-                GetSectionFromFileOffset(peInfo.SectionHeaders, entry.DataPointer);
-                // validate that the new entry is in some section
-                GetSectionFromFileOffset(wcInfo.SectionHeaders, newDataPointer);
             }
             newEntries.Add(newEntry);
         }
         return newEntries.MoveToImmutable();
     }
 
+    private static int TranslateFileOffset(ImmutableArray<SectionHeader> peSections, ImmutableArray<WebcilSectionHeader> wcSections, int peFileOffset)
+    {
+        for (int i = 0; i < peSections.Length; i++)
+        {
+            var peSection = peSections[i];
+            if (peFileOffset >= peSection.PointerToRawData && peFileOffset < peSection.PointerToRawData + peSection.SizeOfRawData)
+            {
+                int offsetInSection = peFileOffset - peSection.PointerToRawData;
+                return wcSections[i].PointerToRawData + offsetInSection;
+            }
+        }
+
+        throw new InvalidOperationException($"file offset {peFileOffset} not in any PE section");
+    }
+
+    private static int AlignTo(int value, int alignment) => (value + (alignment - 1)) & ~(alignment - 1);
+
     private static void OverwriteDebugDirectoryEntries(Stream s, WCFileInfo wcInfo, ImmutableArray<DebugDirectoryEntry> entries)
     {
-        FilePosition debugDirectoryPos = GetPositionOfRelativeVirtualAddress(wcInfo.SectionHeaders, wcInfo.Header.pe_debug_rva);
+        FilePosition debugDirectoryPos = GetPositionOfRelativeVirtualAddress(wcInfo.SectionHeaders, wcInfo.Header.PeDebugRva);
         using var writer = new BinaryWriter(s, System.Text.Encoding.UTF8, leaveOpen: true);
         writer.Seek(debugDirectoryPos.Position, SeekOrigin.Begin);
         foreach (var entry in entries)
         {
             WriteDebugDirectoryEntry(writer, entry);
         }
-        // TODO check that we overwrite with the same size as the original
+        writer.Flush();
+        long bytesWritten = s.Position - debugDirectoryPos.Position;
+        if (bytesWritten != wcInfo.Header.PeDebugSize)
+        {
+            throw new InvalidOperationException(
+                $"Debug directory size mismatch: wrote {bytesWritten} bytes, expected {wcInfo.Header.PeDebugSize}");
+        }
 
         // restore the stream position
         writer.Seek(0, SeekOrigin.End);

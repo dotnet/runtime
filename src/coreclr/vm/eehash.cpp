@@ -18,6 +18,48 @@
 #ifndef DACCESS_COMPILE
 
 // ============================================================================
+// Bucket array allocation helpers for EEHashTable.
+// ============================================================================
+
+// Allocate a zero-initialized bucket array with space for 'dwNumBuckets' buckets
+// plus a reserved leading slot. Returns a pointer past the leading slot (matching
+// the m_pBuckets convention), or NULL on failure.
+EEHashEntry_t** AllocateEEHashBuckets(DWORD dwNumBuckets)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    DWORD dwNumBucketsPlusOne;
+    if (!ClrSafeInt<DWORD>::addition(dwNumBuckets, 1, dwNumBucketsPlusOne))
+        return NULL;
+
+    S_SIZE_T safeSize(sizeof(EEHashEntry_t*));
+    safeSize *= dwNumBucketsPlusOne;
+    if (safeSize.IsOverflow())
+        return NULL;
+
+    SIZE_T cbAlloc = safeSize.Value();
+    EEHashEntry_t** pBuckets = (EEHashEntry_t**) new (nothrow) BYTE[cbAlloc];
+    if (pBuckets == NULL)
+        return NULL;
+
+    memset(pBuckets, 0, cbAlloc);
+
+    // The first slot is reserved; usable buckets start after it.
+    return pBuckets + 1;
+}
+
+void FreeEEHashBuckets(EEHashEntry_t** pBuckets)
+{
+    LIMITED_METHOD_CONTRACT;
+    delete[] (BYTE*)(pBuckets - 1);
+}
+
+// ============================================================================
 // Unicode string hash table helper.
 // ============================================================================
 EEHashEntry_t * EEUnicodeHashTableHelper::AllocateEntry(EEStringData *pKey, BOOL bDeepCopy, void *pHeap)

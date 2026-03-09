@@ -21,7 +21,7 @@ namespace System.Threading.Tasks.Tests
 
         #region Test Methods
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskTask_State()
         {
             RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.None);
@@ -31,7 +31,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskToTaskWithResult_State()
         {
             RunContinueWithTaskToTaskWithResult_State_Helper(TaskContinuationOptions.None);
@@ -41,7 +41,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskToTaskWithResult_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTask_State()
         {
             RunContinueWithTaskWithResultToTask_State_Helper(TaskContinuationOptions.None);
@@ -51,7 +51,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTaskWithResult_State()
         {
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(TaskContinuationOptions.None);
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskTask_State_FaultedCanceled()
         {
             RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled);
@@ -71,7 +71,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskToTaskWithResult_State_FaultedCanceled()
         {
             RunContinueWithTaskToTaskWithResult_State_Helper(s_onlyOnCanceled);
@@ -81,7 +81,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskToTaskWithResult_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTask_State_FaultedCanceled()
         {
             RunContinueWithTaskWithResultToTask_State_Helper(s_onlyOnCanceled);
@@ -91,7 +91,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTaskWithResult_State_FaultedCanceled()
         {
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(s_onlyOnCanceled);
@@ -101,7 +101,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskTask_State_OnException()
         {
             RunContinueWithTaskTask_State_Helper(TaskContinuationOptions.None, true);
@@ -111,7 +111,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskToTaskWithResult_State_OnException()
         {
             RunContinueWithTaskToTaskWithResult_State_Helper(TaskContinuationOptions.None, true);
@@ -121,7 +121,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskToTaskWithResult_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTask_State_OnException()
         {
             RunContinueWithTaskWithResultToTask_State_Helper(TaskContinuationOptions.None, true);
@@ -131,7 +131,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTask_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTaskWithResult_State_OnException()
         {
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(TaskContinuationOptions.None, true);
@@ -141,7 +141,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(s_onlyOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskTask_State_FaultedCanceled_OnException()
         {
             RunContinueWithTaskTask_State_Helper(s_onlyOnCanceled, true);
@@ -151,7 +151,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskToTaskWithResult_State_FaultedCanceled_OnException()
         {
             RunContinueWithTaskToTaskWithResult_State_Helper(s_onlyOnCanceled, true);
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskToTaskWithResult_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTask_State_FaultedCanceled_OnException()
         {
             RunContinueWithTaskWithResultToTask_State_Helper(s_onlyOnCanceled, true);
@@ -171,7 +171,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTask_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithTaskWithResultToTaskWithResult_State_FaultedCanceled_OnException()
         {
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(s_onlyOnCanceled, true);
@@ -181,7 +181,7 @@ namespace System.Threading.Tasks.Tests
             RunContinueWithTaskWithResultToTaskWithResult_State_Helper(s_onlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithPreCancelTests_State()
         {
             Action<Task, bool, string> EnsureCompletionStatus = delegate (Task task, bool shouldBeCompleted, string message)
@@ -261,7 +261,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinuationChainingTest_State()
         {
             int x = 0;
@@ -304,7 +304,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithOnDisposedTaskTest_State()
         {
             Task t1 = Task.Factory.StartNew(delegate { });
@@ -322,7 +322,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithParamsTest_State_Cancellation()
         {
             string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
@@ -372,7 +372,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithParamsTest_State_IllegalParameters()
         {
             Task t1 = new Task(delegate { });

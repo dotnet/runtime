@@ -249,6 +249,7 @@
     <Compile Include="FileInfo\ToString.cs" />
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
+    <Compile Include="FileInfo\InvalidateOnStateChange.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Interop\Windows\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
