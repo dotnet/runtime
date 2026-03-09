@@ -2659,7 +2659,9 @@ AGAIN:
         switch (oper)
         {
             case GT_CNS_INT:
-                if (op1->AsIntCon()->gtIconVal == op2->AsIntCon()->gtIconVal)
+                if ((op1->AsIntCon()->gtIconVal == op2->AsIntCon()->gtIconVal) &&
+                    (op1->GetIconHandleFlag() == op2->GetIconHandleFlag()) &&
+                    (op1->AsIntCon()->gtFieldSeq == op2->AsIntCon()->gtFieldSeq))
                 {
                     return true;
                 }
@@ -2846,6 +2848,14 @@ AGAIN:
                 case GT_ARR_ADDR:
                     break;
 
+                case GT_ALLOCOBJ:
+                    if ((op1->AsAllocObj()->gtNewHelper != op2->AsAllocObj()->gtNewHelper) ||
+                        (op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd))
+                    {
+                        return false;
+                    }
+                    break;
+
                 default:
                     assert(!"unexpected unary ExOp operator");
             }
@@ -2976,7 +2986,10 @@ AGAIN:
                 return false;
             }
 
-            // NOTE: gtArrElemSize may need to be handled
+            if (op1->AsArrElem()->gtArrElemSize != op2->AsArrElem()->gtArrElemSize)
+            {
+                return false;
+            }
 
             unsigned dim;
             for (dim = 0; dim < op1->AsArrElem()->gtArrRank; dim++)
@@ -3001,6 +3014,11 @@ AGAIN:
             return Compare(op1->AsCmpXchg()->Addr(), op2->AsCmpXchg()->Addr()) &&
                    Compare(op1->AsCmpXchg()->Data(), op2->AsCmpXchg()->Data()) &&
                    Compare(op1->AsCmpXchg()->Comparand(), op2->AsCmpXchg()->Comparand());
+
+        case GT_SELECT:
+            return Compare(op1->AsConditional()->gtCond, op2->AsConditional()->gtCond) &&
+                   Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp1) &&
+                   Compare(op1->AsOp()->gtOp2, op2->AsOp()->gtOp2);
 
         default:
             assert(!"unexpected operator");
