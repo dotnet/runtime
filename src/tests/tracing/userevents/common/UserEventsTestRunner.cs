@@ -23,16 +23,18 @@ namespace Tracing.UserEvents.Tests.Common
         private const int DefaultTraceeExitTimeoutMs = 60000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
-        // Delay before starting the tracee to let record-trace finish setup. The
-        // tracee's ManualResetEventSlim gates on tracepoint registration via IPC, but
-        // that alone is not sufficient as record-trace's ring buffers must also be active
-        // (PerfSession::enable) to capture events. Without this delay, the tracee may be
-        // discovered during record-trace's /proc scan and receive IPC before enable,
-        // causing events to be lost. With the delay, the tracee is instead discovered
-        // via MMAP2 records after PerfSession is enabled.
-        // record-trace startup -> PerfSession::enable scales with system process count:
-        // averaged 113ms at 126 processes and 253ms at 534 processes on a 2-core system.
-        private const int RecordTraceSetupDelayMs = 300;
+        // Timeout for record-trace to emit "Recording started" on stdout. record-trace's
+        // startup has two phases: a /proc scan for existing processes, then enabling ring
+        // buffers to capture live mmap events. If the tracee starts during the /proc scan,
+        // record-trace may discover it and send IPC before ring buffers are active, causing
+        // emitted events to be lost. If the tracee starts after the /proc scan but before
+        // ring buffers are enabled, its mmap events are missed entirely and record-trace
+        // never discovers it. By gating on "Recording started" (printed after enable), the
+        // tracee is only discovered via live mmap events with ring buffers already active.
+        // record-trace startup -> enable scales with system process count: averaged 113ms at
+        // 126 processes and 253ms at 534 processes on a 2-core x64 system, but took ~1845ms
+        // on a 2-core ARM64 CI machine.
+        private const int RecordTraceSetupTimeoutMs = 10000;
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
@@ -147,11 +149,16 @@ namespace Tracing.UserEvents.Tests.Common
 
             Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {string.Join(" ", recordTraceStartInfo.ArgumentList)}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
+            using var recordingStarted = new ManualResetEventSlim(false);
             recordTraceProcess.OutputDataReceived += (_, args) =>
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
                     Console.WriteLine($"[record-trace][stdout] {args.Data}");
+                    if (args.Data.Contains("Recording started", StringComparison.Ordinal))
+                    {
+                        recordingStarted.Set();
+                    }
                 }
             };
             recordTraceProcess.BeginOutputReadLine();
@@ -197,9 +204,25 @@ namespace Tracing.UserEvents.Tests.Common
             // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
             EnsureCleanDiagnosticPorts(diagnosticPortDir);
 
-            // Allow record-trace to finish setup before starting the tracee.
-            Console.WriteLine($"Delaying tracee startup {RecordTraceSetupDelayMs}ms for record-trace setup...");
-            Thread.Sleep(RecordTraceSetupDelayMs);
+            // Wait for record-trace to finish setup (capture_environment + enable ring buffers).
+            // "Recording started" is printed after session.enable() succeeds, which means
+            // the ring buffers are active and will capture the tracee's mmap events.
+            Console.WriteLine("Waiting for record-trace to signal 'Recording started'...");
+            if (!recordingStarted.Wait(RecordTraceSetupTimeoutMs))
+            {
+                if (recordTraceProcess.HasExited)
+                {
+                    Console.Error.WriteLine($"record-trace exited prematurely with code {recordTraceProcess.ExitCode}.");
+                }
+                else
+                {
+                    Console.Error.WriteLine($"record-trace did not emit 'Recording started' within {RecordTraceSetupTimeoutMs}ms.");
+                    recordTraceProcess.Kill();
+                }
+
+                UploadArtifactsFromHelixOnFailure(scenarioName, recordTraceLogPath);
+                return -1;
+            }
 
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
