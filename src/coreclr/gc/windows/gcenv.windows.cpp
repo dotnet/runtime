@@ -771,8 +771,9 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualCommitThp(void* address, size_t size, uint16_t node)
 {
-    // On Windows, THP is handled differently - for now just call VirtualCommit
+    // On Windows, THP is not supported yet - for now just call VirtualCommit
     assert(false && "THP is a UNIX only feature");
+    return false;
 }
 
 // Decomit virtual memory range.

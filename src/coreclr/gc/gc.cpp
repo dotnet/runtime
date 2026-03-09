@@ -9581,6 +9581,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #else
     // in case of background gc, the mark array will be committed separately (per segment).
     size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
+
     if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
     {
         dprintf (1, ("Card table commit failed"));
@@ -12447,6 +12448,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
 #else
         0;
 #endif //MULTIPLE_HEAPS
+
     if (!virtual_commit (new_pages, initial_commit, oh, h_number))
     {
         log_init_error_to_host ("Committing %zd bytes for a region failed", initial_commit);
@@ -15824,6 +15826,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
     STRESS_LOG2(LF_GC, LL_INFO10000,
                 "Growing heap_segment: %zx high address: %zx\n",
                 (size_t)seg, (size_t)high_address);
+
     bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
     if (ret)
     {
@@ -38572,6 +38575,7 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
                             commit_start, commit_end,
                             size));
 #endif //SIMPLE_DPRINTF
+
     if (virtual_commit (commit_start, size, recorded_committed_mark_array_bucket))
     {
         // We can only verify the mark array is cleared from begin to end, the first and the last
@@ -49346,6 +49350,7 @@ HRESULT GCHeap::Initialize()
         log_init_error_to_host ("compute_hard_limit failed, check your heap hard limit related configs");
         return CLR_E_GC_BAD_HARD_LIMIT;
     }
+
 #ifdef TARGET_UNIX
     // GCTHP will be turned off when users choose to use GCLargePages - explicit huge pages.
     gc_heap::use_thp_p = GCConfig::GetGCTHP() && gc_heap::ReadTHPEnabled() && !GCConfig::GetGCLargePages();
