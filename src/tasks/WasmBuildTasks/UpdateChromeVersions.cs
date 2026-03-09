@@ -27,7 +27,7 @@ public partial class UpdateChromeVersions : MBU.Task
     private static readonly HttpClient s_httpClient = new();
 
     [GeneratedRegex("#define V8_BUILD_NUMBER (\\d+)")]
-    private static partial Regex V8BuildNumberRegex();
+    private static partial Regex V8BuildNumberRegex { get; }
 
     public string Channel { get; set; } = "stable";
 
@@ -222,7 +222,7 @@ public partial class UpdateChromeVersions : MBU.Task
                 Log.LogMessage(MessageImportance.Low, $"Checking {lkgUrl} ...");
                 string v8VersionHContents = await s_httpClient.GetStringAsync(lkgUrl).ConfigureAwait(false);
 
-                var m = V8BuildNumberRegex().Match(v8VersionHContents);
+                var m = V8BuildNumberRegex.Match(v8VersionHContents);
                 if (!m.Success)
                     throw new LogAsErrorException($"Failed to find v8 build number at {lkgUrl}: {v8VersionHContents}");
 

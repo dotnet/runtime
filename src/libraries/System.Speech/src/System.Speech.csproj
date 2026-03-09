@@ -37,6 +37,10 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <OmitResources Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</OmitResources>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="Common\System\StringPolyfills.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />

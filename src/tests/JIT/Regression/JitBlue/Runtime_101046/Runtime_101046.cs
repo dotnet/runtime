@@ -11,12 +11,13 @@ using Xunit;
 public unsafe class Runtime_101046
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/106393", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
         ushort value = unchecked((ushort)-123);
         return Test(ref value) == -123 ? 100 : 101;
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Test(ref ushort p)
     {

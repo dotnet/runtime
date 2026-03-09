@@ -38,14 +38,12 @@
 #endif // TARGET_UNIX
 
 
-// Support for extracting MethodDesc of a delegate.
-#include "comdelegate.h"
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
 #include "exinfo.h"
+#include "exkind.h"
 
 //----------------------------------------------------------------------------
 //
@@ -93,8 +91,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow);
 
 //-------------------------------------------------------------------------------
 // Basically, this asks whether the exception is a managed exception thrown by
@@ -238,21 +234,22 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
     if (throwable == NULL)
         return NULL;
 
-    // Return value.
-    STRINGREF pString = NULL;
-
-    GCPROTECT_BEGIN(throwable);
+    struct
+    {
+       OBJECTREF throwable;
+       STRINGREF pString;
+    } gc;
+    gc.throwable = throwable;
+    gc.pString = NULL;
+    GCPROTECT_BEGIN(gc);
 
     // Call Object.ToString(). Note that exceptions do not have to inherit from System.Exception
-    MethodDescCallSite toString(METHOD__OBJECT__TO_STRING, &throwable);
-
-    // Make the call.
-    ARG_SLOT arg[1] = {ObjToArgSlot(throwable)};
-    pString = toString.Call_RetSTRINGREF(arg);
+    UnmanagedCallersOnlyCaller callToString(METHOD__RUNTIME_HELPERS__CALL_TO_STRING);
+    callToString.InvokeThrowing(&gc.throwable, &gc.pString);
 
     GCPROTECT_END();
 
-    return pString;
+    return gc.pString;
 }
 
 HRESULT GetExceptionHResult(OBJECTREF throwable)
@@ -386,12 +383,9 @@ void ExceptionPreserveStackTrace(   // No return.
     {
         LOG((LF_EH, LL_INFO1000, "ExceptionPreserveStackTrace called\n"));
 
-        // Call Exception.InternalPreserveStackTrace() ...
-        MethodDescCallSite preserveStackTrace(METHOD__EXCEPTION__INTERNAL_PRESERVE_STACK_TRACE, &throwable);
-
-        // Make the call.
-        ARG_SLOT arg[1] = {ObjToArgSlot(throwable)};
-        preserveStackTrace.Call(arg);
+        // Call Exception.InternalPreserveStackTrace()
+        UnmanagedCallersOnlyCaller preserveStackTrace(METHOD__EXCEPTION__INTERNAL_PRESERVE_STACK_TRACE);
+        preserveStackTrace.InvokeThrowing(&throwable);
     }
 
     GCPROTECT_END();
@@ -434,19 +428,12 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
         if (pFD_WrappedException == NULL)
             pFD_WrappedException = CoreLibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
 
-        OBJECTREF orWrapper = AllocateObject(CoreLibBinder::GetException(kRuntimeWrappedException));
+        OBJECTREF orWrapper = NULL;
 
         GCPROTECT_BEGIN(orWrapper);
 
-        MethodDescCallSite ctor(METHOD__RUNTIME_WRAPPED_EXCEPTION__OBJ_CTOR, &orWrapper);
-
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(orWrapper),
-            ObjToArgSlot(*ppThrowable)
-        };
-
-        ctor.Call(args);
+        UnmanagedCallersOnlyCaller createWrapper(METHOD__EXCEPTION__CREATE_RUNTIME_WRAPPED_EXCEPTION);
+        createWrapper.InvokeThrowing(ppThrowable, &orWrapper);
 
         *ppThrowable = orWrapper;
 
@@ -524,49 +511,34 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         PRECONDITION(IsProtectedByGCFrame(pInnerException));
         PRECONDITION(IsProtectedByGCFrame(pInitException));
         PRECONDITION(IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     } CONTRACTL_END;
 
-    Thread *pThread  = GetThreadNULLOk();
     *pThrowable = NULL;
+    Thread *pThread = GetThread();
 
     // This will make sure to put the thread back to its original state if something
     // throws out of this function (like an OOM exception or something)
-    Holder< BOOL, DoNothing< BOOL >, ResetTypeInitializationExceptionState, FALSE, NoNull< BOOL > >
+    Holder<BOOL, DoNothing<BOOL>, ResetTypeInitializationExceptionState, FALSE, NoNull<BOOL>>
         isAlreadyCreating(pThread->IsCreatingTypeInitException());
 
-    EX_TRY {
-        // This will contain the type of exception we want to create. Read comment below
-        // on why we'd want to create an exception other than TypeInitException
-        MethodTable *pMT;
-        BinderMethodID methodID;
+    // If we are already in the midst of creating a TypeInitializationException object,
+    // and we get here, it means there was an exception thrown while initializing the
+    // TypeInitializationException type itself, or one of the types used by its class
+    // constructor. In this case, we fall back to using the inner exception directly.
+    if (isAlreadyCreating.GetValue())
+    {
+        // If we ever hit one of these asserts, then it is bad
+        // because we do not know what exception to return then.
+        _ASSERTE(pInnerException != NULL);
+        _ASSERTE(*pInnerException != NULL);
+        *pThrowable = *pInnerException;
+        *pInitException = *pInnerException;
+        return;
+    }
 
-        // If we are already in the midst of creating a TypeInitializationException object,
-        // and we get here, it means there was an exception thrown while initializing the
-        // TypeInitializationException type itself, or one of the types used by its class
-        // constructor. In this case, we're going to back down and use a SystemException
-        // object in its place. It is *KNOWN* that both these exception types have identical
-        // .ctor sigs "void instance (string, exception)" so both can be used interchangeably
-        // in the code that follows.
-        if (!isAlreadyCreating.GetValue()) {
-            pThread->SetIsCreatingTypeInitException();
-            pMT = CoreLibBinder::GetException(kTypeInitializationException);
-            methodID = METHOD__TYPE_INIT_EXCEPTION__STR_EX_CTOR;
-        }
-        else {
-            // If we ever hit one of these asserts, then it is bad
-            // because we do not know what exception to return then.
-            _ASSERTE(pInnerException != NULL);
-            _ASSERTE(*pInnerException != NULL);
-            *pThrowable = *pInnerException;
-            *pInitException = *pInnerException;
-            goto ErrExit;
-        }
-
-        // Allocate the exception object
-        *pThrowable = AllocateObject(pMT);
-
-        MethodDescCallSite ctor(methodID, pThrowable);
+    EX_TRY
+    {
+        pThread->SetIsCreatingTypeInitException();
 
         // Since the inner exception object in the .ctor is of type Exception, make sure
         // that the object we're passed in derives from Exception. If not, pass NULL.
@@ -574,22 +546,20 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         if (pInnerException != NULL)
             isException = IsException((*pInnerException)->GetMethodTable());
 
-        _ASSERTE(isException);      // What pathway can give us non-compliant exceptions?
+        OBJECTREF innerEx = isException ? *pInnerException : NULL;
 
-        STRINGREF sType = StringObject::NewString(pTypeThatFailed);
+        GCPROTECT_BEGIN(innerEx);
 
-        // If the inner object derives from exception, set it as the third argument.
-        ARG_SLOT args[] = { ObjToArgSlot(*pThrowable),
-                            ObjToArgSlot(sType),
-                            ObjToArgSlot(isException ? *pInnerException : NULL) };
+        UnmanagedCallersOnlyCaller createTypeInitEx(METHOD__EXCEPTION__CREATE_TYPE_INIT_EXCEPTION);
+        createTypeInitEx.InvokeThrowing(pTypeThatFailed, &innerEx, pThrowable);
 
-        // Call the .ctor
-        ctor.Call(args);
+        GCPROTECT_END();
 
         // On success, set the init exception.
         *pInitException = *pThrowable;
     }
-    EX_CATCH {
+    EX_CATCH
+    {
         // If calling the constructor fails, then we'll call ourselves again, and this time
         // through we will try and create an EEException object. If that fails, then the
         // else block of this will be executed.
@@ -609,9 +579,6 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
     } EX_END_CATCH
 
     CONSISTENCY_CHECK(*pInitException != NULL || !pInnerException);
-
- ErrExit:
-    ;
 }
 
 // ==========================================================================
@@ -1965,61 +1932,6 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
 #endif // !CONTEXT_EXTENDED_REGISTERS
 }
 
-VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    ThreadExceptionState* pExState = pCurThread->GetExceptionState();
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
-    if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
-    {
-        return;
-    }
-
-    // For COMPLUS exceptions, we don't need the original context for our rethrow.
-    if (!(pExState->IsComPlusException()))
-    {
-        _ASSERTE(pExState->GetExceptionRecord());
-
-        // don't copy parm args as have already supplied them on the throw
-        memcpy((void*)pExceptionPointers->ExceptionRecord,
-               (void*)pExState->GetExceptionRecord(),
-               offsetof(EXCEPTION_RECORD, ExceptionInformation));
-    }
-
-    pExState->GetFlags()->SetIsRethrown();
-}
-
-struct RaiseExceptionFilterParam
-{
-    BOOL isRethrown;
-};
-
-LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    RaiseExceptionFilterParam *pParam = (RaiseExceptionFilterParam *) pv;
-
-    if (1 == pParam->isRethrown)
-    {
-        // need to reset the EH info back to the original thrown exception
-        FixupOnRethrow(GetThread(), ep);
-
-        // only do this once
-        pParam->isRethrown++;
-    }
-    else
-    {
-        CONSISTENCY_CHECK((2 == pParam->isRethrown) || (0 == pParam->isRethrown));
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 HRESULT GetHRFromThrowable(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -2041,14 +1953,14 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    STRESS_LOG3(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT rethrow %d\n",
-                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0, rethrow);
+    STRESS_LOG2(LF_EH, LL_INFO100, "******* MANAGED EXCEPTION THROWN: Object thrown: %p MT %pT\n",
+                OBJECTREFToObject(throwable), (throwable!=0)?throwable->GetMethodTable():0);
 
 #ifdef STRESS_LOG
     // Any object could have been thrown, but System.Exception objects have useful information for the stress log
@@ -2071,26 +1983,16 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     }
 #endif
 
-    struct Param : RaiseExceptionFilterParam
-    {
-        OBJECTREF throwable;
-        BOOL fForStackOverflow;
-        ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
-        Thread *pThread;
-        ThreadExceptionState* pExState;
-    } param;
-    param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
-    param.throwable = throwable;
-    param.fForStackOverflow = fForStackOverflow;
-    param.pThread = GetThread();
+    ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
+    Thread* pThread = GetThread();
 
-    _ASSERTE(param.pThread);
-    param.pExState = param.pThread->GetExceptionState();
+    _ASSERTE(pThread);
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
 
-    if (param.pThread->IsRudeAbortInitiated())
+    if (pThread->IsRudeAbortInitiated())
     {
         // Nobody should be able to swallow rude thread abort.
-        param.throwable = CLRException::GetBestThreadAbortException();
+        throwable = CLRException::GetBestThreadAbortException();
     }
 
 #if 0
@@ -2098,7 +2000,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #ifdef _DEBUG
     // If ThreadAbort exception is thrown, the thread should be marked with AbortRequest.
     // If not, we may see unhandled exception.
-    if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
+    if (throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef TARGET_X86
@@ -2111,76 +2013,41 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #endif
 
     // raise
-    PAL_TRY(Param *, pParam, &param)
+
+    ULONG argCount = 0;
+    ULONG flags = 0;
+    ULONG code = 0;
+
+    // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
+    // contains stack trace info.
+    //
+    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // it will set the throwable to something appropriate (like OOM exception) and return the new
+    // exception. Thus, the user's exception object can be replaced here.
+    throwable = pThread->SafeSetLastThrownObject(throwable);
+
+    ULONG_PTR hr = GetHRFromThrowable(throwable);
+
+    argCount = MarkAsThrownByUs(exceptionArgs, hr);
+    flags = EXCEPTION_NONCONTINUABLE;
+    code = EXCEPTION_COMPLUS;
+
+    if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
-        //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-        ULONG_PTR *args = NULL;
-        ULONG argCount = 0;
-        ULONG flags = 0;
-        ULONG code = 0;
+        pThread->ResetPreparingAbort();
 
-        // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
-        // contains stack trace info.
-        //
-        // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropriate (like OOM exception) and return the new
-        // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
-
-        if (!pParam->isRethrown ||
-             pParam->pExState->IsComPlusException() ||
-            (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+        if (pThread->GetFrame() == FRAME_TOP)
         {
-            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
-
-            args = pParam->exceptionArgs;
-            argCount = MarkAsThrownByUs(args, hr);
-            flags = EXCEPTION_NONCONTINUABLE;
-            code = EXCEPTION_COMPLUS;
+            // There is no more managed code on stack.
+            pThread->ResetAbort();
         }
-        else
-        {
-            // Exception code should be consistent.
-            _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
-
-            args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
-            argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
-            flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
-            code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
-        }
-
-        if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
-        {
-            pParam->pThread->ResetPreparingAbort();
-
-            if (pParam->pThread->GetFrame() == FRAME_TOP)
-            {
-                // There is no more managed code on stack.
-                pParam->pThread->ResetAbort();
-            }
-        }
-
-        // Can't access the exception object when are in pre-emptive, so find out before
-        // if its an SO.
-        BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
-
-        if (fIsStackOverflow || pParam->fForStackOverflow)
-        {
-            // Don't probe if we're already handling an SO.  Just throw the exception.
-            RaiseException(code, flags, argCount, args);
-        }
-
-        // This needs to be both here and inside the handler below
-        // enable preemptive mode before call into OS
-        GCX_PREEMP_NO_DTOR();
-
-        // In non-debug, we can just raise the exception once we've probed.
-        RaiseException(code, flags, argCount, args);
     }
-    PAL_EXCEPT_FILTER (RaiseExceptionFilter)
-    {
-    }
-    PAL_ENDTRY
+
+    // Enable preemptive mode before call into OS
+    GCX_PREEMP_NO_DTOR();
+
+    RaiseException(code, flags, argCount, exceptionArgs);
+
     _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
@@ -2190,7 +2057,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     UNREACHABLE();
 }
 
-static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)
+static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2208,10 +2075,10 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
 
-    RaiseTheExceptionInternalOnly(throwable, rethrow);
+    RaiseTheExceptionInternalOnly(throwable);
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2224,44 +2091,29 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explanation.  The rethrow boolean
-    //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
-    //  and that the exception context saved on the Thread object should replace
-    //  the exception context from the upcoming RaiseException().  There is logic
-    //  in the stack trace code to preserve MOST of the stack trace, but to drop the
-    //  last element of the stack trace (has to do with having the address of the rethrow
-    //  instead of the address of the original call in the stack trace.  That is
-    //  controversial itself, but we won't get into that here.)
-    // However, if this is not re-raising that original exception, but rather a new
+    // If this is not re-raising that original exception, but rather a new
     //  os exception for what may be an existing exception object, it is generally
     //  a good thing to preserve the stack trace.
-    if (!rethrow)
-    {
-        Thread *pThread = GetThread();
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
 
-    RealCOMPlusThrowWorker(throwable, rethrow);
+    Thread *pThread = GetThread();
+    pThread->IncPreventAbort();
+    ExceptionPreserveStackTrace(throwable);
+    pThread->DecPreventAbort();
+
+    RealCOMPlusThrowWorker(throwable);
 
     GCPROTECT_END();
 }
 
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
+#ifdef TARGET_WASM
+EXCEPTION_DISPOSITION SetTargetFrame(PAL_SEHException& ex, UINT_PTR targetSP)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    RealCOMPlusThrow(throwable, FALSE);
+    ex.TargetFrameSp = targetSP;
+    return EXCEPTION_CONTINUE_SEARCH;
 }
+#endif // TARGET_WASM
 
-VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP)
 {
     CONTRACTL
     {
@@ -2271,50 +2123,35 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
-    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrowWorker(throwable, FALSE);
-}
-
-// this function finds the managed callback to get a resource
-// string from the then current local domain and calls it
-// this could be a lot of work
-STRINGREF GetResourceStringFromManaged(STRINGREF key)
-{
-    CONTRACTL
+    // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
+    // this is ensured by unwinding stack up to the target frame before propagating the exception. This
+    // difference is due to the fact that on WASM we don't have native stack unwinding support.
+#ifdef TARGET_WASM
+    struct Param
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(key != NULL);
+        Object *exceptionObj;
+        UINT_PTR targetSP;
+    } param = { exceptionObj, targetSP };
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        OBJECTREF throwable = ObjectToOBJECTREF(pParam->exceptionObj);
+#else
+        OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+#endif // TARGET_WASM
+        RealCOMPlusThrowWorker(throwable);
+#ifdef TARGET_WASM
     }
-    CONTRACTL_END;
-
-    struct xx {
-        STRINGREF key;
-        STRINGREF ret;
-    } gc;
-
-    gc.key = key;
-    gc.ret = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    MethodDescCallSite getResourceStringLocal(METHOD__ENVIRONMENT__GET_RESOURCE_STRING_LOCAL);
-
-    // Call Environment::GetResourceStringLocal(String name).  Returns String value (or maybe null)
-    // Don't need to GCPROTECT pArgs, since it's not used after the function call.
-
-    ARG_SLOT pArgs[1] = { ObjToArgSlot(gc.key) };
-    gc.ret = getResourceStringLocal.Call_RetSTRINGREF(pArgs);
-
-    GCPROTECT_END();
-
-    return gc.ret;
+    PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
+    {
+    }
+    PAL_ENDTRY
+#endif // TARGET_WASM
+    UNREACHABLE();
 }
 
 // This function does poentially a LOT of work (loading possibly 50 classes).
-// The return value is an un-GC-protected string ref, or possibly NULL.
-void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
+void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF* ppMessage)
 {
     CONTRACTL
     {
@@ -2328,21 +2165,14 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
 
     if (wszResourceName == NULL || *wszResourceName == W('\0'))
     {
-        ppMessage = NULL;
+        *ppMessage = NULL;
         return;
     }
 
-    // this function never looks at name again after
-    // calling the helper so no need to GCPROTECT it
-    STRINGREF name = StringObject::NewString(wszResourceName);
+    UnmanagedCallersOnlyCaller getResourceString(METHOD__ENVIRONMENT__GET_RESOURCE_STRING);
+    getResourceString.InvokeThrowing(wszResourceName, ppMessage);
 
-    if (wszResourceName != NULL)
-    {
-        STRINGREF value = GetResourceStringFromManaged(name);
-
-        _ASSERTE(value!=NULL || !"Resource string lookup failed - possible misspelling or .resources missing or out of date?");
-        *ppMessage = value;
-    }
+    _ASSERTE(*ppMessage != NULL && "Resource string lookup failed - possible misspelling or .resources missing or out of date?");
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -2711,7 +2541,7 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 }
 
 //
-// Append stack frame to an exception stack trace.
+// Append stack frame to an exception stack trace - handle version.
 //
 void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
@@ -2736,19 +2566,62 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
-    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
-        return;
-
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
     {
-        // Preallocated exceptions will never have this flag set. However, its possible
-        // that after this flag is set for a regular exception but before we throw, we have an async
-        // exception like a RudeThreadAbort, which will replace the exception
-        // containing the restored stack trace.
-
         return;
     }
+
+    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
+}
+
+//
+// Append stack frame to an exception stack trace - objectref version for runtime-async stack frames.
+//
+void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    Thread *pThread = GetThread();
+    MethodTable* pMT = pThrowable->GetMethodTable();
+    _ASSERTE(IsException(pMT));
+
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, FALSE /* fRaisingForeignException */);
+}
+
+//
+// Append stack frame to an exception stack trace.
+//
+void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
+        return;
+
+    struct
+    {
+        StackTraceArrayProtect stackTrace;
+        PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
+        OBJECTREF keepAliveObject = NULL;
+        EXCEPTIONREF pThrowable = NULL;
+    } gc;
+
+    GCPROTECT_BEGIN_THREAD(pThread, gc);
+    gc.pThrowable = (EXCEPTIONREF)pThrowable;
 
     StackTraceElement stackTraceElem;
 
@@ -2777,25 +2650,21 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
             stackTraceElem.flags |= STEF_IP_ADJUSTED;
         }
     }
+    else
+    {
+        stackTraceElem.flags |= STEF_CONTINUATION;
+    }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
-    SetupWatsonBucket(currentIP, pCf);
+    if (pCf != NULL)
+        SetupWatsonBucket(currentIP, pCf);
 #endif // !TARGET_UNIX
 
     EX_TRY
     {
-        struct
-        {
-            StackTraceArrayProtect stackTrace;
-            PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
-            OBJECTREF keepAliveObject = NULL;
-        } gc;
-
-        GCPROTECT_BEGIN_THREAD(pThread, gc);
-
         // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
         // stack trace was created by a different thread.
-        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
+        gc.pThrowable->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
 
         // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
         _ASSERTE((gc.stackTrace.m_pStackTraceArray.Get() == NULL) || (gc.stackTrace.m_pStackTraceArray.GetObjectThread() == pThread));
@@ -2853,23 +2722,23 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         {
             _ASSERTE(keepAliveItemsCount > 0);
             gc.pKeepAliveArray->SetAt(0, gc.stackTrace.m_pStackTraceArray.Get());
-            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
+            gc.pThrowable->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
         }
         else
         {
             _ASSERTE(keepAliveItemsCount == 0);
-            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
+            gc.pThrowable->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
         }
 
         // Clear the _stackTraceString field as it no longer matches the stack trace
-        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTraceString(NULL);
-
-        GCPROTECT_END();    // gc
+        gc.pThrowable->SetStackTraceString(NULL);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH
+
+    GCPROTECT_END();
 }
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
@@ -4405,6 +4274,14 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     STATIC_CONTRACT_MODE_ANY;
 
     LONG retVal = EXCEPTION_CONTINUE_SEARCH;
+
+#ifdef TARGET_WINDOWS
+    if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
+    {
+        // Early out when TLS is not available due to unhandled exception during early thread initialization
+        return retVal;
+    }
+#endif // TARGET_WINDOWS
 
     // Incase of unhandled exceptions on managed threads, we kick in our UE processing at the thread base and also invoke
     // UEF callbacks that various runtimes have registered with us. Once the callbacks return, we return back to the OS
@@ -6879,7 +6756,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
     else
     {
-        RaiseTheExceptionInternalOnly(orThrowable, FALSE);
+        RaiseTheExceptionInternalOnly(orThrowable);
     }
 }
 
@@ -9596,275 +9473,13 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 }
 
 #ifndef DACCESS_COMPILE
-// This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
-// checking whether the delegate can be invoked for the exception's corruption severity.
-void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
-        OBJECTREF *pAppDomain, OBJECTREF *pEventArgs)
+
+static Volatile<bool> g_firstChanceExceptionHasHandler = false;
+
+extern "C" void QCALLTYPE AppContext_SetFirstChanceExceptionHandler()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate) && (*pDelegate != NULL));
-        PRECONDITION(pEventArgs != NULL && IsProtectedByGCFrame(pEventArgs));
-        PRECONDITION(pAppDomain != NULL && IsProtectedByGCFrame(pAppDomain));
-    }
-    CONTRACTL_END;
-
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(DELEGATEREF(*pDelegate)->GetMethodPtr());
-
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(DELEGATEREF(*pDelegate)->GetTarget());
-    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*pAppDomain);
-    args[ARGNUM_2] = OBJECTREF_TO_ARGHOLDER(*pEventArgs);
-
-    CALL_MANAGED_METHOD_NORET(args);
-}
-
-// To include definition of COMDelegate::GetMethodDesc
-#include "comdelegate.h"
-
-// This method constructs the arguments to be passed to the exception notification event callback
-void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-                                                         OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-        PRECONDITION((pOutEventArgs != NULL) && IsProtectedByGCFrame(pOutEventArgs));
-        PRECONDITION(*pOutEventArgs == NULL);
-        PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL) && IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(IsException((*pThrowable)->GetMethodTable())); // We expect a valid exception object
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMTEventArgs = NULL;
-    BinderMethodID idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
-
-    EX_TRY
-    {
-        switch(notificationType)
-        {
-            case FirstChanceExceptionHandler:
-                pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
-                idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
-                break;
-            default:
-                _ASSERTE(!"Invalid Exception Notification Handler!");
-                break;
-        }
-
-        // Allocate the instance of the eventargs corresponding to the notification
-        *pOutEventArgs = AllocateObject(pMTEventArgs);
-
-        // Prepare to invoke the .ctor
-        MethodDescCallSite ctor(idEventArgsCtor, pOutEventArgs);
-
-        // Setup the arguments to be passed to the notification specific EventArgs .ctor
-        if (notificationType == FirstChanceExceptionHandler)
-        {
-            // FirstChance notification takes only a single argument: the exception object.
-            ARG_SLOT args[] =
-            {
-                ObjToArgSlot(*pOutEventArgs),
-                ObjToArgSlot(*pThrowable),
-            };
-
-            ctor.Call(args);
-        }
-        else
-        {
-            // Since we have already asserted above, just set the args to NULL.
-            *pOutEventArgs = NULL;
-        }
-    }
-    EX_CATCH
-    {
-        // Set event args to be NULL incase of any error (e.g. OOM)
-        *pOutEventArgs = NULL;
-        LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
-        RethrowTerminalExceptions();
-    }
-    EX_END_CATCH
-}
-
-// This SEH filter will be invoked when an exception escapes out of the exception notification
-// callback and enters the runtime. In such a case, we ill simply failfast.
-static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVOID pParam)
-{
-    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    return -1;
-}
-
-// This method returns a BOOL to indicate if the AppDomain is ready to receive exception notifications or not.
-BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(notificationType  != UnhandledExceptionHandler);
-    }
-    CONTRACTL_END;
-
-    // Do we have handler(s) of the specific type wired up?
-    if (notificationType == FirstChanceExceptionHandler)
-    {
-        return CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
-    }
-    else
-    {
-        _ASSERTE(!"Invalid exception notification handler specified!");
-        return FALSE;
-    }
-}
-
-// This method wraps the call to the actual 'DeliverNotificationInternal' method in an SEH filter
-// so that if an exception escapes out of the notification callback, we will trigger failfast from
-// our filter.
-void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable)
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_NOTHROW; // NOTHROW because incase of an exception, we will FailFast.
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    struct TryArgs
-    {
-        ExceptionNotificationHandlerType notificationType;
-        OBJECTREF *pThrowable;
-    } args;
-
-    args.notificationType = notificationType;
-    args.pThrowable = pThrowable;
-
-    PAL_TRY(TryArgs *, pArgs, &args)
-    {
-        // Make the call to the actual method that will invoke the callbacks
-        ExceptionNotifications::DeliverNotificationInternal(pArgs->notificationType,
-            pArgs->pThrowable);
-    }
-    PAL_EXCEPT_FILTER(ExceptionNotificationFilter)
-    {
-        // We should never be entering this handler since there should be
-        // no exception escaping out of a callback. If we are here,
-        // failfast.
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-    PAL_ENDTRY;
-}
-
-// This method will deliver the exception notification to the current AppDomain.
-void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        // Unhandled Exception Notification is delivered via Unhandled Exception Processing
-        // mechanism.
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-        PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL));
-        PRECONDITION(ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(notificationType));
-    }
-    CONTRACTL_END;
-
-    Thread *pCurThread = GetThreadNULLOk();
-    _ASSERTE(pCurThread != NULL);
-
-    // Get the current AppDomain
-    AppDomain *pCurDomain = GetAppDomain();
-    _ASSERTE(pCurDomain != NULL);
-
-    struct
-    {
-        OBJECTREF oNotificationDelegate;
-        PTRARRAYREF arrDelegates;
-        OBJECTREF   oInnerDelegate;
-        OBJECTREF   oEventArgs;
-        OBJECTREF   oCurrentThrowable;
-        OBJECTREF   oCurAppDomain;
-    } gc;
-    gc.oNotificationDelegate = NULL;
-    gc.arrDelegates = NULL;
-    gc.oInnerDelegate = NULL;
-    gc.oEventArgs = NULL;
-    gc.oCurrentThrowable = NULL;
-    gc.oCurAppDomain = NULL;
-
-    // This will hold the MethodDesc of the callback that will be invoked.
-    MethodDesc *pMDDelegate = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    // Protect the throwable to be passed to the delegate callback
-    gc.oCurrentThrowable = *pThrowable;
-
-    // We expect a valid exception object
-    _ASSERTE(IsException(gc.oCurrentThrowable->GetMethodTable()));
-
-    // Save the reference to the current AppDomain. If the user code has
-    // wired upto this event, then the managed AppDomain object will exist.
-    gc.oCurAppDomain = pCurDomain->GetRawExposedObject();
-
-    // Get the reference to the delegate based upon the type of notification
-    if (notificationType == FirstChanceExceptionHandler)
-    {
-        gc.oNotificationDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
-    }
-    else
-    {
-        gc.oNotificationDelegate = NULL;
-        _ASSERTE(!"Invalid Exception Notification Handler specified!");
-    }
-
-    if (gc.oNotificationDelegate != NULL)
-    {
-        // Prevent any async exceptions from this moment on this thread
-        ThreadPreventAsyncHolder prevAsync;
-
-        gc.oEventArgs = NULL;
-
-        // Get the arguments to be passed to the delegate callback. Incase of any
-        // problem while allocating the event args, we will return a NULL.
-        ExceptionNotifications::GetEventArgsForNotification(notificationType, &gc.oEventArgs,
-            &gc.oCurrentThrowable);
-
-        // Check if there are multiple callbacks registered? If there are, we will
-        // loop through them, invoking each one at a time. Before invoking the target,
-        // we will check if the target can be invoked based upon the corruption severity
-        // for the active exception that was passed to us.
-        gc.arrDelegates = (PTRARRAYREF) ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationList();
-        if (gc.arrDelegates == NULL || !gc.arrDelegates->GetMethodTable()->IsArray())
-        {
-            ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oNotificationDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
-        }
-        else
-        {
-            // The _invocationCount could be less than the array size, if we are sharing
-            // immutable arrays cleverly.
-            UINT_PTR      cnt = ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationCount();
-            _ASSERTE(cnt <= gc.arrDelegates->GetNumComponents());
-
-            for (UINT_PTR i=0; i<cnt; i++)
-            {
-                gc.oInnerDelegate = gc.arrDelegates->m_Array[i];
-                ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oInnerDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
-            }
-        }
-    }
-
-    GCPROTECT_END();
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    g_firstChanceExceptionHasHandler.Store(true);
 }
 
 void ExceptionNotifications::DeliverFirstChanceNotification()
@@ -9877,10 +9492,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
     CONTRACTL_END;
 
-    // We check for FirstChance notification delivery after setting up the corruption severity
-    // so that we can determine if the callback delegate can handle CSE (or not).
-    //
-    // Deliver it only if not already done and someone has wiredup to receive it.
+    // Deliver it only if not already done and someone has wired up to receive it.
     //
     // We do this provided this is the first frame of a new exception
     // that was thrown or a rethrown exception. We dont want to do this
@@ -9890,18 +9502,30 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     _ASSERTE(pCurTES->GetCurrentExceptionTracker());
     _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
     {
-        GCX_COOP();
-        if (ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(FirstChanceExceptionHandler))
+        if (g_firstChanceExceptionHasHandler.Load())
         {
+            GCX_COOP();
             OBJECTREF oThrowable = NULL;
             GCPROTECT_BEGIN(oThrowable);
 
             oThrowable = pCurTES->GetThrowable();
             _ASSERTE(oThrowable != NULL);
+            _ASSERTE(IsException(oThrowable->GetMethodTable()));
 
-            ExceptionNotifications::DeliverNotification(FirstChanceExceptionHandler, &oThrowable);
+            // Prevent any async exceptions from this moment on this thread
+            ThreadPreventAsyncHolder prevAsync;
+
+            EX_TRY
+            {
+                UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
+                deliverNotification.InvokeThrowing(&oThrowable);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH
+
             GCPROTECT_END();
-
         }
 
         // Mark the exception tracker as having delivered the first chance notification
@@ -10788,9 +10412,9 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#if defined(DACCESS_COMPILE) && defined(TARGET_X86)
-// X86 unwinding always works in terms of context pointers, so they need to be in the correct address space when debugging
-// This may work for other architectures as well, but that isn't tested.
+#if defined(DACCESS_COMPILE)
+// Context pointers in m_ContextPointers reference the target process address space and cannot be used directly.
+// Point them at the local context copy instead.
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
 #else
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
@@ -10840,42 +10464,389 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
 
-#endif // TARGET_X86
+#elif defined(TARGET_AMD64)
 
-//
-// Init a new frame
-//
-void SoftwareExceptionFrame::Init()
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
-    // On x86 we initialize the context state from transition block in
-    // UpdateContextFromTransitionBlock method.
-#ifndef TARGET_X86
-#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
+#ifdef UNIX_AMD64_ABI
+    // On Unix AMD64, there are no non-volatile FP registers, so we only need
+    // control registers and integer callee-saved registers. We don't need to
+    // capture argument registers or FP state for exception handling.
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+    m_Context.Rax = 0;
+#else
+    // On Windows AMD64, we need FP state because xmm6-xmm15 are non-volatile
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+
+    // Read FP callee-saved registers (xmm6-xmm15) from the stack
+    // They are stored at negative offsets from TransitionBlock:
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [arg regs (32)] [padding (8)] [CalleeSavedRegs] [RetAddr]
+    // xmm6 is at sp+32, TransitionBlock is at sp+296, so xmm6 is at TransitionBlock - 264
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
+
+    m_Context.Xmm6 = pFpCalleeSaved[0];
+    m_Context.Xmm7 = pFpCalleeSaved[1];
+    m_Context.Xmm8 = pFpCalleeSaved[2];
+    m_Context.Xmm9 = pFpCalleeSaved[3];
+    m_Context.Xmm10 = pFpCalleeSaved[4];
+    m_Context.Xmm11 = pFpCalleeSaved[5];
+    m_Context.Xmm12 = pFpCalleeSaved[6];
+    m_Context.Xmm13 = pFpCalleeSaved[7];
+    m_Context.Xmm14 = pFpCalleeSaved[8];
+    m_Context.Xmm15 = pFpCalleeSaved[9];
+
+    // Initialize FP control/status in FltSave - this is what fxrstor restores from
+    m_Context.FltSave.ControlWord = 0x27F;  // Default x87 control word
+    m_Context.FltSave.MxCsr = 0x1F80;       // Default MXCSR value (all exceptions masked)
+    m_Context.FltSave.MxCsr_Mask = 0x1FFF;  // MXCSR mask
+    m_Context.MxCsr = 0x1F80;               // Default MXCSR value (all exceptions masked)
+#endif
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#ifndef TARGET_UNIX
-    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
-#else // !TARGET_UNIX
-    BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
-    if (!success)
-    {
-        _ASSERTE(!"SoftwareExceptionFrame::Init failed");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-#endif // !TARGET_UNIX
-
-#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
-
-    m_ReturnAddress = ::GetIP(&m_Context);
-#endif // !TARGET_X86
+    m_Context.Rsp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Rip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
+
+#elif defined(TARGET_ARM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (R0-R3)
+    m_Context.R0 = pTransitionBlock->m_argumentRegisters.r[0];
+    m_Context.R1 = pTransitionBlock->m_argumentRegisters.r[1];
+    m_Context.R2 = pTransitionBlock->m_argumentRegisters.r[2];
+    m_Context.R3 = pTransitionBlock->m_argumentRegisters.r[3];
+
+    // Copy callee-saved registers (R4-R11, Lr)
+    m_Context.R4 = pTransitionBlock->m_calleeSavedRegisters.r4;
+    m_Context.R5 = pTransitionBlock->m_calleeSavedRegisters.r5;
+    m_Context.R6 = pTransitionBlock->m_calleeSavedRegisters.r6;
+    m_Context.R7 = pTransitionBlock->m_calleeSavedRegisters.r7;
+    m_Context.R8 = pTransitionBlock->m_calleeSavedRegisters.r8;
+    m_Context.R9 = pTransitionBlock->m_calleeSavedRegisters.r9;
+    m_Context.R10 = pTransitionBlock->m_calleeSavedRegisters.r10;
+    m_Context.R11 = pTransitionBlock->m_calleeSavedRegisters.r11;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.r14; // r14 is link register
+
+    // Copy floating point argument registers (d0-d7 / s0-s15)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[i] = pFloatArgs->d[i];
+    }
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [padding (4)] [d0-d7 (64 bytes)] [padding (4)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 136 (64 + 4 + 64 + 4)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 136);
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.D[8 + i] = pFpCalleeSaved[i];
+    }
+
+    // Initialize FP status/control register
+    m_Context.Fpscr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.R4 = &m_Context.R4;
+    m_ContextPointers.R5 = &m_Context.R5;
+    m_ContextPointers.R6 = &m_Context.R6;
+    m_ContextPointers.R7 = &m_Context.R7;
+    m_ContextPointers.R8 = &m_Context.R8;
+    m_ContextPointers.R9 = &m_Context.R9;
+    m_ContextPointers.R10 = &m_Context.R10;
+    m_ContextPointers.R11 = &m_Context.R11;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_ARM64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (X0-X7)
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.X[i] = pTransitionBlock->m_argumentRegisters.x[i];
+    }
+
+    // Copy return buffer register (X8)
+    m_Context.X8 = pTransitionBlock->m_x8RetBuffReg;
+
+    // Copy callee-saved registers (X19-X28)
+    m_Context.X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
+    m_Context.X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
+    m_Context.X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
+    m_Context.X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
+    m_Context.X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
+    m_Context.X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
+    m_Context.X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
+    m_Context.X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
+    m_Context.X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
+    m_Context.X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
+
+    // Copy frame pointer and link register
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.x29;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.x30;
+
+    // Copy floating point argument registers (V0-V7)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.V[i] = pFloatArgs->q[i];
+    }
+
+    // Read FP callee-saved registers (d8-d15) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 192 (64 + 128)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 192);
+    m_Context.V[8].Low = pFpCalleeSaved[0];
+    m_Context.V[8].High = 0;
+    m_Context.V[9].Low = pFpCalleeSaved[1];
+    m_Context.V[9].High = 0;
+    m_Context.V[10].Low = pFpCalleeSaved[2];
+    m_Context.V[10].High = 0;
+    m_Context.V[11].Low = pFpCalleeSaved[3];
+    m_Context.V[11].High = 0;
+    m_Context.V[12].Low = pFpCalleeSaved[4];
+    m_Context.V[12].High = 0;
+    m_Context.V[13].Low = pFpCalleeSaved[5];
+    m_Context.V[13].High = 0;
+    m_Context.V[14].Low = pFpCalleeSaved[6];
+    m_Context.V[14].High = 0;
+    m_Context.V[15].Low = pFpCalleeSaved[7];
+    m_Context.V[15].High = 0;
+
+    // Initialize remaining V registers (V16-V31) to zero - these are caller-saved
+    for (int i = 16; i < 32; i++)
+    {
+        m_Context.V[i].Low = 0;
+        m_Context.V[i].High = 0;
+    }
+    // Initialize FP control/status registers
+    m_Context.Fpcr = 0;
+    m_Context.Fpsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.X19 = &m_Context.X19;
+    m_ContextPointers.X20 = &m_Context.X20;
+    m_ContextPointers.X21 = &m_Context.X21;
+    m_ContextPointers.X22 = &m_Context.X22;
+    m_ContextPointers.X23 = &m_Context.X23;
+    m_ContextPointers.X24 = &m_Context.X24;
+    m_ContextPointers.X25 = &m_Context.X25;
+    m_ContextPointers.X26 = &m_Context.X26;
+    m_ContextPointers.X27 = &m_Context.X27;
+    m_ContextPointers.X28 = &m_Context.X28;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_LOONGARCH64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S0-S8)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+
+    // Copy floating point argument registers (fa0-fa7)
+    // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
+    // Each FP register takes 4 slots (for 256-bit LASX vectors).
+    // For 64-bit doubles, we only use the first slot of each register.
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
+    }
+
+    // Read FP callee-saved registers (f24-f31) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [f24-f31 (64 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 128 (64 + 64)
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
+    for (int i = 0; i < 8; i++)
+    {
+        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
+        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+    }
+
+    // Initialize remaining F registers (f8-f23) to zero
+    for (int i = 8; i < 24; i++)
+    {
+        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
+    }
+    // Initialize FP control/status register
+    m_Context.Fcsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S0 = &m_Context.S0;
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_RISCV64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S1-S11, Tp, Gp)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    m_Context.S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
+    m_Context.S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
+    m_Context.S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
+    m_Context.Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+    m_Context.Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+
+    // Initialize all F registers to zero first
+    memset(m_Context.F, 0, sizeof(m_Context.F));
+    // Copy floating point argument registers (fa0-fa7)
+    FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+    for (int i = 0; i < 8; i++)
+    {
+        // F[10-17] are fa0-fa7 in RISC-V register naming
+        memcpy(&m_Context.F[10 + i], &pFloatArgs->f[i], sizeof(double));
+    }
+
+    // Read FP callee-saved registers (fs0-fs11) from the stack
+    // They are stored at negative offset from TransitionBlock:
+    // Layout: [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 160);
+    memcpy(&m_Context.F[8], &pFpCalleeSaved[0], sizeof(double));   // fs0 = f8
+    memcpy(&m_Context.F[9], &pFpCalleeSaved[1], sizeof(double));   // fs1 = f9
+    for (int i = 0; i < 10; i++)
+    {
+        memcpy(&m_Context.F[18 + i], &pFpCalleeSaved[2 + i], sizeof(double));  // fs2-fs11 = f18-f27
+    }
+
+    // Initialize FP control/status register
+    m_Context.Fcsr = 0;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.S9 = &m_Context.S9;
+    m_ContextPointers.S10 = &m_Context.S10;
+    m_ContextPointers.S11 = &m_Context.S11;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Gp = &m_Context.Gp;
+    m_ContextPointers.Tp = &m_Context.Tp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_WASM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // WASM cannot capture execution context, so just zero everything
+    memset(&m_Context, 0, sizeof(m_Context));
+    memset(&m_ContextPointers, 0, sizeof(m_ContextPointers));
+    m_ReturnAddress = 0;
+}
+
+#endif // TARGET_X86
 
 //
 // Init and Link in a new frame
@@ -10883,8 +10854,6 @@ void SoftwareExceptionFrame::Init()
 void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
-
-    Init();
 
     Push(pThread);
 }

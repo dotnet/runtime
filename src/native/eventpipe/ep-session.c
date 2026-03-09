@@ -41,10 +41,6 @@ void
 session_create_streaming_thread (EventPipeSession *session);
 
 static
-void
-ep_session_remove_dangling_session_states (EventPipeSession *session);
-
-static
 bool
 session_user_events_tracepoints_init (
 	EventPipeSession *session,
@@ -381,48 +377,6 @@ ep_on_error:
 }
 
 void
-ep_session_remove_dangling_session_states (EventPipeSession *session)
-{
-	ep_return_void_if_nok (session != NULL);
-
-	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
-
-	dn_vector_ptr_custom_init_params_t params = {0, };
-	params.allocator = (dn_allocator_t *)&allocator;
-	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
-
-	dn_vector_ptr_t threads;
-
-	if (dn_vector_ptr_custom_init (&threads, &params)) {
-		ep_thread_get_threads (&threads);
-		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
-			if (thread) {
-				EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
-				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
-				if (session_state) {
-					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
-					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
-					// the session from the thread session state. Whenever we terminate a session we check to make sure
-					// we haven't leaked any thread session states.
-					ep_thread_delete_session_state(thread, session);
-				}
-				EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
-
-				ep_thread_release (thread);
-			}
-		} DN_VECTOR_PTR_FOREACH_END;
-
-		dn_vector_ptr_dispose (&threads);
-	}
-
-ep_on_exit:
-	return;
-
-ep_on_error:
-	ep_exit_error_handler ();
-}
-
-void
 ep_session_inc_ref (EventPipeSession *session)
 {
 	ep_rt_atomic_inc_uint32_t (&session->ref_count);
@@ -445,9 +399,16 @@ ep_session_dec_ref (EventPipeSession *session)
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
 
-	ep_session_remove_dangling_session_states (session);
-
 	ep_rt_object_free (session);
+}
+
+void
+ep_session_close (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+
+	if (ep_session_type_uses_buffer_manager (session->session_type))
+		ep_buffer_manager_close (session->buffer_manager);
 }
 
 EventPipeSessionProvider *
@@ -524,13 +485,22 @@ ep_session_execute_rundown (
 	ep_rt_execute_rundown (execution_checkpoints);
 }
 
+// Coordinates an EventPipeSession being freed in disable_holding_lock with
+// threads operating on session pointer slots in the _ep_sessions session array.
+// It assumes 1) callers have already cleared the session pointer slot from the
+// _ep_sessions so all threads that already loaded the session pointer slot will
+// be properly awaited and 2) the config lock is held to prevent a new session
+// being allocated and inheriting the session pointer slot index, which would
+// cause threads to mistakenly operate on the wrong session.
 void
-ep_session_suspend_write_event (EventPipeSession *session)
+ep_session_wait_for_inflight_thread_ops (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
 	// Need to disable the session before calling this method.
 	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
+
+	ep_requires_lock_held ();
 
 	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
@@ -543,9 +513,13 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	if (dn_vector_ptr_custom_init (&threads, &params)) {
 		ep_thread_get_threads (&threads);
 		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			// The session slot must remain cleared from the _ep_sessions array from holding the config lock.
+			// Otherwise, if the config lock is removed, a newly allocated session could inherit the same slot
+			// and cause operating threads to mistake the new session for this one.
+			EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 			if (thread) {
-				// Wait for the thread to finish any writes to this session
-				EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+				// The session is disabled, so wait for any in-progress writes to complete.
+				EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == session->index);
 
 				// Since we've already disabled the session, the thread won't call back in to this
 				// session once its done with the current write
@@ -556,9 +530,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 		dn_vector_ptr_dispose (&threads);
 	}
 
-	if (session->buffer_manager)
-		// Convert all buffers to read only to ensure they get flushed
-		ep_buffer_manager_suspend_write_event (session->buffer_manager, session->index);
+	ep_requires_lock_held ();
 }
 
 void

@@ -147,10 +147,15 @@ public sealed class ConditionalTest : ITestInfo
 
         _innerTest = innerTest;
         _condition = condition;
-   }
+    }
 
     public ConditionalTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
         : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
+    {
+    }
+
+    public ConditionalTest(ITestInfo innerTest, string condition, Xunit.TestPlatforms platform)
+        : this(innerTest, $"{(condition.Length == 0 ? "true" : condition)} && ({GetPlatformConditionFromTestPlatform(platform)})")
     {
     }
 
@@ -176,7 +181,6 @@ public sealed class ConditionalTest : ITestInfo
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("string reason = string.Empty;");
             builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
@@ -206,6 +210,16 @@ public sealed class ConditionalTest : ITestInfo
     private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
     {
         List<string> platformCheckConditions = new();
+
+        if (platform == Xunit.TestPlatforms.Any)
+        {
+            return "true";
+        }
+
+        if (platform == 0)
+        {
+            return "false";
+        }
 
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
         {
@@ -502,8 +516,6 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($"string reason = {_filterLocalIdentifier}"
-                             + $".GetTestExclusionReason({test.TestNameExpression});");
             builder.AppendLine(GenerateSkippedTestReporting(test));
         }
         return builder;
@@ -516,7 +528,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
              + $" \"{skippedTest.ContainingType}\","
              + $" @\"{skippedTest.Method}\","
              + $" System.TimeSpan.Zero,"
-             + $" reason,"
+             + $" string.Empty,"
              + $" tempLogSw,"
              + $" statsCsvSw);";
     }

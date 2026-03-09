@@ -502,11 +502,11 @@ public:
     //
     enum ThreadState
     {
-        TS_Unknown                = 0x00000000,    // threads are initialized this way
+        TS_Unknown                = 0x00000000,    // threads are initialized this way. [cDAC] [Thread]: Contract depends on this value.
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        // unused                 = 0x00000002,
+        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
         TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
 
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
@@ -517,13 +517,13 @@ public:
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
 #ifdef FEATURE_HIJACK
-        TS_Hijacked               = 0x00000080,    // Return address has been hijacked
+        TS_Hijacked               = 0x00000080,    // Return address has been hijacked. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_HIJACK
 
         // unused                 = 0x00000100,
-        TS_Background             = 0x00000200,    // Thread is a background thread
-        TS_Unstarted              = 0x00000400,    // Thread has never been started
-        TS_Dead                   = 0x00000800,    // Thread is dead
+        TS_Background             = 0x00000200,    // Thread is a background thread. [cDAC] [Thread]: Contract depends on this value.
+        TS_Unstarted              = 0x00000400,    // Thread has never been started. [cDAC] [Thread]: Contract depends on this value.
+        TS_Dead                   = 0x00000800,    // Thread is dead. [cDAC] [Thread]: Contract depends on this value.
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -548,7 +548,7 @@ public:
         // unused                 = 0x00400000,
 
         // unused                 = 0x00800000,
-        TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
+        TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread? [cDAC] [Thread]: Contract depends on this value.
 
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
@@ -627,10 +627,7 @@ public:
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
-#ifdef FEATURE_COMINTEROP
-        TSNC_WinRTInitialized           = 0x08000000, // the thread has initialized WinRT
-#endif // FEATURE_COMINTEROP
-
+        // unused                       = 0x08000000,
         TSNC_TSLTakenForStartup         = 0x10000000, // The ThreadStoreLock (TSL) is held by another mechanism during
                                                       // thread startup so can be skipped.
 
@@ -747,20 +744,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         ResetThreadState(TS_CoInitialized);
     }
-
-#ifdef FEATURE_COMINTEROP
-    BOOL IsWinRTInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return HasThreadStateNC(TSNC_WinRTInitialized);
-    }
-
-    void ResetWinRTInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ResetThreadStateNC(TSNC_WinRTInitialized);
-    }
-#endif // FEATURE_COMINTEROP
 
     void CleanupCOMState();
 
@@ -1119,7 +1102,6 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     void            CoUninitialize();
     void            BaseCoUninitialize();
-    void            BaseWinRTUninitialize();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     void        CooperativeCleanup();
@@ -2102,7 +2084,7 @@ public:
     // SKIPFUNCLETS includes functionless frames but excludes all funclets and everything between funclets and their parent methods
     #define SKIPFUNCLETS                    0x0002
 
-    #define POPFRAMES                       0x0004
+    // UNUSED                               0x0004
 
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
@@ -2262,10 +2244,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_TraceCallCount;
     }
-
-    // Functions to get/set culture information for current thread.
-    static OBJECTREF GetCulture(BOOL bUICulture);
-    static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
 
 private:
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -2856,28 +2834,30 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
-        return m_dwProfilerEvacuationCounters[slot];
+        return m_dwProfilerEvacuationCounters[slot].Load();
     }
 
     FORCEINLINE void IncProfilerEvacuationCounter(size_t slot)
     {
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        ++m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() + 1;
         _ASSERTE(newValue != 0U);
     }
 
     FORCEINLINE void DecProfilerEvacuationCounter(size_t slot)
     {
         LIMITED_METHOD_CONTRACT;
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        --m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() - 1;
         _ASSERTE(newValue != (DWORD)-1);
     }
 
@@ -3332,7 +3312,7 @@ private:
     Exception* m_pExceptionDuringStartup;
 
 public:
-    void HandleThreadStartupFailure();
+    OBJECTREF GetExceptionDuringStartup();
 
 #ifdef HAVE_GCCOVER
 private:
@@ -3602,32 +3582,11 @@ public:
 #ifdef FEATURE_PERFTRACING
 private:
 
-    // SampleProfiler thread state.  This is set on suspension and cleared before restart.
-    // True if the thread was in cooperative mode.  False if it was in preemptive when the suspension started.
-    Volatile<ULONG> m_gcModeOnSuspension;
-
     // The activity ID for the current thread.
     // An activity ID of zero means the thread is not executing in the context of an activity.
     GUID m_activityId;
 
 public:
-    bool GetGCModeOnSuspension()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_gcModeOnSuspension != 0U;
-    }
-
-    void SaveGCModeOnSuspension()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_gcModeOnSuspension = m_fPreemptiveGCDisabled;
-    }
-
-    void ClearGCModeOnSuspension()
-    {
-        m_gcModeOnSuspension = 0;
-    }
-
     LPCGUID GetActivityId() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -3804,6 +3763,8 @@ struct cdac_data<Thread>
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
+    static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);

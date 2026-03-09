@@ -1550,7 +1550,7 @@ public:
 
         for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
         {
-            if (level[i].IsNull())
+            if (!level[i].IsNull())
             {
                 EnumMemoryRangeSectionMapLevel(flags, *level[i].VolatileLoad(pLockState), pLockState);
             }
@@ -1803,16 +1803,33 @@ class CodeHeapIterator final
         size_t MaxCodeHeapSize;
     };
 
-    EECodeGenManager* m_manager;
+    class EECodeGenManagerReleaseIteratorHolder
+    {
+        EECodeGenManager* m_manager;
+    public:
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManager* manager);
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder&& other)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_manager = other.m_manager;
+            other.m_manager = NULL;
+        }
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder&& other);
+        ~EECodeGenManagerReleaseIteratorHolder();
+    };
+
+    EECodeGenManagerReleaseIteratorHolder m_manager;
     MethodSectionIterator m_Iterator;
     CUnorderedArray<HeapListState, 64> m_Heaps;
     int32_t m_HeapsIndexNext;
     LoaderAllocator* m_pLoaderAllocatorFilter;
     MethodDesc* m_pCurrent;
+    DWORD m_codeType;
 
 public:
     CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList, LoaderAllocator* pLoaderAllocatorFilter);
-    ~CodeHeapIterator();
 
     CodeHeapIterator(CodeHeapIterator const&) = delete;
     CodeHeapIterator& operator=(CodeHeapIterator const&) = delete;
@@ -1931,7 +1948,7 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                  , UINT nUnwindInfos
                   );
@@ -1988,6 +2005,8 @@ protected:
     Crst m_CodeHeapLock;
     ULONG m_iteratorCount;
     bool m_storeRichDebugInfo;
+
+    friend struct ::cdac_data<EEJitManager>;
 };
 
 //-----------------------------------------------------------------------------
@@ -2246,6 +2265,7 @@ template<>
 struct cdac_data<EEJitManager>
 {
     static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
+    static constexpr size_t AllCodeHeaps = offsetof(EEJitManager, m_pAllCodeHeaps);
 };
 
 
@@ -2563,6 +2583,7 @@ template<>
 struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
+    static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
 };
 #endif
 
@@ -2855,10 +2876,10 @@ public:
         return STUB_CODE_BLOCK_UNKNOWN;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
     // Return execution control for interpreter bytecode breakpoints
     virtual IExecutionControl* GetExecutionControl();
-#endif
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #if defined(DACCESS_COMPILE)
 
@@ -2928,6 +2949,16 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pJM != NULL;
+    }
+
+    BOOL        IsInterpretedCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return IsValid() && m_pJM == ExecutionManager::GetInterpreterJitManager();
+#else
+        return FALSE;
+#endif
     }
 
     IJitManager* GetJitManager()

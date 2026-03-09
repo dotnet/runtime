@@ -29,9 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
-#if !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
 #include "../debug/ee/executioncontrol.h"
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -461,12 +461,13 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
     , m_HeapsIndexNext{ 0 }
     , m_pLoaderAllocatorFilter{ pLoaderAllocatorFilter }
     , m_pCurrent{ NULL }
+    , m_codeType(manager->GetCodeType())
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(m_manager != NULL);
+        PRECONDITION(manager != NULL);
     }
     CONTRACTL_END;
 
@@ -485,11 +486,9 @@ CodeHeapIterator::CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList
 
     // Move to the first method section.
     (void)NextMethodSectionIterator();
-
-    m_manager->AddRefIterator();
 }
 
-CodeHeapIterator::~CodeHeapIterator()
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::EECodeGenManagerReleaseIteratorHolder(EECodeGenManager* manager) : m_manager(manager)
 {
     CONTRACTL
     {
@@ -498,7 +497,44 @@ CodeHeapIterator::~CodeHeapIterator()
     }
     CONTRACTL_END;
 
-    m_manager->ReleaseIterator();
+    manager->AddRefIterator();
+}
+
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::~EECodeGenManagerReleaseIteratorHolder()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_manager)
+    {
+        m_manager->ReleaseIterator();
+        m_manager = NULL;
+    }
+}
+
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder& CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::operator=(EECodeGenManagerReleaseIteratorHolder&& other)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (this != &other)
+    {
+        if (m_manager)
+        {
+            m_manager->ReleaseIterator();
+        }
+        m_manager = other.m_manager;
+        other.m_manager = NULL;
+    }
+    return *this;
 }
 
 bool CodeHeapIterator::Next()
@@ -520,8 +556,19 @@ bool CodeHeapIterator::Next()
         else
         {
             BYTE* code = m_Iterator.GetMethodCode();
-            CodeHeader* pHdr = (CodeHeader*)(code - sizeof(CodeHeader));
-            m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
+#ifdef FEATURE_INTERPRETER
+            if (m_codeType == (miManaged | miIL | miOPTIL))
+            {
+                // Interpreter case
+                InterpreterCodeHeader* pHdr = (InterpreterCodeHeader*)(code - sizeof(InterpreterCodeHeader));
+                m_pCurrent = pHdr->GetMethodDesc();
+            }
+            else
+#endif
+            {
+                CodeHeader* pHdr = (CodeHeader*)(code - sizeof(CodeHeader));
+                m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
+            }
 
             // LoaderAllocator filter
             if (m_pLoaderAllocatorFilter && m_pCurrent)
@@ -1250,6 +1297,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX512v3);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_AVX512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512BMM);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1);
@@ -1376,7 +1428,13 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Sha256);
     }
 
-    if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
+    if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve)
+#ifdef FEATURE_INTERPRETER
+        // SVE intrinsics support for the FFR register adds a new concept of per method saved logical FFR state
+        // which the interpreter does not model.
+        && !g_pConfig->EnableInterpreter()
+#endif
+        )
     {
         uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
         uint64_t sveLengthFromOS = GetSveLengthFromOS();
@@ -1387,6 +1445,15 @@ void EEJitManager::SetCpuInfo()
         // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
+
+#ifdef _DEBUG
+            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitUseScalableVectorT))
+            {
+                // Vector<T> will use SVE instead of NEON.
+                CPUCompileFlags.Clear(InstructionSet_VectorT128);
+                CPUCompileFlags.Set(InstructionSet_VectorT);
+            }
+#endif
 
             if (((cpuFeatures & ARM64IntrinsicConstants_Sve2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve2))
             {
@@ -1602,11 +1669,11 @@ EXTERN_C ICorJitCompiler* getJit();
 
 #endif // FEATURE_STATICALLY_LINKED
 
-#if !defined(FEATURE_STATICALLY_LINKED) || defined(FEATURE_JIT)
+#if !defined(FEATURE_STATICALLY_LINKED) || defined(FEATURE_DYNAMIC_CODE_COMPILED)
 
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 JIT_LOAD_DATA g_JitLoadData;
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef FEATURE_INTERPRETER
 JIT_LOAD_DATA g_interpreterLoadData;
@@ -1781,7 +1848,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
-#endif // !FEATURE_STATICALLY_LINKED || FEATURE_JIT
+#endif // !FEATURE_STATICALLY_LINKED || FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef FEATURE_STATICALLY_LINKED
 static ICorJitCompiler* InitializeStaticJIT()
@@ -1804,7 +1871,7 @@ static ICorJitCompiler* InitializeStaticJIT()
 }
 #endif // FEATURE_STATICALLY_LINKED
 
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 BOOL EEJitManager::LoadJIT()
 {
     STANDARD_VM_CONTRACT;
@@ -1937,7 +2004,7 @@ BOOL EEJitManager::LoadJIT()
     // In either failure case, we'll rip down the VM (so no need to clean up (unload) either JIT that did load successfully.
     return IsJitLoaded();
 }
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 //**************************************************************************
 
@@ -2812,7 +2879,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
 }
 
 template<typename TCodeHeader>
-void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
                                , BYTE** ppRealHeader
                                , UINT nUnwindInfos
@@ -2827,21 +2894,10 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     // Alignment
     //
 
-    unsigned alignment = CODE_SIZE_ALIGN;
-
-    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
-    {
-        alignment = max(alignment, 32u);
-    }
-    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
-    {
-        alignment = max(alignment, 16u);
-    }
-
 #if defined(TARGET_X86)
     // when not optimizing for code size, 8-byte align the method entry point, so that
     // the JIT can in turn 8-byte align the loop entry headers.
-    else if ((g_pConfig->GenOptimizeType() != OPT_SIZE))
+    if ((g_pConfig->GenOptimizeType() != OPT_SIZE))
     {
         alignment = max(alignment, 8u);
     }
@@ -2970,14 +3026,14 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     *ppCodeHeaderRW = pCodeHdrRW;
 }
 
-template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+template void EECodeGenManager::AllocCode<CodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                                                       size_t* pAllocatedSize, HeapList** ppCodeHeap
                                                     , BYTE** ppRealHeader
                                                     , UINT nUnwindInfos
                                                      );
 
 #ifdef FEATURE_INTERPRETER
-template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+template void EECodeGenManager::AllocCode<InterpreterCodeHeader>(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                                                                  size_t* pAllocatedSize, HeapList** ppCodeHeap
                                                                , BYTE** ppRealHeader
                                                                , UINT nUnwindInfos
@@ -3643,9 +3699,9 @@ BOOL InterpreterJitManager::LoadInterpreter()
 
 // If both JIT and interpret are available, statically link the JIT. Interpreter can be loaded dynamically
 // via config switch for testing purposes.
-#if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
+#if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_DYNAMIC_CODE_COMPILED)
     newInterpreter = InitializeStaticJIT();
-#else // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
+#else // FEATURE_STATICALLY_LINKED && !FEATURE_DYNAMIC_CODE_COMPILED
     g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
 
     LPWSTR interpreterPath = NULL;
@@ -3653,7 +3709,7 @@ BOOL InterpreterJitManager::LoadInterpreter()
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetInterpreterName() DEBUGARG(interpreterPath), &m_interpreterHandle, &newInterpreter, &g_interpreterLoadData, getClrVmOs());
-#endif // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
+#endif // FEATURE_STATICALLY_LINKED && !FEATURE_DYNAMIC_CODE_COMPILED
 
     // Publish the interpreter.
     m_interpreter = newInterpreter;
@@ -4544,13 +4600,13 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldSize         = 0;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
 IExecutionControl* InterpreterJitManager::GetExecutionControl()
 {
     LIMITED_METHOD_CONTRACT;
     return InterpreterExecutionControl::GetInstance();
 }
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #endif // FEATURE_INTERPRETER
 
@@ -6439,6 +6495,11 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(NULL != pCf);
     _ASSERTE(NULL != pEHClause);
     _ASSERTE(IsTypedHandler(pEHClause));
+
+    if (pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_R2R_SYSTEM_EXCEPTION)
+    {
+        return TypeHandle(g_pExceptionClass);
+    }
 
     MethodDesc *pMD = PTR_MethodDesc(pCf->GetFunction());
 

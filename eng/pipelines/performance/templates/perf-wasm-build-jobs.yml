@@ -1,4 +1,5 @@
 jobs:
+# Build Mono runtime for browser-wasm (used by default wasm benchmarks)
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -14,3 +15,23 @@ jobs:
         - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
           parameters:
             configForBuild: Release
+
+# Build CoreCLR runtime for browser-wasm (used by --wasm-coreclr benchmarks)
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms:
+    - browser_wasm
+    jobParameters:
+      buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      nameSuffix: wasm_coreclr
+      isOfficialBuild: false
+      postBuildSteps:
+        - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
+          parameters:
+            configForBuild: Release
+            artifactName: BrowserWasmCoreCLR
+            sdkDirName: dotnet-none
+            includeRefPack: false

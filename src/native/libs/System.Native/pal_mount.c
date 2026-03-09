@@ -15,15 +15,23 @@
 #if HAVE_MNTINFO
 #include <sys/mount.h>
 #else
+#if HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
+#endif
 #if HAVE_SYS_MNTENT_H
 #include <sys/mntent.h>
 #include <sys/mnttab.h>
-#include <sys/statvfs.h>
-#else
+#elif HAVE_MNTENT_H
 #include <mntent.h>
 #endif
+#include <sys/statvfs.h>
 #define STRING_BUFFER_SIZE 8192
+
+#ifdef __HAIKU__
+#include <dirent.h>
+#include <fs_info.h>
+#include <fs_query.h>
+#endif // __HAIKU__
 
 // Android does not define MNTOPT_RO
 #ifndef MNTOPT_RO
@@ -135,7 +143,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
     return result;
 }
 
-#else
+#elif HAVE_MNTENT_H
     int result = -1;
     FILE* fp = setmntent("/proc/mounts", MNTOPT_RO);
     if (fp != NULL)
@@ -158,6 +166,38 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
     return result;
 }
 
+#elif defined(__HAIKU__)
+    int32 cookie = 0;
+    dev_t currentDev;
+
+    while ((long)(currentDev = next_dev(&cookie)) >= 0)
+    {
+        struct fs_info info;
+        if (fs_stat_dev(currentDev, &info) != B_OK)
+        {
+            continue;
+        }
+
+        char name[STRING_BUFFER_SIZE];
+        // Two bytes for the name as we're storing "."
+        char buf[sizeof(struct dirent) + 2];
+        struct dirent *entry = (struct dirent *)&buf;
+        strncpy(entry->d_name, ".", 2);
+        entry->d_pdev = currentDev;
+        entry->d_pino = info.root;
+
+        if (get_path_for_dirent(entry, name, sizeof(name)) != B_OK)
+        {
+            continue;
+        }
+
+        onFound(context, name);
+    }
+
+    return 0;
+}
+#else
+#error "Don't know how to enumerate mount points on this platform"
 #endif
 
 int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
@@ -207,6 +247,9 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
 #if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     int result = statfs(name, &stats);
+#elif defined(__HAIKU__)
+    struct fs_info stats;
+    int result = fs_stat_dev(dev_for_path(name), &stats);
 #else
     struct statvfs stats;
     int result = statvfs(name, &stats);
@@ -234,6 +277,17 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
         }
         SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_basetype);
         *formatType = -1;
+#elif defined(__HAIKU__)
+        if (bufferLength < B_OS_NAME_LENGTH)
+        {
+            result = ERANGE;
+            *formatType = 0;
+        }
+        else
+        {
+            SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.fsh_name);
+            *formatType = -1;
+        }
 #else
         SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
         *formatType = (int64_t)(stats.f_type);

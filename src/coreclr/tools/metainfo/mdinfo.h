@@ -88,7 +88,6 @@ private:
     void DisplayMethodSpecs(void);
     void DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix);
 
-    void DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix);
     void DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *preFix);
     void DisplayCustomAttributes(mdToken inToken, const char *preFix);
 

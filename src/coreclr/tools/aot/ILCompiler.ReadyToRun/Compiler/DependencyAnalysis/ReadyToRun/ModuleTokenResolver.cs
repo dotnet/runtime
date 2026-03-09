@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // If the token was not lazily mapped, search the input compilation set for a type reference token
-            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
+            if (!_compilationModuleGroup.VersionsWithType(type) && _compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
             {
                 return token;
             }
@@ -128,6 +128,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return default(ModuleToken);
             }
         }
+
+        public ModuleToken GetModuleTokenForField(FieldDesc field, bool allowDynamicallyCreatedReference, bool throwIfNotFound)
+        {
+            if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
+            {
+                if (_compilationModuleGroup.VersionsWithType(ecmaField.OwningType))
+                {
+                    return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+                }
+
+                // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
+                if (allowDynamicallyCreatedReference)
+                {
+                    var handle = _manifestMutableModule.TryGetExistingEntityHandle(ecmaField);
+                    if (handle.HasValue)
+                    {
+                        return new ModuleToken(_manifestMutableModule, handle.Value);
+                    }
+                }
+            }
+
+            // Reverse lookup failed
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(field.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
+        }
+
 
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {

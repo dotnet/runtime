@@ -16,6 +16,9 @@
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="main.cs" />
   </ItemGroup>
   <PropertyGroup>

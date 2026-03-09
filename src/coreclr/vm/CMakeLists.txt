@@ -70,6 +70,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     disassembler.cpp
     domainassembly.cpp
     dynamicmethod.cpp
+    ebr.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
     eehash.cpp
@@ -169,6 +170,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     disassembler.h
     domainassembly.h
     dynamicmethod.h
+    ebr.h
     ecall.h
     eedbginterfaceimpl.h
     eedbginterfaceimpl.inl
@@ -947,6 +949,11 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
+    if (GEN_PINVOKE)
+        list(APPEND VM_SOURCES_WKS_ARCH
+            ${ARCH_SOURCES_DIR}/callhelpers-pinvoke.cpp
+        )
+    endif(GEN_PINVOKE)
 endif()
 
 set(VM_SOURCES_DAC_ARCH

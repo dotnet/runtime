@@ -132,6 +132,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)
     DllImportEntry(RuntimeTypeHandle_MakeArray)
+    DllImportEntry(RuntimeTypeHandle_MakeFunctionPointer)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
     DllImportEntry(RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer)
     DllImportEntry(RuntimeTypeHandle_GetAssemblySlow)
@@ -188,6 +189,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeFieldHandle_GetFieldDataReference)
     DllImportEntry(UnsafeAccessors_ResolveGenericParamToTypeHandle)
     DllImportEntry(StackTrace_GetStackFramesInternal)
+    DllImportEntry(AsyncHelpers_AddContinuationToExInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
     DllImportEntry(ModuleBuilder_GetTypeRef)
@@ -286,6 +288,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
+    DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -317,7 +320,12 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
+#ifdef TARGET_SUNOS
+    // Work around illumos.org/issues/17832
+    {"memset", (void*)&std::memset},
+#else // TARGET_SUNOS
     DllImportEntry(memset)
+#endif // TARGET_SUNOS
     DllImportEntry(memmove)
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
@@ -410,6 +418,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)
+    DllImportEntry(MetadataImport_GetMarshalAs)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
@@ -529,14 +538,12 @@ static const Entry s_QCall[] =
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
 #ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_MarkAsyncMain)
     DllImportEntry(SystemJS_ResolveMainPromise)
     DllImportEntry(SystemJS_RejectMainPromise)
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
-#ifdef FEATURE_INTERPRETER
-    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
-#endif // FEATURE_INTERPRETER
 };
 
 const void* QCallResolveDllImport(const char* name)

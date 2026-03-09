@@ -73,6 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
         /// </summary>
         Type_GetType,
         /// <summary>
+        /// <list type="table">
         /// <item><see cref="System.Type.GetConstructor(System.Type[])"/></item>
         /// <item><see cref="System.Type.GetConstructor(System.Reflection.BindingFlags, System.Type[])"/></item>
         /// <item><see cref="System.Type.GetConstructor(System.Reflection.BindingFlags, System.Reflection.Binder?, System.Type[], System.Reflection.ParameterModifier[]?)"/></item>
@@ -85,6 +86,7 @@ namespace ILLink.Shared.TrimAnalysis
         /// </summary>
         Type_GetConstructors__BindingFlags,
         /// <summary>
+        /// <list type="table">
         /// <item><see cref="System.Type.GetMethod(string)"/></item>
         /// <item><see cref="System.Type.GetMethod(string, System.Reflection.BindingFlags)"/></item>
         /// <item><see cref="System.Type.GetMethod(string, System.Type[])"/></item>
@@ -188,7 +190,7 @@ namespace ILLink.Shared.TrimAnalysis
         /// </summary>
         Type_get_BaseType,
         /// <summary>
-        /// <see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?))"/>
+        /// <see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?)"/>
         /// </summary>
         Expression_Call,
         /// <summary>
@@ -230,6 +232,7 @@ namespace ILLink.Shared.TrimAnalysis
         /// <see cref="System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer(nint, System.Type)"/>
         /// </summary>
         Marshal_GetDelegateForFunctionPointer,
+        /// <summary>
         /// <list type="table">
         /// <item><see cref="System.Activator.CreateInstance(System.Type)"/></item>
         /// <item><see cref="System.Activator.CreateInstance(System.Type, bool)"/></item>
@@ -238,6 +241,7 @@ namespace ILLink.Shared.TrimAnalysis
         /// <item><see cref="System.Activator.CreateInstance(System.Type, System.Reflection.BindingFlags, System.Reflection.Binder, object[], System.Globalization.CultureInfo)"/></item>
         /// <item><see cref="System.Activator.CreateInstance(System.Type, System.Reflection.BindingFlags, System.Reflection.Binder, object[], System.Globalization.CultureInfo, object[])"/></item>
         /// </list>
+        /// </summary>
         Activator_CreateInstance__Type,
         /// <summary>
         /// <list type="table">

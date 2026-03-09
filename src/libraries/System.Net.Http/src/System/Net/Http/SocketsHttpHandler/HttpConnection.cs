@@ -496,7 +496,7 @@ namespace System.Net.Http
             Debug.Assert(status == OperationStatus.Done);
             Debug.Assert(bytesWritten == s.Length);
 
-            _writeBuffer.Commit(s.Length);
+            _writeBuffer.Commit(bytesWritten);
         }
 
         private void WriteString(string s, Encoding? encoding)

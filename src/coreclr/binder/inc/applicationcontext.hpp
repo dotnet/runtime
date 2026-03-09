@@ -28,7 +28,6 @@ namespace BINDER_SPACE
     {
         LPWSTR m_wszSimpleName;
         LPWSTR m_wszILFileName;
-        LPWSTR m_wszNIFileName;
     };
 
     // SHash traits for Namespace -> FileNameList hash
@@ -53,7 +52,7 @@ namespace BINDER_SPACE
 
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
-            if (e.m_wszILFileName == nullptr && e.m_wszNIFileName == nullptr)
+            if (e.m_wszILFileName == nullptr)
             {
                 // Don't delete simple name here since it's a filename only entry and will be cleaned up
                 // by the SimpleName -> FileName entry which reuses the same filename pointer.
@@ -67,10 +66,6 @@ namespace BINDER_SPACE
             if (e.m_wszILFileName != nullptr)
             {
                 delete [] e.m_wszILFileName;
-            }
-            if (e.m_wszNIFileName != nullptr)
-            {
-                delete [] e.m_wszNIFileName;
             }
         }
         static const bool s_DestructPerEntryCleanupAction = true;

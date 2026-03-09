@@ -546,7 +546,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
 
 // Returns the number of bytes at the beginning of the stack frame that shouldn't be
 // modified by an EnC.  This is everything except the space for locals and temporaries.
-inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
+inline size_t GetSizeOfFrameHeaderForEnC(MethodDesc* pMD, hdrInfo * info)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -554,8 +554,9 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     unsigned position = info->savedRegsCountExclFP +
                         info->localloc +
                         info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) // Is this method synchronized
-                        + 1; // for ebpFrame
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+                        (pMD->RequiresAsyncContextSaveAndRestore() ? 2 : 0) + // Does this method save async contexts?
+                        1; // for ebpFrame
     return position * sizeof(TADDR);
 }
 #endif // FEATURE_NATIVEAOT

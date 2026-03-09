@@ -1498,6 +1498,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
+
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
@@ -1586,6 +1591,11 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
 
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + (msig.HasThis() ? 1 : 0), msig.IsReturnTypeVoid() ? 0 : 1);
@@ -2009,6 +2019,8 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_ARM64)
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+    #elif defined(TARGET_ARM)
+        pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_RISCV64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_WASM)
@@ -2312,7 +2324,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
+            // WASM-TODO: update this when we will have codegen
+            _ASSERTE(ilStubInterpData != NULL);
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+
+            // Use this method's own PortableEntryPoint rather than the helper's.
+            // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc
@@ -2390,6 +2410,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
+#if defined(FEATURE_INTERPRETER) && defined(HAS_FIXUP_PRECODE)
+        if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
+        {
+            // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
+            // into the MethodDesc
+            TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            if (byteCodeStartOrFunctionAddress != functionAddress)
+            {
+                // Then we must have an InterpByteCodeStart
+                InterpByteCodeStart* ilStubInterpData = (InterpByteCodeStart*)byteCodeStartOrFunctionAddress;
+                SetInterpreterCode(ilStubInterpData);
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
@@ -2984,6 +3020,12 @@ static PCODE getHelperForStaticBase(Module * pModule, ReadyToRunFixupKind kind, 
     bool GCStatic = (kind == READYTORUN_FIXUP_StaticBaseGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC);
     bool noCtor = pMT->IsClassInitedOrPreinited();
     bool threadStatic = (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC);
+
+    // Special case for DirectOnThreadLocalData: return helper that gets the address of the pThread field
+    if (threadStatic && !GCStatic && pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+    {
+        return CEEJitInfo::getHelperFtnStatic(CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE);
+    }
 
     CorInfoHelpFunc helper;
 
