@@ -649,19 +649,47 @@ namespace
         return strSource.Hash();
     }
 
-    typedef MapSHash<ULONG, const ReverseThunkMapValue*> HashToReverseThunkHash;
-    HashToReverseThunkHash* reverseThunkCache = nullptr;
-
-    HashToReverseThunkHash* CreateReverseThunkHashTable()
+    struct ReverseThunkMapKey
     {
-        HashToReverseThunkHash* newTable = new HashToReverseThunkHash();
-        newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
+        ULONG HashCode;
+        const char* Source;
+    };
+
+    class ReverseThunkHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<const ReverseThunkMapEntry*>>
+    {
+    public:
+        typedef ReverseThunkMapKey key_t;
+
+        static key_t GetKey(element_t e)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return { e->hashCode, e->value.Source };
+        }
+        static BOOL Equals(key_t k1, key_t k2)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (k1.HashCode == k2.HashCode) && strcmp(k1.Source, k2.Source) == 0;
+        }
+        static count_t Hash(key_t k)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return k.HashCode;
+        }
+    };
+
+    typedef SHash<ReverseThunkHashTraits> ReverseThunkHash;
+    ReverseThunkHash* reverseThunkCache = nullptr;
+
+    ReverseThunkHash* CreateReverseThunkHashTable()
+    {
+        ReverseThunkHash* newTable = new ReverseThunkHash();
+        newTable->Reallocate(g_ReverseThunksCount * ReverseThunkHash::s_density_factor_denominator / ReverseThunkHash::s_density_factor_numerator + 1);
         for (size_t i = 0; i < g_ReverseThunksCount; i++)
         {
-            newTable->Add(g_ReverseThunks[i].hashCode, &g_ReverseThunks[i].value);
+            newTable->Add(&g_ReverseThunks[i]);
         }
 
-        HashToReverseThunkHash **ppCache = &reverseThunkCache;
+        ReverseThunkHash **ppCache = &reverseThunkCache;
         if (InterlockedCompareExchangeT(ppCache, newTable, nullptr) != nullptr)
         {
             // Another thread won the race, discard ours
@@ -680,7 +708,7 @@ namespace
         }
 #endif // LOGGING
 
-        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
+        ReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
 
         if (table == nullptr)
         {
@@ -689,17 +717,11 @@ namespace
         }
 
         SString source;
-        ULONG key = CreateKey(pMD, source);
-        const ReverseThunkMapValue* thunk = nullptr;
-        for (HashToReverseThunkHash::KeyIterator iter = table->Begin(key), end = table->End(key); iter != end; iter++)
-        {
-            if (strcmp(iter->Value()->Source, source.GetUTF8()) == 0)
-            {
-                thunk = iter->Value();
-                break;
-            }
-        }
-        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u\n", thunk != nullptr ? "found" : "missing", key));
+        ULONG hashCode = CreateKey(pMD, source);
+        ReverseThunkMapKey key = { hashCode, source.GetUTF8() };
+        const ReverseThunkMapEntry* entry = table->Lookup(key);
+        const ReverseThunkMapValue* thunk = entry != nullptr ? &entry->value : nullptr;
+        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u\n", thunk != nullptr ? "found" : "missing", hashCode));
 
         return thunk;
     }
