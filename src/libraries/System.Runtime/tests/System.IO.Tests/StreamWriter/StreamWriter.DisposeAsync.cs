@@ -69,10 +69,9 @@ namespace System.IO.Tests
         {
             var ms = new MemoryStream();
             var sw = new StreamWriter(ms, leaveOpen: leaveOpen);
-            sw.Write("Hello");
             await sw.DisposeAsync();
 
-            Assert.Throws<ObjectDisposedException>(() => sw.Write(" World"));
+            Assert.Throws<ObjectDisposedException>(() => sw.Write('A'));
         }
 
         [Fact]

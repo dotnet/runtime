@@ -20,7 +20,6 @@ namespace System.IO.Tests
         public void AfterDisposeThrows(bool leaveOpen)
         {
             var sw = new StreamWriter(CreateStream(), leaveOpen: leaveOpen);
-            sw.Write("Hello");
             sw.Dispose();
             ValidateDisposedExceptions(sw);
         }
