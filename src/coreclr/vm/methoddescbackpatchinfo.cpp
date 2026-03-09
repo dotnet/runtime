@@ -25,6 +25,13 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
     _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(IS_ALIGNED((SIZE_T)slot, GetRequiredSlotAlignment(slotType)));
 
+    static const char *slotTypeNames[] = { "Normal", "Vtable", "Executable", "ExecutableRel32" };
+    static_assert(ARRAY_SIZE(slotTypeNames) == SlotType_Count, "Update slotTypeNames when adding new SlotTypes");
+
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+        "EntryPointSlots::Backpatch_Locked slot=" FMT_ADDR " slotType=%s entryPoint=" FMT_ADDR "\n",
+        DBG_ADDR(slot), slotTypeNames[slotType], DBG_ADDR(entryPoint)));
+
     switch (slotType)
     {
         case SlotType_Normal:
@@ -78,7 +85,9 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
     _ASSERTE(pMethodDesc != nullptr);
     bool fReadyToPatchExecutableCode = false;
 
-    auto lambda = [&entryPoint, &fReadyToPatchExecutableCode](LoaderAllocator *pLoaderAllocatorOfSlot, MethodDesc *pMethodDesc, UINT_PTR slotData)
+    DWORD slotCount = 0;
+
+    auto lambda = [&entryPoint, &fReadyToPatchExecutableCode, &slotCount](LoaderAllocator *pLoaderAllocatorOfSlot, MethodDesc *pMethodDesc, UINT_PTR slotData)
     {
 
         TADDR slot;
@@ -99,11 +108,17 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
             fReadyToPatchExecutableCode = true;
         }
         EntryPointSlots::Backpatch_Locked(slot, slotType, entryPoint);
+        slotCount++;
 
         return true; // Keep walking
     };
 
     m_backpatchInfoHash.VisitValuesOfKey(pMethodDesc, lambda);
+
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+        "MethodDescBackpatchInfoTracker::Backpatch_Locked pMD=%p (%s::%s) entryPoint=" FMT_ADDR " slots=%u\n",
+        pMethodDesc, pMethodDesc->m_pszDebugClassName, pMethodDesc->m_pszDebugMethodName,
+        DBG_ADDR(entryPoint), slotCount));
 }
 
 void MethodDescBackpatchInfoTracker::AddSlotAndPatch_Locked(MethodDesc *pMethodDesc, LoaderAllocator *pLoaderAllocatorOfSlot, TADDR slot, EntryPointSlots::SlotType slotType, PCODE currentEntryPoint)

@@ -3184,13 +3184,24 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE previousEntryPoint = GetEntryPointToBackpatch_Locked();
     if (previousEntryPoint == entryPoint)
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::TryBackpatchEntryPointSlots pMD=%p (%s::%s) entryPoint=" FMT_ADDR " - no change (same as previous)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         return true;
     }
 
     if (onlyFromPrestubEntryPoint && previousEntryPoint != GetPrestubEntryPointToBackpatch())
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::TryBackpatchEntryPointSlots pMD=%p (%s::%s) entryPoint=" FMT_ADDR " - skipped (not from prestub)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         return false;
     }
+
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+        "MethodDesc::TryBackpatchEntryPointSlots pMD=%p (%s::%s) entryPoint=" FMT_ADDR " previousEntryPoint=" FMT_ADDR " isVtableBackpatch=%d\n",
+        this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint), DBG_ADDR(previousEntryPoint),
+        IsVersionableWithVtableSlotBackpatch()));
 
     if (IsVersionableWithVtableSlotBackpatch())
     {
@@ -3250,11 +3261,15 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     _ASSERTE(entryPoint != (PCODE)NULL);
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=StableEntryPoint(portable)\n",
+        this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
     SetStableEntryPointInterlocked(entryPoint);
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=BackpatchSlots\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         BackpatchEntryPointSlots(entryPoint);
         return;
     }
@@ -3262,6 +3277,8 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     if (IsVersionable())
     {
         _ASSERTE(IsVersionableWithPrecode());
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=Precode(versionable)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
 
         // SetTargetInterlocked() would return false if it lost the race with another thread. That is fine, this thread
@@ -3275,12 +3292,16 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // Use this path if there already exists a Precode, OR if RequiresStableEntryPoint is set.
         //
         // RequiresStableEntryPoint currently requires that the entrypoint must be a Precode
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=Precode(stable)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
         return;
     }
 
     if (!HasStableEntryPoint())
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=StableEntryPoint\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         SetStableEntryPointInterlocked(entryPoint);
         return;
     }
