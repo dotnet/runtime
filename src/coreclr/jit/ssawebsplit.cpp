@@ -444,7 +444,8 @@ PhaseStatus Compiler::fgSsaWebSplit()
             newVarDsc->lvType = lclType;
 
             // Copy flags that downstream phases rely on for correctness.
-            newVarDsc->lvHasLdAddrOp = varDsc->lvHasLdAddrOp;
+            newVarDsc->lvHasLdAddrOp      = varDsc->lvHasLdAddrOp;
+            newVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
 
             // Copy ref-type class handle info for GDV/devirtualization.
             if (lclType == TYP_REF && varDsc->lvClassHnd != NO_CLASS_HANDLE)
