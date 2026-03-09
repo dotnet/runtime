@@ -2291,6 +2291,7 @@ public:
     // If this is a method with async calling convention: returns the corresponding task-returning method.
     // If this is a task-returning method: returns the corresponding method with async calling convention.
     // Otherwise returns null.
+    // variantIsThunk is set to true if the returned method is a thunk provided by the VM.
     virtual CORINFO_METHOD_HANDLE getAsyncOtherVariant(
         CORINFO_METHOD_HANDLE ftn,
         bool*                 variantIsThunk
