@@ -6381,12 +6381,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
+#ifndef TARGET_WASM
             // If we are using an indirection cell for a direct call then apply
             // an optimization that loads the call target directly from the
             // indirection cell, instead of duplicating the tree.
             bool hasIndirectionCell = call->GetIndirectionCellArgKind() != WellKnownArg::None;
 
             if (!hasIndirectionCell)
+#endif // !TARGET_WASM
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.

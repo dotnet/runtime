@@ -1623,8 +1623,7 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     else
     {
         GetEmitter()->emitIns_BlockTy(INS_if);
-        // Throw helper arity is (i (sp)) -> (void).
-        // Push SP here as the arg for the call.
+        // Throw helpers are managed so we need to push the stack pointer before genEmitHelperCall.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
         GetEmitter()->emitIns(INS_end);
@@ -2144,6 +2143,34 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // DEBUG
     GenTree* target = getCallTarget(call, &params.methHnd);
 
+    ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
+
+    if (call->TypeIs(TYP_STRUCT))
+    {
+        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
+    else if (call->TypeIs(TYP_VOID))
+    {
+        typeStack.Push(CORINFO_WASM_TYPE_VOID);
+    }
+    else
+    {
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->TypeGet())));
+    }
+
+    for (const CallArg& arg : call->gtArgs.Args())
+    {
+        for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
+        {
+            assert(seg.IsPassedInRegister());
+            WasmValueType wvt = WasmRegToType(seg.GetRegister());
+            assert(wvt < WasmValueType::Count);
+            typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
+        }
+    }
+
+    params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
+
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -2214,8 +2241,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //   callTargetReg -- ignored
 //
 // Notes:
-//   Wasm helper calls use the managed calling convention.
-//   SP arg must be first, on the stack below any arguments.
+//   Wasm helper calls typically use the managed calling convention.
+//   SP arg must be first if obligatory, on the stack below any arguments.
+//   To see whether a given helper uses the managed calling convention, check the _SIG entry for it below.
 //
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
@@ -2233,10 +2261,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     {
         params.addr = nullptr;
         assert(helperFunction.accessType == IAT_PVALUE);
-        void* pAddr = helperFunction.addr;
-
-        // Push indirection cell address onto stack for genEmitCall to dereference
-        GetEmitter()->emitIns_I(INS_i32_const_address, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)pAddr);
 
         params.callType = EC_INDIR_R;
     }
@@ -2244,6 +2268,79 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     params.methHnd = m_compiler->eeFindHelper(helper);
     params.argSize = argSize;
     params.retSize = retSize;
+
+    CorInfoWasmType* types           = nullptr;
+    size_t           typeCount       = 0;
+    bool             helperIsManaged = false;
+
+    const bool MANAGED = true, UNMANAGED = false;
+#ifdef TARGET_64BIT
+    const CorInfoWasmType CORINFO_WASM_TYPE_I = CORINFO_WASM_TYPE_I64;
+#else
+    const CorInfoWasmType CORINFO_WASM_TYPE_I = CORINFO_WASM_TYPE_I32;
+#endif // TARGET_64BIT
+
+#define HELPER_SIG(helper_id, is_managed, ...)                                                                         \
+    case helper_id:                                                                                                    \
+    {                                                                                                                  \
+        static CorInfoWasmType helper_id##_types[] = {__VA_ARGS__};                                                    \
+        types                                      = helper_id##_types;                                                \
+        typeCount                                  = ArrLen(helper_id##_types);                                        \
+        helperIsManaged                            = is_managed;                                                       \
+        break;                                                                                                         \
+    }
+
+    switch (helper)
+    {
+        // Managed throw helpers with no args
+        HELPER_SIG(CORINFO_HELP_RNGCHKFAIL, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */,
+                   CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_OVERFLOW, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */,
+                   CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROWDIVZERO, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROWNULLREF, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        // RhpAssignRef
+        HELPER_SIG(CORINFO_HELP_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
+        // RhpCheckedAssignRef
+        HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
+        // JIT_WriteBarrierEnsureNonHeapTarget
+        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        // RhpByRefAssignRef
+        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
+        // RhBulkMoveWithWriteBarrier
+        HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+
+        default:
+            JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
+            NYI_WASM("Missing signature for helper in genEmitHelperCall");
+            unreached();
+    }
+
+#undef HELPER_SIG
+
+    params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
+
+    if (helperIsManaged)
+    {
+        // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        assert(helperFunction.accessType == IAT_PVALUE);
+        GetEmitter()->emitAddressConstant(helperFunction.addr);
+    }
+
+    if (params.callType == EC_INDIR_R)
+    {
+        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        assert(helperFunction.accessType == IAT_PVALUE);
+        GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+    }
 
     genEmitCallWithCurrentGC(params);
 }
@@ -2717,9 +2814,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         }
         else
         {
-            // Load the sp onto the stack for the helper call.
-            // TODO-WASM: Implement a special calling convention for this helper that doesn't accept sp/pep.
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
             // Compute the actual dest/src of the slot being copied to pass to the helper.
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
             emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
@@ -2727,7 +2821,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
             emit->emitIns(INS_I_add);
-            // TODO-WASM: don't load PEP in genEmitHelperCall for write barriers.
+            // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
             // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
             // pointers as a multi-value tuple and use it here.
             genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);

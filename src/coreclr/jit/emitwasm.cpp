@@ -143,6 +143,20 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+//------------------------------------------------------------------------
+// emitAddressConstant: Emit a memory address constant, like an indirection cell.
+// This will automatically make use of relocations and the module base (__r2r_start).
+void emitter::emitAddressConstant(void* address)
+{
+    // Load our module base from __r2r_start, then load our address constant, then sum them.
+    // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
+    emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
+    // emitIns_I(INS_i32_const_address, EA_PTRSIZE, address);
+    // FIXME-WASM: Just a hack for now because const_address relocations throw in crossgen2.
+    emitIns_I(INS_i32_const, EA_PTRSIZE, (int32_t)(((size_t)address) & 0xFFFFFFFFu));
+    emitIns(INS_i32_add);
+}
+
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
@@ -164,6 +178,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
+    assert(params.wasmSignature != nullptr);
+
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to
@@ -172,9 +188,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     instrDesc* id = nullptr;
 
     instruction ins;
-
-    // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
-    emitIns_I(INS_i32_const, EA_4BYTE, 0);
 
     switch (params.callType)
     {
@@ -185,23 +198,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             id->idInsFmt(IF_FUNCIDX);
             break;
         case EC_INDIR_R:
-        {
-            // Indirect load of actual ftn ptr from indirection cell (on the stack)
-            // TODO-WASM: temporary, move this into higher layers (lowering).
-            emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-
-            // TODO-WASM: Generate actual list of types and generate reloc
-            // This is here to exercise the new JIT-EE API
-            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32};
-            CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle =
-                codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 3);
-
-            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)typeHandle);
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)params.wasmSignature);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
-        }
         default:
             unreached();
     }
@@ -378,7 +379,7 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
-static uint8_t GetWasmValueTypeCode(WasmValueType type)
+uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
 {
     // clang-format off
     static const uint8_t typecode_mapping[] = {
@@ -387,6 +388,7 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
         0x7E, // WasmValueType::I64 = 2,
         0x7D, // WasmValueType::F32 = 3,
         0x7C, // WasmValueType::F64 = 4,
+        0x7B, // WasmValueType::V128 = 5,
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
