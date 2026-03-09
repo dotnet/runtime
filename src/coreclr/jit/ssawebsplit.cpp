@@ -353,6 +353,32 @@ PhaseStatus Compiler::fgSsaWebSplit()
             JITDUMP("  Web %u -> V%02u (tracked idx %u)\n", c, newLclNum, newVarDsc->lvVarIndex);
         }
 
+        // Copy liveness from original local to new locals. This is a conservative
+        // overapproximation — the original's liveness is a superset of any split
+        // local's liveness. Without this, downstream phases (e.g., IV opts) that
+        // check bbLiveIn would incorrectly see split locals as dead.
+        if (varDsc->lvTracked)
+        {
+            unsigned const origVarIndex = varDsc->lvVarIndex;
+            for (BasicBlock* const block : Blocks())
+            {
+                if (VarSetOps::IsMember(this, block->bbLiveIn, origVarIndex))
+                {
+                    for (unsigned c = 1; c < numComponents; c++)
+                    {
+                        VarSetOps::AddElemD(this, block->bbLiveIn, lvaGetDesc(componentLclNum[c])->lvVarIndex);
+                    }
+                }
+                if (VarSetOps::IsMember(this, block->bbLiveOut, origVarIndex))
+                {
+                    for (unsigned c = 1; c < numComponents; c++)
+                    {
+                        VarSetOps::AddElemD(this, block->bbLiveOut, lvaGetDesc(componentLclNum[c])->lvVarIndex);
+                    }
+                }
+            }
+        }
+
         // Save m_useDefSsaNum before resetting SSA data.
         unsigned* oldUseDefSsaNum = alloc.allocate<unsigned>(ssaCount);
         for (unsigned i = 0; i < ssaCount; i++)
