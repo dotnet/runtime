@@ -103,23 +103,23 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
                     }
                     else if (key.StartsWith(DocDbPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        HandleMatchedConnectionStringPrefix(data, DocDbPrefix, null, key, value);
+                        HandleMatchedConnectionStringPrefix(data, DocDbPrefix, "Microsoft.Azure.Cosmos", key, value);
                     }
                     else if (key.StartsWith(EventHubPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        HandleMatchedConnectionStringPrefix(data, EventHubPrefix, null, key, value);
+                        HandleMatchedConnectionStringPrefix(data, EventHubPrefix, "Azure.Messaging.EventHubs", key, value);
                     }
                     else if (key.StartsWith(NotificationHubPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        HandleMatchedConnectionStringPrefix(data, NotificationHubPrefix, null, key, value);
+                        HandleMatchedConnectionStringPrefix(data, NotificationHubPrefix, "Microsoft.Azure.NotificationHubs", key, value);
                     }
                     else if (key.StartsWith(RedisCachePrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        HandleMatchedConnectionStringPrefix(data, RedisCachePrefix, null, key, value);
+                        HandleMatchedConnectionStringPrefix(data, RedisCachePrefix, "StackExchange.Redis", key, value);
                     }
                     else if (key.StartsWith(ServiceBusPrefix, StringComparison.OrdinalIgnoreCase))
                     {
-                        HandleMatchedConnectionStringPrefix(data, ServiceBusPrefix, null, key, value);
+                        HandleMatchedConnectionStringPrefix(data, ServiceBusPrefix, "Azure.Messaging.ServiceBus", key, value);
                     }
                     else if (key.StartsWith(CustomConnectionStringPrefix, StringComparison.OrdinalIgnoreCase))
                     {
