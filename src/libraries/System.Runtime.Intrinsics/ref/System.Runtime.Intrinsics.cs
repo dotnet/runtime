@@ -6378,6 +6378,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<float> ConvertToSingleEvenRoundToOdd(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<float> ConvertToSingleOdd(System.Numerics.Vector<float> even, System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<float> ConvertToSingleOddRoundToOdd(System.Numerics.Vector<float> even, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<uint> CountMatchingElements(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CountMatchingElements(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<uint> CountMatchingElements(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CountMatchingElements(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> CountMatchingElementsIn128BitSegments(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CountMatchingElementsIn128BitSegments(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<long> DotProductRotateComplex(System.Numerics.Vector<long> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
@@ -6424,6 +6430,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> InterleavingXorOddEven(System.Numerics.Vector<ulong> even, System.Numerics.Vector<ulong> leftOdd, System.Numerics.Vector<ulong> rightEven) { throw null; }
         public static System.Numerics.Vector<int> Log2(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<long> Log2(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<byte> Match(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> Match(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> Match(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Match(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<double> MaxNumberPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> MaxNumberPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<byte> MaxPairwise(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
@@ -6612,6 +6622,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<short> NegateSaturate(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<int> NegateSaturate(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> NegateSaturate(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> NoMatch(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> NoMatch(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> NoMatch(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> NoMatch(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<byte> PolynomialMultiply(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<sbyte> PolynomialMultiply(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }

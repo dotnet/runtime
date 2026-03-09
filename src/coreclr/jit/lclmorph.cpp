@@ -2122,8 +2122,9 @@ private:
             addr         = addr->AsFieldAddr()->GetFldObj();
         }
 
-        if (addr->IsLclVarAddr())
+        if (addr->OperIs(GT_LCL_ADDR))
         {
+            offset += addr->AsLclFld()->GetLclOffs();
             const LclVarDsc* varDsc = m_compiler->lvaGetDesc(addr->AsLclVarCommon());
 
             if (varDsc->lvPromoted)

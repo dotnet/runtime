@@ -146,6 +146,8 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs"/>
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"

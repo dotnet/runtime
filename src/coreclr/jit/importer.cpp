@@ -3893,6 +3893,32 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
+// impCanReorderWithNullCheck:
+//   Check if the specified tree can be reordered with a null check.
+//
+// Arguments:
+//    tree - The tree
+//
+// Return Value:
+//    True if it would not be observable whether a null check threw before or
+//    after the specified node.
+//
+bool Compiler::impCanReorderWithNullCheck(GenTree* tree)
+{
+    if ((tree->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    if (((tree->gtFlags & GTF_EXCEPT) != 0) && (gtCollectExceptions(tree) != ExceptionSetFlags::NullReferenceException))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // impImportStaticReadOnlyField: Tries to import 'static readonly' field
 //    as a constant if the host type is statically initialized.
 //
@@ -9520,12 +9546,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Handle the cases that might trigger type initialization
                 // (and possibly need to spill the tree for the stored value)
+                bool expandAddrInline =
+                    (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE) && !fgIsBigOffset(fieldInfo.offset);
                 switch (fieldInfo.fieldAccessor)
                 {
                     case CORINFO_FIELD_INSTANCE:
 #ifdef FEATURE_READYTORUN
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
+                        // We will create STOREIND/STOREBLK(FIELD_ADDR(obj, fld), data).
+                        // The required IL evaluation order is obj -> data -> nullcheck(obj) -> store.
+                        // Take care not to reorder the data with the null check.
+                        //
+                        // When the field offset is small enough, we can expand the address
+                        // inline and rely on the store itself to perform the null check,
+                        // so no spill is needed.
+                        if (!expandAddrInline && !impCanReorderWithNullCheck(impStackTop().val) &&
+                            fgAddrCouldBeNull(impStackTop(1).val))
+                        {
+                            impSpillStackEntry(stackState.esStackDepth - 1,
+                                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("non-reorderable data to stfld"));
+                        }
+                        break;
                     case CORINFO_FIELD_STATIC_TLS:
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:
@@ -9602,17 +9644,62 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
+                        bool mayOverlap =
+                            StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass));
+
+                        if (expandAddrInline)
+                        {
+                            if (obj->IsLclVarAddr())
+                            {
+                                lvaGetDesc(obj->AsLclFld())->lvFieldAccessed = true;
+                            }
+                            // When the offset is small enough, expand the address inline
+                            // as ADD(obj, offset). The null check will happen as part of
+                            // the store itself.
+                            FieldSeq* fieldSeq = nullptr;
+                            if (obj->TypeIs(TYP_REF) && !mayOverlap)
+                            {
+                                fieldSeq = GetFieldSeqStore()->Create(resolvedToken.hField, fieldInfo.offset,
+                                                                      FieldSeq::FieldKind::Instance);
+                            }
+
+                            if (fieldInfo.offset != 0)
+                            {
+                                if (obj->OperIs(GT_LCL_ADDR) &&
+                                    IsValidLclAddr(obj->AsLclFld()->GetLclNum(),
+                                                   obj->AsLclFld()->GetLclOffs() + fieldInfo.offset))
+                                {
+                                    obj->AsLclFld()->SetLclOffs(obj->AsLclFld()->GetLclOffs() + fieldInfo.offset);
+                                    op1 = obj;
+                                }
+                                else
+                                {
+                                    var_types addrType = obj->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+                                    op1 =
+                                        gtNewOperNode(GT_ADD, addrType, obj, gtNewIconNode(fieldInfo.offset, fieldSeq));
+
+                                    if (obj->OperIsConst())
+                                    {
+                                        op1 = gtFoldExprConst(op1);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                op1 = obj;
+                            }
+                        }
+                        else
+                        {
+                            op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
-                        if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
-                        {
-                            op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
-                        }
+                            if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                            {
+                                op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
+                            }
 #endif
-                        if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
-                        {
-                            op1->AsFieldAddr()->gtFldMayOverlap = true;
+                            op1->AsFieldAddr()->gtFldMayOverlap = mayOverlap;
                         }
 
                         if (compIsForInlining() &&
