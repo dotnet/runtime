@@ -34,12 +34,5 @@ namespace System.Formats.Asn1
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
-
-        internal static ArraySegment<byte> RentAndEncode(this AsnWriter writer)
-        {
-            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-            int written = writer.Encode(rented);
-            return new ArraySegment<byte>(rented, 0, written);
-        }
     }
 }
