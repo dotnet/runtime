@@ -817,7 +817,7 @@ HRESULT EEConfig::sync()
         }
     }
 #else // !FEATURE_TIERED_COMPILATION
-    tieredCompilation_DefaultTier = NativeCodeVersion::OptimizationTierOptimized;
+    tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTierOptimized;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
