@@ -6,7 +6,6 @@
     <StartupHookSupport>true</StartupHookSupport>
     <NoWarn>$(NoWarn);IL2026</NoWarn>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
-    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StartupHook.cs" />
