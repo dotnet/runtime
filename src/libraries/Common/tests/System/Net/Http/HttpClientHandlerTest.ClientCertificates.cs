@@ -83,8 +83,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, false)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/69238")]
-            if (IsWinHttpHandler) throw SkipException.ForSkip("https://github.com/dotnet/runtime/issues/69238");
 
             var options = new LoopbackServer.Options { UseSsl = true };
 

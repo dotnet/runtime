@@ -1882,6 +1882,18 @@ public:
             return NULL;
         return interpreterCode;
     }
+
+    bool IsInterpreterCodeInitialized(PTR_InterpByteCodeStart& pCode) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        pCode = VolatileLoadWithoutBarrier(&m_interpreterCode);
+        if (pCode == NULL)
+            return false;
+        if (dac_cast<TADDR>(pCode) == INTERPRETER_CODE_POISON)
+            pCode = NULL;
+        return true;
+    }
+
     void SetInterpreterCode(PTR_InterpByteCodeStart interpreterCode)
     {
         LIMITED_METHOD_CONTRACT;
