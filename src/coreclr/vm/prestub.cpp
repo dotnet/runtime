@@ -1498,6 +1498,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
+
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
@@ -1586,6 +1591,11 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
 
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + (msig.HasThis() ? 1 : 0), msig.IsReturnTypeVoid() ? 0 : 1);
@@ -2314,7 +2324,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
+            // WASM-TODO: update this when we will have codegen
+            _ASSERTE(ilStubInterpData != NULL);
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+
+            // Use this method's own PortableEntryPoint rather than the helper's.
+            // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc

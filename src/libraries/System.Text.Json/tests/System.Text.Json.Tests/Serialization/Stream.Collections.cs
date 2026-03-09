@@ -403,7 +403,7 @@ namespace System.Text.Json.Serialization.Tests
 
             foreach (Type type in ObjectNotationTypes<int>())
             {
-                Assert.Equal(@"{""Key"":0,""Value"":0}", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
+                Assert.Equal("""{"Key":0,"Value":0}""", JsonSerializer.Serialize(GetEmptyCollection<int>(type)));
             }
         }
     }

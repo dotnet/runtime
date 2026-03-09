@@ -1943,8 +1943,6 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/120257")]
-                // { "https://quic.nginx.org/" }, // Nginx with content
             };
     }
 

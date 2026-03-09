@@ -160,7 +160,9 @@ c_static_assert((int)PAL_DT_BLK == (int)DT_BLK);
 c_static_assert((int)PAL_DT_REG == (int)DT_REG);
 c_static_assert((int)PAL_DT_LNK == (int)DT_LNK);
 c_static_assert((int)PAL_DT_SOCK == (int)DT_SOCK);
+#ifdef DT_WHT // not available in OpenBSD
 c_static_assert((int)PAL_DT_WHT == (int)DT_WHT);
+#endif
 #endif
 
 // Validate that our Lock enum value are correct for the platform
@@ -560,6 +562,13 @@ int32_t SystemNative_CloseDir(DIR* dir)
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
+#ifdef TARGET_WASM
+    // Pipe is not supported on Wasm (browser or WASI)
+    (void)pipeFds;
+    (void)flags;
+    errno = ENOTSUP;
+    return -1;
+#else // TARGET_WASM
     switch (flags)
     {
         case 0:
@@ -608,6 +617,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     result = -1;
 #endif /* HAVE_PIPE */
     return result;
+#endif // TARGET_WASM
 }
 
 int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
@@ -735,13 +745,18 @@ int32_t SystemNative_FSync(intptr_t fd)
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
-    while ((result =
-#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
-    fcntl(fileDescriptor, F_FULLFSYNC)
-#else
-    fsync(fileDescriptor)
+#ifdef TARGET_OSX
+    while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
+    if (result >= 0)
+    {
+        return result;
+    }
+
+    // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
+    // network file systems, read-only handles). Fall back to fsync.
+    // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
 #endif
-    < 0) && errno == EINTR);
+    while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -1526,7 +1541,9 @@ int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 
     // ucred causes Emscripten to fail even though it's defined,
     // but getting peer credentials won't work for WebAssembly anyway
-#if defined(SO_PEERCRED) && !defined(TARGET_WASM)
+    // ucred also causes OpeBSD to fail because the struct definition is named
+    // differently and on OpenBSD we can use getpeereid(3) instead anyways.
+#if defined(SO_PEERCRED) && !defined(TARGET_WASM) && !defined(TARGET_OPENBSD)
     struct ucred creds;
     socklen_t len = sizeof(creds);
     if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0)
