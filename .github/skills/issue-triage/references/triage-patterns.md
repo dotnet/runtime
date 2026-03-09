@@ -252,7 +252,7 @@ into templates for each recommendation type.
 > 2. Code examples showing typical usage
 > 3. Consideration of edge cases ({specific edge cases})
 >
-> See our [API review process](../../docs/project/api-review-process.md) for
+> See our [API review process](../../../../docs/project/api-review-process.md) for
 > guidelines on writing a strong proposal.
 
 ### API Proposal -- speculative, no inferable scenario

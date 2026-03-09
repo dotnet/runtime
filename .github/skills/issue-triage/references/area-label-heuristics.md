@@ -2,7 +2,7 @@
 
 When checking whether an issue has the correct `area-*` label, use these
 heuristics to map issue content to the correct area. Always cross-reference
-with the authoritative [`docs/area-owners.md`](../../../docs/area-owners.md).
+with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 
 ## Quick-Reference: Namespace → Area Label
 

@@ -172,6 +172,7 @@ or `Same`.
 | Outcome | Meaning | Next step |
 |---------|---------|-----------|
 | `Slower` with ratio >1.10 | Regression confirmed | Proceed to Phase 2 |
+| `Slower` with ratio between 1.05 and 1.10 | Small regression -- likely real but needs confirmation | Re-run with more iterations (`--iterationCount 30`). If it persists, treat as confirmed and proceed to Phase 2. |
 | `Same` or within noise | Not reproduced locally | Check environment differences (OS, arch, CPU). Note in the report. |
 | `Slower` but ratio <1.05 | Marginal -- may be noise | Re-run with more iterations (`--iterationCount 30`). If still marginal, note as inconclusive. |
 
