@@ -281,6 +281,27 @@ PhaseStatus Compiler::fgSsaWebSplit()
         }
 
         JITDUMP("V%02u has %u disjoint SSA webs -- splitting\n", lclNum, numComponents);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            for (unsigned c = 0; c < numComponents; c++)
+            {
+                JITDUMP("  Web %u: {", c);
+                bool first = true;
+                for (unsigned i = 0; i < ssaCount; i++)
+                {
+                    if (componentId[i] == c)
+                    {
+                        JITDUMP("%s%u", first ? "" : ", ", SsaConfig::FIRST_SSA_NUM + i);
+                        first = false;
+                    }
+                }
+                JITDUMP("}\n");
+            }
+        }
+#endif
+
         madeChanges = true;
 
         // Ensure lvaTrackedToVarNum has room.
