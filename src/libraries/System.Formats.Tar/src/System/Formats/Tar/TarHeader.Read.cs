@@ -153,6 +153,14 @@ namespace System.Formats.Tar
                 _gnuSparseRealSize = gnuSparseRealSize;
             }
 
+            // Set the flag for GNU sparse format 1.0 when 'GNU.sparse.major=1' is present. This indicates that
+            // the data section begins with an embedded text-format sparse map (offset/length pairs) followed by
+            // the packed non-zero data segments. The GnuSparseStream class handles expansion when reading.
+            if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1")
+            {
+                _isGnuSparse10 = true;
+            }
+
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
             if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaUid, out int uid))
             {
@@ -228,12 +236,27 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile: // Contains portion of a file
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
-                    _dataStream = GetDataStream(archiveStream, copyData);
-                    if (_dataStream is SeekableSubReadStream)
+                    Stream? rawStream = GetDataStream(archiveStream, copyData);
+                    bool isSeekableStream = rawStream is SeekableSubReadStream;
+                    bool isSubReadStream = rawStream is SubReadStream;
+
+                    // GNU sparse format 1.0 PAX entries embed a sparse map at the start of the data
+                    // section. Wrap the raw stream so callers see an expanded virtual file instead of
+                    // the raw (map + packed data) bytes.
+                    if (_isGnuSparse10 && _gnuSparseRealSize > 0 && rawStream is not null)
+                    {
+                        _dataStream = GnuSparseStream.TryCreate(rawStream, _gnuSparseRealSize);
+                    }
+                    else
+                    {
+                        _dataStream = rawStream;
+                    }
+
+                    if (isSeekableStream)
                     {
                         TarHelpers.AdvanceStream(archiveStream, _size);
                     }
-                    else if (_dataStream is SubReadStream)
+                    else if (isSubReadStream)
                     {
                         // This stream gives the user the chance to optionally read the data section
                         // when the underlying archive stream is unseekable
@@ -290,12 +313,27 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile: // Contains portion of a file
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
-                    _dataStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
-                    if (_dataStream is SeekableSubReadStream)
+                    Stream? rawStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
+                    bool isSeekableStream = rawStream is SeekableSubReadStream;
+                    bool isSubReadStream = rawStream is SubReadStream;
+
+                    // GNU sparse format 1.0 PAX entries embed a sparse map at the start of the data
+                    // section. Wrap the raw stream so callers see an expanded virtual file instead of
+                    // the raw (map + packed data) bytes.
+                    if (_isGnuSparse10 && _gnuSparseRealSize > 0 && rawStream is not null)
+                    {
+                        _dataStream = await GnuSparseStream.TryCreateAsync(rawStream, _gnuSparseRealSize, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        _dataStream = rawStream;
+                    }
+
+                    if (isSeekableStream)
                     {
                         await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
                     }
-                    else if (_dataStream is SubReadStream)
+                    else if (isSubReadStream)
                     {
                         // This stream gives the user the chance to optionally read the data section
                         // when the underlying archive stream is unseekable

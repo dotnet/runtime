@@ -113,7 +113,7 @@ namespace System.Formats.Tar
         /// When the <see cref="EntryType"/> indicates an entry that can contain data, this property returns the length in bytes of such data.
         /// </summary>
         /// <remarks>The entry type that commonly contains data is <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> in the <see cref="TarEntryFormat.V7"/> format). Other uncommon entry types that can also contain data are: <see cref="TarEntryType.ContiguousFile"/>, <see cref="TarEntryType.DirectoryList"/>, <see cref="TarEntryType.MultiVolume"/> and <see cref="TarEntryType.SparseFile"/>.</remarks>
-        public long Length => _header._gnuSparseRealSize > 0 ? _header._gnuSparseRealSize : _header._dataStream != null ? _header._dataStream.Length : _header._size;
+        public long Length => _header._dataStream is not null ? _header._dataStream.Length : _header._size;
 
         /// <summary>
         /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, this property returns the link target path of such link.

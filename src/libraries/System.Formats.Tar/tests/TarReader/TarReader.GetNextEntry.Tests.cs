@@ -470,20 +470,38 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void GnuSparse10Pax_NameAndLengthResolvedFromExtendedAttributes(bool copyData)
+        public void GnuSparse10Pax_DataStreamExpandsSparseSections(bool copyData)
         {
-            // GNU sparse format 1.0 encodes the real file name and real file size in PAX extended attributes.
-            // When TarReader reads such an entry, Name should return the real file name (from GNU.sparse.name)
-            // and Length should return the real file size (from GNU.sparse.realsize), not the placeholder path
-            // or the stored sparse data size.
+            // GNU sparse format 1.0 PAX entries have:
+            // - GNU.sparse.major=1, GNU.sparse.minor=0 in PAX extended attributes
+            // - GNU.sparse.name (real file name), GNU.sparse.realsize (expanded file size)
+            // - Data section: sparse map text + padding to 512-byte block + packed data
+            //
+            // Virtual file layout (realsize=1024):
+            //   [0..255]   = segment 0 data (0x42 bytes)
+            //   [256..1023] = sparse hole (zeros)
             const string PlaceholderName = "GNUSparseFile.0/realfile.txt";
             const string RealName = "realfile.txt";
-            const long RealSize = 1048576; // 1 MB real file size
-            byte[] storedData = new byte[512]; // Small stored sparse data
-            Array.Fill<byte>(storedData, 0x42);
+            const long RealSize = 1024;
+            const long SegmentLength = 256;
+            byte[] packedData = new byte[SegmentLength];
+            Array.Fill<byte>(packedData, 0x42);
+
+            // Build the sparse data section:
+            //   "1\n"       <- 1 segment
+            //   "0\n"       <- offset = 0
+            //   "256\n"     <- numbytes = 256
+            //   [zeros to pad to 512]
+            //   [256 bytes of packed data]
+            byte[] mapText = System.Text.Encoding.ASCII.GetBytes("1\n0\n256\n");
+            byte[] rawSparseData = new byte[512 + SegmentLength];
+            mapText.CopyTo(rawSparseData, 0);
+            packedData.CopyTo(rawSparseData, 512);
 
             var gnuSparseAttributes = new Dictionary<string, string>
             {
+                ["GNU.sparse.major"] = "1",
+                ["GNU.sparse.minor"] = "0",
                 ["GNU.sparse.name"] = RealName,
                 ["GNU.sparse.realsize"] = RealSize.ToString(),
             };
@@ -492,7 +510,7 @@ namespace System.Formats.Tar.Tests
             using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
             {
                 var entry = new PaxTarEntry(TarEntryType.RegularFile, PlaceholderName, gnuSparseAttributes);
-                entry.DataStream = new MemoryStream(storedData);
+                entry.DataStream = new MemoryStream(rawSparseData);
                 writer.WriteEntry(entry);
             }
 
@@ -500,16 +518,124 @@ namespace System.Formats.Tar.Tests
             using var reader = new TarReader(archive);
             TarEntry readEntry = reader.GetNextEntry(copyData);
             Assert.NotNull(readEntry);
-            Assert.Equal(RealName, readEntry.Name);
-            Assert.Equal(RealSize, readEntry.Length);
 
-            // Verify the data stream still contains the stored sparse data (not the expanded real size),
-            // confirming that _size was not overridden by GNU.sparse.realsize.
+            // Name should be the real file name from GNU.sparse.name.
+            Assert.Equal(RealName, readEntry.Name);
+
+            // Length and DataStream.Length should be the expanded file size.
+            Assert.Equal(RealSize, readEntry.Length);
             Assert.NotNull(readEntry.DataStream);
-            Assert.Equal(storedData.Length, readEntry.DataStream.Length);
-            byte[] readData = new byte[storedData.Length];
-            Assert.Equal(storedData.Length, readEntry.DataStream.Read(readData));
-            Assert.Equal(storedData, readData);
+            Assert.Equal(RealSize, readEntry.DataStream.Length);
+
+            // Read the full expanded content and verify sparse expansion.
+            byte[] expanded = new byte[RealSize];
+            int totalRead = 0;
+            while (totalRead < expanded.Length)
+            {
+                int read = readEntry.DataStream.Read(expanded, totalRead, expanded.Length - totalRead);
+                Assert.True(read > 0);
+                totalRead += read;
+            }
+
+            // First 256 bytes should be the packed data (0x42).
+            for (int i = 0; i < SegmentLength; i++)
+            {
+                Assert.Equal(0x42, expanded[i]);
+            }
+            // Remaining 768 bytes should be zeros (the sparse hole).
+            for (int i = (int)SegmentLength; i < RealSize; i++)
+            {
+                Assert.Equal(0, expanded[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GnuSparse10Pax_NilSparseData(bool copyData)
+        {
+            // pax-nil-sparse-data: one segment (offset=0, length=1000), realsize=1000, no holes.
+            // The packed data is 1000 bytes of "0123456789" repeating.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-nil-sparse-data");
+            using TarReader reader = new TarReader(archiveStream);
+
+            TarEntry? entry = reader.GetNextEntry(copyData);
+            Assert.NotNull(entry);
+
+            Assert.Equal("sparse.db", entry.Name);
+            Assert.Equal(1000, entry.Length);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(1000, entry.DataStream.Length);
+
+            byte[] content = new byte[1000];
+            int totalRead = 0;
+            while (totalRead < content.Length)
+            {
+                int read = entry.DataStream.Read(content, totalRead, content.Length - totalRead);
+                Assert.True(read > 0);
+                totalRead += read;
+            }
+
+            // Content is "0123456789" repeating.
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.Equal((byte)'0' + (i % 10), content[i]);
+            }
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GnuSparse10Pax_NilSparseHole(bool copyData)
+        {
+            // pax-nil-sparse-hole: one segment (offset=1000, length=0), realsize=1000, all zeros.
+            // There is no packed data; the entire file is a sparse hole.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-nil-sparse-hole");
+            using TarReader reader = new TarReader(archiveStream);
+
+            TarEntry? entry = reader.GetNextEntry(copyData);
+            Assert.NotNull(entry);
+
+            Assert.Equal("sparse.db", entry.Name);
+            Assert.Equal(1000, entry.Length);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(1000, entry.DataStream.Length);
+
+            byte[] content = new byte[1000];
+            int totalRead = 0;
+            while (totalRead < content.Length)
+            {
+                int read = entry.DataStream.Read(content, totalRead, content.Length - totalRead);
+                Assert.True(read > 0);
+                totalRead += read;
+            }
+
+            // All bytes should be zero (the entire file is a sparse hole).
+            Assert.All(content, b => Assert.Equal(0, b));
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GnuSparse10Pax_SparseBig_NameAndLength(bool copyData)
+        {
+            // pax-sparse-big: 6 segments scattered across a 60 GB virtual file, realsize=60000000000.
+            // Only verifies that metadata is correctly resolved; does not read full content.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-sparse-big");
+            using TarReader reader = new TarReader(archiveStream);
+
+            TarEntry? entry = reader.GetNextEntry(copyData);
+            Assert.NotNull(entry);
+
+            Assert.Equal("pax-sparse", entry.Name);
+            Assert.Equal(60000000000L, entry.Length);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(60000000000L, entry.DataStream.Length);
         }
     }
 }
+

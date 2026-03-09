@@ -160,6 +160,12 @@
   <data name="TarGnuFormatExpected" xml:space="preserve">
     <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>
   </data>
+  <data name="TarGnuSparseMapInvalidNumSegments" xml:space="preserve">
+    <value>The GNU sparse map in this tar entry has an invalid number of segments.</value>
+  </data>
+  <data name="TarGnuSparseMapInvalidSegment" xml:space="preserve">
+    <value>The GNU sparse map in this tar entry contains an invalid segment entry.</value>
+  </data>
   <data name="TarInvalidFormat" xml:space="preserve">
     <value>The archive format is invalid: '{0}'</value>
   </data>

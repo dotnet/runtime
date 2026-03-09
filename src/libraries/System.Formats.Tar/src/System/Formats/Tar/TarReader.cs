@@ -216,7 +216,14 @@ namespace System.Formats.Tar
                 // here until it's located at the beginning of the next entry header.
                 // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream or SeekableSubReadStream.
 
-                if (_previouslyReadEntry._header._dataStream is not SubReadStream dataStream)
+                SubReadStream? dataStream = _previouslyReadEntry._header._dataStream switch
+                {
+                    SubReadStream srs => srs,
+                    GnuSparseStream gss => gss.AdvanceToEndAndGetSubReadStream(),
+                    _ => null,
+                };
+
+                if (dataStream is null)
                 {
                     return;
                 }
@@ -249,7 +256,14 @@ namespace System.Formats.Tar
                 // here until it's located at the beginning of the next entry header.
                 // This should only be done if the previous entry came from a TarReader and it still had its original SubReadStream or SeekableSubReadStream.
 
-                if (_previouslyReadEntry._header._dataStream is not SubReadStream dataStream)
+                SubReadStream? dataStream = _previouslyReadEntry._header._dataStream switch
+                {
+                    SubReadStream srs => srs,
+                    GnuSparseStream gss => gss.AdvanceToEndAndGetSubReadStream(),
+                    _ => null,
+                };
+
+                if (dataStream is null)
                 {
                     return;
                 }

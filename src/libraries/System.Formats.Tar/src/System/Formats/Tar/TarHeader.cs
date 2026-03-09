@@ -42,6 +42,7 @@ namespace System.Formats.Tar
         // Names of GNU sparse extended attributes (used with GNU sparse format 1.0 encoded via PAX)
         private const string PaxEaGnuSparseName = "GNU.sparse.name";
         private const string PaxEaGnuSparseRealSize = "GNU.sparse.realsize";
+        private const string PaxEaGnuSparseMajor = "GNU.sparse.major";
 
         internal Stream? _dataStream;
         internal long _dataOffset;
@@ -85,6 +86,11 @@ namespace System.Formats.Tar
         // This is separate from _size which holds the archive data size and is used for data stream reading.
         internal long _gnuSparseRealSize;
 
+        // Set to true when GNU.sparse.major=1 is present in the PAX extended attributes,
+        // indicating this is a GNU sparse format 1.0 entry whose data section contains an
+        // embedded sparse map followed by the packed data segments.
+        internal bool _isGnuSparse10;
+
         // GNU attributes
 
         internal DateTimeOffset _aTime;
@@ -115,6 +121,7 @@ namespace System.Formats.Tar
             _linkName = other._linkName;
             _dataStream = other._dataStream;
             _gnuSparseRealSize = other._gnuSparseRealSize;
+            _isGnuSparse10 = other._isGnuSparse10;
         }
 
         internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)
