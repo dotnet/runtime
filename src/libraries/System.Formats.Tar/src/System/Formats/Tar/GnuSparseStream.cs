@@ -21,11 +21,19 @@ namespace System.Formats.Tar
     //   - all other regions (holes) read as zero bytes
     internal sealed class GnuSparseStream : Stream
     {
-        private Stream _rawStream;
+        // Caps the segment count to prevent excessive memory allocation from malformed archives.
+        // Each segment entry in the array occupies 16 bytes, so 1M segments = 16 MB.
+        private const int MaxSparseSegments = 1_000_000;
+
+        private readonly Stream _rawStream;
         private bool _isDisposed;
         private readonly long _realSize;
         private readonly (long Offset, long Length)[] _segments;
         private readonly long _dataStart; // byte offset in _rawStream where packed data begins
+
+        // Cumulative sum of segment lengths: _packedStartOffsets[i] is the packed-data offset
+        // of the first byte of segment i. Allows O(1) ComputePackedOffset lookups.
+        private readonly long[] _packedStartOffsets;
 
         private long _virtualPosition; // current position in the virtual (expanded) file
 
@@ -39,6 +47,15 @@ namespace System.Formats.Tar
             _realSize = realSize;
             _segments = segments;
             _dataStart = dataStart;
+
+            // Precompute packed-data start offsets for O(1) lookup during reads.
+            _packedStartOffsets = new long[segments.Length];
+            long sum = 0;
+            for (int i = 0; i < segments.Length; i++)
+            {
+                _packedStartOffsets[i] = sum;
+                sum += segments[i].Length;
+            }
         }
 
         // Creates a GnuSparseStream by parsing the sparse map from rawStream.
@@ -68,7 +85,7 @@ namespace System.Formats.Tar
         }
 
         public override bool CanRead => !_isDisposed;
-        public override bool CanSeek => _rawStream.CanSeek && !_isDisposed;
+        public override bool CanSeek => !_isDisposed && _rawStream.CanSeek;
         public override bool CanWrite => false;
 
         public override long Length
@@ -164,7 +181,7 @@ namespace System.Formats.Tar
                     long remainingInSeg = segLength - offsetInSeg;
                     int countToRead = (int)Math.Min(toRead - totalFilled, remainingInSeg);
 
-                    long packedOffset = ComputePackedOffset(segIdx, offsetInSeg);
+                    long packedOffset = _packedStartOffsets[segIdx] + offsetInSeg;
                     ReadFromPackedData(destination.Slice(totalFilled, countToRead), packedOffset);
                     totalFilled += countToRead;
                 }
@@ -223,7 +240,7 @@ namespace System.Formats.Tar
                     long remainingInSeg = segLength - offsetInSeg;
                     int countToRead = (int)Math.Min(toRead - totalFilled, remainingInSeg);
 
-                    long packedOffset = ComputePackedOffset(segIdx, offsetInSeg);
+                    long packedOffset = _packedStartOffsets[segIdx] + offsetInSeg;
                     await ReadFromPackedDataAsync(buffer.Slice(totalFilled, countToRead), packedOffset, cancellationToken).ConfigureAwait(false);
                     totalFilled += countToRead;
                 }
@@ -233,9 +250,6 @@ namespace System.Formats.Tar
             return totalFilled;
         }
 
-        // When the caller skips this entry without reading the DataStream,
-        // we advance the underlying SubReadStream to its end so the archive
-        // stream pointer moves to the start of the next entry.
         // Returns the underlying SubReadStream for callers that need to advance it,
         // or null if the raw stream is not a SubReadStream (e.g., seekable or copied).
         internal SubReadStream? AdvanceToEndAndGetSubReadStream() =>
@@ -311,18 +325,6 @@ namespace System.Formats.Tar
             return ~lo;
         }
 
-        // Computes the offset of a byte within the packed data (i.e., relative to _dataStart).
-        // segIdx is the segment index; offsetInSeg is the byte offset within that segment.
-        private long ComputePackedOffset(int segIdx, long offsetInSeg)
-        {
-            long offset = 0;
-            for (int i = 0; i < segIdx; i++)
-            {
-                offset += _segments[i].Length;
-            }
-            return offset + offsetInSeg;
-        }
-
         // Parses the sparse map from rawStream (positioned at start).
         // The map format is: numSegments\n, then pairs of offset\n numbytes\n.
         // After the map text, there is zero-padding to the next 512-byte block boundary,
@@ -333,13 +335,13 @@ namespace System.Formats.Tar
             long bytesConsumed = 0;
 
             long numSegments = ReadDecimalLine(rawStream, ref bytesConsumed);
-            if (numSegments < 0)
+            if ((ulong)numSegments > MaxSparseSegments)
             {
                 throw new InvalidDataException(SR.TarGnuSparseMapInvalidNumSegments);
             }
 
             var segments = new (long Offset, long Length)[numSegments];
-            for (long i = 0; i < numSegments; i++)
+            for (int i = 0; i < (int)numSegments; i++)
             {
                 long offset = ReadDecimalLine(rawStream, ref bytesConsumed);
                 long length = ReadDecimalLine(rawStream, ref bytesConsumed);
@@ -363,22 +365,24 @@ namespace System.Formats.Tar
 
         private static async ValueTask<((long Offset, long Length)[] Segments, long DataStart)> ParseSparseMapAsync(Stream rawStream, CancellationToken cancellationToken)
         {
+            // Allocate the single-byte read buffer once and share it across all ReadDecimalLineAsync calls.
+            byte[] singleByte = new byte[1];
             long bytesConsumed = 0;
 
-            (long numSegments, long numSegBytes) = await ReadDecimalLineAsync(rawStream, cancellationToken).ConfigureAwait(false);
+            (long numSegments, long numSegBytes) = await ReadDecimalLineAsync(rawStream, singleByte, cancellationToken).ConfigureAwait(false);
             bytesConsumed += numSegBytes;
 
-            if (numSegments < 0)
+            if ((ulong)numSegments > MaxSparseSegments)
             {
                 throw new InvalidDataException(SR.TarGnuSparseMapInvalidNumSegments);
             }
 
             var segments = new (long Offset, long Length)[numSegments];
-            for (long i = 0; i < numSegments; i++)
+            for (int i = 0; i < (int)numSegments; i++)
             {
-                (long offset, long offsetBytes) = await ReadDecimalLineAsync(rawStream, cancellationToken).ConfigureAwait(false);
+                (long offset, long offsetBytes) = await ReadDecimalLineAsync(rawStream, singleByte, cancellationToken).ConfigureAwait(false);
                 bytesConsumed += offsetBytes;
-                (long length, long lengthBytes) = await ReadDecimalLineAsync(rawStream, cancellationToken).ConfigureAwait(false);
+                (long length, long lengthBytes) = await ReadDecimalLineAsync(rawStream, singleByte, cancellationToken).ConfigureAwait(false);
                 bytesConsumed += lengthBytes;
                 if (offset < 0 || length < 0)
                 {
@@ -437,9 +441,10 @@ namespace System.Formats.Tar
         }
 
         // Returns (value, bytesRead) for one newline-terminated decimal integer.
-        private static async ValueTask<(long Value, long BytesRead)> ReadDecimalLineAsync(Stream stream, CancellationToken cancellationToken)
+        // singleByte is a caller-supplied one-byte buffer reused across calls to avoid per-call allocation.
+        private static async ValueTask<(long Value, long BytesRead)> ReadDecimalLineAsync(Stream stream, byte[] singleByte, CancellationToken cancellationToken)
         {
-            byte[] singleByte = new byte[1];
+            Debug.Assert(singleByte.Length == 1);
             long value = 0;
             long bytesRead = 0;
             bool hasDigits = false;
