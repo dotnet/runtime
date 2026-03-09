@@ -560,6 +560,20 @@ int32_t SystemNative_CloseDir(DIR* dir)
     return result;
 }
 
+static int32_t SetNonBlocking(int fd)
+{
+    int fdFlags;
+    while ((fdFlags = fcntl(fd, F_GETFL)) < 0 && errno == EINTR);
+    if (fdFlags < 0)
+    {
+        return -1;
+    }
+
+    int result;
+    while ((result = fcntl(fd, F_SETFL, fdFlags | O_NONBLOCK)) < 0 && errno == EINTR);
+    return result;
+}
+
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
 #ifdef TARGET_WASM
@@ -569,7 +583,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     errno = ENOTSUP;
     return -1;
 #else // TARGET_WASM
-    if ((flags & ~(PAL_O_CLOEXEC | PAL_O_ASYNC_READ | PAL_O_ASYNC_WRITE)) != 0)
+    if ((flags & ~(PAL_O_CLOEXEC | PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0)
     {
         assert_msg(false, "Unknown pipe flag", (int)flags);
         errno = EINVAL;
@@ -617,34 +631,16 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     result = -1;
 #endif /* HAVE_PIPE */
 
-    if (result == 0 && ((flags & (PAL_O_ASYNC_READ | PAL_O_ASYNC_WRITE)) != 0))
+    if (result == 0 && ((flags & (PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0))
     {
-        if ((flags & PAL_O_ASYNC_READ) != 0)
+        if ((flags & PAL_O_NONBLOCK_READ) != 0)
         {
-            int fdFlags;
-            while ((fdFlags = fcntl(pipeFds[0], F_GETFL)) < 0 && errno == EINTR);
-            if (fdFlags < 0)
-            {
-                result = -1;
-            }
-            else
-            {
-                while ((result = fcntl(pipeFds[0], F_SETFL, fdFlags | O_NONBLOCK)) < 0 && errno == EINTR);
-            }
+            result = SetNonBlocking(pipeFds[0]);
         }
 
-        if (result == 0 && (flags & PAL_O_ASYNC_WRITE) != 0)
+        if (result == 0 && (flags & PAL_O_NONBLOCK_WRITE) != 0)
         {
-            int fdFlags;
-            while ((fdFlags = fcntl(pipeFds[1], F_GETFL)) < 0 && errno == EINTR);
-            if (fdFlags < 0)
-            {
-                result = -1;
-            }
-            else
-            {
-                while ((result = fcntl(pipeFds[1], F_SETFL, fdFlags | O_NONBLOCK)) < 0 && errno == EINTR);
-            }
+            result = SetNonBlocking(pipeFds[1]);
         }
 
         if (result != 0)

@@ -190,12 +190,12 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
             if (asyncRead)
             {
-                flags |= Interop.Sys.PipeFlags.O_ASYNC_READ;
+                flags |= Interop.Sys.PipeFlags.O_NONBLOCK_READ;
             }
 
             if (asyncWrite)
             {
-                flags |= Interop.Sys.PipeFlags.O_ASYNC_WRITE;
+                flags |= Interop.Sys.PipeFlags.O_NONBLOCK_WRITE;
             }
 
             if (Interop.Sys.Pipe(fds, flags) != 0)

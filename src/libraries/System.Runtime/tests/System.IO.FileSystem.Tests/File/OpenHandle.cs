@@ -85,26 +85,26 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(FileOptions.None)]
-        [InlineData(FileOptions.Asynchronous)]
-        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForPipes(FileOptions options)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForPipes(bool useAsync)
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: (options & FileOptions.Asynchronous) != 0, asyncWrite: (options & FileOptions.Asynchronous) != 0);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: useAsync, asyncWrite: useAsync);
 
             using (readHandle)
             using (writeHandle)
             {
-                Verify(readHandle, options);
-                Verify(writeHandle, options);
+                Verify(readHandle, useAsync);
+                Verify(writeHandle, useAsync);
             }
 
-            static void Verify(SafeFileHandle fileHandle, FileOptions fileOptions)
+            static void Verify(SafeFileHandle fileHandle, bool useAsyncIO)
             {
-                Assert.Equal((fileOptions & FileOptions.Asynchronous) != 0, fileHandle.IsAsync);
+                Assert.Equal(useAsyncIO, fileHandle.IsAsync);
 
                 // The following code exercises the code path where the information is fetched from OS.
                 using SafeFileHandle createdFromIntPtr = new(fileHandle.DangerousGetHandle(), ownsHandle: false);
-                Assert.Equal((fileOptions & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
+                Assert.Equal(useAsyncIO, createdFromIntPtr.IsAsync);
             }
         }
 
@@ -134,7 +134,7 @@ namespace System.IO.Tests
                 await Task.WhenAll(writeTask, readTask);
                 Assert.Equal(message, buffer);
 
-                // Now let's test the other direction,
+                // Now let's test a different order,
                 // which is going to test the E_WOULDBLOCK code path on Unix.
                 buffer.AsSpan().Reverse();
 

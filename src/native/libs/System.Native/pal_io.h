@@ -180,8 +180,8 @@ enum
     PAL_O_TRUNC = 0x0080,    // Truncate file to length 0 if it already exists
     PAL_O_SYNC = 0x0100,     // Block writes call will block until physically written
     PAL_O_NOFOLLOW = 0x0200, // Fails to open the target if it's a symlink, parent symlinks are allowed
-    PAL_O_ASYNC_READ = 0x0400,  // Set O_NONBLOCK on the read end of a pipe
-    PAL_O_ASYNC_WRITE = 0x0800, // Set O_NONBLOCK on the write end of a pipe
+    PAL_O_NONBLOCK_READ = 0x0400,  // Set O_NONBLOCK on the read end of a pipe
+    PAL_O_NONBLOCK_WRITE = 0x0800, // Set O_NONBLOCK on the write end of a pipe
 };
 
 /**
@@ -445,7 +445,7 @@ PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
-                        int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_ASYNC_READ, and PAL_O_ASYNC_WRITE for additional behavior.
+                        int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_NONBLOCK_READ, and PAL_O_NONBLOCK_WRITE for additional behavior.
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
