@@ -87,21 +87,25 @@ namespace System.Diagnostics
         public string? WorkingDirectory { get; set; }
 
         /// <summary>
-        /// Gets a list of handles that will be inherited by the child process.
+        /// Gets or sets a list of handles that will be inherited by the child process.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Handles do not need to have inheritance enabled beforehand.
-        /// They are also not duplicated, just added as-is to the child process
-        /// so the exact same handle values can be used in the child process.
+        /// Handles in this list should not have inheritance enabled beforehand.
+        /// If they do, they could be unintentionally inherited by other processes started concurrently with different APIs,
+        /// which may lead to security or resource management issues.
         /// </para>
         /// <para>
-        /// On Windows, the implementation will automatically enable inheritance on any handle added to this list
-        /// by modifying the handle's flags using SetHandleInformation.
+        /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
+        /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
+        /// After the child process is created, inheritance will be disabled on these handles to prevent them
+        /// from being inherited by other processes started with different APIs.
+        /// The handles themselves are not duplicated; they are made inheritable and passed to the child process.
         /// </para>
         /// <para>
-        /// On Unix, the implementation will modify the copy of every handle in the child process
-        /// by removing FD_CLOEXEC flag. It happens after the fork and before the exec, so it does not affect parent process.
+        /// On Unix, the implementation will modify each file descriptor in the child process
+        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
+        /// so it does not affect the parent process.
         /// </para>
         /// </remarks>
         public IList<SafeHandle> InheritedHandles
