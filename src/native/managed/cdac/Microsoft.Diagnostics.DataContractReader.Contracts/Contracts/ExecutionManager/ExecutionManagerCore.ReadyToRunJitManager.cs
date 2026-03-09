@@ -275,7 +275,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         {
             startExInfoRVA = TargetPointer.Null;
             endExInfoRVA = TargetPointer.Null;
-            if (count == 0)
+            if (count < 2)
                 return;
 
             uint low = 0;
