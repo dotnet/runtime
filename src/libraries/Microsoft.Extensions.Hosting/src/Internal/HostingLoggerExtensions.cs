@@ -112,16 +112,5 @@ namespace Microsoft.Extensions.Hosting.Internal
                    message: "Hosting failed to start");
             }
         }
-
-        public static void BackgroundServiceExceptionsPropagating(this ILogger logger, Exception ex)
-        {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug(
-                    eventId: LoggerEventIds.BackgroundServiceExceptionsPropagating,
-                    exception: ex,
-                    message: "Propagating background service exceptions");
-            }
-        }
     }
 }

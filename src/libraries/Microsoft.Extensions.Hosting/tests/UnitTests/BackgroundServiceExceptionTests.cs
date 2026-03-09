@@ -147,6 +147,31 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.IsType<InvalidOperationException>(ex));
         }
 
+        [Fact]
+        public async Task BackgroundServiceExceptionAndStopException_ThrowsAggregateException()
+        {
+            var builder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<HostOptions>(options =>
+                    {
+                        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+                    });
+                    services.AddHostedService<AsynchronousFailureService>();
+                    services.AddHostedService<StopFailureService>();
+                });
+
+            var aggregateException = await Assert.ThrowsAsync<AggregateException>(async () =>
+            {
+                await builder.Build().RunAsync();
+            });
+
+            Assert.Equal(2, aggregateException.InnerExceptions.Count);
+
+            Assert.All(aggregateException.InnerExceptions, ex =>
+                Assert.IsType<InvalidOperationException>(ex));
+        }
+
         /// <summary>
         /// Tests that when a BackgroundService throws an exception with Ignore behavior,
         /// the host does not throw and continues to run until stopped.
@@ -253,6 +278,12 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
                 throw new InvalidOperationException("Third asynchronous failure");
             }
+        }
+
+        private class StopFailureService : IHostedService
+        {
+            public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public Task StopAsync(CancellationToken cancellationToken) => throw new InvalidOperationException("Stop failure");
         }
 
         private class SuccessfulService : BackgroundService

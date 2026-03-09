@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
         private bool _hostStopped;
-        private readonly List<ExceptionDispatchInfo> _backgroundServiceExceptions = new();
+        private readonly List<Exception> _backgroundServiceExceptions = new();
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _logger.BackgroundServiceStoppingHost(ex);
                     lock (_backgroundServiceExceptions)
                     {
-                        _backgroundServiceExceptions.Add(ExceptionDispatchInfo.Capture(ex));
+                        _backgroundServiceExceptions.Add(ex);
                     }
 
                     // This catches all exceptions and does not re-throw.
@@ -288,6 +288,10 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 _hostStopped = true;
 
+                // If background services faulted and caused the host to stop, rethrow the exceptions
+                // so they propagate and cause a non-zero exit code.
+                exceptions.AddRange(_backgroundServiceExceptions);
+
                 if (exceptions.Count > 0)
                 {
                     if (exceptions.Count == 1)
@@ -299,7 +303,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                     else
                     {
-                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                        var ex = new AggregateException("One or more hosted services failed to stop or one or more background services threw an exception.", exceptions);
                         _logger.StoppedWithException(ex);
                         throw ex;
                     }
@@ -307,25 +311,6 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
 
             _logger.Stopped();
-
-            // If background services faulted and caused the host to stop, rethrow the exceptions
-            // so they propagate and cause a non-zero exit code.
-            lock (_backgroundServiceExceptions)
-            {
-                if (_backgroundServiceExceptions.Count == 1)
-                {
-                    _logger.BackgroundServiceExceptionsPropagating(_backgroundServiceExceptions[0].SourceException);
-                    _backgroundServiceExceptions[0].Throw();
-                }
-                else if (_backgroundServiceExceptions.Count > 1)
-                {
-                    var aggregateException = new AggregateException(
-                        "One or more background services threw an exception.",
-                        _backgroundServiceExceptions.Select(edi => edi.SourceException));
-                    _logger.BackgroundServiceExceptionsPropagating(aggregateException);
-                    throw aggregateException;
-                }
-            }
         }
 
         private static async Task ForeachService<T>(
