@@ -409,7 +409,7 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
                     pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
                 }
 
-                PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+                PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
                 DECLARE_ARGHOLDER_ARRAY(args, 3);
 
                 if (m_pRecordMT->IsValueType())

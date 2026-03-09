@@ -1456,7 +1456,7 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
             GCX_PREEMP();
             pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT);
         }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         while (pOle < pOleEnd)
         {
@@ -1510,7 +1510,7 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
             GCX_PREEMP();
             pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT);
         }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 4);
         while (pOle < pOleEnd)
         {
@@ -1550,7 +1550,7 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
             GCX_PREEMP();
             pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
         }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 4);
         while (pOle < pOleEnd)
         {
@@ -3857,7 +3857,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
             args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pBoxedValueClass);
         }
 
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
         args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
