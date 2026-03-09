@@ -84,6 +84,16 @@ is not minimal (e.g., it relies on a large JSON file, a zip attachment, a
 multi-project solution, or contains unnecessary types and dependencies), derive a
 **minimal self-contained reproduction** that can be pasted inline into the issue.
 
+### When to skip minimization
+
+Skip minimization entirely if any of these conditions apply:
+
+- The original reproduction is already small (roughly 30 lines or fewer)
+- The recommendation will be CLOSE or NEEDS INFO (minimization adds value
+  primarily for issues that will remain open)
+- Reproduction was not attempted (e.g., environment mismatch, safety concerns)
+- The issue is a duplicate of an existing issue that already has a minimal repro
+
 As stated in the project's
 [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md#why-are-minimal-reproductions-important),
 minimal reproductions are important because they:

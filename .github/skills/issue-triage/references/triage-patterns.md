@@ -81,12 +81,51 @@ into templates for each recommendation type.
 > **Complexity:** S -- isolated change to one component.
 > **Confidence:** Medium -- reasonable enhancement but impact is hard to gauge.
 
+### Bug -- reproduced with minimal reproduction derived
+
+> Thanks for reporting this. I was able to reproduce the issue on .NET {version}.
+> I derived a minimal reproduction that isolates the problem:
+>
+> ```csharp
+> {Minimal self-contained reproduction}
+> ```
+>
+> Moving to the {milestone} milestone for investigation.
+>
+> **Priority:** {High|Normal|Low} -- {rationale}.
+> **Confidence:** High -- reproduced and minimized locally.
+
+### Performance regression -- bisect completed
+
+> Thanks for reporting this regression. I was able to reproduce the performance
+> degradation and bisected it to {commit SHA / PR link}:
+>
+> - **Regressing commit:** {SHA} ({PR title})
+> - **Test/Base ratio:** {ratio} ({benchmark name})
+> - **Root cause:** {1-2 sentence explanation of why the change caused the regression}
+>
+> Moving to the {milestone} milestone for investigation.
+>
+> **Priority:** High -- confirmed performance regression with identified culprit.
+> **Confidence:** High -- bisect completed with statistical significance.
+
 ## CLOSE Responses
 
 ### Duplicate
 
 > This is a duplicate of #{number}, which tracks the same {bug/feature request}.
 > Closing in favor of that issue -- please add your +1 there to help us prioritize.
+
+### Already fixed
+
+> This issue has been addressed by {PR link / commit reference}. The fix is
+> available in .NET {version}. If you're still seeing this behavior on the
+> latest version, please let us know and we can reopen.
+
+### Spam / off-topic
+
+> Closing this issue as it does not appear to be a bug report or feature request
+> related to the .NET runtime.
 
 ### Won't fix -- by design
 
@@ -99,9 +138,9 @@ into templates for each recommendation type.
 ### Won't fix -- maintenance burden / scope
 
 > We appreciate the suggestion, but this falls outside the scope of what we want
-> to maintain in the BCL. The .NET ecosystem has good solutions for this via
-> {NuGet package / third-party library}. We generally prefer to keep the BCL
-> focused on {foundational primitives / broad scenarios}.
+> to maintain in the BCL. The .NET ecosystem has community packages that address
+> this scenario. We generally prefer to keep the BCL focused on {foundational
+> primitives / broad scenarios}.
 
 ### Wrong repo
 
@@ -176,12 +215,12 @@ into templates for each recommendation type.
 
 ### API Proposal -- existing workaround covers the scenario
 
-> Thanks for the suggestion! We looked into this and found that {existing
-> package/API} already covers this scenario. Here's how you can achieve what
-> you described:
+> Thanks for the suggestion! We looked into this and found that existing APIs
+> and community packages already cover this scenario. Here's how you can achieve
+> what you described:
 >
 > ```csharp
-> {Concrete, functional code workaround using existing APIs or packages}
+> {Concrete, functional code workaround using existing BCL APIs}
 > ```
 >
 > Since this is achievable today without a new API, we don't think this clears
@@ -271,11 +310,11 @@ into templates for each recommendation type.
 
 ### API Proposal -- existing workaround may suffice
 
-> Thanks for the proposal! We found that {existing package/API} may already
-> cover your scenario. Here's one approach:
+> Thanks for the proposal! We found that existing APIs may already cover your
+> scenario. Here's one approach:
 >
 > ```csharp
-> {Concrete workaround using existing APIs or packages}
+> {Concrete workaround using existing BCL APIs or patterns}
 > ```
 >
 > Have you tried this approach? If it doesn't work for your scenario, could

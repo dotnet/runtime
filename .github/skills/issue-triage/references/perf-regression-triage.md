@@ -3,6 +3,11 @@
 Guidance for investigating and triaging performance regressions in
 dotnet/runtime. Referenced from the main [SKILL.md](../SKILL.md) during Step 5.
 
+> **Note:** The commands in this guide use Linux/macOS shell syntax (`build.sh`,
+> `cp -r`, forward-slash paths, `\` line continuation). On Windows, adapt
+> accordingly: use `build.cmd`, `Copy-Item` or `xcopy`, backslash paths, and
+> backtick (`` ` ``) line continuation.
+
 A performance regression is a report that something got measurably slower (or
 uses more memory/allocations) compared to a previous .NET version or a recent
 commit. These reports come from several sources:

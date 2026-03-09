@@ -130,9 +130,15 @@ actual workable solution worth maintaining.
 ## Workaround Evaluation
 
 When an existing solution is found (community or Microsoft package, simple
-extension method, existing BCL pattern), the triage response must include a
-**concrete, functional code workaround** covering the specific scenario from
-the issue -- not a generic "use package X" dismissal.
+extension method, existing BCL pattern), the triage report should document it
+with a **concrete, functional code workaround** covering the specific scenario
+from the issue -- not a generic "use package X" dismissal.
+
+**Important:** The maintainer report body (Prior Art & Ecosystem section) may
+name specific third-party packages. However, the author-facing "Suggested
+response" must refer to alternatives generically (e.g., "community packages
+exist that address this scenario") and prefer BCL-based workarounds in code
+examples. See the content rules in the main SKILL.md Step 8.
 
 - **Clear-cut**: The workaround fully addresses the scenario → CLOSE with the
   workaround in the response.
