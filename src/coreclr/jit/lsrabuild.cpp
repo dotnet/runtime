@@ -255,7 +255,6 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     assert(!interval->isLocalVar);
 
     RefPosition*     useRefPosition   = defRefPosition->nextRefPosition;
-    SingleTypeRegSet defRegAssignment = defRefPosition->registerAssignment;
     SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
     bool             useRegConflict   = false;
 
