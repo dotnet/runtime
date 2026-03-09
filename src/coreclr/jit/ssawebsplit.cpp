@@ -269,6 +269,66 @@ PhaseStatus Compiler::fgSsaWebSplit()
             continue;
         }
 
+        // Merge components that have no uses into another component. In pruned
+        // SSA, FIRST_SSA_NUM (the initial/entry def) typically has no uses;
+        // retbuf defs via LCL_ADDR may also have no direct SSA uses. There is
+        // no benefit to giving a useless component its own local.
+        bool merged = false;
+        bool* componentHasUses = alloc.allocate<bool>(numComponents);
+        memset(componentHasUses, 0, numComponents * sizeof(bool));
+        for (unsigned i = 0; i < ssaCount; i++)
+        {
+            if (varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM + i)->GetNumUses() > 0)
+            {
+                componentHasUses[componentId[i]] = true;
+            }
+        }
+
+        // Find a merge target — prefer component 0, otherwise pick the first
+        // component that has uses. If no component has uses, use component 0.
+        unsigned mergeTarget = 0;
+        for (unsigned c = 0; c < numComponents; c++)
+        {
+            if (componentHasUses[c])
+            {
+                mergeTarget = c;
+                break;
+            }
+        }
+
+        for (unsigned i = 0; i < ssaCount; i++)
+        {
+            if (!componentHasUses[componentId[i]] && componentId[i] != mergeTarget)
+            {
+                componentId[i] = mergeTarget;
+                merged         = true;
+            }
+        }
+
+        if (merged)
+        {
+            // Re-count components after merging.
+            numComponents = 0;
+            for (unsigned i = 0; i < ssaCount; i++)
+            {
+                rootToComponent[i] = UINT_MAX;
+            }
+            for (unsigned i = 0; i < ssaCount; i++)
+            {
+                unsigned const cid = componentId[i];
+                if (rootToComponent[cid] == UINT_MAX)
+                {
+                    rootToComponent[cid] = numComponents++;
+                }
+                componentId[i] = rootToComponent[cid];
+            }
+
+            if (numComponents <= 1)
+            {
+                continue;
+            }
+        }
+
         // Check VarSet capacity — we need room for numComponents-1 new tracked locals.
         unsigned const numNewTracked  = numComponents - 1;
         unsigned const bitsPerSizeT   = (unsigned)(sizeof(size_t) * 8);
