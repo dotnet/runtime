@@ -1085,6 +1085,14 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
     const SSL_CIPHER* cipher = SSL_get_current_cipher(ssl);
     if (!cipher)
     {
+        // During the handshake (e.g. inside the cert verify callback),
+        // the current cipher may not be set yet (TLS 1.2 sets it at
+        // ChangeCipherSpec). Fall back to the pending cipher which is
+        // available as soon as ServerHello is processed.
+        cipher = SSL_get_pending_cipher(ssl);
+    }
+    if (!cipher)
+    {
         *cipherId = -1;
         return 0;
     }

@@ -29,7 +29,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/115467", TestPlatforms.Android)]
-        [SkipOnPlatform(TestPlatforms.Linux, "With inline cert validation, connection info is not yet available during the validation callback.")]
         public async Task ClientAsyncAuthenticate_ConnectionInfoInCallback_DoesNotThrow()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, SslProtocols.Tls12, SslProtocolSupport.DefaultSslProtocols, AllowAnyServerCertificateAndVerifyConnectionInfo);

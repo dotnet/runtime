@@ -1163,6 +1163,15 @@ namespace System.Net.Security
 
                 if (remoteCertValidationCallback != null)
                 {
+                    // Ensure connection info is populated before calling the user callback,
+                    // which may access properties like SslProtocol or CipherAlgorithm.
+                    // During inline cert validation the handshake hasn't completed yet, so
+                    // _connectionInfo may not have been set by ProcessHandshakeSuccess.
+                    if (_connectionInfo.Protocol == 0 && _securityContext is not null)
+                    {
+                        SslStreamPal.QueryContextConnectionInfo(_securityContext, ref _connectionInfo);
+                    }
+
                     success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
                 }
                 else
