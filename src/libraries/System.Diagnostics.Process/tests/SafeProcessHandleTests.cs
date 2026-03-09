@@ -503,6 +503,7 @@ namespace System.Diagnostics.Tests
         public void KillOnParentExit_KillsTheChild_WhenParentExits(bool enabled)
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
                 (enabledStr) =>
@@ -511,15 +512,19 @@ namespace System.Diagnostics.Tests
                     processStartOptions.KillOnParentExit = bool.Parse(enabledStr);
 
                     using SafeProcessHandle started = SafeProcessHandle.Start(processStartOptions, input: null, output: null, error: null);
-                    return started.ProcessId; // return grand child pid as exit code
+                    Console.WriteLine(started.ProcessId);
+
+                    return 0;
                 },
                 arg: enabled.ToString(),
                 remoteInvokeOptions);
 
+            string firstLine = remoteHandle.Process.StandardOutput.ReadLine();
+            int grandChildPid = int.Parse(firstLine);
             remoteHandle.Process.WaitForExit();
 
             // It's currently not implemented on macOS.
-            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), remoteHandle.ExitCode);
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), grandChildPid);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
