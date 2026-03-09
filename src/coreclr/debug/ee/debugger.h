@@ -299,6 +299,9 @@ public:
 #define GCX_COOP_EEINTERFACE()                                          \
     GCHolderEEInterface<TRUE, FALSE, FALSE> __gcCoop_onlyOneAllowedPerScope
 
+#define GCX_COOP_EEINTERFACE_IFTHREAD()                                 \
+    GCHolderEEInterface<TRUE, FALSE, TRUE> __gcCoop_onlyOneAllowedPerScope
+
 #define GCX_PREEMP_EEINTERFACE()                                        \
     GCHolderEEInterface<FALSE, FALSE, FALSE> __gcCoop_onlyOneAllowedPerScope
 
@@ -535,7 +538,7 @@ class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTr
         }
         static void OnRemovePerEntryCleanupAction(const OBJECTHANDLE &e)
         {
-            GCX_COOP();
+            GCX_COOP_EEINTERFACE_IFTHREAD();
             DestroyLongWeakHandle(e);
         }
 };
