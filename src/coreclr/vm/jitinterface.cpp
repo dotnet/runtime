@@ -8984,7 +8984,8 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
 
     MethodDesc* pMD = GetMethod(ftn);
     MethodDesc* pAsyncOtherVariant = NULL;
-    if (pMD->HasAsyncMethodData())
+
+    if (pMD->HasAsyncOtherVariant())
     {
          pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
     }
