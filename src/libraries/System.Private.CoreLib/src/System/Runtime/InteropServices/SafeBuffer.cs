@@ -365,7 +365,6 @@ namespace System.Runtime.InteropServices
         /* No indexer.  The perf would be misleadingly bad.  People should use
          * AcquirePointer and ReleasePointer instead.  */
 
-        [RequiresUnsafe]
         private void SpaceCheck(byte* ptr, nuint sizeInBytes)
         {
             if (_numBytes < sizeInBytes)

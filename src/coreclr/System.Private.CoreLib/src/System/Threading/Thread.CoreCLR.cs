@@ -491,7 +491,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DebuggerHidden]
         [DebuggerStepThrough]
-        [RequiresUnsafe]
         internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
         {
             return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));

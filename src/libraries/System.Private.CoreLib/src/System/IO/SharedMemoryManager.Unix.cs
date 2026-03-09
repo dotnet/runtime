@@ -139,7 +139,6 @@ namespace System.IO
             SharedMemoryManager<TSharedMemoryProcessData>.Instance.AddProcessDataHeader(this);
         }
 
-        [RequiresUnsafe]
         public static void* GetDataPointer(SharedMemoryProcessDataHeader<TSharedMemoryProcessData>? processDataHeader)
         {
             return processDataHeader is null

@@ -22,7 +22,6 @@ namespace System.Buffers
         /// <param name="pinnable">reference to manually managed object, or default if there is no memory manager</param>
         /// <param name="handle">handle used to pin array buffers</param>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable? pinnable = default)
         {
             _pointer = pointer;
@@ -34,7 +33,6 @@ namespace System.Buffers
         /// Returns the pointer to memory, where the memory is assumed to be pinned and hence the address won't change.
         /// </summary>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public void* Pointer => _pointer;
 
         /// <summary>

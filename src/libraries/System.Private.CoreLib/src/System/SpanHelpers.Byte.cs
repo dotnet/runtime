@@ -1291,7 +1291,6 @@ namespace System
             => (nuint)(uint)((length - (int)offset) & ~(Vector512<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe nuint UnalignedCountVector128(byte* searchSpace)
         {
             nint unaligned = (nint)searchSpace & (Vector128<byte>.Count - 1);

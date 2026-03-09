@@ -64,7 +64,6 @@ namespace System.Threading
         public static extern HeaderLockResult Release(object obj);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe int* GetHeaderPtr(byte* ppObjectData)
         {
             // The header is the 4 bytes before a pointer-sized chunk before the object data pointer.
