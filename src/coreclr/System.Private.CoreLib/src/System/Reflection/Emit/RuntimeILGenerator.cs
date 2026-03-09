@@ -658,6 +658,10 @@ namespace System.Reflection.Emit
             {
                 Debug.Assert(opcode.Equals(OpCodes.Calli),
                                 "Unexpected opcode encountered for StackBehaviour VarPop.");
+
+                // If there is a non-void return type, push one.
+                if (signature.ReturnType is Type retType && retType != typeof(void))
+                    stackchange++;
                 // Pop the arguments..
                 stackchange -= signature.ArgumentCount;
                 // Pop native function pointer off the stack.

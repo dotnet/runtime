@@ -17,7 +17,7 @@ namespace Tracing.UserEvents.Tests.Common
     public class UserEventsTestRunner
     {
         private const int SIGINT = 2;
-        private const int DefaultTraceeExitTimeoutMs = 5000;
+        private const int DefaultTraceeExitTimeoutMs = 60000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
         // Delay before starting the tracee to let record-trace finish setup. The
@@ -60,7 +60,9 @@ namespace Tracing.UserEvents.Tests.Common
                     enabledEvent.Set();
                 }
 
+                Console.WriteLine("Tracee waiting for EventSource to be enabled via IPC...");
                 enabledEvent.Wait();
+                Console.WriteLine("Tracee EventSource enabled, emitting events.");
 
                 traceeAction();
                 return 0;
@@ -122,6 +124,7 @@ namespace Tracing.UserEvents.Tests.Common
             // As a workaround, deleting the temp file and allowing record-trace to create it works reliably.
             File.Delete(traceFilePath);
             traceFilePath = Path.ChangeExtension(traceFilePath, ".nettrace");
+            string recordTraceLogPath = Path.ChangeExtension(traceFilePath, ".log");
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
@@ -131,6 +134,8 @@ namespace Tracing.UserEvents.Tests.Common
             recordTraceStartInfo.ArgumentList.Add(scriptFilePath);
             recordTraceStartInfo.ArgumentList.Add("--out");
             recordTraceStartInfo.ArgumentList.Add(traceFilePath);
+            recordTraceStartInfo.ArgumentList.Add("--log-path");
+            recordTraceStartInfo.ArgumentList.Add(recordTraceLogPath);
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
@@ -243,6 +248,7 @@ namespace Tracing.UserEvents.Tests.Common
             if (!File.Exists(traceFilePath))
             {
                 Console.Error.WriteLine($"Expected trace file not found at `{traceFilePath}`");
+                UploadArtifactsFromHelixOnFailure(scenarioName, recordTraceLogPath);
                 return -1;
             }
 
@@ -250,7 +256,7 @@ namespace Tracing.UserEvents.Tests.Common
             if (!traceValidator(traceePid, source))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
-                UploadTraceFileFromHelix(traceFilePath, scenarioName);
+                UploadArtifactsFromHelixOnFailure(scenarioName, traceFilePath, recordTraceLogPath);
                 return -1;
             }
 
@@ -345,14 +351,24 @@ namespace Tracing.UserEvents.Tests.Common
             }
         }
 
-        private static void UploadTraceFileFromHelix(string traceFilePath, string scenarioName)
+        private static void UploadArtifactsFromHelixOnFailure(string scenarioName, params string[] filePaths)
         {
             var helixWorkItemDirectory = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
-            if (helixWorkItemDirectory != null && Directory.Exists(helixWorkItemDirectory))
+            if (helixWorkItemDirectory is null || !Directory.Exists(helixWorkItemDirectory))
+                return;
+
+            foreach (string filePath in filePaths)
             {
-                var destPath = Path.Combine(helixWorkItemDirectory, $"{scenarioName}.nettrace");
-                Console.WriteLine($"Uploading trace file to Helix work item directory: {destPath}");
-                File.Copy(traceFilePath, destPath, overwrite: true);
+                if (!File.Exists(filePath))
+                {
+                    Console.WriteLine($"Artifact not found at `{filePath}`, skipping upload.");
+                    continue;
+                }
+
+                string extension = Path.GetExtension(filePath);
+                string destPath = Path.Combine(helixWorkItemDirectory, $"{scenarioName}{extension}");
+                Console.WriteLine($"Uploading artifact to Helix work item directory: {destPath}");
+                File.Copy(filePath, destPath, overwrite: true);
             }
         }
     }

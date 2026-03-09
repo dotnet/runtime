@@ -27,6 +27,7 @@ InterpMemKindMacro(ILCode)            // IL code buffers
 InterpMemKindMacro(InterpCode)        // Interpreter bytecode
 InterpMemKindMacro(Instruction)       // InterpInst allocations
 InterpMemKindMacro(IntervalMap)       // Variable interval maps
+InterpMemKindMacro(MethodData)        // Temporary method data during compilation
 InterpMemKindMacro(NativeToILMapping) // Native to IL offset mappings
 InterpMemKindMacro(Reloc)             // Relocations
 InterpMemKindMacro(RetryData)         // Data for retrying compilation
