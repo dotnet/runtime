@@ -2683,6 +2683,11 @@ bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
     }
     assert(outermostHBtab != nullptr);
 
+    // header is no longer a try entry, so update its flags
+    //
+    assert(!bbIsTryBeg(header));
+    header->RemoveFlags(BBF_DONT_REMOVE);
+
     // Recompute preheader placement
     //
     const unsigned enclosingTryIndex = outermostHBtab->ebdEnclosingTryIndex;
