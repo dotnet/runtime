@@ -12,11 +12,12 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
 {
