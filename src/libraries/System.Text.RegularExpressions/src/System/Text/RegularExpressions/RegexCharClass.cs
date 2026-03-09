@@ -1237,7 +1237,7 @@ namespace System.Text.RegularExpressions
             // For ASCII, lazily initialize. For non-ASCII, just compute the value.
             return ch < 128 ?
                 InitializeValue(ch, set, ref asciiLazyCache) :
-                CharInClassRecursive(ch, set, 0);
+                CharInClassIterative(ch, set, 0);
 
             static bool InitializeValue(char ch, string set, ref uint[]? asciiLazyCache)
             {
@@ -1269,27 +1269,31 @@ namespace System.Text.RegularExpressions
         /// Determines a character's membership in a character class (via the string representation of the class).
         /// </summary>
         public static bool CharInClass(char ch, string set) =>
-            CharInClassRecursive(ch, set, 0);
+            CharInClassIterative(ch, set, 0);
 
-        private static bool CharInClassRecursive(char ch, string set, int start)
+        private static bool CharInClassIterative(char ch, string set, int start)
         {
-            int setLength = set[start + SetLengthIndex];
-            int categoryLength = set[start + CategoryLengthIndex];
-            int endPosition = start + SetStartIndex + setLength + categoryLength;
+            bool inClass = false;
 
-            bool inClass = CharInClassInternal(ch, set, start, setLength, categoryLength);
-
-            // Note that we apply the negation *before* performing the subtraction.  This is because
-            // the negation only applies to the first char class, not the entire subtraction.
-            if (IsNegated(set, start))
+            while (true)
             {
+                int setLength = set[start + SetLengthIndex];
+                int categoryLength = set[start + CategoryLengthIndex];
+                int endPosition = start + SetStartIndex + setLength + categoryLength;
+
+                if (CharInClassInternal(ch, set, start, setLength, categoryLength) == IsNegated(set, start))
+                {
+                    break;
+                }
+
                 inClass = !inClass;
-            }
 
-            // Subtract if necessary
-            if (inClass && set.Length > endPosition)
-            {
-                inClass = !CharInClassRecursive(ch, set, endPosition);
+                if (set.Length <= endPosition)
+                {
+                    break;
+                }
+
+                start = endPosition;
             }
 
             return inClass;
@@ -1427,32 +1431,48 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        public static RegexCharClass Parse(string charClass) => ParseRecursive(charClass, 0);
-
-        private static RegexCharClass ParseRecursive(string charClass, int start)
+        public static RegexCharClass Parse(string charClass)
         {
-            int setLength = charClass[start + SetLengthIndex];
-            int categoryLength = charClass[start + CategoryLengthIndex];
-            int endPosition = start + SetStartIndex + setLength + categoryLength;
+            RegexCharClass? outermost = null;
+            RegexCharClass? current = null;
 
-            int i = start + SetStartIndex;
-            int end = i + setLength;
-
-            List<(char First, char Last)>? ranges = ComputeRanges(charClass.AsSpan(start));
-
-            RegexCharClass? sub = null;
-            if (charClass.Length > endPosition)
+            int pos = 0;
+            while (true)
             {
-                sub = ParseRecursive(charClass, endPosition);
+                int setLength = charClass[pos + SetLengthIndex];
+                int categoryLength = charClass[pos + CategoryLengthIndex];
+                int endPosition = pos + SetStartIndex + setLength + categoryLength;
+
+                List<(char First, char Last)>? ranges = ComputeRanges(charClass.AsSpan(pos));
+
+                StringBuilder? categoriesBuilder = null;
+                if (categoryLength > 0)
+                {
+                    int end = pos + SetStartIndex + setLength;
+                    categoriesBuilder = new StringBuilder().Append(charClass.AsSpan(end, categoryLength));
+                }
+
+                var level = new RegexCharClass(IsNegated(charClass, pos), ranges, categoriesBuilder, subtraction: null);
+
+                if (outermost is null)
+                {
+                    outermost = level;
+                }
+                else
+                {
+                    current!.AddSubtraction(level);
+                }
+                current = level;
+
+                if (charClass.Length <= endPosition)
+                {
+                    break;
+                }
+
+                pos = endPosition;
             }
 
-            StringBuilder? categoriesBuilder = null;
-            if (categoryLength > 0)
-            {
-                categoriesBuilder = new StringBuilder().Append(charClass.AsSpan(end, categoryLength));
-            }
-
-            return new RegexCharClass(IsNegated(charClass, start), ranges, categoriesBuilder, sub);
+            return outermost!;
         }
 
         /// <summary>Computes a list of all of the character ranges in the set string.</summary>
@@ -1591,51 +1611,52 @@ namespace System.Text.RegularExpressions
         public string ToStringClass()
         {
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            ToStringClass(ref vsb);
-            return vsb.ToString();
-        }
 
-        private void ToStringClass(ref ValueStringBuilder vsb)
-        {
-            Canonicalize();
-
-            int initialLength = vsb.Length;
-            int categoriesLength = _categories?.Length ?? 0;
-            Span<char> headerSpan = vsb.AppendSpan(SetStartIndex);
-            headerSpan[FlagsIndex] = (char)(_negate ? 1 : 0);
-            headerSpan[SetLengthIndex] = '\0'; // (will be replaced once we know how long a range we've added)
-            headerSpan[CategoryLengthIndex] = (char)categoriesLength;
-
-            // Append ranges
-            List<(char First, char Last)>? rangelist = _rangelist;
-            if (rangelist != null)
+            RegexCharClass? current = this;
+            do
             {
-                for (int i = 0; i < rangelist.Count; i++)
+                current.Canonicalize();
+
+                int initialLength = vsb.Length;
+                int categoriesLength = current._categories?.Length ?? 0;
+                Span<char> headerSpan = vsb.AppendSpan(SetStartIndex);
+                headerSpan[FlagsIndex] = (char)(current._negate ? 1 : 0);
+                headerSpan[SetLengthIndex] = '\0'; // (will be replaced once we know how long a range we've added)
+                headerSpan[CategoryLengthIndex] = (char)categoriesLength;
+
+                // Append ranges
+                List<(char First, char Last)>? rangelist = current._rangelist;
+                if (rangelist != null)
                 {
-                    (char First, char Last) currentRange = rangelist[i];
-                    vsb.Append(currentRange.First);
-                    if (currentRange.Last != LastChar)
+                    for (int i = 0; i < rangelist.Count; i++)
                     {
-                        vsb.Append((char)(currentRange.Last + 1));
+                        (char First, char Last) currentRange = rangelist[i];
+                        vsb.Append(currentRange.First);
+                        if (currentRange.Last != LastChar)
+                        {
+                            vsb.Append((char)(currentRange.Last + 1));
+                        }
                     }
                 }
-            }
 
-            // Update the range length.  The ValueStringBuilder may have already had some
-            // contents (if this is a subtactor), so we need to offset by the initial length.
-            vsb[initialLength + SetLengthIndex] = (char)(vsb.Length - initialLength - SetStartIndex);
+                // Update the range length.  The ValueStringBuilder may have already had some
+                // contents (if this is a subtactor), so we need to offset by the initial length.
+                vsb[initialLength + SetLengthIndex] = (char)(vsb.Length - initialLength - SetStartIndex);
 
-            // Append categories
-            if (categoriesLength != 0)
-            {
-                foreach (ReadOnlyMemory<char> chunk in _categories!.GetChunks())
+                // Append categories
+                if (categoriesLength != 0)
                 {
-                    vsb.Append(chunk.Span);
+                    foreach (ReadOnlyMemory<char> chunk in current._categories!.GetChunks())
+                    {
+                        vsb.Append(chunk.Span);
+                    }
                 }
-            }
 
-            // Append a subtractor if there is one.
-            _subtractor?.ToStringClass(ref vsb);
+                current = current._subtractor;
+            }
+            while (current is not null);
+
+            return vsb.ToString();
         }
 
         /// <summary>

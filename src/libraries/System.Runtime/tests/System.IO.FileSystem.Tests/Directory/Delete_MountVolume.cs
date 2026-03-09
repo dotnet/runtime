@@ -14,6 +14,7 @@ using System.Text;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -23,8 +24,10 @@ namespace System.IO.Tests
         private delegate void ExceptionCode();
         private static bool s_pass = true;
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
+        private static bool IsNtfs =>
+            FileSystemDebugInfo.IsCurrentDriveNTFS();
+
+        [ConditionalFact(nameof(IsNtfs))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing volumes / mounts / drive letters
         public static void RunTest()
         {

@@ -190,9 +190,11 @@ When you download artifacts via MCP tools or manually, the directory structure c
 
 ### Helix Work Item Downloads
 
-Two MCP tools download Helix artifacts:
-- **`hlx_download`** — downloads multiple files from a work item, with optional glob `pattern` (e.g., `pattern:"*.binlog"`). Returns local file paths.
+MCP tools for downloading Helix artifacts:
+- **`hlx_download`** — downloads multiple files from a work item. Returns local file paths.
 - **`hlx_download_url`** — downloads a single file by direct URI (from `hlx_files` output). Use when you know exactly which file you need.
+
+> 💡 **Prefer remote investigation first**: search file contents, parse test results, and search logs remotely before downloading. Only download when you need to load binlogs or do offline analysis.
 
 `hlx_download` saves files to a temp directory. The structure is **flat** — all files from the work item land in one directory:
 
@@ -208,7 +210,7 @@ C:\...\Temp\helix-{hash}\
 ```
 
 **Key confusion point:** Numbered binlogs (`msbuild0.binlog`, `msbuild1.binlog`) correspond to individual test cases within the work item, not to build phases. A work item like `Microsoft.NET.Build.Tests.dll.18` runs dozens of tests, each invoking MSBuild separately. To map a binlog to a specific test:
-1. Load it with `mcp-binlog-tool-load_binlog`
+1. Load it with the binlog analysis tools
 2. Check the project paths inside — they usually contain the test name
 3. Or check `testResults.xml` to correlate test execution order with binlog numbering
 
@@ -226,7 +228,7 @@ $env:TEMP\TestBuild_linux_x64\
         └── SendToHelix.binlog     # Contains Helix job GUIDs
 ```
 
-**Key confusion point:** The artifact name appears twice in the path (extract folder + subfolder inside the ZIP). Use the full nested path with `mcp-binlog-tool-load_binlog`.
+**Key confusion point:** The artifact name appears twice in the path (extract folder + subfolder inside the ZIP). Use the full nested path when loading binlogs.
 
 ### Mapping Binlogs to Failures
 

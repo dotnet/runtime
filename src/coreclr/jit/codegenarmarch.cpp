@@ -501,7 +501,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CATCH_ARG:
 
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->bbCatchTyp));
+            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
 
             /* Catch arguments get passed in a register. genCodeForBBlist()
                would have marked it as holding a GC object, but not used. */
@@ -3451,33 +3451,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             // Generate a direct call to a non-virtual user defined or helper method
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
+            assert(call->gtDirectCallAddress != nullptr);
 
-#ifdef FEATURE_READYTORUN
-            if (call->gtEntryPoint.addr != NULL)
-            {
-                assert(call->gtEntryPoint.accessType == IAT_VALUE);
-                params.addr = call->gtEntryPoint.addr;
-            }
-            else
-#endif // FEATURE_READYTORUN
-                if (call->IsHelperCall())
-                {
-                    CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            params.addr = call->gtDirectCallAddress;
 
-                    CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                    params.addr                       = helperLookup.addr;
-                    assert(helperLookup.accessType == IAT_VALUE);
-                }
-                else
-                {
-                    // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
-                }
-
-            assert(params.addr != nullptr);
-
-// Non-virtual direct call to known addresses
 #ifdef TARGET_ARM
             if (!validImmForBL((ssize_t)params.addr))
             {
@@ -4136,7 +4113,7 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R_R(ins, EA_4BYTE, mul->GetRegNum(), mul->AsMultiRegOp()->gtOtherReg, srcReg1, srcReg2);
 #else
-    GetEmitter()->emitIns_R_R_R(ins, EA_4BYTE, mul->GetRegNum(), srcReg1, srcReg2);
+    GetEmitter()->emitIns_R_R_R(ins, EA_8BYTE, mul->GetRegNum(), srcReg1, srcReg2);
 #endif
 
     genProduceReg(mul);

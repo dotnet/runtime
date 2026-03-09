@@ -152,6 +152,13 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
     return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(
+          CORINFO_METHOD_HANDLE ftn,
+          bool* variantIsThunk)
+{
+    return original_ICorJitInfo->getAsyncOtherVariant(ftn, variantIsThunk);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -507,12 +514,11 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
 
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
-    return original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    return original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
 }
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
@@ -908,6 +914,12 @@ void interceptor_ICJI::getFpStructLowering(
           CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
     original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
+}
+
+CorInfoWasmType interceptor_ICJI::getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    return original_ICorJitInfo->getWasmLowering(structHnd);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

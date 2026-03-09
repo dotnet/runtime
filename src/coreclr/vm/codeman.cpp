@@ -29,9 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
-#if !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
 #include "../debug/ee/executioncontrol.h"
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -1297,6 +1297,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX512v3);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_AVX512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512BMM);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1);
@@ -1440,6 +1445,15 @@ void EEJitManager::SetCpuInfo()
         // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
+
+#ifdef _DEBUG
+            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitUseScalableVectorT))
+            {
+                // Vector<T> will use SVE instead of NEON.
+                CPUCompileFlags.Clear(InstructionSet_VectorT128);
+                CPUCompileFlags.Set(InstructionSet_VectorT);
+            }
+#endif
 
             if (((cpuFeatures & ARM64IntrinsicConstants_Sve2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve2))
             {
@@ -4586,13 +4600,13 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldSize         = 0;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
 IExecutionControl* InterpreterJitManager::GetExecutionControl()
 {
     LIMITED_METHOD_CONTRACT;
     return InterpreterExecutionControl::GetInstance();
 }
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #endif // FEATURE_INTERPRETER
 
