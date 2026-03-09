@@ -82,7 +82,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IWasmCodeNode.cs" Link="Compiler\DependencyAnalysis\IWasmCodeNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />

@@ -65,7 +65,7 @@ namespace ILCompiler.ObjectWriter
             _uniqueSignatures.Add(mangledName, _uniqueSignatures.Count);
         }
 
-        private protected override void RecordMethodDeclaration(IWasmCodeNode node, MethodDesc desc)
+        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
         {
             WriteSignatureIndexForFunction(desc);
 

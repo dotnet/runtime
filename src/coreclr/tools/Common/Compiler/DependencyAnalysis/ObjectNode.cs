@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (factory.Target.IsWasm && this is IWasmMethodCodeNode wasmMethodCodeNode)
+            if (factory.Target.IsWasm && this is IMethodCodeNodeWithTypeSignature wasmMethodCodeNode)
             {
                 dependencies ??= new DependencyList();
 

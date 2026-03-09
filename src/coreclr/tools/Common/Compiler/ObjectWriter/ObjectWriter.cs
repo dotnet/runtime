@@ -449,11 +449,11 @@ namespace ILCompiler.ObjectWriter
                     continue;
                 }
 
-                if (node is IWasmCodeNode codeNode && _nodeFactory.Target.IsWasm)
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
                     Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
 
-                    // TODO-Wasm: eventually this should check IWasmMethodCodeNode
+                    // TODO: eventually this should check IMethodCodeNodeWithTypeSignature
                     // Once we have signatures implemented for all code-carrying nodes
                     if (node is IMethodBodyNode methodNode)
                     {
@@ -664,7 +664,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(IWasmCodeNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
