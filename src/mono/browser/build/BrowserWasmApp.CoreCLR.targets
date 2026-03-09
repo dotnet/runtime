@@ -33,6 +33,9 @@
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
 
     <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+
+    <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
+    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
 
   <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
@@ -182,7 +185,7 @@
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
-      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node'))" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
     </ItemGroup>
 
     <ItemGroup>
@@ -261,6 +264,8 @@
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(NativeFileReference)" Condition="'%(Extension)' == '.c' or '%(Extension)' == '.cpp'" />
       <_WasmSourceFileToCompile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
+      <!-- Add compile RSP and compat header as dependencies for incremental build -->
+      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
     </ItemGroup>
 
     <!-- Native .a files to link: any NativeFileReference that are archives -->
@@ -322,10 +327,17 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
 
-    <!-- Add generated C++ files to compile list -->
+    <!-- Add generated C++ files to compile list.
+         Note: reverse-pinvoke-table.cpp is NOT compiled separately because
+         libcoreclr_static.a already contains callhelpers-reverse.cpp.o with the
+         default reverse-thunk table. Compiling the app-generated version would
+         cause duplicate symbol errors when the archive object is pulled in for
+         other required symbols (e.g., SystemInteropJS_*). -->
     <ItemGroup>
-      <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o" />
-      <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o" />
+      <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
+                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
+                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
     </ItemGroup>
   </Target>
 
@@ -408,8 +420,11 @@
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
 
-    <!-- CoreCLR static libraries from the runtime pack -->
+    <!-- CoreCLR static libraries from the runtime pack (order matches CMakeLists.txt) -->
     <ItemGroup>
+      <!-- Browser host (linked first, as in CMakeLists.txt) -->
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libBrowserHost.a" />
+
       <!-- CoreCLR runtime engine -->
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_static.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libnativeresourcestring.a" />
@@ -417,9 +432,6 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrminipal.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrpal.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libminipal.a" />
-
-      <!-- Browser host -->
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libBrowserHost.a" />
 
       <!-- Platform libraries -->
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.a" />
@@ -474,9 +486,9 @@
       <_EmccLinkStepArgs Include="-s EXPORT_NAME=createDotnetRuntime" />
       <_EmccLinkStepArgs Include="-s ENVIRONMENT=web,webview,worker,node,shell" />
 
-      <!-- Symbol handling -->
-      <_EmccLinkStepArgs Include="-s LLD_REPORT_UNDEFINED" />
-      <_EmccLinkStepArgs Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
+      <!-- Symbol handling (strict undefined checks in Debug only, matching CMakeLists.txt) -->
+      <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s LLD_REPORT_UNDEFINED" />
+      <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
       <_EmccLinkStepArgs Include="--emit-symbol-map" />
 
       <!-- Assertions for debug -->
