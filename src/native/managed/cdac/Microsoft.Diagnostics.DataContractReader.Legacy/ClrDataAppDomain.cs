@@ -80,9 +80,15 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
                 if (name is not null && bufLen > 0)
                 {
-                    string dacName = new string(legacyNameBuf, 0, (int)nameLenLocal - 1);
-                    string cdacName = new string(name);
-                    Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+                    // On truncation (S_FALSE), nameLenLocal is the full required length
+                    // which may exceed bufLen. Cap to the actual buffer size.
+                    int compareLen = (int)Math.Min(nameLenLocal, bufLen) - 1;
+                    if (compareLen > 0)
+                    {
+                        string dacName = new string(legacyNameBuf, 0, compareLen);
+                        string cdacName = new string(name, 0, compareLen);
+                        Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+                    }
                 }
             }
         }
