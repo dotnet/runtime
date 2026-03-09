@@ -688,7 +688,7 @@ private:
             return false;
         }
 
-        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr))
+        if ((inlineeComp->fgFirstBB->firstStmt() != nullptr))
         {
             JITDUMP("Inlinee has statements\n");
             return false;
@@ -753,13 +753,13 @@ private:
         JITDUMP("Inlinee does not have control flow; inserting mid-block\n");
 
 #ifdef DEBUG
-        for (Statement* stmt = inlineeComp->fgFirstBB->bbStmtList; stmt != nullptr; stmt = stmt->GetNextStmt())
+        for (Statement* stmt = inlineeComp->fgFirstBB->firstStmt(); stmt != nullptr; stmt = stmt->GetNextStmt())
         {
             DISPSTMT(stmt);
         }
 #endif
 
-        m_compiler->fgInsertStmtListBefore(block, stmt, inlineeComp->fgFirstBB->bbStmtList);
+        m_compiler->fgInsertStmtListBefore(block, stmt, inlineeComp->fgFirstBB->firstStmt());
 
         const BasicBlockFlags inlineeBlockFlags = inlineeComp->fgFirstBB->GetFlagsRaw();
         noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
@@ -1749,13 +1749,13 @@ void StatementListBuilder::InsertIntoBlockAtBeginning(BasicBlock* block)
         lastStmt = m_tail;
     }
 
-    if (block->bbStmtList != nullptr)
+    if (block->firstStmt() != nullptr)
     {
-        m_tail->SetNextStmt(block->bbStmtList);
-        block->bbStmtList->SetPrevStmt(m_tail);
+        m_tail->SetNextStmt(block->firstStmt());
+        block->firstStmt()->SetPrevStmt(m_tail);
     }
 
-    block->bbStmtList = m_head;
+    block->SetFirstStmt(m_head);
     m_head->SetPrevStmt(lastStmt);
 }
 

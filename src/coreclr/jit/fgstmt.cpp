@@ -414,7 +414,7 @@ void Compiler::fgInsertStmtListAtEnd(BasicBlock* block, Statement* stmtList)
     else
     {
         // The block is completely empty.
-        block->bbStmtList = stmtList;
+        block->SetFirstStmt(stmtList);
     }
 }
 
@@ -425,10 +425,10 @@ void Compiler::fgInsertStmtListBefore(BasicBlock* block, Statement* before, Stat
         return;
     }
 
-    assert(block->bbStmtList != nullptr);
+    assert(block->firstStmt() != nullptr);
     Statement* stmtLast = stmtList->GetPrevStmt();
 
-    if (before == block->bbStmtList)
+    if (before == block->firstStmt())
     {
         // We're inserting before the first statement in the block.
         Statement* first = block->firstStmt();
@@ -437,7 +437,7 @@ void Compiler::fgInsertStmtListBefore(BasicBlock* block, Statement* before, Stat
         stmtLast->SetNextStmt(first);
         stmtList->SetPrevStmt(last);
 
-        block->bbStmtList = stmtList;
+        block->SetFirstStmt(stmtList);
         first->SetPrevStmt(stmtLast);
     }
     else
