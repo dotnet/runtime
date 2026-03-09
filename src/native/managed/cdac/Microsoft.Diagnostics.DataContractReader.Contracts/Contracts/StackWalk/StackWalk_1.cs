@@ -42,7 +42,9 @@ internal partial class StackWalk_1 : IStackWalk
         IPlatformAgnosticContext Context,
         StackWalkState State,
         TargetPointer FrameAddress,
-        ThreadData ThreadData) : IStackDataFrameHandle
+        ThreadData ThreadData,
+        bool IsResumableFrame = false,
+        bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
@@ -52,7 +54,48 @@ internal partial class StackWalk_1 : IStackWalk
         public FrameIterator FrameIter { get; set; } = frameIter;
         public ThreadData ThreadData { get; set; } = threadData;
 
-        public StackDataFrameHandle ToDataFrame() => new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData);
+        // Track isFirst exactly like native CrawlFrame::isFirst in StackFrameIterator.
+        // Starts true, set false after processing a managed (frameless) frame,
+        // set back to true when encountering a ResumableFrame (FRAME_ATTR_RESUMABLE).
+        public bool IsFirst { get; set; } = true;
+
+        public bool IsCurrentFrameResumable()
+        {
+            if (State is not (StackWalkState.SW_FRAME or StackWalkState.SW_SKIPPED_FRAME))
+                return false;
+
+            var ft = FrameIter.GetCurrentFrameType();
+            // Only frame types with FRAME_ATTR_RESUMABLE set isFirst=true.
+            // FaultingExceptionFrame has FRAME_ATTR_FAULTED (sets hasFaulted)
+            // but NOT FRAME_ATTR_RESUMABLE, so it must not be included here.
+            // TODO: HijackFrame only has FRAME_ATTR_RESUMABLE on non-x86 platforms.
+            // When x86 stack walking is supported, this should be conditioned on
+            // the target architecture.
+            return ft is FrameIterator.FrameType.ResumableFrame
+                      or FrameIterator.FrameType.RedirectedThreadFrame
+                      or FrameIterator.FrameType.HijackFrame;
+        }
+
+        /// <summary>
+        /// Update the IsFirst state for the NEXT frame, matching native stackwalk.cpp:
+        /// - After a frameless frame: isFirst = false (line 2202)
+        /// - After a ResumableFrame: isFirst = true (line 2235)
+        /// - After other Frames: isFirst = false
+        /// </summary>
+        public void AdvanceIsFirst()
+        {
+            if (State == StackWalkState.SW_FRAMELESS)
+                IsFirst = false;
+            else
+                IsFirst = IsCurrentFrameResumable();
+        }
+
+        public StackDataFrameHandle ToDataFrame()
+        {
+            bool isResumable = IsCurrentFrameResumable();
+            bool isActiveFrame = IsFirst && State == StackWalkState.SW_FRAMELESS;
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame);
+        }
     }
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
@@ -61,6 +104,18 @@ internal partial class StackWalk_1 : IStackWalk
         FillContextFromThread(context, threadData);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
+
+        // Skip Frames whose address is below the initial context's SP.
+        // This matches the native DAC behavior: when StackWalkFrames starts from a
+        // profiler filter context, Frames at a lower SP (pushed more recently) are
+        // not encountered during the walk. Without this, Frames like
+        // RedirectedThreadFrame (pushed during GC stress redirect) would incorrectly
+        // set IsFirst=true for the wrong managed frame.
+        TargetPointer initialSP = context.StackPointer;
+        while (frameIterator.IsValid() && frameIterator.CurrentFrameAddress.Value < initialSP.Value)
+        {
+            frameIterator.Next();
+        }
 
         // if the next Frame is not valid and we are not in managed code, there is nothing to return
         if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
@@ -71,10 +126,12 @@ internal partial class StackWalk_1 : IStackWalk
         StackWalkData stackWalkData = new(context, state, frameIterator, threadData);
 
         yield return stackWalkData.ToDataFrame();
+        stackWalkData.AdvanceIsFirst();
 
         while (Next(stackWalkData))
         {
             yield return stackWalkData.ToDataFrame();
+            stackWalkData.AdvanceIsFirst();
         }
     }
 
@@ -87,7 +144,6 @@ internal partial class StackWalk_1 : IStackWalk
         IEnumerable<GCFrameData> gcFrames = Filter(frames);
 
         GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
-        bool isFirstFramelessFrame = true;
 
         foreach (GCFrameData gcFrame in gcFrames)
         {
@@ -110,11 +166,12 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
-                        // The leaf (active) frame reports scratch registers; parent frames don't.
-                        GcScanner.CodeManagerFlags codeManagerFlags = isFirstFramelessFrame
+                        // IsActiveFrame was computed during CreateStackWalk, matching native
+                        // CrawlFrame::IsActiveFunc() semantics. Active frames report scratch
+                        // registers; non-active frames skip them.
+                        GcScanner.CodeManagerFlags codeManagerFlags = gcFrame.Frame.IsActiveFrame
                             ? GcScanner.CodeManagerFlags.ActiveStackFrame
                             : 0;
-                        isFirstFramelessFrame = false;
 
                         GcScanner gcScanner = new(_target);
                         gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext);

@@ -46,6 +46,10 @@ internal class GcScanner
 
         uint stackBaseRegister = decoder.StackBaseRegister;
 
+        // Lazily compute the caller SP for GC_CALLER_SP_REL slots.
+        // The native code uses GET_CALLER_SP(pRD) which comes from EnsureCallerContextIsValid.
+        TargetPointer? callerSP = null;
+
         return decoder.EnumerateLiveSlots(
             (uint)relativeOffset.Value,
             (uint)flags,
@@ -69,7 +73,7 @@ internal class GcScanner
                     {
                         1 => context.StackPointer,                                  // GC_SP_REL
                         2 => context.GetRegisterValue(stackBaseRegister),            // GC_FRAMEREG_REL
-                        0 => context.StackPointer,                                  // GC_CALLER_SP_REL (TODO: use actual caller SP)
+                        0 => GetCallerSP(context, ref callerSP),                    // GC_CALLER_SP_REL
                         _ => throw new InvalidOperationException($"Unknown stack slot base: {spBase}"),
                     };
 
@@ -85,6 +89,21 @@ internal class GcScanner
                     scanContext.GCEnumCallback(addr, scanFlags, loc);
                 }
             });
+    }
+
+    /// <summary>
+    /// Compute the caller's SP by unwinding the current context one frame.
+    /// Cached in <paramref name="cached"/> to avoid repeated unwinds for the same frame.
+    /// </summary>
+    private TargetPointer GetCallerSP(IPlatformAgnosticContext context, ref TargetPointer? cached)
+    {
+        if (cached is null)
+        {
+            IPlatformAgnosticContext callerContext = context.Clone();
+            callerContext.Unwind(_target);
+            cached = callerContext.StackPointer;
+        }
+        return cached.Value;
     }
 
 }

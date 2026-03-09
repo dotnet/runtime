@@ -44,4 +44,14 @@ internal class ARM64GCInfoTraits : IGCInfoTraits
     // Preserved (non-scratch): x19-x28
     // Scratch: x0-x17, x29(FP), x30(LR)
     public static bool IsScratchRegister(uint regNum) => regNum <= 17 || regNum >= 29;
+
+    // ARM64 has a fixed stack parameter scratch area.
+    // Stack slots with GC_SP_REL base in [0, scratchAreaSize) are scratch slots.
+    public static bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+    {
+        // GC_SP_REL = 1
+        return spBase == 1
+            && spOffset >= 0
+            && (uint)spOffset < fixedStackParameterScratchArea;
+    }
 }

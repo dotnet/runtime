@@ -57,4 +57,16 @@ internal class AMD64GCInfoTraits : IGCInfoTraits
             | (1u << 15); // r15
         return (preservedMask & (1u << (int)regNum)) == 0;
     }
+
+    // AMD64 has a fixed stack parameter scratch area (shadow space + outgoing args).
+    // Stack slots with GC_SP_REL base and offset in [0, scratchAreaSize) are scratch slots.
+    // This matches the native IsScratchStackSlot which computes GetStackSlot and checks
+    // pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea.
+    public static bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+    {
+        // GC_SP_REL = 1
+        return spBase == 1
+            && spOffset >= 0
+            && (uint)spOffset < fixedStackParameterScratchArea;
+    }
 }

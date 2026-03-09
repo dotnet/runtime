@@ -856,13 +856,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         else
         {
             // Skip scratch stack slots for non-leaf frames (slots in the outgoing/scratch area)
-            if (!_reportScratchSlots && TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA
-                && slot.Base == GcStackSlotBase.GC_SP_REL
-                && slot.SpOffset >= 0
-                && (uint)slot.SpOffset < _fixedStackParameterScratchArea)
-            {
+            if (!_reportScratchSlots && TTraits.IsScratchStackSlot(slot.SpOffset, (uint)slot.Base, _fixedStackParameterScratchArea))
                 return;
-            }
             // FP-based-only mode: only report GC_FRAMEREG_REL slots
             if (_reportFpBasedSlotsOnly && slot.Base != GcStackSlotBase.GC_FRAMEREG_REL)
                 return;

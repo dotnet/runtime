@@ -54,6 +54,14 @@ internal interface IGCInfoTraits
     /// </summary>
     static abstract bool IsScratchRegister(uint regNum);
 
+    /// <summary>
+    /// Returns true if a stack slot at the given offset and base is in the scratch/outgoing area.
+    /// Scratch stack slots should only be reported for the active (leaf) stack frame.
+    /// spBase uses the GcStackSlotBase encoding: 0=CALLER_SP_REL, 1=SP_REL, 2=FRAMEREG_REL.
+    /// </summary>
+    static virtual bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+        => false;
+
     // These are the same across all platforms
     static virtual int POINTER_SIZE_ENCBASE { get; } = 3;
     static virtual int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
