@@ -244,7 +244,6 @@
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-msimd128"                                Condition="'$(WasmEnableSIMD)' == 'true'" />
-      <_EmccCommonFlags Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" Condition="'$(EmccMaximumHeapSize)' != ''" />
     </ItemGroup>
 
     <ItemGroup>
@@ -369,7 +368,7 @@
       <_CompatHeaderLines Include="#define LL_INFO1000 0" />
       <_CompatHeaderLines Include="#define LOG(x)" />
       <_CompatHeaderLines Include="// CoreCLR assertion stubs" />
-      <_CompatHeaderLines Include="#define PORTABILITY_ASSERT(msg) do { fprintf(stderr, &quot;PORTABILITY_ASSERT: %%s\n&quot;, msg)%3B abort()%3B } while(0)" />
+      <_CompatHeaderLines Include="#define PORTABILITY_ASSERT(msg) do { fprintf(stderr, &quot;PORTABILITY_ASSERT: %25s&quot;, msg)%3B fprintf(stderr, &quot;\n&quot;)%3B abort()%3B } while(0)" />
     </ItemGroup>
 
     <WriteLinesToFile Lines="@(_CompatHeaderLines)" File="$(_WasmCoreclrCompatHeader)" Overwrite="true" WriteOnlyWhenDifferent="true" />
