@@ -18,7 +18,6 @@ namespace Microsoft.Interop
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var unsafeCodeIsEnabled = context.CompilationProvider.Select((comp, ct) => comp.Options is CSharpCompilationOptions { AllowUnsafe: true }); // Unsafe code enabled
             // Get all types with the [GeneratedComClassAttribute] attribute.
             var attributedClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
@@ -31,9 +30,7 @@ namespace Microsoft.Interop
                         var compilation = context.SemanticModel.Compilation;
                         return ComClassInfo.TryGetFrom(type, syntax, compilation);
                     })
-                .Combine(unsafeCodeIsEnabled)
-                .Where(static data => data.Left is not null && data.Right)
-                .Select(static (data, _) => data.Left!);
+                .Where(static info => info is not null);
 
             var classInfoType = attributedClasses
                 .Select(static (info, ct) => new ItemAndSyntaxes<ComClassInfo>(info,
