@@ -528,12 +528,5 @@ namespace Microsoft.Win32.SafeHandles
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
         }
-
-        private enum NullableBool
-        {
-            Undefined = 0,
-            False = -1,
-            True = 1
-        }
     }
 }
