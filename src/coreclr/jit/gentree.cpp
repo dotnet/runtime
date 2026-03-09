@@ -2772,6 +2772,21 @@ AGAIN:
             case GT_GCPOLL:
                 return true;
 
+            case GT_JCC:
+            case GT_SETCC:
+                if (op1->AsCC()->gtCondition.GetCode() != op2->AsCC()->gtCondition.GetCode())
+                {
+                    break;
+                }
+                return true;
+
+            case GT_PHYSREG:
+                if (op1->AsPhysReg()->gtSrcReg != op2->AsPhysReg()->gtSrcReg)
+                {
+                    break;
+                }
+                return true;
+
             default:
                 break;
         }
@@ -2881,6 +2896,33 @@ AGAIN:
 
     if (kind & GTK_BINOP)
     {
+        if (op1->OperIs(GT_JCMP, GT_JTEST, GT_SELECTCC))
+        {
+            if (op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode())
+            {
+                return false;
+            }
+        }
+#ifdef TARGET_ARM64
+        else if (op1->OperIs(GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
+        {
+            if (op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode())
+            {
+                return false;
+            }
+        }
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+        else if (op1->OperIs(GT_CCMP))
+        {
+            if ((op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode()) ||
+                (op1->AsCCMP()->gtFlagsVal != op2->AsCCMP()->gtFlagsVal))
+            {
+                return false;
+            }
+        }
+#endif
+
         if (IsExOp(kind))
         {
             // ExOp operators extend unary operator with extra, non-GenTree* members.  In many cases,
