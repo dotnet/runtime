@@ -204,6 +204,8 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Loop:
                     if (Parent is not { Kind: RegexNodeKind.Atomic })
                     {
+                        if (M == 0 && N == 1)
+                            throw new InvalidOperationException($"DEBUG: MakeLoopAtomic called on Loop{{0,1}} noBacktrackingByPosition={noBacktrackingByPosition}");
                         RegexNode loopAsChild = new(RegexNodeKind.Loop, Options, M, N);
                         Kind = RegexNodeKind.Atomic;
                         M = N = 0;
