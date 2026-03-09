@@ -68,19 +68,43 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileOptions.None)]
         [InlineData(FileOptions.Asynchronous)]
-        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation(FileOptions options)
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForRegularFiles(FileOptions options)
         {
             using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal((options & FileOptions.Asynchronous) != 0, handle.IsAsync);
+                Assert.Equal((options & FileOptions.Asynchronous) != 0 && IsAsyncIoSupportedForRegularFiles, handle.IsAsync);
 
                 // the following code exercises the code path where we don't know FileOptions used for opening the handle
                 // and instead we ask the OS about it
-                if (OperatingSystem.IsWindows()) // async file handles are a Windows concept
+                if (IsAsyncIoSupportedForRegularFiles)
                 {
                     SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
                     Assert.Equal((options & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(FileOptions.None)]
+        [InlineData(FileOptions.Asynchronous)]
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForPipes(FileOptions options)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: (options & FileOptions.Asynchronous) != 0, asyncWrite: (options & FileOptions.Asynchronous) != 0);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                Verify(readHandle, options);
+                Verify(writeHandle, options);
+            }
+
+            static void Verify(SafeFileHandle fileHandle, FileOptions fileOptions)
+            {
+                Assert.Equal((fileOptions & FileOptions.Asynchronous) != 0, fileHandle.IsAsync);
+
+                // The following code exercises the code path where the information is fetched from OS.
+                using SafeFileHandle createdFromIntPtr = new(fileHandle.DangerousGetHandle(), ownsHandle: false);
+                Assert.Equal((fileOptions & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
             }
         }
 
@@ -92,6 +116,7 @@ namespace System.IO.Tests
         public static async Task SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
         {
             byte[] message = "Hello, Pipe!"u8.ToArray();
+            byte[] buffer = new byte[message.Length];
 
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
             Assert.Equal(asyncRead, readHandle.IsAsync);
@@ -101,28 +126,34 @@ namespace System.IO.Tests
 
             using (readHandle)
             using (writeHandle)
-            using (Stream readStream = CreatePipeReadStream(readHandle, asyncRead))
-            using (Stream writeStream = CreatePipeWriteStream(writeHandle, asyncWrite))
+            using (Stream readStream = CreatePipeStream(readHandle, FileAccess.Read, asyncRead))
+            using (Stream writeStream = CreatePipeStream(writeHandle, FileAccess.Write, asyncWrite))
             {
-                byte[] buffer = new byte[message.Length];
-
                 Task writeTask = writeStream.WriteAsync(message, 0, message.Length);
                 Task readTask = readStream.ReadAsync(buffer, 0, buffer.Length);
-
                 await Task.WhenAll(writeTask, readTask);
+                Assert.Equal(message, buffer);
 
+                // Now let's test the other direction,
+                // which is going to test the E_WOULDBLOCK code path on Unix.
+                buffer.AsSpan().Reverse();
+
+                readTask = readStream.ReadAsync(buffer, 0, buffer.Length);
+                writeTask = writeStream.WriteAsync(message, 0, message.Length);
+                await Task.WhenAll(readTask, writeTask);
                 Assert.Equal(message, buffer);
             }
+        }
 
-            static Stream CreatePipeReadStream(SafeFileHandle readHandle, bool asyncRead)
-                => !OperatingSystem.IsWindows() && asyncRead
-                ? new AnonymousPipeClientStream(PipeDirection.In, TransferOwnershipToPipeHandle(readHandle))
-                : new FileStream(readHandle, FileAccess.Read, 1, asyncRead);
+        private static Stream CreatePipeStream(SafeFileHandle readHandle, FileAccess access, bool asyncIO)
+        {
+            if (!OperatingSystem.IsWindows() && asyncIO)
+            {
+                PipeDirection direction = access == FileAccess.Read ? PipeDirection.In : PipeDirection.Out;
+                return new AnonymousPipeClientStream(direction, TransferOwnershipToPipeHandle(readHandle));
+            }
 
-            static Stream CreatePipeWriteStream(SafeFileHandle writeHandle, bool asyncWrite)
-                => !OperatingSystem.IsWindows() && asyncWrite
-                ? new AnonymousPipeClientStream(PipeDirection.Out, TransferOwnershipToPipeHandle(writeHandle))
-                : new FileStream(writeHandle, FileAccess.Write, 1, asyncWrite);
+            return new FileStream(readHandle, access, 1, asyncIO);
 
             static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
             {
@@ -135,7 +166,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AsyncHandleOnUnix_Throws()
+        public void AsyncHandleOnUnix_FileStream_ctor_Throws()
         {
             // Currently SafeFileHandle.CreateAnonymousPipe is the only public API that allows creating async handles on Unix
 

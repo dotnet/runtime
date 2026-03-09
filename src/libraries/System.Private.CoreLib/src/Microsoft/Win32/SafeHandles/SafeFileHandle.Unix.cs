@@ -348,7 +348,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // Translate some FileOptions; some just aren't supported, and others will be handled after calling open.
-            // - Asynchronous: Handled in ctor, setting _useAsync and SafeFileHandle.IsAsync to true
+            // - Asynchronous: Unix does not support O_NONBLOCK for regular files, only for pipes and sockets.
             // - DeleteOnClose: Doesn't have a Unix equivalent, but we approximate it in Dispose
             // - Encrypted: No equivalent on Unix and is ignored
             // - RandomAccess: Implemented after open if posix_fadvise is available
@@ -401,7 +401,7 @@ namespace Microsoft.Win32.SafeHandles
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
 
-            IsAsync = (options & FileOptions.Asynchronous) != 0;
+            IsAsync = false; // Unix does not support O_NONBLOCK for regular files.
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
