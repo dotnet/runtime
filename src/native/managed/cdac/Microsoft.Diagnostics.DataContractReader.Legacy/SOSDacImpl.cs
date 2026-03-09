@@ -3950,7 +3950,7 @@ public sealed unsafe partial class SOSDacImpl
     }
 
 #if DEBUG
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly]
     private static void TraverseModuleMapCallback(uint index, ulong moduleAddr, void* expectedElements)
     {
         var expectedElementsDict = (Dictionary<ulong, uint>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
@@ -3964,7 +3964,7 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 #endif
-    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ulong, void*, void> pCallback, void* token)
+    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged<uint, ulong, void*, void> pCallback, void* token)
     {
         int hr = HResults.S_OK;
         IEnumerable<(TargetPointer Address, uint Index)> elements = Enumerable.Empty<(TargetPointer, uint)>();
@@ -4004,7 +4004,7 @@ public sealed unsafe partial class SOSDacImpl
             Dictionary<ulong, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target).Value, tuple => tuple.Index);
             expectedElements.Add(default, 0);
             void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
-            delegate* unmanaged[Stdcall]<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
+            delegate* unmanaged<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
 
             int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, callbackDebugPtr, tokenDebug);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
@@ -4015,7 +4015,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 #if DEBUG
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly]
     private static Interop.BOOL TraverseRCWCleanupListCallback(ulong rcwAddr, ulong ctx, ulong staThread, Interop.BOOL isFreeThreaded, void* expectedElements)
     {
         var expectedElementsDict = (Dictionary<ulong, ulong>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
@@ -4030,7 +4030,7 @@ public sealed unsafe partial class SOSDacImpl
         return Interop.BOOL.TRUE;
     }
 #endif
-    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
+    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
     {
         int hr = HResults.S_OK;
         IEnumerable<Contracts.RCWCleanupInfo> cleanupInfos = Enumerable.Empty<Contracts.RCWCleanupInfo>();
@@ -4064,7 +4064,7 @@ public sealed unsafe partial class SOSDacImpl
             expectedElements.Add(default, 0);
             GCHandle expectedElementsHandle = GCHandle.Alloc(expectedElements);
             void* tokenDebug = GCHandle.ToIntPtr(expectedElementsHandle).ToPointer();
-            delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
+            delegate* unmanaged<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
 
             int hrLocal = _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, callbackDebugPtr, tokenDebug);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");

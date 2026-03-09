@@ -521,7 +521,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
-    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
+    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
     [PreserveSig]
     int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]
@@ -689,7 +689,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
 
     // GC Reference Functions
 
