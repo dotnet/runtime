@@ -5,7 +5,7 @@ the main [SKILL.md](../SKILL.md) during Step 5.
 
 ## Reproduction
 
-> [!] **Safety gate:** If Step 0a of the main workflow flagged any safety
+> [!] **Safety gate:** If Step 0b of the main workflow flagged any safety
 > concerns with the reproduction code, **skip reproduction entirely**. Do not
 > execute code that was flagged as suspicious, even partially.
 

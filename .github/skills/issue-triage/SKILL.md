@@ -356,7 +356,7 @@ maintainer responses for each recommendation type.
 
 ---
 
-## Safety Concerns {only if Step 0a flagged issues; omit entirely if clean}
+## Safety Concerns {only if Step 0b flagged issues; omit entirely if clean}
 
 {List each concern with specifics, e.g.:}
 - [!] **Suspicious reproduction code** -- repro calls `HttpClient` to fetch from `http://{suspicious-domain}`. Reproduction skipped.
