@@ -267,7 +267,6 @@ extern bool g_libSslUses32BitTime;
 #define FOR_ALL_OPENSSL_FUNCTIONS \
     REQUIRED_FUNCTION(a2d_ASN1_OBJECT) \
     REQUIRED_FUNCTION(ASN1_d2i_bio) \
-    REQUIRED_FUNCTION(ASYNC_pause_job) \
     REQUIRED_FUNCTION(ASN1_i2d_bio) \
     REQUIRED_FUNCTION(ASN1_GENERALIZEDTIME_free) \
     REQUIRED_FUNCTION(ASN1_INTEGER_get) \
@@ -288,8 +287,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(BIO_gets) \
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
-    REQUIRED_FUNCTION(BIO_new_fp) \
-    REQUIRED_FUNCTION(BIO_printf) \
     REQUIRED_FUNCTION(BIO_read) \
     REQUIRED_FUNCTION(BIO_up_ref) \
     REQUIRED_FUNCTION(BIO_s_mem) \
@@ -651,7 +648,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_add_client_CA) \
     REQUIRED_FUNCTION(SSL_set_alpn_protos) \
-    REQUIRED_FUNCTION(SSL_set_info_callback) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_callback_ctrl) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
@@ -733,9 +729,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_verify_client_post_handshake) \
     REQUIRED_FUNCTION(SSL_set_post_handshake_auth) \
     REQUIRED_FUNCTION(SSL_version) \
-    REQUIRED_FUNCTION(SSL_want) \
-    REQUIRED_FUNCTION(SSL_trace) \
-    REQUIRED_FUNCTION(SSL_set_msg_callback) \
     REQUIRED_FUNCTION(UI_create_method) \
     REQUIRED_FUNCTION(UI_destroy_method) \
     REQUIRED_FUNCTION(X509_check_host) \
@@ -843,7 +836,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
 #define ASN1_GENERALIZEDTIME_free ASN1_GENERALIZEDTIME_free_ptr
 #define ASN1_d2i_bio ASN1_d2i_bio_ptr
-#define ASYNC_pause_job ASYNC_pause_job_ptr
 #define ASN1_i2d_bio ASN1_i2d_bio_ptr
 #define ASN1_INTEGER_get ASN1_INTEGER_get_ptr
 #define ASN1_OBJECT_free ASN1_OBJECT_free_ptr
@@ -863,8 +855,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define BIO_gets BIO_gets_ptr
 #define BIO_new BIO_new_ptr
 #define BIO_new_file BIO_new_file_ptr
-#define BIO_new_fp BIO_new_fp_ptr
-#define BIO_printf BIO_printf_ptr
 #define BIO_read BIO_read_ptr
 #define BIO_up_ref BIO_up_ref_ptr
 #define BIO_s_mem BIO_s_mem_ptr
@@ -1231,7 +1221,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_add_client_CA SSL_add_client_CA_ptr
 #define SSL_set_alpn_protos SSL_set_alpn_protos_ptr
-#define SSL_set_info_callback SSL_set_info_callback_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_callback_ctrl SSL_CTX_callback_ctrl_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
@@ -1312,9 +1301,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_verify_client_post_handshake SSL_verify_client_post_handshake_ptr
 #define SSL_set_post_handshake_auth SSL_set_post_handshake_auth_ptr
 #define SSL_version SSL_version_ptr
-#define SSL_want SSL_want_ptr
-#define SSL_trace SSL_trace_ptr
-#define SSL_set_msg_callback SSL_set_msg_callback_ptr
 #define TLS_method TLS_method_ptr
 #define UI_create_method UI_create_method_ptr
 #define UI_destroy_method UI_destroy_method_ptr

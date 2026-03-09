@@ -343,54 +343,10 @@ void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
     }
 }
 
-static BIO* bio_stdout = NULL;
-
-static void apps_ssl_info_callback(const SSL *s, int where, int ret)
-{
-    const char *str;
-    int w = where & ~SSL_ST_MASK;
-
-    if (w & SSL_ST_CONNECT)
-        str = "SSL_connect";
-    else if (w & SSL_ST_ACCEPT)
-        str = "SSL_accept";
-    else
-        str = "undefined";
-
-    if (where & SSL_CB_LOOP) {
-        BIO_printf(bio_stdout, "%s:%s\n", str, SSL_state_string_long(s));
-    } else if (where & SSL_CB_ALERT) {
-        str = (where & SSL_CB_READ) ? "read" : "write";
-        BIO_printf(bio_stdout, "SSL3 alert %s:%s:%s\n", str,
-                SSL_alert_type_string_long(ret),
-                SSL_alert_desc_string_long(ret));
-    } else if (where & SSL_CB_EXIT) {
-        if (ret == 0) {
-            BIO_printf(bio_stdout, "%s:failed in %s\n",
-                    str, SSL_state_string_long(s));
-        } else if (ret < 0) {
-            BIO_printf(bio_stdout, "%s:error in %s\n",
-                    str, SSL_state_string_long(s));
-        }
-    }
-}
-
 void CryptoNative_SslSetConnectState(SSL* ssl)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_connect_state(ssl);
-    // SSL_set_msg_callback(ssl, SSL_trace);
-    // if (bio_stdout == NULL)
-    // {
-    //     bio_stdout = BIO_new_fp(stdout, BIO_NOCLOSE);
-    //     if (bio_stdout == NULL)
-    //     {
-    //         ERR_clear_error();
-    //         return;
-    //     }
-    // }
-    // SSL_set_msg_callback_arg(ssl, bio_stdout);
-    // SSL_set_info_callback(ssl, apps_ssl_info_callback);
 }
 
 void CryptoNative_SslSetAcceptState(SSL* ssl)
@@ -1376,21 +1332,6 @@ void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidation
     {
         SSL_CTX_set_cert_verify_callback(ctx, CertVerifyCallback, (void*)callback);
     }
-}
-
-void CryptoNative_SslSetVerifyResult(SSL* ssl, int64_t verifyResult)
-{
-    (void)ssl;
-    (void)verifyResult;
-    SSL_set_verify_result(ssl, verifyResult);
-}
-
-/*
-Shims the SSL_get_verify_result method.
-*/
-int64_t CryptoNative_SslGetVerifyResult(SSL* ssl)
-{
-    return SSL_get_verify_result(ssl);
 }
 
 /*

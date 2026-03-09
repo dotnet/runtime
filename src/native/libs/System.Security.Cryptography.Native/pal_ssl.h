@@ -569,12 +569,3 @@ Sets the certificate verification callback for the SSL_CTX.
 */
 PALEXPORT void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidationCallback callback);
 
-/*
-Shims the SSL_set_verify_result method.
-*/
-PALEXPORT void CryptoNative_SslSetVerifyResult(SSL* ssl, int64_t verifyResult);
-
-/*
-Shims the SSL_get_verify_result method.
-*/
-PALEXPORT int64_t CryptoNative_SslGetVerifyResult(SSL* ssl);
