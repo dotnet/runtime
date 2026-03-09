@@ -42,11 +42,15 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
-  <!-- Task declarations -->
+  <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile"
-             AssemblyFile="$(WasmBuildTasksAssemblyPath)"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
-             Condition="'$(WasmBuildTasksAssemblyPath)' != ''" />
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
@@ -100,6 +104,7 @@
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
       _CoreCLRPrepareForNativeBuild;
+      _CoreCLRGenerateManagedToNative;
       _CoreCLRWriteCompileRsp;
       _CoreCLRCompileNativeSources;
       _CoreCLRWriteLinkRsp;
@@ -244,6 +249,11 @@
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
+
+      <!-- Include paths for ManagedToNativeGenerator output compilation -->
+      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/coreclr/vm/wasm&quot;" Condition="Exists('$(RepoRoot)src/coreclr/vm/wasm/callhelpers.hpp')" />
+      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/native&quot;" Condition="Exists('$(RepoRoot)src/native/minipal/entrypoints.h')" />
+      <_EmccCFlags Include="-include &quot;$(_WasmIntermediateOutputPath)coreclr_compat.h&quot;" />
     </ItemGroup>
 
     <!-- Source files: user NativeFileReference sources -->
@@ -259,9 +269,102 @@
     </ItemGroup>
   </Target>
 
+  <!-- ======================== Generate Managed-to-Native ======================== -->
+
+  <Target Name="_CoreCLRGenerateManagedToNative">
+    <PropertyGroup>
+      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.cpp</_WasmPInvokeTablePath>
+      <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)reverse-pinvoke-table.cpp</_WasmReversePInvokeTablePath>
+      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.cpp</_WasmInterpToNativeTablePath>
+      <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
+      <_IsLibraryMode Condition="'$(OutputType)' == 'Library'">true</_IsLibraryMode>
+      <_IsLibraryMode Condition="'$(_IsLibraryMode)' == ''">false</_IsLibraryMode>
+    </PropertyGroup>
+
+    <!-- P/Invoke modules: user native libraries + system native libraries -->
+    <ItemGroup>
+      <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
+      <_WasmPInvokeModules Include="libSystem.Native" />
+      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Native.Browser" />
+      <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+    </ItemGroup>
+
+    <!-- Managed assemblies to scan -->
+    <ItemGroup>
+      <_WasmManagedAssemblies Include="@(WasmAssembliesToBundle->Distinct())" />
+    </ItemGroup>
+
+    <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
+    <PropertyGroup>
+      <_HasCoreLib Condition="'%(_WasmManagedAssemblies.FileName)%(_WasmManagedAssemblies.Extension)' == 'System.Private.CoreLib.dll'">true</_HasCoreLib>
+      <!-- CoreCLR WASM ships CoreLib in the native directory, not the lib directory -->
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</_CoreLibPath>
+      <_CoreLibPath Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'System.Private.CoreLib.dll'))</_CoreLibPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(_HasCoreLib)' != 'true' and !Exists('$(_CoreLibPath)')"
+           Text="Could not find 'System.Private.CoreLib.dll' in the runtime pack at $(_CoreLibPath)" />
+
+    <ItemGroup Condition="'$(_HasCoreLib)' != 'true'">
+      <_WasmManagedAssemblies Include="$(_CoreLibPath)" />
+    </ItemGroup>
+
+    <ManagedToNativeGenerator
+      Assemblies="@(_WasmManagedAssemblies)"
+      PInvokeModules="@(_WasmPInvokeModules)"
+      PInvokeOutputPath="$(_WasmPInvokeTablePath)"
+      ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
+      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
+      CacheFilePath="$(_WasmM2NCachePath)"
+      IsLibraryMode="$(_IsLibraryMode)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
+
+    <!-- Add generated C++ files to compile list -->
+    <ItemGroup>
+      <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o" />
+      <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o" />
+    </ItemGroup>
+  </Target>
+
   <!-- ======================== Write Compile RSP ======================== -->
 
   <Target Name="_CoreCLRWriteCompileRsp" Condition="@(_WasmSourceFileToCompile->Count()) > 0">
+    <!-- Generate a compatibility header with type/macro stubs for compiling
+         ManagedToNativeGenerator output outside the full CoreCLR build context -->
+    <PropertyGroup>
+      <_WasmCoreclrCompatHeader>$(_WasmIntermediateOutputPath)coreclr_compat.h</_WasmCoreclrCompatHeader>
+    </PropertyGroup>
+    <ItemGroup>
+      <_CompatHeaderLines Include="// Auto-generated CoreCLR compat header for app native build" />
+      <_CompatHeaderLines Include="#pragma once" />
+      <_CompatHeaderLines Include="#include &lt;stddef.h&gt;" />
+      <_CompatHeaderLines Include="#include &lt;stdint.h&gt;" />
+      <_CompatHeaderLines Include="#include &lt;stdlib.h&gt;" />
+      <_CompatHeaderLines Include="#include &lt;stdio.h&gt;" />
+      <_CompatHeaderLines Include="// CoreCLR type stubs" />
+      <_CompatHeaderLines Include="#ifndef _CORECLR_COMPAT_TYPES" />
+      <_CompatHeaderLines Include="#define _CORECLR_COMPAT_TYPES" />
+      <_CompatHeaderLines Include="typedef void MethodDesc%3B" />
+      <_CompatHeaderLines Include="typedef uintptr_t PCODE%3B" />
+      <_CompatHeaderLines Include="typedef uint32_t ULONG%3B" />
+      <_CompatHeaderLines Include="#define INTERP_STACK_SLOT_SIZE 8u" />
+      <_CompatHeaderLines Include="#endif" />
+      <_CompatHeaderLines Include="// CoreCLR logging stubs" />
+      <_CompatHeaderLines Include="#define LF_INTEROP 0" />
+      <_CompatHeaderLines Include="#define LL_INFO1000 0" />
+      <_CompatHeaderLines Include="#define LOG(x)" />
+      <_CompatHeaderLines Include="// CoreCLR assertion stubs" />
+      <_CompatHeaderLines Include="#define PORTABILITY_ASSERT(msg) do { fprintf(stderr, &quot;PORTABILITY_ASSERT: %%s\n&quot;, msg)%3B abort()%3B } while(0)" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(_CompatHeaderLines)" File="$(_WasmCoreclrCompatHeader)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmCoreclrCompatHeader)" />
+    </ItemGroup>
+
     <ItemGroup>
       <_WasmCFlags Include="@(_EmccCFlags)" />
     </ItemGroup>
