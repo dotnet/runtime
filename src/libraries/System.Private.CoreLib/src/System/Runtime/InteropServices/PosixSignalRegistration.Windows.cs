@@ -15,7 +15,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static readonly object s_oneOfRegisterUnregisterLock = new();
 
-
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
             int signo = signal switch
@@ -103,6 +102,7 @@ namespace System.Runtime.InteropServices
         private static Interop.BOOL HandlerRoutine(int dwCtrlType)
         {
             Token[]? tokens = null;
+
             lock (s_registrations)
             {
                 if (s_registrations.TryGetValue(dwCtrlType, out List<Token>? registrations))
