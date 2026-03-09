@@ -103,7 +103,7 @@ unsigned SymW(_In_ __nullterminated char* curPos)
     return (unsigned)wc;
 }
 /*--------------------------------------------------------------------------*/
-char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenAU(_In_reads_(tokLen) void* curTok, size_t tokLen)
 {
     char *nb = new char[tokLen+1];
     if(nb != NULL)
@@ -113,14 +113,9 @@ char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
     }
     return nb;
 }
-char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenW(_In_reads_(tokLen) void* curTok, size_t tokLen)
 {
-    if (!PtrIsWCHARAligned(curTok))
-    {
-        _ASSERTE(!"NewStrFromTokenW: misaligned curTok");
-        return NULL;
-    }
-    // CodeQL [SM02986] Cast to WCHAR is safe because we bail if curTok is not properly aligned
+    _ASSERTE(PtrIsWCHARAligned((char*) curTok) && "NewStrFromTokenW: misaligned curTok");
     WCHAR* wcurTok = (WCHAR*)curTok;
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
