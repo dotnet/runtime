@@ -93,6 +93,8 @@ public unsafe class GetRegisterNameTests
     [InlineData(RuntimeInfoArchitecture.X64, 0, "rax")]
     [InlineData(RuntimeInfoArchitecture.X86, 3, "ebx")]
     [InlineData(RuntimeInfoArchitecture.Arm64, 0, "X0")]
+    [InlineData(RuntimeInfoArchitecture.LoongArch64, 0, "R0")]
+    [InlineData(RuntimeInfoArchitecture.RiscV64, 0, "R0")]
     public void GetRegisterName_CallerFrame_PrependsCaller(
         RuntimeInfoArchitecture targetArch,
         int regNum,
