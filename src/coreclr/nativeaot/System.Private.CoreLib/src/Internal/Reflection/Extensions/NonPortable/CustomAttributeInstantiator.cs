@@ -109,7 +109,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         // Use type-qualified lookup to avoid AmbiguousMatchException
                         // when a derived class covariant-overrides the property
                         PropertyInfo? propertyInfo = argumentType != null
-                            ? walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly, 
+                            ? walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly,
                                                binder: null, returnType: argumentType, types: [], modifiers: null)
                             : walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
