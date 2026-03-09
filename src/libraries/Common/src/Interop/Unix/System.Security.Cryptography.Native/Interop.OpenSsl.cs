@@ -424,6 +424,7 @@ internal static partial class Interop
                 authOptionsHandle = GCHandle.Alloc(sslAuthenticationOptions);
                 Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(authOptionsHandle));
                 sslHandle.AuthOptionsHandle = authOptionsHandle;
+                authOptionsHandle = default; // the ownership is transferred to sslHandle, so we should not free it in the caller anymore.
 
                 if (!sslAuthenticationOptions.AllowRsaPssPadding || !sslAuthenticationOptions.AllowRsaPkcs1Padding)
                 {
