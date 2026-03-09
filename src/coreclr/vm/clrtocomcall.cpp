@@ -316,7 +316,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         gc.EventProviderTypeObj = pEvProvMT->GetManagedClassObject();
         gc.ThisObj = pFrame->GetThis();
 
-        UnmanagedCallersOnlyCaller getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER_UCO);
+        UnmanagedCallersOnlyCaller getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER);
 
         // Retrieve the event provider for the event interface type.
         getEventProvider.InvokeThrowing(&gc.ThisObj, &gc.EventProviderTypeObj, &gc.EventProviderObj);
@@ -659,18 +659,18 @@ UINT32 CLRToCOMLateBoundWorker(
         }
 
         // Create a call site for the invoke
-        UnmanagedCallersOnlyCaller forwardCallToInvoke(METHOD__CLASS__FORWARD_CALL_TO_INVOKE_UCO);
+        UnmanagedCallersOnlyCaller forwardCallToInvoke(METHOD__CLASS__FORWARD_CALL_TO_INVOKE);
 
         // Invoke the method
         forwardCallToInvoke.InvokeThrowing(
             &gc.ItfTypeObj,
-            reinterpret_cast<OBJECTREF*>(&gc.MemberName),
+            &gc.MemberName,
             (INT32)binderFlags,
             &gc.ThisObj,
-            reinterpret_cast<OBJECTREF*>(&gc.Args),
-            reinterpret_cast<OBJECTREF*>(&gc.ArgsIsByRef),
+            &gc.Args,
+            &gc.ArgsIsByRef,
             &gc.ArgsWrapperTypes,
-            reinterpret_cast<OBJECTREF*>(&gc.ArgsTypes),
+            &gc.ArgsTypes,
             &gc.RetValType,
             &gc.RetVal);
 

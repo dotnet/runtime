@@ -1494,7 +1494,7 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
-        private static unsafe void GetIEnumeratorToEnumVariantMarshalerUco(object* pResult, Exception* pException)
+        private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try
             {

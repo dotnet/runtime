@@ -2158,7 +2158,7 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
         }
         else
         {
-            UnmanagedCallersOnlyCaller castVariant(METHOD__VARIANT__CAST_VARIANT_UCO);
+            UnmanagedCallersOnlyCaller castVariant(METHOD__VARIANT__CAST_VARIANT);
 
             // MarshalOleRefVariantForObjectNoCast has checked that the variant is not an array
             // so we can use the marshal cast helper to coerce the object to the proper type.
@@ -2756,7 +2756,7 @@ void OleVariant::MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTR
     }
     else
     {
-        UnmanagedCallersOnlyCaller convertVariantToObject(METHOD__VARIANT__CONVERT_VARIANT_TO_OBJECT_UCO);
+        UnmanagedCallersOnlyCaller convertVariantToObject(METHOD__VARIANT__CONVERT_VARIANT_TO_OBJECT);
         convertVariantToObject.InvokeThrowing(pOle, pObj);
     }
 }
@@ -2796,7 +2796,7 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
     }
     else
     {
-        UnmanagedCallersOnlyCaller convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT_UCO);
+        UnmanagedCallersOnlyCaller convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
         convertObjectToVariant.InvokeThrowing(pObj, pOle);
     }
 

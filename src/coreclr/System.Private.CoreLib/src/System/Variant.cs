@@ -193,12 +193,11 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void MarshalHelperConvertObjectToVariantUco(object* pObject, ComVariant* pOle, Exception* pException)
+        private static unsafe void MarshalHelperConvertObjectToVariant(object* pObject, ComVariant* pOle, Exception* pException)
         {
             try
             {
-                MarshalHelperConvertObjectToVariant(*pObject, out ComVariant tmp);
-                *pOle = tmp;
+                MarshalHelperConvertObjectToVariant(*pObject, out *pOle);
             }
             catch (Exception ex)
             {
@@ -335,7 +334,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void MarshalHelperConvertVariantToObjectUco(ComVariant* pOle, object* pResult, Exception* pException)
+        private static unsafe void MarshalHelperConvertVariantToObject(ComVariant* pOle, object* pResult, Exception* pException)
         {
             try
             {
@@ -425,12 +424,11 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void MarshalHelperCastVariantUco(object* pValue, int vt, ComVariant* pOle, Exception* pException)
+        private static unsafe void MarshalHelperCastVariant(object* pValue, int vt, ComVariant* pOle, Exception* pException)
         {
             try
             {
-                MarshalHelperCastVariant(*pValue!, vt, out ComVariant tmp);
-                *pOle = tmp;
+                MarshalHelperCastVariant(*pValue!, vt, out *pOle);
             }
             catch (Exception ex)
             {

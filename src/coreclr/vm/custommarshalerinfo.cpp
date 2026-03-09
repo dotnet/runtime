@@ -120,7 +120,7 @@ CustomMarshalerInfo* CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(LoaderH
     GCX_COOP();
     GCPROTECT_BEGIN(IEnumeratorMarshalerObj);
 
-    UnmanagedCallersOnlyCaller getMarshaler(METHOD__STUBHELPERS__GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER_UCO);
+    UnmanagedCallersOnlyCaller getMarshaler(METHOD__STUBHELPERS__GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER);
     getMarshaler.InvokeThrowing(&IEnumeratorMarshalerObj);
 
     pInfo = new (pHeap) CustomMarshalerInfo(pLoaderAllocator, pLoaderAllocator->AllocateHandle(IEnumeratorMarshalerObj));

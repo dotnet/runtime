@@ -4221,38 +4221,30 @@ namespace System
 
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
-        private static unsafe void ForwardCallToInvokeMemberUco(
-            object* pRuntimeType,
-            object* pMemberName,
+        private static unsafe void ForwardCallToInvokeMember(
+            RuntimeType* pRuntimeType,
+            string* pMemberName,
             int flags,
             object* pTarget,
-            object* pArgs,
-            object* pArgsIsByRef,
-            object* pArgsWrapperTypes,
-            object* pArgsTypes,
-            object* pRetType,
+            object[]* pArgs,
+            bool[]* pArgsIsByRef,
+            int[]* pArgsWrapperTypes,
+            Type[]* pArgsTypes,
+            Type* pRetType,
             object* pResult,
             Exception* pException)
         {
             try
             {
-                RuntimeType runtimeType = (RuntimeType)(*pRuntimeType)!;
-                string memberName = (string)(*pMemberName)!;
-                object[] args = (object[])(*pArgs)!;
-                bool[] argsIsByRef = (bool[])(*pArgsIsByRef)!;
-                int[]? argsWrapperTypes = (int[]?)(*pArgsWrapperTypes);
-                Type[] argsTypes = (Type[])(*pArgsTypes)!;
-                Type retType = (Type)(*pRetType)!;
-
-                *pResult = runtimeType.ForwardCallToInvokeMember(
-                    memberName,
+                *pResult = pRuntimeType->ForwardCallToInvokeMember(
+                    *pMemberName,
                     (BindingFlags)flags,
                     *pTarget,
-                    args,
-                    argsIsByRef,
-                    argsWrapperTypes,
-                    argsTypes,
-                    retType);
+                    *pArgs,
+                    *pArgsIsByRef,
+                    *pArgsWrapperTypes,
+                    *pArgsTypes,
+                    *pRetType);
             }
             catch (Exception ex)
             {

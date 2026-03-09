@@ -762,18 +762,12 @@ namespace Internal.Runtime.InteropServices
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);
 
-        // Helper function to create an object from the native side
-        public static object Create()
-        {
-            return new LicenseInteropProxy();
-        }
-
         [UnmanagedCallersOnly]
-        private static unsafe void CreateUco(object* pResult, Exception* pException)
+        private static unsafe void Create(object* pResult, Exception* pException)
         {
             try
             {
-                *pResult = Create();
+                *pResult = new LicenseInteropProxy();
             }
             catch (Exception ex)
             {
@@ -891,15 +885,11 @@ namespace Internal.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void GetCurrentContextInfoUco(object* pProxy, object* pType, int* pIsDesignTime, IntPtr* pBstrKey, Exception* pException)
+        private static unsafe void GetCurrentContextInfo(LicenseInteropProxy* pProxy, Type* pType, bool* pIsDesignTime, IntPtr* pBstrKey, Exception* pException)
         {
             try
             {
-                LicenseInteropProxy proxy = (LicenseInteropProxy)(*pProxy)!;
-                Type type = (Type)(*pType)!;
-                proxy.GetCurrentContextInfo(type.TypeHandle, out bool isDesignTime, out IntPtr bstrKey);
-                *pIsDesignTime = isDesignTime ? 1 : 0;
-                *pBstrKey = bstrKey;
+                pProxy->GetCurrentContextInfo(pType->TypeHandle, out *pIsDesignTime, out *pBstrKey);
             }
             catch (Exception ex)
             {
@@ -924,11 +914,11 @@ namespace Internal.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void SaveKeyInCurrentContextUco(object* pProxy, IntPtr bstrKey, Exception* pException)
+        private static unsafe void SaveKeyInCurrentContext(LicenseInteropProxy* pProxy, IntPtr bstrKey, Exception* pException)
         {
             try
             {
-                ((LicenseInteropProxy)(*pProxy)!).SaveKeyInCurrentContext(bstrKey);
+                pProxy->SaveKeyInCurrentContext(bstrKey);
             }
             catch (Exception ex)
             {

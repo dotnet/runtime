@@ -137,16 +137,16 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         GCPROTECT_BEGIN(gc);
 
         // Create an instance of the object
-        UnmanagedCallersOnlyCaller createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE_UCO);
+        UnmanagedCallersOnlyCaller createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
         createObj.InvokeThrowing(&gc.pProxy);
         gc.pType = rth.GetManagedClassObject();
 
         // Query the current licensing context
-        UnmanagedCallersOnlyCaller getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO_UCO);
-        INT32 fDesignTime = FALSE;
-        BSTR bstrKeyRaw = NULL;
-        getCurrentContextInfo.InvokeThrowing(&gc.pProxy, &gc.pType, &fDesignTime, reinterpret_cast<INT_PTR*>(&bstrKeyRaw));
-        bstrKey = bstrKeyRaw;
+        UnmanagedCallersOnlyCaller getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO);
+        CLR_BOOL fDesignTime = FALSE;
+        INT_PTR bstrKeyRaw = NULL;
+        getCurrentContextInfo.InvokeThrowing(&gc.pProxy, &gc.pType, &fDesignTime, &bstrKeyRaw);
+        bstrKey = (BSTR)bstrKeyRaw;
 
         if (fDesignTime)
         {
@@ -177,7 +177,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             // Store the requested license key
             if (SUCCEEDED(hr))
             {
-                UnmanagedCallersOnlyCaller saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT_UCO);
+                UnmanagedCallersOnlyCaller saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT);
                 BSTR bstrKeyValue = (BSTR)bstrKey;
                 saveKeyInCurrentContext.InvokeThrowing(&gc.pProxy, reinterpret_cast<INT_PTR>(bstrKeyValue));
             }
