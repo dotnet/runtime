@@ -11052,29 +11052,20 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             printf("DUconflict    ");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE1:
-            printf(indentFormat, "  Case #1 use defRegAssignment");
+        case LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE:
+            printf(indentFormat, "  Define in fixed use reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE2:
-            printf(indentFormat, "  Case #2 use useRegAssignment");
+        case LSRA_EVENT_DEFUSE_DEF_IN_USE:
+            printf(indentFormat, "  Define in candidate use reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE3:
-            printf(indentFormat, "  Case #3 use useRegAssignment");
-            dumpRegRecords();
-            dumpRegRecords();
-            break;
-        case LSRA_EVENT_DEFUSE_CASE4:
-            printf(indentFormat, "  Case #4 use defRegAssignment");
+        case LSRA_EVENT_DEFUSE_ANY_DEF:
+            printf(indentFormat, "  Define in any reg");
             dumpRegRecords();
             break;
-        case LSRA_EVENT_DEFUSE_CASE5:
-            printf(indentFormat, "  Case #5 set def to all regs");
-            dumpRegRecords();
-            break;
-        case LSRA_EVENT_DEFUSE_CASE6:
-            printf(indentFormat, "  Case #6 need a copy");
+        case LSRA_EVENT_DEFUSE_COPY:
+            printf(indentFormat, "  Need a copy");
             dumpRegRecords();
             if (interval == nullptr)
             {
@@ -11247,7 +11238,6 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
             break;
 
         // We currently don't dump anything for these events.
-        case LSRA_EVENT_DEFUSE_FIXED_DELAY_USE:
         case LSRA_EVENT_SPILL_EXTENDED_LIFETIME:
         case LSRA_EVENT_END_BB:
         case LSRA_EVENT_FREE_REGS:
