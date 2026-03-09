@@ -11,7 +11,7 @@ using System.Runtime.Versioning;
 /// then crashes to produce a dump for analysis.
 /// This debuggee is Windows-only, as RCW support requires FEATURE_COMINTEROP.
 /// </summary>
-internal static class Program
+internal static partial class Program
 {
     private const int S_OK = 0;
     private const int S_FALSE = 1;
@@ -36,11 +36,11 @@ internal static class Program
         int GetInterfaceFromGlobal(int dwCookie, ref Guid riid, out IntPtr ppv);
     }
 
-    [DllImport("ole32.dll")]
-    private static extern int CoInitializeEx(IntPtr pvReserved, uint dwCoInit);
+    [LibraryImport("ole32.dll")]
+    private static partial int CoInitializeEx(IntPtr pvReserved, uint dwCoInit);
 
-    [DllImport("ole32.dll")]
-    private static extern void CoUninitialize();
+    [LibraryImport("ole32.dll")]
+    private static partial void CoUninitialize();
 
     private static void Main()
     {
