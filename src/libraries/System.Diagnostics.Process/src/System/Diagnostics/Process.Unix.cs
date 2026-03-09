@@ -505,7 +505,7 @@ namespace System.Diagnostics
             {
                 if (usesTerminal)
                 {
-                    ConfigureTerminalForChildProcesses(1);
+                    ProcessUtils.ConfigureTerminalForChildProcesses(1);
                 }
 
                 int childPid;
@@ -553,7 +553,7 @@ namespace System.Diagnostics
                 {
                     // We failed to launch a child that could use the terminal.
                     ProcessUtils.s_processStartLock.EnterWriteLock();
-                    ConfigureTerminalForChildProcesses(-1);
+                    ProcessUtils.ConfigureTerminalForChildProcesses(-1);
                     ProcessUtils.s_processStartLock.ExitWriteLock();
                 }
             }
@@ -979,7 +979,7 @@ namespace System.Diagnostics
 
                     // Register our callback.
                     Interop.Sys.RegisterForSigChld(&OnSigChild);
-                    SetDelayedSigChildConsoleConfigurationHandler();
+                    ProcessUtils.SetDelayedSigChildConsoleConfigurationHandler();
 
                     s_initialized = true;
                 }
@@ -999,9 +999,9 @@ namespace System.Diagnostics
             ProcessUtils.s_processStartLock.EnterWriteLock();
             try
             {
-                bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
+                bool childrenUsingTerminalPre = ProcessUtils.AreChildrenUsingTerminal;
                 ProcessWaitState.CheckChildren(reapAll != 0, configureConsole != 0);
-                bool childrenUsingTerminalPost = AreChildrenUsingTerminal;
+                bool childrenUsingTerminalPost = ProcessUtils.AreChildrenUsingTerminal;
 
                 // return whether console configuration was skipped.
                 return childrenUsingTerminalPre && !childrenUsingTerminalPost && configureConsole == 0 ? 1 : 0;
