@@ -142,6 +142,17 @@ namespace Tracing.UserEvents.Tests.Common
             recordTraceStartInfo.ArgumentList.Add(traceFilePath);
             recordTraceStartInfo.ArgumentList.Add("--log-path");
             recordTraceStartInfo.ArgumentList.Add(recordTraceLogPath);
+            recordTraceStartInfo.ArgumentList.Add("--log-filter");
+            recordTraceStartInfo.ArgumentList.Add(
+                "one_collect::helpers::dotnet=debug," +
+                "one_collect::perf_event=debug," +
+                "one_collect::perf_event::rb=info," +
+                "one_collect::helpers::exporting::formats::nettrace=debug," +
+                "one_collect::helpers::exporting::os=warn," +
+                "ruwind=warn," +
+                "one_collect::tracefs=warn," +
+                "one_collect::scripting=warn," +
+                "engine=warn");
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
@@ -284,6 +295,7 @@ namespace Tracing.UserEvents.Tests.Common
             if (!traceValidator(traceePid, source))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
+                DumpTraceeEvents(traceFilePath, traceePid);
                 UploadArtifactsFromHelixOnFailure(scenarioName, traceFilePath, recordTraceLogPath);
                 return -1;
             }
@@ -397,6 +409,38 @@ namespace Tracing.UserEvents.Tests.Common
                 string destPath = Path.Combine(helixWorkItemDirectory, $"{scenarioName}{extension}");
                 Console.WriteLine($"Uploading artifact to Helix work item directory: {destPath}");
                 File.Copy(filePath, destPath, overwrite: true);
+            }
+        }
+
+        private static void DumpTraceeEvents(string traceFilePath, int traceePid)
+        {
+            try
+            {
+                using EventPipeEventSource diagSource = new EventPipeEventSource(traceFilePath);
+                int traceeEventCount = 0;
+                var eventSummary = new Dictionary<string, int>();
+
+                diagSource.Dynamic.All += (TraceEvent e) =>
+                {
+                    if (e.ProcessID != traceePid)
+                        return;
+
+                    traceeEventCount++;
+                    string key = $"{e.ProviderName}/{e.EventName}";
+                    eventSummary[key] = eventSummary.GetValueOrDefault(key) + 1;
+                };
+
+                diagSource.Process();
+
+                Console.Error.WriteLine($"Tracee PID {traceePid} had {traceeEventCount} event(s) in the trace:");
+                foreach (var (key, count) in eventSummary)
+                {
+                    Console.Error.WriteLine($"  {key}: {count}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to dump tracee events: {ex}");
             }
         }
     }
