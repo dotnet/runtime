@@ -133,6 +133,27 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void AsyncHandleOnUnix_Throws()
+        {
+            // Currently SafeFileHandle.CreateAnonymousPipe is the only public API that allows creating async handles on Unix
+
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: true, asyncWrite: true);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                Assert.True(readHandle.IsAsync);
+                Assert.True(writeHandle.IsAsync);
+                Assert.Equal(FileHandleType.Pipe, readHandle.Type);
+                Assert.Equal(FileHandleType.Pipe, writeHandle.Type);
+
+                AssertExtensions.Throws<ArgumentException>("handle", () => new FileStream(readHandle, FileAccess.ReadWrite));
+                AssertExtensions.Throws<ArgumentException>("handle", () => new FileStream(writeHandle, FileAccess.ReadWrite));
+            }
+        }
+
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]

@@ -42,16 +42,9 @@ namespace System.IO.Tests
         public void AsyncDiscoveredFromHandle()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, true))
+            using (FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite))
             {
-                if (OperatingSystem.IsWindows())
-                {
-                    using FileStream fsh = new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite);
-                    Assert.True(fsh.IsAsync);
-                }
-                else
-                {
-                    AssertExtensions.Throws<ArgumentException>("handle", () => new FileStream(fs.SafeFileHandle, FileAccess.ReadWrite));
-                }
+                Assert.True(fsh.IsAsync);
             }
 
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, false))
