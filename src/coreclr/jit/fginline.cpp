@@ -912,7 +912,7 @@ private:
 
                 CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                ILLocation ilLocation                = call->gtLateDevirtualizationInfo->ilLocation;
+                ILLocation             ilLocation             = call->gtLateDevirtualizationInfo->ilLocation;
                 InlineContext*         inlinersContext        = call->gtInlineContext;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
