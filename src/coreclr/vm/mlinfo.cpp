@@ -26,7 +26,6 @@
 #include "dispparammarshaler.h"
 #endif // FEATURE_COMINTEROP
 
-#define INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
 #define DEBUG_CONTEXT_STR_LEN 2000
@@ -411,68 +410,6 @@ VOID CollateParamTokens(IMDInternalImport *pInternalImport, mdMethodDef md, ULON
     }
 }
 
-
-void *LayoutClassMarshalers::operator new(size_t size, LoaderHeap *pHeap)
-{
-    CONTRACT (void*)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pHeap));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    void* mem = pHeap->AllocMem(S_SIZE_T(sizeof(LayoutClassMarshalers)));
-
-    RETURN mem;
-}
-
-
-void LayoutClassMarshalers::operator delete(void *pMem)
-{
-    LIMITED_METHOD_CONTRACT;
-    // Instances of this class are always allocated on the loader heap so
-    // the delete operator has nothing to do.
-}
-
-void LayoutClassMarshalers::SetMarshalMethod(MethodDesc* pMD, MarshalOperation op)
-{
-    switch (op)
-    {
-    case MarshalOperation::ConvertToUnmanaged:
-        m_pConvertToUnmanagedMD = pMD;
-        break;
-    case MarshalOperation::ConvertToManaged:
-        m_pConvertToManagedMD = pMD;
-        break;
-    case MarshalOperation::Free:
-        m_pFreeMD = pMD;
-        break;
-    default:
-        _ASSERTE(!"Unexpected marshal operation");
-        break;
-    }
-}
-
-MethodDesc* LayoutClassMarshalers::GetMarshalMethod(MarshalOperation op)
-{
-    switch (op)
-    {
-    case MarshalOperation::ConvertToUnmanaged:
-        return m_pConvertToUnmanagedMD;
-    case MarshalOperation::ConvertToManaged:
-        return m_pConvertToManagedMD;
-    case MarshalOperation::Free:
-        return m_pFreeMD;
-    default:
-        _ASSERTE(!"Unexpected marshal operation");
-        return nullptr;
-    }
-}
-
 EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst) :
     m_pAllocator(pAllocator),
     m_pHeap(pAllocator->GetLowFrequencyHeap()),
@@ -487,7 +424,6 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
     CONTRACTL_END;
 
     LockOwner lock = {pCrst, IsOwnerOfCrst};
-    m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
     m_CMInfoHashTable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
 }
 
@@ -531,37 +467,6 @@ void EEMarshalingData::operator delete(void *pMem)
     // Instances of this class are always allocated on the loader heap so
     // the delete operator has nothing to do.
 }
-
-
-void EEMarshalingData::CacheLayoutClassILStub(MethodTable* pMT, MarshalOperation op, MethodDesc* pStubMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    CrstHolder lock(m_lock);
-
-    // Verify that the stub has not already been added by another thread.
-    HashDatum res = 0;
-    if (m_structILStubCache.GetValue(pMT, &res))
-    {
-        LayoutClassMarshalers* pMarshalers = (LayoutClassMarshalers*)res;
-
-        if (pMarshalers->GetMarshalMethod(op) != nullptr)
-        {
-            return;
-        }
-
-        pMarshalers->SetMarshalMethod(pStubMD, op);
-        return;
-    }
-
-    NewHolder<LayoutClassMarshalers> pMarshalers = new (m_pHeap) LayoutClassMarshalers(pMT);
-    pMarshalers->SetMarshalMethod(pStubMD, op);
-
-    m_structILStubCache.InsertValue(pMT, pMarshalers);
-
-    pMarshalers.SuppressRelease();
-}
-
 
 CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 {

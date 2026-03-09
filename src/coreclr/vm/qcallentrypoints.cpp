@@ -498,6 +498,7 @@ static const Entry s_QCall[] =
     DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
+    DllImportEntry(StubHelpers_CreateLayoutClassMarshalStub)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)

@@ -283,9 +283,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #endif
     if (SF_IsStructMarshalStub(dwStubFlags))
     {
-        // Struct marshal stub MethodDescs might be directly called from `call` IL instructions
-        // so we want to keep their compile time data alive as long as the LoaderAllocator in case they're used again.
-        pMD->GetILStubResolver()->SetLoaderHeap(pCreationHeap);
         pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else

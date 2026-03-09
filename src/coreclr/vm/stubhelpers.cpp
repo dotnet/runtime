@@ -678,7 +678,7 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
     END_QCALL;
 }
 
-extern "C" PCODE QCALLTYPE StubHelpers_GetLayoutClassMarshalStub(QCall::TypeHandle th, int operation)
+extern "C" PCODE QCALLTYPE StubHelpers_CreateLayoutClassMarshalStub(QCall::TypeHandle th, int operation)
 {
     QCALL_CONTRACT;
 

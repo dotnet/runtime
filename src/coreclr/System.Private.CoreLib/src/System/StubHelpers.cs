@@ -1384,6 +1384,8 @@ namespace System.StubHelpers
 
     internal static unsafe class LayoutClassMarshaler<T> where T : class
     {
+        private static readonly Lock s_stubGenLock = new();
+
         private static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToUnmanagedStub
         {
             get
@@ -1391,9 +1393,15 @@ namespace System.StubHelpers
                 if (field != null)
                     return field;
 
-                RuntimeTypeHandle th = typeof(T).TypeHandle;
+                lock (s_stubGenLock)
+                {
+                    if (field != null)
+                        return field;
 
-                return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.ConvertToUnmanaged);
+                    RuntimeTypeHandle th = typeof(T).TypeHandle;
+
+                    return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.ConvertToUnmanaged);
+                }
             }
         }
 
@@ -1404,9 +1412,15 @@ namespace System.StubHelpers
                 if (field != null)
                     return field;
 
-                RuntimeTypeHandle th = typeof(T).TypeHandle;
+                lock (s_stubGenLock)
+                {
+                    if (field != null)
+                        return field;
 
-                return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.ConvertToManaged);
+                    RuntimeTypeHandle th = typeof(T).TypeHandle;
+
+                    return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.ConvertToManaged);
+                }
             }
         }
 
@@ -1417,9 +1431,15 @@ namespace System.StubHelpers
                 if (field != null)
                     return field;
 
-                RuntimeTypeHandle th = typeof(T).TypeHandle;
+                lock (s_stubGenLock)
+                {
+                    if (field != null)
+                        return field;
 
-                return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.Free);
+                    RuntimeTypeHandle th = typeof(T).TypeHandle;
+
+                    return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.Free);
+                }
             }
         }
 
@@ -1699,7 +1719,7 @@ namespace System.StubHelpers
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetLayoutClassMarshalStub")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateLayoutClassMarshalStub")]
         internal static unsafe partial delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> GetLayoutClassMarshalStub(QCallTypeHandle th, int operation);
 
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)

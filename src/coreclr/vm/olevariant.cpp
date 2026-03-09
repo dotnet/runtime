@@ -1451,7 +1451,12 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
     BYTE *managedData = (*pComArray)->GetDataPtr();
     GCPROTECT_BEGININTERIOR(managedData)
     {
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT));
+        MethodDesc* pMD;
+        {
+            GCX_PREEMP();
+            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT);
+        }
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         while (pOle < pOleEnd)
         {
@@ -1500,7 +1505,12 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
     BYTE *managedData = (*pComArray)->GetDataPtr();
     GCPROTECT_BEGININTERIOR(managedData)
     {
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT));
+        MethodDesc* pMD;
+        {
+            GCX_PREEMP();
+            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT);
+        }
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
         DECLARE_ARGHOLDER_ARRAY(args, 4);
         while (pOle < pOleEnd)
         {
@@ -1535,7 +1545,12 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
     BYTE *pOleEnd = pOle + elemSize * cElements;
     while (pOle < pOleEnd)
     {
-        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT));
+        MethodDesc* pMD;
+        {
+            GCX_PREEMP();
+            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
+        }
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
         DECLARE_ARGHOLDER_ARRAY(args, 4);
         while (pOle < pOleEnd)
         {
@@ -3826,14 +3841,20 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
 
         if (pValueClassMT->IsValueType())
         {
-            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+            {
+                GCX_PREEMP();
+                pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+            }
             args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
         }
         else
         {
             // Layout class
-            pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(*pBoxedValueClass);
+            {
+                GCX_PREEMP();
+                pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+            }
+            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pBoxedValueClass);
         }
 
         PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);

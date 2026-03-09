@@ -198,47 +198,6 @@ BOOL ParseNativeTypeInfo(mdToken                    token,
 BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
 
-enum class MarshalOperation : int32_t;
-
-class LayoutClassMarshalers
-{
-private:
-    MethodTable* m_pMT;
-    MethodDesc* m_pConvertToUnmanagedMD;
-    MethodDesc* m_pConvertToManagedMD;
-    MethodDesc* m_pFreeMD;
-
-public:
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-    LayoutClassMarshalers(MethodTable* pMT)
-        : m_pMT(pMT)
-        , m_pConvertToUnmanagedMD(nullptr)
-        , m_pConvertToManagedMD(nullptr)
-        , m_pFreeMD(nullptr)
-    {
-
-    }
-    MethodDesc* GetConvertToUnmanagedMD()
-    {
-        return m_pConvertToUnmanagedMD;
-    }
-
-    MethodDesc* GetConvertToManagedMD()
-    {
-        return m_pConvertToManagedMD;
-    }
-
-    MethodDesc* GetFreeMD()
-    {
-        return m_pFreeMD;
-    }
-
-    void SetMarshalMethod(MethodDesc* pMD, MarshalOperation op);
-
-    MethodDesc* GetMarshalMethod(MarshalOperation op);
-};
-
 class EEMarshalingData
 {
 public:
@@ -250,26 +209,6 @@ public:
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *pMem);
 
-#ifndef DACCESS_COMPILE
-    LayoutClassMarshalers* LookupLayoutClassILStubSpeculative(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        HashDatum res = 0;
-        m_structILStubCache.GetValueSpeculative(pMT, &res);
-        return (LayoutClassMarshalers*)res;
-    }
-
-    LayoutClassMarshalers* LookupLayoutClassILStub(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        HashDatum res = 0;
-        m_structILStubCache.GetValue(pMT, &res);
-        return (LayoutClassMarshalers*)res;
-    }
-
-    void CacheLayoutClassILStub(MethodTable* pMT, MarshalOperation op, MethodDesc* pStubMD);
-#endif
-
     // This method returns the custom marshaling info associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerInfo *GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
@@ -279,7 +218,6 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    EEPtrHashTable                      m_structILStubCache;
     EECMInfoHashTable                   m_CMInfoHashTable;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;

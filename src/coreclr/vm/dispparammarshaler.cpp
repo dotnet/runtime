@@ -399,10 +399,12 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             {
                 if (m_pRecordMT->IsValueType())
                 {
+                    GCX_PREEMP();
                     pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
                 }
                 else
                 {
+                    GCX_PREEMP();
                     // Layout class
                     pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
                 }
