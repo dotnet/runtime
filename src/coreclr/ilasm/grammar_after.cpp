@@ -238,7 +238,7 @@ void yyerror(_In_ __nullterminated const char* str) {
     const char* fmt = "%s(%d) : error : %s at token '%s' in: %s\n";
     if(Sym == SymW) // Unicode file
     {
-        // CodeQL [SM02986] Casting yygetline result to WCHAR* is safe because tokBuff is WCHAR-aligned and properly null terminated
+        // CodeQL [SM02986] Casting tokBuff to WCHAR* is safe because tokBuff is WCHAR-aligned and properly null terminated
         MAKE_UTF8PTR_FROMWIDE(tokBuffUtf8, (WCHAR*)tokBuff);
         // CodeQL [SM02986] Casting yygetline result to WCHAR* is safe because buff is guaranteed to be WCHAR-aligned
         MAKE_UTF8PTR_FROMWIDE(curLineUtf8, (WCHAR*)yygetline(PENV->curLine));
