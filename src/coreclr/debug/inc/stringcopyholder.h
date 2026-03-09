@@ -20,8 +20,18 @@ public:
     // Free the memory allocated for the string contents
     ~StringCopyHolder();
 
+    // IUnknown
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override
+    {
+        if (ppvObject == NULL) return E_POINTER;
+        *ppvObject = NULL;
+        return E_NOINTERFACE;
+    }
+    ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
+    ULONG STDMETHODCALLTYPE Release() override { return 1; }
+
     // Make a copy of the provided null-terminated unicode string
-    virtual HRESULT AssignCopy(const WCHAR * pCopy);
+    virtual HRESULT AssignCopy(const WCHAR * pCopy) override;
 
     // Reset the string to NULL and free memory
     void Clear();

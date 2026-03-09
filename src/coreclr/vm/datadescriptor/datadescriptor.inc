@@ -48,6 +48,9 @@ CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, StateNC, cdac_data<Thread>::StateNC)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadHandle, cdac_data<Thread>::ThreadHandle)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CurrNotification, cdac_data<Thread>::CurrNotification)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_data<Thread>::TEB)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
@@ -234,6 +237,8 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_data<Module>:
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
+CDAC_TYPE_FIELD(Module, /*pointer*/, DomainAssembly, cdac_data<Module>::DomainAssembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, SimpleName, cdac_data<Module>::SimpleName)
 CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
@@ -298,6 +303,11 @@ CDAC_TYPE_INDETERMINATE(ProbeExtensionResult)
 CDAC_TYPE_FIELD(ProbeExtensionResult, /*int32*/, Type, offsetof(ProbeExtensionResult, Type))
 CDAC_TYPE_END(ProbeExtensionResult)
 
+CDAC_TYPE_BEGIN(DomainAssembly)
+CDAC_TYPE_INDETERMINATE(DomainAssembly)
+CDAC_TYPE_FIELD(DomainAssembly, /*pointer*/, Assembly, cdac_data<DomainAssembly>::Assembly)
+CDAC_TYPE_END(DomainAssembly)
+
 CDAC_TYPE_BEGIN(AppDomain)
 CDAC_TYPE_INDETERMINATE(AppDomain)
 CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
@@ -310,6 +320,13 @@ CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
 CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
+
+CDAC_TYPE_BEGIN(Debugger)
+CDAC_TYPE_INDETERMINATE(Debugger)
+CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, cdac_data<Debugger>::LeftSideInitialized)
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, cdac_data<Debugger>::Defines)
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, cdac_data<Debugger>::MDStructuresVersion)
+CDAC_TYPE_END(Debugger)
 
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
@@ -1165,6 +1182,11 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
+CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
+#endif
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
@@ -1303,6 +1325,7 @@ CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+CDAC_GLOBAL_CONTRACT(Debugger, 1)
 CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)

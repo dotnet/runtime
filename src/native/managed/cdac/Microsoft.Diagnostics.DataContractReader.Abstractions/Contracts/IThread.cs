@@ -55,6 +55,11 @@ public interface IThread : IContract
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
+    TargetPointer GetExposedObject(TargetPointer threadPointer) => throw new NotImplementedException();
+    TargetPointer GetThreadHandle(TargetPointer threadPointer) => throw new NotImplementedException();
+    TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
+    TargetPointer GetCurrentCustomDebuggerNotification(TargetPointer threadPointer) => throw new NotImplementedException();
+    int GetPartialUserState(TargetPointer threadPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

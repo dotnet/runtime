@@ -214,4 +214,65 @@ internal readonly struct Thread_1 : IThread
         _target.ReadBuffer(readFrom, rval);
         return rval;
     }
+
+    TargetPointer IThread.GetExposedObject(TargetPointer threadPointer)
+    {
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
+        return _target.ReadPointer(threadPointer + (ulong)type.Fields["GCHandle"].Offset);
+    }
+
+    TargetPointer IThread.GetThreadHandle(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        return thread.ThreadHandle;
+    }
+
+    TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        TargetPointer trackerPtr = _target.ReadPointer(thread.ExceptionTracker);
+        if (trackerPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(trackerPtr);
+        return exceptionInfo.ThrownObjectHandle;
+    }
+
+    TargetPointer IThread.GetCurrentCustomDebuggerNotification(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        return thread.CurrNotification;
+    }
+
+    int IThread.GetPartialUserState(TargetPointer threadPointer)
+    {
+        // Thread state flags
+        const uint TS_Background = 0x200;
+        const uint TS_Unstarted = 0x400;
+        const uint TS_Dead = 0x800;
+        const uint TS_Interruptible = 0x2000000;
+        const uint TS_TPWorkerThread = 0x1000000;
+        // ThreadStateNC flags
+        const uint TSNC_DebuggerSleepWaitJoin = 0x04000000;
+        // CorDebugUserState
+        const int USER_BACKGROUND = 0x4;
+        const int USER_UNSTARTED = 0x8;
+        const int USER_STOPPED = 0x10;
+        const int USER_WAIT_SLEEP_JOIN = 0x20;
+        const int USER_THREADPOOL = 0x100;
+
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        uint ts = thread.State;
+        uint tsnc = thread.StateNC;
+        int result = 0;
+
+        if ((ts & TS_Background) != 0) result |= USER_BACKGROUND;
+        if ((ts & TS_Unstarted) != 0) result |= USER_UNSTARTED;
+        if ((ts & TS_Dead) != 0) result |= USER_STOPPED;
+        if ((ts & TS_Interruptible) != 0 || (tsnc & TSNC_DebuggerSleepWaitJoin) != 0)
+            result |= USER_WAIT_SLEEP_JOIN;
+        if ((ts & TS_TPWorkerThread) != 0) result |= USER_THREADPOOL;
+
+        return result;
+    }
 }

@@ -76,6 +76,7 @@ class DebuggerFrame;
 class DebuggerModule;
 class DebuggerModuleTable;
 class Debugger;
+template<typename T> struct cdac_data;
 class DebuggerBreakpoint;
 class DebuggerPendingFuncEvalTable;
 class DebuggerRCThread;
@@ -2998,6 +2999,8 @@ public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
     void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool fHasActivePatchSkip = false, bool fClearSetIP = false);
     BOOL IsOutOfProcessSetContextEnabled();
+
+    friend struct ::cdac_data<Debugger>;
 };
 
 
@@ -3028,6 +3031,15 @@ void RedirectedHandledJITCaseForGCStress_StubEnd();
 void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
 void ApcActivationCallbackStubEnd();
 #endif // FEATURE_SPECIAL_USER_MODE_APC
+
+};
+
+template<>
+struct cdac_data<Debugger>
+{
+    static constexpr size_t LeftSideInitialized = offsetof(Debugger, m_fLeftSideInitialized);
+    static constexpr size_t Defines = offsetof(Debugger, m_defines);
+    static constexpr size_t MDStructuresVersion = offsetof(Debugger, m_mdDataStructureVersion);
 };
 
 

@@ -49,6 +49,11 @@ ThreadData GetThreadData(TargetPointer threadPointer);
 void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
+TargetPointer GetExposedObject(TargetPointer threadPointer);
+TargetPointer GetThreadHandle(TargetPointer threadPointer);
+TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer);
+TargetPointer GetCurrentCustomDebuggerNotification(TargetPointer threadPointer);
+int GetPartialUserState(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -104,6 +109,10 @@ The contract additionally depends on these data descriptors
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
+| `Thread` | `StateNC` | Thread state NC (non-core) flags |
+| `Thread` | `ThreadHandle` | OS thread handle |
+| `Thread` | `CurrNotification` | Pointer to current custom debugger notification object |
+| `Thread` | `GCHandle` | GC handle for the exposed managed Thread object |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
 | `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
@@ -309,6 +318,45 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 
     _target.ReadBuffer(readFrom, span);
     return span.ToArray();
+}
+
+TargetPointer IThread.GetExposedObject(TargetPointer threadPointer)
+{
+    return target.ReadPointer(threadPointer + /* Thread::GCHandle offset */);
+}
+
+TargetPointer IThread.GetThreadHandle(TargetPointer threadPointer)
+{
+    return target.ReadPointer(threadPointer + /* Thread::ThreadHandle offset */);
+}
+
+TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+{
+    TargetPointer exceptionTracker = target.ReadPointer(threadPointer + /* Thread::ExceptionTracker offset */);
+    TargetPointer trackerPtr = target.ReadPointer(exceptionTracker);
+    if (trackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    return target.ReadPointer(trackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+}
+
+TargetPointer IThread.GetCurrentCustomDebuggerNotification(TargetPointer threadPointer)
+{
+    return target.ReadPointer(threadPointer + /* Thread::CurrNotification offset */);
+}
+
+int IThread.GetPartialUserState(TargetPointer threadPointer)
+{
+    uint state = target.Read<uint>(threadPointer + /* Thread::State offset */);
+    uint stateNC = target.Read<uint>(threadPointer + /* Thread::StateNC offset */);
+
+    int result = 0;
+    if ((state & 0x200) != 0) result |= 0x4;       // TS_Background -> USER_BACKGROUND
+    if ((state & 0x400) != 0) result |= 0x8;       // TS_Unstarted -> USER_UNSTARTED
+    if ((state & 0x800) != 0) result |= 0x10;      // TS_Dead -> USER_STOPPED
+    if ((state & 0x2000000) != 0 || (stateNC & 0x04000000) != 0)
+        result |= 0x20;                             // TS_Interruptible/TSNC_DebuggerSleepWaitJoin -> USER_WAIT_SLEEP_JOIN
+    if ((state & 0x1000000) != 0) result |= 0x100; // TS_TPWorkerThread -> USER_THREADPOOL
+    return result;
 }
 
 ```

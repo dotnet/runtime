@@ -159,6 +159,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.TypeRefToMethodTableMap), DataType.pointer),
             new(nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
             new(nameof(Data.Module.DynamicILBlobTable), DataType.pointer),
+            new(nameof(Data.Module.SimpleName), DataType.pointer),
+            new(nameof(Data.Module.DomainAssembly), DataType.pointer),
         ]
     };
 
@@ -206,6 +208,10 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
             new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
             new(nameof(Data.Thread.UEWatsonBucketTrackerBuckets), DataType.pointer),
+            new(nameof(Data.Thread.StateNC), DataType.uint32),
+            new(nameof(Data.Thread.ThreadHandle), DataType.pointer),
+            new(nameof(Data.Thread.CurrNotification), DataType.pointer),
+            new("GCHandle", DataType.pointer),
         ]
     };
 

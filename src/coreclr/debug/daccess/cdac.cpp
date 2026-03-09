@@ -75,7 +75,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, IUnknown* legacyImpl)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, void* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -94,7 +94,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, I
     return CDAC{cdacLib, handle, target, legacyImpl};
 }
 
-CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl)
+CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, void* legacyImpl)
     : m_module{module}
     , m_cdac_handle{handle}
     , m_target{target}
@@ -122,6 +122,23 @@ void CDAC::CreateSosInterface(IUnknown** sos)
 {
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
     _ASSERTE(createSosInterface != nullptr);
-    int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    int ret = createSosInterface(m_cdac_handle, static_cast<IUnknown*>(m_legacyImpl), sos);
     _ASSERTE(ret == 0);
+}
+
+HRESULT CDAC::CreateDacDbiInterface(IDacDbiInterface** dacdbi)
+{
+    if (dacdbi == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *dacdbi = nullptr;
+    decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
+    if (createDacDbiInterface == nullptr)
+    {
+        return E_NOTIMPL;
+    }
+
+    return createDacDbiInterface(m_cdac_handle, m_legacyImpl, reinterpret_cast<void**>(dacdbi));
 }
