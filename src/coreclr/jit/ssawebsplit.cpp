@@ -91,9 +91,9 @@ public:
 //
 struct SsaWebRemap
 {
-    unsigned  ssaCount;   // number of SSA defs in the original local
-    unsigned* targetLcl;  // [ssaIndex] -> target local number
-    unsigned* targetSsa;  // [ssaIndex] -> target SSA number
+    unsigned  ssaCount;  // number of SSA defs in the original local
+    unsigned* targetLcl; // [ssaIndex] -> target local number
+    unsigned* targetSsa; // [ssaIndex] -> target SSA number
 };
 
 //------------------------------------------------------------------------
@@ -116,8 +116,19 @@ PhaseStatus Compiler::fgSsaWebSplit()
 {
     if (JitConfig.JitDoSsaWebSplit() == 0)
     {
+        JITDUMP("Phase disabled by JitDoSsaWebSplit\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableSsaWebSplitRange;
+    JitEnableSsaWebSplitRange.EnsureInit(JitConfig.JitEnableSsaWebSplitRange());
+    if (!JitEnableSsaWebSplitRange.Contains(impInlineRoot()->info.compMethodHash()))
+    {
+        JITDUMP("Phase disabled by JitEnableSsaWebSplitRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
 
     CompAllocator alloc = getAllocator(CMK_SSA);
 
@@ -204,9 +215,9 @@ PhaseStatus Compiler::fgSsaWebSplit()
             GenTreePhi* const phi = store->Data()->AsPhi();
             for (GenTreePhi::Use& use : phi->Uses())
             {
-                GenTreePhiArg* const phiArg    = use.GetNode()->AsPhiArg();
+                GenTreePhiArg* const phiArg = use.GetNode()->AsPhiArg();
                 assert(phiArg->GetLclNum() == lclNum);
-                unsigned const       argSsaNum = phiArg->GetSsaNum();
+                unsigned const argSsaNum = phiArg->GetSsaNum();
                 if (argSsaNum == SsaConfig::RESERVED_SSA_NUM)
                 {
                     continue;
@@ -237,32 +248,31 @@ PhaseStatus Compiler::fgSsaWebSplit()
 
     // Liveness copy pairs — populated during step 3, applied during step 4.
     // The maximum number of new tracked locals is bounded by VarSet capacity.
-    unsigned const       bitsPerSizeT   = (unsigned)(sizeof(size_t) * 8);
-    unsigned const       varSetCapacity = lvaTrackedCountInSizeTUnits * bitsPerSizeT;
-    unsigned const       maxNewTracked  = (varSetCapacity > lvaTrackedCount) ? (varSetCapacity - lvaTrackedCount) : 0;
-    LivenessCopyPair*    livenessCopies = alloc.allocate<LivenessCopyPair>(maxNewTracked > 0 ? maxNewTracked : 1);
-    unsigned             livenessCopyCount = 0;
+    unsigned const    bitsPerSizeT      = (unsigned)(sizeof(size_t) * 8);
+    unsigned const    varSetCapacity    = lvaTrackedCountInSizeTUnits * bitsPerSizeT;
+    unsigned const    maxNewTracked     = (varSetCapacity > lvaTrackedCount) ? (varSetCapacity - lvaTrackedCount) : 0;
+    LivenessCopyPair* livenessCopies    = alloc.allocate<LivenessCopyPair>(maxNewTracked > 0 ? maxNewTracked : 1);
+    unsigned          livenessCopyCount = 0;
 
     // Capture the tracked count before we start adding new tracked locals.
     unsigned const trackedCountBefore = lvaTrackedCount;
 
     for (unsigned trackedIdx = 0; trackedIdx < trackedCountBefore; trackedIdx++)
     {
-        unsigned const      lclNum = lvaTrackedIndexToLclNum(trackedIdx);
-        DisjointSet* const  dset   = (lclNum < lclCountBefore) ? dsets[lclNum] : nullptr;
+        unsigned const     lclNum = lvaTrackedIndexToLclNum(trackedIdx);
+        DisjointSet* const dset   = (lclNum < lclCountBefore) ? dsets[lclNum] : nullptr;
         if (dset == nullptr)
         {
             continue;
         }
 
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        LclVarDsc*     varDsc   = lvaGetDesc(lclNum);
         unsigned const ssaCount = varDsc->lvPerSsaData.GetCount();
 
         // Union partial defs with the SSA def they read from.
         for (unsigned i = 0; i < ssaCount; i++)
         {
-            unsigned const useDefSsaNum =
-                varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM + i)->GetUseDefSsaNum();
+            unsigned const useDefSsaNum = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM + i)->GetUseDefSsaNum();
             if (useDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
             {
                 unsigned const useDefIndex = useDefSsaNum - SsaConfig::FIRST_SSA_NUM;
@@ -307,7 +317,7 @@ PhaseStatus Compiler::fgSsaWebSplit()
         // SSA, FIRST_SSA_NUM (the initial/entry def) typically has no uses;
         // retbuf defs via LCL_ADDR may also have no direct SSA uses. There is
         // no benefit to giving a useless component its own local.
-        bool merged = false;
+        bool  merged           = false;
         bool* componentHasUses = alloc.allocate<bool>(numComponents);
         memset(componentHasUses, 0, numComponents * sizeof(bool));
         for (unsigned i = 0; i < ssaCount; i++)
@@ -525,9 +535,9 @@ PhaseStatus Compiler::fgSsaWebSplit()
                 continue;
             }
 
-            unsigned const   targetLcl = componentLclNum[componentId[i]];
-            LclVarDsc* const targetDsc = lvaGetDesc(targetLcl);
-            LclSsaVarDsc* const ssaDef = targetDsc->GetPerSsaData(newSsaNum[i]);
+            unsigned const      targetLcl = componentLclNum[componentId[i]];
+            LclVarDsc* const    targetDsc = lvaGetDesc(targetLcl);
+            LclSsaVarDsc* const ssaDef    = targetDsc->GetPerSsaData(newSsaNum[i]);
             ssaDef->SetUseDefSsaNum(newSsaNum[useDefIndex]);
         }
 
