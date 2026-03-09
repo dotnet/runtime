@@ -207,15 +207,26 @@ PhaseStatus Compiler::fgSsaWebSplit()
     // Step 3: For each local with a DisjointSet, also union partial defs
     // (these are available from SSA metadata, no IR walk needed). Then count
     // components, create new locals, and build remap tables.
+    //
+    // Process locals in order of ascending tracked index (lvVarIndex) so that
+    // the most important locals (highest weighted ref count) are split first.
+    // This matters because each split consumes VarSet capacity, and we want
+    // high-value locals to benefit from splitting before capacity runs out.
+    // Only process locals that existed when the phase started; newly added
+    // split locals are not candidates for further splitting.
     //------------------------------------------------------------------------
 
     SsaWebRemap** remapTable = alloc.allocate<SsaWebRemap*>(lclCountBefore);
     memset(remapTable, 0, lclCountBefore * sizeof(SsaWebRemap*));
     bool madeChanges = false;
 
-    for (unsigned lclNum = 0; lclNum < lclCountBefore; lclNum++)
+    // Capture the tracked count before we start adding new tracked locals.
+    unsigned const trackedCountBefore = lvaTrackedCount;
+
+    for (unsigned trackedIdx = 0; trackedIdx < trackedCountBefore; trackedIdx++)
     {
-        DisjointSet* const dset = dsets[lclNum];
+        unsigned const      lclNum = lvaTrackedIndexToLclNum(trackedIdx);
+        DisjointSet* const  dset   = (lclNum < lclCountBefore) ? dsets[lclNum] : nullptr;
         if (dset == nullptr)
         {
             continue;
