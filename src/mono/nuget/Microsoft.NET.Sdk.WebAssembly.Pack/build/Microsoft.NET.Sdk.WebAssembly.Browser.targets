@@ -429,7 +429,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
+  <!-- Resolve endpoints and inputs needed for boot JSON generation.
+       This target always runs to ensure endpoint items are populated for downstream consumers. -->
+  <Target Name="_ResolveBuildWasmBootJsonEndpoints" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
       <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
@@ -483,6 +485,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpoints" />
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
+  </Target>
+
+  <!-- Write the boot JSON file. Supports MSBuild incrementalism: skipped when all inputs
+       are older than the output, avoiding the expensive GenerateWasmBootJson computation
+       on no-op rebuilds. -->
+  <Target Name="_WriteBuildWasmBootJsonFile"
+    DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath)"
+    Outputs="$(_WasmBuildBootJsonPath)">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -523,6 +534,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
+  </Target>
+
+  <!-- Define the boot config file as a static web asset and create endpoints.
+       This target always runs to ensure items are populated for _AddWasmStaticWebAssets. -->
+  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile">
 
     <ItemGroup>
       <_WasmBuildBootConfigCandidate
@@ -873,7 +889,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   </Target>
 
-  <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
+  <!-- Resolve inputs needed for publish boot JSON generation. -->
+  <Target Name="_ResolvePublishWasmBootJsonInputs" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmPublishApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmPublishApplicationEnvironmentName>
     </PropertyGroup>
@@ -906,6 +923,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpointsForPublish" />
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
+  </Target>
+
+  <!-- Write the publish boot JSON file. Supports MSBuild incrementalism: skipped when all
+       inputs are older than the output. -->
+  <Target Name="GeneratePublishWasmBootJson"
+    DependsOnTargets="_ResolvePublishWasmBootJsonInputs"
+    Inputs="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath)"
+    Outputs="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
