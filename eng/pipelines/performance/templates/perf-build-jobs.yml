@@ -5,17 +5,21 @@ jobs:
   # build coreclr and libraries
   - template: /eng/pipelines/performance/templates/perf-coreclr-build-jobs.yml
     parameters:
-      linux_x64: true
-      windows_x64: true
-      windows_x86: true
-      android_arm64: true
+      # Temporarily disabled for testing R2R interpreter job
+      linux_x64: false
+      windows_x64: false
+      windows_x86: false
+      android_arm64: false
+      coreclr_r2r_interpreter: true
 
-  # build mono for AOT
-  - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml
-    parameters:
-      mono_x64: true
-      monoAot_x64: true
-      monoAndroid: true
+  # Temporarily disabled for testing R2R interpreter job
+  - ${{ if false }}:
+    # build mono for AOT
+    - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml
+      parameters:
+        mono_x64: true
+        monoAot_x64: true
+        monoAndroid: true
 
   # Disabled due to not successfully building at the moment. https://github.com/dotnet/performance/issues/4729
   - ${{ if false }}:
