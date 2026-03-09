@@ -631,7 +631,7 @@ namespace
         return thunk;
     }
 
-    ULONG CreateKey(MethodDesc* pMD, SString &strSource)
+    ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
     {
         _ASSERTE(pMD != nullptr);
 
@@ -717,7 +717,7 @@ namespace
         }
 
         SString source;
-        ULONG hashCode = CreateKey(pMD, source);
+        ULONG hashCode = GetHashCode(pMD, source);
         ReverseThunkMapKey key = { hashCode, source.GetUTF8() };
         const ReverseThunkMapEntry* entry = table->Lookup(key);
         const ReverseThunkMapValue* thunk = entry != nullptr ? &entry->value : nullptr;
