@@ -7507,19 +7507,33 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 // Lower stub dispatched virtual calls.
 GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
-    GenTreeCall * temp = m_compiler->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
-
-    call->gtCallAddr = temp->gtCallAddr;
-    call->gtCallType          = CT_USER_FUNC;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-
-    CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT);
-    call->gtDirectCallAddress         = helperLookup.addr;
-
-    return nullptr;
-
-#if 0
     assert(call->IsVirtualStub());
+
+    if (m_compiler->opts.ShouldUseDispatchHelpers())
+    {
+        // Convert from VSD indirect call (call [r11]) to a direct call to a
+        // dispatch resolver helper (call RhpResolveInterfaceMethodFast).
+        // The dispatch cell is still passed via the VirtualStubCell arg in r11.
+
+        // For CT_INDIRECT calls (shared generic code with dictionary lookup),
+        // gtCallAddr is a tree node in the LIR that computes the dispatch cell address.
+        // We're converting to a direct call, so remove it from the LIR.
+        // The VirtualStubCell arg (a deep clone of this tree) still passes
+        // the dispatch cell address in the VSD param register.
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            BlockRange().Remove(call->gtCallAddr, /* markOperandsUnused */ true);
+        }
+
+        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT);
+        call->gtCallType          = CT_USER_FUNC;
+        call->gtCallMethHnd       = nullptr;
+        call->gtDirectCallAddress = helperLookup.addr;
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+
+        return nullptr;
+    }
 
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:
@@ -7601,7 +7615,6 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 
     // TODO-Cleanup: start emitting random NOPS
     return result;
-#endif
 }
 
 //------------------------------------------------------------------------

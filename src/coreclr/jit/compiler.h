@@ -10563,6 +10563,13 @@ public:
                    jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
         }
 
+        // true if the JIT should use helpers for interface dispatch
+        // instead of virtual stub dispatch
+        bool ShouldUseDispatchHelpers()
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_USE_DISPATCH_HELPERS);
+        }
+
         // true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method
         // prolog/epilog
         bool IsReversePInvoke()
