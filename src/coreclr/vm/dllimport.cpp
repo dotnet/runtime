@@ -3915,7 +3915,6 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 }
 
 static void CreateLayoutClassStub(MethodTable* pMT,
-    DWORD dwStubFlags,
     PInvokeStubLinker* linker,
     MarshalOperation op)
 {
@@ -3923,7 +3922,6 @@ static void CreateLayoutClassStub(MethodTable* pMT,
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(linker));
-        PRECONDITION(SF_IsStructMarshalStub(dwStubFlags));
     }
     CONTRACTL_END;
 
@@ -5293,21 +5291,6 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
     }
     CONTRACT_END;
 
-    DWORD dwStubFlags = PINVOKESTUB_FL_STRUCT_MARSHAL;
-
-    BOOL bestFit, throwOnUnmappableChar;
-
-    ReadBestFitCustomAttribute(pMT->GetModule(), pMT->GetCl(), &bestFit, &throwOnUnmappableChar);
-
-    if (bestFit == TRUE)
-    {
-        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
-    }
-    if (throwOnUnmappableChar == TRUE)
-    {
-        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
-    }
-
     // void (ref byte managedData, byte* nativeData, ref CleanupWorkListElement cwl)
     FunctionSigBuilder sigBuilder;
 
@@ -5335,14 +5318,14 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
 
     bool generatedNewStub = false;
 
-    PInvokeStubLinker pLinker{dwStubFlags, pMT->GetModule(), Signature(szMetaSig, cbMetaSigSize), &typeContext, NULL, -1};
+    PInvokeStubLinker pLinker{PINVOKESTUB_FL_STRUCT_MARSHAL, pMT->GetModule(), Signature(szMetaSig, cbMetaSigSize), &typeContext, NULL, -1};
 
-    CreateLayoutClassStub(pMT, dwStubFlags, &pLinker, operation);
+    CreateLayoutClassStub(pMT, &pLinker, operation);
 
     MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
         pMT->GetLoaderAllocator(),
         pMT,
-        dwStubFlags,
+        PINVOKESTUB_FL_STRUCT_MARSHAL,
         pMT->GetModule(),
         szMetaSig,
         cbMetaSigSize,
