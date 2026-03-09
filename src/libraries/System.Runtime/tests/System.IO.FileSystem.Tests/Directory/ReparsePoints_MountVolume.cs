@@ -23,7 +23,7 @@ namespace System.IO.Tests
         private static bool IsNtfs =>
             FileSystemDebugInfo.IsCurrentDriveNTFS();
 
-        [ConditionalFact(nameof(IsNtfs))]
+        [ConditionalFact(typeof(Directory_ReparsePoints_MountVolume), nameof(IsNtfs))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing mounting volumes and reparse points
         public static void runTest()
         {

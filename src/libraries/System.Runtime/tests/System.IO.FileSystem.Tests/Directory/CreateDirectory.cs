@@ -519,14 +519,14 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
             var drive = IOServices.GetNotReadyDrive();
             if (drive is null)
             {
-                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+                Assert.Skip("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             Assert.Throws<DirectoryNotFoundException>(() =>
@@ -535,14 +535,14 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {
             var drive = IOServices.GetNotReadyDrive();
             if (drive is null)
             {
-                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+                Assert.Skip("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             // 'Device is not ready'

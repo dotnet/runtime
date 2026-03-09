@@ -303,14 +303,14 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void NotReadyDriveAsPath_ReturnsFalse()
         {
             var drive = IOServices.GetNotReadyDrive();
             if (drive is null)
             {
-                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+                Assert.Skip("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             bool result = Exists(drive);
@@ -318,14 +318,14 @@ namespace System.IO.Tests
             Assert.False(result);
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
         {
             var drive = IOServices.GetNotReadyDrive();
             if (drive is null)
             {
-                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+                Assert.Skip("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             bool result = Exists(Path.Combine(drive, "Subdirectory"));
