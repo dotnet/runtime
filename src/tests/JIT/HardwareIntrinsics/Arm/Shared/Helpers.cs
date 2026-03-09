@@ -151,6 +151,54 @@ namespace JIT.HardwareIntrinsics.Arm
             return T.CreateChecked(bitSize - (highest + 1));
         }
 
+        public static U CountMatchingElements<T, U>(T[] mask, T[] left, T[] right, int i)
+            where U : unmanaged, INumber<U>
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+
+            if (mask[i] != T.Zero)
+            {
+                for (int j = 0; j <= i; j++)
+                {
+                    if (mask[j] != T.Zero && left[i] == right[j])
+                    {
+                        result++;
+                    }
+                }
+            }
+
+            return U.CreateChecked(result);
+        }
+
+        public static unsafe byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+            int elementSize = sizeof(T);
+            int segmentStartByte = ((i * elementSize) / 16) * 16;
+            int segmentEndByte = segmentStartByte + 16;
+            int rightLengthBytes = right.Length * elementSize;
+
+            if (segmentEndByte > rightLengthBytes)
+            {
+                segmentEndByte = rightLengthBytes;
+            }
+
+            int segmentStart = segmentStartByte / elementSize;
+            int segmentEnd = segmentEndByte / elementSize;
+
+            for (int j = segmentStart; j < segmentEnd; j++)
+            {
+                if (left[i] == right[j])
+                {
+                    result++;
+                }
+            }
+
+            return byte.CreateChecked(result);
+        }
+
         public static unsafe int HighestSetBit<T>(T value)
             where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
         {
