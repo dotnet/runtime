@@ -1090,6 +1090,7 @@ namespace System.Net.Security
             // validation.
             // TODO: this forces allocation of X509Certificate2Collection
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
+            RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
 
             try
             {
@@ -1160,7 +1161,6 @@ namespace System.Net.Security
 
                 _remoteCertificate = certificate;
 
-                RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
                 if (remoteCertValidationCallback != null)
                 {
                     success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
