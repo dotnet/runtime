@@ -97,6 +97,16 @@ struct SsaWebRemap
 };
 
 //------------------------------------------------------------------------
+// LivenessCopyPair: Records that a new split local's liveness bits should
+// be copied from an original local's liveness bits.
+//
+struct LivenessCopyPair
+{
+    unsigned origVarIndex; // tracked index of the original local
+    unsigned newVarIndex;  // tracked index of the new split local
+};
+
+//------------------------------------------------------------------------
 // fgSsaWebSplit: Split locals whose SSA webs are disjoint into separate locals.
 //
 // Returns:
@@ -220,6 +230,14 @@ PhaseStatus Compiler::fgSsaWebSplit()
     memset(remapTable, 0, lclCountBefore * sizeof(SsaWebRemap*));
     bool madeChanges = false;
 
+    // Liveness copy pairs — populated during step 3, applied during step 4.
+    // The maximum number of new tracked locals is bounded by VarSet capacity.
+    unsigned const       bitsPerSizeT   = (unsigned)(sizeof(size_t) * 8);
+    unsigned const       varSetCapacity = lvaTrackedCountInSizeTUnits * bitsPerSizeT;
+    unsigned const       maxNewTracked  = (varSetCapacity > lvaTrackedCount) ? (varSetCapacity - lvaTrackedCount) : 0;
+    LivenessCopyPair*    livenessCopies = alloc.allocate<LivenessCopyPair>(maxNewTracked > 0 ? maxNewTracked : 1);
+    unsigned             livenessCopyCount = 0;
+
     // Capture the tracked count before we start adding new tracked locals.
     unsigned const trackedCountBefore = lvaTrackedCount;
 
@@ -341,9 +359,7 @@ PhaseStatus Compiler::fgSsaWebSplit()
         }
 
         // Check VarSet capacity — we need room for numComponents-1 new tracked locals.
-        unsigned const numNewTracked  = numComponents - 1;
-        unsigned const bitsPerSizeT   = (unsigned)(sizeof(size_t) * 8);
-        unsigned const varSetCapacity = lvaTrackedCountInSizeTUnits * bitsPerSizeT;
+        unsigned const numNewTracked = numComponents - 1;
         if (lvaTrackedCount + numNewTracked > varSetCapacity)
         {
             JITDUMP("V%02u has %u disjoint SSA webs but insufficient VarSet capacity (%u + %u > %u) -- skipping\n",
@@ -445,29 +461,17 @@ PhaseStatus Compiler::fgSsaWebSplit()
             JITDUMP("  Web %u -> V%02u (tracked idx %u)\n", c, newLclNum, newVarDsc->lvVarIndex);
         }
 
-        // Copy liveness from original local to new locals. This is a conservative
-        // overapproximation — the original's liveness is a superset of any split
-        // local's liveness. Without this, downstream phases (e.g., IV opts) that
-        // check bbLiveIn would incorrectly see split locals as dead.
+        // Record liveness copy pairs — the actual liveness update is deferred
+        // to step 4 so we don't need a separate block walk per split local.
         if (varDsc->lvTracked)
         {
             unsigned const origVarIndex = varDsc->lvVarIndex;
-            for (BasicBlock* const block : Blocks())
+            for (unsigned c = 1; c < numComponents; c++)
             {
-                if (VarSetOps::IsMember(this, block->bbLiveIn, origVarIndex))
-                {
-                    for (unsigned c = 1; c < numComponents; c++)
-                    {
-                        VarSetOps::AddElemD(this, block->bbLiveIn, lvaGetDesc(componentLclNum[c])->lvVarIndex);
-                    }
-                }
-                if (VarSetOps::IsMember(this, block->bbLiveOut, origVarIndex))
-                {
-                    for (unsigned c = 1; c < numComponents; c++)
-                    {
-                        VarSetOps::AddElemD(this, block->bbLiveOut, lvaGetDesc(componentLclNum[c])->lvVarIndex);
-                    }
-                }
+                assert(livenessCopyCount < maxNewTracked);
+                livenessCopies[livenessCopyCount].origVarIndex = origVarIndex;
+                livenessCopies[livenessCopyCount].newVarIndex  = lvaGetDesc(componentLclNum[c])->lvVarIndex;
+                livenessCopyCount++;
             }
         }
 
@@ -544,11 +548,28 @@ PhaseStatus Compiler::fgSsaWebSplit()
 
     //------------------------------------------------------------------------
     // Step 4 — Walk 2: Rewrite all IR nodes for split locals in a single pass,
-    // and populate SSA def metadata (block, defNode, use counts) from the IR.
+    // populate SSA def metadata (block, defNode, use counts) from the IR, and
+    // copy liveness bits from original locals to their split locals.
     //------------------------------------------------------------------------
 
     for (BasicBlock* const block : Blocks())
     {
+        // Copy liveness from original locals to new split locals. This is a
+        // conservative overapproximation — the original's liveness is a superset
+        // of any split local's liveness. Without this, downstream phases (e.g.,
+        // IV opts) that check bbLiveIn would incorrectly see split locals as dead.
+        for (unsigned i = 0; i < livenessCopyCount; i++)
+        {
+            if (VarSetOps::IsMember(this, block->bbLiveIn, livenessCopies[i].origVarIndex))
+            {
+                VarSetOps::AddElemD(this, block->bbLiveIn, livenessCopies[i].newVarIndex);
+            }
+            if (VarSetOps::IsMember(this, block->bbLiveOut, livenessCopies[i].origVarIndex))
+            {
+                VarSetOps::AddElemD(this, block->bbLiveOut, livenessCopies[i].newVarIndex);
+            }
+        }
+
         for (Statement* const stmt : block->Statements())
         {
             for (GenTree* const tree : stmt->TreeList())
