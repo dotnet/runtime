@@ -775,7 +775,7 @@ namespace System.StubHelpers
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_CreateMarshaler")]
         [SuppressGCTransition]
-        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags, IntPtr pManagedMarshaler);
+        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags);
 
         internal static void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
@@ -1355,7 +1355,7 @@ namespace System.StubHelpers
         [Intrinsic]
         private static extern void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
 
-        internal static void ConvertToUnmanaged(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
             try
             {
@@ -1370,12 +1370,12 @@ namespace System.StubHelpers
         }
 
         [Intrinsic]
-        internal static extern void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+        public static extern void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
 
         [Intrinsic]
-        internal static extern void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+        private static extern void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
 
-        internal static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
             FreeCore(ref managed, unmanaged, ref cleanupWorkList);
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);
@@ -1448,7 +1448,7 @@ namespace System.StubHelpers
             ConvertToUnmanagedStub(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
-        internal static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
             try
             {
@@ -1462,12 +1462,12 @@ namespace System.StubHelpers
             }
         }
 
-        internal static void ConvertToManaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToManaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             ConvertToManagedStub(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
-        internal static void FreeCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        private static void FreeCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (managed is null)
             {
@@ -1479,7 +1479,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static void Free(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
             FreeCore(managed, unmanaged, ref cleanupWorkList);
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);

@@ -98,19 +98,26 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
 
 extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
 
     TypeHandle th = t.AsTypeHandle();
     if (th.HasLayout())
     {
         *pIsBlittable = th.IsBlittable();
         *pNativeSize = th.GetMethodTable()->GetNativeSize();
-        return TRUE;
+        ret = TRUE;
     }
 
     *pIsBlittable = FALSE;
     *pNativeSize = 0;
-    return FALSE;
+
+    END_QCALL;
+
+    return ret;
 }
 
 /************************************************************************

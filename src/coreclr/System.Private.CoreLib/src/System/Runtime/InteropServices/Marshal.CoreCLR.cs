@@ -333,7 +333,6 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_HasLayout")]
-        [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool HasLayout(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] out bool isBlittable, out int nativeSize);
 

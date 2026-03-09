@@ -2302,7 +2302,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     TypeHandle layoutClassType{m_pargs->m_pMT};
 
     EmitLoadManagedValue(pslILEmit);
-    EmitLoadNativeHomeAddr(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
@@ -2335,7 +2335,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
     EmitLoadManagedValue(pslILEmit);
-    EmitLoadNativeHomeAddr(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
     pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
@@ -2361,7 +2361,7 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
     EmitLoadManagedValue(pslILEmit);
-    EmitLoadNativeHomeAddr(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
@@ -2507,14 +2507,14 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-    TypeHandle layoutClassType{m_pargs->m_pMT};
-
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
     pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+
+    pslILEmit->EmitLabel(pNullRefLabel);
 }
 
 void ILLayoutClassMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
@@ -4580,8 +4580,7 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    _ASSERTE(sizeof(MngdSafeArrayMarshaler) == sizeof(void*) * 2 + 8);
-    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 2 + 8); // sizeof(MngdSafeArrayMarshaler)
+    pslILEmit->EmitLDC(sizeof(MngdSafeArrayMarshaler));
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
