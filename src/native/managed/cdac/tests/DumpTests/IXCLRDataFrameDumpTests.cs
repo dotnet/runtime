@@ -288,7 +288,16 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
-        return stackWalk.CreateStackWalk(crashingThread).First();
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md != TargetPointer.Null)
+                return dataFrame;
+        }
+
+        Assert.Fail("No managed frames with MethodDesc found on the crashing thread's stack");
+        throw new InvalidOperationException("Unreachable");
     }
 
     private IXCLRDataFrame CreateFrameForFirstManagedFrame()

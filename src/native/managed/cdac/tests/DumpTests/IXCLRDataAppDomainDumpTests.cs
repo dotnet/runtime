@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
@@ -70,12 +69,13 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         IXCLRDataAppDomain appDomain = GetAppDomain();
 
         uint nameLen;
-        appDomain.GetName(0, &nameLen, null);
+        int hr = appDomain.GetName(0, &nameLen, null);
+        AssertHResult(HResults.S_OK, hr);
 
         char[] nameBuf = new char[nameLen];
         fixed (char* pName = nameBuf)
         {
-            int hr = appDomain.GetName(nameLen, null, pName);
+            hr = appDomain.GetName(nameLen, null, pName);
             AssertHResult(HResults.S_OK, hr);
             Assert.Equal('\0', pName[nameLen - 1]);
         }
@@ -90,7 +90,8 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         IXCLRDataAppDomain appDomain = GetAppDomain();
 
         uint fullLen;
-        appDomain.GetName(0, &fullLen, null);
+        int hr = appDomain.GetName(0, &fullLen, null);
+        AssertHResult(HResults.S_OK, hr);
         Assert.True(fullLen > 2, "Need a name long enough to truncate");
 
         uint truncLen = fullLen - 1;
@@ -98,7 +99,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         uint reportedLen;
         fixed (char* pName = nameBuf)
         {
-            int hr = appDomain.GetName(truncLen, &reportedLen, pName);
+            hr = appDomain.GetName(truncLen, &reportedLen, pName);
             AssertHResult(HResults.S_FALSE, hr);
         }
 
@@ -115,7 +116,8 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         IXCLRDataAppDomain appDomain = GetAppDomain();
 
         uint fullLen;
-        appDomain.GetName(0, &fullLen, null);
+        int hr = appDomain.GetName(0, &fullLen, null);
+        AssertHResult(HResults.S_OK, hr);
         Assert.True(fullLen > 2, "Need a name long enough to truncate");
 
         uint truncLen = fullLen - 1;
@@ -136,13 +138,15 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         IXCLRDataAppDomain appDomain = GetAppDomain();
 
         uint len1;
-        appDomain.GetName(0, &len1, null);
+        int hr = appDomain.GetName(0, &len1, null);
+        AssertHResult(HResults.S_OK, hr);
 
         uint len2;
         char[] nameBuf = new char[len1];
         fixed (char* pName = nameBuf)
         {
-            appDomain.GetName(len1, &len2, pName);
+            hr = appDomain.GetName(len1, &len2, pName);
+            AssertHResult(HResults.S_OK, hr);
         }
 
         Assert.Equal(len1, len2);
@@ -188,9 +192,21 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
     {
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
-        IStackDataFrameHandle firstFrame = stackWalk.CreateStackWalk(crashingThread).First();
 
-        ClrDataFrame frame = new ClrDataFrame(Target, firstFrame, legacyImpl: null);
+        IStackDataFrameHandle? managedFrame = null;
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md != TargetPointer.Null)
+            {
+                managedFrame = dataFrame;
+                break;
+            }
+        }
+
+        Assert.NotNull(managedFrame);
+
+        ClrDataFrame frame = new ClrDataFrame(Target, managedFrame, legacyImpl: null);
         IXCLRDataFrame xclrFrame = frame;
 
         DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
