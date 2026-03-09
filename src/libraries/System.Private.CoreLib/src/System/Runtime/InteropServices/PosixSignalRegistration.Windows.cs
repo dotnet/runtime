@@ -15,10 +15,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static readonly object s_oneOfRegisterUnregisterLock = new();
 
-        /// <summary>
-        /// Lock object for critical section ensuring that only one of unregister and callback execution happen at time.
-        /// </summary>
-        private static readonly object s_oneOfUnregisterExecuteLock = new();
 
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
@@ -82,23 +78,20 @@ namespace System.Runtime.InteropServices
 
         private unsafe void Unregister()
         {
-            lock (s_oneOfUnregisterExecuteLock)
+            lock (s_oneOfRegisterUnregisterLock)
             {
-                lock (s_oneOfRegisterUnregisterLock)
+                lock (s_registrations)
                 {
-                    lock (s_registrations)
+                    if (_token is Token token)
                     {
-                        if (_token is Token token)
-                        {
-                            _token = null;
+                        _token = null;
 
-                            if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
+                        if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
+                        {
+                            tokens.Remove(token);
+                            if (tokens.Count == 0)
                             {
-                                tokens.Remove(token);
-                                if (tokens.Count == 0)
-                                {
-                                    s_registrations.Remove(token.SigNo);
-                                }
+                                s_registrations.Remove(token.SigNo);
                             }
                         }
                     }
@@ -110,34 +103,31 @@ namespace System.Runtime.InteropServices
         private static Interop.BOOL HandlerRoutine(int dwCtrlType)
         {
             Token[]? tokens = null;
-            lock (s_oneOfUnregisterExecuteLock)
+            lock (s_registrations)
             {
-                lock (s_registrations)
+                if (s_registrations.TryGetValue(dwCtrlType, out List<Token>? registrations))
                 {
-                    if (s_registrations.TryGetValue(dwCtrlType, out List<Token>? registrations))
-                    {
-                        tokens = new Token[registrations.Count];
-                        registrations.CopyTo(tokens);
-                    }
+                    tokens = new Token[registrations.Count];
+                    registrations.CopyTo(tokens);
                 }
-
-                if (tokens is null)
-                {
-                    return Interop.BOOL.FALSE;
-                }
-
-                var context = new PosixSignalContext(0);
-
-                // Iterate through the tokens in reverse order to match the order of registration.
-                for (int i = tokens.Length - 1; i >= 0; i--)
-                {
-                    Token token = tokens[i];
-                    context.Signal = token.Signal;
-                    token.Handler(context);
-                }
-
-                return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             }
+
+            if (tokens is null)
+            {
+                return Interop.BOOL.FALSE;
+            }
+
+            var context = new PosixSignalContext(0);
+
+            // Iterate through the tokens in reverse order to match the order of registration.
+            for (int i = tokens.Length - 1; i >= 0; i--)
+            {
+                Token token = tokens[i];
+                context.Signal = token.Signal;
+                token.Handler(context);
+            }
+
+            return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
     }
 }
