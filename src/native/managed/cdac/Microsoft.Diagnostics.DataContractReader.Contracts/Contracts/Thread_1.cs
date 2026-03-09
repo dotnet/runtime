@@ -76,6 +76,14 @@ internal readonly struct Thread_1 : IThread
             GetThreadFromLink(thread.LinkNext));
     }
 
+    void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        allocBytes = thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.AllocBytes ?? 0;
+        allocBytesLoh = thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.AllocBytesLoh ?? 0;
+    }
+
     void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);

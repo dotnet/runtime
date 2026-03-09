@@ -36,6 +36,9 @@ bool Compiler::fgHaveProfileData()
 //------------------------------------------------------------------------
 // fgHaveProfileWeights: Check if we have a profile that has weights.
 //
+// Returns:
+//    true if profile weights are available
+//
 // Notes:
 //    These weights may come from instrumentation or from synthesis.
 //
@@ -46,6 +49,9 @@ bool Compiler::fgHaveProfileWeights()
 
 //------------------------------------------------------------------------
 // fgRemoveProfileData: Remove all traces of profile info
+//
+// Arguments:
+//   reason -- string describing why profile data is being removed
 //
 // Notes:
 //   Needed if the jit initially thought it was going to optimize
@@ -644,7 +650,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
         //
         weight_t blockWeight = block->bbWeight;
 
-        if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount)
+        if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
         {
             *((uint32_t*)addrOfCurrentExecutionCount) = (uint32_t)blockWeight;
         }
@@ -1403,7 +1409,7 @@ void EfficientEdgeCountInstrumentor::Prepare(bool preImport)
 
 //------------------------------------------------------------------------
 // EfficientEdgeCountInstrumentor::SplitCriticalEdges: add blocks for
-//   probes along critical edges and adjust affeted probes and probe lists.
+//   probes along critical edges and adjust affected probes and probe lists.
 //
 //
 // Notes:
@@ -1746,7 +1752,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
     const bool dual           = interlocked && scalable;
 
     JITDUMP("Using %s probes\n",
-            unsynchronized ? "unsychronized"
+            unsynchronized ? "unsynchronized"
                            : (dual ? "both interlocked and scalable" : (interlocked ? "interlocked" : "scalable")));
 
     // Walk the bbSparseProbeList, adding instrumentation.
@@ -1789,7 +1795,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
             // Write the current synthesized count as the profile data
             //
             // Todo: handle pseudo edges!
-            FlowEdge* const edge = m_compiler->fgGetPredForBlock(source, target);
+            FlowEdge* const edge = m_compiler->fgGetPredForBlock(target, source);
 
             if (edge != nullptr)
             {
@@ -2421,6 +2427,12 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     }
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::Prepare: Prepare for value instrumentation.
+//
+// Arguments:
+//    isPreImport - true if this is the pre-import phase
+//
 void ValueInstrumentor::Prepare(bool isPreImport)
 {
     if (isPreImport)
@@ -2438,6 +2450,14 @@ void ValueInstrumentor::Prepare(bool isPreImport)
 #endif
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::BuildSchemaElements: Build schema elements for value
+//    profiling in the given block.
+//
+// Arguments:
+//    block  - the block to build schema elements for
+//    schema - [IN/OUT] the schema to add elements to
+//
 void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
     if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
@@ -2455,6 +2475,15 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
     }
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::Instrument: Instrument the given block with value
+//    profiling probes.
+//
+// Arguments:
+//    block         - the block to instrument
+//    schema        - the schema describing the instrumentation
+//    profileMemory - the profile data buffer
+//
 void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
     if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
@@ -2549,7 +2578,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 
     if (minimalProfiling && (fgBBcount < 2))
     {
-        // Don't instrumenting small single-block methods.
+        // Don't instrument small single-block methods.
         JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
         fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
@@ -3994,7 +4023,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 
     // We may not have have the same number of model edges and flow edges.
     //
-    // This can happen because bome BBJ_LEAVE blocks may have been missed during
+    // This can happen because some BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
     // to just yet (specially, in WalkSpanningTree, we may not add the target of
     // a BBJ_LEAVE to the worklist).
@@ -4422,6 +4451,9 @@ bool Compiler::fgComputeMissingBlockWeights()
 //   weight2 -- second weight
 //   epsilon -- maximum absolute difference for weights to be considered equal
 //
+// Returns:
+//   true if the weights are within epsilon of each other
+//
 // Notes:
 //   In most cases you should probably call fgProfileWeightsConsistent instead
 //   of this method.
@@ -4438,6 +4470,9 @@ bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_
 // Arguments:
 //   weight1 -- first weight
 //   weight2 -- second weight
+//
+// Returns:
+//   true if the weights are within a small relative percentage of each other
 //
 bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 {
@@ -4459,6 +4494,9 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   weight1 -- first weight
 //   weight2 -- second weight
 //   epsilon -- small weight threshold
+//
+// Returns:
+//   true if the weights are consistent or both are smaller than epsilon
 //
 bool Compiler::fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon)
 {
@@ -4905,7 +4943,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 
         // Walk successor edges and add up flow counts.
         //
-        unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
         for (FlowEdge* succEdge : block->SuccEdges())
@@ -4922,12 +4959,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
                 JITDUMP("Missing likelihood on %p " FMT_BB "->" FMT_BB "\n", succEdge, block->bbNum, succBlock->bbNum);
                 missingLikelihood++;
             }
-        }
-
-        if (missingEdges > 0)
-        {
-            JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
-            likelyWeightsValid = false;
         }
 
         if (verifyHasLikelihood)
@@ -5118,7 +5149,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
         {
             if (metric != nullptr)
             {
-                *metric++;
+                (*metric)++;
             }
             fgPgoConsistent = false;
         }

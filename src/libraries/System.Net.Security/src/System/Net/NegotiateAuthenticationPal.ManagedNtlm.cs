@@ -560,7 +560,7 @@ namespace System.Net
                     return targetInfoBuffer;
                 }
 
-                return targetInfoBuffer.AsSpan(targetInfoOffset).ToArray();
+                return targetInfoBuffer.AsSpan(0, targetInfoOffset).ToArray();
             }
 
             // Section 3.4.5.2 SIGNKEY, 3.4.5.3 SEALKEY

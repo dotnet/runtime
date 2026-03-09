@@ -4,8 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.TypeSystem;
-using ILCompiler.ObjectWriter;
 
 namespace Internal.JitInterface
 {

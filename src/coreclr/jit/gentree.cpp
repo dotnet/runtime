@@ -12791,7 +12791,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
 #ifdef TARGET_WASM
                     case GenTreeBlk::BlkOpKindNativeOpcode:
-                        printf(" (memory.copy|fill)");
+                        printf(" (memory.%s)", tree->OperIsCopyBlkOp() ? "copy" : "fill");
                         break;
 #endif
 
@@ -18569,7 +18569,7 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
 }
 
 //------------------------------------------------------------------------
-// GenTreeVecCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
+// GenTreeVecCon::EvaluateBinaryInPlace: Evaluates this constant using the given operation
 //
 // Arguments:
 //    oper     - the operation to use in the evaluation
@@ -20755,6 +20755,7 @@ bool GenTree::isEmbeddedMaskingCompatible() const
 //   comp               - The compiler
 //   tgtMaskSize        - The mask size to check compatibility against
 //   tgtSimdBaseJitType - The target simd base jit type to use if supported
+//   broadcastOpIndex   - A pointer to receive the position of the operand supporting broadcast
 //
 // Return Value:
 //   true if the node lowering instruction has a EVEX embedded masking support
@@ -33785,6 +33786,65 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 tree->SetMorphed(this);
                 return gtFoldExprHWIntrinsic(tree);
+            }
+
+            case NI_X86Base_BlendVariable:
+            case NI_AVX_BlendVariable:
+            case NI_AVX2_BlendVariable:
+            case NI_AVX512_BlendVariableMask:
+            {
+                if (!op3->OperIsConst())
+                {
+                    break;
+                }
+
+                bool maskIsZero    = false;
+                bool maskIsAllOnes = false;
+
+                if (op3->IsCnsMsk())
+                {
+                    maskIsZero = op3->IsMaskZero();
+
+                    if (!maskIsZero)
+                    {
+                        GenTreeMskCon* mask      = op3->AsMskCon();
+                        uint32_t       elemCount = simdSize / genTypeSize(simdBaseType);
+
+                        maskIsAllOnes = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
+                    }
+                }
+                else
+                {
+                    assert(op3->IsCnsVec());
+
+                    maskIsZero = op3->IsVectorZero();
+
+                    if (!maskIsZero)
+                    {
+                        maskIsAllOnes = op3->IsVectorAllBitsSet();
+                    }
+                }
+
+                if (maskIsAllOnes)
+                {
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        // op1 has side effects, this would require us to append a new statement
+                        // to ensure that it isn't lost, which isn't safe to do from the general
+                        // purpose handler here. We'll recognize this and mark it in VN instead
+                        break;
+                    }
+
+                    // op1 has no side effects, so we can return op2 directly
+                    return op2;
+                }
+
+                if (maskIsZero)
+                {
+                    return gtWrapWithSideEffects(op1, op2, GTF_ALL_EFFECT);
+                }
+
+                break;
             }
 #endif // TARGET_XARCH
 

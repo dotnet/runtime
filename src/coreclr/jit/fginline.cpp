@@ -9,11 +9,12 @@
 
 // Flowgraph Inline Support
 
-/*****************************************************************************/
-
 //------------------------------------------------------------------------
-// fgCheckForInlineDepthAndRecursion: compute depth of the candidate, and
+// fgCheckInlineDepthAndRecursion: compute depth of the candidate, and
 // check for recursion.
+//
+// Arguments:
+//    inlineInfo - inline info for the inline candidate
 //
 // Return Value:
 //    The depth of the inline candidate. The root method is a depth 0, top-level
@@ -61,6 +62,10 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 //------------------------------------------------------------------------
 // IsDisallowedRecursiveInline: Check whether 'info' is a recursive inline (of
 // 'ancestor'), and whether it should be disallowed.
+//
+// Arguments:
+//    ancestor   - inline context of the ancestor
+//    inlineInfo - inline info for the inline candidate
 //
 // Return Value:
 //    True if the inline is recursive and should be disallowed.
@@ -802,7 +807,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // AssignStructInlineeToVar: Store the struct inlinee to a temp local.
+    // StoreStructInlineeToVar: Store the struct inlinee to a temp local.
     //
     // Arguments:
     //    inlinee   - The inlinee of the RET_EXPR node
@@ -905,10 +910,10 @@ private:
                 }
 #endif // DEBUG
 
-                InlineContext*         inlinersContext        = call->gtInlineContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                ILLocation             ilLocation             = call->gtLateDevirtualizationInfo->ilLocation;
+                ILLocation ilLocation                = call->gtLateDevirtualizationInfo->ilLocation;
+                InlineContext*         inlinersContext        = call->gtInlineContext;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
@@ -1473,11 +1478,18 @@ void Compiler::fgNoteNonInlineCandidate(GenTreeCall* call)
 
 #ifdef DEBUG
 
-/*****************************************************************************
- * Callback to make sure there is no more GT_RET_EXPR and GTF_CALL_INLINE_CANDIDATE nodes.
- */
-
-/* static */
+//------------------------------------------------------------------------
+// fgDebugCheckInlineCandidates: Callback to make sure there is no more
+//    GT_RET_EXPR and GTF_CALL_INLINE_CANDIDATE nodes.
+//
+// Arguments:
+//    pTree - pointer to the tree node being walked
+//    data  - walk data
+//
+// Return Value:
+//    WALK_CONTINUE
+//
+// static
 Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
@@ -1557,7 +1569,7 @@ void Compiler::fgInvokeInlineeCompiler(InlineInfo&     inlineInfo,
 
         if (pParam->inlineInfo->inlineResult->IsCandidate())
         {
-            /* Clear the temp table */
+            // Clear the temp table
             memset(pParam->inlineInfo->lclTmpNum, -1, sizeof(pParam->inlineInfo->lclTmpNum));
 
             //
@@ -1853,7 +1865,7 @@ void Compiler::fgFinalizeInlineeStatements(InlineInfo* pInlineInfo)
     else if (InlineeCompiler->fgPgoFailReason != nullptr)
     {
         // Single block inlinees may not have probes
-        // when we've ensabled minimal profiling (which
+        // when we've enabled minimal profiling (which
         // is now the default).
         //
         if (InlineeCompiler->fgBBcount == 1)
@@ -1996,17 +2008,16 @@ void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements,
     {
         noway_assert(argInfo.argIsUsed);
 
-        /* argBashTmpNode is non-NULL iff the argument's value was
-           referenced exactly once by the original IL. This offers an
-           opportunity to avoid an intermediate temp and just insert
-           the original argument tree.
-
-           However, if the temp node has been cloned somewhere while
-           importing (e.g. when handling isinst or dup), or if the IL
-           took the address of the argument, then argBashTmpNode will
-           be set (because the value was only explicitly retrieved
-           once) but the optimization cannot be applied.
-         */
+        // argBashTmpNode is non-NULL iff the argument's value was
+        // referenced exactly once by the original IL. This offers an
+        // opportunity to avoid an intermediate temp and just insert
+        // the original argument tree.
+        //
+        // However, if the temp node has been cloned somewhere while
+        // importing (e.g. when handling isinst or dup), or if the IL
+        // took the address of the argument, then argBashTmpNode will
+        // be set (because the value was only explicitly retrieved
+        // once) but the optimization cannot be applied.
 
         GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
@@ -2181,7 +2192,7 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // The only reason we move it here is for calling "impInlineFetchArg(0,..." to reserve a temp
     // for the "this" pointer.
     // Note: Here we no longer do the optimization that was done by thisDereferencedFirst in the old inliner.
-    // However the assetionProp logic will remove any unnecessary null checks that we may have added
+    // However the assertionProp logic will remove any unnecessary null checks that we may have added
     //
     GenTree* nullcheck = nullptr;
 
