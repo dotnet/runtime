@@ -143,6 +143,7 @@ public enum DataType
     StubDispatchFrame,
     ComCallWrapper,
     SimpleComCallWrapper,
+    ComMethodTable,
     RCWCleanupList,
     RCW,
     CtxEntry,

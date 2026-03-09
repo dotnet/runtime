@@ -232,6 +232,19 @@ static void Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedExc
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
+{
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "CreateTargetInvocationException", &MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
@@ -473,6 +486,19 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     return result;
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid(void * arg0, void * arg1)
+{
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.StartupHookProvider, System.Private.CoreLib", "ManagedStartup", &MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32(void * arg0, void * arg1)
 {
@@ -544,6 +570,19 @@ static void Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid(void * arg0)
+{
+    int64_t args[1] = { (int64_t)arg0 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "OnProcessExit", &MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
@@ -568,6 +607,19 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnTypeResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid(void * arg0, void * arg1)
+{
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "OnUnhandledException", &MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32 = nullptr;
