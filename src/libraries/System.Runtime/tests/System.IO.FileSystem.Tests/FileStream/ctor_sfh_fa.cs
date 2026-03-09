@@ -44,6 +44,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void AsyncHandleOnUnix_Throws()
+        {
+            using SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, FileOptions.Asynchronous);
+            AssertExtensions.Throws<ArgumentException>("handle", () => CreateFileStream(handle, FileAccess.ReadWrite));
+        }
+
+        [Fact]
         public void FileAccessRead()
         {
             string fileName = GetTestFilePath();

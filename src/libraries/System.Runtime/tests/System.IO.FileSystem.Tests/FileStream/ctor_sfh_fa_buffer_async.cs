@@ -24,8 +24,15 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, 4096, true))
             {
-                using (CreateFileStream(fs.SafeFileHandle, FileAccess.ReadWrite, 4096, true))
-                { }
+                if (OperatingSystem.IsWindows())
+                {
+                    using (CreateFileStream(fs.SafeFileHandle, FileAccess.ReadWrite, 4096, true))
+                    { }
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentException>("handle", () => CreateFileStream(fs.SafeFileHandle, FileAccess.ReadWrite, 4096, true));
+                }
             }
         }
 
@@ -36,6 +43,12 @@ namespace System.IO.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete, 4096, isAsync))
             {
+                if (!OperatingSystem.IsWindows() && isAsync)
+                {
+                    AssertExtensions.Throws<ArgumentException>("handle", () => CreateFileStream(fs.SafeFileHandle, FileAccess.ReadWrite, 4096, !isAsync));
+                    return;
+                }
+
                 // isAsync parameter is now ignored, handle.IsAsync is used instead
                 using (FileStream newFs = CreateFileStream(fs.SafeFileHandle, FileAccess.ReadWrite, 4096, !isAsync))
                 {
