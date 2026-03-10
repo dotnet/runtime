@@ -79,12 +79,14 @@ IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
+TargetPointer GetSystemAssembly();
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 ```
 
 ## Version 1
@@ -118,7 +120,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
-| `Assembly` | `Level` | File load level of the assembly |
+| `Assembly` | `IsLoaded` | Whether assembly has been loaded |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
@@ -134,11 +136,20 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
+| `LoaderAllocator` | `StaticsHeap` | Statics heap of LoaderAllocator |
+| `LoaderAllocator` | `ExecutableHeap` | Executable heap of LoaderAllocator |
+| `LoaderAllocator` | `FixupPrecodeHeap` | FixupPrecode heap of LoaderAllocator (optional, present when `HAS_FIXUP_PRECODE`) |
+| `LoaderAllocator` | `NewStubPrecodeHeap` | NewStubPrecode heap of LoaderAllocator (optional, present when not `FEATURE_PORTABLE_ENTRYPOINTS`) |
+| `LoaderAllocator` | `DynamicHelpersStubHeap` | DynamicHelpers stub heap of LoaderAllocator (optional, present when `FEATURE_READYTORUN && FEATURE_STUBPRECODE_DYNAMIC_HELPERS`) |
+| `LoaderAllocator` | `VirtualCallStubManager` | Pointer to the VirtualCallStubManager of LoaderAllocator |
 | `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
+| `VirtualCallStubManager` | `IndcellHeap` | Indirection cell heap of VirtualCallStubManager |
+| `VirtualCallStubManager` | `CacheEntryHeap` | Cache entry heap of VirtualCallStubManager (optional, present when `FEATURE_VIRTUAL_STUB_DISPATCH`) |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
@@ -170,7 +181,6 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
-| `ASSEMBLY_LEVEL_LOADED` | uint | The value of Assembly Level required for an Assembly to be considered loaded. In the runtime, this is `FILE_LOAD_DELIVER_EVENTS` | `0x4` |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 
 Contracts used:
@@ -248,7 +258,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             // IncludeAvailableToProfilers contains some loaded AND loading
             // assemblies.
         }
-        else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED)
+        else if (assembly.IsLoaded)
         {
             if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
             {
@@ -611,15 +621,22 @@ bool IsDynamic(ModuleHandle handle)
 bool IsAssemblyLoaded(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
-    return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
+    bool isLoaded = target.Read<byte>(assembly + /* Assembly::IsLoaded*/) != 0;
+    return isLoaded;
 }
 
 TargetPointer GetGlobalLoaderAllocator()
 {
     TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
     TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
-    return target.ReadPointer(systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */);
+    return systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */;
+}
+
+TargetPointer GetSystemAssembly()
+{
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    return target.ReadPointer(systemDomain + /* SystemDomain::SystemAssembly offset */);
 }
 
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
@@ -640,6 +657,44 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
 {
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
+}
+
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+{
+    // Read LoaderAllocator data
+    LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
+
+    // Always-present heaps
+    Dictionary<string, TargetPointer> heaps = {
+        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
+        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
+        ["StaticsHeap"] = la.StaticsHeap,
+        ["StubHeap"] = la.StubHeap,
+        ["ExecutableHeap"] = la.ExecutableHeap,
+    };
+
+    // Feature-conditional heaps: only included when the data descriptor field exists
+    if (LoaderAllocator type has "FixupPrecodeHeap" field)
+        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+
+    if (LoaderAllocator type has "NewStubPrecodeHeap" field)
+        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+
+    if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
+        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+
+    // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
+    if (la.VirtualCallStubManager != null)
+    {
+        VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
+
+        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+
+        if (VirtualCallStubManager type has "CacheEntryHeap" field)
+            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+    }
+
+    return heaps;
 }
 
 private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>

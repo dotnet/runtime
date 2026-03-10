@@ -11,7 +11,7 @@ namespace System.Data.OleDb.Tests
     public class OleDbDataReaderTests : OleDbTestBase
     {
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void FieldCount_NoMetadata_ReturnsZero()
         {
             command.CommandText = @"CREATE TABLE sample.csv;";
@@ -23,7 +23,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void InvalidRowIndex()
         {
             RunTest((reader) => {
@@ -38,7 +38,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void NonExistentColumn()
         {
             RunTest((reader) => {
@@ -51,7 +51,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetValues()
         {
             RunTest((reader) => {
@@ -67,7 +67,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void EmptyReader_SchemaOnly_EmptyReader()
         {
             const string expectedMessage = "No data exists for the row/column.";
@@ -81,7 +81,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetSchemaTable_SchemaOnly_GetsColumnInfo()
         {
             RunTest((reader) => {
@@ -94,7 +94,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetSchemaTable_ColumnName_Success()
         {
             RunTest((reader) => {
@@ -109,7 +109,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetSchemaTable_DataType_Success()
         {
             RunTest((reader) => {
@@ -124,7 +124,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Read_GetInt32_Success()
         {
             RunTest((reader) => {
@@ -137,7 +137,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Read_GetString_Success()
         {
             RunTest((reader) => {
@@ -148,7 +148,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Read_GetDouble_Success()
         {
             RunTest((reader) => {
@@ -160,7 +160,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Read_GetFloat_Success()
         {
             RunTest((reader) => {
@@ -172,7 +172,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Read_GetDateTime_Success()
         {
             RunTest((reader) => {
@@ -184,7 +184,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         [InlineData(0)]
         [InlineData(1)]
         public void GetChar_MethodNotSupported_Throws(int ordinal)
@@ -195,7 +195,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetValues_Null_Throws()
         {
             RunTest((reader) => {
@@ -204,7 +204,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void IsClosed_CallReaderApis_Throws()
         {
             RunTest((reader) => {
@@ -219,7 +219,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void InnerReader_OpenReaderExists_Throws()
         {
             RunTest((reader) => {
@@ -230,7 +230,7 @@ namespace System.Data.OleDb.Tests
             });
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void GetEnumerator_BadType_Throws()
         {
             Assert.Throws<ArgumentException>(() => OleDbEnumerator.GetEnumerator(typeof(Exception)));

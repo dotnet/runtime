@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -33,7 +31,7 @@ namespace System.Formats.Tar
                 Interop.Sys.FileTypes.S_IFCHR => TarEntryType.CharacterDevice,
                 Interop.Sys.FileTypes.S_IFIFO => TarEntryType.Fifo,
                 Interop.Sys.FileTypes.S_IFLNK => TarEntryType.SymbolicLink,
-                Interop.Sys.FileTypes.S_IFREG => Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile,
+                Interop.Sys.FileTypes.S_IFREG => TarHelpers.GetRegularFileEntryTypeForFormat(Format),
                 Interop.Sys.FileTypes.S_IFDIR => TarEntryType.Directory,
                 _ => throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath)),
             };

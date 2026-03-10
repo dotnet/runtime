@@ -92,9 +92,9 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
-            if (partitions > 1 && !PlatformDetection.IsThreadingSupported)
+            if (partitions > 1 && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             _ = count;
@@ -117,9 +117,9 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
-            if (partitions > 1 && !PlatformDetection.IsThreadingSupported)
+            if (partitions > 1 && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             int seen = 0;
@@ -157,7 +157,7 @@ namespace System.Linq.Parallel.Tests
             Merge_Ordered(labeled, count, options);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ThrowOnCount_AllMergeOptions_MemberData), new[] { 4, 8 })]
         // FailingMergeData has enumerables that throw errors when attempting to perform the nth enumeration.
         // This test checks whether the query runs in a pipelined or buffered fashion.
@@ -166,7 +166,7 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(0, labeled.Item.WithDegreeOfParallelism(count - 1).WithMergeOptions(options).First());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(MergeData), new[] { 4, 8 })]
         // This test checks whether the query runs in a pipelined or buffered fashion.
         public static void Merge_Ordered_Pipelining_Select(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
@@ -207,7 +207,7 @@ namespace System.Linq.Parallel.Tests
         // enumerator when it is finished. If an exception occurs, the calling enumerator disposes
         // the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void PlinqChunkPartitioner_DontEnumerateAfterException(
             Labeled<ParallelQuery<int>> left, int leftCount,
@@ -230,7 +230,7 @@ namespace System.Linq.Parallel.Tests
         // disposes the enumerator when it is finished.  If an exception occurs, the calling
         // enumerator disposes the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void ManualChunkPartitioner_DontEnumerateAfterException(
             Labeled<ParallelQuery<int>> left, int leftCount,
