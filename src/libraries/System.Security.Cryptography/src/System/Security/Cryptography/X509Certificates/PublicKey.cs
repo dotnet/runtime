@@ -487,10 +487,6 @@ namespace System.Security.Cryptography.X509Certificates
             return new PublicKey(oid, parameters, keyValue, skipCopy: true);
         }
 
-        // internal static PublicKey DecodeSubjectPublicKeyInfo(ref SubjectPublicKeyInfoAsn spki)
-        // {
-        //     DecodeSubjectPublicKeyInfo(
-        //         ref spki,
         private static void DecodeSubjectPublicKeyInfo(
             ref ValueSubjectPublicKeyInfoAsn spki,
             out Oid oid,
