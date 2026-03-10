@@ -52,13 +52,10 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             // Match native DAC behavior: fail when the buffer is too small,
             // and on success copy the full context.
             if (contextBufSize < (uint)context.Length)
-            {
-                hr = HResults.E_INVALIDARG;
-            }
-            else if (contextBufSize > 0 && context.Length > 0)
-            {
+                throw new ArgumentException();
+
+            if (contextBufSize > 0 && context.Length > 0)
                 Array.Copy(context, 0, contextBuf, 0, context.Length);
-            }
         }
         catch (System.Exception ex)
         {
