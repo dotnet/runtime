@@ -618,7 +618,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorNormal_Success()
         {
@@ -637,7 +636,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorZeroCountLength_Success()
         {
@@ -666,7 +664,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorNegOffset_ArgumentOutOfRangeException()
         {
@@ -692,7 +689,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorNegCount_ArgumentOutOfRangeException()
         {
@@ -733,7 +729,6 @@ namespace System.Net.Sockets.Tests
         // File lengths are validated on send
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorEndOfBufferTrue_Success()
         {
@@ -775,7 +770,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorEndOfBufferFalse_Success()
         {

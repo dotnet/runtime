@@ -49,7 +49,7 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(fileStream);
 
-            if (!fileStream.IsAsync)
+            if (!fileStream.IsAsync && OperatingSystem.IsWindows())
             {
                 throw new ArgumentException(SR.net_sockets_sendpackelement_FileStreamMustBeAsync, nameof(fileStream));
             }
