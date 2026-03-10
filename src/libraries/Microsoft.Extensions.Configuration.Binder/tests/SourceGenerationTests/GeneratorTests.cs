@@ -418,7 +418,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task Diagnostic_HasPragmaSuppressibleLocation()
         {
+            // Embed #pragma warning disable to verify the diagnostic location
+            // is in the same source tree and can be covered by the pragma.
             string source = """
+                #pragma warning disable SYSLIB1103
                 using System;
                 using Microsoft.Extensions.Configuration;
 
@@ -435,9 +438,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
+            // Verify diagnostic is reported and has a SourceFile location.
+            // This is the precondition for #pragma warning disable to work:
+            // ExternalFileLocation (the old behavior) ignores pragmas entirely.
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1103");
             Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+            Assert.NotNull(diagnostic.Location.SourceTree);
         }
     }
 }

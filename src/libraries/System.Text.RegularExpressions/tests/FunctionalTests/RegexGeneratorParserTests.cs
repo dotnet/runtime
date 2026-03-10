@@ -431,9 +431,20 @@ namespace System.Text.RegularExpressions.Tests
                 _ => throw new ArgumentException(diagnosticId),
             };
 
-            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(code);
-            Diagnostic diagnostic = Assert.Single(diagnostics, d => d.Id == diagnosticId);
+            // Verify diagnostic is reported and has a SourceFile location.
+            // This is the precondition for #pragma warning disable to work:
+            // ExternalFileLocation (the old behavior) ignores pragmas entirely.
+            string codeWithPragma = $"#pragma warning disable {diagnosticId}\n{code}";
+            (Compilation comp, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(codeWithPragma);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == diagnosticId);
             Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+
+            // Verify the diagnostic location is within the scope of the #pragma directive
+            // in the same syntax tree, proving the compiler's pragma processing can suppress it.
+            SyntaxTree tree = diagnostic.Location.SourceTree;
+            Assert.NotNull(tree);
+            Assert.Contains(comp.SyntaxTrees, t => t == tree);
+            Assert.True(diagnostic.Location.SourceSpan.Start > 0);
         }
 
         [Fact]

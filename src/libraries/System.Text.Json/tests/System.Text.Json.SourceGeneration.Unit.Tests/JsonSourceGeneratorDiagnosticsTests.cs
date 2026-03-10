@@ -760,7 +760,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void Diagnostic_HasPragmaSuppressibleLocation()
         {
             // SYSLIB1038: JsonInclude attribute on inaccessible member
-            Compilation compilation = CompilationHelper.CreateCompilation(@"
+            string source = @"
+                #pragma warning disable SYSLIB1038
                 using System.Text.Json.Serialization;
 
                 namespace Test
@@ -773,11 +774,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     [JsonSerializable(typeof(MyClass))]
                     public partial class JsonContext : JsonSerializerContext { }
-                }");
+                }";
 
+            // Verify diagnostic is reported and has a SourceFile location.
+            // This is the precondition for #pragma warning disable to work:
+            // ExternalFileLocation (the old behavior) ignores pragmas entirely.
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
             Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1038");
             Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+
+            // Verify the diagnostic location is in a syntax tree that is part of the compilation,
+            // proving the compiler's pragma processing can suppress it.
+            Assert.NotNull(diagnostic.Location.SourceTree);
+            Assert.Contains(compilation.SyntaxTrees, t => t == diagnostic.Location.SourceTree);
         }
     }
 }
