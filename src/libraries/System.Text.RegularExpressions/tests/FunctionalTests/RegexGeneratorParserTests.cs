@@ -404,7 +404,6 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Diagnostic_HasPragmaSuppressibleLocation()
         {
             // SYSLIB1044 (LimitedSourceGeneration) is emitted for case-insensitive backreferences.
-            // It is NOT tagged NotConfigurable, so #pragma warning disable can suppress it.
             string code = """
                 #pragma warning disable SYSLIB1044
                 using System.Text.RegularExpressions;

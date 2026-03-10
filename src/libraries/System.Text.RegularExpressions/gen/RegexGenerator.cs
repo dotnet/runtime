@@ -11,7 +11,6 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -25,8 +24,6 @@ namespace System.Text.RegularExpressions.Generator
         private const string HelpersTypeName = "Utilities";
         /// <summary>Namespace containing all the generated code.</summary>
         private const string GeneratedNamespace = "System.Text.RegularExpressions.Generated";
-        /// <summary>Tracking name for the source generation step, used by incremental generation tests.</summary>
-        public const string SourceGenerationTrackingName = "SourceGenerationStep";
         /// <summary>Code for a [GeneratedCode] attribute to put on the top-level generated members.</summary>
         private static readonly string s_generatedCodeAttribute = $"GeneratedCodeAttribute(\"{typeof(RegexGenerator).Assembly.GetName().Name}\", \"{typeof(RegexGenerator).Assembly.GetName().Version}\")";
         /// <summary>Header comments and usings to include at the top of every generated file.</summary>
@@ -47,196 +44,266 @@ namespace System.Text.RegularExpressions.Generator
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // The ForAttributeWithMetadataName transform validates the attribute and returns
-            // either a Diagnostic (validation failure), a RegexPatternAndSyntax (success), or null (skip).
-            // Collect all per-method results, then aggregate into one RegexSourceGenerationResult
-            // record (with deduplicated helpers) plus a single list of all diagnostics.
-            IncrementalValueProvider<(RegexSourceGenerationResult Result, ImmutableArray<Diagnostic> Diagnostics)> collected =
+            // Produces one entry per generated regex.  This may be:
+            // - Diagnostic in the case of a failure that should end the compilation
+            // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
+            // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
+            var collected =
                 context.SyntaxProvider
+
+                // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
+                // The predicate will be run once for every attributed node in the same file that's being modified.
+                // The transform will be run once for every attributed node in the compilation.
+                // Thus, both should do the minimal amount of work required and get out.  This should also have extracted
+                // everything from the target necessary to do all subsequent analysis and should return an object that's
+                // meaningfully comparable and that doesn't reference anything from the compilation: we want to ensure
+                // that any successful cached results are idempotent for the input such that they don't trigger downstream work
+                // if there are no changes.
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
                     GetRegexMethodDataOrFailureDiagnostic)
-                .Where(static m => m is not null)
-                .Collect()
-                .Select(static (items, _) =>
-                {
-                    ImmutableArray<RegexMethodEntry>.Builder? methods = null;
-                    Dictionary<string, HelperMethod>? helpersByName = null;
-                    ImmutableArray<Diagnostic>.Builder? allDiagnostics = null;
 
-                    foreach (object? item in items)
+                // Filter out any parsing errors that resulted in null objects being returned.
+                .Where(static m => m is not null)
+
+                // The input here will either be a Diagnostic (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
+                // or it will be a RegexPatternAndSyntax containing all of the successfully parsed data from the attribute/method.
+                .Select((methodOrDiagnostic, _) =>
+                {
+                    if (methodOrDiagnostic is RegexPatternAndSyntax method)
                     {
-                        if (item is Diagnostic diagnostic)
+                        try
                         {
-                            (allDiagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
+                            RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
+                            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
+                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.DiagnosticLocation, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
                         }
-                        else if (item is RegexPatternAndSyntax method)
+                        catch (Exception e)
                         {
-                            RegexMethodEntry? entry = ParseAndGenerateRegex(method, ref allDiagnostics, ref helpersByName);
-                            if (entry is not null)
-                            {
-                                (methods ??= ImmutableArray.CreateBuilder<RegexMethodEntry>()).Add(entry);
-                            }
+                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
                         }
                     }
 
-                    var result = new RegexSourceGenerationResult(
-                        methods?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<RegexMethodEntry>.Empty,
-                        helpersByName?.Values.OrderBy(h => h.Name, StringComparer.Ordinal).ToImmutableEquatableArray() ?? ImmutableEquatableArray<HelperMethod>.Empty);
+                    return methodOrDiagnostic;
+                })
 
-                    return (Result: result, Diagnostics: allDiagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+                // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
+                .Select((state, _) =>
+                {
+                    if (state is not RegexMethod regexMethod)
+                    {
+                        Debug.Assert(state is Diagnostic);
+                        return state;
+                    }
+
+                    // If we're unable to generate a full implementation for this regex, report a diagnostic.
+                    // We'll still output a limited implementation that just caches a new Regex(...).
+                    if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
+                    {
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), regexMethod.CompilationData);
+                    }
+
+                    // Generate the core logic for the regex.
+                    Dictionary<string, string[]> requiredHelpers = new();
+                    var sw = new StringWriter();
+                    var writer = new IndentedTextWriter(sw);
+                    writer.Indent += 2;
+                    writer.WriteLine();
+                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, regexMethod.CompilationData.CheckOverflow);
+                    writer.Indent -= 2;
+                    return (regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
+                })
+
+                // Combine all of the generated text outputs into a single batch, then split
+                // the source model from diagnostics so they can be emitted independently.
+                .Collect()
+                .Select(static (results, _) =>
+                {
+                    ImmutableArray<Diagnostic>.Builder? diagnostics = null;
+
+                    foreach (object result in results)
+                    {
+                        if (result is Diagnostic d)
+                        {
+                            (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(d);
+                        }
+                        else if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
+                        {
+                            (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(limitedSupportResult.Item3);
+                        }
+                    }
+
+                    return (Results: results, Diagnostics: diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
                 });
 
-            // Project to just the equatable source model, discarding diagnostics.
-            // RegexSourceGenerationResult uses ImmutableEquatableArray fields for deep value equality,
-            // so Roslyn's Select operator compares successive snapshots and only propagates changes
-            // downstream when the model structurally differs. This ensures source generation is fully
-            // incremental: re-emitting code only when the regex spec actually changes.
-            IncrementalValueProvider<RegexSourceGenerationResult> sourceResults = collected
-                .Select(static (t, _) => t.Result)
-                .WithTrackingName(SourceGenerationTrackingName);
-
-            context.RegisterSourceOutput(sourceResults, EmitSource);
-
-            // Project to just the diagnostics, discarding the model. ImmutableArray<Diagnostic> does not
-            // implement value equality, so Roslyn's incremental pipeline uses reference equality for these
-            // values — the callback fires on every compilation change. This is by design: diagnostic
-            // emission is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
-            // (cf. https://github.com/dotnet/runtime/issues/92509).
-            // No source code is generated from this pipeline — it exists solely to report diagnostics.
-            IncrementalValueProvider<ImmutableArray<Diagnostic>> diagnosticResults =
-                collected.Select(static (t, _) => t.Diagnostics);
-
-            context.RegisterSourceOutput(diagnosticResults, EmitDiagnostics);
-        }
-
-        private static void EmitSource(SourceProductionContext context, RegexSourceGenerationResult result)
-        {
-            if (result.Methods.Count == 0)
+            // Project to just the source model for code generation.
+            context.RegisterSourceOutput(collected.Select(static (t, _) => t.Results), static (context, results) =>
             {
-                return;
-            }
-
-            // At this point we'll be emitting code.  Create a writer to hold it all.
-            using StringWriter sw = new();
-            using IndentedTextWriter writer = new(sw);
-
-            // Add file headers and required usings.
-            foreach (string header in s_headers)
-            {
-                writer.WriteLine(header);
-            }
-            writer.WriteLine();
-
-            // For every generated type, we give it an incrementally increasing ID, in order to create
-            // unique type names even in situations where method names were the same, while also keeping
-            // the type names short.  Note that this is why we only generate the RunnerFactory implementations
-            // earlier in the pipeline... we want to avoid generating code that relies on the class names
-            // until we're able to iterate through them linearly keeping track of a deterministic ID
-            // used to name them.  The boilerplate code generation that happens here is minimal when compared to
-            // the work required to generate the actual matching code for the regex.
-            int id = 0;
-
-            // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
-            // expression/options/timeout.  A Dictionary<(expression, options, timeout), (entry, generatedName)> is used to
-            // deduplicate, where the value contains the entry and the generated name used for the key.
-            var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), (RegexMethodEntry Entry, string GeneratedName)>();
-
-            foreach (RegexMethodEntry entry in result.Methods)
-            {
-                var key = (entry.Pattern, entry.Options, entry.MatchTimeout);
-                string generatedName;
-                if (emittedExpressions.TryGetValue(key, out (RegexMethodEntry Entry, string GeneratedName) existing))
+                if (results.All(static r => r is Diagnostic))
                 {
-                    generatedName = existing.GeneratedName;
-                }
-                else
-                {
-                    generatedName = $"{entry.MemberName}_{id++}";
-                    emittedExpressions.Add(key, (entry, generatedName));
+                    return;
                 }
 
-                EmitRegexPartialMethod(entry, generatedName, writer);
-                writer.WriteLine();
-            }
+                // At this point we'll be emitting code.  Create a writer to hold it all.
+                using StringWriter sw = new();
+                using IndentedTextWriter writer = new(sw);
 
-            // At this point we've emitted all the partial method definitions, but we still need to emit the actual regex-derived implementations.
-            // These are all emitted inside of our generated class.
-
-            writer.WriteLine($"namespace {GeneratedNamespace}");
-            writer.WriteLine($"{{");
-
-            // We emit usings here now that we're inside of a namespace block and are no longer emitting code into
-            // a user's partial type.  We can now rely on binding rules mapping to these usings and don't need to
-            // use global-qualified names for the rest of the implementation.
-            writer.WriteLine($"    using System;");
-            writer.WriteLine($"    using System.Buffers;");
-            writer.WriteLine($"    using System.CodeDom.Compiler;");
-            writer.WriteLine($"    using System.Collections;");
-            writer.WriteLine($"    using System.ComponentModel;");
-            writer.WriteLine($"    using System.Globalization;");
-            writer.WriteLine($"    using System.Runtime.CompilerServices;");
-            writer.WriteLine($"    using System.Text.RegularExpressions;");
-            writer.WriteLine($"    using System.Threading;");
-            writer.WriteLine($"");
-
-            // Emit each Regex-derived type.
-            writer.Indent++;
-            foreach ((RegexMethodEntry entry, string generatedName) in emittedExpressions.Values)
-            {
-                if (entry.LimitedSupportReason is not null)
+                // Add file headers and required usings.
+                foreach (string header in s_headers)
                 {
-                    EmitRegexLimitedBoilerplate(writer, entry, generatedName, entry.LimitedSupportReason, entry.CompilationData.LanguageVersion);
-                }
-                else if (entry.GeneratedCode is not null)
-                {
-                    EmitRegexDerivedImplementation(writer, entry, generatedName, entry.GeneratedCode, entry.CompilationData.AllowUnsafe);
+                    writer.WriteLine(header);
                 }
                 writer.WriteLine();
-            }
-            writer.Indent--;
 
-            // If any of the Regex-derived types asked for helper methods, emit those now.
-            if (result.Helpers.Count != 0)
-            {
-                writer.Indent++;
-                writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
-                writer.WriteLine($"[{s_generatedCodeAttribute}]");
-                writer.WriteLine($"file static class {HelpersTypeName}");
-                writer.WriteLine($"{{");
-                writer.Indent++;
-                bool sawFirst = false;
-                foreach (HelperMethod helper in result.Helpers)
+                // For every generated type, we give it an incrementally increasing ID, in order to create
+                // unique type names even in situations where method names were the same, while also keeping
+                // the type names short.  Note that this is why we only generate the RunnerFactory implementations
+                // earlier in the pipeline... we want to avoid generating code that relies on the class names
+                // until we're able to iterate through them linearly keeping track of a deterministic ID
+                // used to name them.  The boilerplate code generation that happens here is minimal when compared to
+                // the work required to generate the actual matching code for the regex.
+                int id = 0;
+
+                // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
+                // expression/options/timeout.  A Dictionary<(expression, options, timeout), RegexMethod> is used to deduplicate, where the value of the
+                // pair is the implementation used for the key.
+                var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
+
+                // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
+                // limited support and need to simply output boilerplate.
+                // If we have any (RegexMethod regexMethod, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
+                // those are generated implementations to be emitted.  We need to gather up their required helpers.
+                Dictionary<string, string[]> requiredHelpers = new();
+                foreach (object? result in results)
                 {
-                    if (sawFirst)
+                    RegexMethod? regexMethod = null;
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                     {
+                        regexMethod = limitedSupportResult.Item1;
+                    }
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
+                    {
+                        foreach (KeyValuePair<string, string[]> helper in regexImpl.Item3)
+                        {
+                            if (!requiredHelpers.ContainsKey(helper.Key))
+                            {
+                                requiredHelpers.Add(helper.Key, helper.Value);
+                            }
+                        }
+
+                        regexMethod = regexImpl.Item1;
+                    }
+
+                    if (regexMethod is not null)
+                    {
+                        var key = (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout);
+                        if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
+                        {
+                            regexMethod.IsDuplicate = true;
+                            regexMethod.GeneratedName = implementation.GeneratedName;
+                        }
+                        else
+                        {
+                            regexMethod.IsDuplicate = false;
+                            regexMethod.GeneratedName = $"{regexMethod.MemberName}_{id++}";
+                            emittedExpressions.Add(key, regexMethod);
+                        }
+
+                        EmitRegexPartialMethod(regexMethod, writer);
                         writer.WriteLine();
                     }
-                    sawFirst = true;
+                }
 
-                    foreach (string value in helper.Lines)
+                // At this point we've emitted all the partial method definitions, but we still need to emit the actual regex-derived implementations.
+                // These are all emitted inside of our generated class.
+
+                writer.WriteLine($"namespace {GeneratedNamespace}");
+                writer.WriteLine($"{{");
+
+                // We emit usings here now that we're inside of a namespace block and are no longer emitting code into
+                // a user's partial type.  We can now rely on binding rules mapping to these usings and don't need to
+                // use global-qualified names for the rest of the implementation.
+                writer.WriteLine($"    using System;");
+                writer.WriteLine($"    using System.Buffers;");
+                writer.WriteLine($"    using System.CodeDom.Compiler;");
+                writer.WriteLine($"    using System.Collections;");
+                writer.WriteLine($"    using System.ComponentModel;");
+                writer.WriteLine($"    using System.Globalization;");
+                writer.WriteLine($"    using System.Runtime.CompilerServices;");
+                writer.WriteLine($"    using System.Text.RegularExpressions;");
+                writer.WriteLine($"    using System.Threading;");
+                writer.WriteLine($"");
+
+                // Emit each Regex-derived type.
+                writer.Indent++;
+                foreach (object? result in results)
+                {
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                     {
-                        writer.WriteLine(value);
+                        if (!limitedSupportResult.Item1.IsDuplicate)
+                        {
+                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2, limitedSupportResult.Item4.LanguageVersion);
+                            writer.WriteLine();
+                        }
+                    }
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
+                    {
+                        if (!regexImpl.Item1.IsDuplicate)
+                        {
+                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2, regexImpl.Item4.AllowUnsafe);
+                            writer.WriteLine();
+                        }
                     }
                 }
                 writer.Indent--;
+
+                // If any of the Regex-derived types asked for helper methods, emit those now.
+                if (requiredHelpers.Count != 0)
+                {
+                    writer.Indent++;
+                    writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
+                    writer.WriteLine($"[{s_generatedCodeAttribute}]");
+                    writer.WriteLine($"file static class {HelpersTypeName}");
+                    writer.WriteLine($"{{");
+                    writer.Indent++;
+                    bool sawFirst = false;
+                    foreach (KeyValuePair<string, string[]> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
+                    {
+                        if (sawFirst)
+                        {
+                            writer.WriteLine();
+                        }
+                        sawFirst = true;
+
+                        foreach (string value in helper.Value)
+                        {
+                            writer.WriteLine(value);
+                        }
+                    }
+                    writer.Indent--;
+                    writer.WriteLine($"}}");
+                    writer.Indent--;
+                }
+
                 writer.WriteLine($"}}");
-                writer.Indent--;
-            }
 
-            writer.WriteLine($"}}");
+                // Save out the source
+                context.AddSource("RegexGenerator.g.cs", sw.ToString());
+            });
 
-            // Save out the source
-            context.AddSource("RegexGenerator.g.cs", sw.ToString());
-        }
-
-        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<Diagnostic> diagnostics)
-        {
-            foreach (Diagnostic diagnostic in diagnostics)
+            // Project to just the diagnostics. ImmutableArray<Diagnostic> does not implement value
+            // equality, so Roslyn's incremental pipeline uses reference equality — the callback fires
+            // on every compilation change. This is by design: diagnostic emission is cheap, and we
+            // need fresh SourceLocation instances that support #pragma warning disable
+            // (cf. https://github.com/dotnet/runtime/issues/92509).
+            context.RegisterSourceOutput(collected.Select(static (t, _) => t.Diagnostics), static (context, diagnostics) =>
             {
-                context.ReportDiagnostic(diagnostic);
-            }
+                foreach (Diagnostic diagnostic in diagnostics)
+                {
+                    context.ReportDiagnostic(diagnostic);
+                }
+            });
         }
 
         /// <summary>Determines whether the passed in node supports C# code generation.</summary>
@@ -297,6 +364,5 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
         }
-
     }
 }
