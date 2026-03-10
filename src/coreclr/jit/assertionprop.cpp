@@ -6411,9 +6411,57 @@ PhaseStatus Compiler::optAssertionPropMain()
                     printf("\n");
                 }
 #endif
+                // Record BBJ_COND state before morphing so we can fix up
+                // assertion out sets if morph changes the block's edges.
+                bool        wasCond = block->KindIs(BBJ_COND);
+                BasicBlock* trueBb  = wasCond ? block->GetTrueTarget() : nullptr;
+                BasicBlock* falseBb = wasCond ? block->GetFalseTarget() : nullptr;
+
                 // Re-morph the statement.
                 fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
                 madeChanges = true;
+
+                // Fix up assertion out sets if morphing changed the block's edges in a way
+                // that affects the semantics of the assertions.
+                //
+                if (wasCond && !optLocalAssertionProp)
+                {
+                    if (!block->KindIs(BBJ_COND))
+                    {
+                        // NOTE: if trueBb == falseBb then we don't know how assertions may change
+                        // so we take the conservative path in that case.
+                        //
+                        if ((block->GetUniqueSucc() == trueBb) && (trueBb != falseBb))
+                        {
+                            // BBJ_COND was folded (e.g. to BBJ_ALWAYS).
+                            // Fix up bbAssertionOut to match the retained edge.
+                            //
+                            BitVecOps::Assign(apTraits, block->bbAssertionOut, bbJtrueAssertionOut[block->bbNum]);
+                        }
+                        else if ((block->GetUniqueSucc() == falseBb) && (trueBb != falseBb))
+                        {
+                            // bbAssertionOut already has the false-edge assertions.
+                        }
+                        else
+                        {
+                            // Converted to something unexpected (e.g. BBJ_SWITCH) — conservatively
+                            // just propagate the IN assertions, which is better than losing all assertions.
+                            //
+                            BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
+                            // We can also quickly walk over the trees and accumulate more assertions if needed.
+                            // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
+                        }
+                    }
+                    else if ((block->GetTrueTarget() != trueBb) || (block->GetFalseTarget() != falseBb))
+                    {
+                        // Conservatively clear assertions if edges changed in any way that we don't expect.
+                        // We still can be smart here and handle e.g. edge flip.
+                        //
+                        BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
+                        BitVecOps::Assign(apTraits, bbJtrueAssertionOut[block->bbNum], block->bbAssertionIn);
+                        // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
+                    }
+                }
             }
 
             // Check if propagation removed statements starting from current stmt.

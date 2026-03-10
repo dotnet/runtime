@@ -62,7 +62,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         return hr;
     }
 
-    int IXCLRDataAppDomain.GetManagedObject(/*IXCLRDataValue*/ void** value)
+    int IXCLRDataAppDomain.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
         => _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)

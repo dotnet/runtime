@@ -1382,7 +1382,7 @@ namespace System.Security.Cryptography
                 {
                     using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
                     {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+                        ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
                         SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
 
                         MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
