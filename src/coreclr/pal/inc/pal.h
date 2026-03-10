@@ -203,7 +203,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.

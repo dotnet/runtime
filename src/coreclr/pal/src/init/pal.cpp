@@ -647,7 +647,7 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
+PAL_InitializeCoreCLR(BOOL runningInExe)
 {
     g_running_in_exe = runningInExe;
 
