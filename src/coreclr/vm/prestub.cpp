@@ -101,9 +101,13 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bo
         _ASSERTE(!(pMT->IsInterface() && !IsStatic()));
 
         // Backpatching the funcptr stub:
-        //     For methods versionable with vtable slot backpatch, a funcptr stub is guaranteed to point to the at-the-time
-        //     current entry point shortly after creation, and backpatching it further is taken care of by
-        //     MethodDesc::BackpatchEntryPointSlots()
+        //     For methods versionable with vtable slot backpatch, funcptr precodes are registered in the
+        //     backpatching table (see FuncPtrStubs::GetFuncPtrStub). During non-final tiers, the funcptr
+        //     precode target is set to the temporary entry point (the method's precode), so calls through
+        //     the funcptr stub flow through the method's precode to the current code. At final tier, the
+        //     funcptr precode target is updated to the final code by Backpatch_Locked in
+        //     SetBackpatchableEntryPoint(). Because the funcptr precode is in the backpatching table, it is
+        //     also updated during rejit scenarios via BackpatchToResetEntryPointSlots().
 
         // Backpatching the temporary entry point:
         //     The temporary entry point is not directly backpatched for methods versionable with vtable slot backpatch.

@@ -126,6 +126,28 @@ PCODE Precode::GetTarget()
     return target;
 }
 
+#ifndef DACCESS_COMPILE
+PTR_PCODE Precode::GetTargetSlot()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PrecodeType precodeType = GetType();
+    switch (precodeType)
+    {
+    case PRECODE_STUB:
+        return AsStubPrecode()->GetTargetSlot();
+#ifdef HAS_FIXUP_PRECODE
+    case PRECODE_FIXUP:
+        return AsFixupPrecode()->GetTargetSlot();
+#endif // HAS_FIXUP_PRECODE
+
+    default:
+        UnexpectedPrecodeType("Precode::GetTargetSlot", precodeType);
+        return NULL;
+    }
+}
+#endif // !DACCESS_COMPILE
+
 MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
 {
     CONTRACTL {
