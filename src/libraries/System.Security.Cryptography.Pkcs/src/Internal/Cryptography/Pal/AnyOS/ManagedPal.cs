@@ -44,7 +44,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             try
             {
                 // Certificates are DER encoded.
-                AsnValueReader reader = new AsnValueReader(extension.RawData, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(extension.RawData, AsnEncodingRules.DER);
 
                 if (reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> contents))
                 {
