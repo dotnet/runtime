@@ -32,10 +32,10 @@
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
-    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
-             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">

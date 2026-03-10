@@ -18,11 +18,7 @@ internal static class SslKeyLogger
 
         try
         {
-#if DEBUG
-            bool isEnabled = true;
-#else
-            bool isEnabled = AppContextSwitchHelper.GetBooleanConfig("System.Net.EnableSslKeyLogging");
-#endif
+            bool isEnabled = LocalAppContextSwitches.EnableSslKeyLogging;
 
             if (isEnabled && s_keyLogFile != null)
             {
