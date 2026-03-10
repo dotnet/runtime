@@ -2336,7 +2336,7 @@ void CodeGen::genCodeForCatchArg(GenTree* tree)
     noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
 
     // Catch arguments get passed in a register. genCodeForBBlist()
-    // would have marked it as holding a GC object, but not used. 
+    // would have marked it as holding a GC object, but not used.
 
     noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
     inst_Mov(TYP_REF, tree->GetRegNum(), REG_EXCEPTION_OBJECT, /* canSkip */ true);
