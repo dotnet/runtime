@@ -95,7 +95,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
                         .WithLocation(0)
-                        .WithArguments("Test.C")
                 }
             };
 
@@ -127,8 +126,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 ExpectedDiagnostics =
                 {
                     new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
-                        .WithLocation(0)
-                        .WithArguments("Test.C"),
+                        .WithLocation(0),
                     new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier)
                         .WithLocation(0)
                         .WithArguments("Test.C")
@@ -186,7 +184,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
                         .WithLocation(0)
-                        .WithArguments("Test.C")
                 }
             };
 
