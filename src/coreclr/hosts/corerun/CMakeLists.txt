@@ -78,7 +78,7 @@ else()
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -sINITIAL_MEMORY=134217728
-                -sMAXIMUM_MEMORY=2147483648
+                -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1

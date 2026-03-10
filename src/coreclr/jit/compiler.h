@@ -4604,6 +4604,8 @@ protected:
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+    bool impCanReorderWithNullCheck(GenTree* tree);
+
     bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
     void impCheckForPInvokeCall(
@@ -4810,7 +4812,7 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -4871,21 +4873,18 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
     }
 
-    GenTree* impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                             CORINFO_LOOKUP*         pLookup,
+    GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
-    GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_LOOKUP*         pLookup,
+    GenTree* impRuntimeLookupToTree(CORINFO_LOOKUP*         pLookup,
                                     void*                   compileTimeHandle);
 
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
                                            var_types               type,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr,
                                            GenTree*                arg1               = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
@@ -6232,6 +6231,7 @@ public:
     void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
+    bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false);
 
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
@@ -7595,7 +7595,7 @@ public:
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
-    GenTree*    getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree*    getArrayLengthFromAllocation(GenTree* tree);
     GenTree*    optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree*    optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree*    optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -8682,6 +8682,11 @@ public:
 
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
+
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

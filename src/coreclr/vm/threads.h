@@ -2085,7 +2085,7 @@ public:
     #define SKIPFUNCLETS                    0x0002
 
     // UNUSED                               0x0004
-    
+
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
     #define HANDLESKIPPEDFRAMES             0x0010 // temporary to handle skipped frames for appdomain unload
@@ -2834,28 +2834,30 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
-        return m_dwProfilerEvacuationCounters[slot];
+        return m_dwProfilerEvacuationCounters[slot].Load();
     }
 
     FORCEINLINE void IncProfilerEvacuationCounter(size_t slot)
     {
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        ++m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() + 1;
         _ASSERTE(newValue != 0U);
     }
 
     FORCEINLINE void DecProfilerEvacuationCounter(size_t slot)
     {
         LIMITED_METHOD_CONTRACT;
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        --m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() - 1;
         _ASSERTE(newValue != (DWORD)-1);
     }
 
@@ -3761,6 +3763,8 @@ struct cdac_data<Thread>
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
+    static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);

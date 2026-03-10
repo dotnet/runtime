@@ -3,7 +3,7 @@
 
 import type { CharPtrPtr, VoidPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
-import { browserVirtualAppBase } from "../per-module";
+import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -23,8 +23,8 @@ export function initializeCoreCLR(): number {
         }
     }
 
-    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath);
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath);
+    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
@@ -35,8 +35,8 @@ export function initializeCoreCLR(): number {
     runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
 
     const buffers: VoidPtr[] = [];
-    const appctx_keys = _ems_._malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
-    const appctx_values = _ems_._malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+    const appctx_keys = _ems_._malloc(sizeOfPtr * runtimeConfigProperties.size) as any as CharPtrPtr;
+    const appctx_values = _ems_._malloc(sizeOfPtr * runtimeConfigProperties.size) as any as CharPtrPtr;
     buffers.push(appctx_keys as any);
     buffers.push(appctx_values as any);
 
@@ -44,8 +44,8 @@ export function initializeCoreCLR(): number {
     for (const [key, value] of runtimeConfigProperties.entries()) {
         const keyPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(key);
         const valuePtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(value);
-        _ems_.dotnetApi.setHeapU32((appctx_keys as any) + (propertyCount * 4), keyPtr);
-        _ems_.dotnetApi.setHeapU32((appctx_values as any) + (propertyCount * 4), valuePtr);
+        _ems_.dotnetApi.setHeapU32((appctx_keys as any) + (propertyCount * sizeOfPtr), keyPtr);
+        _ems_.dotnetApi.setHeapU32((appctx_values as any) + (propertyCount * sizeOfPtr), valuePtr);
         propertyCount++;
         buffers.push(keyPtr as any);
         buffers.push(valuePtr as any);
@@ -72,7 +72,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
         args ??= [];
 
         const sp = _ems_.stackSave();
-        const argsvPtr: number = _ems_.stackAlloc((args.length + 1) * 4) as any;
+        const argsvPtr: number = _ems_.stackAlloc((args.length + 1) * sizeOfPtr) as any;
         const ptrs: VoidPtr[] = [];
         try {
 

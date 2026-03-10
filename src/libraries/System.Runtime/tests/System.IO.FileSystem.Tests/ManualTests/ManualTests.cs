@@ -12,7 +12,7 @@ namespace System.IO.ManualTests
     {
         public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemManualTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void Throw_FileStreamDispose_WhenRemoteMountRunsOutOfSpace()
         {
@@ -76,7 +76,7 @@ namespace System.IO.ManualTests
             });
         }
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemManualTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public static void FileCopy_WorksToExFatVolume()
         {
@@ -102,7 +102,7 @@ namespace System.IO.ManualTests
 
         const long InitialFileSize = 1024;
 
-        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [ConditionalFact(typeof(FileSystemManualTests), nameof(ManualTestsEnabled))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void SetLength_DoesNotAlterPositionWhenNativeCallFails()
         {

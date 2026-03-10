@@ -89,7 +89,7 @@
     <DiaSymReaderTargetArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderTargetArch).dll</DiaSymReaderTargetArchFileName>
     <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' != ''">$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
     <!-- When publishing we won't have the NuGet packages, so use the copy from the build artifacts directory. -->
-    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' == ''">$(CoreCLRArtifactsPath)crossgen2/$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
+    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' == ''">$(CoreCLRArtifactsPath)crossgen2/Microsoft.DiaSymReader.Native.dll</DiaSymReaderTargetArchPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
@@ -97,7 +97,8 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
+      Link="Microsoft.DiaSymReader.Native.dll"
+      TargetPath="Microsoft.DiaSymReader.Native.dll"
       />
   </ItemGroup>
 </Project>

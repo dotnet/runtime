@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
 #endif
             // Windows and Unix permit trailing data after the DER contents of the certificate, so we will allow
             // it here, too.
-            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
             ReadOnlySpan<byte> encodedValue = reader.PeekEncodedValue();
 
             CertificateAsn.Decode(ref reader, rawData, out certificate);
@@ -280,8 +280,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(extensionBytes, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(extensionBytes, AsnEncodingRules.DER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 while (sequenceReader.HasData)
@@ -296,7 +296,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 // Currently only UPN is supported, which is a UTF8 string per
                                 // https://msdn.microsoft.com/en-us/library/ff842518.aspx
-                                AsnValueReader nameReader = new AsnValueReader(
+                                ValueAsnReader nameReader = new ValueAsnReader(
                                     generalName.OtherName.Value.Value.Span,
                                     AsnEncodingRules.DER);
 
