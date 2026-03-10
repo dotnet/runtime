@@ -53,8 +53,9 @@ and `SimpleComCallWrapperData` is:
 ``` csharp
 public struct SimpleComCallWrapperData
 {
-    public ulong RefCount;        // raw refcount (includes CLEANUP_SENTINEL bit)
-    public uint Flags;            // IsAggregated = 0x1, IsExtendsCom = 0x2, IsHandleWeak = 0x4
+    public ulong RefCount;       // visible refcount (raw refcount with CLEANUP_SENTINEL and other non-count bits masked off)
+    public bool IsNeutered;      // true if CLEANUP_SENTINEL bit was set in the raw ref count
+    public uint Flags;           // IsAggregated = 0x1, IsExtendsCom = 0x2, IsHandleWeak = 0x4
     public TargetPointer OuterIUnknown;  // outer IUnknown for aggregation (m_pOuter)
     public TargetPointer MainWrapper;    // start ComCallWrapper in the chain
 }
@@ -109,13 +110,6 @@ Contracts used:
 
 ``` csharp
 
-private enum CCWFlags
-{
-    IsAggregated = 0x1,
-    IsExtendsCom = 0x2,
-    IsHandleWeak = 0x4,
-}
-
 // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
 private enum ComMethodTableFlags : ulong
 {
@@ -133,46 +127,19 @@ public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
     => _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
 
 // Returns data from the SimpleComCallWrapper at sccw.
+// Applies ComRefcountMask to produce the visible RefCount and checks CLEANUP_SENTINEL for IsNeutered.
 public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
 {
+    ulong rawRefCount = _target.Read<ulong>(sccw + /* SimpleComCallWrapper::RefCount offset */);
+    long refCountMask = _target.ReadGlobal<long>("ComRefcountMask");
     return new SimpleComCallWrapperData
     {
-        RefCount     = _target.Read<ulong>(sccw + /* SimpleComCallWrapper::RefCount offset */),
-        Flags        = _target.Read<uint>(sccw  + /* SimpleComCallWrapper::Flags offset */),
+        RefCount      = rawRefCount & (ulong)refCountMask,
+        IsNeutered    = (rawRefCount & CleanupSentinel) != 0,
+        Flags         = _target.Read<uint>(sccw + /* SimpleComCallWrapper::Flags offset */),
         OuterIUnknown = _target.ReadPointer(sccw + /* SimpleComCallWrapper::OuterIUnknown offset */),
         MainWrapper   = _target.ReadPointer(sccw + /* SimpleComCallWrapper::MainWrapper offset */),
     };
-}
-
-public ulong GetRefCount(TargetPointer address)
-{
-    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-    long refCountMask = _target.ReadGlobal<long>("ComRefcountMask");
-    return sccw.RefCount & (ulong)refCountMask;
-}
-
-public bool IsHandleWeak(TargetPointer address)
-{
-    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-    return (sccw.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
-}
-
-public bool IsNeutered(TargetPointer address)
-{
-    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-    return (sccw.RefCount & CleanupSentinel) != 0;
-}
-
-public bool IsExtendsCOMObject(TargetPointer address)
-{
-    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-    return (sccw.Flags & (uint)CCWFlags.IsExtendsCom) != 0;
-}
-
-public bool IsAggregated(TargetPointer address)
-{
-    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-    return (sccw.Flags & (uint)CCWFlags.IsAggregated) != 0;
 }
 
 // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
@@ -202,10 +169,6 @@ public TargetPointer GetCCWHandle(TargetPointer ccw)
     TargetPointer startCCW = GetCCWAddress(ccw);
     return _target.ReadPointer(startCCW + /* ComCallWrapper::Handle offset */);
 }
-
-// Returns the outer IUnknown pointer (m_pOuter); any wrapper in the chain is accepted.
-public TargetPointer GetOuterIUnknown(TargetPointer ccw)
-    => GetSimpleComCallWrapperData(GetSimpleComCallWrapper(ccw)).OuterIUnknown;
 
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
 {

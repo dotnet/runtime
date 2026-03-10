@@ -98,13 +98,14 @@ public class BuiltInCOMTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSimpleComCallWrapperData_RefCount_ReturnsRawValue(MockTarget.Architecture arch)
+    public void GetSimpleComCallWrapperData_RefCount_ReturnsMaskedValue(MockTarget.Architecture arch)
     {
         var helpers = new TargetTestHelpers(arch);
         var builder = new MockMemorySpace.Builder(helpers);
         int P = helpers.PointerSize;
 
         ulong simpleWrapperAddr = 0x5000;
+        // Raw refcount has CLEANUP_SENTINEL (bit 31) set plus a visible count of 0x1234_5678.
         ulong rawRefCount = 0x0000_0000_1234_5678UL | 0x80000000UL;
         var simpleWrapperFragment = new MockMemorySpace.HeapFragment
         {
@@ -130,7 +131,9 @@ public class BuiltInCOMTests
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
         var builtInCOM = target.Contracts.BuiltInCOM;
         SimpleComCallWrapperData data = builtInCOM.GetSimpleComCallWrapperData(builtInCOM.GetSimpleComCallWrapper(new TargetPointer(ccwAddr)));
-        Assert.Equal(rawRefCount, data.RefCount);
+        // RefCount should have the CLEANUP_SENTINEL bit stripped by the contract.
+        Assert.Equal(rawRefCount & ComRefcountMask, data.RefCount);
+        Assert.True(data.IsNeutered);
     }
 
     [Theory]
@@ -242,7 +245,7 @@ public class BuiltInCOMTests
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
         var builtInCOM = target.Contracts.BuiltInCOM;
         SimpleComCallWrapperData data = builtInCOM.GetSimpleComCallWrapperData(builtInCOM.GetSimpleComCallWrapper(new TargetPointer(ccwAddr)));
-        Assert.True((data.RefCount & 0x80000000UL) != 0);
+        Assert.True(data.IsNeutered);
     }
 
     [Theory]
@@ -280,7 +283,7 @@ public class BuiltInCOMTests
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
         var builtInCOM = target.Contracts.BuiltInCOM;
         SimpleComCallWrapperData data = builtInCOM.GetSimpleComCallWrapperData(builtInCOM.GetSimpleComCallWrapper(new TargetPointer(ccwAddr)));
-        Assert.True((data.RefCount & 0x80000000UL) == 0);
+        Assert.False(data.IsNeutered);
     }
 
     [Theory]
@@ -984,76 +987,6 @@ public class BuiltInCOMTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetOuterIUnknown_ReturnsValue(MockTarget.Architecture arch)
-    {
-        var helpers = new TargetTestHelpers(arch);
-        var builder = new MockMemorySpace.Builder(helpers);
-        int P = helpers.PointerSize;
-
-        ulong simpleWrapperAddr = 0x5000;
-        ulong ccwAddr = 0x4000;
-        ulong outerIUnknownAddr = 0xAAAA_0000;
-
-        var simpleWrapperFragment = new MockMemorySpace.HeapFragment
-        {
-            Name = "SimpleComCallWrapper",
-            Address = simpleWrapperAddr,
-            Data = new byte[12 + 3 * P],
-        };
-        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12, P), ccwAddr);        // MainWrapper
-        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12 + 2 * P, P), outerIUnknownAddr); // OuterIUnknown
-        builder.AddHeapFragment(simpleWrapperFragment);
-
-        var ccwFragment = new MockMemorySpace.HeapFragment
-        {
-            Name = "ComCallWrapper",
-            Address = ccwAddr,
-            Data = new byte[8 * P],
-        };
-        helpers.WritePointer(ccwFragment.Data.AsSpan(0, P), simpleWrapperAddr);
-        helpers.WritePointer(ccwFragment.Data.AsSpan(6 * P, P), LinkedWrapperTerminator);
-        builder.AddHeapFragment(ccwFragment);
-
-        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-        Assert.Equal(outerIUnknownAddr, target.Contracts.BuiltInCOM.GetOuterIUnknown(new TargetPointer(ccwAddr)).Value);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetOuterIUnknown_ZeroWhenNotAggregated(MockTarget.Architecture arch)
-    {
-        var helpers = new TargetTestHelpers(arch);
-        var builder = new MockMemorySpace.Builder(helpers);
-        int P = helpers.PointerSize;
-
-        ulong simpleWrapperAddr = 0x5000;
-        ulong ccwAddr = 0x4000;
-
-        var simpleWrapperFragment = new MockMemorySpace.HeapFragment
-        {
-            Name = "SimpleComCallWrapper",
-            Address = simpleWrapperAddr,
-            Data = new byte[12 + 3 * P], // OuterIUnknown slot left zero-initialized
-        };
-        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12, P), ccwAddr); // MainWrapper
-        builder.AddHeapFragment(simpleWrapperFragment);
-
-        var ccwFragment = new MockMemorySpace.HeapFragment
-        {
-            Name = "ComCallWrapper",
-            Address = ccwAddr,
-            Data = new byte[8 * P],
-        };
-        helpers.WritePointer(ccwFragment.Data.AsSpan(0, P), simpleWrapperAddr);
-        helpers.WritePointer(ccwFragment.Data.AsSpan(6 * P, P), LinkedWrapperTerminator);
-        builder.AddHeapFragment(ccwFragment);
-
-        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-        Assert.Equal(TargetPointer.Null, target.Contracts.BuiltInCOM.GetOuterIUnknown(new TargetPointer(ccwAddr)));
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
     public void GetSimpleComCallWrapper_ReturnsSCCWAddress(MockTarget.Architecture arch)
     {
         var helpers = new TargetTestHelpers(arch);
@@ -1126,7 +1059,9 @@ public class BuiltInCOMTests
         TargetPointer sccwPtr = target.Contracts.BuiltInCOM.GetSimpleComCallWrapper(new TargetPointer(ccwAddr));
         SimpleComCallWrapperData data = target.Contracts.BuiltInCOM.GetSimpleComCallWrapperData(sccwPtr);
 
-        Assert.Equal(rawRefCount, data.RefCount);
+        // rawRefCount has no CLEANUP_SENTINEL bit, so the masked RefCount equals the raw value.
+        Assert.Equal(rawRefCount & ComRefcountMask, data.RefCount);
+        Assert.False(data.IsNeutered);
         Assert.Equal(flags, data.Flags);
         Assert.Equal(ccwAddr, data.MainWrapper.Value);
         Assert.Equal(outerIUnknownAddr, data.OuterIUnknown.Value);
@@ -1167,6 +1102,7 @@ public class BuiltInCOMTests
         SimpleComCallWrapperData data = target.Contracts.BuiltInCOM.GetSimpleComCallWrapperData(sccwPtr);
 
         Assert.Equal(0UL, data.RefCount);
+        Assert.False(data.IsNeutered);
         Assert.Equal(0u, data.Flags);
         Assert.Equal(TargetPointer.Null, data.OuterIUnknown);
         Assert.Equal(ccwAddr, data.MainWrapper.Value);

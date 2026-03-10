@@ -36,12 +36,18 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     }
 
     // Returns the data stored in a SimpleComCallWrapper.
+    // CLEANUP_SENTINEL is bit 31 of m_llRefCount; when set the CCW is neutered.
+    // Mirrors SimpleComCallWrapper::CLEANUP_SENTINEL in src/coreclr/vm/comcallablewrapper.h
+    private const ulong CleanupSentinel = 0x80000000UL;
+
     public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
     {
         Data.SimpleComCallWrapper data = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccw);
+        long refCountMask = _target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
         return new SimpleComCallWrapperData
         {
-            RefCount = data.RefCount,
+            RefCount = data.RefCount & (ulong)refCountMask,
+            IsNeutered = (data.RefCount & CleanupSentinel) != 0,
             Flags = data.Flags,
             OuterIUnknown = data.OuterIUnknown,
             MainWrapper = data.MainWrapper,

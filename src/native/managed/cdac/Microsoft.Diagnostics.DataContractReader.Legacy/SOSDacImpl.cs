@@ -612,9 +612,7 @@ public sealed unsafe partial class SOSDacImpl
                 : TargetPointer.Null;
 
             SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(contract.GetSimpleComCallWrapper(startCCW));
-            // CLEANUP_SENTINEL is bit 31 of the raw ref count; mask it off to get the visible refcount.
-            long refCountMask = _target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
-            int refCount = (int)(sccwData.RefCount & (ulong)refCountMask);
+            int refCount = (int)sccwData.RefCount;
             bool isHandleWeak = (sccwData.Flags & 0x4u) != 0;
 
             data->outerIUnknown = sccwData.OuterIUnknown.ToClrDataAddress(_target);
@@ -623,7 +621,7 @@ public sealed unsafe partial class SOSDacImpl
             data->ccwAddress = startCCW.ToClrDataAddress(_target);
             data->refCount = refCount;
             data->interfaceCount = contract.GetCCWInterfaces(startCCW).Count();
-            data->isNeutered = (sccwData.RefCount & 0x80000000UL) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isNeutered = sccwData.IsNeutered ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             data->jupiterRefCount = 0;
             data->isPegged = Interop.BOOL.FALSE;
             data->isGlobalPegged = Interop.BOOL.FALSE;

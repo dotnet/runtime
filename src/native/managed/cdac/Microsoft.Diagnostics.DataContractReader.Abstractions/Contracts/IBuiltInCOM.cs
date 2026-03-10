@@ -15,8 +15,10 @@ public readonly struct COMInterfacePointerData
 /// <summary>Data read from a SimpleComCallWrapper.</summary>
 public readonly struct SimpleComCallWrapperData
 {
-    /// <summary>The raw reference count (includes the CLEANUP_SENTINEL bit).</summary>
+    /// <summary>The visible reference count (raw refcount with CLEANUP_SENTINEL and other non-count bits masked off via ComRefcountMask).</summary>
     public ulong RefCount { get; init; }
+    /// <summary>True if the CCW has been neutered (CLEANUP_SENTINEL bit was set in the raw ref count).</summary>
+    public bool IsNeutered { get; init; }
     /// <summary>Bit flags (IsAggregated = 0x1, IsExtendsCom = 0x2, IsHandleWeak = 0x4).</summary>
     public uint Flags { get; init; }
     /// <summary>Outer IUnknown pointer for aggregated CCWs (m_pOuter).</summary>
