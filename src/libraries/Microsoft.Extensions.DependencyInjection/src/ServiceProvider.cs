@@ -188,6 +188,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Asynchronously disposes the service provider and all resolved services that implement <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>.
         /// </summary>
+        /// <remarks>
+        /// Individual <see cref="IAsyncDisposable.DisposeAsync"/> calls are executed with <c>ConfigureAwait(false)</c>,
+        /// which means disposal operations do not attempt to resume on the original synchronization context.
+        /// Services should not rely on disposal completing on any particular context.
+        /// </remarks>
         /// <returns>A value task that represents the asynchronous operation.</returns>
         public ValueTask DisposeAsync()
         {
