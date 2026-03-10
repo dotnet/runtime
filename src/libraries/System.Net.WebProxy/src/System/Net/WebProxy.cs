@@ -22,7 +22,6 @@ namespace System.Net
     /// </remarks>
     public partial class WebProxy : IWebProxy, ISerializable
     {
-        private Uri? _address;
         private ChangeTrackingArrayList? _bypassList;
         private Regex[]? _regexBypassList;
 
@@ -67,6 +66,10 @@ namespace System.Net
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
         /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property when no explicit <paramref name="Credentials"/> are provided.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
@@ -154,12 +157,11 @@ namespace System.Net
         /// </remarks>
         public Uri? Address
         {
-            get => _address;
+            get;
             set
             {
-                _address = value;
-                NetworkCredential? uriCredentials = GetCredentialsFromUri(value);
-                if (uriCredentials is not null)
+                field = value;
+                if (GetCredentialsFromUri(value) is NetworkCredential uriCredentials)
                 {
                     Credentials = uriCredentials;
                 }
@@ -268,12 +270,17 @@ namespace System.Net
 
         private static NetworkCredential? GetCredentialsFromUri(Uri? uri)
         {
-            if (uri is null || !uri.IsAbsoluteUri || string.IsNullOrEmpty(uri.UserInfo))
+            if (uri is null || !uri.IsAbsoluteUri)
             {
                 return null;
             }
 
             string userInfo = uri.UserInfo;
+            if (string.IsNullOrEmpty(userInfo))
+            {
+                return null;
+            }
+
             int colonIndex = userInfo.IndexOf(':');
 
             string userName;
