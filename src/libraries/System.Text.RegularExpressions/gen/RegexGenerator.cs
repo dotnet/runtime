@@ -71,15 +71,13 @@ namespace System.Text.RegularExpressions.Generator
                 .Where(static m => m is not null)
 
                 // The input here will either be a Diagnostic (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
-                // or it will be a (RegexPatternAndSyntax, Location) tuple containing all of the successfully parsed data from the attribute/method.
+                // or it will be a RegexPatternAndSyntax containing all of the successfully parsed data from the attribute/method.
                 // This step parses the regex tree and checks whether full code generation is supported.
-                // The Location is consumed here for diagnostic creation and not propagated further.
+                // The DiagnosticLocation is consumed here for diagnostic creation and not propagated further.
                 .Select((methodOrDiagnostic, _) =>
                 {
-                    if (methodOrDiagnostic is ValueTuple<RegexPatternAndSyntax, Location> methodAndLocation)
+                    if (methodOrDiagnostic is RegexPatternAndSyntax method)
                     {
-                        RegexPatternAndSyntax method = methodAndLocation.Item1;
-                        Location location = methodAndLocation.Item2;
                         try
                         {
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
@@ -90,14 +88,14 @@ namespace System.Text.RegularExpressions.Generator
                             // We'll still output a limited implementation that just caches a new Regex(...).
                             if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
                             {
-                                return (object)(regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, location), regexMethod.CompilationData);
+                                return (object)(regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, method.DiagnosticLocation), regexMethod.CompilationData);
                             }
 
                             return regexMethod;
                         }
                         catch (Exception e)
                         {
-                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, location, e.Message);
+                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
                         }
                     }
 

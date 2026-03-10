@@ -214,6 +214,7 @@ namespace System.Text.RegularExpressions.Generator
             var result = new RegexPatternAndSyntax(
                 regexType,
                 IsProperty: regexMemberSymbol is IPropertySymbol,
+                memberSyntax.GetLocation(),
                 regexMemberSymbol.Name,
                 memberSyntax.Modifiers.ToString(),
                 nullableRegex,
@@ -237,7 +238,7 @@ namespace System.Text.RegularExpressions.Generator
                 parent = parent.Parent as TypeDeclarationSyntax;
             }
 
-            return (result, memberSyntax.GetLocation());
+            return result;
 
             static bool IsAllowedKind(SyntaxKind kind) => kind is
                 SyntaxKind.ClassDeclaration or
@@ -248,7 +249,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Data about a regex directly from the GeneratedRegex attribute.</summary>
-        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData);
+        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, bool IsProperty, Location DiagnosticLocation, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData);
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
         internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData)
