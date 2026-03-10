@@ -169,8 +169,14 @@ void Compiler::lvaInitTypeRef()
 #if defined(TARGET_WASM)
     if (!opts.IsReversePInvoke())
     {
-        // Managed Wasm ABI passes stack pointer as first arg, portable entry point as last arg
-        info.compArgsCount += 2;
+        // Managed Wasm ABI passes stack pointer as first arg...
+        info.compArgsCount += 1;
+
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+        {
+            // ... and portable entry point as last arg
+            info.compArgsCount += 1;
+        }
     }
 #endif
 
@@ -548,11 +554,14 @@ void Compiler::lvaAllocWasmStackPtr()
 //
 void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
 {
-    LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-    varDsc->lvType    = TYP_I_IMPL;
-    varDsc->lvIsParam = 1;
-    varDsc->lvOnFrame = true;
-    (*curVarNum)++;
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
+        varDsc->lvType    = TYP_I_IMPL;
+        varDsc->lvIsParam = 1;
+        varDsc->lvOnFrame = true;
+        (*curVarNum)++;
+    }
 }
 
 #endif // defined(TARGET_WASM)
@@ -5132,7 +5141,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 if (varDsc->lvIsStructField)
                 {
                     const unsigned parentLclNum         = varDsc->lvParentLcl;
-                    const int      parentOriginalOffset = info.compPatchpointInfo->Offset(parentLclNum);
+                    const int      parentOriginalOffset = lvaOSRLocalTier0FrameOffset(parentLclNum);
                     const int      offset = originalFrameStkOffs + parentOriginalOffset + varDsc->lvFldOffset;
 
                     JITDUMP("---OSR--- V%02u (promoted field of V%02u; on tier0 frame) tier0 FP-rel offset %d tier0 "
@@ -5147,25 +5156,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 {
                     // Add frampointer-relative offset of this OSR live local in the original frame
                     // to the offset of original frame in our new frame.
-                    int originalOffset;
-                    if (lclNum == lvaMonAcquired)
-                    {
-                        originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
-                    }
-                    else if (lclNum == lvaAsyncExecutionContextVar)
-                    {
-                        originalOffset = info.compPatchpointInfo->AsyncExecutionContextOffset();
-                    }
-                    else if (lclNum == lvaAsyncSynchronizationContextVar)
-                    {
-                        originalOffset = info.compPatchpointInfo->AsyncSynchronizationContextOffset();
-                    }
-                    else
-                    {
-                        assert(lclNum < info.compPatchpointInfo->NumberOfLocals());
-                        originalOffset = info.compPatchpointInfo->Offset(lclNum);
-                    }
-                    const int offset = originalFrameStkOffs + originalOffset;
+                    int       originalOffset = lvaOSRLocalTier0FrameOffset(lclNum);
+                    const int offset         = originalFrameStkOffs + originalOffset;
 
                     JITDUMP(
                         "---OSR--- V%02u (on tier0 frame) tier0 FP-rel offset %d tier0 frame offset %d new virt offset "
