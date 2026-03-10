@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="runtime" />
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="runtime;build" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" ExcludeAssets="runtime" />
   </ItemGroup>
 </Project>
