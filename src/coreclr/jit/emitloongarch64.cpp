@@ -1982,10 +1982,13 @@ void emitter::emitIns_R_C(
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
 
-    // when id->idIns == bl, for reloc! 4-ins.
+    // when id->idIns == b, for AsyncResumeInfo reloc.
+    //   pcalau12i reg, off-hi-20bits
+    //   addi_d  reg, offs_lo-12bits(reg)
+    // when id->idIns == bl, for reloc! 2-ins.
     //   pcaddu12i reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
-    // when id->idIns == load-ins, for reloc! 4-ins.
+    // when id->idIns == load-ins, for reloc! 2-ins.
     //   pcaddu12i reg, off-hi-20bits
     //   load  reg, offs_lo-12bits(reg)
     //
@@ -2008,8 +2011,7 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-
-    if (m_compiler->opts.compReloc || id->idIsReloc())
+    if (m_compiler->opts.compReloc)
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
@@ -3377,6 +3379,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             // Reference to JIT data
 
+            // when id->idIns == b, for AsyncResumeInfo reloc.
+            //   pcalau12i reg, off-hi-20bits
+            //   addi_d  reg, offs_lo-12bits(reg)
             // when id->idIns == bl, for reloc!
             //   pcaddu12i r21, off-hi-20bits
             //   addi_d  reg, r21, off-lo-12bits
@@ -3409,7 +3414,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             ins            = id->idIns();
             regNumber reg1 = id->idReg1();
 
-            if (id->idIsReloc())
+            if (ins == INS_b)
+            {
+                // relocation for AsyncResumeInfo.
+                *(code_t*)dstRW = 0x1a000000 | (code_t)reg1;
+                dstRW += 4;
+                ins             = INS_addi_d;
+                *(code_t*)dstRW = 0x02c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
+                dstRW += 4;
+                emitRecordRelocation(dstRW - 8 - writeableOffset, emitDataOffsetToPtr(dataOffs), CorInfoReloc::LOONGARCH64_PC);
+            }
+            else if (id->idIsReloc())
             {
                 // get the addr-offset of the data.
                 imm = (ssize_t)emitDataOffsetToPtr(dataOffs) - (ssize_t)(dstRW - writeableOffset);
