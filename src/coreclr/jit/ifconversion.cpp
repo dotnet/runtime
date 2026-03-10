@@ -82,7 +82,19 @@ bool OptIfConversionDsc::IfConvertCheckFlow()
 
     m_doElseConversion = trueBb->GetUniquePred(m_compiler) != nullptr;
     m_finalBlock       = m_doElseConversion ? trueBb->GetUniqueSucc() : trueBb;
-    m_mainOper         = (m_finalBlock == nullptr && trueBb->KindIs(BBJ_RETURN)) ? GT_RETURN : GT_STORE_LCL_VAR;
+    m_mainOper         = GT_STORE_LCL_VAR;
+
+    if (m_doElseConversion && m_finalBlock == nullptr)
+    {
+        if (falseBb->KindIs(BBJ_RETURN) && trueBb->KindIs(BBJ_RETURN))
+        {
+            m_mainOper = GT_RETURN;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     return falseBb->GetUniqueSucc() == m_finalBlock;
 }
@@ -360,7 +372,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         return false;
     }
-
+    JITDUMP("valid flow\n");
     m_cond = last->gtGetOp1();
 
     // Check the Then and Else blocks have a single operation each.
