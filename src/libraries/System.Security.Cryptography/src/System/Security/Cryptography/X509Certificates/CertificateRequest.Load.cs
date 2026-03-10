@@ -273,14 +273,17 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else
                     {
-                        if (attr.AttrValues.Length == 0)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
+                        bool anyAttrValues = false;
 
                         foreach (ReadOnlySpan<byte> val in attr.GetAttrValues(AsnEncodingRules.DER))
                         {
                             req.OtherRequestAttributes.Add(new AsnEncodedData(attr.AttrType, val));
+                            anyAttrValues = true;
+                        }
+
+                        if (!anyAttrValues)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
                     }
                 }
