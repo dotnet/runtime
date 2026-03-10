@@ -118,8 +118,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
 
     [Theory, TestCategory("no-workload")]
-    [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]
-    [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ true)]
+    [MemberData(nameof(InvariantGlobalizationTestData), /*publish*/ false)]
+    [MemberData(nameof(InvariantGlobalizationTestData), /*publish*/ true)]
     public async Task WorkloadNotRequiredForInvariantGlobalization(Configuration config, bool invariant, bool publish)
     {
         string prefix = $"props_req_workload_{(publish ? "publish" : "build")}";

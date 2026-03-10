@@ -28,15 +28,15 @@ namespace Wasm.Build.Tests
 
         // TODO: check that icu bits have been linked out
         [Theory]
-        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
-        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true })]
+        [MemberData(nameof(InvariantGlobalizationTestData), new object[] { /*aot*/ false })]
+        [MemberData(nameof(InvariantGlobalizationTestData), new object[] { /*aot*/ true })]
         [TestCategory("native")]
         public async Task AOT_InvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization);
 
         // TODO: What else should we use to verify a relinked build?
         [Theory]
-        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
+        [MemberData(nameof(InvariantGlobalizationTestData), new object[] { /*aot*/ false })]
         [TestCategory("native")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);

@@ -51,7 +51,7 @@ public class IcuTests : IcuTestsBase
         
 
     [Theory]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { Configuration.Release })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), new object[] { Configuration.Release })]
     [TestCategory("native")]
     public async Task FullIcuFromRuntimePackWithInvariant(Configuration config=Configuration.Release, bool aot=false, bool invariant=true, bool fullIcu=true, string testedLocales="Array.Empty<Locale>()") =>
         await PublishAndRunIcuTest(
@@ -65,7 +65,7 @@ public class IcuTests : IcuTestsBase
                 $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData><RunAOTCompilation>{aot}</RunAOTCompilation>");
 
     [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { Configuration.Release })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), new object[] { Configuration.Release })]
     [TestCategory("native")]
     public async Task FullIcuFromRuntimePackWithCustomIcu(Configuration config, bool aot, bool fullIcu)
     {
@@ -82,7 +82,7 @@ public class IcuTests : IcuTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { Configuration.Release })]
+    [MemberData(nameof(IncorrectIcuTestData), new object[] { Configuration.Release })]
     [TestCategory("workload")]
     public void NonExistingCustomFileAssertError(Configuration config, string customIcu, bool isFilenameFormCorrect)
     {        

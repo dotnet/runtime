@@ -27,8 +27,8 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         ).UnwrapItemsAsArrays();
 
     [Theory]
-    [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
-    [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
+    [MemberData(nameof(FlagsOnlyChangeData), /*aot*/ false)]
+    [MemberData(nameof(FlagsOnlyChangeData), /*aot*/ true)]
     public async Task OptimizationFlagChange(Configuration config, bool aot, string cflags, string ldflags)
     {
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");

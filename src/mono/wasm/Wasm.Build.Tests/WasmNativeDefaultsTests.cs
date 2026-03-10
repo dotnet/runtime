@@ -97,8 +97,8 @@ namespace Wasm.Build.Tests
 
 #pragma warning disable xUnit1026 // For unused *buildValue*, and *publishValue* parameters
         [Theory]
-        [MemberData(nameof(DefaultsTestData), parameters: false)]
-        [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: false)]
+        [MemberData(nameof(DefaultsTestData), false)]
+        [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), false)]
         public void DefaultsWithBuild(Configuration config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
         {
             (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_build", config, extraProperties, aot, expectWasmBuildNativeForBuild, isPublish: false);
@@ -107,8 +107,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(DefaultsTestData), parameters: true)]
-        [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: true)]
+        [MemberData(nameof(DefaultsTestData), true)]
+        [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), true)]
         public void DefaultsWithPublish(Configuration config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
         {
             (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, expectWasmBuildNativeForPublish, isPublish: true);
@@ -134,7 +134,7 @@ namespace Wasm.Build.Tests
         };
 
         [Theory]
-        [MemberData(nameof(SetWasmNativeStripExplicitlyTestData), parameters: /*publish*/ false)]
+        [MemberData(nameof(SetWasmNativeStripExplicitlyTestData), /*publish*/ false)]
         [MemberData(nameof(SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData))]
         public void WasmNativeStripDefaultWithBuild(Configuration config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
         {
@@ -148,7 +148,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SetWasmNativeStripExplicitlyTestData), parameters: /*publish*/ true)]
+        [MemberData(nameof(SetWasmNativeStripExplicitlyTestData), /*publish*/ true)]
         [MemberData(nameof(SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData))]
         public void WasmNativeStripDefaultWithPublish(Configuration config, string extraProperties, bool expectedWasmBuildNativeValue, bool expectedWasmNativeStripValue)
         {

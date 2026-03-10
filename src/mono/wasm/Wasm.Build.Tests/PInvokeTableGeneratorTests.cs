@@ -90,8 +90,8 @@ namespace Wasm.Build.Tests
                 ).UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
-        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), Configuration.Debug)]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), Configuration.Release)]
         public async Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
         {
@@ -273,7 +273,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
+        [BuildAndRun(aot: false, config: Configuration.Undefined, new object[] { "tr_TR.UTF-8" })]
         public async Task BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
             // Check that we can generate interp tables in non-english cultures

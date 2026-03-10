@@ -28,9 +28,9 @@ namespace Wasm.Build.Tests
                     .UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
+        [MemberData(nameof(SatelliteAssemblyTestData), new object[] { /*aot*/ false, /*relinking*/ false })]
+        [MemberData(nameof(SatelliteAssemblyTestData), new object[] { /*aot*/ false, /*relinking*/ true })]
+        [MemberData(nameof(SatelliteAssemblyTestData), new object[] { /*aot*/ true,  /*relinking*/ false })]
         [TestCategory("native")]
         public async Task ResourcesFromMainAssembly(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
@@ -55,9 +55,9 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ true })]
+        [MemberData(nameof(SatelliteAssemblyTestData), new object[] { /*aot*/ false, /*relinking*/ false })]
+        [MemberData(nameof(SatelliteAssemblyTestData), new object[] { /*aot*/ false, /*relinking*/ true })]
+        [MemberData(nameof(SatelliteAssemblyTestData), new object[] { /*aot*/ true,  /*relinking*/ true })]
         [TestCategory("native")]
         public async Task ResourcesFromProjectReference(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {

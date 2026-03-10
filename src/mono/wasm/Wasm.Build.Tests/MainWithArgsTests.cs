@@ -27,15 +27,15 @@ namespace Wasm.Build.Tests
                 .UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
+        [MemberData(nameof(MainWithArgsTestData), new object[] { /*aot*/ false })]
+        [MemberData(nameof(MainWithArgsTestData), new object[] { /*aot*/ true })]
         [TestCategory("native")]
         public async Task AsyncMainWithArgs(Configuration config, bool aot, string[] args)
             => await TestMainWithArgs(config, aot, "async_main_with_args", "AsyncMainWithArgs.cs", args);
 
         [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
+        [MemberData(nameof(MainWithArgsTestData), new object[] { /*aot*/ false })]
+        [MemberData(nameof(MainWithArgsTestData), new object[] { /*aot*/ true })]
         [TestCategory("native")]
         public async Task NonAsyncMainWithArgs(Configuration config, bool aot, string[] args)
             => await TestMainWithArgs(config, aot, "non_async_main_args", "SyncMainWithArgs.cs", args);

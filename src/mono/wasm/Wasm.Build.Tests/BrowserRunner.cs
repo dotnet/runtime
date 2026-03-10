@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
+using Xunit;
 using Wasm.Tests.Internal;
 namespace Wasm.Build.Tests;
 

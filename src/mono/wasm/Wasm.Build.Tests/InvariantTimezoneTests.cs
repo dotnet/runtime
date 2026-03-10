@@ -25,14 +25,14 @@ namespace Wasm.Build.Tests
                 .UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, })]
-        [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ true })]
+        [MemberData(nameof(InvariantTimezoneTestData), new object[] { /*aot*/ false, })]
+        [MemberData(nameof(InvariantTimezoneTestData), new object[] { /*aot*/ true })]
         [TestCategory("native")]
         public async Task AOT_InvariantTimezone(Configuration config, bool aot, bool? invariantTimezone)
             => await TestInvariantTimezone(config, aot, invariantTimezone);
 
         [Theory]
-        [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false })]
+        [MemberData(nameof(InvariantTimezoneTestData), new object[] { /*aot*/ false })]
         [TestCategory("native")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantTimezone)
             => await TestInvariantTimezone(config, aot, invariantTimezone, isNativeBuild: true);

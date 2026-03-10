@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
                 .UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
+        [MemberData(nameof(MainMethodSimdTestData), new object[] { /*aot*/ false, /* simd */ true })]
         public async Task Build_NoAOT_ShouldNotRelink(Configuration config, bool aot, bool simd)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "build_with_workload_no_aot");
@@ -45,9 +45,9 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
-        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
-        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
+        [MemberData(nameof(MainMethodSimdTestData), new object[] { /*aot*/ true, /* simd */ true })]
+        [MemberData(nameof(MainMethodSimdTestData), new object[] { /*aot*/ false, /* simd */ true })]
+        [MemberData(nameof(MainMethodSimdTestData), new object[] { /*aot*/ true, /* simd */ false })]
         [TestCategory("native")]
         public async Task PublishSIMD_AOT(Configuration config, bool aot, bool simd)
         {

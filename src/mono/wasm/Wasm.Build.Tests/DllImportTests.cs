@@ -110,7 +110,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(parameters: new object[] { new object[] {
+        [BuildAndRun(aot: false, config: Configuration.Undefined, new object[] { new object[] {
                 "with-hyphen",
                 "with#hash-and-hyphen",
                 "with.per.iod",
