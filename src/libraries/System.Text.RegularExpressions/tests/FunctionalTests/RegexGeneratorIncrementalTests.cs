@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions.Generator;
@@ -99,11 +98,14 @@ namespace System.Text.RegularExpressions.Tests
                 CSharpSyntaxTree.ParseText(SourceText.From(source2, Encoding.UTF8), s_parseOptions));
             driver = driver.RunGenerators(compilation);
             runResult = driver.GetRunResult().Results[0];
+            // The comment change causes the per-item transform to re-run (Location changes),
+            // but the deeply equatable source model is structurally identical. The input to
+            // the tracked step is Unchanged (recomputed but equal); the output is Cached.
             Assert.Collection(GetSourceGenRunSteps(runResult),
                 step =>
                 {
                     Assert.Collection(step.Inputs,
-                        source => Assert.Equal(IncrementalStepRunReason.Cached, source.Source.Outputs[source.OutputIndex].Reason));
+                        source => Assert.Equal(IncrementalStepRunReason.Unchanged, source.Source.Outputs[source.OutputIndex].Reason));
                     Assert.Collection(step.Outputs,
                         output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
                 });
