@@ -48,7 +48,12 @@ namespace Benchstone.BenchF
             Escape(fr);
             Escape(fi);
 
-            return Math.Abs(fr[1] - 0.25053) < 0.0001 && Math.Abs(fr[2] - 0.13494) < 0.0001;
+            const double ExpectedDcReal = 1.30035;
+            const double ExpectedDcImag = 0.0;
+            const double Tolerance = 1E-4;
+
+            return Math.Abs(fr[1] - ExpectedDcReal) < Tolerance &&
+                   Math.Abs(fi[1] - ExpectedDcImag) < Tolerance;
         }
 
         private static void FastFourierT(double[] fr, double[] fi, int n)

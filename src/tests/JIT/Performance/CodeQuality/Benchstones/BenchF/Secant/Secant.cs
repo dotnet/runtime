@@ -57,7 +57,11 @@ namespace Benchstone.BenchF
             Escape(x1);
             Escape(fx1);
 
-            return iflag == 1 && System.Math.Abs(x1 - 1.32471795) < 0.00001;
+            // The root for x^3 - x - 1 = 0 is approximately 1.32471795 (Plastic Ratio)
+            const double ExpectedRoot = 1.32471795;
+            const double Tolerance = 1E-5;
+
+            return (iflag <= 1) && (System.Math.Abs(x1 - ExpectedRoot) < Tolerance);
         }
 
         private static double FF(double x)

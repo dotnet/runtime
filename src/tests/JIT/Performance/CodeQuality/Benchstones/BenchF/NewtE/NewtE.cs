@@ -74,7 +74,13 @@ namespace Benchstone.BenchF
                 }
             }
 
-            return System.Math.Abs(a) < 0.00001 && System.Math.Abs(b) < 0.00001;
+            // The values a and b represent F(x, y) and G(x, y) respectively.
+            // For a successful root finding, both should theoretically converge to 0.0.
+            const double ExpectedFunctionValue = 0.0;
+            const double Tolerance = 1E-5;
+
+            return Math.Abs(a - ExpectedFunctionValue) < Tolerance &&
+                   Math.Abs(b - ExpectedFunctionValue) < Tolerance;
         }
 
         private static double F(double x, double y)

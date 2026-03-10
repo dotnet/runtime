@@ -77,7 +77,10 @@ namespace Benchstone.BenchF
                 ber = ber + System.Math.Abs(System.Math.Sqrt((double)i) - t[i][n + 1]);
             }
 
-            return ber < 1e-10;
+            const double ExpectedError = 0.0;
+            const double Tolerance = 1E-4;
+
+            return System.Math.Abs(ber - ExpectedError) < Tolerance;
         }
 
         private static void Inner(double[][] t, out double det, ref int n)

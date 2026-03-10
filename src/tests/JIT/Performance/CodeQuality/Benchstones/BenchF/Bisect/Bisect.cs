@@ -69,7 +69,10 @@ namespace Benchstone.BenchF
             Escape(error);
             Escape(xi);
 
-            return iflag == 0 && System.Math.Abs(xi - 1.32471795) <= 0.00001;
+            const double ExpectedRoot = 1.32471795;
+            const double Tolerance = 1e-5;
+
+            return (iflag == 0) && (System.Math.Abs(xi - ExpectedRoot) <= Tolerance);
         }
 
         private static double FF(double x)

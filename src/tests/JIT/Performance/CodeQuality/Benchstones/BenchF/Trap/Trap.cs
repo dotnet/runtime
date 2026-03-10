@@ -55,7 +55,12 @@ namespace Benchstone.BenchF
                 }
             }
 
-            return System.Math.Abs(cortrp - 0.74682413) < 0.00001;
+            // The integral of exp(-x^2) from 0 to 1 is approximately 0.74682413
+            const double ExpectedIntegral = 0.74682413;
+            const double Tolerance = 1E-5;
+
+            // Validate the corrected trapezoidal estimate (cortrp) for the final iteration (n=15)
+            return System.Math.Abs(cortrp - ExpectedIntegral) < Tolerance;
         }
 
         private static double F(double x)

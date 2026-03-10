@@ -88,9 +88,15 @@ namespace Benchstone.BenchF
                 s_t = t_arg;
             }
 
-            return Math.Abs(s_x - (-8.8354)) < 0.001 &&
-                   Math.Abs(s_y - (-7.5145)) < 0.001 &&
-                   Math.Abs(s_z - 31.7893) < 0.001;
+            // Expected steady-state values for the Lorenz attractor after 8M iterations using RK4
+            const double ExpectedX = -8.8354;
+            const double ExpectedY = -7.5145;
+            const double ExpectedZ = 31.7893;
+            const double Tolerance = 1E-3;
+
+            return Math.Abs(s_x - ExpectedX) < Tolerance &&
+                   Math.Abs(s_y - ExpectedY) < Tolerance &&
+                   Math.Abs(s_z - ExpectedZ) < Tolerance;
         }
 
         private static double F(double t, double x, double y, double z)

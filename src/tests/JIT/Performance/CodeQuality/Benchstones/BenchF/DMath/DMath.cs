@@ -78,7 +78,12 @@ namespace Benchstone.BenchF
             // Escape sines array so that its elements appear live-out
             Escape(sines);
 
-            return Math.Abs(sines[90] - 1.0) < 1E-7 && Math.Abs(sines[30] - 0.5) < 1E-7;
+            const double ExpectedSin90 = 1.0;
+            const double ExpectedSin30 = 0.5;
+            const double Tolerance = 1E-7;
+
+            return Math.Abs(sines[90] - ExpectedSin90) < Tolerance &&
+                   Math.Abs(sines[30] - ExpectedSin30) < Tolerance;
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]

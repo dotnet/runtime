@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -36,7 +35,11 @@ namespace Benchstone.BenchF
                 s_a = s_a + Math.Abs(s_e);
             }
 
-            return s_a < 0.001;
+            // The accumulated mathematical error (s_a) should theoretically be 0.0
+            const double ExpectedAccumulatedError = 0.0;
+            const double Tolerance = 1e-3;
+
+            return Math.Abs(s_a - ExpectedAccumulatedError) < Tolerance;
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]

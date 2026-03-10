@@ -35,7 +35,12 @@ namespace Benchstone.BenchF
                 s_a = s_a + Math.Abs(s_e);
             }
 
-            return s_a < 0.5f;
+            // The accumulated mathematical error (s_a) should theoretically be 0.0
+            // Using a slightly higher tolerance here because float (32-bit) accumulates more error than double
+            const float ExpectedAccumulatedError = 0.0F;
+            const float Tolerance = 0.1F;
+
+            return Math.Abs(s_a - ExpectedAccumulatedError) < Tolerance;
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]

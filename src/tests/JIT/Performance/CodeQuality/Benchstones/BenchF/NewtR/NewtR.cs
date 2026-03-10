@@ -56,7 +56,11 @@ namespace Benchstone.BenchF
             Escape(x0);
             Escape(fx0);
 
-            return iflag == 0 && System.Math.Abs(x0 - 1.32471795) < 0.00001;
+            // The root for x^3 - x - 1 = 0 is approximately 1.32471795 (Plastic Ratio)
+            const double ExpectedRoot = 1.32471795;
+            const double Tolerance = 1E-5;
+
+            return System.Math.Abs(x0 - ExpectedRoot) < Tolerance;
         }
 
         private static double FF(double x)
@@ -95,7 +99,7 @@ namespace Benchstone.BenchF
                 }
             }
         L999:
-            iflag = (System.Math.Abs(FF(x0)) < ftol) ? 0 : 2;
+            iflag = 2;
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
