@@ -952,7 +952,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // GT_LCLHEAP has the same stack depth constraint, but it no longer sets
                     // GTF_EXCEPT, so it must be checked explicitly here.
                     //
-                    if ((argx->gtFlags & GTF_EXCEPT) || comp->gtTreeContainsOper(argx, GT_LCLHEAP))
+                    if ((argx->gtFlags & GTF_EXCEPT) ||
+                        (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP)))
                     {
                         SetNeedsTemp(&arg);
                         continue;
