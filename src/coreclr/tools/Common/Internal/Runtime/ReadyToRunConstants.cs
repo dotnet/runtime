@@ -121,6 +121,7 @@ namespace Internal.ReadyToRunConstants
         DispatchStubAddrSlot = 5,
         FieldDescSlot = 6,
         DeclaringTypeHandleSlot = 7,
+        DevirtualizedMethodDescSlot = 8,
     }
 
     public enum ReadyToRunFixupKind
