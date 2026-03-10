@@ -53,7 +53,6 @@ namespace System.Runtime.CompilerServices
     {
         private readonly void* _pByteRef;
 
-        [RequiresUnsafe]
         private ByteRefOnStack(void* pByteRef)
         {
             _pByteRef = pByteRef;

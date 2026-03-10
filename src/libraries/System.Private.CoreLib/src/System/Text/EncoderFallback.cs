@@ -84,7 +84,6 @@ namespace System.Text
 
         // Set the above values
         // This can't be part of the constructor because EncoderFallbacks would have to know how to implement these.
-        [RequiresUnsafe]
         internal unsafe void InternalInitialize(char* charStart, char* charEnd, EncoderNLS? encoder, bool setEncoder)
         {
             this.charStart = charStart;
