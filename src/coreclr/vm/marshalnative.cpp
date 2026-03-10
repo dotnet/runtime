@@ -111,9 +111,11 @@ extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIs
         *pNativeSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
     }
-
-    *pIsBlittable = FALSE;
-    *pNativeSize = 0;
+    else
+    {
+        *pIsBlittable = FALSE;
+        *pNativeSize = 0;
+    }
 
     END_QCALL;
 

@@ -403,12 +403,11 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
                 }
 
                 PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-                DECLARE_ARGHOLDER_ARRAY(args, 4);
+                DECLARE_ARGHOLDER_ARRAY(args, 3);
 
                 args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(BoxedValueClass);
                 args[ARGNUM_1] = PTR_TO_ARGHOLDER(pvRecord);
-                args[ARGNUM_2] = DWORD_TO_ARGHOLDER(m_pRecordMT->GetNativeSize());
-                args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
+                args[ARGNUM_2] = PTR_TO_ARGHOLDER(nullptr);
 
                 CALL_MANAGED_METHOD_NORET(args);
             }

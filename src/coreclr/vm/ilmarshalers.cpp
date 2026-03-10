@@ -1097,8 +1097,6 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 {
     STANDARD_VM_CONTRACT;
 
-    TypeHandle structType{m_pargs->m_pMT};
-
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
@@ -2298,8 +2296,6 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
 
     ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
-
-    TypeHandle layoutClassType{m_pargs->m_pMT};
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);

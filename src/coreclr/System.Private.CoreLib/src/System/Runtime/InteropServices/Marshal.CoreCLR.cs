@@ -277,8 +277,6 @@ namespace System.Runtime.InteropServices
             {
                 return s_marshalerCache.GetOrAdd(t, CreateMarshalMethods);
 
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-                    Justification = "Analysis can't flow back from this callback, so we put RequiresDynamicCode on the containing method.")]
                 static NonBlittableMarshalerMethods CreateMarshalMethods(Type type)
                 {
                     Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);

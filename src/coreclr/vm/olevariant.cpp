@@ -1501,7 +1501,6 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
         FillMemory(pOle, pOleEnd - pOle, 0);
     }
 
-    const SIZE_T compSize = (*pComArray)->GetComponentSize();
     BYTE *managedData = (*pComArray)->GetDataPtr();
     GCPROTECT_BEGININTERIOR(managedData)
     {
@@ -1540,29 +1539,24 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
     CONTRACTL_END;
 
     SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
-    SIZE_T componentSize = TypeHandle(pInterfaceMT).MakeSZArray().GetMethodTable()->GetComponentSize();
     BYTE *pOle = (BYTE *) oleArray;
     BYTE *pOleEnd = pOle + elemSize * cElements;
+
+    MethodDesc* pMD;
+    {
+        GCX_PREEMP();
+        pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
+    }
+    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
+    DECLARE_ARGHOLDER_ARRAY(args, 4);
     while (pOle < pOleEnd)
     {
-        MethodDesc* pMD;
-        {
-            GCX_PREEMP();
-            pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
-        }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        while (pOle < pOleEnd)
-        {
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(nullptr);
-            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
-            args[ARGNUM_2] = DWORD_TO_ARGHOLDER(elemSize);
-            args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
+        args[ARGNUM_0] = PTR_TO_ARGHOLDER(nullptr);
+        args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
+        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(elemSize);
+        args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
 
-            CALL_MANAGED_METHOD_NORET(args);
-            pOle += elemSize;
-        }
-
+        CALL_MANAGED_METHOD_NORET(args);
         pOle += elemSize;
     }
 }
@@ -3840,7 +3834,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
 
         {
             GCX_PREEMP();
-            pMD = GetStructMarshalingMethod(METHOD__BOXEDLAYOUTTYPE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+            pMD = GetStructMarshalingMethod(METHOD__BOXEDLAYOUTTYPE_MARSHALER__CONVERT_TO_UNMANAGED, pValueClassMT);
         }
         PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 4);

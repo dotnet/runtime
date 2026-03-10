@@ -1362,10 +1362,19 @@ namespace System.StubHelpers
                 NativeMemory.Clear(unmanaged, (nuint)nativeSize);
                 ConvertToUnmanagedCore(ref managed, unmanaged, ref cleanupWorkList);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Free(ref managed, unmanaged, nativeSize, ref cleanupWorkList);
-                throw;
+                ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(ex);
+                try
+                {
+                    Free(ref managed, unmanaged, nativeSize, ref cleanupWorkList);
+                }
+                catch
+                {
+                    // Swallow exceptions from Free to preserve the original marshalling exception.
+                }
+
+                edi.Throw();
             }
         }
 
@@ -1455,10 +1464,20 @@ namespace System.StubHelpers
                 NativeMemory.Clear(unmanaged, (nuint)nativeSize);
                 ConvertToUnmanagedCore(managed, unmanaged, ref cleanupWorkList);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Free(managed, unmanaged, nativeSize, ref cleanupWorkList);
-                throw;
+                ExceptionDispatchInfo exceptionDispatchInfo = ExceptionDispatchInfo.Capture(ex);
+
+                try
+                {
+                    Free(managed, unmanaged, nativeSize, ref cleanupWorkList);
+                }
+                catch
+                {
+                    exceptionDispatchInfo.Throw();
+                }
+
+                exceptionDispatchInfo.Throw();
             }
         }
 
