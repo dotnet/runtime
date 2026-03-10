@@ -30,6 +30,7 @@ namespace System.Formats.Tar
         private bool _isDisposed;
         private readonly long _realSize;
         private readonly (long Offset, long Length)[] _segments;
+        private readonly long _dataStart; // absolute position in _rawStream where packed data begins
 
         // Cumulative sum of segment lengths: _packedStartOffsets[i] is the packed-data offset
         // of the first byte of segment i. Allows O(1) ComputePackedOffset lookups.
@@ -45,11 +46,12 @@ namespace System.Formats.Tar
         // For typical forward sequential reads, this avoids repeated binary searches.
         private int _currentSegmentIndex;
 
-        private GnuSparseStream(Stream rawStream, long realSize, (long Offset, long Length)[] segments)
+        private GnuSparseStream(Stream rawStream, long realSize, (long Offset, long Length)[] segments, long dataStart)
         {
             _rawStream = rawStream;
             _realSize = realSize;
             _segments = segments;
+            _dataStart = dataStart;
 
             // Precompute packed-data start offsets for O(1) lookup during reads.
             _packedStartOffsets = new long[segments.Length];
@@ -71,8 +73,8 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            (var segments, long _) = ParseSparseMap(isAsync: false, rawStream, CancellationToken.None).GetAwaiter().GetResult();
-            return new GnuSparseStream(rawStream, realSize, segments);
+            (var segments, long dataStart) = ParseSparseMap(isAsync: false, rawStream, CancellationToken.None).GetAwaiter().GetResult();
+            return new GnuSparseStream(rawStream, realSize, segments, dataStart);
         }
 
         // Asynchronously creates a GnuSparseStream by parsing the sparse map from rawStream.
@@ -83,8 +85,8 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            (var segments, long _) = await ParseSparseMap(isAsync: true, rawStream, cancellationToken).ConfigureAwait(false);
-            return new GnuSparseStream(rawStream, realSize, segments);
+            (var segments, long dataStart) = await ParseSparseMap(isAsync: true, rawStream, cancellationToken).ConfigureAwait(false);
+            return new GnuSparseStream(rawStream, realSize, segments, dataStart);
         }
 
         public override bool CanRead => !_isDisposed;
@@ -261,12 +263,17 @@ namespace System.Formats.Tar
         internal Stream BaseStream => _rawStream;
 
         // Reads from the packed data at the given packedOffset.
-        // Computes the skip distance from _nextPackedOffset and uses TarHelpers.AdvanceStream
-        // which handles both seekable (Position +=) and non-seekable (read-and-discard) streams.
+        // Computes the absolute target position (_dataStart + packedOffset) and advances
+        // the raw stream to that point. For seekable streams, uses the actual stream
+        // position (which may differ from _nextPackedOffset if the stream was reset
+        // externally for TarWriter round-tripping). For non-seekable streams, uses
+        // the tracked _nextPackedOffset since external resets cannot occur.
         // Returns the number of bytes actually read (may be less than destination.Length).
         private int ReadFromPackedData(Span<byte> destination, long packedOffset)
         {
-            long skipBytes = packedOffset - _nextPackedOffset;
+            long targetPosition = _dataStart + packedOffset;
+            long currentPosition = _rawStream.CanSeek ? _rawStream.Position : (_dataStart + _nextPackedOffset);
+            long skipBytes = targetPosition - currentPosition;
             Debug.Assert(_rawStream.CanSeek || skipBytes >= 0, "Non-seekable stream read went backwards in packed data.");
             if (skipBytes != 0)
             {
@@ -279,7 +286,9 @@ namespace System.Formats.Tar
 
         private async ValueTask<int> ReadFromPackedDataAsync(Memory<byte> destination, long packedOffset, CancellationToken cancellationToken)
         {
-            long skipBytes = packedOffset - _nextPackedOffset;
+            long targetPosition = _dataStart + packedOffset;
+            long currentPosition = _rawStream.CanSeek ? _rawStream.Position : (_dataStart + _nextPackedOffset);
+            long skipBytes = targetPosition - currentPosition;
             Debug.Assert(_rawStream.CanSeek || skipBytes >= 0, "Non-seekable stream read went backwards in packed data.");
             if (skipBytes != 0)
             {
