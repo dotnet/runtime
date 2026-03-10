@@ -568,8 +568,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_LCLHEAP:
-            LowerLclHeap(node);
-            break;
+            return LowerLclHeap(node);
 
 #ifdef TARGET_XARCH
         case GT_INTRINSIC:
@@ -11703,9 +11702,12 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // LowerLclHeap: a common logic to lower LCLHEAP.
 //
 // Arguments:
-//    blkNode - the LCLHEAP node we are lowering.
+//    node - the LCLHEAP node we are lowering.
 //
-void Lowering::LowerLclHeap(GenTree* node)
+// Returns:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerLclHeap(GenTree* node)
 {
     assert(node->OperIs(GT_LCLHEAP));
 
@@ -11713,9 +11715,10 @@ void Lowering::LowerLclHeap(GenTree* node)
     if (!BlockRange().TryGetUse(node, &use))
     {
         // Value is unused - no need to allocate anything, just keep the size for its side effects
+        GenTree* next = node->gtNext;
         node->gtGetOp1()->SetUnusedValue();
         BlockRange().Remove(node);
-        return;
+        return next;
     }
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
@@ -11729,7 +11732,7 @@ void Lowering::LowerLclHeap(GenTree* node)
             // Replace with null for LCLHEAP(0)
             node->BashToZeroConst(TYP_I_IMPL);
             BlockRange().Remove(sizeNode);
-            return;
+            return node->gtNext;
         }
 
         if (m_compiler->info.compInitMem)
@@ -11738,7 +11741,7 @@ void Lowering::LowerLclHeap(GenTree* node)
             if ((size > UINT_MAX) || (alignedSize > UINT_MAX))
             {
                 // Size is too big - don't mark sizeNode as contained
-                return;
+                return node->gtNext;
             }
 
             // Align LCLHEAP size for more efficient zeroing via BLK
@@ -11761,6 +11764,7 @@ void Lowering::LowerLclHeap(GenTree* node)
     }
 #endif
     ContainCheckLclHeap(node->AsOp());
+    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
