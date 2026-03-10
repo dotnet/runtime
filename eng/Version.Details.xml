@@ -1,9 +1,9 @@
 <Dependencies>
   <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="5507d7a2f05bb6c073a055ead6ce1c4bbe396cda" BarId="304069" />
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="11.0.0-alpha.1.26063.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="11.0.0-alpha.1.26128.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>b12b32d4177efa391c10895fc2ef3b7a21fb1d4d</Sha>
+      <Sha>62bd07d81fecda4ae8a90919755e1acc9591e9e8</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="19.1.0-alpha.1.26116.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
