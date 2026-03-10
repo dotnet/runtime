@@ -5705,7 +5705,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             {
                 if (slotCount > 1)
                 {
-#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_WASM)
                     assert(call->HasMultiRegRetVal());
 #endif
                 }
