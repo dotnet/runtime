@@ -200,7 +200,7 @@ namespace <xsl:value-of select="@namespace" />
 
             sequenceReader.ThrowIfNotEmpty();
         }
-    }
+<xsl:apply-templates mode="ValueCollectionEnumerable" />    }
 }
 </xsl:template>
 
@@ -334,7 +334,7 @@ namespace <xsl:value-of select="@namespace" />
                 throw new CryptographicException();
             }
         }
-    }
+<xsl:apply-templates select="*" mode="ValueCollectionEnumerable" />    }
 }
 </xsl:template>
 
@@ -1411,5 +1411,75 @@ namespace <xsl:value-of select="@namespace" />
       <xsl:otherwise>0</xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
+
+  <!-- ==== Value* ref struct: collection enumerable types ==== -->
+
+  <!-- Only generate for SequenceOf/SetOf with @valueName (opt-in) -->
+  <xsl:template match="asn:SequenceOf[@valueName] | asn:SetOf[@valueName]" mode="ValueCollectionEnumerable" xml:space="default">
+    <xsl:variable name="collNoun">
+      <xsl:choose>
+        <xsl:when test="self::asn:SetOf">SetOf</xsl:when>
+        <xsl:otherwise>Sequence</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="elementValueType" select="*/@valueTypeName" />
+    <xsl:if test="1" xml:space="preserve">
+
+        internal <xsl:value-of select="@name"/>Enumerable <xsl:value-of select="@valueName"/>(AsnEncodingRules ruleSet)
+        {
+            return new <xsl:value-of select="@name"/>Enumerable(<xsl:value-of select="@name"/>, ruleSet);
+        }
+
+        internal readonly ref struct <xsl:value-of select="@name"/>Enumerable
+        {
+            private readonly ReadOnlySpan&lt;byte&gt; _encoded;
+            private readonly AsnEncodingRules _ruleSet;
+
+            internal <xsl:value-of select="@name"/>Enumerable(ReadOnlySpan&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+            {
+                _encoded = encoded;
+                _ruleSet = ruleSet;
+            }
+
+            public Enumerator GetEnumerator() =&gt; new Enumerator(_encoded, _ruleSet);
+
+            internal ref struct Enumerator
+            {
+                private ValueAsnReader _reader;
+                private <xsl:value-of select="$elementValueType"/> _current;
+
+                internal Enumerator(ReadOnlySpan&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+                {
+                    if (!encoded.IsEmpty)
+                    {
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        _reader = outerReader.Read<xsl:value-of select="$collNoun"/>(<xsl:call-template name="MaybeImplicitCall0"/>);
+                    }
+
+                    _current = default;
+                }
+
+                public <xsl:value-of select="$elementValueType"/> Current =&gt; _current;
+
+                public bool MoveNext()
+                {
+                    if (!_reader.HasData)
+                    {
+                        return false;
+                    }
+
+                    <xsl:value-of select="$elementValueType"/>.Decode(ref _reader, out _current);
+                    return true;
+                }
+            }
+        }
+</xsl:if>
+  </xsl:template>
+
+  <!-- No-op for SequenceOf/SetOf without @valueName -->
+  <xsl:template match="asn:SequenceOf[not(@valueName)] | asn:SetOf[not(@valueName)]" mode="ValueCollectionEnumerable" />
+
+  <!-- No-op for all other element types -->
+  <xsl:template match="*" mode="ValueCollectionEnumerable" />
 
 </xsl:stylesheet>

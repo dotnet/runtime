@@ -144,7 +144,6 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         }
     }
 
-#if NET
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValueNameConstraintsAsn
     {
@@ -213,5 +212,4 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
-#endif
 }

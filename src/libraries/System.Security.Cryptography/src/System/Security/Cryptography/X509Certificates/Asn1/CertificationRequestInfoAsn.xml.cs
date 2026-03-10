@@ -195,5 +195,55 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             sequenceReader.ThrowIfNotEmpty();
         }
+
+
+        internal AttributesEnumerable GetAttributes(AsnEncodingRules ruleSet)
+        {
+            return new AttributesEnumerable(Attributes, ruleSet);
+        }
+
+        internal readonly ref struct AttributesEnumerable
+        {
+            private readonly ReadOnlySpan<byte> _encoded;
+            private readonly AsnEncodingRules _ruleSet;
+
+            internal AttributesEnumerable(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+            {
+                _encoded = encoded;
+                _ruleSet = ruleSet;
+            }
+
+            public Enumerator GetEnumerator() => new Enumerator(_encoded, _ruleSet);
+
+            internal ref struct Enumerator
+            {
+                private ValueAsnReader _reader;
+                private System.Security.Cryptography.Asn1.ValueAttributeAsn _current;
+
+                internal Enumerator(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+                {
+                    if (!encoded.IsEmpty)
+                    {
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        _reader = outerReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    }
+
+                    _current = default;
+                }
+
+                public System.Security.Cryptography.Asn1.ValueAttributeAsn Current => _current;
+
+                public bool MoveNext()
+                {
+                    if (!_reader.HasData)
+                    {
+                        return false;
+                    }
+
+                    System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref _reader, out _current);
+                    return true;
+                }
+            }
+        }
     }
 }
