@@ -189,7 +189,7 @@ namespace System.IO.Tests
             using (FileStream writeStream = new FileStream(writeHandle, FileAccess.Write, 1, asyncWrite))
             {
                 Task writeTask = writeStream.WriteAsync(message, 0, message.Length);
-                Task readTask = readStream.ReadAsync(buffer, 0, buffer.Length);
+                Task readTask = readStream.ReadExactlyAsync(buffer).AsTask();
                 await Task.WhenAll(writeTask, readTask);
                 Assert.Equal(message, buffer);
 
