@@ -23,13 +23,13 @@ namespace System
 
         // Returns value of given switch or environment variable using provided cache.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool GetCachedSwitchValue(string switchName, string? envVariable, ref int cachedSwitchValue)
+        internal static bool GetCachedSwitchValue(string switchName, string? envVariable, ref int cachedSwitchValue, bool defaultValue = false)
         {
             // The cached switch value has 3 states: 0 - unknown, 1 - true, -1 - false
             if (cachedSwitchValue < 0) return false;
             if (cachedSwitchValue > 0) return true;
 
-            return GetCachedSwitchValueInternal(switchName, envVariable, ref cachedSwitchValue, false);
+            return GetCachedSwitchValueInternal(switchName, envVariable, ref cachedSwitchValue, defaultValue);
         }
 
         private static bool GetCachedSwitchValueInternal(string switchName, string? envVariable, ref int cachedSwitchValue, bool defaultValue)
