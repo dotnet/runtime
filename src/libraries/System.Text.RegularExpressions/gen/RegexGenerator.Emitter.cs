@@ -1106,7 +1106,6 @@ namespace System.Text.RegularExpressions.Generator
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
                             }
-                            writer.WriteLine("base.runtextpos = pos;");
                         }
                         writer.WriteLine();
                         break;
