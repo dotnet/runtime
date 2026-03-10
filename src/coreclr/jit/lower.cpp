@@ -11703,7 +11703,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // LowerLclHeap: a common logic to lower LCLHEAP.
 //
 // Arguments:
-//    blkNode - the LCLHEAP node we are lowering.
+//    node - the LCLHEAP node we are lowering.
 //
 void Lowering::LowerLclHeap(GenTree* node)
 {
