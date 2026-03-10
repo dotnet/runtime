@@ -485,7 +485,7 @@ namespace System.Formats.Tar.Tests
             string sizeOctal = Convert.ToString(paxDataBytes.Length, 8).PadLeft(11, '0') + "\0";
             Encoding.UTF8.GetBytes(sizeOctal).CopyTo(paxHeader.AsSpan(124, 12));
 
-            WriteChecksum(paxHeader);
+            WriteHeaderChecksum(paxHeader);
             archiveStream.Write(paxHeader);
             archiveStream.Write(paxDataBytes);
             int padding = (512 - (paxDataBytes.Length % 512)) % 512;
@@ -505,7 +505,7 @@ namespace System.Formats.Tar.Tests
             Encoding.UTF8.GetBytes("00").CopyTo(entryHeader.AsSpan(263, 2));
             Encoding.UTF8.GetBytes(prefix).CopyTo(entryHeader.AsSpan(345));
 
-            WriteChecksum(entryHeader);
+            WriteHeaderChecksum(entryHeader);
             archiveStream.Write(entryHeader);
             archiveStream.Write(new byte[1024]);
             archiveStream.Seek(0, SeekOrigin.Begin);
@@ -517,17 +517,6 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(longLinkTarget, entry.LinkName);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
             Assert.Null(await reader2.GetNextEntryAsync());
-        }
-
-        private static void WriteChecksum(byte[] header)
-        {
-            int checksum = 0;
-            for (int i = 0; i < header.Length; i++)
-            {
-                checksum += (i >= 148 && i < 156) ? (byte)' ' : header[i];
-            }
-            string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
-            Encoding.UTF8.GetBytes(checksumStr).CopyTo(header.AsSpan(148, 8));
         }
     }
 }
