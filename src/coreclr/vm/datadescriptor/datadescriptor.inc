@@ -1281,7 +1281,6 @@ CDAC_GLOBAL(SyncBlockIndexMask, uint32, MASK_SYNCBLOCKINDEX)
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 #if FEATURE_COMINTEROP
-CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
 CDAC_GLOBAL(CCWNumInterfaces, uint32, cdac_data<ComCallWrapper>::NumInterfaces)
 CDAC_GLOBAL(CCWThisMask, nuint, cdac_data<ComCallWrapper>::ThisMask)
 CDAC_GLOBAL_POINTER(TearOffAddRef, &g_cdacTearOffAddRef)
