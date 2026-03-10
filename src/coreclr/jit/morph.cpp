@@ -952,7 +952,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // GT_LCLHEAP has the same stack depth constraint, but it no longer sets
                     // GTF_EXCEPT, so it must be checked explicitly here.
                     //
-                    if ((argx->gtFlags & GTF_EXCEPT) ||
+                    if (((argx->gtFlags & GTF_EXCEPT) != 0) ||
                         (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP)))
                     {
                         SetNeedsTemp(&arg);
@@ -961,7 +961,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #else
                     // For Arm/X64 we can't reorder a register argument that uses a GT_LCLHEAP
                     //
-                    if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
+                    if (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP))
                     {
                         assert(comp->compLocallocUsed);
                         SetNeedsTemp(&arg);
