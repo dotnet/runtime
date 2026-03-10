@@ -121,6 +121,7 @@ namespace System.Text.RegularExpressions.Generator
                 .Select(static (results, _) =>
                 {
                     ImmutableArray<Diagnostic>.Builder? diagnostics = null;
+                    ImmutableArray<object>.Builder? filteredResults = null;
 
                     foreach (object result in results)
                     {
@@ -131,16 +132,30 @@ namespace System.Text.RegularExpressions.Generator
                         else if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                         {
                             (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(limitedSupportResult.Item3);
+                            (filteredResults ??= ImmutableArray.CreateBuilder<object>()).Add(
+                                (limitedSupportResult.Item1, limitedSupportResult.Item2, limitedSupportResult.Item4));
+                        }
+                        else
+                        {
+                            (filteredResults ??= ImmutableArray.CreateBuilder<object>()).Add(result);
                         }
                     }
 
-                    return (Results: results, Diagnostics: diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+                    return (
+                        Results: filteredResults?.ToImmutable() ?? ImmutableArray<object>.Empty,
+                        Diagnostics: diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
                 });
 
-            // Project to just the source model for code generation.
-            context.RegisterSourceOutput(collected.Select(static (t, _) => t.Results), static (context, results) =>
+            // Project to just the source model, discarding diagnostics.
+            // ObjectImmutableArraySequenceEqualityComparer applies element-wise equality over
+            // the heterogeneous result array, enabling Roslyn's incremental pipeline to skip
+            // re-emitting source when the model has not changed.
+            IncrementalValueProvider<ImmutableArray<object>> sourceModel =
+                collected.Select(static (t, _) => t.Results).WithComparer(new ObjectImmutableArraySequenceEqualityComparer());
+
+            context.RegisterSourceOutput(sourceModel, static (context, results) =>
             {
-                if (results.All(static r => r is Diagnostic))
+                if (results.IsEmpty)
                 {
                     return;
                 }
@@ -170,15 +185,15 @@ namespace System.Text.RegularExpressions.Generator
                 // pair is the implementation used for the key.
                 var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
 
-                // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
+                // If we have any (RegexMethod regexMethod, string reason, CompilationData compilationData), these are regexes for which we have
                 // limited support and need to simply output boilerplate.
-                // If we have any (RegexMethod regexMethod, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
+                // If we have any (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers, CompilationData compilationData),
                 // those are generated implementations to be emitted.  We need to gather up their required helpers.
                 Dictionary<string, string[]> requiredHelpers = new();
                 foreach (object? result in results)
                 {
                     RegexMethod? regexMethod = null;
-                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, CompilationData> limitedSupportResult)
                     {
                         regexMethod = limitedSupportResult.Item1;
                     }
@@ -239,11 +254,11 @@ namespace System.Text.RegularExpressions.Generator
                 writer.Indent++;
                 foreach (object? result in results)
                 {
-                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, CompilationData> limitedSupportResult)
                     {
                         if (!limitedSupportResult.Item1.IsDuplicate)
                         {
-                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2, limitedSupportResult.Item4.LanguageVersion);
+                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2, limitedSupportResult.Item3.LanguageVersion);
                             writer.WriteLine();
                         }
                     }
@@ -362,6 +377,39 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 return false;
+            }
+        }
+
+        private sealed class ObjectImmutableArraySequenceEqualityComparer : IEqualityComparer<ImmutableArray<object>>
+        {
+            public bool Equals(ImmutableArray<object> left, ImmutableArray<object> right)
+            {
+                if (left.Length != right.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < left.Length; i++)
+                {
+                    bool areEqual = left[i] is { } leftElem
+                        ? leftElem.Equals(right[i])
+                        : right[i] is null;
+
+                    if (!areEqual)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            public int GetHashCode([DisallowNull] ImmutableArray<object> obj)
+            {
+                int hash = 0;
+                for (int i = 0; i < obj.Length; i++)
+                    hash = (hash, obj[i]).GetHashCode();
+                return hash;
             }
         }
     }
