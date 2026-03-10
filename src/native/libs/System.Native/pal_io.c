@@ -560,20 +560,6 @@ int32_t SystemNative_CloseDir(DIR* dir)
     return result;
 }
 
-static int32_t SetNonBlocking(int fd)
-{
-    int fdFlags;
-    while ((fdFlags = fcntl(fd, F_GETFL)) < 0 && errno == EINTR);
-    if (fdFlags < 0)
-    {
-        return -1;
-    }
-
-    int result;
-    while ((result = fcntl(fd, F_SETFL, fdFlags | O_NONBLOCK)) < 0 && errno == EINTR);
-    return result;
-}
-
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
 #ifdef TARGET_WASM
@@ -635,12 +621,12 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     {
         if ((flags & PAL_O_NONBLOCK_READ) != 0)
         {
-            result = SetNonBlocking(pipeFds[0]);
+            result = SystemNative_FcntlSetIsNonBlocking((intptr_t)pipeFds[0], 1);
         }
 
         if (result == 0 && (flags & PAL_O_NONBLOCK_WRITE) != 0)
         {
-            result = SetNonBlocking(pipeFds[1]);
+            result = SystemNative_FcntlSetIsNonBlocking((intptr_t)pipeFds[1], 1);
         }
 
         if (result != 0)
