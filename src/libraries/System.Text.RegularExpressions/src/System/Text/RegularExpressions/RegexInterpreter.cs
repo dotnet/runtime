@@ -366,6 +366,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
+#pragma warning disable CS0649
+        public static System.IO.TextWriter? DebugLog;
+#pragma warning restore CS0649
+
         private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)
         {
             SetOperator((RegexOpcode)_code.Codes[0]);
@@ -380,6 +384,17 @@ namespace System.Text.RegularExpressions
                     // Details at https://github.com/dotnet/corefx/pull/25096.
                     Advance(advance);
                     advance = -1;
+                }
+
+                if (DebugLog is not null)
+                {
+                    DebugLog.Write($"  [{_codepos,3}] op={_operator,-40} pos={runtextpos}");
+                    if (runtextpos < inputSpan.Length) DebugLog.Write($" ch='{inputSpan[runtextpos]}'");
+                    DebugLog.Write($"  stk=[");
+                    for (int si = runstack!.Length - 1; si >= runstackpos; si--)
+                        DebugLog.Write($"{runstack[si]},");
+                    DebugLog.Write($"]");
+                    DebugLog.WriteLine();
                 }
 
                 switch (_operator)

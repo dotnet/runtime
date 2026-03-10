@@ -789,5 +789,25 @@ namespace System.Text.RegularExpressions.Tests
             RegexOptions foundOptions = RegexParser.ParseOptionsInPattern(pattern, RegexOptions.None);
             Assert.Equal((RegexOptions)expectedOptions, foundOptions);
         }
+
+        [Fact]
+        public void DebugDumpTree()
+        {
+            var sb = new System.Text.StringBuilder();
+            var writer = new System.IO.StringWriter(sb);
+            RegexInterpreter.DebugLog = writer;
+
+            try
+            {
+                var regex = new Regex(@"a(?:b.*?c)?d");
+                var match = regex.Match("abccd");
+                writer.Flush();
+                throw new Exception($"Match={match.Success} Value='{match.Value}'\nTrace:\n{sb}");
+            }
+            finally
+            {
+                RegexInterpreter.DebugLog = null;
+            }
+        }
     }
 }
