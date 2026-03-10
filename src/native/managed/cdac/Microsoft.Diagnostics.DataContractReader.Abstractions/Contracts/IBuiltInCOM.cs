@@ -12,6 +12,19 @@ public readonly struct COMInterfacePointerData
     public TargetPointer MethodTable { get; init; }
 }
 
+/// <summary>Data read from a SimpleComCallWrapper.</summary>
+public readonly struct SimpleComCallWrapperData
+{
+    /// <summary>The raw reference count (includes the CLEANUP_SENTINEL bit).</summary>
+    public ulong RefCount { get; init; }
+    /// <summary>Bit flags (IsAggregated = 0x1, IsExtendsCom = 0x2, IsHandleWeak = 0x4).</summary>
+    public uint Flags { get; init; }
+    /// <summary>Outer IUnknown pointer for aggregated CCWs (m_pOuter).</summary>
+    public TargetPointer OuterIUnknown { get; init; }
+    /// <summary>Pointer to the start (first) ComCallWrapper in the chain.</summary>
+    public TargetPointer MainWrapper { get; init; }
+}
+
 /// <summary>Data for a single RCW entry in the RCW cleanup list.</summary>
 public record struct RCWCleanupInfo(
     TargetPointer RCW,
@@ -44,6 +57,11 @@ public interface IBuiltInCOM : IContract
     // Returns the outer IUnknown pointer (m_pOuter) for aggregated CCWs.
     // All wrappers in a chain share the same SimpleComCallWrapper, so any wrapper address is accepted.
     TargetPointer GetOuterIUnknown(TargetPointer ccw) => throw new NotImplementedException();
+    // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
+    TargetPointer GetSimpleComCallWrapper(TargetPointer ccw) => throw new NotImplementedException();
+    // Returns the data stored in a SimpleComCallWrapper.
+    // sccw must be a SimpleComCallWrapper address (obtain via GetSimpleComCallWrapper).
+    SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
 }
 

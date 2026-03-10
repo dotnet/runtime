@@ -28,6 +28,11 @@ public TargetPointer GetCCWHandle(TargetPointer ccw);
 // Returns the outer IUnknown pointer (m_pOuter) for aggregated CCWs.
 // All wrappers in a chain share the same SimpleComCallWrapper, so any wrapper address is accepted.
 public TargetPointer GetOuterIUnknown(TargetPointer ccw);
+// Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
+public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw);
+// Returns the data stored in a SimpleComCallWrapper.
+// sccw must be a SimpleComCallWrapper address (obtain via GetSimpleComCallWrapper).
+public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw);
 // Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
@@ -41,6 +46,17 @@ public struct COMInterfacePointerData
     public TargetPointer InterfacePointerAddress;
     // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
     public TargetPointer MethodTable;
+}
+```
+
+and `SimpleComCallWrapperData` is:
+``` csharp
+public struct SimpleComCallWrapperData
+{
+    public ulong RefCount;        // raw refcount (includes CLEANUP_SENTINEL bit)
+    public uint Flags;            // IsAggregated = 0x1, IsExtendsCom = 0x2, IsHandleWeak = 0x4
+    public TargetPointer OuterIUnknown;  // outer IUnknown for aggregation (m_pOuter)
+    public TargetPointer MainWrapper;    // start ComCallWrapper in the chain
 }
 ```
 
@@ -112,40 +128,51 @@ private const uint MarshalingTypeFreeThreaded = 2u; // matches RCW::MarshalingTy
 // CLEANUP_SENTINEL: bit 31 of m_llRefCount; set when the CCW is neutered
 private const ulong CleanupSentinel = 0x80000000UL;
 
+// Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
+public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
+    => _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
+
+// Returns data from the SimpleComCallWrapper at sccw.
+public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
+{
+    return new SimpleComCallWrapperData
+    {
+        RefCount     = _target.Read<ulong>(sccw + /* SimpleComCallWrapper::RefCount offset */),
+        Flags        = _target.Read<uint>(sccw  + /* SimpleComCallWrapper::Flags offset */),
+        OuterIUnknown = _target.ReadPointer(sccw + /* SimpleComCallWrapper::OuterIUnknown offset */),
+        MainWrapper   = _target.ReadPointer(sccw + /* SimpleComCallWrapper::MainWrapper offset */),
+    };
+}
+
 public ulong GetRefCount(TargetPointer address)
 {
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    ulong refCount = _target.Read<ulong>(ccw + /* SimpleComCallWrapper::RefCount offset */);
+    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
     long refCountMask = _target.ReadGlobal<long>("ComRefcountMask");
-    return refCount & (ulong)refCountMask;
+    return sccw.RefCount & (ulong)refCountMask;
 }
 
 public bool IsHandleWeak(TargetPointer address)
 {
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & (uint)CCWFlags.IsHandleWeak) != 0;
+    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
+    return (sccw.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
 }
 
 public bool IsNeutered(TargetPointer address)
 {
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    ulong refCount = _target.Read<ulong>(ccw + /* SimpleComCallWrapper::RefCount offset */);
-    return (refCount & CleanupSentinel) != 0;
+    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
+    return (sccw.RefCount & CleanupSentinel) != 0;
 }
 
 public bool IsExtendsCOMObject(TargetPointer address)
 {
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & (uint)CCWFlags.IsExtendsCom) != 0;
+    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
+    return (sccw.Flags & (uint)CCWFlags.IsExtendsCom) != 0;
 }
 
 public bool IsAggregated(TargetPointer address)
 {
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & (uint)CCWFlags.IsAggregated) != 0;
+    SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
+    return (sccw.Flags & (uint)CCWFlags.IsAggregated) != 0;
 }
 
 // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
@@ -167,11 +194,7 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
 // Returns the address of the start ComCallWrapper.
 // Unconditionally follows SimpleWrapper→MainWrapper (mirrors ComCallWrapper::GetStartWrapper).
 public TargetPointer GetCCWAddress(TargetPointer ccw)
-{
-    var sccw = _target.ReadPointer(_target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */)
-                                   + /* SimpleComCallWrapper::MainWrapper offset */);
-    return sccw; // = sccw.MainWrapper
-}
+    => GetSimpleComCallWrapperData(GetSimpleComCallWrapper(ccw)).MainWrapper;
 
 // Returns the GC object handle (m_ppThis) of the start ComCallWrapper.
 public TargetPointer GetCCWHandle(TargetPointer ccw)
@@ -182,10 +205,7 @@ public TargetPointer GetCCWHandle(TargetPointer ccw)
 
 // Returns the outer IUnknown pointer (m_pOuter); any wrapper in the chain is accepted.
 public TargetPointer GetOuterIUnknown(TargetPointer ccw)
-{
-    var sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
-    return _target.ReadPointer(sccw + /* SimpleComCallWrapper::OuterIUnknown offset */);
-}
+    => GetSimpleComCallWrapperData(GetSimpleComCallWrapper(ccw)).OuterIUnknown;
 
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
 {
