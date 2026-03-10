@@ -61,7 +61,7 @@ namespace System.Text.RegularExpressions.Generator
                 .Collect()
                 .Select(static (items, _) =>
                 {
-                    List<RegexMethodEntry>? methods = null;
+                    ImmutableArray<RegexMethodEntry>.Builder? methods = null;
                     Dictionary<string, HelperMethod>? helpersByName = null;
                     ImmutableArray<Diagnostic>.Builder? allDiagnostics = null;
 
@@ -76,7 +76,7 @@ namespace System.Text.RegularExpressions.Generator
                             RegexMethodEntry? entry = ParseAndGenerateRegex(method, ref allDiagnostics, ref helpersByName);
                             if (entry is not null)
                             {
-                                (methods ??= new List<RegexMethodEntry>()).Add(entry);
+                                (methods ??= ImmutableArray.CreateBuilder<RegexMethodEntry>()).Add(entry);
                             }
                         }
                     }

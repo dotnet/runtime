@@ -104,14 +104,14 @@ namespace Microsoft.Extensions.Logging.Generators
             IncrementalValueProvider<(ImmutableEquatableArray<(LoggerClassSpec LoggerClassSpec, bool HasStringCreate)> Specs, ImmutableArray<Diagnostic> Diagnostics)> collected =
                 loggerClasses.Collect().Select(static (items, _) =>
                 {
-                    List<(LoggerClassSpec, bool)>? specs = null;
+                    ImmutableArray<(LoggerClassSpec, bool)>.Builder? specs = null;
                     ImmutableArray<Diagnostic>.Builder? diagnostics = null;
 
                     foreach (var item in items)
                     {
                         if (item.LoggerClassSpec is not null)
                         {
-                            (specs ??= new()).Add((item.LoggerClassSpec, item.HasStringCreate));
+                            (specs ??= ImmutableArray.CreateBuilder<(LoggerClassSpec, bool)>()).Add((item.LoggerClassSpec, item.HasStringCreate));
                         }
                         if (!item.Diagnostics.IsDefaultOrEmpty)
                         {
