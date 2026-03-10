@@ -1845,9 +1845,22 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
                 if (doPublish)
                 {
                     bool mayHaveEntryPointSlotsToBackpatch2 = pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
-                    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder2(
-                        mayHaveEntryPointSlotsToBackpatch2);
-                    pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch2);
+                    if (handleCallCountingForFirstCall && mayHaveEntryPointSlotsToBackpatch2)
+                    {
+                        // Non-final tier for backpatchable methods: redirect the precode to the code, but do NOT
+                        // set GetMethodEntryPoint() or backpatch vtable slots. Vtable slots stay pointing to the
+                        // precode (temporary entry point). Keeping GetMethodEntryPoint() == GetTemporaryEntryPoint()
+                        // causes DoBackpatch() to return early, preventing slot recording during non-final tiers.
+                        // Slots will only be recorded and backpatched when the final tier is activated.
+                        Precode::GetPrecodeFromEntryPoint(pMethodDesc->GetTemporaryEntryPoint())
+                            ->SetTargetInterlocked(pCode, TRUE /* fOnlyRedirectFromPrestub */);
+                    }
+                    else
+                    {
+                        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder2(
+                            mayHaveEntryPointSlotsToBackpatch2);
+                        pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch2);
+                    }
                 }
                 else
                 {

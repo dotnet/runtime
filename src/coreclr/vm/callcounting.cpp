@@ -607,20 +607,19 @@ bool CallCountingManager::SetCodeEntryPoint(
                 // relatively rare, let it be handled elsewhere.
                 if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                 {
-                    methodDesc->SetMethodEntryPoint(codeEntryPoint);
                     if (activeCodeVersion.IsFinalTier())
                     {
-                        // Final tier: reset precode to prestub for lazy vtable slot backpatching via
-                        // DoBackpatch(). Calls through vtable slots will go through precode -> prestub ->
-                        // DoBackpatch() which records and patches each slot to final tier code.
+                        // Final tier: set the method entry point to the final code and reset precode to
+                        // prestub for lazy vtable slot backpatching via DoBackpatch().
+                        methodDesc->SetMethodEntryPoint(codeEntryPoint);
                         Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
                             ->ResetTargetInterlocked();
                     }
                     else
                     {
                         // Non-final tier: set precode target to the code entry point. Vtable slots remain
-                        // pointing to the temporary entry point (precode), so calls flow through
-                        // precode -> code without going through the prestub. No vtable slot backpatching.
+                        // pointing to the temporary entry point (precode). Do NOT set GetMethodEntryPoint()
+                        // to prevent DoBackpatch() from recording vtable slots during non-final tiers.
                         Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
                             ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
                     }
@@ -668,9 +667,9 @@ bool CallCountingManager::SetCodeEntryPoint(
                 }
                 if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                 {
-                    // Non-final tier: set precode target to the code entry point. Vtable slots stay on the
-                    // temporary entry point (precode). The call counting stub is no longer needed.
-                    methodDesc->SetMethodEntryPoint(codeEntryPoint);
+                    // Non-final tier (call counting threshold just reached): set precode target to the code
+                    // entry point. Vtable slots stay pointing to the temporary entry point (precode). Do NOT
+                    // set GetMethodEntryPoint() to prevent DoBackpatch() from recording vtable slots.
                     Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
                         ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
                 }
@@ -749,23 +748,9 @@ bool CallCountingManager::SetCodeEntryPoint(
         // - On some architectures (e.g. arm64), jitted code may load the entry point into a register at a GC-safe
         //   point, and the stub could be deleted before the register is used for the call
         //
-        // Ensure vtable slots point to the temporary entry point (precode) so calls flow through
-        // precode → call counting stub → native code. Vtable slots may have been backpatched to native code
-        // during the initial publish or tiering delay. BackpatchToResetEntryPointSlots() also sets
-        // GetMethodEntryPoint() to the temporary entry point, which we override below.
-        //
-        // There is a benign race window between resetting vtable slots and setting the precode target: a thread
-        // may briefly see vtable slots pointing to the precode while the precode still points to its previous
-        // target (prestub or native code). This results in at most one uncounted call, which is acceptable since
-        // call counting is a heuristic.
-        methodDesc->BackpatchToResetEntryPointSlots();
-
-        // Keep GetMethodEntryPoint() set to the native code entry point rather than the temporary entry point.
-        // DoBackpatch() (prestub.cpp) skips slot recording when GetMethodEntryPoint() == GetTemporaryEntryPoint(),
-        // interpreting it as "method not yet published". By keeping GetMethodEntryPoint() at native code, we
-        // ensure that after the precode reverts to prestub (when call counting stubs are deleted), new vtable
-        // slots discovered by DoBackpatch() will be properly recorded for future backpatching.
-        methodDesc->SetMethodEntryPoint(codeEntryPoint);
+        // Vtable slots already point to the temporary entry point (precode) since we never backpatch vtable slots
+        // during non-final tiers. GetMethodEntryPoint() is kept at the temporary entry point to prevent
+        // DoBackpatch() from recording vtable slots during non-final tiers.
         Precode *precode = Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint());
         precode->SetTargetInterlocked(callCountingCodeEntryPoint, FALSE);
     }
@@ -947,12 +932,11 @@ void CallCountingManager::CompleteCallCounting()
                         {
                             // Non-final tier (call counting just completed, tier 1 promotion queued): set
                             // precode target to the code entry point. Vtable slots remain pointing to the
-                            // temporary entry point (precode). The call counting stub will be deleted by
-                            // DeleteAllCallCountingStubs().
-                            PCODE nativeCode = activeCodeVersion.GetNativeCode();
-                            methodDesc->SetMethodEntryPoint(nativeCode);
+                            // temporary entry point (precode). Do NOT set GetMethodEntryPoint() to prevent
+                            // DoBackpatch() from recording vtable slots during non-final tiers.
                             Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
-                                ->SetTargetInterlocked(nativeCode, FALSE /* fOnlyRedirectFromPrestub */);
+                                ->SetTargetInterlocked(activeCodeVersion.GetNativeCode(),
+                                                       FALSE /* fOnlyRedirectFromPrestub */);
                         }
                         else
                         {
@@ -974,17 +958,18 @@ void CallCountingManager::CompleteCallCounting()
                         {
                             if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                             {
-                                methodDesc->SetMethodEntryPoint(activeNativeCode);
                                 if (activeCodeVersion.IsFinalTier())
                                 {
-                                    // Final tier: reset precode to prestub for lazy vtable slot backpatching
-                                    // via DoBackpatch().
+                                    // Final tier: set the method entry point to the final code and reset
+                                    // precode to prestub for lazy vtable slot backpatching via DoBackpatch().
+                                    methodDesc->SetMethodEntryPoint(activeNativeCode);
                                     Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
                                         ->ResetTargetInterlocked();
                                 }
                                 else
                                 {
-                                    // Non-final tier: set precode target to the code entry point.
+                                    // Non-final tier: set precode target to the code entry point. Do NOT set
+                                    // GetMethodEntryPoint() to prevent DoBackpatch() from recording slots.
                                     Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
                                         ->SetTargetInterlocked(activeNativeCode, FALSE /* fOnlyRedirectFromPrestub */);
                                 }

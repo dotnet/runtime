@@ -257,8 +257,8 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     {
         // Non-final tier: set precode target to the code entry point. Vtable slots remain pointing to the
         // temporary entry point (precode), so calls flow through precode -> code without going through the
-        // prestub. No vtable slot backpatching is needed during non-final tiers.
-        pMethodDesc->SetMethodEntryPoint(codeEntryPoint);
+        // prestub. Do NOT set GetMethodEntryPoint() — keeping it at the temporary entry point prevents
+        // DoBackpatch() from recording vtable slots during non-final tiers.
         Precode::GetPrecodeFromEntryPoint(pMethodDesc->GetTemporaryEntryPoint())
             ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
     }
