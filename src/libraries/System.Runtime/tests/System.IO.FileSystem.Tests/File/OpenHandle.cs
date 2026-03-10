@@ -87,6 +87,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
         public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForPipes(bool useAsync)
         {
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: useAsync, asyncWrite: useAsync);
@@ -113,6 +114,7 @@ namespace System.IO.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
         public static async Task SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
         {
             byte[] message = "Hello, Pipe!"u8.ToArray();
@@ -138,7 +140,7 @@ namespace System.IO.Tests
                 // which is going to test the E_WOULDBLOCK code path on Unix.
                 buffer.AsSpan().Reverse();
 
-                readTask = readStream.ReadAsync(buffer, 0, buffer.Length);
+                readTask = readStream.ReadExactlyAsync(buffer).AsTask();
                 writeTask = writeStream.WriteAsync(message, 0, message.Length);
                 await Task.WhenAll(readTask, writeTask);
                 Assert.Equal(message, buffer);
@@ -166,6 +168,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
         public void AsyncHandleOnUnix_FileStream_ctor_Throws()
         {
             // Currently SafeFileHandle.CreateAnonymousPipe is the only public API that allows creating async handles on Unix
