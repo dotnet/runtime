@@ -35,14 +35,6 @@ public record struct RCWCleanupInfo(
 public interface IBuiltInCOM : IContract
 {
     static string IContract.Name { get; } = nameof(BuiltInCOM);
-    ulong GetRefCount(TargetPointer address) => throw new NotImplementedException();
-    bool IsHandleWeak(TargetPointer address) => throw new NotImplementedException();
-    // Returns true if the CCW has been neutered (CLEANUP_SENTINEL bit is set in the ref count).
-    bool IsNeutered(TargetPointer address) => throw new NotImplementedException();
-    // Returns true if the managed class extends a COM object (IsExtendsCom flag).
-    bool IsExtendsCOMObject(TargetPointer address) => throw new NotImplementedException();
-    // Returns true if the CCW is aggregated (IsAggregated flag).
-    bool IsAggregated(TargetPointer address) => throw new NotImplementedException();
     // Resolves a COM interface pointer to the start ComCallWrapper.
     // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
     TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) => throw new NotImplementedException();
@@ -54,9 +46,6 @@ public interface IBuiltInCOM : IContract
     TargetPointer GetCCWAddress(TargetPointer ccw) => throw new NotImplementedException();
     // Returns the GC object handle (m_ppThis) of the start ComCallWrapper.
     TargetPointer GetCCWHandle(TargetPointer ccw) => throw new NotImplementedException();
-    // Returns the outer IUnknown pointer (m_pOuter) for aggregated CCWs.
-    // All wrappers in a chain share the same SimpleComCallWrapper, so any wrapper address is accepted.
-    TargetPointer GetOuterIUnknown(TargetPointer ccw) => throw new NotImplementedException();
     // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
     TargetPointer GetSimpleComCallWrapper(TargetPointer ccw) => throw new NotImplementedException();
     // Returns the data stored in a SimpleComCallWrapper.

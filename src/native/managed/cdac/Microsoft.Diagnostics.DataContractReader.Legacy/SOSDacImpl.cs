@@ -610,21 +610,26 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer managedObject = handle != TargetPointer.Null
                 ? _target.ReadPointer(handle)
                 : TargetPointer.Null;
-            int refCount = (int)contract.GetRefCount(startCCW);
 
-            data->outerIUnknown = contract.GetOuterIUnknown(startCCW).ToClrDataAddress(_target);
+            SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(contract.GetSimpleComCallWrapper(startCCW));
+            // CLEANUP_SENTINEL is bit 31 of the raw ref count; mask it off to get the visible refcount.
+            long refCountMask = _target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
+            int refCount = (int)(sccwData.RefCount & (ulong)refCountMask);
+            bool isHandleWeak = (sccwData.Flags & 0x4u) != 0;
+
+            data->outerIUnknown = sccwData.OuterIUnknown.ToClrDataAddress(_target);
             data->managedObject = managedObject.ToClrDataAddress(_target);
             data->handle = handle.ToClrDataAddress(_target);
             data->ccwAddress = startCCW.ToClrDataAddress(_target);
             data->refCount = refCount;
             data->interfaceCount = contract.GetCCWInterfaces(startCCW).Count();
-            data->isNeutered = contract.IsNeutered(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isNeutered = (sccwData.RefCount & 0x80000000UL) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             data->jupiterRefCount = 0;
             data->isPegged = Interop.BOOL.FALSE;
             data->isGlobalPegged = Interop.BOOL.FALSE;
-            data->hasStrongRef = (refCount > 0) && !contract.IsHandleWeak(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            data->isExtendsCOMObject = contract.IsExtendsCOMObject(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            data->isAggregated = contract.IsAggregated(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->hasStrongRef = (refCount > 0) && !isHandleWeak ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isExtendsCOMObject = (sccwData.Flags & 0x2u) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isAggregated = (sccwData.Flags & 0x1u) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

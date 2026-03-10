@@ -106,13 +106,15 @@ public class BuiltInCOMDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+        long refCountMask = Target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
 
         List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
         Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
 
         foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            ulong refCount = builtInCOM.GetRefCount(ccwPtr);
+            SimpleComCallWrapperData sccwData = builtInCOM.GetSimpleComCallWrapperData(builtInCOM.GetSimpleComCallWrapper(ccwPtr));
+            ulong refCount = sccwData.RefCount & (ulong)refCountMask;
             Assert.True(refCount > 0,
                 $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
         }
@@ -125,6 +127,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+        long refCountMask = Target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
 
         List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
         Assert.True(ccwPtrs.Count >= 3, "Expected at least three objects with an active CCW from strong handles");
@@ -135,12 +138,16 @@ public class BuiltInCOMDumpTests : DumpTestBase
             Assert.NotEqual(TargetPointer.Null, startCCW);
 
             // A live CCW (not neutered) should have a positive ref count and a strong ref.
-            Assert.False(builtInCOM.IsNeutered(startCCW),
+            SimpleComCallWrapperData sccwData = builtInCOM.GetSimpleComCallWrapperData(builtInCOM.GetSimpleComCallWrapper(startCCW));
+            bool isNeutered = (sccwData.RefCount & 0x80000000UL) != 0;
+            bool isHandleWeak = (sccwData.Flags & 0x4u) != 0;
+            ulong refCount = sccwData.RefCount & (ulong)refCountMask;
+
+            Assert.False(isNeutered,
                 $"Expected non-neutered CCW at 0x{ccwPtr:X}");
-            ulong refCount = builtInCOM.GetRefCount(startCCW);
             Assert.True(refCount > 0,
                 $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
-            Assert.False(builtInCOM.IsHandleWeak(startCCW),
+            Assert.False(isHandleWeak,
                 $"Expected strong handle for CCW at 0x{ccwPtr:X}");
 
             // The handle should be populated and dereferenceable to a managed object.

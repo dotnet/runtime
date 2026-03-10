@@ -7,17 +7,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 {
     private readonly Target _target;
 
-    private enum CCWFlags
-    {
-        IsAggregated = 0x1,
-        IsExtendsCom = 0x2,
-        IsHandleWeak = 0x4,
-    }
-
-    // CLEANUP_SENTINEL is bit 31 of m_llRefCount; when set the CCW is neutered.
-    // Mirrors SimpleComCallWrapper::CLEANUP_SENTINEL in src/coreclr/vm/comcallablewrapper.h
-    private const ulong CleanupSentinel = 0x80000000UL;
-
     // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
     private enum ComMethodTableFlags : ulong
     {
@@ -38,50 +27,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         _target = target;
     }
-
-    public ulong GetRefCount(TargetPointer address)
-    {
-        SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-        return sccw.RefCount & (ulong)_target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
-    }
-
-    public bool IsHandleWeak(TargetPointer address)
-    {
-        SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-        return (sccw.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
-    }
-
-    public bool IsNeutered(TargetPointer address)
-    {
-        SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-        return (sccw.RefCount & CleanupSentinel) != 0;
-    }
-
-    public bool IsExtendsCOMObject(TargetPointer address)
-    {
-        SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-        return (sccw.Flags & (uint)CCWFlags.IsExtendsCom) != 0;
-    }
-
-    public bool IsAggregated(TargetPointer address)
-    {
-        SimpleComCallWrapperData sccw = GetSimpleComCallWrapperData(GetSimpleComCallWrapper(address));
-        return (sccw.Flags & (uint)CCWFlags.IsAggregated) != 0;
-    }
-
-    // See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
-    // ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
-    public TargetPointer GetCCWAddress(TargetPointer ccw) => NavigateToStartWrapper(ccw);
-
-    public TargetPointer GetCCWHandle(TargetPointer ccw)
-    {
-        TargetPointer startCCW = NavigateToStartWrapper(ccw);
-        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(startCCW);
-        return wrapper.Handle;
-    }
-
-    public TargetPointer GetOuterIUnknown(TargetPointer ccw)
-        => GetSimpleComCallWrapperData(GetSimpleComCallWrapper(ccw)).OuterIUnknown;
 
     // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
     public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
@@ -108,6 +53,17 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     // which always returns the canonical start wrapper (for the start itself, it returns itself).
     private TargetPointer NavigateToStartWrapper(TargetPointer ccw)
         => GetSimpleComCallWrapperData(GetSimpleComCallWrapper(ccw)).MainWrapper;
+
+    // See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
+    // ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
+    public TargetPointer GetCCWAddress(TargetPointer ccw) => NavigateToStartWrapper(ccw);
+
+    public TargetPointer GetCCWHandle(TargetPointer ccw)
+    {
+        TargetPointer startCCW = NavigateToStartWrapper(ccw);
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(startCCW);
+        return wrapper.Handle;
+    }
 
     // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
     // Handles two cases:
