@@ -611,30 +611,20 @@ namespace Internal.JitInterface
 
             if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
             {
-                // Default to true, and set to false if at least one of the types is actually supported in the current environment, and none of the
-                // intrinsic types are in an opportunistic state.
-                bool doBypass = true;
-
                 foreach (var intrinsicType in compExactlyDependsOnList)
                 {
                     InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(intrinsicType.Context.Target.Architecture, intrinsicType);
-                    if (instructionSet == InstructionSet.ILLEGAL)
+                    // If the instruction set is ILLEGAL, it means it is never supported by the current architecture so the behavior at runtime is known
+                    if (instructionSet != InstructionSet.ILLEGAL)
                     {
-                        // This instruction set isn't supported on the current platform at all.
-                        continue;
-                    }
-                    if (instructionSetSupport.IsInstructionSetSupported(instructionSet) || instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
-                    {
-                        doBypass = false;
-                    }
-                    else
-                    {
-                        // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
-                        return true;
+                        if (!instructionSetSupport.IsInstructionSetSupported(instructionSet) &&
+                                !instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                        {
+                            // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
+                            return true;
+                        }
                     }
                 }
-
-                return doBypass;
             }
 
             // No reason to bypass compilation and code generation.
