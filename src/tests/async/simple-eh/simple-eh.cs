@@ -14,7 +14,6 @@ using Xunit;
 public class Async2SimpleEH
 {
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124044", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestThrowAfterYield()
     {
         Task.Run(AsyncEntry).Wait();
@@ -53,7 +52,6 @@ public class Async2SimpleEH
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124044", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static int TestDefinesIntButThrows()
     {
         return TestDefinesIntButThrowsAsync().GetAwaiter().GetResult();
@@ -82,7 +80,6 @@ public class Async2SimpleEH
     private struct S { public long A, B, C, D; }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124044", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static int TestDefinesSButThrows()
     {
         return TestDefinesSButThrowsAsync().GetAwaiter().GetResult();
