@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -1430,24 +1431,31 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         [Fact]
         public async Task Diagnostic_HasPragmaSuppressibleLocation()
         {
-            // SYSLIB1017: MissingLogLevel
-            // Embed #pragma warning disable to verify the diagnostic location
-            // is in the same source tree and can be covered by the pragma.
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+            // SYSLIB1017: MissingLogLevel (Error, but not NotConfigurable).
+            string code = """
                 #pragma warning disable SYSLIB1017
-                partial class C
-                {
-                    [LoggerMessage(EventId = 0, Message = ""M1"")]
-                    static partial void M1(ILogger logger);
-                }
-            ");
+                using Microsoft.Extensions.Logging;
 
-            // Verify diagnostic is reported and has a SourceFile location.
-            // This is the precondition for #pragma warning disable to work:
-            // ExternalFileLocation (the old behavior) ignores pragmas entirely.
-            Diagnostic diagnostic = Assert.Single(diagnostics, d => d.Id == "SYSLIB1017");
-            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
-            Assert.NotNull(diagnostic.Location.SourceTree);
+                namespace Test
+                {
+                    partial class C
+                    {
+                        [LoggerMessage(EventId = 0, Message = "M1")]
+                        static partial void M1(ILogger logger);
+                    }
+                }
+                """;
+
+            Assembly[] refs = new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly };
+            using var workspace = RoslynTestUtils.CreateTestWorkspace();
+            Project proj = RoslynTestUtils.CreateTestProject(workspace, refs)
+                .WithDocuments(new[] { code });
+            Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
+            Compilation comp = (await proj.GetCompilationAsync().ConfigureAwait(false))!;
+            var (diags, _) = RoslynTestUtils.RunGenerator(comp, new LoggerMessageGenerator());
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(diags, comp);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1017");
+            Assert.True(diagnostic.IsSuppressed);
         }
     }
 }

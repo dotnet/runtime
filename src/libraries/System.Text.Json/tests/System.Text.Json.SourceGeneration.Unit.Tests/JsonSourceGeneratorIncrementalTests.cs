@@ -145,9 +145,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
             WalkObjectGraph(result.ContextGenerationSpecs);
-            // NB result.Diagnostics are now produced via a pipeline that combines with CompilationProvider
-            // and deliberately reference the SyntaxTree for pragma suppression support.
-            // Cf. https://github.com/dotnet/runtime/issues/92509
 
             static void WalkObjectGraph(object obj)
             {

@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -418,8 +419,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task Diagnostic_HasPragmaSuppressibleLocation()
         {
-            // Embed #pragma warning disable to verify the diagnostic location
-            // is in the same source tree and can be covered by the pragma.
+            // SYSLIB1103: ValueTypesInvalidForBind (Warning, configurable).
             string source = """
                 #pragma warning disable SYSLIB1103
                 using System;
@@ -438,13 +438,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            // Verify diagnostic is reported and has a SourceFile location.
-            // This is the precondition for #pragma warning disable to work:
-            // ExternalFileLocation (the old behavior) ignores pragmas entirely.
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
-            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1103");
-            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
-            Assert.NotNull(diagnostic.Location.SourceTree);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.True(diagnostic.IsSuppressed);
         }
     }
 }

@@ -3,8 +3,10 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Globalization;
@@ -398,53 +400,25 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
-        [Theory]
-        [InlineData("SYSLIB1041")]
-        [InlineData("SYSLIB1042")]
-        [InlineData("SYSLIB1043")]
-        public async Task Diagnostic_HasPragmaSuppressibleLocation(string diagnosticId)
+        [Fact]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation()
         {
-            string code = diagnosticId switch
-            {
-                "SYSLIB1041" => @"
-                    using System.Text.RegularExpressions;
-                    partial class C
-                    {
-                        [GeneratedRegex(""ab"")]
-                        [GeneratedRegex(""abc"")]
-                        private static partial Regex MultipleAttributes();
-                    }",
-                "SYSLIB1042" => @"
-                    using System.Text.RegularExpressions;
-                    partial class C
-                    {
-                        [GeneratedRegex(""ab[]"")]
-                        private static partial Regex InvalidPattern();
-                    }",
-                "SYSLIB1043" => @"
-                    using System.Text.RegularExpressions;
-                    partial class C
-                    {
-                        [GeneratedRegex(""ab"")]
-                        private static Regex NonPartialProperty => null;
-                    }",
-                _ => throw new ArgumentException(diagnosticId),
-            };
+            // SYSLIB1044 (LimitedSourceGeneration) is emitted for case-insensitive backreferences.
+            // It is NOT tagged NotConfigurable, so #pragma warning disable can suppress it.
+            string code = """
+                #pragma warning disable SYSLIB1044
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("(a)\\1", RegexOptions.IgnoreCase)]
+                    private static partial Regex Method();
+                }
+                """;
 
-            // Verify diagnostic is reported and has a SourceFile location.
-            // This is the precondition for #pragma warning disable to work:
-            // ExternalFileLocation (the old behavior) ignores pragmas entirely.
-            string codeWithPragma = $"#pragma warning disable {diagnosticId}\n{code}";
-            (Compilation comp, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(codeWithPragma);
-            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == diagnosticId);
-            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
-
-            // Verify the diagnostic location is within the scope of the #pragma directive
-            // in the same syntax tree, proving the compiler's pragma processing can suppress it.
-            SyntaxTree tree = diagnostic.Location.SourceTree;
-            Assert.NotNull(tree);
-            Assert.Contains(comp.SyntaxTrees, t => t == tree);
-            Assert.True(diagnostic.Location.SourceSpan.Start > 0);
+            (Compilation comp, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(code);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, comp);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1044");
+            Assert.True(diagnostic.IsSuppressed);
         }
 
         [Fact]
