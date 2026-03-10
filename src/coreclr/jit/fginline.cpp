@@ -348,6 +348,26 @@ private:
         JITDUMP("Inlining candidate [%06u] in " FMT_STMT "\n", Compiler::dspTreeID(call), m_statement->GetID());
         DISPSTMT(m_statement);
 
+        GenTree*& substExpr = inlineInfo.inlineCandidateInfo->result.substExpr;
+        if (((parent == nullptr) || (parent->OperIs(GT_COMMA) && (use == &parent->AsOp()->gtOp1))) &&
+            (substExpr != nullptr))
+        {
+            JITDUMP("Inline result is unused; extracting side effects from [%06u]\n", Compiler::dspTreeID(substExpr));
+            GenTree* sideEffects = nullptr;
+            m_compiler->gtExtractSideEffList(substExpr, &sideEffects);
+            if (sideEffects == nullptr)
+            {
+                JITDUMP("  No side effects; replacing with GT_NOP\n");
+                substExpr->gtBashToNOP();
+            }
+            else
+            {
+                JITDUMP("  Extracted side effects:\n");
+                DISPTREE(sideEffects);
+                substExpr = sideEffects;
+            }
+        }
+
         if (InsertMidStatement(inlineInfo, use))
         {
             m_nextBlock     = m_block;
@@ -377,8 +397,7 @@ private:
 
         inlineInfo.setupStatements.InsertIntoBlockBefore(callBlock, callStmt);
 
-        GenTree* substExpr     = call->gtInlineCandidateInfo->result.substExpr;
-        auto     getComplexity = [](GenTree* tree) {
+        auto getComplexity = [](GenTree* tree) {
             return 1;
         };
         if ((substExpr != nullptr) && substExpr->IsValue() &&
@@ -399,13 +418,6 @@ private:
         if (*use == nullptr)
         {
             *use = m_compiler->gtNewNothingNode();
-        }
-        else
-        {
-            if ((*use)->IsValue() && !(*use)->IsCall() && (use == callStmt->GetRootNodePointer()))
-            {
-                *use = m_compiler->gtUnusedValNode(*use);
-            }
         }
 
         if (call->gtInlineCandidateInfo->result.substBB != nullptr)
