@@ -774,7 +774,7 @@ Fail
 ;;    x15                    contains the target address
 ;;
 ;; Preserves all argument registers
-        NESTED_ENTRY JIT_InterfaceLookupForSlot
+        NESTED_ENTRY JIT_InterfaceDispatchForSlot
 
         PROLOG_WITH_TRANSITION_BLOCK
 

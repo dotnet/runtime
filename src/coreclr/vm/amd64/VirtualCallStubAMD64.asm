@@ -91,7 +91,7 @@ LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 ;;    r11                    contains the address of the indirection cell (with the flags in the low bits)
 ;;
 ;; Preserves all argument registers
-NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
+NESTED_ENTRY JIT_InterfaceDispatchForSlot, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK
         
@@ -104,7 +104,7 @@ NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
         RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
-NESTED_END JIT_InterfaceLookupForSlot, _TEXT
+NESTED_END JIT_InterfaceDispatchForSlot, _TEXT
 
 endif ;; FEATURE_VIRTUAL_STUB_DISPATCH 
         end

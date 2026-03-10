@@ -7452,7 +7452,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             BlockRange().Remove(call->gtCallAddr, /* markOperandsUnused */ true);
         }
 
-        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT);
+        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
         call->gtCallType          = CT_USER_FUNC;
         call->gtCallMethHnd       = nullptr;
         call->gtDirectCallAddress = helperLookup.addr;
