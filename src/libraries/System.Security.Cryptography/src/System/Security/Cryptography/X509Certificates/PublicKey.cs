@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.X509Certificates
             return writer;
         }
 
-        private static unsafe int DecodeSubjectPublicKeyInfo(
+        private static int DecodeSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out Oid oid,
             out AsnEncodedData? parameters,
