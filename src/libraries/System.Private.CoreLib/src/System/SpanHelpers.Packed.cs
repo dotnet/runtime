@@ -1140,7 +1140,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
-        public static Vector512<byte> PackSources(Vector512<short> source0, Vector512<short> source1)
+        internal static Vector512<byte> PackSources(Vector512<short> source0, Vector512<short> source1)
         {
             Debug.Assert(Avx512BW.IsSupported);
             // Pack two vectors of characters into bytes. While the type is Vector256<short>, these are really UInt16 characters.
@@ -1152,7 +1152,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
-        public static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
+        internal static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
         {
             Debug.Assert(Avx2.IsSupported);
             // Pack two vectors of characters into bytes. While the type is Vector256<short>, these are really UInt16 characters.
@@ -1164,7 +1164,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
+        internal static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
         {
             Debug.Assert(Sse2.IsSupported);
             // Pack two vectors of characters into bytes. While the type is Vector128<short>, these are really UInt16 characters.

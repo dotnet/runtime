@@ -2169,7 +2169,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count*2));
                 }
 
-                while (offset < lengthToExamine - (nuint)Vector512<ushort>.Count)
+                while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count)
                 {
                     Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
@@ -2192,6 +2192,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                if (offset < lengthToExamine)
                 {
                     Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector512<ushort>.Count);
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
@@ -2204,8 +2205,8 @@ namespace System
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
                     offset = lengthToExamine;
-                    return;
                 }
+                return;
             }
             else if (Vector256.IsHardwareAccelerated && lengthToExamine >= (uint)Vector256<ushort>.Count*2)
             {
@@ -2258,7 +2259,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count*2));
                 }
 
-                while (offset < lengthToExamine - (nuint)Vector256<ushort>.Count)
+                while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count)
                 {
                     Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
@@ -2281,6 +2282,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                if (offset < lengthToExamine)
                 {
                     Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector256<ushort>.Count);
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
@@ -2293,8 +2295,8 @@ namespace System
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
                     offset = lengthToExamine;
-                    return;
                 }
+                return;
             }
             else if (Vector128.IsHardwareAccelerated)
             {
@@ -2347,7 +2349,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count*2));
                 }
 
-                while (offset < lengthToExamine - (nuint)Vector128<ushort>.Count)
+                while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
@@ -2370,6 +2372,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                if (offset < lengthToExamine)
                 {
                     Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector128<ushort>.Count);
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
@@ -2382,8 +2385,8 @@ namespace System
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
                     offset = lengthToExamine;
-                    return;
                 }
+                return;
             }
 
             while (offset < lengthToExamine)
