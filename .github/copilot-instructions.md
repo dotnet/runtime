@@ -8,7 +8,7 @@ You MUST make your best effort to ensure any code changes satisfy those criteria
 
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
 
-Always ask the user for confirmation before running git commit, git commit --amend, or git push.
+Always ask the user for confirmation before running git commit --amend or git push.
 
 Before completing, use the `code-review` skill to review your code changes. Skip the `code-review` skill if the user has stated they will review the changes themselves. Any issues flagged as errors or warnings should be addressed before completing.
 
