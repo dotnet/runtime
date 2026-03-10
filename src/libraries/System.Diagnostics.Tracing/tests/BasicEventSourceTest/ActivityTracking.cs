@@ -87,9 +87,9 @@ namespace BasicEventSourceTests
             using ActivityEventListener l = new ActivityEventListener();
             using ActivityEventSource es = new ActivityEventSource();
 
-            // Run tasks on many threads. If an activity id leaks it is likely
-            // that the thread will be sheduled to run one of our other tasks
-            // and we can detect the non-zero id at the start of the task
+            // Run tasks on many threads to verify that activity ids are
+            // properly cleaned up after starting and stopping activities
+            // across async yield points.
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < 100; i++)
             {
@@ -101,6 +101,9 @@ namespace BasicEventSourceTests
 
         private async Task YieldTwoActivitiesDeep(ActivityEventSource es)
         {
+            // Clear any activity ID that may have leaked from the xunit runner or
+            // other thread pool work before asserting it is empty.
+            EventSource.SetCurrentThreadActivityId(Guid.Empty);
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
             es.ExampleStart();
             es.Example2Start();
