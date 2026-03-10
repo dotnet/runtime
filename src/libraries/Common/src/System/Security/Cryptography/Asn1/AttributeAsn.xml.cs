@@ -204,6 +204,7 @@ namespace System.Security.Cryptography.Asn1
                     {
                         ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
                         _reader = outerReader.ReadSetOf();
+                        outerReader.ThrowIfNotEmpty();
                     }
 
                     _current = default;

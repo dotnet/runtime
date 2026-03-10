@@ -226,6 +226,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                     {
                         ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
                         _reader = outerReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
+                        outerReader.ThrowIfNotEmpty();
                     }
 
                     _current = default;
