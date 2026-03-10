@@ -214,7 +214,6 @@ namespace System.Text.RegularExpressions.Generator
             var result = new RegexPatternAndSyntax(
                 regexType,
                 IsProperty: regexMemberSymbol is IPropertySymbol,
-                memberSyntax.GetLocation(),
                 regexMemberSymbol.Name,
                 memberSyntax.Modifiers.ToString(),
                 nullableRegex,
@@ -222,7 +221,8 @@ namespace System.Text.RegularExpressions.Generator
                 regexOptions,
                 matchTimeout,
                 culture,
-                compilationData);
+                compilationData)
+            { DiagnosticLocation = memberSyntax.GetLocation() };
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -249,11 +249,21 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Data about a regex directly from the GeneratedRegex attribute.</summary>
-        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, bool IsProperty, Location DiagnosticLocation, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData);
+        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData)
+        {
+            /// <summary>Location for diagnostic reporting. Not part of record equality.</summary>
+            public Location DiagnosticLocation { get; init; } = Location.None;
+        }
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, Location DiagnosticLocation, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData)
+        internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CompilationData CompilationData)
         {
+            /// <summary>Location for diagnostic reporting. Not part of record equality.</summary>
+            public Location DiagnosticLocation { get; init; } = Location.None;
+            /// <summary>Parsed regex tree. Not part of record equality.</summary>
+            public RegexTree Tree { get; init; } = null!;
+            /// <summary>Analysis results from the regex tree. Not part of record equality.</summary>
+            public AnalysisResults Analysis { get; init; } = null!;
             public string? GeneratedName { get; set; }
             public bool IsDuplicate { get; set; }
         }
