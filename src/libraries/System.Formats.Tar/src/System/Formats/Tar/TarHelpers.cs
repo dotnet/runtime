@@ -194,6 +194,9 @@ namespace System.Formats.Tar
             return false;
         }
 
+        // Chooses the compatible regular file entry type for the specified format.
+        internal static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.

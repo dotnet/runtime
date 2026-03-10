@@ -162,6 +162,14 @@ namespace Build.Tasks
                     continue;
                 }
 
+                // Only classify files that the SDK has identified as managed runtime assemblies.
+                // Other files (e.g. Content items that happen to be managed assemblies) should be
+                // left alone and allowed to be published as-is.
+                if (!taskItem.GetMetadata("PostprocessAssembly").Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 // For all other files, check if they are managed assemblies.
                 // If they're managed, skip publishing them and categorize them correctly as inputs to ILC.
                 // If they're not managed assemblies, then they're native dependencies. Allow them to be published.

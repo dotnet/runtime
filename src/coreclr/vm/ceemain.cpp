@@ -123,6 +123,7 @@
 #include "clsload.hpp"
 #include "object.h"
 #include "hash.h"
+#include "ebr.h"
 #include "ecall.h"
 #include "ceemain.h"
 #include "dllimport.h"
@@ -694,6 +695,10 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
+#ifdef HOST_ANDROID
+        PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
+#endif // HOST_ANDROID
+
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
             unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
@@ -785,6 +790,10 @@ void EEStartupHelper()
         // Crsts and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
+
+        // Initialize EBR (Epoch-Based Reclamation) for safe deferred deletion.
+        // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
+        g_EbrCollector.Init();
 
         StubManager::InitializeStubManagers();
 
@@ -1233,7 +1242,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 
         // Indicate the EE is the shut down phase.
-        g_fEEShutDown |= ShutDown_Start;
+        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
@@ -1358,7 +1367,7 @@ part2:
             // lock -- after the OS has stopped all other threads.
             if (fIsDllUnloading && (g_fEEShutDown & ShutDown_Phase2) == 0)
             {
-                g_fEEShutDown |= ShutDown_Phase2;
+                InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
 
                 if (!g_fFastExitProcess)
                 {
@@ -1592,7 +1601,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 {
                     if (GCHeapUtilities::IsGCInProgress())
                     {
-                        g_fEEShutDown |= ShutDown_Phase2;
+                        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
                         break;
                     }
 

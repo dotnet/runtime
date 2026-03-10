@@ -2,6 +2,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories("./jitstd")
 include_directories("../inc")
+include_directories("../jitshared")
 
 # gcc 10 and lower versions are too sensitive to bit fields width and warn from core compiler.
 # Since there is no better / specific suppression available for these core warnings, we disable
@@ -484,9 +485,14 @@ set( JIT_WASM_HEADERS
     fgwasm.h
 )
 
+set ( JITSHARED_SOURCES
+    ../jitshared/histogram.cpp
+)
+
 convert_to_absolute_path(JIT_SOURCES ${JIT_SOURCES})
 convert_to_absolute_path(JIT_HEADERS ${JIT_HEADERS})
 convert_to_absolute_path(JIT_RESOURCES ${JIT_RESOURCES})
+convert_to_absolute_path(JITSHARED_SOURCES ${JITSHARED_SOURCES})
 
 # Also convert the per-architecture sources to absolute paths, if the subdirs want to use them.
 
@@ -616,6 +622,7 @@ function(add_jit jitName)
       add_library_clr(${jitName}
           SHARED
           ${JIT_SOURCES}
+          ${JITSHARED_SOURCES}
           ${JIT_ARCH_SOURCES}
           ${JIT_HEADERS}
           ${JIT_ARCH_HEADERS}
@@ -627,6 +634,7 @@ function(add_jit jitName)
       add_library_clr(${jitName}
           SHARED
           ${JIT_SOURCES}
+          ${JITSHARED_SOURCES}
           ${JIT_ARCH_SOURCES}
           ${JIT_RESOURCES}
           ${JIT_DEF_FILE}
