@@ -565,16 +565,27 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(!wasMethodCalled || createTieringBackgroundWorkerRef != nullptr);
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
 
-    if (!methodDesc->IsEligibleForTieredCompilation() ||
-        (
-            // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
-            // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
-            !activeCodeVersion.IsDefaultVersion() &&
-            activeCodeVersion.IsFinalTier()
-        ) ||
-        !g_pConfig->TieredCompilation_CallCounting())
+    if (!methodDesc->IsEligibleForTieredCompilation() || !g_pConfig->TieredCompilation_CallCounting())
     {
         methodDesc->SetCodeEntryPoint(codeEntryPoint);
+        return true;
+    }
+
+    if (!activeCodeVersion.IsDefaultVersion() && activeCodeVersion.IsFinalTier())
+    {
+        if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
+        {
+            // Final tier for backpatchable methods: set the method entry point to the final code and reset the
+            // precode to prestub. Vtable slots continue to point to the precode (temporary entry point). Calls
+            // through those slots will go through prestub -> DoBackpatch(), which lazily discovers, records, and
+            // patches each slot to point directly to the final tier code.
+            methodDesc->SetMethodEntryPoint(codeEntryPoint);
+            Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
+        }
+        else
+        {
+            methodDesc->SetCodeEntryPoint(codeEntryPoint);
+        }
         return true;
     }
 
@@ -594,14 +605,29 @@ bool CallCountingManager::SetCodeEntryPoint(
             {
                 // Call counting is disabled, complete, or pending completion. The pending completion stage here would be
                 // relatively rare, let it be handled elsewhere.
-                methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                 {
-                    // Reset the precode target to prestub. For backpatchable methods, the precode must always
-                    // point to prestub (not native code) so that new vtable slots flow through DoBackpatch()
-                    // for discovery and recording. SetCodeEntryPoint() above handles recorded slots via
-                    // BackpatchEntryPointSlots() without touching the precode.
-                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
+                    methodDesc->SetMethodEntryPoint(codeEntryPoint);
+                    if (activeCodeVersion.IsFinalTier())
+                    {
+                        // Final tier: reset precode to prestub for lazy vtable slot backpatching via
+                        // DoBackpatch(). Calls through vtable slots will go through precode -> prestub ->
+                        // DoBackpatch() which records and patches each slot to final tier code.
+                        Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
+                            ->ResetTargetInterlocked();
+                    }
+                    else
+                    {
+                        // Non-final tier: set precode target to the code entry point. Vtable slots remain
+                        // pointing to the temporary entry point (precode), so calls flow through
+                        // precode -> code without going through the prestub. No vtable slot backpatching.
+                        Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
+                            ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
+                    }
+                }
+                else
+                {
+                    methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 }
                 return true;
             }
@@ -640,12 +666,17 @@ bool CallCountingManager::SetCodeEntryPoint(
                         ->GetTieredCompilationManager()
                         ->AsyncPromoteToTier1(activeCodeVersion, createTieringBackgroundWorkerRef);
                 }
-                methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                 {
-                    // Reset the precode target to prestub so that new vtable slots flow through DoBackpatch()
-                    // for discovery and recording. The call counting stub is no longer needed.
-                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
+                    // Non-final tier: set precode target to the code entry point. Vtable slots stay on the
+                    // temporary entry point (precode). The call counting stub is no longer needed.
+                    methodDesc->SetMethodEntryPoint(codeEntryPoint);
+                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
+                        ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
+                }
+                else
+                {
+                    methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 }
                 callCountingInfo->SetStage(CallCountingInfo::Stage::Complete);
                 return true;
@@ -912,13 +943,20 @@ void CallCountingManager::CompleteCallCounting()
                 {
                     if (activeCodeVersion == codeVersion)
                     {
-                        methodDesc->SetCodeEntryPoint(activeCodeVersion.GetNativeCode());
                         if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                         {
-                            // Reset the precode target to prestub so that new vtable slots flow through
-                            // DoBackpatch() for discovery and recording. The call counting stub will be
-                            // deleted by DeleteAllCallCountingStubs().
-                            Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
+                            // Non-final tier (call counting just completed, tier 1 promotion queued): set
+                            // precode target to the code entry point. Vtable slots remain pointing to the
+                            // temporary entry point (precode). The call counting stub will be deleted by
+                            // DeleteAllCallCountingStubs().
+                            PCODE nativeCode = activeCodeVersion.GetNativeCode();
+                            methodDesc->SetMethodEntryPoint(nativeCode);
+                            Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
+                                ->SetTargetInterlocked(nativeCode, FALSE /* fOnlyRedirectFromPrestub */);
+                        }
+                        else
+                        {
+                            methodDesc->SetCodeEntryPoint(activeCodeVersion.GetNativeCode());
                         }
                         break;
                     }
@@ -934,10 +972,26 @@ void CallCountingManager::CompleteCallCounting()
                         PCODE activeNativeCode = activeCodeVersion.GetNativeCode();
                         if (activeNativeCode != 0)
                         {
-                            methodDesc->SetCodeEntryPoint(activeNativeCode);
                             if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                             {
-                                Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
+                                methodDesc->SetMethodEntryPoint(activeNativeCode);
+                                if (activeCodeVersion.IsFinalTier())
+                                {
+                                    // Final tier: reset precode to prestub for lazy vtable slot backpatching
+                                    // via DoBackpatch().
+                                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
+                                        ->ResetTargetInterlocked();
+                                }
+                                else
+                                {
+                                    // Non-final tier: set precode target to the code entry point.
+                                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())
+                                        ->SetTargetInterlocked(activeNativeCode, FALSE /* fOnlyRedirectFromPrestub */);
+                                }
+                            }
+                            else
+                            {
+                                methodDesc->SetCodeEntryPoint(activeNativeCode);
                             }
                             break;
                         }

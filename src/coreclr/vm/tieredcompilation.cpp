@@ -253,7 +253,19 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     // Set the code entry point before recording the method for call counting to avoid a race. Otherwise, the tiering delay may
     // expire and enable call counting for the method before the entry point is set here, in which case calls to the method
     // would not be counted anymore.
-    pMethodDesc->SetCodeEntryPoint(codeEntryPoint);
+    if (pMethodDesc->MayHaveEntryPointSlotsToBackpatch())
+    {
+        // Non-final tier: set precode target to the code entry point. Vtable slots remain pointing to the
+        // temporary entry point (precode), so calls flow through precode -> code without going through the
+        // prestub. No vtable slot backpatching is needed during non-final tiers.
+        pMethodDesc->SetMethodEntryPoint(codeEntryPoint);
+        Precode::GetPrecodeFromEntryPoint(pMethodDesc->GetTemporaryEntryPoint())
+            ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
+    }
+    else
+    {
+        pMethodDesc->SetCodeEntryPoint(codeEntryPoint);
+    }
     _ASSERTE(m_methodsPendingCountingForTier1 != nullptr);
     m_methodsPendingCountingForTier1->Append(pMethodDesc);
     return true;
