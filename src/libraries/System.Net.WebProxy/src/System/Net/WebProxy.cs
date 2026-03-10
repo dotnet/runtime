@@ -69,7 +69,7 @@ namespace System.Net
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
-            this.Credentials = Credentials;
+            this.Credentials = Credentials ?? GetCredentialsFromUri(Address);
             this.BypassProxyOnLocal = BypassOnLocal;
             if (BypassList != null)
             {
@@ -244,6 +244,33 @@ namespace System.Net
             }
 
             return proxyUri;
+        }
+
+        private static NetworkCredential? GetCredentialsFromUri(Uri? uri)
+        {
+            if (uri is null || !uri.IsAbsoluteUri || string.IsNullOrEmpty(uri.UserInfo))
+            {
+                return null;
+            }
+
+            string userInfo = uri.UserInfo;
+            int colonIndex = userInfo.IndexOf(':');
+
+            string userName;
+            string password;
+
+            if (colonIndex != -1)
+            {
+                userName = Uri.UnescapeDataString(userInfo.AsSpan(0, colonIndex));
+                password = Uri.UnescapeDataString(userInfo.AsSpan(colonIndex + 1));
+            }
+            else
+            {
+                userName = Uri.UnescapeDataString(userInfo);
+                password = string.Empty;
+            }
+
+            return new NetworkCredential(userName, password);
         }
 
         private void UpdateRegexList()
