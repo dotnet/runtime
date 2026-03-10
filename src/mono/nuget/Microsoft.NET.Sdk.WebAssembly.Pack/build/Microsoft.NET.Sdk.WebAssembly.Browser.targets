@@ -990,7 +990,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        inputs are older than the output. -->
   <Target Name="GeneratePublishWasmBootJson"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs"
-    Inputs="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath)"
+    Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath)"
     Outputs="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)">
 
     <GenerateWasmBootJson
