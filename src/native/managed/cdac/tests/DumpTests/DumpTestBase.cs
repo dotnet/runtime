@@ -81,7 +81,7 @@ public abstract class DumpTestBase : IDisposable
         string versionDir = Path.Combine(dumpRoot, config.RuntimeVersion);
         _dumpInfo = DumpInfo.TryLoad(versionDir);
 
-        EvaluateSkipAttributes(config, callerName);
+        EvaluateSkipAttributes(config, callerName, dumpType);
 
         string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
 
@@ -111,9 +111,9 @@ public abstract class DumpTestBase : IDisposable
     /// Checks the calling test method for skip attributes and throws
     /// <see cref="SkipTestException"/> if the current configuration matches.
     /// </summary>
-    private void EvaluateSkipAttributes(TestConfiguration config, string callerName)
+    private void EvaluateSkipAttributes(TestConfiguration config, string callerName, string? dumpType = null)
     {
-        if (config.RuntimeVersion is "net10.0" && DumpType == "heap")
+        if (config.RuntimeVersion is "net10.0" && (dumpType ?? DumpType) == "heap")
         {
             throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
         }
