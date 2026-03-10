@@ -2011,7 +2011,7 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-    if (m_compiler->opts.compReloc)
+    if (m_compiler->opts.compReloc || id->idIsReloc())
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
