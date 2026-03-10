@@ -1119,9 +1119,9 @@ private:
 
     enum SimpleComCallWrapperFlags
     {
-        enum_IsAggregated                      = 0x1,
-        enum_IsExtendsCom                      = 0x2,
-        enum_IsHandleWeak                      = 0x4,
+        enum_IsAggregated                      = 0x1,  // [cDAC] [BuiltInCOM]: Contract depends on this value
+        enum_IsExtendsCom                      = 0x2,  // [cDAC] [BuiltInCOM]: Contract depends on this value
+        enum_IsHandleWeak                      = 0x4,  // [cDAC] [BuiltInCOM]: Contract depends on this value
         enum_IsComActivated                    = 0x8,
         // unused                              = 0x10,
         // unused                              = 0x80,

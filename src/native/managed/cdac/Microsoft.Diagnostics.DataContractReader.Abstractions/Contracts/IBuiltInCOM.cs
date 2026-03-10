@@ -19,10 +19,16 @@ public readonly struct SimpleComCallWrapperData
     public ulong RefCount { get; init; }
     /// <summary>True if the CCW has been neutered (CLEANUP_SENTINEL bit was set in the raw ref count).</summary>
     public bool IsNeutered { get; init; }
-    /// <summary>Bit flags (IsAggregated = 0x1, IsExtendsCom = 0x2, IsHandleWeak = 0x4).</summary>
-    public uint Flags { get; init; }
+    /// <summary>True if the CCW is aggregated (IsAggregated flag, bit 0x1).</summary>
+    public bool IsAggregated { get; init; }
+    /// <summary>True if the managed class extends a COM object (IsExtendsCom flag, bit 0x2).</summary>
+    public bool IsExtendsCOMObject { get; init; }
+    /// <summary>True if the GC handle is weak (IsHandleWeak flag, bit 0x4).</summary>
+    public bool IsHandleWeak { get; init; }
     /// <summary>Outer IUnknown pointer for aggregated CCWs (m_pOuter).</summary>
     public TargetPointer OuterIUnknown { get; init; }
+    /// <summary>GC object handle (m_ppThis) of the start ComCallWrapper.</summary>
+    public TargetPointer Handle { get; init; }
     /// <summary>Pointer to the start (first) ComCallWrapper in the chain.</summary>
     public TargetPointer MainWrapper { get; init; }
 }
@@ -43,11 +49,6 @@ public interface IBuiltInCOM : IContract
     // Enumerates COM interfaces exposed by the ComCallWrapper chain.
     // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
-    // Returns the address of the start ComCallWrapper for the given CCW address.
-    // All wrappers in a chain share the same SimpleComCallWrapper, so any wrapper address is accepted.
-    TargetPointer GetCCWAddress(TargetPointer ccw) => throw new NotImplementedException();
-    // Returns the GC object handle (m_ppThis) of the start ComCallWrapper.
-    TargetPointer GetCCWHandle(TargetPointer ccw) => throw new NotImplementedException();
     // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
     TargetPointer GetSimpleComCallWrapper(TargetPointer ccw) => throw new NotImplementedException();
     // Returns the data stored in a SimpleComCallWrapper.

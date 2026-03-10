@@ -489,8 +489,7 @@ internal readonly struct GC_1 : IGC
                 IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
                 SimpleComCallWrapperData sccwData = builtInCOM.GetSimpleComCallWrapperData(builtInCOM.GetSimpleComCallWrapper(ccw));
                 handleData.RefCount = (uint)sccwData.RefCount;
-                bool isHandleWeak = (sccwData.Flags & 0x4u) != 0;
-                handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !isHandleWeak);
+                handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !sccwData.IsHandleWeak);
             }
         }
 
