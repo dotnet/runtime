@@ -35,6 +35,7 @@ pr:
     include:
     - main
     - release/*.*
+    - copilot/*.*
   paths:
     include:
     - '*'
