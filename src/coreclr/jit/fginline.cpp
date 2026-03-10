@@ -378,7 +378,7 @@ private:
         BasicBlock* callBlock = m_compiler->compCurBB;
         Statement*  callStmt  = m_statement;
 
-        if (NeedToSplit(inlineInfo, call))
+        if (NeedToSplit(call))
         {
             JITDUMP("Splitting is required\n");
             Statement* newStmt = nullptr;
@@ -755,7 +755,7 @@ private:
         return true;
     }
 
-    bool NeedToSplit(InlineInfo& inlineInfo, GenTreeCall* call)
+    bool NeedToSplit(GenTreeCall* call)
     {
         struct Visitor : GenTreeVisitor<Visitor>
         {
@@ -791,11 +791,6 @@ private:
             fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
             {
                 GenTree* tree = *use;
-                if (tree == m_call)
-                {
-                    return fgWalkResult::WALK_ABORT;
-                }
-
                 Flags |= tree->gtFlags & GTF_ALL_EFFECT;
 
                 if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
@@ -817,17 +812,6 @@ private:
         if ((visitor.Flags & GTF_ALL_EFFECT) != 0)
         {
             return true;
-        }
-
-        // Setup statements can be arguments with IR coming from the inlining
-        // function. Those could have stores to locals that we saw uses of
-        // before the call itself.
-        for (Statement* stmt = inlineInfo.setupStatements.Head(); stmt != nullptr; stmt = stmt->GetNextStmt())
-        {
-            if ((stmt->GetRootNode()->gtFlags & GTF_ASG) != 0)
-            {
-                return true;
-            }
         }
 
         return false;
