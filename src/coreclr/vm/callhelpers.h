@@ -534,38 +534,6 @@ enum DispatchCallSimpleFlags
 #define PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pMD, objref)                \
         PCODE __pSlot = pMD->GetCallTarget(&objref);
 
-#ifdef _DEBUG
-#define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, methodTable)                     \
-        {                                                                        \
-            MethodDesc* __pMeth = methodTable->GetMethodDescForSlot(slotNumber); \
-            _ASSERTE(__pMeth);                                                   \
-            _ASSERTE(!__pMeth->HasMethodInstantiation() &&                       \
-                     !__pMeth->GetMethodTable()->IsInterface());                 \
-        }
-#else
-#define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, objref)
-#endif
-
-// a simple virtual method is a non-interface/non-generic method
-// Note: objref has to be protected!
-#define PREPARE_SIMPLE_VIRTUAL_CALLSITE(id, objref)                              \
-        static WORD s_slot##id = MethodTable::NO_SLOT;                           \
-        WORD __slot = VolatileLoad(&s_slot##id);                                 \
-        if (__slot == MethodTable::NO_SLOT)                                      \
-        {                                                                        \
-            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);                        \
-            _ASSERTE(pMeth);                                                     \
-            __slot = pMeth->GetSlot();                                           \
-            VolatileStore(&s_slot##id, __slot);                                  \
-        }                                                                        \
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(__slot, objref)               \
-
-// a simple virtual method is a non-interface/non-generic method
-#define PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(slotNumber, objref)           \
-        MethodTable* __pObjMT = (objref)->GetMethodTable();                      \
-        SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, __pObjMT);                       \
-        PCODE __pSlot = (PCODE) __pObjMT->GetRestoredSlot(slotNumber);
-
 #define PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD)   \
         PCODE __pSlot = (pMD)->GetSingleCallableAddrOfCode();
 
@@ -665,6 +633,10 @@ void CallDefaultConstructor(OBJECTREF ref);
 // from native code.
 //
 
+// Use CLR_BOOL_ARG to convert a BOOL value to a CLR_BOOL for passing to
+// UnmanagedCallersOnlyCaller::InvokeThrowing when the managed parameter is bool.
+#define CLR_BOOL_ARG(x) ((CLR_BOOL)(!!(x)))
+
 // Helper class for calling managed methods marked with [UnmanagedCallersOnly].
 // This provides a more efficient alternative to MethodDescCallSite for methods
 // using the reverse P/Invoke infrastructure.
@@ -745,6 +717,57 @@ public:
             COMPlusThrow(gc.Exception);
 
         GCPROTECT_END();
+    }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeThrowing_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        Ret ret;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<Ret(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            ret = fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+
+        return ret;
     }
 };
 

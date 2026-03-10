@@ -613,7 +613,7 @@ static int run(const configuration& config)
     // The NodeJS process is kept alive by pending async work via safeSetTimeout() -> runtimeKeepalivePush()
     // The actual exit code would be set by SystemJS_ResolveMainPromise if the managed Main() is async.
     // Or in Module.onExit handler when  managed Main() is synchronous.
-    return 0;
+    return exit_code;
 #else // TARGET_BROWSER
     return corerun_shutdown(exit_code);
 #endif // TARGET_BROWSER

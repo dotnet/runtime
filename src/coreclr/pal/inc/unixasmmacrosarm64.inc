@@ -198,13 +198,35 @@ C_FUNC(\Name\()_End):
 // FloatRegisters::q2
 // FloatRegisters::q1
 // FloatRegisters::q0
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1, SaveGPArgs = 1
+// Optional: Callee saved floating point registers (if pushCalleeSavedFloatRegs=1)
+//   d15
+//   d14
+//   d13
+//   d12
+//   d11
+//   d10
+//   d9
+//   d8
+//
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (d8-d15) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1, SaveGPArgs = 1, pushCalleeSavedFloatRegs = 0
 
-        __PWTB_FloatArgumentRegisters = \extraLocals
+        __PWTB_FloatCalleeSavedRegisters = \extraLocals
         __PWTB_SaveFPArgs = \SaveFPArgs
+        __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
 
-        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
-                __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+        .if ((__PWTB_FloatCalleeSavedRegisters % 16) != 0)
+                __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 8
+        .endif
+
+        // If pushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 64
+        .else
+                __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters
         .endif
 
         __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
@@ -234,7 +256,15 @@ C_FUNC(\Name\()_End):
         .endif
 
         .if (__PWTB_SaveFPArgs == 1)
-                SAVE_FLOAT_ARGUMENT_REGISTERS sp, \extraLocals
+                SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+        .endif
+
+        // Save callee-saved floating point registers if requested
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                PROLOG_SAVE_REG_PAIR d8, d9, __PWTB_FloatCalleeSavedRegisters
+                PROLOG_SAVE_REG_PAIR d10, d11, __PWTB_FloatCalleeSavedRegisters + 16
+                PROLOG_SAVE_REG_PAIR d12, d13, __PWTB_FloatCalleeSavedRegisters + 32
+                PROLOG_SAVE_REG_PAIR d14, d15, __PWTB_FloatCalleeSavedRegisters + 48
         .endif
 
 .endm

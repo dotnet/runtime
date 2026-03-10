@@ -54,19 +54,18 @@
     <NestedBuildProperty Include="WasmTestForwardConsole" />
   </ItemGroup>
 
-  <Target Name="BuildSampleInTree"
-      Inputs="
-      Program.cs;
-      $(_WasmMainJSFileName);
-      $(_SampleProject);
-      $(MSBuildProjectFile)
-      $(TargetFileName)
-      "
-      Outputs="
-      bin/$(Configuration)/publish/wwwroot/_framework/dotnet.native.wasm;
-      bin/$(Configuration)/publish/wwwroot/_framework/dotnet.native.js;
-      bin/$(Configuration)/publish/wwwroot/$(_WasmMainJSFileName);
-      ">
+  <Target Name="_ValidateRuntimeFlavorBuild" BeforeTargets="BuildSampleInTree">
+    <PropertyGroup>
+      <_MonoBuildDir>$(ArtifactsObjDir)mono\browser.wasm.$(Configuration)\out\lib\</_MonoBuildDir>
+      <_CoreCLRBuildDir>$(ArtifactsObjDir)coreclr\browser.wasm.$(Configuration)\libs-native\</_CoreCLRBuildDir>
+    </PropertyGroup>
+    <Error Condition="'$(RuntimeFlavor)' == 'Mono' and !Exists('$(_MonoBuildDir)')"
+           Text="Mono build not found at '$(_MonoBuildDir)'. Build Mono for browser-wasm first: ./build.sh mono+libs -os browser -c $(Configuration)" />
+    <Error Condition="'$(RuntimeFlavor)' == 'CoreCLR' and !Exists('$(_CoreCLRBuildDir)')"
+           Text="CoreCLR build not found at '$(_CoreCLRBuildDir)'. Build CoreCLR for browser-wasm first: ./build.sh clr+libs+host -os browser -c $(Configuration)" />
+  </Target>
+
+  <Target Name="BuildSampleInTree">
     <PropertyGroup>
       <_ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</_ScriptExt>
       <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
@@ -74,6 +73,9 @@
       <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
       <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
     </PropertyGroup>
+    <!-- Clean obj (in artifacts) and bin (local) folders to avoid stale artifacts from previous builds, when runtime binaries and scripts change normal clean is too fragile -->
+    <RemoveDir Directories="$(BaseIntermediateOutputPath)" Condition="Exists('$(BaseIntermediateOutputPath)')" />
+    <RemoveDir Directories="$(MSBuildProjectDirectory)\bin" Condition="Exists('$(MSBuildProjectDirectory)\bin')" />
     <ItemGroup>
       <NestedBuildPropertyValue Include="/p:Nested_%(NestedBuildProperty.Identity)=$(%(NestedBuildProperty.Identity))" Condition="'$(%(NestedBuildProperty.Identity))' != '%(NestedBuildProperty.DefaultValue)'" />
     </ItemGroup>
@@ -94,7 +96,7 @@
   </Target>
 
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 --module $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/publish/wwwroot" Command="node $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
