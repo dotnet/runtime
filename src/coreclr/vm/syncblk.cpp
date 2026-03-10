@@ -764,7 +764,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
@@ -789,7 +789,6 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     psb->m_thinLock.StoreWithoutBarrier(0);
     if (psb->m_Lock)
     {
-        GCX_COOP();
         DestroyHandle(psb->m_Lock);
         psb->m_Lock = NULL;
     }
