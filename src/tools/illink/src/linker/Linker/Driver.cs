@@ -750,14 +750,8 @@ namespace Mono.Linker
                         }
                         case "a":
                         {
-                            if (!GetStringParam(token, out string? assemblyFile))
+                            if (!GetStringParam(token, out string? assemblyName))
                                 return -1;
-
-                            if (!File.Exists(assemblyFile) && assemblyFile.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, assemblyFile);
-                                return -1;
-                            }
 
                             AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
                             var rootMode = GetNextStringValue();
@@ -770,7 +764,7 @@ namespace Mono.Linker
                                 rmode = parsed_rmode.Value;
                             }
 
-                            inputs.Add(new RootAssemblyInput(assemblyFile, rmode));
+                            inputs.Add(new RootAssemblyInput(assemblyName, rmode));
                             continue;
                         }
                         case "b":

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.IO;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -60,7 +61,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public virtual void RootAssemblyEntryPoint(string fileName)
         {
             Append("-a");
-            Append(fileName);
+            Append(Path.GetFileNameWithoutExtension(fileName));
             Append("entrypoint");
         }
 
@@ -68,7 +69,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
 #if NET
             Append("-a");
-            Append(fileName);
+            Append(Path.GetFileNameWithoutExtension(fileName));
             Append("visible");
 #else
             Append("-r");
@@ -79,7 +80,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public virtual void RootAssembly(string fileName)
         {
             Append("-a");
-            Append(fileName);
+            Append(Path.GetFileNameWithoutExtension(fileName));
         }
 
         public virtual void IgnoreDescriptors(bool value)
