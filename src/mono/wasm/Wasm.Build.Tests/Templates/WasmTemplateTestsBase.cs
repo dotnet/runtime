@@ -89,6 +89,36 @@ public class WasmTemplateTestsBase : BuildTestBase
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
+        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        {
+            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+            extraProperties +=
+            """
+                <UseMonoRuntime>false</UseMonoRuntime>
+                <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+            """;
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App">
+                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
+
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
@@ -132,6 +162,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             extraProperties +=
             """
                 <UseMonoRuntime>false</UseMonoRuntime>
+                <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
             """;
             extraItems +=
             $$"""

@@ -115,5 +115,21 @@ namespace Wasm.Build.Tests
                 m => Assert.Equal("Zip file created successfully.", m)
             );
         }
+
+        [TestCategory("coreclr")]
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async Task SimpleNativeBuildForCoreCLR(Configuration config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBrowserRunMainOnly, "NativeBuildCoreCLR",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            var (_, buildOutput) = PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
+
+            var result = await RunForPublishWithWebServer(new BrowserRunOptions(Configuration: config));
+            Assert.Collection(
+                result.TestOutput,
+                m => Assert.Equal("Hello from WasmBrowserRunMainOnly!", m)
+            );
+        }
     }
 }
