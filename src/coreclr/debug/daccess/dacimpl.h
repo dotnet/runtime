@@ -15,12 +15,10 @@
 
 #include <minipal/mutex.h>
 #include "gcinterface.dac.h"
+
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
-
-// #define DAC_HASHTABLE
-
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
 #undef return
@@ -732,7 +730,7 @@ private:
     // This has the benefit of scaling to different workloads appropriately (as opposed to having a
     // fixed number of buckets).
 
-    struct DacHashCompare
+    struct DacInstanceHashFunc
     {
         // Custom hash function
         // The default hash function uses a pseudo-randomizing function to get a random
@@ -755,9 +753,8 @@ private:
             return (std::size_t)(keyval >>DAC_INSTANCE_HASH_SHIFT);
         }
     };
-    // typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
-    // Start the experiment without bringing in hash_compare which was moved to stdex and isn't portable.
-    typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare> DacInstanceHash;
+
+    typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacInstanceHashFunc> DacInstanceHash;
     typedef DacInstanceHash::value_type DacInstanceHashValue;
     typedef DacInstanceHash::iterator DacInstanceHashIterator;
     DacInstanceHash m_hash;
