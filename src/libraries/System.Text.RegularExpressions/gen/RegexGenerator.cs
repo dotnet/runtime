@@ -307,12 +307,15 @@ namespace System.Text.RegularExpressions.Generator
                 context.AddSource("RegexGenerator.g.cs", sw.ToString());
             });
 
-            // Project to just the diagnostics. ImmutableArray<Diagnostic> does not implement value
-            // equality, so Roslyn's incremental pipeline uses reference equality — the callback fires
-            // on every compilation change. This is by design: diagnostic emission is cheap, and we
-            // need fresh SourceLocation instances that support #pragma warning disable
+            // Project to just the diagnostics, discarding the model. ImmutableArray<Diagnostic> does not
+            // implement value equality, so Roslyn's incremental pipeline uses reference equality —
+            // the callback fires on every compilation change. This is by design: diagnostic emission
+            // is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
             // (cf. https://github.com/dotnet/runtime/issues/92509).
-            context.RegisterSourceOutput(collected.Select(static (t, _) => t.Diagnostics), static (context, diagnostics) =>
+            IncrementalValueProvider<ImmutableArray<Diagnostic>> diagnosticResults =
+                collected.Select(static (t, _) => t.Diagnostics);
+
+            context.RegisterSourceOutput(diagnosticResults, static (context, diagnostics) =>
             {
                 foreach (Diagnostic diagnostic in diagnostics)
                 {
