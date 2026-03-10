@@ -58,7 +58,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
-using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
+using System;<xsl:if test="(asn:SequenceOf | asn:SetOf) and (not(@emitType) or @emitType='struct' or @emitType='both')">
 using System.Collections.Generic;</xsl:if>
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
@@ -67,7 +67,7 @@ namespace <xsl:value-of select="@namespace" />
 {<xsl:if test="*[@defaultDerInit]">
     file static class Shared<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="DefaultFieldDef" />
-#if DEBUG
+<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">#if DEBUG
         static Shared<xsl:value-of select="@name" />()
         {
             <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
@@ -76,8 +76,8 @@ namespace <xsl:value-of select="@namespace" />
             ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
         }
 #endif
-    }
-</xsl:if>
+</xsl:if>    }
+</xsl:if><xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct <xsl:value-of select="@name" />
     {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="FieldDef" />
@@ -147,7 +147,7 @@ namespace <xsl:value-of select="@namespace" />
             sequenceReader.ThrowIfNotEmpty();
         }
     }
-
+</xsl:if><xsl:if test="@emitType='ref' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct Value<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="ValueFieldDef" />
@@ -201,20 +201,20 @@ namespace <xsl:value-of select="@namespace" />
             sequenceReader.ThrowIfNotEmpty();
         }
 <xsl:apply-templates mode="ValueCollectionEnumerable" />    }
-}
+</xsl:if>}
 </xsl:template>
 
     <xsl:template match="asn:Choice">// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
-using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
+using System;<xsl:if test="(asn:SequenceOf | asn:SetOf) and (not(@emitType) or @emitType='struct' or @emitType='both')">
 using System.Collections.Generic;</xsl:if>
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
 namespace <xsl:value-of select="@namespace" />
-{
+{<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct <xsl:value-of select="@name" />
     {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="ValidateChoice" /><xsl:apply-templates mode="FieldDef" />
@@ -290,7 +290,7 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
     }
-
+</xsl:if><xsl:if test="@emitType='ref' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct Value<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="ValueFieldDef" />
@@ -335,7 +335,7 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 <xsl:apply-templates select="*" mode="ValueCollectionEnumerable" />    }
-}
+</xsl:if>}
 </xsl:template>
 
   <xsl:template match="*[@defaultDerInit and @optional]" mode="Validate">
