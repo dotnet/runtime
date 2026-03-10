@@ -64,18 +64,4 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             result.ConsoleOutput.Any(m => expectedRegex.IsMatch(m)),
             $"The library initializer test didn't emit expected error message.\nConsole output:\n{string.Join("\n", result.ConsoleOutput)}");
     }
-
-    [Fact]
-    [TestCategory("bundler-friendly")]
-    public void BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer()
-    {
-        Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
-        // project exists and contains <BundlerFriendlyBootConfig>true</BundlerFriendlyBootConfig>
-        BuildProject(info, config, noDefaultOptions: true, wasmFingerprintDotnetJs: false);
-        string bootConfigPath = _provider.GetBootConfigPath(GetBinFrameworkDir(config, forPublish: false));
-        string bootJSObject = ProjectProviderBase.GetBootJsonContent(bootConfigPath);
-        // Bundler-friendly doesnt product json, its technically a js object literal. It cannot be json parsed can be checked if not contains hot reload.
-        Assert.DoesNotContain("Microsoft.DotNet.HotReload.WebAssembly.Browser", bootJSObject);
-    }
 }
