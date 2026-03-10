@@ -2169,7 +2169,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count*2));
                 }
 
-                while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count)
+                while (offset < lengthToExamine - (nuint)Vector512<ushort>.Count)
                 {
                     Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
@@ -2188,6 +2188,23 @@ namespace System
                     }
 
                     offset += (nuint)Vector512<ushort>.Count;
+                }
+
+                // Handle the last chunk in a vectorized way also.
+                // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                {
+                    Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector512<ushort>.Count);
+                    Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
+                    Vector512<byte> cmp = v1Eq.AsByte();
+                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - (int)(lengthToExamine - offset) * sizeof(char))) - 1);
+                    while (mask != 0)
+                    {
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector512<ushort>.Count);
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    }
+                    offset = lengthToExamine;
+                    return;
                 }
             }
             else if (Vector256.IsHardwareAccelerated && lengthToExamine >= (uint)Vector256<ushort>.Count*2)
@@ -2241,7 +2258,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count*2));
                 }
 
-                while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count)
+                while (offset < lengthToExamine - (nuint)Vector256<ushort>.Count)
                 {
                     Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
@@ -2260,6 +2277,23 @@ namespace System
                     }
 
                     offset += (nuint)Vector256<ushort>.Count;
+                }
+
+                // Handle the last chunk in a vectorized way also.
+                // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                {
+                    Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector256<ushort>.Count);
+                    Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
+                    Vector256<byte> cmp = v1Eq.AsByte();
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - (int)(lengthToExamine - offset) * sizeof(char))) - 1);
+                    while (mask != 0)
+                    {
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector256<ushort>.Count);
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    }
+                    offset = lengthToExamine;
+                    return;
                 }
             }
             else if (Vector128.IsHardwareAccelerated)
@@ -2313,7 +2347,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count*2));
                 }
 
-                while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
+                while (offset < lengthToExamine - (nuint)Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
@@ -2332,6 +2366,23 @@ namespace System
                     }
 
                     offset += (nuint)Vector128<ushort>.Count;
+                }
+
+                // Handle the last chunk in a vectorized way also.
+                // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                {
+                    Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, lengthToExamine - (nuint)Vector128<ushort>.Count);
+                    Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
+                    Vector128<byte> cmp = v1Eq.AsByte();
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - (int)(lengthToExamine - offset) * sizeof(char))) - 1);
+                    while (mask != 0)
+                    {
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector128<ushort>.Count);
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    }
+                    offset = lengthToExamine;
+                    return;
                 }
             }
 
