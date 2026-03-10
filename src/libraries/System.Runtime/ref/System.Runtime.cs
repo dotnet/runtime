@@ -22,6 +22,7 @@ namespace Microsoft.Win32.SafeHandles
         public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         public bool IsAsync { get { throw null; } }
+        public System.IO.FileHandleType Type { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
@@ -10447,6 +10448,17 @@ namespace System.IO
         Encrypted = 16384,
         IntegrityStream = 32768,
         NoScrubData = 131072,
+    }
+    public enum FileHandleType
+    {
+        Unknown = 0,
+        RegularFile = 1,
+        Pipe = 2,
+        Socket = 3,
+        CharacterDevice = 4,
+        Directory = 5,
+        SymbolicLink = 6,
+        BlockDevice = 7
     }
     public sealed partial class FileInfo : System.IO.FileSystemInfo
     {

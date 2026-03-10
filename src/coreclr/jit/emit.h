@@ -484,6 +484,9 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
+#ifdef TARGET_WASM
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
+#endif
 };
 
 class emitter

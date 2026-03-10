@@ -5335,10 +5335,174 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+
+    // Static ANSI string pointers for all known heap names, in the canonical order matching
+    // LoaderAllocatorLoaderHeapNames in request.cpp. These are process-lifetime allocations,
+    // equivalent to static const char* literals in C++.
+    private static readonly (string Name, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
+    private (string Name, nint AnsiPtr)[]? _filteredHeapNameEntries;
+
+    private static (string Name, nint AnsiPtr)[] InitializeHeapNameEntries()
+    {
+        // Order must match LoaderAllocatorLoaderHeapNames in src/coreclr/debug/daccess/request.cpp
+        string[] names =
+        [
+            "LowFrequencyHeap",
+            "HighFrequencyHeap",
+            "StaticsHeap",
+            "StubHeap",
+            "ExecutableHeap",
+            "FixupPrecodeHeap",
+            "NewStubPrecodeHeap",
+            "DynamicHelpersStubHeap",
+            "IndcellHeap",
+            "CacheEntryHeap",
+        ];
+        var entries = new (string, nint)[names.Length];
+        for (int i = 0; i < names.Length; i++)
+            entries[i] = (names[i], Marshal.StringToHGlobalAnsi(names[i]));
+        return entries;
+    }
+
+    // Returns the set of heap name entries for this target, filtered by which
+    // data descriptor fields exist. This mirrors the DAC's compile-time
+    // LoaderAllocatorLoaderHeapNames array and ensures a fixed count/ordering
+    // regardless of per-loader-allocator runtime state (e.g. VCS manager being null).
+    private (string Name, nint AnsiPtr)[] GetFilteredHeapNameEntries()
+    {
+        if (_filteredHeapNameEntries is not null)
+            return _filteredHeapNameEntries;
+
+        Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
+        Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
+
+        var entries = new List<(string Name, nint AnsiPtr)>();
+        foreach (var entry in s_heapNameEntries)
+        {
+            bool include = entry.Name is "IndcellHeap" or "CacheEntryHeap"
+                ? vcsType.Fields.ContainsKey(entry.Name)
+                : laType.Fields.ContainsKey(entry.Name);
+            if (include)
+                entries.Add(entry);
+        }
+
+        _filteredHeapNameEntries = entries.ToArray();
+        return _filteredHeapNameEntries;
+    }
+
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
+
+            if (pNeeded != null)
+                *pNeeded = loaderHeapCount;
+
+            if (ppNames != null)
+            {
+                int fillCount = Math.Min(count, loaderHeapCount);
+                for (int i = 0; i < fillCount; i++)
+                    ppNames[i] = (char*)filteredEntries[i].AnsiPtr;
+            }
+
+            if (count < loaderHeapCount)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int pNeededLocal;
+            _legacyImpl13.GetLoaderAllocatorHeapNames(0, null, &pNeededLocal);
+            Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+            if (hr >= 0 && ppNames != null && pNeededLocal > 0)
+            {
+                char** ppNamesLocal = stackalloc char*[pNeededLocal];
+                _legacyImpl13.GetLoaderAllocatorHeapNames(pNeededLocal, ppNamesLocal, null);
+                int compareCount = Math.Min(count, pNeededLocal);
+                for (int i = 0; i < compareCount; i++)
+                {
+                    string cdacName = Marshal.PtrToStringAnsi((nint)ppNames[i])!;
+                    string dacName = Marshal.PtrToStringAnsi((nint)ppNamesLocal[i])!;
+                    Debug.Assert(cdacName == dacName, $"HeapName[{i}] - cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (loaderAllocator == 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
+
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
+
+            if (pNeeded != null)
+                *pNeeded = loaderHeapCount;
+
+            if (pLoaderHeaps != null)
+            {
+                if (count < loaderHeapCount)
+                {
+                    hr = HResults.E_INVALIDARG;
+                }
+                else
+                {
+                    for (int i = 0; i < loaderHeapCount; i++)
+                    {
+                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].Name, out TargetPointer heapAddr)
+                            ? heapAddr.ToClrDataAddress(_target)
+                            : 0;
+                        pKinds[i] = 0; // LoaderHeapKindNormal
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int pNeededLocal;
+            int hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, 0, null, null, &pNeededLocal);
+            Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+            if (hr >= 0 && pLoaderHeaps != null && pNeededLocal > 0)
+            {
+                ClrDataAddress* pLoaderHeapsLocal = stackalloc ClrDataAddress[pNeededLocal];
+                int* pKindsLocal = stackalloc int[pNeededLocal];
+                hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, pNeededLocal, pLoaderHeapsLocal, pKindsLocal, null);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hrLocal >= 0)
+                {
+                    for (int i = 0; i < pNeededLocal; i++)
+                    {
+                        Debug.Assert(pLoaderHeaps[i] == pLoaderHeapsLocal[i], $"Heap[{i}] - cDAC: {pLoaderHeaps[i]:x}, DAC: {pLoaderHeapsLocal[i]:x}");
+                        Debug.Assert(pKinds[i] == pKindsLocal[i], $"Kind[{i}] - cDAC: {pKinds[i]}, DAC: {pKindsLocal[i]}");
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
