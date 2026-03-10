@@ -32,8 +32,11 @@ queries:
         # the possibility of loading malicious code.
         - "cs/deserialization-unexpected-subtypes"
   #
-  # We don't want to warn about usage of dangerous crypto within our own crypto implementations or
-  # interop code, since the rule would noisily try to warn us about *ourselves*.
+  # Don't warn about usage of non-compliant crypto within our own implementations or interop code,
+  # since the rule would noisily try to warn us about *ourselves*. These exclusions are scoped
+  # to just the crypto code itself. We still want alerts when consumers of crypto (even within this
+  # repo) still try to use non-compliant primitives; those call sites must be manually inspected
+  # and suppressed if appropriate.
   #
   - exclude:
       queryid:
