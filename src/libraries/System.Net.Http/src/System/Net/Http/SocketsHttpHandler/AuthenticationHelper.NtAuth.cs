@@ -31,20 +31,10 @@ namespace System.Net.Http
                     return usePortInSpn == NullableBool.True;
                 }
 
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool value))
-                {
-                    s_usePortInSpn = value ? NullableBool.True : NullableBool.False;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_usePortInSpn =
-                        Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? NullableBool.True : NullableBool.False;
-                }
+                bool value = AppContextSwitchHelper.GetBooleanConfig(UsePortInSpnCtxSwitch, UsePortInSpnEnvironmentVariable);
+                s_usePortInSpn = value ? NullableBool.True : NullableBool.False;
 
-                return s_usePortInSpn == NullableBool.True;
+                return value;
             }
         }
 

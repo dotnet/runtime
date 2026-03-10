@@ -146,8 +146,7 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
-                    bool ocspFetch = false;
-                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
+                    bool ocspFetch = AppContextSwitchHelper.GetBooleanConfig(EnableOcspStaplingContextSwitchName);
                     // given cert is X509Certificate2 with key. We can use it directly.
                     SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
                 }

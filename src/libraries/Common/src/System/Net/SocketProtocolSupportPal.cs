@@ -14,23 +14,7 @@ namespace System.Net
         public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
         public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
 
-        private static bool IsIPv6Disabled()
-        {
-            // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch(DisableIPv6AppCtxSwitch, out bool disabled))
-            {
-                return disabled;
-            }
-
-            // AppContext switch wasn't used. Check the environment variable.
-            string? envVar = Environment.GetEnvironmentVariable(DisableIPv6EnvironmentVariable);
-
-            if (envVar is not null)
-            {
-                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
-            }
-
-            return false;
-        }
+        private static bool IsIPv6Disabled() =>
+            AppContextSwitchHelper.GetBooleanConfig(DisableIPv6AppCtxSwitch, DisableIPv6EnvironmentVariable);
     }
 }

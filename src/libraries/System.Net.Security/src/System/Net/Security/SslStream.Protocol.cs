@@ -34,20 +34,10 @@ namespace System.Net.Security
                     return disableTlsResume == NullableBool.True;
                 }
 
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
-                {
-                    s_disableTlsResume = value ? NullableBool.True : NullableBool.False;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_disableTlsResume =
-                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? NullableBool.True : NullableBool.False;
-                }
+                bool value = AppContextSwitchHelper.GetBooleanConfig(DisableTlsResumeCtxSwitch, DisableTlsResumeEnvironmentVariable);
+                s_disableTlsResume = value ? NullableBool.True : NullableBool.False;
 
-                return s_disableTlsResume == NullableBool.True;
+                return value;
             }
         }
 
@@ -61,20 +51,10 @@ namespace System.Net.Security
                     return enableServerAiaDownloads == NullableBool.True;
                 }
 
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(EnableServerAiaDownloadsCtxSwitch, out bool value))
-                {
-                    s_enableServerAiaDownloads = value ? NullableBool.True : NullableBool.False;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_enableServerAiaDownloads =
-                        Environment.GetEnvironmentVariable(EnableServerAiaDownloadsEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? NullableBool.True : NullableBool.False;
-                }
+                bool value = AppContextSwitchHelper.GetBooleanConfig(EnableServerAiaDownloadsCtxSwitch, EnableServerAiaDownloadsEnvironmentVariable);
+                s_enableServerAiaDownloads = value ? NullableBool.True : NullableBool.False;
 
-                return s_enableServerAiaDownloads == NullableBool.True;
+                return value;
             }
         }
 
