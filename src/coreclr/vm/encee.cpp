@@ -1469,13 +1469,12 @@ void EnCSyncBlockInfo::Cleanup()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
     // Walk our linked list of all the fields that were added
     EnCAddedField *pEntry = m_pList;
     {
-        GCX_COOP();
         while (pEntry)
         {
             // Clean up the handle we created in EnCAddedField::Allocate
