@@ -8,22 +8,17 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct GeneralSubtreeAsn
+    file static class SharedGeneralSubtreeAsn
     {
-        private static ReadOnlySpan<byte> DefaultMinimum => [0x02, 0x01, 0x00];
-
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn Base;
-        internal int Minimum;
-        internal int? Maximum;
+        internal static ReadOnlySpan<byte> DefaultMinimum => [0x02, 0x01, 0x00];
 
 #if DEBUG
-        static GeneralSubtreeAsn()
+        static SharedGeneralSubtreeAsn()
         {
             GeneralSubtreeAsn decoded = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultMinimum, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedGeneralSubtreeAsn.DefaultMinimum, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.Minimum))
             {
@@ -33,6 +28,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct GeneralSubtreeAsn
+    {
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn Base;
+        internal int Minimum;
+        internal int? Maximum;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -51,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(Minimum);
 
-                if (!tmp.EncodedValueEquals(DefaultMinimum))
+                if (!tmp.EncodedValueEquals(SharedGeneralSubtreeAsn.DefaultMinimum))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                     tmp.CopyTo(writer);
@@ -130,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultMinimum, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedGeneralSubtreeAsn.DefaultMinimum, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.Minimum))
                 {
@@ -160,4 +163,103 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+#if NET
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueGeneralSubtreeAsn
+    {
+        internal ReadOnlySpan<byte> Base;
+        internal int Minimum;
+        internal int? Maximum;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueGeneralSubtreeAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueGeneralSubtreeAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueGeneralSubtreeAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueGeneralSubtreeAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueGeneralSubtreeAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader explicitReader;
+            ValueAsnReader defaultReader;
+
+            decoded.Base = sequenceReader.ReadEncodedValue();
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
+            {
+                explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+
+                if (!explicitReader.TryReadInt32(out decoded.Minimum))
+                {
+                    explicitReader.ThrowIfNotEmpty();
+                }
+
+                explicitReader.ThrowIfNotEmpty();
+            }
+            else
+            {
+                defaultReader = new ValueAsnReader(SharedGeneralSubtreeAsn.DefaultMinimum, AsnEncodingRules.DER);
+
+                if (!defaultReader.TryReadInt32(out decoded.Minimum))
+                {
+                    defaultReader.ThrowIfNotEmpty();
+                }
+
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
+            {
+                explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+
+                if (explicitReader.TryReadInt32(out int tmpMaximum))
+                {
+                    decoded.Maximum = tmpMaximum;
+                }
+                else
+                {
+                    explicitReader.ThrowIfNotEmpty();
+                }
+
+                explicitReader.ThrowIfNotEmpty();
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
+#endif
 }

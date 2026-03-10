@@ -105,4 +105,66 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValuePolicyInformationAsn
+    {
+        internal string PolicyIdentifier;
+        internal ReadOnlySpan<byte> PolicyQualifiers;
+        internal bool HasPolicyQualifiers;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePolicyInformationAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePolicyInformationAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValuePolicyInformationAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValuePolicyInformationAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValuePolicyInformationAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+
+            decoded.PolicyIdentifier = sequenceReader.ReadObjectIdentifier();
+
+            if (sequenceReader.HasData)
+            {
+                decoded.PolicyQualifiers = sequenceReader.ReadEncodedValue();
+                decoded.HasPolicyQualifiers = true;
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }

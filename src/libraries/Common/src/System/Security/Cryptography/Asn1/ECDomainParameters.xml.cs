@@ -118,4 +118,59 @@ namespace System.Security.Cryptography.Asn1
             }
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueECDomainParameters
+    {
+        internal ReadOnlySpan<byte> Specified;
+        internal bool HasSpecified;
+        internal string? Named;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueECDomainParameters decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueECDomainParameters decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueECDomainParameters decoded)
+        {
+            decoded = default;
+            Asn1Tag tag = reader.PeekTag();
+
+            if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
+            {
+                decoded.Specified = reader.ReadEncodedValue();
+                decoded.HasSpecified = true;
+            }
+            else if (tag.HasSameClassAndValue(Asn1Tag.ObjectIdentifier))
+            {
+                decoded.Named = reader.ReadObjectIdentifier();
+            }
+            else
+            {
+                throw new CryptographicException();
+            }
+        }
+    }
 }

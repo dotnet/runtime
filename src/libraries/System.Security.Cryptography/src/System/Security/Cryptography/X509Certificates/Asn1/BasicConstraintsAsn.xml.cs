@@ -8,25 +8,28 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct BasicConstraintsAsn
+    file static class SharedBasicConstraintsAsn
     {
-        private static ReadOnlySpan<byte> DefaultCA => [0x01, 0x01, 0x00];
-
-        internal bool CA;
-        internal int? PathLengthConstraint;
+        internal static ReadOnlySpan<byte> DefaultCA => [0x01, 0x01, 0x00];
 
 #if DEBUG
-        static BasicConstraintsAsn()
+        static SharedBasicConstraintsAsn()
         {
             BasicConstraintsAsn decoded = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultCA, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedBasicConstraintsAsn.DefaultCA, AsnEncodingRules.DER);
             decoded.CA = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct BasicConstraintsAsn
+    {
+        internal bool CA;
+        internal int? PathLengthConstraint;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -44,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
                 tmp.WriteBoolean(CA);
 
-                if (!tmp.EncodedValueEquals(DefaultCA))
+                if (!tmp.EncodedValueEquals(SharedBasicConstraintsAsn.DefaultCA))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -110,7 +113,87 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultCA, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedBasicConstraintsAsn.DefaultCA, AsnEncodingRules.DER);
+                decoded.CA = defaultReader.ReadBoolean();
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
+            {
+
+                if (sequenceReader.TryReadInt32(out int tmpPathLengthConstraint))
+                {
+                    decoded.PathLengthConstraint = tmpPathLengthConstraint;
+                }
+                else
+                {
+                    sequenceReader.ThrowIfNotEmpty();
+                }
+
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueBasicConstraintsAsn
+    {
+        internal bool CA;
+        internal int? PathLengthConstraint;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueBasicConstraintsAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueBasicConstraintsAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueBasicConstraintsAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueBasicConstraintsAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueBasicConstraintsAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Boolean))
+            {
+                decoded.CA = sequenceReader.ReadBoolean();
+            }
+            else
+            {
+                defaultReader = new ValueAsnReader(SharedBasicConstraintsAsn.DefaultCA, AsnEncodingRules.DER);
                 decoded.CA = defaultReader.ReadBoolean();
             }
 

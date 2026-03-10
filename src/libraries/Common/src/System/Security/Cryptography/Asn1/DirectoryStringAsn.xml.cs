@@ -173,4 +173,79 @@ namespace System.Security.Cryptography.Asn1
             }
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueDirectoryStringAsn
+    {
+        internal string? TeletexString;
+        internal string? PrintableString;
+        internal ReadOnlySpan<byte> UniversalString;
+        internal bool HasUniversalString;
+        internal string? Utf8String;
+        internal string? BmpString;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueDirectoryStringAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueDirectoryStringAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueDirectoryStringAsn decoded)
+        {
+            decoded = default;
+            Asn1Tag tag = reader.PeekTag();
+
+            if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.T61String)))
+            {
+                decoded.TeletexString = reader.ReadCharacterString(UniversalTagNumber.T61String);
+            }
+            else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.PrintableString)))
+            {
+                decoded.PrintableString = reader.ReadCharacterString(UniversalTagNumber.PrintableString);
+            }
+            else if (tag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)28)))
+            {
+                if (!reader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)28)))
+                {
+                    throw new CryptographicException();
+                }
+
+                decoded.UniversalString = reader.ReadEncodedValue();
+                decoded.HasUniversalString = true;
+            }
+            else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.UTF8String)))
+            {
+                decoded.Utf8String = reader.ReadCharacterString(UniversalTagNumber.UTF8String);
+            }
+            else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.BMPString)))
+            {
+                decoded.BmpString = reader.ReadCharacterString(UniversalTagNumber.BMPString);
+            }
+            else
+            {
+                throw new CryptographicException();
+            }
+        }
+    }
 }

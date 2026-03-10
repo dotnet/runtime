@@ -111,4 +111,80 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueCertificateTemplateAsn
+    {
+        internal string TemplateID;
+        internal int TemplateMajorVersion;
+        internal int? TemplateMinorVersion;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCertificateTemplateAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCertificateTemplateAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueCertificateTemplateAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueCertificateTemplateAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueCertificateTemplateAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+
+            decoded.TemplateID = sequenceReader.ReadObjectIdentifier();
+
+            if (!sequenceReader.TryReadInt32(out decoded.TemplateMajorVersion))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
+            {
+
+                if (sequenceReader.TryReadInt32(out int tmpTemplateMinorVersion))
+                {
+                    decoded.TemplateMinorVersion = tmpTemplateMinorVersion;
+                }
+                else
+                {
+                    sequenceReader.ThrowIfNotEmpty();
+                }
+
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }

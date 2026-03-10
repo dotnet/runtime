@@ -123,4 +123,71 @@ namespace System.Security.Cryptography.Asn1
             }
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValuePbkdf2SaltChoice
+    {
+        internal ReadOnlySpan<byte> Specified;
+        internal bool HasSpecified;
+        internal ReadOnlySpan<byte> OtherSource;
+        internal bool HasOtherSource;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2SaltChoice decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValuePbkdf2SaltChoice decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValuePbkdf2SaltChoice decoded)
+        {
+            decoded = default;
+            Asn1Tag tag = reader.PeekTag();
+            ReadOnlySpan<byte> tmpSpan;
+
+            if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
+            {
+
+                if (reader.TryReadPrimitiveOctetString(out tmpSpan))
+                {
+                    decoded.Specified = tmpSpan;
+                }
+                else
+                {
+                    decoded.Specified = reader.ReadOctetString();
+                }
+
+                decoded.HasSpecified = true;
+            }
+            else if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
+            {
+                decoded.OtherSource = reader.ReadEncodedValue();
+                decoded.HasOtherSource = true;
+            }
+            else
+            {
+                throw new CryptographicException();
+            }
+        }
+    }
 }

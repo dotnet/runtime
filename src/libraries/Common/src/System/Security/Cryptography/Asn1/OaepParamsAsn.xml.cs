@@ -8,39 +8,42 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct OaepParamsAsn
+    file static class SharedOaepParamsAsn
     {
-        private static ReadOnlySpan<byte> DefaultHashFunc => [0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00];
+        internal static ReadOnlySpan<byte> DefaultHashFunc => [0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00];
 
-        private static ReadOnlySpan<byte> DefaultMaskGenFunc => [0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00];
+        internal static ReadOnlySpan<byte> DefaultMaskGenFunc => [0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00];
 
-        private static ReadOnlySpan<byte> DefaultPSourceFunc => [0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09, 0x04, 0x00];
-
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashFunc;
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn MaskGenFunc;
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn PSourceFunc;
+        internal static ReadOnlySpan<byte> DefaultPSourceFunc => [0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09, 0x04, 0x00];
 
 #if DEBUG
-        static OaepParamsAsn()
+        static SharedOaepParamsAsn()
         {
             OaepParamsAsn decoded = default;
             ReadOnlyMemory<byte> rebind = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultHashFunc, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedOaepParamsAsn.DefaultHashFunc, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.HashFunc);
             reader.ThrowIfNotEmpty();
 
-            reader = new ValueAsnReader(DefaultMaskGenFunc, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedOaepParamsAsn.DefaultMaskGenFunc, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.MaskGenFunc);
             reader.ThrowIfNotEmpty();
 
-            reader = new ValueAsnReader(DefaultPSourceFunc, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedOaepParamsAsn.DefaultPSourceFunc, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.PSourceFunc);
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct OaepParamsAsn
+    {
+        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashFunc;
+        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn MaskGenFunc;
+        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn PSourceFunc;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -57,7 +60,7 @@ namespace System.Security.Cryptography.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
                 HashFunc.Encode(tmp);
 
-                if (!tmp.EncodedValueEquals(DefaultHashFunc))
+                if (!tmp.EncodedValueEquals(SharedOaepParamsAsn.DefaultHashFunc))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                     tmp.CopyTo(writer);
@@ -71,7 +74,7 @@ namespace System.Security.Cryptography.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
                 MaskGenFunc.Encode(tmp);
 
-                if (!tmp.EncodedValueEquals(DefaultMaskGenFunc))
+                if (!tmp.EncodedValueEquals(SharedOaepParamsAsn.DefaultMaskGenFunc))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
                     tmp.CopyTo(writer);
@@ -85,7 +88,7 @@ namespace System.Security.Cryptography.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
                 PSourceFunc.Encode(tmp);
 
-                if (!tmp.EncodedValueEquals(DefaultPSourceFunc))
+                if (!tmp.EncodedValueEquals(SharedOaepParamsAsn.DefaultPSourceFunc))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
                     tmp.CopyTo(writer);
@@ -150,7 +153,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultHashFunc, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedOaepParamsAsn.DefaultHashFunc, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.HashFunc);
             }
 
@@ -163,7 +166,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultMaskGenFunc, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedOaepParamsAsn.DefaultMaskGenFunc, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.MaskGenFunc);
             }
 
@@ -176,8 +179,103 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultPSourceFunc, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedOaepParamsAsn.DefaultPSourceFunc, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.PSourceFunc);
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueOaepParamsAsn
+    {
+        internal ReadOnlySpan<byte> HashFunc;
+        internal ReadOnlySpan<byte> MaskGenFunc;
+        internal ReadOnlySpan<byte> PSourceFunc;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueOaepParamsAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueOaepParamsAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueOaepParamsAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueOaepParamsAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueOaepParamsAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader explicitReader;
+            ValueAsnReader defaultReader;
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
+            {
+                explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                decoded.HashFunc = explicitReader.ReadEncodedValue();
+                explicitReader.ThrowIfNotEmpty();
+            }
+            else
+            {
+                defaultReader = new ValueAsnReader(SharedOaepParamsAsn.DefaultHashFunc, AsnEncodingRules.DER);
+                decoded.HashFunc = defaultReader.ReadEncodedValue();
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
+            {
+                explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+                decoded.MaskGenFunc = explicitReader.ReadEncodedValue();
+                explicitReader.ThrowIfNotEmpty();
+            }
+            else
+            {
+                defaultReader = new ValueAsnReader(SharedOaepParamsAsn.DefaultMaskGenFunc, AsnEncodingRules.DER);
+                decoded.MaskGenFunc = defaultReader.ReadEncodedValue();
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 2)))
+            {
+                explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
+                decoded.PSourceFunc = explicitReader.ReadEncodedValue();
+                explicitReader.ThrowIfNotEmpty();
+            }
+            else
+            {
+                defaultReader = new ValueAsnReader(SharedOaepParamsAsn.DefaultPSourceFunc, AsnEncodingRules.DER);
+                decoded.PSourceFunc = defaultReader.ReadEncodedValue();
             }
 
 

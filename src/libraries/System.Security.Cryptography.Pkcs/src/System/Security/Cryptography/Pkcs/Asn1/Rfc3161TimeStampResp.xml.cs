@@ -98,4 +98,66 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueRfc3161TimeStampResp
+    {
+        internal ReadOnlySpan<byte> Status;
+        internal ReadOnlySpan<byte> TimeStampToken;
+        internal bool HasTimeStampToken;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRfc3161TimeStampResp decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRfc3161TimeStampResp decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueRfc3161TimeStampResp decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRfc3161TimeStampResp decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRfc3161TimeStampResp decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+
+            decoded.Status = sequenceReader.ReadEncodedValue();
+
+            if (sequenceReader.HasData)
+            {
+                decoded.TimeStampToken = sequenceReader.ReadEncodedValue();
+                decoded.HasTimeStampToken = true;
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }

@@ -152,4 +152,66 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueDistributionPointNameAsn
+    {
+        internal ReadOnlySpan<byte> FullName;
+        internal bool HasFullName;
+        internal ReadOnlySpan<byte> NameRelativeToCRLIssuer;
+        internal bool HasNameRelativeToCRLIssuer;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueDistributionPointNameAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueDistributionPointNameAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueDistributionPointNameAsn decoded)
+        {
+            decoded = default;
+            Asn1Tag tag = reader.PeekTag();
+
+            if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
+            {
+                decoded.FullName = reader.ReadEncodedValue();
+                decoded.HasFullName = true;
+            }
+            else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
+            {
+                if (!reader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
+                {
+                    throw new CryptographicException();
+                }
+
+                decoded.NameRelativeToCRLIssuer = reader.ReadEncodedValue();
+                decoded.HasNameRelativeToCRLIssuer = true;
+            }
+            else
+            {
+                throw new CryptographicException();
+            }
+        }
+    }
 }

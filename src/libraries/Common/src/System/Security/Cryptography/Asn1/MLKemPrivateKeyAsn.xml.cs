@@ -147,4 +147,87 @@ namespace System.Security.Cryptography.Asn1
             }
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueMLKemPrivateKeyAsn
+    {
+        internal ReadOnlySpan<byte> Seed;
+        internal bool HasSeed;
+        internal ReadOnlySpan<byte> ExpandedKey;
+        internal bool HasExpandedKey;
+        internal ReadOnlySpan<byte> Both;
+        internal bool HasBoth;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueMLKemPrivateKeyAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueMLKemPrivateKeyAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueMLKemPrivateKeyAsn decoded)
+        {
+            decoded = default;
+            Asn1Tag tag = reader.PeekTag();
+            ReadOnlySpan<byte> tmpSpan;
+
+            if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
+            {
+
+                if (reader.TryReadPrimitiveOctetString(out tmpSpan, new Asn1Tag(TagClass.ContextSpecific, 0)))
+                {
+                    decoded.Seed = tmpSpan;
+                }
+                else
+                {
+                    decoded.Seed = reader.ReadOctetString(new Asn1Tag(TagClass.ContextSpecific, 0));
+                }
+
+                decoded.HasSeed = true;
+            }
+            else if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
+            {
+
+                if (reader.TryReadPrimitiveOctetString(out tmpSpan))
+                {
+                    decoded.ExpandedKey = tmpSpan;
+                }
+                else
+                {
+                    decoded.ExpandedKey = reader.ReadOctetString();
+                }
+
+                decoded.HasExpandedKey = true;
+            }
+            else if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
+            {
+                decoded.Both = reader.ReadEncodedValue();
+                decoded.HasBoth = true;
+            }
+            else
+            {
+                throw new CryptographicException();
+            }
+        }
+    }
 }

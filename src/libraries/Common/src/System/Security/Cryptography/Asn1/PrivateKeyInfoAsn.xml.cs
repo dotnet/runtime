@@ -134,4 +134,85 @@ namespace System.Security.Cryptography.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValuePrivateKeyInfoAsn
+    {
+        internal int Version;
+        internal ReadOnlySpan<byte> PrivateKeyAlgorithm;
+        internal ReadOnlySpan<byte> PrivateKey;
+        internal ReadOnlySpan<byte> Attributes;
+        internal bool HasAttributes;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePrivateKeyInfoAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePrivateKeyInfoAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValuePrivateKeyInfoAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValuePrivateKeyInfoAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValuePrivateKeyInfoAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> tmpSpan;
+
+
+            if (!sequenceReader.TryReadInt32(out decoded.Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
+            decoded.PrivateKeyAlgorithm = sequenceReader.ReadEncodedValue();
+
+            if (sequenceReader.TryReadPrimitiveOctetString(out tmpSpan))
+            {
+                decoded.PrivateKey = tmpSpan;
+            }
+            else
+            {
+                decoded.PrivateKey = sequenceReader.ReadOctetString();
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
+            {
+                decoded.Attributes = sequenceReader.ReadEncodedValue();
+                decoded.HasAttributes = true;
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }

@@ -100,4 +100,78 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueKeyTransRecipientInfoAsn
+    {
+        internal int Version;
+        internal ReadOnlySpan<byte> Rid;
+        internal ReadOnlySpan<byte> KeyEncryptionAlgorithm;
+        internal ReadOnlySpan<byte> EncryptedKey;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueKeyTransRecipientInfoAsn decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueKeyTransRecipientInfoAsn decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueKeyTransRecipientInfoAsn decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueKeyTransRecipientInfoAsn decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueKeyTransRecipientInfoAsn decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> tmpSpan;
+
+
+            if (!sequenceReader.TryReadInt32(out decoded.Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
+            decoded.Rid = sequenceReader.ReadEncodedValue();
+            decoded.KeyEncryptionAlgorithm = sequenceReader.ReadEncodedValue();
+
+            if (sequenceReader.TryReadPrimitiveOctetString(out tmpSpan))
+            {
+                decoded.EncryptedKey = tmpSpan;
+            }
+            else
+            {
+                decoded.EncryptedKey = sequenceReader.ReadOctetString();
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }
