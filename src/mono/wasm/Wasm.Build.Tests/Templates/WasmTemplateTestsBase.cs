@@ -124,7 +124,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
-        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        if (s_buildEnv.IsCoreClrRuntime)
         {
             // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
             string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
