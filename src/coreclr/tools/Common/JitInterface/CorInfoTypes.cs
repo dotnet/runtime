@@ -1517,7 +1517,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         CORJIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        // CORJIT_FLAG_UNUSED               = 14,
+        CORJIT_FLAG_ASYNC                   = 14,  // Generate code for use as an async function
         CORJIT_FLAG_RELOC                   = 15, // Generate relocatable code
         CORJIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -1536,7 +1536,6 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
-        CORJIT_FLAG_ASYNC                   = 31,  // Generate code for use as an async function
     }
 
     public struct CORJIT_FLAGS

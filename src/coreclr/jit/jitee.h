@@ -23,7 +23,7 @@ public:
         JIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         JIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        // JIT_FLAG_UNUSED               = 14,
+        JIT_FLAG_ASYNC                   = 14, // Generate code for use as an async function
         JIT_FLAG_RELOC                   = 15, // Generate relocatable code
         JIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         JIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -44,7 +44,6 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
-        JIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
