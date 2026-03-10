@@ -4867,7 +4867,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     lclDsc->lvIsCSE = true;
 
     // Propagate IsNeverNegative from the CSE expression to the temp.
-    if (varTypeIsIntegral(cseLclVarTyp) && successfulCandidate->Expr()->IsNeverNegative(m_compiler))
+    // Mainly targeting Span.Length.
+    if (cseLclVarTyp == TYP_INT && successfulCandidate->Expr()->OperIs(GT_IND, GT_LCL_VAR) &&
+        successfulCandidate->Expr()->IsNeverNegative(m_compiler))
     {
         lclDsc->SetIsNeverNegative(true);
     }
