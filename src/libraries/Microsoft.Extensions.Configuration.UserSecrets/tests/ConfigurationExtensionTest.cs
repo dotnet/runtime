@@ -55,6 +55,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
             throw new Exception("test foo bar");
+            /*
             var randValue = Guid.NewGuid().ToString();
             var configKey = "MyDummySetting";
 
@@ -64,6 +65,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
                 .Build();
 
             Assert.Equal(randValue, config[configKey]);
+            */
         }
 
         [Fact]
