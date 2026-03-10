@@ -3037,13 +3037,15 @@ SWITCH_OPCODE:
                     else
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                        // WASM-TODO: We may end up here with native JIT helper entrypoint without MethodDesc
-                        // that CALL_INTERP_METHOD is not able to handle. This is a potential problem for
-                        // interpreter<->native code stub generator.
-                        // https://github.com/dotnet/runtime/pull/119516#discussion_r2337631271
-                        if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
+                        // On portable entry point platforms, calli targets are portable entry points.
+                        // If the PE has a MethodDesc, route through CALL_INTERP_METHOD which derives
+                        // the cookie at runtime. This covers both interpreted methods and FCalls
+                        // (which have native code set but still carry an MD).
+                        // JIT helper PEs (no MethodDesc) fall through to InvokeCalliStub using
+                        // the compile-time cookie.
+                        targetMethod = PortableEntryPoint::TryGetMethodDesc(calliFunctionPointer);
+                        if (targetMethod != nullptr)
                         {
-                            targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
                             goto CALL_INTERP_METHOD;
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

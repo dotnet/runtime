@@ -19,6 +19,7 @@ public: // static
     static void* GetActualCode(PCODE addr);
     static void SetActualCode(PCODE addr, PCODE actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
+    static MethodDesc* TryGetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
 
