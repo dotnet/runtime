@@ -396,9 +396,10 @@ namespace System.Formats.Tar
                         return value;
                     }
 
-                    if (availableStart == bytes.Length)
+                    if (availableStart + TarHelpers.RecordSize > bytes.Length)
                     {
-                        // Buffer full but no newline: line is too long (malformed).
+                        // Not enough room in the buffer for another block-sized fill
+                        // and no newline found: line is too long (malformed).
                         throw new InvalidDataException(SR.TarInvalidNumber);
                     }
 
