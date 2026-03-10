@@ -30,6 +30,7 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
         }
 
+#if !TARGET_WINDOWS
         private static int s_useManagedNtlm;
         [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
         internal static bool UseManagedNtlm
@@ -39,6 +40,7 @@ namespace System
                 defaultValue: OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
                 (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase)));
         }
+#endif
 
 #if TARGET_APPLE
         private static int s_useNetworkFramework;
