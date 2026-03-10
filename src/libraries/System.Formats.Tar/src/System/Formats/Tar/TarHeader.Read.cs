@@ -115,15 +115,6 @@ namespace System.Formats.Tar
                 _name = paxEaName;
             }
 
-            // GNU sparse format 1.0 (encoded via PAX) stores the real file name in 'GNU.sparse.name',
-            // which overrides the placeholder path (e.g. 'GNUSparseFile.0/...') stored in the 'path' attribute.
-            // PAX 1.0 sparse entries use TarEntryType.RegularFile (typeFlag '0'), not SparseFile ('S').
-            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile &&
-                ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
-            {
-                _name = gnuSparseName;
-            }
-
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
             if (ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
@@ -148,22 +139,30 @@ namespace System.Formats.Tar
                 _size = size;
             }
 
-            // GNU sparse format 1.0 (encoded via PAX) stores the real (expanded) file size in 'GNU.sparse.realsize'.
-            // This is stored separately so that the archive data size (_size) is preserved for correct data stream reading.
-            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile &&
-                TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+            // GNU sparse format 1.0 (encoded via PAX) uses RegularFile type flag ('0') and stores sparse metadata in
+            // PAX extended attributes. Process all GNU sparse 1.0 attributes together in this block.
+            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
-                _gnuSparseRealSize = gnuSparseRealSize;
-            }
+                // 'GNU.sparse.name' overrides the placeholder path (e.g. 'GNUSparseFile.0/...') in the header's 'path' field.
+                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
+                {
+                    _name = gnuSparseName;
+                }
 
-            // Set the flag for GNU sparse format 1.0 when 'GNU.sparse.major=1' and 'GNU.sparse.minor=0' are present.
-            // This indicates the data section begins with an embedded text-format sparse map (offset/length pairs)
-            // followed by the packed non-zero data segments. The GnuSparseStream class handles expansion when reading.
-            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile &&
-                ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1" &&
-                ExtendedAttributes.TryGetValue(PaxEaGnuSparseMinor, out string? gnuSparseMinor) && gnuSparseMinor == "0")
-            {
-                _isGnuSparse10 = true;
+                // 'GNU.sparse.realsize' is the expanded (virtual) file size; stored separately from _size so that
+                // _size retains the archive data section length needed for correct stream positioning.
+                if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+                {
+                    _gnuSparseRealSize = gnuSparseRealSize;
+                }
+
+                // 'GNU.sparse.major=1' and 'GNU.sparse.minor=0' identify format 1.0, where the data section begins
+                // with an embedded text-format sparse map followed by the packed non-zero data segments.
+                if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1" &&
+                    ExtendedAttributes.TryGetValue(PaxEaGnuSparseMinor, out string? gnuSparseMinor) && gnuSparseMinor == "0")
+                {
+                    _isGnuSparse10 = true;
+                }
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes

@@ -477,28 +477,34 @@ namespace System.Formats.Tar.Tests
             // - GNU.sparse.name (real file name), GNU.sparse.realsize (expanded file size)
             // - Data section: sparse map text + padding to 512-byte block + packed data
             //
-            // Virtual file layout (realsize=1024):
-            //   [0..255]   = sparse hole (zeros)
-            //   [256..511] = segment 0 data (0x42 bytes) — hole in the middle test
-            //   [512..1023] = sparse hole (zeros)
+            // Virtual file layout (realsize=2048):
+            //   [0..255]    = sparse hole (zeros)
+            //   [256..511]  = segment 0 data (0x42)  — two data segments with a hole in the middle
+            //   [512..767]  = sparse hole (zeros)
+            //   [768..1023] = segment 1 data (0x43)
+            //   [1024..2047] = sparse hole (zeros, trailing)
             const string PlaceholderName = "GNUSparseFile.0/realfile.txt";
             const string RealName = "realfile.txt";
-            const long RealSize = 1024;
-            const long SegmentOffset = 256;
-            const long SegmentLength = 256;
-            byte[] packedData = new byte[SegmentLength];
-            Array.Fill<byte>(packedData, 0x42);
+            const long RealSize = 2048;
+            const long Seg0Offset = 256, Seg0Length = 256;
+            const long Seg1Offset = 768, Seg1Length = 256;
+
+            byte[] packedData0 = new byte[Seg0Length];
+            Array.Fill<byte>(packedData0, 0x42);
+            byte[] packedData1 = new byte[Seg1Length];
+            Array.Fill<byte>(packedData1, 0x43);
 
             // Build the sparse data section:
-            //   "1\n"       <- 1 segment
-            //   "256\n"     <- offset = 256
-            //   "256\n"     <- numbytes = 256
-            //   [zeros to pad to 512]
-            //   [256 bytes of packed data]
-            byte[] mapText = System.Text.Encoding.ASCII.GetBytes("1\n256\n256\n");
-            byte[] rawSparseData = new byte[512 + SegmentLength];
+            //   "2\n"         <- 2 segments
+            //   "256\n256\n"  <- seg0: offset=256, length=256
+            //   "768\n256\n"  <- seg1: offset=768, length=256
+            //   [zeros to pad to 512-byte block boundary]
+            //   [256 bytes of 0x42] [256 bytes of 0x43]
+            byte[] mapText = System.Text.Encoding.ASCII.GetBytes("2\n256\n256\n768\n256\n");
+            byte[] rawSparseData = new byte[512 + Seg0Length + Seg1Length];
             mapText.CopyTo(rawSparseData, 0);
-            packedData.CopyTo(rawSparseData, 512);
+            packedData0.CopyTo(rawSparseData, 512);
+            packedData1.CopyTo(rawSparseData, 512 + (int)Seg0Length);
 
             var gnuSparseAttributes = new Dictionary<string, string>
             {
@@ -542,21 +548,16 @@ namespace System.Formats.Tar.Tests
                 totalRead += read;
             }
 
-            // First 256 bytes should be zeros (leading hole).
-            for (int i = 0; i < SegmentOffset; i++)
-            {
-                Assert.Equal(0, expanded[i]);
-            }
-            // Middle 256 bytes should be the packed data (0x42).
-            for (int i = (int)SegmentOffset; i < (int)(SegmentOffset + SegmentLength); i++)
-            {
-                Assert.Equal(0x42, expanded[i]);
-            }
-            // Last 512 bytes should be zeros (trailing hole).
-            for (int i = (int)(SegmentOffset + SegmentLength); i < RealSize; i++)
-            {
-                Assert.Equal(0, expanded[i]);
-            }
+            // [0..255] should be zeros (leading hole).
+            for (int i = 0; i < Seg0Offset; i++) Assert.Equal(0, expanded[i]);
+            // [256..511] should be 0x42 (segment 0).
+            for (int i = (int)Seg0Offset; i < (int)(Seg0Offset + Seg0Length); i++) Assert.Equal(0x42, expanded[i]);
+            // [512..767] should be zeros (middle hole).
+            for (int i = (int)(Seg0Offset + Seg0Length); i < Seg1Offset; i++) Assert.Equal(0, expanded[i]);
+            // [768..1023] should be 0x43 (segment 1).
+            for (int i = (int)Seg1Offset; i < (int)(Seg1Offset + Seg1Length); i++) Assert.Equal(0x43, expanded[i]);
+            // [1024..2047] should be zeros (trailing hole).
+            for (int i = (int)(Seg1Offset + Seg1Length); i < RealSize; i++) Assert.Equal(0, expanded[i]);
         }
 
         [Theory]
