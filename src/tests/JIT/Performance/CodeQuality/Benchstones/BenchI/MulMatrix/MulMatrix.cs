@@ -9,124 +9,156 @@ using TestLibrary;
 
 namespace Benchstone.BenchI
 {
-public static class MulMatrix
-{
+    public static class MulMatrix
+    {
 
 #if DEBUG
-    public const int Iterations = 1;
+        public const int Iterations = 1;
 #else
     public const int Iterations = 100;
 #endif
 
-    const int Size = 75;
-    static volatile object VolatileObject;
+        const int Size = 75;
+        static volatile object VolatileObject;
 
-    static void Escape(object obj) {
-        VolatileObject = obj;
-    }
-
-    static T[][] AllocArray<T>(int n1, int n2) {
-        T[][] a = new T[n1][];
-        for (int i = 0; i < n1; ++i) {
-            a[i] = new T[n2];
+        static void Escape(object obj)
+        {
+            VolatileObject = obj;
         }
-        return a;
-    }
 
-    static void Inner(int[][] a, int[][] b, int[][] c) {
-
-        int i, j, k, l;
-
-        // setup
-        for (j = 0; j < Size; j++) {
-            for (i = 0; i < Size; i++) {
-                a[i][j] = i;
-                b[i][j] = 2 * j;
-                c[i][j] = a[i][j] + b[i][j];
+        static T[][] AllocArray<T>(int n1, int n2)
+        {
+            T[][] a = new T[n1][];
+            for (int i = 0; i < n1; ++i)
+            {
+                a[i] = new T[n2];
             }
+            return a;
         }
 
-        // jkl
-        for (j = 0; j < Size; j++) {
-            for (k = 0; k < Size; k++) {
-                for (l = 0; l < Size; l++) {
-                    c[j][k] += a[j][l] * b[l][k];
+        static void Inner(int[][] a, int[][] b, int[][] c)
+        {
+
+            int i, j, k, l;
+
+            // setup
+            for (j = 0; j < Size; j++)
+            {
+                for (i = 0; i < Size; i++)
+                {
+                    a[i][j] = i;
+                    b[i][j] = 2 * j;
+                    c[i][j] = a[i][j] + b[i][j];
                 }
             }
-        }
 
-        // jlk
-        for (j = 0; j < Size; j++) {
-            for (l = 0; l < Size; l++) {
-                for (k = 0; k < Size; k++) {
-                    c[j][k] += a[j][l] * b[l][k];
+            // jkl
+            for (j = 0; j < Size; j++)
+            {
+                for (k = 0; k < Size; k++)
+                {
+                    for (l = 0; l < Size; l++)
+                    {
+                        c[j][k] += a[j][l] * b[l][k];
+                    }
                 }
             }
-        }
 
-        // kjl
-        for (k = 0; k < Size; k++) {
-            for (j = 0; j < Size; j++) {
-                for (l = 0; l < Size; l++) {
-                    c[j][k] += a[j][l] * b[l][k];
+            // jlk
+            for (j = 0; j < Size; j++)
+            {
+                for (l = 0; l < Size; l++)
+                {
+                    for (k = 0; k < Size; k++)
+                    {
+                        c[j][k] += a[j][l] * b[l][k];
+                    }
                 }
             }
-        }
 
-        // klj
-        for (k = 0; k < Size; k++) {
-            for (l = 0; l < Size; l++) {
-                for (j = 0; j < Size; j++) {
-                    c[j][k] += a[j][l] * b[l][k];
+            // kjl
+            for (k = 0; k < Size; k++)
+            {
+                for (j = 0; j < Size; j++)
+                {
+                    for (l = 0; l < Size; l++)
+                    {
+                        c[j][k] += a[j][l] * b[l][k];
+                    }
                 }
             }
-        }
 
-        // ljk
-        for (l = 0; l < Size; l++) {
-            for (j = 0; j < Size; j++) {
-                for (k = 0; k < Size; k++) {
-                    c[j][k] += a[j][l] * b[l][k];
+            // klj
+            for (k = 0; k < Size; k++)
+            {
+                for (l = 0; l < Size; l++)
+                {
+                    for (j = 0; j < Size; j++)
+                    {
+                        c[j][k] += a[j][l] * b[l][k];
+                    }
                 }
             }
-        }
 
-        // lkj
-        for (l = 0; l < Size; l++) {
-            for (k = 0; k < Size; k++) {
-                for (j = 0; j < Size; j++) {
-                    c[j][k] += a[j][l] * b[l][k];
+            // ljk
+            for (l = 0; l < Size; l++)
+            {
+                for (j = 0; j < Size; j++)
+                {
+                    for (k = 0; k < Size; k++)
+                    {
+                        c[j][k] += a[j][l] * b[l][k];
+                    }
                 }
             }
+
+            // lkj
+            for (l = 0; l < Size; l++)
+            {
+                for (k = 0; k < Size; k++)
+                {
+                    for (j = 0; j < Size; j++)
+                    {
+                        c[j][k] += a[j][l] * b[l][k];
+                    }
+                }
+            }
+
+            return;
         }
 
-        return;
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Bench()
+        {
+            int[][] a = AllocArray<int>(Size, Size);
+            int[][] b = AllocArray<int>(Size, Size);
+            int[][] c = AllocArray<int>(Size, Size);
+
+            for (int i = 0; i < Iterations; ++i)
+            {
+                Inner(a, b, c);
+            }
+
+            Escape(c);
+            int j = Size - 1;
+            int k = Size - 1;
+            int expectedLast = j + 2 * k + 900 * j * k;
+
+            return c[j][k] == expectedLast && c[1][1] == 903;
+        }
+
+        static bool TestBase()
+        {
+            bool result = Bench();
+            return result;
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            bool result = TestBase();
+            return (result ? 100 : -1);
+        }
     }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Bench() {
-        int[][] a = AllocArray<int>(Size, Size);
-        int[][] b = AllocArray<int>(Size, Size);
-        int[][] c = AllocArray<int>(Size, Size);
-
-        for (int i = 0; i < Iterations; ++i) {
-            Inner(a, b, c);
-        }
-
-        Escape(c);
-        return true;
-    }
-
-    static bool TestBase() {
-        bool result = Bench();
-        return result;
-    }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [Fact]
-    public static int TestEntryPoint() {
-        bool result = TestBase();
-        return (result ? 100 : -1);
-    }
-}
 }

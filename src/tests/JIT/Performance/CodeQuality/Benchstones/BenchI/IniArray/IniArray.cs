@@ -9,44 +9,57 @@ using TestLibrary;
 
 namespace Benchstone.BenchI
 {
-public static class IniArray
-{
+    public static class IniArray
+    {
 
 #if DEBUG
-    public const int Iterations = 1;
+        public const int Iterations = 1;
 #else
     public const int Iterations = 10000000;
 #endif
 
-    const int Allotted = 16;
-    static volatile object VolatileObject;
+        const int Allotted = 16;
+        static volatile object VolatileObject;
 
-    static void Escape(object obj) {
-        VolatileObject = obj;
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Bench() {
-        char[] workarea = new char[Allotted];
-        for (int i = 0; i < Iterations; i++) {
-            for (int j = 0; j < Allotted; j++) {
-                workarea[j] = ' ';
-            }
+        static void Escape(object obj)
+        {
+            VolatileObject = obj;
         }
-        Escape(workarea);
-        return true;
-    }
 
-    static bool TestBase() {
-        bool result = Bench();
-        return result;
-    }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Bench()
+        {
+            char[] workarea = new char[Allotted];
+            for (int i = 0; i < Iterations; i++)
+            {
+                for (int j = 0; j < Allotted; j++)
+                {
+                    workarea[j] = ' ';
+                }
+            }
+            Escape(workarea);
+            for (int i = 0; i < Allotted; i++)
+            {
+                if (workarea[i] != ' ')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [Fact]
-    public static int TestEntryPoint() {
-        bool result = TestBase();
-        return (result ? 100 : -1);
+        static bool TestBase()
+        {
+            bool result = Bench();
+            return result;
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            bool result = TestBase();
+            return (result ? 100 : -1);
+        }
     }
-}
 }
