@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
                     {
-                        return (object)(regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, location), regexMethod.CompilationData);
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, location), regexMethod.CompilationData);
                     }
 
                     // Generate the core logic for the regex.
@@ -121,7 +121,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, regexMethod.CompilationData.CheckOverflow);
                     writer.Indent -= 2;
-                    return (object)(regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
+                    return (regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
                 })
 
                 // Combine all of the generated text outputs into a single batch, then split
