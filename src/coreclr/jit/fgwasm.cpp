@@ -1826,3 +1826,268 @@ void Compiler::fgDumpWasmControlFlowDot()
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// fgWasmEhFlow: make post-catch control flow explicit
+//
+// Returns:
+//    Suitable phase status.
+//
+// Notes:
+//    Wasm must handle post-catch control flow explicitly via codegen,
+//    as the runtime cannot change the actual IP of the method.
+//
+//    So, for methods with catch clauses, we must enumerate the sets
+//    of catch continuation blocks (blocks with a BBJ_EHCATCHRET pred) per handler region,
+//    and at the start of the handler, insert a swtich that dispatches
+//    control to the appropriate continuation block based on a control variable.
+//
+//    We then must set this variable appropriately in all BBJ_EHCATCHRET blocks.
+//
+//    Later, during Wasm codegen, we will add try_table constructs before the
+//    switches, so that on exception the runtime can cause resumption of control within
+//    the method at the appropriate point. But initially we just need to make the
+//    control flow explicit in the IR so w can generate proper nested Wasm control flow.
+//
+//    After this phase runs, try regions may have multiple entry points.
+//    (TODO: make sure to set the EH virtual IP appropriately at each).
+//    Note this may already be the case if we ran the async transformation.
+//    (TODO: review how these interact).
+//
+PhaseStatus Compiler::fgWasmEhFlow()
+{
+    // If there is no EH, or no catch handlers, nothing to do.
+    //
+    bool hasCatch = false;
+
+    for (EHblkDsc* const dsc : EHClauses(this))
+    {
+        if (dsc->HasCatchHandler())
+        {
+            hasCatch = true;
+            break;
+        }
+    }
+
+    if (!hasCatch)
+    {
+        JITDUMP("Method does not have any catch handlers\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Walk the blocks and collect up the BBJ_CATCHRET blocks per enclosing handler region.
+    //
+    // both of thse use the "biased EH index" (so 0 => method region, 1 => EH#0, etc).
+    //
+    jitstd::vector<ArrayStack<BasicBlock*>*> catchRetBlocksByHandlerRegion(compHndBBtabCount + 1, nullptr,
+                                                                           getAllocator(CMK_WasmCfgLowering));
+    jitstd::vector<ArrayStack<BasicBlock*>*> catchRetContinuationBlocksByRegion(compHndBBtabCount + 1, nullptr,
+                                                                                getAllocator(CMK_WasmCfgLowering));
+
+    unsigned continuationCount = 0;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            // Find enclosing handler index
+            //
+            assert(block->hasHndIndex());
+            unsigned const handlerIndex = block->getHndIndex() + 1;
+
+            JITDUMP("Catchret block " FMT_BB " in region EH#%02u\n", block->bbNum, handlerIndex - 1);
+
+            // Add it to the catchret collection for this handler
+            //
+            ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByHandlerRegion[handlerIndex];
+
+            if (catchRetBlocks == nullptr)
+            {
+                catchRetBlocks =
+                    new (this, CMK_WasmCfgLowering) ArrayStack<BasicBlock*>(getAllocator(CMK_WasmCfgLowering));
+                catchRetBlocksByHandlerRegion[handlerIndex] = catchRetBlocks;
+            }
+
+            catchRetBlocks->Push(block);
+
+            // Find the continuation block for this catchret, and add it to the continuation collection for the region.
+            //
+            // Note it may already be in the collection if there are multiple catchrets that target the same
+            // continuation.
+            //
+            EHblkDsc* const dsc = ehGetBlockHndDsc(block);
+            unsigned const  enclosingHandlerIndex =
+                (dsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingHndIndex + 1;
+
+            ArrayStack<BasicBlock*>* catchRetContinuationBlocks =
+                catchRetContinuationBlocksByRegion[enclosingHandlerIndex];
+
+            if (catchRetContinuationBlocks == nullptr)
+            {
+                catchRetContinuationBlocks =
+                    new (this, CMK_WasmCfgLowering) ArrayStack<BasicBlock*>(getAllocator(CMK_WasmCfgLowering));
+                catchRetContinuationBlocksByRegion[enclosingHandlerIndex] = catchRetContinuationBlocks;
+            }
+
+            BasicBlock* const continuationBlock = block->GetTarget();
+
+            bool alreadyAdded = false;
+            for (BasicBlock* const existing : catchRetContinuationBlocks->TopDownOrder())
+            {
+                if (existing == continuationBlock)
+                {
+                    alreadyAdded = true;
+                    break;
+                }
+            }
+
+            if (!alreadyAdded)
+            {
+                continuationCount++;
+
+                // Re-purpose bbPreorderNum to hold the region-relative continuation number
+                // TODO: this may need to be method global?
+                //
+                continuationBlock->bbPreorderNum = catchRetContinuationBlocks->Height();
+                catchRetContinuationBlocks->Push(continuationBlock);
+            }
+
+#ifdef DEBUG
+
+            if (!alreadyAdded)
+            {
+                if (enclosingHandlerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    JITDUMP("Continuation block " FMT_BB " is in the method region [%u]\n", continuationBlock->bbNum,
+                            continuationBlock->bbPreorderNum);
+                }
+                else
+                {
+                    JITDUMP("Continuation block " FMT_BB " is in region EH#%02u [%u]\n", continuationBlock->bbNum,
+                            enclosingHandlerIndex, continuationBlock->bbPreorderNum);
+                }
+
+                // Ensure the continuation block is in the enclosing handler region, and
+                // that all its preds are either catchret blocks in the same region as `block`
+                // or in the same region as the continuation block.
+                //
+                if (continuationBlock->hasHndIndex())
+                {
+                    assert(continuationBlock->getHndIndex() == enclosingHandlerIndex);
+                }
+                else
+                {
+                    assert(enclosingHandlerIndex == 0);
+                }
+
+                for (BasicBlock* const continuationPred : continuationBlock->PredBlocks())
+                {
+
+                    if (continuationPred->KindIs(BBJ_EHCATCHRET))
+                    {
+                        assert(BasicBlock::sameHndRegion(continuationPred, block));
+                    }
+                    else
+                    {
+                        assert(BasicBlock::sameHndRegion(continuationPred, continuationBlock));
+                    }
+                }
+            }
+#endif
+        }
+    }
+
+    // Allocate an exposed int local to hold the continuation number.
+    // TODO-WASM: possibly share this with the "virtual IP"
+    // TODO-WASM: this may need to be at a known offset from $fp
+    // We do not wany any opts acting on this local (eg jump threading)
+    //
+    unsigned const continuationLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH continuation local"));
+    lvaGetDesc(continuationLocalNum)->lvType = TYP_INT;
+    lvaSetVarAddrExposed(continuationLocalNum DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+
+    // Now for each region with continuations, add a switch at region entry that dispatches to the
+    // various continuations.
+    //
+    for (int i = 0; i < catchRetBlocksByHandlerRegion.size(); i++)
+    {
+        ArrayStack<BasicBlock*>* catchRetContinuationBlocks = catchRetContinuationBlocksByRegion[i];
+
+        if (catchRetContinuationBlocks == nullptr)
+        {
+            continue;
+        }
+
+        BasicBlock* dispatchBlock = nullptr;
+        if (i == 0)
+        {
+            BasicBlock* const regionEntryBlock = fgFirstBB;
+            // assert is scratch?
+            // If not BBJ_ALWAYS, may need to split mid-block
+            assert(fgFirstBB->KindIs(BBJ_ALWAYS));
+            dispatchBlock = fgSplitBlockAtEnd(regionEntryBlock);
+        }
+        else
+        {
+            BasicBlock* const regionEntryBlock = compHndBBtab[i - 1].ebdHndBeg;
+            fgSplitBlockAtBeginning(regionEntryBlock);
+            dispatchBlock = regionEntryBlock;
+        }
+
+        assert(dispatchBlock->isEmpty());
+        assert(dispatchBlock->KindIs(BBJ_ALWAYS));
+        // dispatchBlock->SetKind(BBJ_SWITCH);
+        dispatchBlock->SetFlags(BBF_INTERNAL);
+
+        FlowEdge* const defaultEdge = dispatchBlock->GetTargetEdge();
+        unsigned const  caseCount   = catchRetContinuationBlocks->Height() + 1;
+
+        JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatchBlock->bbNum, caseCount);
+
+        FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
+        FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
+
+        for (BasicBlock* const catchRetContinuationBlock : catchRetContinuationBlocks->BottomUpOrder())
+        {
+            JITDUMP("  case %u: " FMT_BB "\n", catchRetContinuationBlock->bbPreorderNum,
+                    catchRetContinuationBlock->bbNum);
+            FlowEdge* caseEdge = fgAddRefPred(catchRetContinuationBlock, dispatchBlock);
+
+            succs[catchRetContinuationBlock->bbPreorderNum] = caseEdge;
+            cases[catchRetContinuationBlock->bbPreorderNum] = caseEdge;
+
+            // We only got to the non-default case if there was an exception
+            caseEdge->setLikelihood(0);
+        }
+
+        // default edge is the default case... we may want to rethink this and make
+        // the default case invalid?
+        JITDUMP("  case %u (default): " FMT_BB "\n", caseCount - 1, defaultEdge->getDestinationBlock()->bbPreorderNum);
+        succs[caseCount - 1] = defaultEdge;
+        cases[caseCount - 1] = defaultEdge;
+
+        BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, caseCount, cases, caseCount, true);
+        dispatchBlock->SetSwitch(swtDesc);
+
+        GenTree* const controlVar = gtNewLclvNode(continuationLocalNum, TYP_INT);
+        GenTree* const switchNode = gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+
+        assert(dispatchBlock->isEmpty());
+
+        if (dispatchBlock->IsLIR())
+        {
+            LIR::Range range = LIR::SeqTree(this, switchNode);
+            LIR::AsRange(dispatchBlock).InsertAtEnd(std::move(range));
+        }
+        else
+        {
+            Statement* const switchStmt = fgNewStmtAtEnd(dispatchBlock, switchNode);
+            gtSetStmtInfo(switchStmt);
+            fgSetStmtSeq(switchStmt);
+        }
+    }
+
+    // TODO: add code to set the continuation variable appropriately in each BBJ_EHCATCHRET block and at entry.
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}

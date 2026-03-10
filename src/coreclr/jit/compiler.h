@@ -6200,6 +6200,7 @@ public:
 
 #ifdef TARGET_WASM
     FlowGraphDfsTree* fgWasmDfs();
+    PhaseStatus fgWasmEhFlow();
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
 #ifdef DEBUG
