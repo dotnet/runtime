@@ -239,7 +239,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         internal int Version;
         internal string Policy;
-        internal ReadOnlySpan<byte> MessageImprint;
+        internal System.Security.Cryptography.Pkcs.Asn1.ValueMessageImprint MessageImprint;
         internal ReadOnlySpan<byte> SerialNumber;
         internal DateTimeOffset GenTime;
         internal System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy? Accuracy;
@@ -302,7 +302,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
 
             decoded.Policy = sequenceReader.ReadObjectIdentifier();
-            decoded.MessageImprint = sequenceReader.ReadEncodedValue();
+            System.Security.Cryptography.Pkcs.Asn1.ValueMessageImprint.Decode(ref sequenceReader, out decoded.MessageImprint);
             decoded.SerialNumber = sequenceReader.ReadIntegerBytes();
             decoded.GenTime = sequenceReader.ReadGeneralizedTime();
 
