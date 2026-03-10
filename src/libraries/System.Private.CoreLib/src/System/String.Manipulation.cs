@@ -2204,7 +2204,6 @@ namespace System
                         sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector512<ushort>.Count);
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
-                    offset = lengthToExamine;
                 }
                 return;
             }
@@ -2294,7 +2293,6 @@ namespace System
                         sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector256<ushort>.Count);
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
-                    offset = lengthToExamine;
                 }
                 return;
             }
@@ -2384,20 +2382,11 @@ namespace System
                         sepListBuilder.Append((int)(lengthToExamine + bitPos) - Vector128<ushort>.Count);
                         mask = BitOperations.ResetLowestSetBit(mask);
                     }
-                    offset = lengthToExamine;
                 }
                 return;
             }
 
-            while (offset < lengthToExamine)
-            {
-                char curr = Unsafe.Add(ref source, offset);
-                if (curr == c)
-                {
-                    sepListBuilder.Append((int)offset);
-                }
-                offset++;
-            }
+            Debug.Fail("We should not be able to reach this point of MakeSeparatorListVectorized.");
         }
 
         private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
