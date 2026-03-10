@@ -17,10 +17,7 @@ namespace Tracing.UserEvents.Tests.Common
     public class UserEventsTestRunner
     {
         private const int SIGINT = 2;
-
-        // The tracee must JIT compile, receive IPC enable, and emit events before exiting.
-        // Under JitStress on ARM64, this can take significantly longer than normal.
-        private const int DefaultTraceeExitTimeoutMs = 60000;
+        private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
         // Timeout for record-trace to emit "Recording started" on stdout. record-trace's
