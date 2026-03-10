@@ -8,6 +8,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using Microsoft.Interop.Analyzers;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.Interop.SyntaxFactoryExtensions;
 
@@ -28,7 +30,16 @@ namespace Microsoft.Interop
                         var type = (INamedTypeSymbol)context.TargetSymbol;
                         var syntax = (ClassDeclarationSyntax)context.TargetNode;
                         var compilation = context.SemanticModel.Compilation;
-                        return ComClassInfo.TryGetFrom(type, syntax, compilation);
+                        var unsafeCodeIsEnabled = compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
+                        INamedTypeSymbol? generatedComInterfaceAttributeType = compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
+
+                        // Currently all reported diagnostics are fatal to the generator
+                        if (ComClassGeneratorDiagnosticsAnalyzer.GetDiagnosticsForAnnotatedClass(type, unsafeCodeIsEnabled, generatedComInterfaceAttributeType).Any())
+                        {
+                            return null;
+                        }
+
+                        return ComClassInfo.From(type, syntax, generatedComInterfaceAttributeType);
                     })
                 .Where(static info => info is not null);
 

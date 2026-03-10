@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -53,15 +54,20 @@ public sealed class ComClassGeneratorDiagnosticsAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        Location location = classToAnalyze.Locations.First();
+        foreach (Diagnostic diagnostic in GetDiagnosticsForAnnotatedClass(classToAnalyze, unsafeCodeIsEnabled, generatedComInterfaceAttributeType))
+        {
+            context.ReportDiagnostic(diagnostic);
+        }
+    }
+
+    public static IEnumerable<Diagnostic> GetDiagnosticsForAnnotatedClass(INamedTypeSymbol annotatedClass, bool unsafeCodeIsEnabled, INamedTypeSymbol? generatedComInterfaceAttributeType)
+    {
+        Location location = annotatedClass.Locations.First();
         bool hasErrors = false;
 
         if (!unsafeCodeIsEnabled)
         {
-            context.ReportDiagnostic(
-                Diagnostic.Create(
-                    GeneratorDiagnostics.RequiresAllowUnsafeBlocks,
-                    location));
+            yield return Diagnostic.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, location);
             hasErrors = true;
         }
 
@@ -69,34 +75,32 @@ public sealed class ComClassGeneratorDiagnosticsAnalyzer : DiagnosticAnalyzer
 
         if (!declarationNode.IsInPartialContext(out _))
         {
-            context.ReportDiagnostic(
-                Diagnostic.Create(
-                    GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier,
-                    location,
-                    classToAnalyze));
+            yield return Diagnostic.Create(
+                GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier,
+                location,
+                annotatedClass);
             hasErrors = true;
         }
 
         if (hasErrors)
         {
             // If we already reported at least one error avoid stacking a warning on top of it
-            return;
+            yield break;
         }
 
-        foreach (INamedTypeSymbol iface in classToAnalyze.AllInterfaces)
+        foreach (INamedTypeSymbol iface in annotatedClass.AllInterfaces)
         {
             if (iface.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, generatedComInterfaceAttributeType)) is { } generatedComInterfaceAttribute &&
                 GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComInterfaceAttribute).Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
             {
-                return;
+                yield break;
             }
         }
 
         // Class doesn't implement any generated COM interface. Report a warning about that
-        context.ReportDiagnostic(
-            Diagnostic.Create(
-                GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface,
-                location,
-                classToAnalyze));
+        yield return Diagnostic.Create(
+            GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface,
+            location,
+            annotatedClass);
     }
 }

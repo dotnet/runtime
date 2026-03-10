@@ -4,9 +4,7 @@
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Interop
 {
@@ -25,20 +23,9 @@ namespace Microsoft.Interop
             ImplementedInterfacesNames = implementedInterfacesNames;
         }
 
-        public static ComClassInfo? TryGetFrom(INamedTypeSymbol type, ClassDeclarationSyntax syntax, Compilation compilation)
+        public static ComClassInfo From(INamedTypeSymbol type, ClassDeclarationSyntax syntax, INamedTypeSymbol? generatedComInterfaceAttributeType)
         {
-            if (compilation.Options is not CSharpCompilationOptions { AllowUnsafe: true })
-            {
-                return null;
-            }
-
-            if (!syntax.IsInPartialContext(out _))
-            {
-                return null;
-            }
-
             ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
-            INamedTypeSymbol? generatedComInterfaceAttributeType = compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
             foreach (INamedTypeSymbol iface in type.AllInterfaces)
             {
                 AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generatedComInterfaceAttributeType));
@@ -52,7 +39,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            return names.Count == 0 ? null : new ComClassInfo(
+            return new ComClassInfo(
                 type.ToDisplayString(),
                 new ContainingSyntaxContext(syntax),
                 new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
