@@ -40,11 +40,13 @@ namespace System
                 (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase)));
         }
 
+#if TARGET_APPLE
         private static int s_useNetworkFramework;
         internal static bool UseNetworkFramework
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetCachedSwitchValue("System.Net.Security.UseNetworkFramework", "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", ref s_useNetworkFramework);
         }
+#endif
     }
 }
