@@ -11,15 +11,15 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     /// <summary>
-    /// Unit tests for GnuSparseStream behavior. Since GnuSparseStream is internal,
+    /// Tests for GNU sparse format 1.0 (PAX) reading. Since GnuSparseStream is internal,
     /// it is exercised through TarReader's public DataStream property using
     /// programmatically constructed PAX 1.0 sparse archives.
     /// </summary>
-    public class GnuSparseStreamTests : TarTestsBase
+    public class TarReader_SparseFileTests : TarTestsBase
     {
         // Builds a PAX 1.0 sparse archive in memory and returns a TarEntry whose
         // DataStream is a GnuSparseStream. segments is an array of (virtualOffset, length)
-        // pairs and rawPackedData is the concatenated packed bytes for all segments.
+        // pairs; packed data for each segment is filled with its 1-based index value.
         private static (MemoryStream archive, byte[] rawPackedData) BuildSparseArchive(
             string realName, long realSize,
             (long Offset, long Length)[] segments)
@@ -81,6 +81,34 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(entry);
             Assert.NotNull(entry.DataStream);
             return entry.DataStream;
+        }
+
+        // Builds a raw archive byte array where the sparse map text is injected directly,
+        // bypassing TarWriter validation. Used to construct malformed archives.
+        private static MemoryStream BuildRawSparseArchive(string sparseMapContent, string realName, long realSize)
+        {
+            byte[] mapBytes = Encoding.ASCII.GetBytes(sparseMapContent);
+            int padding = (512 - (mapBytes.Length % 512)) % 512;
+            byte[] rawData = new byte[mapBytes.Length + padding];
+            mapBytes.CopyTo(rawData, 0);
+
+            var gnuSparseAttributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.major"] = "1",
+                ["GNU.sparse.minor"] = "0",
+                ["GNU.sparse.name"] = realName,
+                ["GNU.sparse.realsize"] = realSize.ToString(),
+            };
+
+            var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/" + realName, gnuSparseAttributes);
+                entry.DataStream = new MemoryStream(rawData);
+                writer.WriteEntry(entry);
+            }
+            archive.Position = 0;
+            return archive;
         }
 
         [Theory]
@@ -297,7 +325,6 @@ namespace System.Formats.Tar.Tests
             const string RegularName = "regular.txt";
             byte[] regularContent = Encoding.UTF8.GetBytes("Hello, world!");
 
-            var segments = new[] { (0L, 256L) };
             string sparseMapText = "1\n0\n256\n";
             byte[] sparseMapBytes = Encoding.ASCII.GetBytes(sparseMapText);
             byte[] packedData = new byte[256];
@@ -343,6 +370,125 @@ namespace System.Formats.Tar.Tests
             byte[] buf = new byte[regularContent.Length];
             second.DataStream.ReadExactly(buf);
             Assert.Equal(regularContent, buf);
+        }
+
+        // --- Corrupted format tests ---
+
+        [Theory]
+        [InlineData("abc\n0\n256\n")]        // non-numeric segment count
+        [InlineData("\n0\n256\n")]            // empty segment count line
+        [InlineData("1\nabc\n256\n")]         // non-numeric offset
+        [InlineData("1\n0\nabc\n")]           // non-numeric length
+        [InlineData("1\n-1\n256\n")]          // negative offset
+        [InlineData("1\n0\n-1\n")]            // negative length
+        [InlineData("1\n0\n")]                // truncated: missing length line
+        [InlineData("1\n")]                   // truncated: missing offset and length lines
+        public void CorruptedSparseMap_InvalidDataException(string sparseMapContent)
+        {
+            var archive = BuildRawSparseArchive(sparseMapContent, "file.bin", 1024);
+            using var reader = new TarReader(archive);
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry(copyData: false));
+        }
+
+        [Theory]
+        [InlineData("abc\n0\n256\n")]
+        [InlineData("\n0\n256\n")]
+        [InlineData("1\nabc\n256\n")]
+        [InlineData("1\n0\nabc\n")]
+        [InlineData("1\n-1\n256\n")]
+        [InlineData("1\n0\n-1\n")]
+        [InlineData("1\n0\n")]
+        [InlineData("1\n")]
+        public async Task CorruptedSparseMap_InvalidDataException_Async(string sparseMapContent)
+        {
+            var archive = BuildRawSparseArchive(sparseMapContent, "file.bin", 1024);
+            using var reader = new TarReader(archive);
+            await Assert.ThrowsAsync<InvalidDataException>(() => reader.GetNextEntryAsync(copyData: false).AsTask());
+        }
+
+        [Fact]
+        public void CorruptedSparseMap_TruncatedAfterSegmentCount_InvalidDataException()
+        {
+            // The sparse map contains the segment count but is truncated before the offset/length.
+            // The data section has 512 bytes (so _size > 0 and the sparse stream will be created),
+            // but the map text ends before providing the required offset and length lines.
+            string sparseMapContent = "1\n"; // claims 1 segment but provides neither offset nor length
+            var archive = BuildRawSparseArchive(sparseMapContent, "file.bin", 1024);
+            using var reader = new TarReader(archive);
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry(copyData: false));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MissingSparseAttributes_EntryReadAsNormal(bool copyData)
+        {
+            // An entry with GNU.sparse.major but no GNU.sparse.minor should NOT be treated
+            // as sparse format 1.0. It should be read as a plain regular file.
+            byte[] content = Encoding.ASCII.GetBytes("plain content");
+
+            var attributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.major"] = "1",
+                // GNU.sparse.minor intentionally omitted
+                ["GNU.sparse.name"] = "real.bin",
+                ["GNU.sparse.realsize"] = "1024",
+            };
+
+            var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/real.bin", attributes);
+                entry.DataStream = new MemoryStream(content);
+                writer.WriteEntry(entry);
+            }
+            archive.Position = 0;
+
+            using var reader = new TarReader(archive);
+            TarEntry? e = reader.GetNextEntry(copyData);
+            Assert.NotNull(e);
+            // Without both major=1 and minor=0, the entry is NOT treated as sparse 1.0:
+            // the name is overridden by GNU.sparse.name but the DataStream is not wrapped.
+            Assert.Equal("real.bin", e.Name);
+            Assert.NotNull(e.DataStream);
+            byte[] buf = new byte[content.Length];
+            e.DataStream.ReadExactly(buf);
+            Assert.Equal(content, buf);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WrongMajorMinor_EntryReadAsNormal(bool copyData)
+        {
+            // GNU.sparse.major=2 (not 1.0) should not trigger sparse expansion.
+            byte[] content = Encoding.ASCII.GetBytes("plain content");
+
+            var attributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.major"] = "2",
+                ["GNU.sparse.minor"] = "0",
+                ["GNU.sparse.name"] = "real.bin",
+                ["GNU.sparse.realsize"] = "1024",
+            };
+
+            var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/real.bin", attributes);
+                entry.DataStream = new MemoryStream(content);
+                writer.WriteEntry(entry);
+            }
+            archive.Position = 0;
+
+            using var reader = new TarReader(archive);
+            TarEntry? e = reader.GetNextEntry(copyData);
+            Assert.NotNull(e);
+            Assert.Equal("real.bin", e.Name);
+            Assert.NotNull(e.DataStream);
+            byte[] buf = new byte[content.Length];
+            e.DataStream.ReadExactly(buf);
+            Assert.Equal(content, buf);
         }
     }
 }
