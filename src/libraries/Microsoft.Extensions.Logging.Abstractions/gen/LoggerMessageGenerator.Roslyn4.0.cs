@@ -101,11 +101,14 @@ namespace Microsoft.Extensions.Logging.Generators
 
             // Single collect for all per-method results, then aggregate into an equatable source
             // model (using ImmutableEquatableArray for deep value equality) plus flat diagnostics.
+            // Diagnostics are deduplicated here because each attributed method triggers parsing of
+            // the entire class, producing duplicate diagnostics.
             IncrementalValueProvider<(ImmutableEquatableArray<(LoggerClassSpec LoggerClassSpec, bool HasStringCreate)> Specs, ImmutableArray<Diagnostic> Diagnostics)> collected =
                 loggerClasses.Collect().Select(static (items, _) =>
                 {
                     ImmutableArray<(LoggerClassSpec, bool)>.Builder? specs = null;
                     ImmutableArray<Diagnostic>.Builder? diagnostics = null;
+                    HashSet<(string Id, TextSpan? Span, string? FilePath)>? seen = null;
 
                     foreach (var item in items)
                     {
@@ -113,9 +116,12 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             (specs ??= ImmutableArray.CreateBuilder<(LoggerClassSpec, bool)>()).Add((item.LoggerClassSpec, item.HasStringCreate));
                         }
-                        if (!item.Diagnostics.IsDefaultOrEmpty)
+                        foreach (Diagnostic diagnostic in item.Diagnostics)
                         {
-                            (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).AddRange(item.Diagnostics);
+                            if ((seen ??= new()).Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
+                            {
+                                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
+                            }
                         }
                     }
 
@@ -146,15 +152,9 @@ namespace Microsoft.Extensions.Logging.Generators
 
         private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<Diagnostic> diagnostics)
         {
-            // Use HashSet to deduplicate — each attributed method triggers parsing of entire class,
-            // producing duplicate diagnostics.
-            var reportedDiagnostics = new HashSet<(string Id, TextSpan? Span, string? FilePath)>();
             foreach (Diagnostic diagnostic in diagnostics)
             {
-                if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
-                {
-                    context.ReportDiagnostic(diagnostic);
-                }
+                context.ReportDiagnostic(diagnostic);
             }
         }
 
