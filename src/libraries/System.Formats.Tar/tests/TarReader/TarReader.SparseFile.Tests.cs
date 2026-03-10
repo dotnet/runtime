@@ -613,6 +613,131 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public async Task GnuSparse10Pax_DataStreamExpandsSparseSections_Async(bool copyData)
+        {
+            const string PlaceholderName = "GNUSparseFile.0/realfile.txt";
+            const string RealName = "realfile.txt";
+            const long RealSize = 1024;
+            const long SegmentLength = 256;
+            byte[] packedData = new byte[SegmentLength];
+            Array.Fill<byte>(packedData, 0x42);
+
+            byte[] mapText = Encoding.ASCII.GetBytes("1\n0\n256\n");
+            byte[] rawSparseData = new byte[512 + SegmentLength];
+            mapText.CopyTo(rawSparseData, 0);
+            packedData.CopyTo(rawSparseData, 512);
+
+            var gnuSparseAttributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.major"] = "1",
+                ["GNU.sparse.minor"] = "0",
+                ["GNU.sparse.name"] = RealName,
+                ["GNU.sparse.realsize"] = RealSize.ToString(),
+            };
+
+            using var archive = new MemoryStream();
+            await using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, PlaceholderName, gnuSparseAttributes);
+                entry.DataStream = new MemoryStream(rawSparseData);
+                await writer.WriteEntryAsync(entry);
+            }
+
+            archive.Position = 0;
+            await using var reader = new TarReader(archive);
+            TarEntry readEntry = await reader.GetNextEntryAsync(copyData);
+            Assert.NotNull(readEntry);
+
+            Assert.Equal(RealName, readEntry.Name);
+            Assert.Equal(RealSize, readEntry.Length);
+            Assert.NotNull(readEntry.DataStream);
+            Assert.Equal(RealSize, readEntry.DataStream.Length);
+
+            byte[] expanded = new byte[RealSize];
+            int totalRead = 0;
+            while (totalRead < expanded.Length)
+            {
+                int read = await readEntry.DataStream.ReadAsync(expanded, totalRead, expanded.Length - totalRead);
+                Assert.True(read > 0);
+                totalRead += read;
+            }
+
+            for (int i = 0; i < SegmentLength; i++)
+            {
+                Assert.Equal(0x42, expanded[i]);
+            }
+            for (int i = (int)SegmentLength; i < RealSize; i++)
+            {
+                Assert.Equal(0, expanded[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GnuSparse10Pax_NilSparseData_Async(bool copyData)
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-nil-sparse-data");
+            await using TarReader reader = new TarReader(archiveStream);
+
+            TarEntry? entry = await reader.GetNextEntryAsync(copyData);
+            Assert.NotNull(entry);
+
+            Assert.Equal("sparse.db", entry.Name);
+            Assert.Equal(1000, entry.Length);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(1000, entry.DataStream.Length);
+
+            byte[] content = new byte[1000];
+            int totalRead = 0;
+            while (totalRead < content.Length)
+            {
+                int read = await entry.DataStream.ReadAsync(content, totalRead, content.Length - totalRead);
+                Assert.True(read > 0);
+                totalRead += read;
+            }
+
+            for (int i = 0; i < 1000; i++)
+            {
+                Assert.Equal((byte)'0' + (i % 10), content[i]);
+            }
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GnuSparse10Pax_NilSparseHole_Async(bool copyData)
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-nil-sparse-hole");
+            await using TarReader reader = new TarReader(archiveStream);
+
+            TarEntry? entry = await reader.GetNextEntryAsync(copyData);
+            Assert.NotNull(entry);
+
+            Assert.Equal("sparse.db", entry.Name);
+            Assert.Equal(1000, entry.Length);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(1000, entry.DataStream.Length);
+
+            byte[] content = new byte[1000];
+            int totalRead = 0;
+            while (totalRead < content.Length)
+            {
+                int read = await entry.DataStream.ReadAsync(content, totalRead, content.Length - totalRead);
+                Assert.True(read > 0);
+                totalRead += read;
+            }
+
+            Assert.All(content, b => Assert.Equal(0, b));
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public void GnuSparse10Pax_SparseBig_NameAndLength(bool copyData)
         {
             // pax-sparse-big: 6 segments scattered across a 60 GB virtual file, realsize=60000000000.
