@@ -48,6 +48,9 @@ namespace System.Text.RegularExpressions.Generator
             // - Diagnostic in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
             // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
+            //
+            // Location is threaded separately from the records so that it doesn't participate in
+            // record equality — this allows the incremental pipeline to cache results by value.
             IncrementalValueProvider<(ImmutableArray<object> Results, ImmutableArray<Diagnostic> Diagnostics)> collected =
                 context.SyntaxProvider
 
@@ -68,20 +71,23 @@ namespace System.Text.RegularExpressions.Generator
                 .Where(static m => m is not null)
 
                 // The input here will either be a Diagnostic (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
-                // or it will be a RegexPatternAndSyntax containing all of the successfully parsed data from the attribute/method.
+                // or it will be a (RegexPatternAndSyntax, Location) tuple containing all of the successfully parsed data from the attribute/method.
                 .Select((methodOrDiagnostic, _) =>
                 {
-                    if (methodOrDiagnostic is RegexPatternAndSyntax method)
+                    if (methodOrDiagnostic is ValueTuple<RegexPatternAndSyntax, Location> methodAndLocation)
                     {
+                        RegexPatternAndSyntax method = methodAndLocation.Item1;
+                        Location location = methodAndLocation.Item2;
                         try
                         {
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
                             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
-                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.DiagnosticLocation, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
+                            RegexMethod regexMethod = new(method.DeclaringType, method.IsProperty, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
+                            return (object)(regexMethod, location);
                         }
                         catch (Exception e)
                         {
-                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.DiagnosticLocation, e.Message);
+                            return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, location, e.Message);
                         }
                     }
 
@@ -91,17 +97,20 @@ namespace System.Text.RegularExpressions.Generator
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
                 .Select((state, _) =>
                 {
-                    if (state is not RegexMethod regexMethod)
+                    if (state is not ValueTuple<RegexMethod, Location> regexMethodAndLocation)
                     {
                         Debug.Assert(state is Diagnostic);
                         return state;
                     }
 
+                    RegexMethod regexMethod = regexMethodAndLocation.Item1;
+                    Location location = regexMethodAndLocation.Item2;
+
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
                     {
-                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), regexMethod.CompilationData);
+                        return (object)(regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, location), regexMethod.CompilationData);
                     }
 
                     // Generate the core logic for the regex.
@@ -112,7 +121,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, regexMethod.CompilationData.CheckOverflow);
                     writer.Indent -= 2;
-                    return (regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
+                    return (object)(regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
                 })
 
                 // Combine all of the generated text outputs into a single batch, then split
