@@ -92,6 +92,12 @@ namespace System.Formats.Tar
         // embedded sparse map followed by the packed data segments.
         internal bool _isGnuSparse10;
 
+        // When _isGnuSparse10 is true, this wraps _dataStream and presents the expanded virtual
+        // file content. _dataStream remains the raw (condensed) stream so that TarWriter can
+        // round-trip the original sparse data and AdvanceDataStreamIfNeeded works without
+        // special-casing.
+        internal GnuSparseStream? _gnuSparseDataStream;
+
         // GNU attributes
 
         internal DateTimeOffset _aTime;
@@ -123,6 +129,7 @@ namespace System.Formats.Tar
             _dataStream = other._dataStream;
             _gnuSparseRealSize = other._gnuSparseRealSize;
             _isGnuSparse10 = other._isGnuSparse10;
+            _gnuSparseDataStream = other._gnuSparseDataStream;
         }
 
         internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)
