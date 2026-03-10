@@ -3341,8 +3341,17 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm + 1);
-                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    assert(!(!IsUnsigned && (imm == INT64_MAX)));
+                    if (IsUnsigned && (imm == ~0))
+                    {
+                        // unsigned (a <= ~0) is always true.
+                        emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, targetReg, REG_R0, 1);
+                    }
+                    else
+                    {
+                        emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm + 1);
+                        emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    }
                 }
             }
             else if (tree->OperIs(GT_GT))
