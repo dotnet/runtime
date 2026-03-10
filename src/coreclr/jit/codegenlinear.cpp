@@ -1461,7 +1461,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
         }
     }
 
-    assert(node->OperIs(GT_CATCH_ARG) || ((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0));
+    assert((node->gtDebugFlags & GTF_DEBUG_NODE_CG_CONSUMED) == 0);
     assert((lastConsumedNode == nullptr) || (node->gtUseNum == -1) || (node->gtUseNum > lastConsumedNode->gtUseNum));
 
     node->gtDebugFlags |= GTF_DEBUG_NODE_CG_CONSUMED;
@@ -2323,6 +2323,30 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// genCodeForCatchArg:
+//   Generates code for GT_CATCH_ARG.
+//
+// Arguments:
+//    tree - the GT_CAST node.
+//
+void CodeGen::genCodeForCatchArg(GenTree* tree)
+{
+    noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
+
+    // Catch arguments get passed in a register. genCodeForBBlist()
+    // would have marked it as holding a GC object, but not used. 
+
+    noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
+    inst_Mov(TYP_REF, tree->GetRegNum(), REG_EXCEPTION_OBJECT, /* canSkip */ true);
+
+    if (tree->GetRegNum() != REG_EXCEPTION_OBJECT)
+    {
+        gcInfo.gcMarkRegSetNpt(RBM_EXCEPTION_OBJECT);
+    }
+    genProduceReg(tree);
+}
 
 //------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.
