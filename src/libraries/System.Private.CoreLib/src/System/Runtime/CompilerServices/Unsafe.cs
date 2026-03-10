@@ -103,7 +103,6 @@ namespace System.Runtime.CompilerServices
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T Add<T>(ref T source, int elementOffset)
             where T : allows ref struct
         {
@@ -132,7 +131,6 @@ namespace System.Runtime.CompilerServices
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T Add<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
@@ -190,7 +188,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T Add<T>(ref T source, nuint elementOffset)
             where T : allows ref struct
         {
@@ -219,7 +216,6 @@ namespace System.Runtime.CompilerServices
         // Mono:AddByteOffset
         [NonVersionable]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
             where T : allows ref struct
@@ -681,7 +677,6 @@ namespace System.Runtime.CompilerServices
         // AOT:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
-        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
@@ -842,7 +837,6 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INT_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T Subtract<T>(ref T source, int elementOffset)
             where T : allows ref struct
         {
@@ -898,7 +892,6 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T Subtract<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
@@ -926,7 +919,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T Subtract<T>(ref T source, nuint elementOffset)
             where T : allows ref struct
         {
@@ -952,7 +944,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
-        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
@@ -973,7 +964,6 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset)
             where T : allows ref struct

@@ -148,7 +148,6 @@ namespace System.Runtime.InteropServices
         /// the pointer from within the SafeBuffer.  You must set
         /// pointer to null before calling this method.</param>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public void AcquirePointer(ref byte* pointer)
         {
             if (_numBytes == Uninitialized)

@@ -175,13 +175,11 @@ namespace System.Threading
             }
         }
 
-        [RequiresUnsafe]
         internal static unsafe NativeOverlapped* ToNativeOverlapped(Win32ThreadPoolNativeOverlapped* overlapped)
         {
             return (NativeOverlapped*)overlapped;
         }
 
-        [RequiresUnsafe]
         internal static unsafe Win32ThreadPoolNativeOverlapped* FromNativeOverlapped(NativeOverlapped* overlapped)
         {
             return (Win32ThreadPoolNativeOverlapped*)overlapped;
