@@ -267,10 +267,11 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
+        [Theory]
         [MemberData(nameof(BadResolveTypes))]
         public void ResolveTypeFail(int token)
         {
+            Assert.SkipUnless(PlatformDetection.IsMetadataTokenSupported, "Requires IsMetadataTokenSupported");
             Assert.ThrowsAny<ArgumentException>(() =>
             {
                 Module.ResolveType(token);
@@ -296,10 +297,11 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
+        [Theory]
         [MemberData(nameof(BadResolveMethods))]
         public void ResolveMethodFail(int token)
         {
+            Assert.SkipUnless(PlatformDetection.IsMetadataTokenSupported, "Requires IsMetadataTokenSupported");
             Assert.ThrowsAny<ArgumentException>(() =>
             {
                 Module.ResolveMethod(token);
@@ -326,10 +328,11 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
+        [Theory]
         [MemberData(nameof(BadResolveFields))]
         public void ResolveFieldFail(int token)
         {
+            Assert.SkipUnless(PlatformDetection.IsMetadataTokenSupported, "Requires IsMetadataTokenSupported");
             Assert.ThrowsAny<ArgumentException>(() =>
             {
                 Module.ResolveField(token);
@@ -345,10 +348,11 @@ namespace System.Reflection.Tests
             }
             .Union(NullTokens);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
+        [Theory]
         [MemberData(nameof(BadResolveStrings))]
         public void ResolveStringFail(int token)
         {
+            Assert.SkipUnless(PlatformDetection.IsMetadataTokenSupported, "Requires IsMetadataTokenSupported");
             Assert.ThrowsAny<ArgumentException>(() =>
             {
                 Module.ResolveString(token);

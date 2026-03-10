@@ -35,13 +35,14 @@ namespace System.Runtime.CompilerServices.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => cwt.Add(key, key)); // duplicate key
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [Theory]
         [InlineData(1, false)]
         [InlineData(1, true)]
         [InlineData(100, false)]
         [InlineData(100, true)]
         public static void Add(int numObjects, bool tryAdd)
         {
+            Assert.SkipUnless(PlatformDetection.IsPreciseGcSupported, "Requires IsPreciseGcSupported");
             // Isolated to ensure we drop all references even in debug builds where lifetime is extended by the JIT to the end of the method
             Func<int, Tuple<ConditionalWeakTable<object, object>, WeakReference[], WeakReference[]>> body = count =>
             {

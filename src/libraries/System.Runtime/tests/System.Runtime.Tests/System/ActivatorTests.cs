@@ -742,10 +742,11 @@ namespace System.Tests
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(type, nonPublic: false));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [Theory]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
+            Assert.SkipUnless(PlatformDetection.IsAssemblyLoadingSupported, "Requires IsAssemblyLoadingSupported");
             ObjectHandle oh = null;
             if (exceptionType != null)
             {
@@ -781,11 +782,12 @@ namespace System.Tests
             { "TestLoadAssembly.dll", "publicclassnodefaultconstructorsample", "PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(TestingCreateInstanceObjectHandleData))]
         public static void TestingCreateInstanceObjectHandle(string assemblyName, string type, string returnedFullNameType, Type exceptionType, bool returnNull)
         {
+            Assert.SkipUnless(PlatformDetection.IsAssemblyLoadingSupported, "Requires IsAssemblyLoadingSupported");
             ObjectHandle oh = null;
 
             if (exceptionType != null)
@@ -838,10 +840,11 @@ namespace System.Tests
             { "mscorlib", "System.Nullable`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]", "", null, true }
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [Theory]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceFromObjectHandleFullSignature(string assemblyFile, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {
+            Assert.SkipUnless(PlatformDetection.IsAssemblyLoadingSupported, "Requires IsAssemblyLoadingSupported");
             ObjectHandle oh = Activator.CreateInstanceFrom(assemblyFile: assemblyFile, typeName: type, ignoreCase: ignoreCase, bindingAttr: bindingAttr, binder: binder, args: args, culture: culture, activationAttributes: activationAttributes);
             CheckValidity(oh, returnedFullNameType);
         }
@@ -860,11 +863,12 @@ namespace System.Tests
             yield return new object[] { "TestLoadAssembly.dll", "privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "PrivateClassSample" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(TestingCreateInstanceObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceObjectHandleFullSignature(string assemblyName, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType, bool returnNull)
         {
+            Assert.SkipUnless(PlatformDetection.IsAssemblyLoadingSupported, "Requires IsAssemblyLoadingSupported");
             ObjectHandle oh = Activator.CreateInstance(assemblyName: assemblyName, typeName: type, ignoreCase: ignoreCase, bindingAttr: bindingAttr, binder: binder, args: args, culture: culture, activationAttributes: activationAttributes);
             if (returnNull)
             {

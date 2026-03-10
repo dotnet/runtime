@@ -3398,11 +3398,12 @@ namespace System.Tests
             Assert.Throws<RankException>(() => Array.Reverse((Array)new int[10, 10], 0, 0));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [Theory]
         [InlineData(0)]
         [InlineData(-1)]
         public static void Reverse_IndexLessThanLowerBound_ThrowsArgumentOutOfRangeException(int lowerBound)
         {
+            Assert.SkipUnless(PlatformDetection.IsNonZeroLowerBoundArraySupported, "Requires IsNonZeroLowerBoundArraySupported");
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], lowerBound), lowerBound - 1, 0));
         }
 

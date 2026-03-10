@@ -103,10 +103,11 @@ namespace System.Tests
         }
 
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
-        [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(IsEnglishUILanguage))]
+        [Theory]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
         public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string alternativeDisplayName, string standardName, string daylightName, string alternativeDaylightName)
         {
+            Assert.SkipUnless(TimeZoneInfoTests.IsEnglishUILanguage, "Requires IsEnglishUILanguage");
             // Edge case - Optionally allow some characters to be absent in the display name.
             const string chars = ".’";
             foreach (char c in chars)
@@ -2131,10 +2132,11 @@ namespace System.Tests
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)
         {
+            Assert.SkipUnless(PlatformDetection.IsBinaryFormatterSupported, "Requires IsBinaryFormatterSupported");
             BinaryFormatter formatter = new BinaryFormatter();
 
             using (MemoryStream stream = new MemoryStream())
@@ -2296,7 +2298,7 @@ namespace System.Tests
         // https://github.com/dotnet/runtime/issues/73031 is the tracking issue to investigate the test failure on Android.
         private static bool CanRunNJulianRuleTest => !PlatformDetection.IsLinuxBionic && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(CanRunNJulianRuleTest))]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
         [InlineData("<+00>0<+01>,30/0,J365/25", 31, 1, true)]
@@ -2307,6 +2309,7 @@ namespace System.Tests
         [InlineData("<+00>0<+01>,A/0,J365/25", 0, 0, false)]
         public static void NJulianRuleTest(string posixRule, int dayNumber, int monthNumber, bool shouldSucceed)
         {
+            Assert.SkipUnless(TimeZoneInfoTests.CanRunNJulianRuleTest, "Requires CanRunNJulianRuleTest");
             string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
             using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
             {
@@ -2485,10 +2488,11 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
+        [Theory]
         [MemberData(nameof(AlternativeName_TestData))]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi, "Requires IsNotBrowser and IsNotWasi");
             if (PlatformDetection.ICUVersion.Major >= 52 && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
             {
                 TimeZoneInfo tzi1 = TimeZoneInfo.FindSystemTimeZoneById(ianaId);
@@ -2561,7 +2565,7 @@ namespace System.Tests
             Assert.False(TimeZoneInfo.TryFindSystemTimeZoneById(nonNativeTzName, out _));
         }
 
-        [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(SupportIanaNamesConversion))]
+        [Theory]
         [InlineData("Pacific Standard Time", "America/Los_Angeles")]
         [InlineData("AUS Eastern Standard Time", "Australia/Sydney")]
         [InlineData("GMT Standard Time", "Europe/London")]
@@ -2579,6 +2583,7 @@ namespace System.Tests
         [InlineData("Iran Standard Time", "Asia/Tehran")]
         public static void IdsConversionsTest(string windowsId, string ianaId)
         {
+            Assert.SkipUnless(TimeZoneInfoTests.SupportIanaNamesConversion, "Requires SupportIanaNamesConversion");
             Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
             Assert.Equal(windowsId, winId);
 
@@ -2586,7 +2591,7 @@ namespace System.Tests
             Assert.Equal(ianaId, ianaConvertedId);
         }
 
-        [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(SupportIanaNamesConversion))]
+        [Theory]
         [InlineData("Pacific Standard Time", "America/Vancouver", "CA")]
         [InlineData("Pacific Standard Time", "America/Los_Angeles", "US")]
         [InlineData("Pacific Standard Time", "America/Los_Angeles", "\u0600NotValidRegion")]
@@ -2613,6 +2618,7 @@ namespace System.Tests
         [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
         public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
         {
+            Assert.SkipUnless(TimeZoneInfoTests.SupportIanaNamesConversion, "Requires SupportIanaNamesConversion");
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));
             Assert.Equal(ianaId, ianaConvertedId);
         }
@@ -2680,7 +2686,7 @@ namespace System.Tests
             // Note we cannot test the DisplayName, as it will contain the ID.
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Browser)]
         [InlineData("America/Buenos_Aires")]
         [InlineData("America/Catamarca")]
@@ -2690,6 +2696,7 @@ namespace System.Tests
         [InlineData("America/Indianapolis")]
         public static void ChangeLocalTimeZone(string id)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotWasmThreadingSupported, "Requires IsNotWasmThreadingSupported");
             string originalTZ = Environment.GetEnvironmentVariable("TZ");
             try
             {
@@ -2855,9 +2862,10 @@ namespace System.Tests
 
         [InlineData("Pacific Standard Time")]
         [InlineData("America/Los_Angeles")]
-        [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(SupportICUAndRemoteExecution))]
+        [Theory]
         public static void TestZoneNamesUsingAlternativeId(string zoneId)
         {
+            Assert.SkipUnless(TimeZoneInfoTests.SupportICUAndRemoteExecution, "Requires SupportICUAndRemoteExecution");
             RemoteExecutor.Invoke(id =>
             {
                 TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(id);
@@ -2871,9 +2879,10 @@ namespace System.Tests
         [InlineData("Central Standard Time", "America/Chicago")]
         [InlineData("Mountain Standard Time", "America/Denver")]
         [InlineData("Pacific Standard Time", "America/Los_Angeles")]
-        [ConditionalTheory(typeof(TimeZoneInfoTests), nameof(SupportICUAndRemoteExecution))]
+        [Theory]
         public static void TestTimeZoneNames(string windowsId, string ianaId)
         {
+            Assert.SkipUnless(TimeZoneInfoTests.SupportICUAndRemoteExecution, "Requires SupportICUAndRemoteExecution");
             RemoteExecutor.Invoke(static (wId, iId) =>
             {
                 TimeZoneInfo info1, info2;

@@ -37,7 +37,11 @@ namespace System.Diagnostics.Tests
 
         static DebugTests()
         {
-            _debugOnlyProvider = GetProvider(null);
+            // In xunit v3, trace listeners may already be initialized before this
+            // static constructor runs, so the current provider could already be the
+            // trace-aware provider.  Create a fresh DebugProvider to serve as the
+            // debug-only provider (bypasses TraceListeners entirely).
+            _debugOnlyProvider = Activator.CreateInstance(Type.GetType(DebugProviderTypeName)!)!;
             // Triggers code to wire up TraceListeners with Debug
             _ = Trace.Listeners.Count;
             _debugTraceProvider = GetProvider(null);
@@ -112,16 +116,33 @@ namespace System.Diagnostics.Tests
                 {
                     test();
                 }
-                catch (Exception ex) when (WriteLogger.s_instance.AssertUIOutput == string.Empty)
+                catch (Exception ex)
                 {
-                    // When xunit3's TraceListener has already wired up the trace provider,
-                    // Debug.Assert(false) goes through TraceInternal.Fail which throws instead
-                    // of going through s_FailCore. Capture the exception message.
-                    WriteLogger.s_instance.FailCore("", ex.Message, "", "");
+                    if (WriteLogger.s_instance.AssertUIOutput == string.Empty)
+                    {
+                        // When using the trace provider, Debug.Assert(false) goes through
+                        // TraceInternal.Fail → TraceListener.Fail. If xunit v3's listener
+                        // throws before the DefaultTraceListener can call s_FailCore,
+                        // capture the message from the exception instead.
+                        WriteLogger.s_instance.FailCore("", ex.Message, "", "");
+                    }
+
+                    // If AssertUIOutput is already populated, the exception was thrown
+                    // by a secondary listener (e.g., xunit v3's) after the assert was
+                    // already captured via s_FailCore. Swallow it.
                 }
+                // Prefer AssertUIOutput (populated via s_FailCore). When using the
+                // trace provider the assert message may only be captured through
+                // WriteAssert → WriteCore → LoggedOutput instead.
+                string output = WriteLogger.s_instance.AssertUIOutput;
+                if (string.IsNullOrEmpty(output))
+                {
+                    output = WriteLogger.s_instance.LoggedOutput;
+                }
+
                 for (int i = 0; i < expectedOutputStrings.Length; i++)
                 {
-                    Assert.Contains(expectedOutputStrings[i], WriteLogger.s_instance.AssertUIOutput);
+                    Assert.Contains(expectedOutputStrings[i], output);
                 }
 
             }

@@ -62,10 +62,11 @@ namespace System.Tests
             yield return new object[] { unchecked((nuint)0xffffffffffffffff), 5, unchecked(0x0000000000000004) }; /// Add should not throw an OverflowException
         }
 
-        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is64Bit))]
+        [Theory]
         [MemberData(nameof(Add_TestData))]
         public static void Add(nuint value, int offset, ulong expected)
         {
+            Assert.SkipUnless(Is64Bit, "Requires Is64Bit");
             MethodInfo add = typeof(nuint).GetMethod("Add");
 
             nuint result = (nuint)add.Invoke(null, new object[] { value, offset });
@@ -84,10 +85,11 @@ namespace System.Tests
             yield return new object[] { (nuint)38, -2, (ulong)40 };
         }
 
-        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is64Bit))]
+        [Theory]
         [MemberData(nameof(Subtract_TestData))]
         public static void Subtract(nuint value, int offset, ulong expected)
         {
+            Assert.SkipUnless(Is64Bit, "Requires Is64Bit");
             MethodInfo subtract = typeof(nuint).GetMethod("Subtract");
 
             nuint result = (nuint)subtract.Invoke(null, new object[] { value, offset });
@@ -610,7 +612,7 @@ namespace System.Tests
         public static void TryFormat(nuint i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
 
-        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is32Bit))]
+        [Theory]
         [InlineData(0U, 0U, "0000000000000000")]
         [InlineData(0U, 1U, "0000000000000000")]
         [InlineData(1U, 0U, "0000000000000000")]
@@ -622,11 +624,12 @@ namespace System.Tests
         [InlineData(0x29B46BB5U, 0x9782BA17U, "18AEB7774A612F43")]
         public static void BigMul32(uint a, uint b, string result)
         {
+            Assert.SkipUnless(Is32Bit, "Requires Is32Bit");
             nuint upper = nuint.BigMul(a, b, out nuint lower);
             Assert.Equal(result, $"{upper:X8}{lower:X8}");
         }
 
-        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is64Bit))]
+        [Theory]
         [InlineData(0U, 0U, "00000000000000000000000000000000")]
         [InlineData(0U, 1U, "00000000000000000000000000000000")]
         [InlineData(1U, 0U, "00000000000000000000000000000000")]
@@ -638,6 +641,7 @@ namespace System.Tests
         [InlineData(0xE8FAF08929B46BB5, 0x26B442D59782BA17, "23394CF8915296631EB6255F4A612F43")]
         public static void BigMul64(ulong a, ulong b, string result)
         {
+            Assert.SkipUnless(Is64Bit, "Requires Is64Bit");
             nuint upper = nuint.BigMul((nuint)a, (nuint)b, out nuint lower);
             Assert.Equal(result, $"{upper:X16}{lower:X16}");
         }
