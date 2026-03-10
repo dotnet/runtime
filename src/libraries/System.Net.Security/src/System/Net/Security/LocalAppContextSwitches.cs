@@ -30,19 +30,14 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
         }
 
+        private static int s_useManagedNtlm;
         [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
-        internal static bool UseManagedNtlm { get; } = InitializeUseManagedNtlm();
-
-        private static bool InitializeUseManagedNtlm()
+        internal static bool UseManagedNtlm
         {
-            bool value = false;
-            if (GetSwitchValue("System.Net.Security.UseManagedNtlm", ref value))
-            {
-                return value;
-            }
-
-            return OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.Security.UseManagedNtlm", ref s_useManagedNtlm,
+                defaultValue: OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
+                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase)));
         }
     }
 }
