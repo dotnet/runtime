@@ -1847,19 +1847,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
                     bool mayHaveEntryPointSlotsToBackpatch2 = pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
                     if (handleCallCountingForFirstCall && mayHaveEntryPointSlotsToBackpatch2)
                     {
-                        // Non-final tier for backpatchable methods: redirect the precode to the code, but do NOT
-                        // set GetMethodEntryPoint() or backpatch vtable slots. Vtable slots stay pointing to the
-                        // precode (temporary entry point). Keeping GetMethodEntryPoint() == GetTemporaryEntryPoint()
-                        // causes DoBackpatch() to return early, preventing slot recording during non-final tiers.
-                        // Slots will only be recorded and backpatched when the final tier is activated.
-                        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
-                            "PublishVersionableCode pMD=%p (%s::%s) entryPoint=" FMT_ADDR
-                            " path=VtableSlotBackpatch(InitialPublish-NonFinal) - precode target redirected,"
-                            " vtable slot stays at temporary entry point\n",
-                            pMethodDesc, pMethodDesc->m_pszDebugClassName, pMethodDesc->m_pszDebugMethodName,
-                            DBG_ADDR(pCode)));
-                        Precode::GetPrecodeFromEntryPoint(pMethodDesc->GetTemporaryEntryPoint())
-                            ->SetTargetInterlocked(pCode, TRUE /* fOnlyRedirectFromPrestub */);
+                        pMethodDesc->SetBackpatchableEntryPoint(pCode, false /* isFinalTier */, TRUE /* fOnlyRedirectFromPrestub */);
                     }
                     else
                     {

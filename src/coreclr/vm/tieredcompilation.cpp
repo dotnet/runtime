@@ -255,17 +255,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     // would not be counted anymore.
     if (pMethodDesc->MayHaveEntryPointSlotsToBackpatch())
     {
-        // Non-final tier: set precode target to the code entry point. Vtable slots remain pointing to the
-        // temporary entry point (precode), so calls flow through precode -> code without going through the
-        // prestub. Do NOT set GetMethodEntryPoint() — keeping it at the temporary entry point prevents
-        // DoBackpatch() from recording vtable slots during non-final tiers.
-        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
-            "TrySetCodeEntryPointAndRecordMethodForCallCounting pMD=%p (%s::%s) entryPoint=" FMT_ADDR
-            " path=VtableSlotBackpatch(DelayActivation-NonFinal) - precode target redirected\n",
-            pMethodDesc, pMethodDesc->m_pszDebugClassName, pMethodDesc->m_pszDebugMethodName,
-            DBG_ADDR(codeEntryPoint)));
-        Precode::GetPrecodeFromEntryPoint(pMethodDesc->GetTemporaryEntryPoint())
-            ->SetTargetInterlocked(codeEntryPoint, FALSE /* fOnlyRedirectFromPrestub */);
+        pMethodDesc->SetBackpatchableEntryPoint(codeEntryPoint, false /* isFinalTier */);
     }
     else
     {

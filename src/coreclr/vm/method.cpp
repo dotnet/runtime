@@ -3334,6 +3334,42 @@ void MethodDesc::ResetCodeEntryPoint()
         GetPrecode()->ResetTargetInterlocked();
     }
 }
+
+// Sets the entry point for a backpatchable method during tiered compilation.
+// For final tier: sets the owning vtable slot to codeEntryPoint and resets the precode to prestub,
+//   enabling lazy vtable slot discovery via DoBackpatch().
+// For non-final tier: redirects the precode target to codeEntryPoint without modifying the vtable slot.
+//   The vtable slot stays at the temporary entry point (precode), preventing DoBackpatch() from
+//   recording vtable slots during non-final tiers.
+void MethodDesc::SetBackpatchableEntryPoint(PCODE codeEntryPoint, bool isFinalTier, BOOL fOnlyRedirectFromPrestub)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
+    _ASSERTE(!isFinalTier || !fOnlyRedirectFromPrestub);
+
+    Precode *precode = Precode::GetPrecodeFromEntryPoint(GetTemporaryEntryPoint());
+    if (isFinalTier)
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::SetBackpatchableEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR
+            " isFinalTier=true - setting owning vtable slot to final code,"
+            " resetting precode to prestub for lazy DoBackpatch\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(codeEntryPoint)));
+        SetMethodEntryPoint(codeEntryPoint);
+        precode->ResetTargetInterlocked();
+    }
+    else
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::SetBackpatchableEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR
+            " isFinalTier=false fOnlyRedirectFromPrestub=%d - precode target redirected,"
+            " vtable slot stays at temporary entry point\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(codeEntryPoint),
+            fOnlyRedirectFromPrestub));
+        precode->SetTargetInterlocked(codeEntryPoint, fOnlyRedirectFromPrestub);
+    }
+}
 #endif // FEATURE_TIERED_COMPILATION
 
 void MethodDesc::ResetCodeEntryPointForEnC()
