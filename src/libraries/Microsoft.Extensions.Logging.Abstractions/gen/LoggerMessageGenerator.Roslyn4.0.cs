@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Text;
+using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -98,13 +99,37 @@ namespace Microsoft.Extensions.Logging.Generators
 #endif
                 ;
 
-            // Project the combined pipeline result to just the equatable model, discarding diagnostics.
-            // LoggerClassSpec implements value equality, so Roslyn's Select operator will compare
-            // successive model snapshots and only propagate changes downstream when the model structurally
-            // differs. This ensures source generation is fully incremental: re-emitting code only when
-            // the logger spec actually changes, not on every keystroke or positional shift.
-            IncrementalValueProvider<ImmutableArray<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)>> sourceGenerationSpecs =
-                loggerClasses.Select(static (t, _) => (t.LoggerClassSpec, t.HasStringCreate)).Collect();
+            // Single collect for all per-method results, then aggregate into an equatable source
+            // model (using ImmutableEquatableArray for deep value equality) plus flat diagnostics.
+            IncrementalValueProvider<(ImmutableEquatableArray<(LoggerClassSpec LoggerClassSpec, bool HasStringCreate)> Specs, ImmutableArray<Diagnostic> Diagnostics)> collected =
+                loggerClasses.Collect().Select(static (items, _) =>
+                {
+                    List<(LoggerClassSpec, bool)>? specs = null;
+                    ImmutableArray<Diagnostic>.Builder? diagnostics = null;
+
+                    foreach (var item in items)
+                    {
+                        if (item.LoggerClassSpec is not null)
+                        {
+                            (specs ??= new()).Add((item.LoggerClassSpec, item.HasStringCreate));
+                        }
+                        if (!item.Diagnostics.IsDefaultOrEmpty)
+                        {
+                            (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).AddRange(item.Diagnostics);
+                        }
+                    }
+
+                    return (
+                        specs?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<(LoggerClassSpec, bool)>.Empty,
+                        diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+                });
+
+            // Project to just the equatable source model, discarding diagnostics.
+            // ImmutableEquatableArray provides deep value equality, so Roslyn's Select operator
+            // compares successive model snapshots and only propagates changes downstream when the
+            // model structurally differs. This ensures source generation is fully incremental.
+            IncrementalValueProvider<ImmutableEquatableArray<(LoggerClassSpec LoggerClassSpec, bool HasStringCreate)>> sourceGenerationSpecs =
+                collected.Select(static (t, _) => t.Specs);
 
             context.RegisterSourceOutput(sourceGenerationSpecs, static (spc, items) => EmitSource(items, spc));
 
@@ -113,33 +138,29 @@ namespace Microsoft.Extensions.Logging.Generators
             // values — the callback fires on every compilation change. This is by design: diagnostic
             // emission is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
             // (cf. https://github.com/dotnet/runtime/issues/92509).
-            // No source code is generated from this pipeline — it exists solely to report diagnostics.
-            IncrementalValueProvider<ImmutableArray<ImmutableArray<Diagnostic>>> diagnostics =
-                loggerClasses.Select(static (t, _) => t.Diagnostics).Collect();
+            IncrementalValueProvider<ImmutableArray<Diagnostic>> diagnosticResults =
+                collected.Select(static (t, _) => t.Diagnostics);
 
-            context.RegisterSourceOutput(diagnostics, EmitDiagnostics);
+            context.RegisterSourceOutput(diagnosticResults, EmitDiagnostics);
         }
 
-        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<ImmutableArray<Diagnostic>> items)
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<Diagnostic> diagnostics)
         {
             // Use HashSet to deduplicate — each attributed method triggers parsing of entire class,
             // producing duplicate diagnostics.
             var reportedDiagnostics = new HashSet<(string Id, TextSpan? Span, string? FilePath)>();
-            foreach (ImmutableArray<Diagnostic> diagnosticBatch in items)
+            foreach (Diagnostic diagnostic in diagnostics)
             {
-                foreach (Diagnostic diagnostic in diagnosticBatch)
+                if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
                 {
-                    if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
-                    {
-                        context.ReportDiagnostic(diagnostic);
-                    }
+                    context.ReportDiagnostic(diagnostic);
                 }
             }
         }
 
-        private static void EmitSource(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> items, SourceProductionContext context)
+        private static void EmitSource(ImmutableEquatableArray<(LoggerClassSpec LoggerClassSpec, bool HasStringCreate)> items, SourceProductionContext context)
         {
-            if (items.IsDefaultOrEmpty)
+            if (items.Count == 0)
             {
                 return;
             }
@@ -149,35 +170,32 @@ namespace Microsoft.Extensions.Logging.Generators
 
             foreach (var item in items)
             {
-                if (item.LoggerClassSpec != null)
+                hasStringCreate |= item.HasStringCreate;
+
+                // Build unique key including parent class chain to handle nested classes
+                string classKey = BuildClassKey(item.LoggerClassSpec);
+
+                // Each attributed method in a partial class file produces the same LoggerClassSpec with all methods in that file.
+                // However, different partial class files produce different LoggerClassSpecs with different methods. Merge them.
+                if (!allLogClasses.TryGetValue(classKey, out LoggerClass? existingClass))
                 {
-                    hasStringCreate |= item.HasStringCreate;
+                    allLogClasses[classKey] = FromSpec(item.LoggerClassSpec);
+                }
+                else
+                {
+                    var newClass = FromSpec(item.LoggerClassSpec);
 
-                    // Build unique key including parent class chain to handle nested classes
-                    string classKey = BuildClassKey(item.LoggerClassSpec);
-
-                    // Each attributed method in a partial class file produces the same LoggerClassSpec with all methods in that file.
-                    // However, different partial class files produce different LoggerClassSpecs with different methods. Merge them.
-                    if (!allLogClasses.TryGetValue(classKey, out LoggerClass? existingClass))
+                    var existingMethodKeys = new HashSet<(string Name, int EventId)>();
+                    foreach (var method in existingClass.Methods)
                     {
-                        allLogClasses[classKey] = FromSpec(item.LoggerClassSpec);
+                        existingMethodKeys.Add((method.Name, method.EventId));
                     }
-                    else
+
+                    foreach (var method in newClass.Methods)
                     {
-                        var newClass = FromSpec(item.LoggerClassSpec);
-
-                        var existingMethodKeys = new HashSet<(string Name, int EventId)>();
-                        foreach (var method in existingClass.Methods)
+                        if (existingMethodKeys.Add((method.Name, method.EventId)))
                         {
-                            existingMethodKeys.Add((method.Name, method.EventId));
-                        }
-
-                        foreach (var method in newClass.Methods)
-                        {
-                            if (existingMethodKeys.Add((method.Name, method.EventId)))
-                            {
-                                existingClass.Methods.Add(method);
-                            }
+                            existingClass.Methods.Add(method);
                         }
                     }
                 }
