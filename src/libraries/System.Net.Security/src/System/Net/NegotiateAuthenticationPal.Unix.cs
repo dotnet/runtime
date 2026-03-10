@@ -23,10 +23,7 @@ namespace System.Net
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
 
         [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
-        private static bool UseManagedNtlm { get; } =
-            AppContextSwitchHelper.GetBooleanConfig("System.Net.Security.UseManagedNtlm",
-                defaultValue: OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase)));
+        private static bool UseManagedNtlm => LocalAppContextSwitches.UseManagedNtlm;
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {

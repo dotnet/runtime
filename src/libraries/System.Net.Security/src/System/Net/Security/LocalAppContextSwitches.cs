@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -26,6 +28,21 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
+        }
+
+        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
+        internal static bool UseManagedNtlm { get; } = InitializeUseManagedNtlm();
+
+        private static bool InitializeUseManagedNtlm()
+        {
+            bool value = false;
+            if (GetSwitchValue("System.Net.Security.UseManagedNtlm", ref value))
+            {
+                return value;
+            }
+
+            return OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
+                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase));
         }
     }
 }
