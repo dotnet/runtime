@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -72,7 +73,7 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            (var segments, long dataStart) = ParseSparseMap(rawStream);
+            (var segments, long dataStart) = ParseSparseMap(isAsync: false, rawStream, CancellationToken.None).GetAwaiter().GetResult();
             return new GnuSparseStream(rawStream, realSize, segments, dataStart);
         }
 
@@ -84,7 +85,7 @@ namespace System.Formats.Tar
                 return null;
             }
 
-            (var segments, long dataStart) = await ParseSparseMapAsync(rawStream, cancellationToken).ConfigureAwait(false);
+            (var segments, long dataStart) = await ParseSparseMap(isAsync: true, rawStream, cancellationToken).ConfigureAwait(false);
             return new GnuSparseStream(rawStream, realSize, segments, dataStart);
         }
 
@@ -338,23 +339,28 @@ namespace System.Formats.Tar
             return ~_segments.Length; // Past all segments.
         }
 
-        // Parses the sparse map from rawStream (positioned at start).
+        // Parses the sparse map from rawStream (positioned at the start of the data section).
         // The map format is: numSegments\n, then pairs of offset\n numbytes\n.
         // After the map text, there is zero-padding to the next 512-byte block boundary,
         // and then the packed data begins.
-        // Returns the parsed segments and the data start offset in rawStream.
-        private static ((long Offset, long Length)[] Segments, long DataStart) ParseSparseMap(Stream rawStream)
+        //
+        // The buffer is 2 * RecordSize (1024 bytes) and each fill reads exactly RecordSize (512)
+        // bytes. This guarantees that totalBytesRead is always a multiple of RecordSize and
+        // equals dataStart (mapBytesConsumed + padding), so no corrective seeking is needed.
+        //
+        // Returns the parsed segments and the data-start offset in rawStream.
+        private static async ValueTask<((long Offset, long Length)[] Segments, long DataStart)> ParseSparseMap(
+            bool isAsync, Stream rawStream, CancellationToken cancellationToken)
         {
-            // Sliding-window buffer: bytes[activeStart..availableStart) are unconsumed data.
-            byte[] bytes = new byte[512];
+            byte[] bytes = new byte[2 * TarHelpers.RecordSize];
             int activeStart = 0;
             int availableStart = 0;
-            long totalBytesReadFromStream = 0;
+            long totalBytesRead = 0;
 
-            // Refills the buffer by compacting and reading from the stream.
-            void FillBuffer()
+            // Compact the buffer and read exactly one RecordSize (512) block.
+            // Returns true if bytes were read, false on EOF.
+            async ValueTask<bool> FillBufferAsync()
             {
-                // Compact: move unread bytes to the front.
                 int active = availableStart - activeStart;
                 if (active > 0 && activeStart > 0)
                 {
@@ -363,111 +369,17 @@ namespace System.Formats.Tar
                 activeStart = 0;
                 availableStart = active;
 
-                int read = rawStream.Read(bytes, availableStart, bytes.Length - availableStart);
-                availableStart += read;
-                totalBytesReadFromStream += read;
+                int newBytes = isAsync
+                    ? await rawStream.ReadAtLeastAsync(bytes.AsMemory(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false)
+                    : rawStream.ReadAtLeast(bytes.AsSpan(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false);
+
+                availableStart += newBytes;
+                totalBytesRead += newBytes;
+                return newBytes > 0;
             }
 
             // Reads a newline-terminated decimal line from the buffer, refilling as needed.
             // Returns the parsed value. Throws InvalidDataException if the line is malformed.
-            long ReadLine()
-            {
-                while (true)
-                {
-                    int nlIdx = bytes.AsSpan(activeStart, availableStart - activeStart).IndexOf((byte)'\n');
-                    if (nlIdx >= 0)
-                    {
-                        long value = ParseDecimalSpan(bytes.AsSpan(activeStart, nlIdx));
-                        activeStart += nlIdx + 1;
-                        return value;
-                    }
-
-                    if (availableStart == bytes.Length)
-                    {
-                        // Buffer full but no newline: sparse map line is too long (malformed).
-                        throw new InvalidDataException(SR.TarInvalidNumber);
-                    }
-
-                    FillBuffer();
-
-                    if (availableStart == activeStart)
-                    {
-                        // EOF reached before newline.
-                        throw new InvalidDataException(SR.TarInvalidNumber);
-                    }
-                }
-            }
-
-            FillBuffer();
-
-            long numSegments = ReadLine();
-            if ((ulong)numSegments > MaxSparseSegments)
-            {
-                throw new InvalidDataException(SR.TarInvalidNumber);
-            }
-
-            var segments = new (long Offset, long Length)[numSegments];
-            for (int i = 0; i < (int)numSegments; i++)
-            {
-                long offset = ReadLine();
-                long length = ReadLine();
-                if (offset < 0 || length < 0)
-                {
-                    throw new InvalidDataException(SR.TarInvalidNumber);
-                }
-                segments[i] = (offset, length);
-            }
-
-            // The number of bytes logically consumed from the sparse map is totalBytesReadFromStream - buffered-but-unread.
-            long mapBytesConsumed = totalBytesReadFromStream - (availableStart - activeStart);
-
-            // Skip padding bytes to align to the next 512-byte block boundary.
-            // Some padding bytes may already be in the buffer; skip those first.
-            int padding = TarHelpers.CalculatePadding(mapBytesConsumed);
-            int paddingInBuffer = Math.Min(padding, availableStart - activeStart);
-            int paddingFromStream = padding - paddingInBuffer;
-            if (paddingFromStream > 0)
-            {
-                TarHelpers.AdvanceStream(rawStream, paddingFromStream);
-            }
-
-            long dataStart = mapBytesConsumed + padding;
-
-            // For seekable streams, seek to the exact dataStart position so ReadFromPackedData
-            // can seek correctly even if we buffered ahead into the packed data region.
-            if (rawStream.CanSeek)
-            {
-                rawStream.Seek(dataStart, SeekOrigin.Begin);
-            }
-            // For non-seekable streams, the buffer is exactly 512 bytes wide and dataStart is
-            // always a multiple of 512, so after consuming the padding there are no bytes left
-            // in the buffer that belong to the packed data region.
-
-            return (segments, dataStart);
-        }
-
-        private static async ValueTask<((long Offset, long Length)[] Segments, long DataStart)> ParseSparseMapAsync(Stream rawStream, CancellationToken cancellationToken)
-        {
-            byte[] bytes = new byte[512];
-            int activeStart = 0;
-            int availableStart = 0;
-            long totalBytesReadFromStream = 0;
-
-            async ValueTask FillBufferAsync()
-            {
-                int active = availableStart - activeStart;
-                if (active > 0 && activeStart > 0)
-                {
-                    bytes.AsSpan(activeStart, active).CopyTo(bytes);
-                }
-                activeStart = 0;
-                availableStart = active;
-
-                int read = await rawStream.ReadAsync(bytes.AsMemory(availableStart, bytes.Length - availableStart), cancellationToken).ConfigureAwait(false);
-                availableStart += read;
-                totalBytesReadFromStream += read;
-            }
-
             async ValueTask<long> ReadLineAsync()
             {
                 while (true)
@@ -475,20 +387,24 @@ namespace System.Formats.Tar
                     int nlIdx = bytes.AsSpan(activeStart, availableStart - activeStart).IndexOf((byte)'\n');
                     if (nlIdx >= 0)
                     {
-                        long value = ParseDecimalSpan(bytes.AsSpan(activeStart, nlIdx));
+                        ReadOnlySpan<byte> span = bytes.AsSpan(activeStart, nlIdx);
+                        if (!Utf8Parser.TryParse(span, out long value, out int consumed) || consumed != span.Length)
+                        {
+                            throw new InvalidDataException(SR.TarInvalidNumber);
+                        }
                         activeStart += nlIdx + 1;
                         return value;
                     }
 
                     if (availableStart == bytes.Length)
                     {
+                        // Buffer full but no newline: line is too long (malformed).
                         throw new InvalidDataException(SR.TarInvalidNumber);
                     }
 
-                    await FillBufferAsync().ConfigureAwait(false);
-
-                    if (availableStart == activeStart)
+                    if (!await FillBufferAsync().ConfigureAwait(false))
                     {
+                        // EOF before newline.
                         throw new InvalidDataException(SR.TarInvalidNumber);
                     }
                 }
@@ -502,7 +418,7 @@ namespace System.Formats.Tar
                 throw new InvalidDataException(SR.TarInvalidNumber);
             }
 
-            var segments = new (long Offset, long Length)[numSegments];
+            var segments = new (long Offset, long Length)[(int)numSegments];
             for (int i = 0; i < (int)numSegments; i++)
             {
                 long offset = await ReadLineAsync().ConfigureAwait(false);
@@ -514,44 +430,10 @@ namespace System.Formats.Tar
                 segments[i] = (offset, length);
             }
 
-            long mapBytesConsumed = totalBytesReadFromStream - (availableStart - activeStart);
-            int padding = TarHelpers.CalculatePadding(mapBytesConsumed);
-            int paddingInBuffer = Math.Min(padding, availableStart - activeStart);
-            int paddingFromStream = padding - paddingInBuffer;
-            if (paddingFromStream > 0)
-            {
-                await TarHelpers.AdvanceStreamAsync(rawStream, paddingFromStream, cancellationToken).ConfigureAwait(false);
-            }
-
-            long dataStart = mapBytesConsumed + padding;
-
-            if (rawStream.CanSeek)
-            {
-                rawStream.Seek(dataStart, SeekOrigin.Begin);
-            }
-
-            return (segments, dataStart);
-        }
-
-        // Parses a decimal integer from a span of ASCII digits. Throws InvalidDataException if the span is
-        // empty or contains non-digit characters.
-        private static long ParseDecimalSpan(ReadOnlySpan<byte> span)
-        {
-            if (span.IsEmpty)
-            {
-                throw new InvalidDataException(SR.TarInvalidNumber);
-            }
-
-            long value = 0;
-            foreach (byte b in span)
-            {
-                if ((uint)(b - '0') > 9u)
-                {
-                    throw new InvalidDataException(SR.TarInvalidNumber);
-                }
-                value = checked(value * 10 + (b - '0'));
-            }
-            return value;
+            // Since each FillBuffer call reads exactly RecordSize (512) bytes, totalBytesRead
+            // is always a multiple of RecordSize. It equals mapBytesConsumed + padding = dataStart,
+            // so the stream is already positioned at the start of the packed data.
+            return (segments, totalBytesRead);
         }
 
         protected override void Dispose(bool disposing)
