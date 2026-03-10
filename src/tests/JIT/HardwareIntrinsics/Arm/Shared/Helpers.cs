@@ -151,6 +151,54 @@ namespace JIT.HardwareIntrinsics.Arm
             return T.CreateChecked(bitSize - (highest + 1));
         }
 
+        public static U CountMatchingElements<T, U>(T[] mask, T[] left, T[] right, int i)
+            where U : unmanaged, INumber<U>
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+
+            if (mask[i] != T.Zero)
+            {
+                for (int j = 0; j <= i; j++)
+                {
+                    if (mask[j] != T.Zero && left[i] == right[j])
+                    {
+                        result++;
+                    }
+                }
+            }
+
+            return U.CreateChecked(result);
+        }
+
+        public static unsafe byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+            int elementSize = sizeof(T);
+            int segmentStartByte = ((i * elementSize) / 16) * 16;
+            int segmentEndByte = segmentStartByte + 16;
+            int rightLengthBytes = right.Length * elementSize;
+
+            if (segmentEndByte > rightLengthBytes)
+            {
+                segmentEndByte = rightLengthBytes;
+            }
+
+            int segmentStart = segmentStartByte / elementSize;
+            int segmentEnd = segmentEndByte / elementSize;
+
+            for (int j = segmentStart; j < segmentEnd; j++)
+            {
+                if (left[i] == right[j])
+                {
+                    result++;
+                }
+            }
+
+            return byte.CreateChecked(result);
+        }
+
         public static unsafe int HighestSetBit<T>(T value)
             where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
         {
@@ -3276,12 +3324,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
         {
             // If mask isn't provided, default to all true
-            mask = mask ?? Enumerable.Repeat<double>(1.0, op1.Length).ToArray();
+            mask = mask ?? Enumerable.Repeat<double>(BitConverter.Int64BitsToDouble(1), op1.Length).ToArray();
             double result = op1[0];
 
             for (int i = 0; i < op1.Length; i++)
             {
-                if (mask[i] != 0.0)
+                if (BitConverter.DoubleToInt64Bits(mask[i]) != 0)
                 {
                     result += op2[i];
                 }
@@ -3293,12 +3341,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float AddSequentialAcross(float[] op1, float[] op2, float[] mask = null)
         {
             // If mask isn't provided, default to all true
-            mask = mask ?? Enumerable.Repeat<float>((float)1.0, op1.Length).ToArray();
+            mask = mask ?? Enumerable.Repeat<float>(BitConverter.Int32BitsToSingle(1), op1.Length).ToArray();
             float result = op1[0];
 
             for (int i = 0; i < op1.Length; i++)
             {
-                if (mask[i] != 0.0)
+                if (BitConverter.SingleToInt32Bits(mask[i]) != 0)
                 {
                     result += op2[i];
                 }
@@ -6336,7 +6384,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
+                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -6346,7 +6394,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
+                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7796,6 +7844,44 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             return even;
         }
+
+        public static T[] Match<T>(T[] mask, T[] left, T[] right, bool isNoMatch = false)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[left.Length];
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    bool found = false;
+                    for (int j = 0; j < right.Length; j++)
+                    {
+                        if (left[i] == right[j])
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (isNoMatch)
+                    {
+                        result[i] = found ? T.Zero : T.One;
+                    }
+                    else
+                    {
+                        result[i] = found ? T.One : T.Zero;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] NoMatch<T>(T[] mask, T[] left, T[] right)
+            where T : unmanaged, IBinaryInteger<T>
+            => Match(mask, left, right, isNoMatch: true);
 
         public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
             where T : unmanaged, IBinaryInteger<T>

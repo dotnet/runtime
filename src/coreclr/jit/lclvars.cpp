@@ -269,14 +269,17 @@ void Compiler::lvaInitTypeRef()
         // GS checks require the stack to be re-ordered, which can't be done with EnC
         !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
     {
-        setNeedsGSSecurityCookie();
-        compGSReorderStackLayout = true;
+        bool nowHasCookie = setNeedsGSSecurityCookie();
 
-        for (unsigned i = 0; i < lvaCount; i++)
+        if (nowHasCookie)
         {
-            if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+            JITDUMP("Marking some struct locals as unsafe to stress GS checks\n");
+            for (unsigned i = 0; i < lvaCount; i++)
             {
-                lvaTable[i].lvIsUnsafeBuffer = true;
+                if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+                {
+                    lvaTable[i].lvIsUnsafeBuffer = true;
+                }
             }
         }
     }
@@ -951,6 +954,20 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 
         dsc->lvIsRegArg      = numRegisters > 0;
         dsc->lvIsMultiRegArg = numRegisters > 1;
+
+#ifdef DEBUG
+        // Extra query to facilitate wasm replay of native collections.
+        // TODO-WASM: delete once we can get a wasm collection.
+        //
+        if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun() && (structLayout != nullptr))
+        {
+            CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+            if (clsHnd != NO_CLASS_HANDLE)
+            {
+                info.compCompHnd->getWasmLowering(clsHnd);
+            }
+        }
+#endif // DEBUG
     }
 
     lvaParameterStackSize = classifier.StackSize();
@@ -2546,15 +2563,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
-        // GS checks require the stack to be re-ordered, which can't be done with EnC.
         if (unsafeValueClsCheck)
         {
             unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
 
-            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
+            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) != 0)
             {
                 setNeedsGSSecurityCookie();
-                compGSReorderStackLayout = true;
                 varDsc->lvIsUnsafeBuffer = true;
             }
         }
@@ -2909,6 +2924,22 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     assert(varNum < lvaCount);
     return lvaGetDesc(varNum)->lvExactSize();
 }
+
+//------------------------------------------------------------------------
+// lvaLclValueSize: Return the ValueSize for the given local variable.
+//
+// The ValueSize is a representation of the size of the variable that allows
+// for symbolic representations of sizes that may be unknown to the compiler
+// at the time of compilation, such as the length of a hardware vector on ARM64.
+//
+// Arguments:
+//    varNum -- number of the variable.
+//
+ValueSize Compiler::lvaLclValueSize(unsigned varNum)
+{
+    assert(varNum < lvaCount);
+    return lvaGetDesc(varNum)->lvValueSize();
+}
 //------------------------------------------------------------------------
 // lvExactSize: Get the exact size of the type of this local.
 //
@@ -2918,7 +2949,20 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //
 unsigned LclVarDsc::lvExactSize() const
 {
-    return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
+    assert(!varTypeHasUnknownSize(lvType));
+    return lvValueSize().GetExact();
+}
+
+//------------------------------------------------------------------------
+// lvValueSize: Get the value size of the type of this local.
+//
+// Return Value:
+//    The value size container for this local. This either contains an exact
+//    size or a compile-time unknown size.
+//
+ValueSize LclVarDsc::lvValueSize() const
+{
+    return (lvType == TYP_STRUCT) ? ValueSize(GetLayout()->GetSize()) : ValueSize::FromJitType(lvType);
 }
 
 //------------------------------------------------------------------------
