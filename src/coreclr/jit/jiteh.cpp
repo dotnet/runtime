@@ -898,6 +898,53 @@ unsigned Compiler::ehTrueEnclosingTryIndex(unsigned regionIndex)
     return regionIndex;
 }
 
+//-------------------------------------------------------------
+// ehOutermostMutualProtectTryIndex: find the outermost enclosing try
+//   region that is a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of outermost enclosing mutual-protect try region.
+//   Note this will often be `regionIndex`.
+//
+// Notes:
+//   Only safe to use after importation, once we have normalized the
+//   EH in the flow graph.
+//
+unsigned Compiler::ehOutermostMutualProtectTryIndex(unsigned regionIndex)
+{
+    assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(fgImportDone);
+
+    EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
+    EHblkDsc* HBtab     = ehDscRoot;
+
+    for (;;)
+    {
+        unsigned enclosingRegionIndex = HBtab->ebdEnclosingTryIndex;
+        if (enclosingRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            // No enclosing 'try'; we're done
+            break;
+        }
+
+        HBtab = ehGetDsc(enclosingRegionIndex);
+        if (!EHblkDsc::ebdIsSameTry(ehDscRoot, HBtab))
+        {
+            // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
+            // original region). Return it.
+            break;
+        }
+
+        // Encloding region is a mutual-protect 'try', keep searching
+        regionIndex = enclosingRegionIndex;
+    }
+
+    return regionIndex;
+}
+
 unsigned Compiler::ehGetEnclosingRegionIndex(unsigned regionIndex, bool* inTryRegion)
 {
     assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);

@@ -543,7 +543,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_SWITCH:
-            genTableBasedSwitch(treeNode);
+
+            if (treeNode->gtFlags & GTF_SWITCH_WASM_EH)
+            {
+                genWasmTryTable(treeNode);
+            }
+            else
+            {
+                genTableBasedSwitch(treeNode);
+            }
             break;
 
         case GT_RETURN:
@@ -719,6 +727,62 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 
         GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
+}
+
+//------------------------------------------------------------------------
+// genTableBasedSwitch: emit Wasm try_table
+//
+// Arguments:
+//    treeNode - swich describing the possible EH continuations
+//
+// Remarks:
+//    Logically we transform
+//
+//    switch (v) {c0, c1, ... cn-2, default}
+//
+//    into
+//
+//    block
+//      try_table (emptysig) catch (exsig) 0
+//
+//    local.get $sp
+//    memory.load <eh state offset>
+//    br_table c0 c1 ... cn-2 default
+//    unreached
+//
+//    The default case is the non-exceptional continuation.
+//
+//
+void CodeGen::genWasmTryTable(GenTree* treeNode)
+{
+    BasicBlock* const block = m_compiler->compCurBB;
+    assert(block->KindIs(BBJ_SWITCH));
+
+    genConsumeOperands(treeNode->AsOp());
+
+    BBswtDesc* const desc      = block->GetSwitchTargets();
+    unsigned const   caseCount = desc->GetCaseCount();
+
+    // We don't expect degenerate or default-less switches
+    //
+    assert(caseCount > 0);
+    assert(desc->HasDefaultCase());
+
+    //// try_table list (labelidx*) labelidx
+    //// list is prefixed with length, which is caseCount - 1
+    ////
+    // GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount - 1);
+
+    //// Emit the list case targets, then default case target
+    //// (which is always the last case in the desc).
+    ////
+    // for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
+    //{
+    //     BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
+    //     unsigned          depth = findTargetDepth(caseTarget);
+
+    //    GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
+    //}
 }
 
 //------------------------------------------------------------------------

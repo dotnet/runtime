@@ -1838,8 +1838,8 @@ void Compiler::fgDumpWasmControlFlowDot()
 //    as the runtime cannot change the actual IP of the method.
 //
 //    So, for methods with catch clauses, we must enumerate the sets
-//    of catch continuation blocks (blocks with a BBJ_EHCATCHRET pred) per handler region,
-//    and at the start of the handler, insert a swtich that dispatches
+//    of catch continuation blocks (blocks with a BBJ_EHCATCHRET pred) per try/catch region,
+//    and at the start of outermost mutual protect try, insert a switch that dispatches
 //    control to the appropriate continuation block based on a control variable.
 //
 //    We then must set this variable appropriately in all BBJ_EHCATCHRET blocks.
@@ -1847,12 +1847,8 @@ void Compiler::fgDumpWasmControlFlowDot()
 //    Later, during Wasm codegen, we will add try_table constructs before the
 //    switches, so that on exception the runtime can cause resumption of control within
 //    the method at the appropriate point. But initially we just need to make the
-//    control flow explicit in the IR so w can generate proper nested Wasm control flow.
-//
-//    After this phase runs, try regions may have multiple entry points.
-//    (TODO: make sure to set the EH virtual IP appropriately at each).
-//    Note this may already be the case if we ran the async transformation.
-//    (TODO: review how these interact).
+//    control flow explicit in the IR so the continuations are placed properly in
+//    the reverse postorder we use to generate proper nested Wasm control flow.
 //
 PhaseStatus Compiler::fgWasmEhFlow()
 {
@@ -1875,61 +1871,62 @@ PhaseStatus Compiler::fgWasmEhFlow()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Walk the blocks and collect up the BBJ_CATCHRET blocks per enclosing handler region.
+    // Walk the blocks and collect up the BBJ_CATCHRET blocks per associated try region.
+    // Note for mutual protect trys we associate all catchrets with the outermost try.
     //
-    // both of thse use the "biased EH index" (so 0 => method region, 1 => EH#0, etc).
+    // Also note there may be fewer continuation blocks than catchret blocks, as multiple
+    // catchrets may target the same continuation.
     //
-    jitstd::vector<ArrayStack<BasicBlock*>*> catchRetBlocksByHandlerRegion(compHndBBtabCount + 1, nullptr,
-                                                                           getAllocator(CMK_WasmCfgLowering));
-    jitstd::vector<ArrayStack<BasicBlock*>*> catchRetContinuationBlocksByRegion(compHndBBtabCount + 1, nullptr,
-                                                                                getAllocator(CMK_WasmCfgLowering));
-
-    unsigned continuationCount = 0;
+    // Both of these vectors use an "unbiased EH index" (0 is EH#00).
+    //
+    jitstd::vector<ArrayStack<BasicBlock*>*> catchRetBlocksByTryRegion(compHndBBtabCount + 1, nullptr,
+                                                                       getAllocator(CMK_WasmCfgLowering));
+    jitstd::vector<ArrayStack<BasicBlock*>*> catchRetContinuationBlocksByTryRegion(compHndBBtabCount + 1, nullptr,
+                                                                                   getAllocator(CMK_WasmCfgLowering));
 
     for (BasicBlock* const block : Blocks())
     {
         if (block->KindIs(BBJ_EHCATCHRET))
         {
-            // Find enclosing handler index
+            // Find the immediate try region for the catch
             //
             assert(block->hasHndIndex());
-            unsigned const handlerIndex = block->getHndIndex() + 1;
+            unsigned const initialTryIndex = block->getHndIndex();
 
-            JITDUMP("Catchret block " FMT_BB " in region EH#%02u\n", block->bbNum, handlerIndex - 1);
-
-            // Add it to the catchret collection for this handler
+            // Now walk up through any enclosing mutual protect trys.
             //
-            ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByHandlerRegion[handlerIndex];
+            unsigned tryIndex = ehOutermostMutualProtectTryIndex(initialTryIndex);
+
+            JITDUMP("Associating catchret block " FMT_BB " with outermost try region EH#%02u\n", block->bbNum,
+                    tryIndex);
+
+            // Add it to the catchret collection for this try
+            //
+            ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByTryRegion[tryIndex];
 
             if (catchRetBlocks == nullptr)
             {
                 catchRetBlocks =
                     new (this, CMK_WasmCfgLowering) ArrayStack<BasicBlock*>(getAllocator(CMK_WasmCfgLowering));
-                catchRetBlocksByHandlerRegion[handlerIndex] = catchRetBlocks;
+                catchRetBlocksByTryRegion[tryIndex] = catchRetBlocks;
             }
 
             catchRetBlocks->Push(block);
 
-            // Find the continuation block for this catchret, and add it to the continuation collection for the region.
+            // Find the continuation block for the catchret
             //
-            // Note it may already be in the collection if there are multiple catchrets that target the same
-            // continuation.
-            //
-            EHblkDsc* const dsc = ehGetBlockHndDsc(block);
-            unsigned const  enclosingHandlerIndex =
-                (dsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingHndIndex + 1;
+            BasicBlock* const continuationBlock = block->GetTarget();
 
-            ArrayStack<BasicBlock*>* catchRetContinuationBlocks =
-                catchRetContinuationBlocksByRegion[enclosingHandlerIndex];
+            // Add it to the continuation collection for the region.
+            //
+            ArrayStack<BasicBlock*>* catchRetContinuationBlocks = catchRetContinuationBlocksByTryRegion[tryIndex];
 
             if (catchRetContinuationBlocks == nullptr)
             {
                 catchRetContinuationBlocks =
                     new (this, CMK_WasmCfgLowering) ArrayStack<BasicBlock*>(getAllocator(CMK_WasmCfgLowering));
-                catchRetContinuationBlocksByRegion[enclosingHandlerIndex] = catchRetContinuationBlocks;
+                catchRetContinuationBlocksByTryRegion[tryIndex] = catchRetContinuationBlocks;
             }
-
-            BasicBlock* const continuationBlock = block->GetTarget();
 
             bool alreadyAdded = false;
             for (BasicBlock* const existing : catchRetContinuationBlocks->TopDownOrder())
@@ -1943,131 +1940,75 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
             if (!alreadyAdded)
             {
-                continuationCount++;
-
-                // Re-purpose bbPreorderNum to hold the region-relative continuation number
-                // TODO: this may need to be method global?
-                //
-                continuationBlock->bbPreorderNum = catchRetContinuationBlocks->Height();
                 catchRetContinuationBlocks->Push(continuationBlock);
             }
 
-#ifdef DEBUG
-
-            if (!alreadyAdded)
-            {
-                if (enclosingHandlerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    JITDUMP("Continuation block " FMT_BB " is in the method region [%u]\n", continuationBlock->bbNum,
-                            continuationBlock->bbPreorderNum);
-                }
-                else
-                {
-                    JITDUMP("Continuation block " FMT_BB " is in region EH#%02u [%u]\n", continuationBlock->bbNum,
-                            enclosingHandlerIndex, continuationBlock->bbPreorderNum);
-                }
-
-                // Ensure the continuation block is in the enclosing handler region, and
-                // that all its preds are either catchret blocks in the same region as `block`
-                // or in the same region as the continuation block.
-                //
-                if (continuationBlock->hasHndIndex())
-                {
-                    assert(continuationBlock->getHndIndex() == enclosingHandlerIndex);
-                }
-                else
-                {
-                    assert(enclosingHandlerIndex == 0);
-                }
-
-                for (BasicBlock* const continuationPred : continuationBlock->PredBlocks())
-                {
-
-                    if (continuationPred->KindIs(BBJ_EHCATCHRET))
-                    {
-                        assert(BasicBlock::sameHndRegion(continuationPred, block));
-                    }
-                    else
-                    {
-                        assert(BasicBlock::sameHndRegion(continuationPred, continuationBlock));
-                    }
-                }
-            }
-#endif
+            // TODO -- assert branch from try entry  to continuation is reasoanble...?
         }
     }
 
     // Allocate an exposed int local to hold the continuation number.
     // TODO-WASM: possibly share this with the "virtual IP"
-    // TODO-WASM: this may need to be at a known offset from $fp
+    // TODO-WASM: this will need to be at a known offset from $fp
     // We do not wany any opts acting on this local (eg jump threading)
     //
-    unsigned const continuationLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH continuation local"));
+    unsigned const continuationLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH continuation number"));
     lvaGetDesc(continuationLocalNum)->lvType = TYP_INT;
     lvaSetVarAddrExposed(continuationLocalNum DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
 
     // Now for each region with continuations, add a switch at region entry that dispatches to the
     // various continuations.
     //
-    for (int i = 0; i < catchRetBlocksByHandlerRegion.size(); i++)
+    for (int i = 0; i < catchRetBlocksByTryRegion.size(); i++)
     {
-        ArrayStack<BasicBlock*>* catchRetContinuationBlocks = catchRetContinuationBlocksByRegion[i];
+        ArrayStack<BasicBlock*>* catchRetContinuationBlocks = catchRetContinuationBlocksByTryRegion[i];
 
         if (catchRetContinuationBlocks == nullptr)
         {
             continue;
         }
 
-        BasicBlock* dispatchBlock = nullptr;
-        if (i == 0)
-        {
-            BasicBlock* const regionEntryBlock = fgFirstBB;
-            // assert is scratch?
-            // If not BBJ_ALWAYS, may need to split mid-block
-            assert(fgFirstBB->KindIs(BBJ_ALWAYS));
-            dispatchBlock = fgSplitBlockAtEnd(regionEntryBlock);
-        }
-        else
-        {
-            BasicBlock* const regionEntryBlock = compHndBBtab[i - 1].ebdHndBeg;
-            fgSplitBlockAtBeginning(regionEntryBlock);
-            dispatchBlock = regionEntryBlock;
-        }
+        EHblkDsc* const   dsc              = ehGetDsc(i);
+        BasicBlock* const regionEntryBlock = dsc->ebdTryBeg;
 
-        assert(dispatchBlock->isEmpty());
-        assert(dispatchBlock->KindIs(BBJ_ALWAYS));
-        // dispatchBlock->SetKind(BBJ_SWITCH);
-        dispatchBlock->SetFlags(BBF_INTERNAL);
+        fgSplitBlockAtBeginning(regionEntryBlock);
 
-        FlowEdge* const defaultEdge = dispatchBlock->GetTargetEdge();
+        assert(regionEntryBlock->isEmpty());
+        assert(regionEntryBlock->KindIs(BBJ_ALWAYS));
+
+        FlowEdge* const defaultEdge = regionEntryBlock->GetTargetEdge();
         unsigned const  caseCount   = catchRetContinuationBlocks->Height() + 1;
+        unsigned        caseNumber  = 0;
 
-        JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatchBlock->bbNum, caseCount);
+        JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", regionEntryBlock->bbNum, caseCount);
 
+        // Start building switch info
+        //
         FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
         FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
 
-        for (BasicBlock* const catchRetContinuationBlock : catchRetContinuationBlocks->BottomUpOrder())
+        // The "normal flow" edge is case 0.
+        //
+        JITDUMP("  case %u (normal flow): " FMT_BB "\n", caseNumber, defaultEdge->getDestinationBlock()->bbNum);
+        succs[caseNumber] = defaultEdge;
+        cases[caseNumber] = defaultEdge;
+        caseNumber++;
+
+        for (BasicBlock* const catchRetContinuationBlock : catchRetContinuationBlocks->TopDownOrder())
         {
-            JITDUMP("  case %u: " FMT_BB "\n", catchRetContinuationBlock->bbPreorderNum,
-                    catchRetContinuationBlock->bbNum);
-            FlowEdge* caseEdge = fgAddRefPred(catchRetContinuationBlock, dispatchBlock);
+            JITDUMP("  case %u: " FMT_BB "\n", caseNumber, catchRetContinuationBlock->bbNum);
+            FlowEdge* caseEdge = fgAddRefPred(catchRetContinuationBlock, regionEntryBlock);
 
-            succs[catchRetContinuationBlock->bbPreorderNum] = caseEdge;
-            cases[catchRetContinuationBlock->bbPreorderNum] = caseEdge;
+            succs[caseNumber] = caseEdge;
+            cases[caseNumber] = caseEdge;
 
-            // We only got to the non-default case if there was an exception
+            // We only get here on exception
             caseEdge->setLikelihood(0);
+            caseNumber++;
         }
 
-        // default edge is the default case... we may want to rethink this and make
-        // the default case invalid?
-        JITDUMP("  case %u (default): " FMT_BB "\n", caseCount - 1, defaultEdge->getDestinationBlock()->bbPreorderNum);
-        succs[caseCount - 1] = defaultEdge;
-        cases[caseCount - 1] = defaultEdge;
-
         BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, caseCount, cases, caseCount, true);
-        dispatchBlock->SetSwitch(swtDesc);
+        regionEntryBlock->SetSwitch(swtDesc);
 
         GenTree* const defaultValue    = gtNewIconNode(caseCount - 1);
         GenTree* const setDefaultValue = gtNewStoreLclVarNode(continuationLocalNum, defaultValue);
@@ -2076,21 +2017,19 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         switchNode->gtFlags |= GTF_SWITCH_WASM_EH;
 
-        assert(dispatchBlock->isEmpty());
-
-        if (dispatchBlock->IsLIR())
+        if (regionEntryBlock->IsLIR())
         {
             LIR::Range range1 = LIR::SeqTree(this, setDefaultValue);
-            LIR::AsRange(dispatchBlock).InsertAtEnd(std::move(range1));
+            LIR::AsRange(regionEntryBlock).InsertAtEnd(std::move(range1));
             LIR::Range range2 = LIR::SeqTree(this, switchNode);
-            LIR::AsRange(dispatchBlock).InsertAtEnd(std::move(range2));
+            LIR::AsRange(regionEntryBlock).InsertAtEnd(std::move(range2));
         }
         else
         {
-            Statement* const storeStmt = fgNewStmtAtEnd(dispatchBlock, setDefaultValue);
+            Statement* const storeStmt = fgNewStmtAtEnd(regionEntryBlock, setDefaultValue);
             gtSetStmtInfo(storeStmt);
             fgSetStmtSeq(storeStmt);
-            Statement* const switchStmt = fgNewStmtAtEnd(dispatchBlock, switchNode);
+            Statement* const switchStmt = fgNewStmtAtEnd(regionEntryBlock, switchNode);
             gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
@@ -2098,20 +2037,38 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
     // Before each catchret, set the continuation variable appropriately.
     //
-    for (int i = 0; i < catchRetBlocksByHandlerRegion.size(); i++)
+    for (int i = 0; i < catchRetBlocksByTryRegion.size(); i++)
     {
-        ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByHandlerRegion[i];
+        ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByTryRegion[i];
 
         if (catchRetBlocks == nullptr)
         {
             continue;
         }
 
+        ArrayStack<BasicBlock*>* continuationBlocks = catchRetContinuationBlocksByTryRegion[i];
+
         for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
         {
-            unsigned const continuationNum = catchRetBlock->GetTarget()->bbPreorderNum;
-            JITDUMP("Setting continuation variable to %u in " FMT_BB "\n", continuationNum, catchRetBlock->bbNum);
-            GenTree* const valueNode = gtNewIconNode(continuationNum);
+            BasicBlock* const continuationBlock = catchRetBlock->GetTarget();
+
+            unsigned caseNum = 1;
+            bool     found   = false;
+
+            for (BasicBlock* const existing : continuationBlocks->TopDownOrder())
+            {
+                if (existing == continuationBlock)
+                {
+                    found = true;
+                    break;
+                }
+                caseNum++;
+            }
+
+            assert(found);
+
+            JITDUMP("Setting continuation variable to %u in " FMT_BB "\n", caseNum, catchRetBlock->bbNum);
+            GenTree* const valueNode = gtNewIconNode(caseNum);
             GenTree* const storeNode = gtNewStoreLclVarNode(continuationLocalNum, valueNode);
             if (catchRetBlock->IsLIR())
             {
@@ -2126,6 +2083,8 @@ PhaseStatus Compiler::fgWasmEhFlow()
             }
         }
     }
+
+    // In each continuation reset the value to 0...?
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

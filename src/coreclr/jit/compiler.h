@@ -2805,6 +2805,9 @@ public:
     // Find the true enclosing try index, ignoring 'mutual protect' try. Uses blocks to check.
     unsigned ehTrueEnclosingTryIndex(unsigned regionIndex);
 
+    // Find the outermost mutually protecting try index. Uses blocks to check.
+    unsigned ehOutermostMutualProtectTryIndex(unsigned regionIndex);
+
     // Return the index of the most nested enclosing region for a particular EH region. Returns NO_ENCLOSING_INDEX
     // if there is no enclosing region. If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion'
     // is set to 'true' if the enclosing region is a 'try', or 'false' if the enclosing region is a handler.
