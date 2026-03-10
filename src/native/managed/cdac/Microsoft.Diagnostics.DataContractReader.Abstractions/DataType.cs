@@ -82,7 +82,6 @@ public enum DataType
     ThisPtrRetBufPrecodeData,
     Array,
     SyncBlock,
-    SLink,
     SyncTableEntry,
     InteropSyncBlockInfo,
     SyncBlockCache,
@@ -125,6 +124,7 @@ public enum DataType
     EEJitManager,
     PatchpointInfo,
     PortableEntryPoint,
+    VirtualCallStubManager,
 
     TransitionBlock,
     DebuggerEval,
@@ -144,6 +144,7 @@ public enum DataType
     StubDispatchFrame,
     ComCallWrapper,
     SimpleComCallWrapper,
+    ComMethodTable,
     RCWCleanupList,
     RCW,
     CtxEntry,

@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.X509Certificates
                         try
                         {
                             // Try a V1 template structure, just a string:
-                            AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
+                            ValueAsnReader reader = new(ext.RawData, AsnEncodingRules.DER);
                             decodedName = reader.ReadAnyAsnString();
                             reader.ThrowIfNotEmpty();
                         }
