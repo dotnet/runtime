@@ -1318,7 +1318,7 @@ static int CertVerifyCallback(X509_STORE_CTX* store, void* param)
 {
     (void)param;
     SslCtxCertValidationCallback callback = (SslCtxCertValidationCallback) param;
-    SSL *ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
+    SSL* ssl = (SSL*) X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
 
     int verifyResult = callback(ssl, store);
 
