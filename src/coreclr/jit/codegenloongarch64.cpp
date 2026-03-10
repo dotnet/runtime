@@ -6073,31 +6073,15 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
     // Now we can actually use those slot ID's to declare live ranges.
     gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
 
+#ifdef FEATURE_REMAP_FUNCTION
     if (m_compiler->opts.compDbgEnC)
     {
-        // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
-        // which is:
-        //  -return address
-        //  -saved off RBP
-        //  -saved 'this' pointer and bool for synchronized methods
-
-        // 4 slots for RBP + return address + RSI + RDI
-        int preservedAreaSize = 4 * REGSIZE_BYTES;
-
-        if (m_compiler->info.compFlags & CORINFO_FLG_SYNCH)
-        {
-            if (!(m_compiler->info.compFlags & CORINFO_FLG_STATIC))
-            {
-                preservedAreaSize += REGSIZE_BYTES;
-            }
-
-            preservedAreaSize += 1; // bool for synchronized methods
-        }
-
-        // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
-        // frame
-        gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+        // TODO: lvaMonAcquired, lvaAsyncExecutionContextVar and lvaAsyncExecutionContextVar locals are special
+        // that is necessary to allocate in the top of the stack frame and included as part of the EnC frame header
+        // for EnC to work.
+        NYI_LOONGARCH64("compDbgEnc in CodeGen::genCreateAndStoreGCInfo() ---unimplemented/unused on LA64 yet---");
     }
+#endif // FEATURE_REMAP_FUNCTION
 
     if (m_compiler->opts.IsReversePInvoke())
     {

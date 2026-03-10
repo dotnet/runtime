@@ -458,7 +458,7 @@ namespace ILCompiler.DependencyAnalysis
             pcInstr = *(pCode + 1);
 
             pcInstr &= 0xFFC003FF; // keep bits 31-22, 9-0
-            // Assemble the pc-relative low 12 bits of 'imm' into the addid or ld instruction
+            // Assemble the pc-relative low 12 bits of 'imm' into the addi.d or ld instruction
             pcInstr |= (uint)((imm & 0xFFF) << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction

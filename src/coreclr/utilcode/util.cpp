@@ -2220,10 +2220,10 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
     INT64 imm = imm38 + relOff;
     relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
 
+    pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
     // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu18i instruction
     pcInstr |= (UINT32)(((imm >> 18) & 0xFFFFF) << 5);
 
-    pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
     *pCode = pcInstr; // write the assembled instruction
 
     pcInstr = *(pCode + 1);
