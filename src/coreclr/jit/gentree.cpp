@@ -7358,9 +7358,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_CKFINITE:
             return ExceptionSetFlags::ArithmeticException;
 
-        case GT_LCLHEAP:
-            return ExceptionSetFlags::StackOverflowException;
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {

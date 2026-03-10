@@ -2520,17 +2520,6 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 }
                 break;
 
-            case GT_LCLHEAP:
-                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
-                {
-                    JITDUMP("Removing dead LCLHEAP:\n");
-                    DISPNODE(node);
-
-                    // Mark the size operand as unused so it is still processed for any side effects.
-                    blockRange.Remove(node, true);
-                }
-                break;
-
             case GT_LOCKADD:
             case GT_XORR:
             case GT_XAND:
