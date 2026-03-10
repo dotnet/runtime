@@ -697,6 +697,11 @@ public:
         return m_head == nullptr;
     }
 
+    Statement* Head()
+    {
+        return m_head;
+    }
+
     void Append(Statement* stmt);
 
     void InsertIntoBlockAtBeginning(BasicBlock* block);

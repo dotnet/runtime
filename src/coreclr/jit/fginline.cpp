@@ -378,7 +378,7 @@ private:
         BasicBlock* callBlock = m_compiler->compCurBB;
         Statement*  callStmt  = m_statement;
 
-        if (NeedToSplit(call))
+        if (NeedToSplit(inlineInfo, call))
         {
             JITDUMP("Splitting is required\n");
             Statement* newStmt = nullptr;
@@ -755,7 +755,7 @@ private:
         return true;
     }
 
-    bool NeedToSplit(GenTreeCall* call)
+    bool NeedToSplit(InlineInfo& inlineInfo, GenTreeCall* call)
     {
         struct Visitor : GenTreeVisitor<Visitor>
         {
@@ -765,16 +765,27 @@ private:
         public:
             enum
             {
+                DoPreOrder        = true,
                 DoPostOrder       = true,
                 UseExecutionOrder = true,
             };
 
-            GenTreeFlags Flags = GTF_EMPTY;
+            GenTreeFlags Flags         = GTF_EMPTY;
 
             Visitor(Compiler* comp, GenTreeCall* call)
                 : GenTreeVisitor(comp)
                 , m_call(call)
             {
+            }
+
+            fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+            {
+                if (*use == m_call)
+                {
+                    return fgWalkResult::WALK_ABORT;
+                }
+
+                return fgWalkResult::WALK_CONTINUE;
             }
 
             fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -803,16 +814,23 @@ private:
         Visitor visitor(m_compiler, call);
         visitor.WalkTree(m_statement->GetRootNodePointer(), nullptr);
 
-        if ((visitor.Flags & GTF_ALL_EFFECT) == 0)
+        if ((visitor.Flags & GTF_ALL_EFFECT) != 0)
         {
-            // No side effects before the call itself. This means we do not
-            // need to split; the only problem would be if the inlined call
-            // could somehow assign to locals before it, but that's not
-            // possible for inlinees.
-            return false;
+            return true;
         }
 
-        return true;
+        // Setup statements can be arguments with IR coming from the inlining
+        // function. Those could have stores to locals that we saw uses of
+        // before the call itself.
+        for (Statement* stmt = inlineInfo.setupStatements.Head(); stmt != nullptr; stmt = stmt->GetNextStmt())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_ASG) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     bool InsertMidBlock(InlineInfo& inlineInfo, BasicBlock* block, Statement* stmt)
