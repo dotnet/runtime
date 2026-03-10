@@ -2983,6 +2983,7 @@ AGAIN:
                 case GT_INDEX_ADDR:
                     if ((op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize) ||
                         (op1->AsIndexAddr()->gtElemType != op2->AsIndexAddr()->gtElemType) ||
+                        (op1->AsIndexAddr()->gtStructElemClass != op2->AsIndexAddr()->gtStructElemClass) ||
                         (op1->AsIndexAddr()->gtLenOffset != op2->AsIndexAddr()->gtLenOffset) ||
                         (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset))
                     {
