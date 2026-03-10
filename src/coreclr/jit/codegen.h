@@ -334,6 +334,9 @@ protected:
 
     void      genEstablishFramePointer(int delta, bool reportUnwindData);
     void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+#ifdef TARGET_WASM
+    void      genHomeRegisterParamsOutsideProlog();
+#endif
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
