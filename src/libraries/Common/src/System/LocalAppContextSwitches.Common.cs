@@ -18,7 +18,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool GetCachedSwitchValue(string switchName, ref int cachedSwitchValue, bool defaultValue = false)
         {
-            GetCachedSwitchValueInternal(switchName, null, ref cachedSwitchValue, defaultValue);
+            // The cached switch value has 3 states: 0 - unknown, 1 - true, -1 - false
+            if (cachedSwitchValue < 0) return false;
+            if (cachedSwitchValue > 0) return true;
+
+            return GetCachedSwitchValueInternal(switchName, null, ref cachedSwitchValue, defaultValue);
         }
 
         // Returns value of given switch or environment variable using provided cache.
@@ -60,6 +64,7 @@ namespace System
                 return true;
             }
 
+            value = false;
             return false;
         }
     }
