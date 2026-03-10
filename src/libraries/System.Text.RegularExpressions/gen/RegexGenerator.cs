@@ -72,6 +72,8 @@ namespace System.Text.RegularExpressions.Generator
 
                 // The input here will either be a Diagnostic (in the case of something erroneous detected in GetRegexMethodDataOrFailureDiagnostic)
                 // or it will be a (RegexPatternAndSyntax, Location) tuple containing all of the successfully parsed data from the attribute/method.
+                // This step parses the regex tree and checks whether full code generation is supported.
+                // The Location is consumed here for diagnostic creation and not propagated further.
                 .Select((methodOrDiagnostic, _) =>
                 {
                     if (methodOrDiagnostic is ValueTuple<RegexPatternAndSyntax, Location> methodAndLocation)
@@ -83,7 +85,15 @@ namespace System.Text.RegularExpressions.Generator
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
                             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
                             RegexMethod regexMethod = new(method.DeclaringType, method.IsProperty, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
-                            return (object)(regexMethod, location);
+
+                            // If we're unable to generate a full implementation for this regex, report a diagnostic.
+                            // We'll still output a limited implementation that just caches a new Regex(...).
+                            if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
+                            {
+                                return (object)(regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, location), regexMethod.CompilationData);
+                            }
+
+                            return regexMethod;
                         }
                         catch (Exception e)
                         {
@@ -97,20 +107,10 @@ namespace System.Text.RegularExpressions.Generator
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
                 .Select((state, _) =>
                 {
-                    if (state is not ValueTuple<RegexMethod, Location> regexMethodAndLocation)
+                    if (state is not RegexMethod regexMethod)
                     {
-                        Debug.Assert(state is Diagnostic);
+                        Debug.Assert(state is Diagnostic or ValueTuple<RegexMethod, string, Diagnostic, CompilationData>);
                         return state;
-                    }
-
-                    RegexMethod regexMethod = regexMethodAndLocation.Item1;
-                    Location location = regexMethodAndLocation.Item2;
-
-                    // If we're unable to generate a full implementation for this regex, report a diagnostic.
-                    // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
-                    {
-                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, location), regexMethod.CompilationData);
                     }
 
                     // Generate the core logic for the regex.
