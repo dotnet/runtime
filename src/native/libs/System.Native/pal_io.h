@@ -706,6 +706,14 @@ PALEXPORT int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t le
 PALEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
 
 /**
+ * Reads the number of bytes specified into the provided buffer from the specified, opened non-blocking file descriptor.
+ * If no data is currently available, polls the file descriptor until data arrives or the pipe/socket is closed.
+ *
+ * Returns the number of bytes read on success; 0 on EOF; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize);
+
+/**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
  * small, the path will be truncated. No matter what, the buffer will not be null terminated.
  *
@@ -739,6 +747,14 @@ PALEXPORT void SystemNative_Sync(void);
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
 PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
+
+/**
+ * Writes the specified buffer to the provided open non-blocking file descriptor.
+ * If the write buffer is currently full, polls the file descriptor until space is available or the pipe/socket is closed.
+ *
+ * Returns the number of bytes written on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
  * Copies all data from the source file descriptor to the destination file descriptor.
