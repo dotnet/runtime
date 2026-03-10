@@ -9765,7 +9765,7 @@ insGroup* emitter::emitAllocIG()
     ig        = (insGroup*)emitGetMem(sz);
 
 #ifdef DEBUG
-    ig->igSelf = ig;
+    ig->igSelf     = ig;
     ig->igDataSize = 0;
 #endif
 

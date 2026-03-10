@@ -332,10 +332,10 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void      genEstablishFramePointer(int delta, bool reportUnwindData);
-    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+    void genEstablishFramePointer(int delta, bool reportUnwindData);
+    void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
 #ifdef TARGET_WASM
-    void      genHomeRegisterParamsOutsideProlog();
+    void genHomeRegisterParamsOutsideProlog();
 #endif
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
