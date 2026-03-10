@@ -1,8 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <!-- Ignore nullable warnings on .NET Framework -->
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -26,22 +28,33 @@
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonBuilderHelper.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\Common\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
 
     <!-- Reference Microsoft.Build.Tasks.Core directly to avoid bringing in it's package closure.
          This assembly is provided by MSBuild.  -->
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)Microsoft.NET.WebAssembly.Webcil.dll" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(MSBuildProjectName)*" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*.dll*" TargetPath="tasks\$(NetFrameworkToolCurrent)" />
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(TargetPath)" />
+  <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(TargetPath)" Condition="'$(TargetPath)' != ''" />
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
