@@ -764,7 +764,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
     [PreserveSig]
-    int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
     int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
 
