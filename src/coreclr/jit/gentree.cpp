@@ -2661,7 +2661,8 @@ AGAIN:
             case GT_CNS_INT:
                 if ((op1->AsIntCon()->gtIconVal == op2->AsIntCon()->gtIconVal) &&
                     (op1->GetIconHandleFlag() == op2->GetIconHandleFlag()) &&
-                    (op1->AsIntCon()->gtFieldSeq == op2->AsIntCon()->gtFieldSeq))
+                    (op1->AsIntCon()->gtFieldSeq == op2->AsIntCon()->gtFieldSeq) &&
+                    (op1->AsIntCon()->gtCompileTimeHandle == op2->AsIntCon()->gtCompileTimeHandle))
                 {
                     return true;
                 }
@@ -2759,10 +2760,17 @@ AGAIN:
                 return true;
 
             case GT_FTN_ADDR:
-                if (op1->AsFptrVal()->gtFptrMethod != op2->AsFptrVal()->gtFptrMethod)
+                if ((op1->AsFptrVal()->gtFptrMethod != op2->AsFptrVal()->gtFptrMethod) ||
+                    (op1->AsFptrVal()->gtFptrDelegateTarget != op2->AsFptrVal()->gtFptrDelegateTarget))
                 {
                     break;
                 }
+#ifdef FEATURE_READYTORUN
+                if (op1->AsFptrVal()->gtEntryPoint.addr != op2->AsFptrVal()->gtEntryPoint.addr)
+                {
+                    break;
+                }
+#endif
                 return true;
 
             case GT_NOP:
@@ -2881,10 +2889,17 @@ AGAIN:
 
                 case GT_ALLOCOBJ:
                     if ((op1->AsAllocObj()->gtNewHelper != op2->AsAllocObj()->gtNewHelper) ||
-                        (op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd))
+                        (op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd) ||
+                        (op1->AsAllocObj()->gtHelperHasSideEffects != op2->AsAllocObj()->gtHelperHasSideEffects))
                     {
                         return false;
                     }
+#ifdef FEATURE_READYTORUN
+                    if (op1->AsAllocObj()->gtEntryPoint.addr != op2->AsAllocObj()->gtEntryPoint.addr)
+                    {
+                        return false;
+                    }
+#endif
                     break;
 
                 default:
