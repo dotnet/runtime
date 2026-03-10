@@ -15,6 +15,20 @@
 //      to use the new data.
 //   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
+// Increment this when making a change where we'd like to recommend users update their diagnostic tools.
+// Tools can use this to display an advisory notice to users encouraging them to update. Changing
+// this value on its own is not considered a breaking change. See the RuntimeInfo.md data contract for details.
+// When incrementing this value, also implement the new functionality in the cDAC reader and update the
+// GetCurrentReaderVersion() method on the IRuntimeInfo contract in
+// src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
+// to match.
+#ifndef CDAC_RECOMMENDED_READER_VERSION
+#define CDAC_RECOMMENDED_READER_VERSION 1
+#endif
+
+// When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
+// you should also update the contract versions at the bottom of this file for any contract that is being broken.
+
 
 CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
@@ -133,7 +147,7 @@ CDAC_TYPE_END(GCHandle)
 // Object
 
 CDAC_TYPE_BEGIN(Object)
-CDAC_TYPE_INDETERMINATE(Object)
+CDAC_TYPE_SIZE(sizeof(Object))
 CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_data<Object>::m_pMethTab)
 CDAC_TYPE_END(Object)
 
@@ -153,13 +167,22 @@ CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCW, cdac_data<InteropSyncBlockInfo>::CCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
 CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, Lock, cdac_data<SyncBlock>::Lock)
+CDAC_TYPE_FIELD(SyncBlock, /*uint32*/, ThinLock, cdac_data<SyncBlock>::ThinLock)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_END(SyncBlock)
+
+CDAC_TYPE_BEGIN(SLink)
+CDAC_TYPE_INDETERMINATE(SLink)
+CDAC_TYPE_FIELD(SLink, /*pointer*/, Next, offsetof(SLink, m_pNext))
+CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
@@ -181,6 +204,7 @@ CDAC_TYPE_END(ManagedObjectWrapperLayout)
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
+CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, Object, offsetof(SyncTableEntry, m_Object))
 CDAC_TYPE_END(SyncTableEntry)
 
 // Loader
@@ -236,9 +260,29 @@ CDAC_TYPE_INDETERMINATE(LoaderAllocator)
 CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAllocator>::ReferenceCount)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StaticsHeap, cdac_data<LoaderAllocator>::StaticsHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ExecutableHeap, cdac_data<LoaderAllocator>::ExecutableHeap)
+#ifdef HAS_FIXUP_PRECODE
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, FixupPrecodeHeap, cdac_data<LoaderAllocator>::FixupPrecodeHeap)
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, NewStubPrecodeHeap, cdac_data<LoaderAllocator>::NewStubPrecodeHeap)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, DynamicHelpersStubHeap, cdac_data<LoaderAllocator>::DynamicHelpersStubHeap)
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(VirtualCallStubManager)
+CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
+CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, IndcellHeap, cdac_data<VirtualCallStubManager>::IndcellHeap)
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, CacheEntryHeap, cdac_data<VirtualCallStubManager>::CacheEntryHeap)
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+CDAC_TYPE_END(VirtualCallStubManager)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
@@ -342,11 +386,6 @@ CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumStaticFields, cdac_data<EEClass>::NumSta
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
-
-CDAC_TYPE_BEGIN(ArrayClass)
-CDAC_TYPE_INDETERMINATE(ArrayClass)
-CDAC_TYPE_FIELD(ArrayClass, /*uint8*/, Rank, cdac_data<ArrayClass>::Rank)
-CDAC_TYPE_END(ArrayClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -692,6 +731,7 @@ CDAC_TYPE_END(RangeSection)
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
 CDAC_TYPE_FIELD(EEJitManager, /*bool*/, StoreRichDebugInfo, cdac_data<EEJitManager>::StoreRichDebugInfo)
+CDAC_TYPE_FIELD(EEJitManager, /*pointer*/, AllCodeHeaps, cdac_data<EEJitManager>::AllCodeHeaps)
 CDAC_TYPE_END(EEJitManager)
 
 CDAC_TYPE_BEGIN(RealCodeHeader)
@@ -1046,13 +1086,41 @@ CDAC_TYPE_END(DynamicILBlobTable)
 CDAC_TYPE_BEGIN(ComCallWrapper)
 CDAC_TYPE_INDETERMINATE(ComCallWrapper)
 CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, SimpleWrapper, cdac_data<ComCallWrapper>::SimpleWrapper)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, IPtr, cdac_data<ComCallWrapper>::IPtr)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, Next, cdac_data<ComCallWrapper>::Next)
 CDAC_TYPE_END(ComCallWrapper)
 
 CDAC_TYPE_BEGIN(SimpleComCallWrapper)
 CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, MainWrapper, cdac_data<SimpleComCallWrapper>::MainWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, VTablePtr, cdac_data<SimpleComCallWrapper>::VTablePtr)
 CDAC_TYPE_END(SimpleComCallWrapper)
+
+CDAC_TYPE_BEGIN(ComMethodTable)
+CDAC_TYPE_SIZE(sizeof(ComMethodTable))
+CDAC_TYPE_FIELD(ComMethodTable, /*nuint*/, Flags, cdac_data<ComMethodTable>::Flags)
+CDAC_TYPE_FIELD(ComMethodTable, /*pointer*/, MethodTable, cdac_data<ComMethodTable>::MethodTable)
+CDAC_TYPE_END(ComMethodTable)
+CDAC_TYPE_BEGIN(RCWCleanupList)
+CDAC_TYPE_INDETERMINATE(RCWCleanupList)
+CDAC_TYPE_FIELD(RCWCleanupList, /*pointer*/, FirstBucket, cdac_data<RCWCleanupList>::FirstBucket)
+CDAC_TYPE_END(RCWCleanupList)
+
+CDAC_TYPE_BEGIN(RCW)
+CDAC_TYPE_INDETERMINATE(RCW)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, NextCleanupBucket, cdac_data<RCW>::NextCleanupBucket)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, NextRCW, cdac_data<RCW>::NextRCW)
+CDAC_TYPE_FIELD(RCW, /*uint32*/, Flags, cdac_data<RCW>::Flags)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxCookie, cdac_data<RCW>::CtxCookie)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxEntry, cdac_data<RCW>::CtxEntry)
+CDAC_TYPE_END(RCW)
+
+CDAC_TYPE_BEGIN(CtxEntry)
+CDAC_TYPE_INDETERMINATE(CtxEntry)
+CDAC_TYPE_FIELD(CtxEntry, /*pointer*/, STAThread, cdac_data<CtxEntry>::STAThread)
+CDAC_TYPE_END(CtxEntry)
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
@@ -1060,6 +1128,12 @@ CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
 CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations * sizeof(PCODE))
 CDAC_TYPE_END(ComWrappersVtablePtrs)
 #endif
+
+CDAC_TYPE_BEGIN(SyncBlockCache)
+CDAC_TYPE_INDETERMINATE(SyncBlockCache)
+CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_FIELD(SyncBlockCache, /*pointer*/, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
+CDAC_TYPE_END(SyncBlockCache)
 
 CDAC_TYPES_END()
 
@@ -1157,11 +1231,13 @@ CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 1)
 CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 0)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(RecommendedReaderVersion, uint32, CDAC_RECOMMENDED_READER_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, uint64, VALUE_MASK)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
+CDAC_GLOBAL(ArrayBaseSize, uint32, ARRAYBASE_BASESIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
@@ -1175,6 +1251,7 @@ CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
 CDAC_GLOBAL(FieldOffsetBigRVA, uint32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
+CDAC_GLOBAL_POINTER(ContinuationMethodTable, &::g_pContinuationClassIfSubTypeCreated)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
@@ -1208,13 +1285,27 @@ CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
+CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
+CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
+CDAC_GLOBAL(SyncBlockMaskLockThreadId, uint32, SBLK_MASK_LOCK_THREADID)
+CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, uint32, SBLK_MASK_LOCK_RECLEVEL)
+CDAC_GLOBAL(SyncBlockRecursionLevelShift, uint32, SBLK_RECLEVEL_SHIFT)
+CDAC_GLOBAL(SyncBlockIsHashOrSyncBlockIndex, uint32, BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+CDAC_GLOBAL(SyncBlockIsHashCode, uint32, BIT_SBLK_IS_HASHCODE)
+CDAC_GLOBAL(SyncBlockIndexMask, uint32, MASK_SYNCBLOCKINDEX)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+CDAC_GLOBAL(CCWNumInterfaces, uint32, cdac_data<ComCallWrapper>::NumInterfaces)
+CDAC_GLOBAL(CCWThisMask, nuint, cdac_data<ComCallWrapper>::ThisMask)
+CDAC_GLOBAL_POINTER(TearOffAddRef, &g_cdacTearOffAddRef)
+CDAC_GLOBAL_POINTER(TearOffAddRefSimple, &g_cdacTearOffAddRefSimple)
+CDAC_GLOBAL_POINTER(TearOffAddRefSimpleInner, &g_cdacTearOffAddRefSimpleInner)
+CDAC_GLOBAL_POINTER(RCWCleanupList, &g_pRCWCleanupList)
 #endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.
@@ -1247,6 +1338,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
 CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
+CDAC_GLOBAL_CONTRACT(SyncBlock, 1)
 CDAC_GLOBAL_CONTRACT(StackWalk, 1)
 CDAC_GLOBAL_CONTRACT(StressLog, 2)
 CDAC_GLOBAL_CONTRACT(Thread, 1)

@@ -14,6 +14,9 @@
 #include "cdacplatformmetadata.hpp"
 #include "interoplibinterface_comwrappers.h"
 #include "comcallablewrapper.h"
+#ifdef FEATURE_COMINTEROP
+#include "runtimecallablewrapper.h"
+#endif // FEATURE_COMINTEROP
 #include "methodtable.h"
 #include "threads.h"
 #include "vars.hpp"
@@ -21,6 +24,7 @@
 
 #include "configure.h"
 
+#include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"
 
