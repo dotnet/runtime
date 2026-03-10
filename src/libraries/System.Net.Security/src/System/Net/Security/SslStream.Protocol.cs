@@ -16,47 +16,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
-        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
-        private const string EnableServerAiaDownloadsCtxSwitch = "System.Net.Security.EnableServerAiaDownloads";
-        private const string EnableServerAiaDownloadsEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS";
-
-        private static volatile NullableBool s_disableTlsResume;
-        private static volatile NullableBool s_enableServerAiaDownloads;
-
-        internal static bool DisableTlsResume
-        {
-            get
-            {
-                NullableBool disableTlsResume = s_disableTlsResume;
-                if (disableTlsResume != NullableBool.Undefined)
-                {
-                    return disableTlsResume == NullableBool.True;
-                }
-
-                bool value = AppContextSwitchHelper.GetBooleanConfig(DisableTlsResumeCtxSwitch, DisableTlsResumeEnvironmentVariable);
-                s_disableTlsResume = value ? NullableBool.True : NullableBool.False;
-
-                return value;
-            }
-        }
-
-        internal static bool EnableServerAiaDownloads
-        {
-            get
-            {
-                NullableBool enableServerAiaDownloads = s_enableServerAiaDownloads;
-                if (enableServerAiaDownloads != NullableBool.Undefined)
-                {
-                    return enableServerAiaDownloads == NullableBool.True;
-                }
-
-                bool value = AppContextSwitchHelper.GetBooleanConfig(EnableServerAiaDownloadsCtxSwitch, EnableServerAiaDownloadsEnvironmentVariable);
-                s_enableServerAiaDownloads = value ? NullableBool.True : NullableBool.False;
-
-                return value;
-            }
-        }
 
 
         private SafeFreeCredentials? _credentialsHandle;
@@ -1097,7 +1056,7 @@ namespace System.Net.Security
                         chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                         chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
-                        if (_sslAuthenticationOptions.IsServer && !EnableServerAiaDownloads)
+                        if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
                         {
                             chain.ChainPolicy.DisableCertificateDownloads = true;
                         }

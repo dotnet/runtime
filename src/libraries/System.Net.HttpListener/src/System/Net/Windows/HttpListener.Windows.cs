@@ -36,7 +36,7 @@ namespace System.Net
         // no more than one outstanding write at a time, and can significantly improve throughput over high-latency connections.
         // Applications that use asynchronous I/O and that may have more than one send outstanding at a time should not use this flag.
         // Enabling this can result in higher CPU and memory usage by Http.sys.
-        internal static bool EnableKernelResponseBuffering { get; } = AppContextSwitchHelper.GetBooleanConfig("System.Net.HttpListener.EnableKernelResponseBuffering");
+        internal static bool EnableKernelResponseBuffering => LocalAppContextSwitches.EnableKernelResponseBuffering;
 
         // Mitigate potential DOS attacks by limiting the number of unknown headers we accept.  Numerous header names
         // with hash collisions will cause the server to consume excess CPU.  1000 headers limits CPU time to under

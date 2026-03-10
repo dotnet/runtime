@@ -25,6 +25,17 @@ namespace System
             return GetCachedSwitchValueInternal(switchName, ref cachedSwitchValue);
         }
 
+        // Returns value of given switch or environment variable using provided cache.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool GetCachedSwitchValue(string switchName, string envVariable, ref int cachedSwitchValue)
+        {
+            // The cached switch value has 3 states: 0 - unknown, 1 - true, -1 - false
+            if (cachedSwitchValue < 0) return false;
+            if (cachedSwitchValue > 0) return true;
+
+            return GetCachedSwitchValueInternal(switchName, envVariable, ref cachedSwitchValue);
+        }
+
         private static bool GetCachedSwitchValueInternal(string switchName, ref int cachedSwitchValue)
         {
             bool hasSwitch = AppContext.TryGetSwitch(switchName, out bool isSwitchEnabled);
@@ -40,6 +51,36 @@ namespace System
             }
 
             return isSwitchEnabled;
+        }
+
+        private static bool GetCachedSwitchValueInternal(string switchName, string envVariable, ref int cachedSwitchValue)
+        {
+            if (!AppContext.TryGetSwitch(switchName, out bool isSwitchEnabled))
+            {
+                isSwitchEnabled = GetBooleanEnvironmentVariable(envVariable);
+            }
+
+            AppContext.TryGetSwitch("TestSwitch.LocalAppContext.DisableCaching", out bool disableCaching);
+            if (!disableCaching)
+            {
+                cachedSwitchValue = isSwitchEnabled ? 1 /*true*/ : -1 /*false*/;
+            }
+
+            return isSwitchEnabled;
+        }
+
+        private static bool GetBooleanEnvironmentVariable(string envVariable)
+        {
+            string? str = Environment.GetEnvironmentVariable(envVariable);
+            if (str is not null)
+            {
+                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // Provides default values for switches if they're not always false by default

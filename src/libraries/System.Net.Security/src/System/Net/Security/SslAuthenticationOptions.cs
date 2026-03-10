@@ -11,7 +11,6 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions : IDisposable
     {
-        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
 
         internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
 
@@ -146,7 +145,7 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
-                    bool ocspFetch = AppContextSwitchHelper.GetBooleanConfig(EnableOcspStaplingContextSwitchName);
+                    bool ocspFetch = LocalAppContextSwitches.EnableOcspStapling;
                     // given cert is X509Certificate2 with key. We can use it directly.
                     SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
                 }

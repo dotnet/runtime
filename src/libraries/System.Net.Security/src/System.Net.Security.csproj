@@ -34,6 +34,8 @@
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
              Link="Common\System\AppContextSwitchHelper.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -53,6 +55,7 @@
     <Compile Include="System\Net\Security\ProtectionLevel.cs" />
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
+    <Compile Include="System\Net\Security\LocalAppContextSwitches.cs" />
     <Compile Include="System\Net\Security\SslCertificateTrust.cs" />
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientHelloInfo.cs" />
@@ -117,8 +120,6 @@
              Link="Common\System\Net\NegotiationInfoClass.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\NullableBool.cs"
-             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs"
              Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
   </ItemGroup>

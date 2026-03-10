@@ -16,27 +16,7 @@ namespace System.Net.Http
 {
     internal static partial class AuthenticationHelper
     {
-        private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
-        private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
-
-        private static volatile NullableBool s_usePortInSpn;
-
-        private static bool UsePortInSpn
-        {
-            get
-            {
-                NullableBool usePortInSpn = s_usePortInSpn;
-                if (usePortInSpn != NullableBool.Undefined)
-                {
-                    return usePortInSpn == NullableBool.True;
-                }
-
-                bool value = AppContextSwitchHelper.GetBooleanConfig(UsePortInSpnCtxSwitch, UsePortInSpnEnvironmentVariable);
-                s_usePortInSpn = value ? NullableBool.True : NullableBool.False;
-
-                return value;
-            }
-        }
+        private static bool UsePortInSpn => LocalAppContextSwitches.UsePortInSpn;
 
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
