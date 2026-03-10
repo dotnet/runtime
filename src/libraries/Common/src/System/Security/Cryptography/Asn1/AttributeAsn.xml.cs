@@ -173,5 +173,55 @@ namespace System.Security.Cryptography.Asn1
 
             sequenceReader.ThrowIfNotEmpty();
         }
+
+
+        internal AttrValuesEnumerable GetAttrValues(AsnEncodingRules ruleSet)
+        {
+            return new AttrValuesEnumerable(AttrValues, ruleSet);
+        }
+
+        internal readonly ref struct AttrValuesEnumerable
+        {
+            private readonly ReadOnlySpan<byte> _encoded;
+            private readonly AsnEncodingRules _ruleSet;
+
+            internal AttrValuesEnumerable(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+            {
+                _encoded = encoded;
+                _ruleSet = ruleSet;
+            }
+
+            public Enumerator GetEnumerator() => new Enumerator(_encoded, _ruleSet);
+
+            internal ref struct Enumerator
+            {
+                private ValueAsnReader _reader;
+                private ReadOnlySpan<byte> _current;
+
+                internal Enumerator(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+                {
+                    if (!encoded.IsEmpty)
+                    {
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        _reader = outerReader.ReadSetOf();
+                    }
+
+                    _current = default;
+                }
+
+                public ReadOnlySpan<byte> Current => _current;
+
+                public bool MoveNext()
+                {
+                    if (!_reader.HasData)
+                    {
+                        return false;
+                    }
+
+                    _current = _reader.ReadEncodedValue();
+                    return true;
+                }
+            }
+        }
     }
 }

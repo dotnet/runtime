@@ -487,31 +487,31 @@ namespace System.Security.Cryptography.X509Certificates
             return new PublicKey(oid, parameters, keyValue, skipCopy: true);
         }
 
-        internal static PublicKey DecodeSubjectPublicKeyInfo(ref SubjectPublicKeyInfoAsn spki)
-        {
-            DecodeSubjectPublicKeyInfo(
-                ref spki,
-                out Oid oid,
-                out AsnEncodedData? parameters,
-                out AsnEncodedData keyValue);
+        // internal static PublicKey DecodeSubjectPublicKeyInfo(ref SubjectPublicKeyInfoAsn spki)
+        // {
+        //     DecodeSubjectPublicKeyInfo(
+        //         ref spki,
+        //         out Oid oid,
+        //         out AsnEncodedData? parameters,
+        //         out AsnEncodedData keyValue);
 
-            return new PublicKey(oid, parameters, keyValue, skipCopy: true);
-        }
+        //     return new PublicKey(oid, parameters, keyValue, skipCopy: true);
+        // }
 
-        private static void DecodeSubjectPublicKeyInfo(
-            ref SubjectPublicKeyInfoAsn spki,
-            out Oid oid,
-            out AsnEncodedData? parameters,
-            out AsnEncodedData keyValue)
-        {
-            oid = new Oid(spki.Algorithm.Algorithm, null);
-            keyValue = new AsnEncodedData(spki.SubjectPublicKey.Span);
-            parameters = spki.Algorithm.Parameters switch
-            {
-                ReadOnlyMemory<byte> algParameters => new AsnEncodedData(algParameters.Span),
-                _ => null,
-            };
-        }
+        // private static void DecodeSubjectPublicKeyInfo(
+        //     ref SubjectPublicKeyInfoAsn spki,
+        //     out Oid oid,
+        //     out AsnEncodedData? parameters,
+        //     out AsnEncodedData keyValue)
+        // {
+        //     oid = new Oid(spki.Algorithm.Algorithm, null);
+        //     keyValue = new AsnEncodedData(spki.SubjectPublicKey.Span);
+        //     parameters = spki.Algorithm.Parameters switch
+        //     {
+        //         ReadOnlyMemory<byte> algParameters => new AsnEncodedData(algParameters.Span),
+        //         _ => null,
+        //     };
+        // }
 
         private static void DecodeSubjectPublicKeyInfo(
             ref ValueSubjectPublicKeyInfoAsn spki,

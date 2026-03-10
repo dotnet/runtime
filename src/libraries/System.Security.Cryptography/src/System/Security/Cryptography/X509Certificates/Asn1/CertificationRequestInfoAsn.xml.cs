@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     {
         internal System.Numerics.BigInteger Version;
         internal ReadOnlySpan<byte> Subject;
-        internal ReadOnlySpan<byte> SubjectPublicKeyInfo;
+        internal System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal ReadOnlySpan<byte> Attributes;
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCertificationRequestInfoAsn decoded)
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
 
             decoded.Subject = sequenceReader.ReadEncodedValue();
-            decoded.SubjectPublicKeyInfo = sequenceReader.ReadEncodedValue();
+            System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn.Decode(ref sequenceReader, out decoded.SubjectPublicKeyInfo);
             decoded.Attributes = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();

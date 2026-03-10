@@ -17,7 +17,10 @@
   -->
   <asn:Integer name="Version" type="int" />
   <asn:AnyValue name="Subject" universalTagNumber="16" />
-  <asn:AsnType name="SubjectPublicKeyInfo" typeName="System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn" />
+  <asn:AsnType
+    name="SubjectPublicKeyInfo"
+    typeName="System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn" />
   <asn:SetOf name="Attributes" implicitTag="0" valueName="GetAttributes">
     <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" valueTypeName="System.Security.Cryptography.Asn1.ValueAttributeAsn" />
   </asn:SetOf>
