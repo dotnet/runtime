@@ -275,7 +275,7 @@ namespace System.Text.RegularExpressions.Generator
         /// </summary>
         private static RegexMethodEntry? ParseAndGenerateRegex(
             RegexPatternAndSyntax method,
-            List<Diagnostic> diagnostics, ref Dictionary<string, HelperMethod>? helpers)
+            ref ImmutableArray<Diagnostic>.Builder? diagnostics, ref Dictionary<string, HelperMethod>? helpers)
         {
             RegexTree regexTree;
             AnalysisResults analysis;
@@ -286,7 +286,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             catch (Exception e)
             {
-                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.MemberLocation, e.Message));
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, method.MemberLocation, e.Message));
                 return null;
             }
 
@@ -314,7 +314,7 @@ namespace System.Text.RegularExpressions.Generator
             // We'll still output a limited implementation that just caches a new Regex(...).
             if (!SupportsCodeGeneration(regexMethod, method.CompilationData.LanguageVersion, out string? reason))
             {
-                diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, method.MemberLocation));
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, method.MemberLocation));
 
                 return new RegexMethodEntry(
                     method.DeclaringType, method.IsProperty, method.MemberName,

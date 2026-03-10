@@ -63,17 +63,17 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     List<RegexMethodEntry>? methods = null;
                     Dictionary<string, HelperMethod>? helpersByName = null;
-                    List<Diagnostic>? allDiagnostics = null;
+                    ImmutableArray<Diagnostic>.Builder? allDiagnostics = null;
 
                     foreach (object? item in items)
                     {
                         if (item is Diagnostic diagnostic)
                         {
-                            (allDiagnostics ??= new List<Diagnostic>()).Add(diagnostic);
+                            (allDiagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
                         }
                         else if (item is RegexPatternAndSyntax method)
                         {
-                            RegexMethodEntry? entry = ParseAndGenerateRegex(method, allDiagnostics ??= new List<Diagnostic>(), ref helpersByName);
+                            RegexMethodEntry? entry = ParseAndGenerateRegex(method, ref allDiagnostics, ref helpersByName);
                             if (entry is not null)
                             {
                                 (methods ??= new List<RegexMethodEntry>()).Add(entry);
@@ -85,9 +85,7 @@ namespace System.Text.RegularExpressions.Generator
                         methods?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<RegexMethodEntry>.Empty,
                         helpersByName?.Values.OrderBy(h => h.Name, StringComparer.Ordinal).ToImmutableEquatableArray() ?? ImmutableEquatableArray<HelperMethod>.Empty);
 
-                    return (Result: result, Diagnostics: allDiagnostics is not null
-                        ? ImmutableArray.CreateRange(allDiagnostics)
-                        : ImmutableArray<Diagnostic>.Empty);
+                    return (Result: result, Diagnostics: allDiagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
                 });
 
             // Project to just the equatable source model, discarding diagnostics.
