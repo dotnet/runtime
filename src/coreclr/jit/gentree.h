@@ -541,6 +541,8 @@ enum GenTreeFlags : unsigned
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
 #endif // FEATURE_HW_INTRINSICS
+
+    GTF_SWITCH_WASM_EH          = 0x80000000, // GT_SWITCH -- this switch is used for WebAssembly exception handling
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)

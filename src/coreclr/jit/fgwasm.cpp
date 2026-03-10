@@ -106,7 +106,7 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
 
     JITDUMP("Determining Wasm DFS entry points\n");
 
-    // All funclets are entries. For now we assume finallys are funclets.
+    // All funclets are entries. For now finallys are funclets.
     // We walk from outer->inner order, so that for mutual protect trys
     // the "first" handler is visited last and ends up earlier in RPO.
     //
@@ -123,10 +123,9 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
         }
     }
 
-    // Also consider any non-funclet entry block that is only reachable by
-    // EH as an entry. Eventually we'll have to introduce some Wasm-appropriate
-    // way for control to reach these blocks, at which point we should make this
-    // manifest (either as Wasm EH, or via explicit control flow).
+    // Also look for any non-funclet entry block that is only reachable EH.
+    // These should have been connected up to special Wasm switches at
+    // method and funclet entry. If not, something is wrong.
     //
     hasBlocksOnlyReachableViaEH = false;
 
@@ -961,6 +960,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
     if (hasBlocksOnlyReachableViaEH)
     {
         JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        NYI_WASM("Missing EH flow during fgWasmTransformSccs");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -2069,25 +2069,63 @@ PhaseStatus Compiler::fgWasmEhFlow()
         BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, caseCount, cases, caseCount, true);
         dispatchBlock->SetSwitch(swtDesc);
 
-        GenTree* const controlVar = gtNewLclvNode(continuationLocalNum, TYP_INT);
-        GenTree* const switchNode = gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+        GenTree* const defaultValue    = gtNewIconNode(caseCount - 1);
+        GenTree* const setDefaultValue = gtNewStoreLclVarNode(continuationLocalNum, defaultValue);
+        GenTree* const controlVar      = gtNewLclvNode(continuationLocalNum, TYP_INT);
+        GenTree* const switchNode      = gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+
+        switchNode->gtFlags |= GTF_SWITCH_WASM_EH;
 
         assert(dispatchBlock->isEmpty());
 
         if (dispatchBlock->IsLIR())
         {
-            LIR::Range range = LIR::SeqTree(this, switchNode);
-            LIR::AsRange(dispatchBlock).InsertAtEnd(std::move(range));
+            LIR::Range range1 = LIR::SeqTree(this, setDefaultValue);
+            LIR::AsRange(dispatchBlock).InsertAtEnd(std::move(range1));
+            LIR::Range range2 = LIR::SeqTree(this, switchNode);
+            LIR::AsRange(dispatchBlock).InsertAtEnd(std::move(range2));
         }
         else
         {
+            Statement* const storeStmt = fgNewStmtAtEnd(dispatchBlock, setDefaultValue);
+            gtSetStmtInfo(storeStmt);
+            fgSetStmtSeq(storeStmt);
             Statement* const switchStmt = fgNewStmtAtEnd(dispatchBlock, switchNode);
             gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
         }
     }
 
-    // TODO: add code to set the continuation variable appropriately in each BBJ_EHCATCHRET block and at entry.
+    // Before each catchret, set the continuation variable appropriately.
+    //
+    for (int i = 0; i < catchRetBlocksByHandlerRegion.size(); i++)
+    {
+        ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByHandlerRegion[i];
+
+        if (catchRetBlocks == nullptr)
+        {
+            continue;
+        }
+
+        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+        {
+            unsigned const continuationNum = catchRetBlock->GetTarget()->bbPreorderNum;
+            JITDUMP("Setting continuation variable to %u in " FMT_BB "\n", continuationNum, catchRetBlock->bbNum);
+            GenTree* const valueNode = gtNewIconNode(continuationNum);
+            GenTree* const storeNode = gtNewStoreLclVarNode(continuationLocalNum, valueNode);
+            if (catchRetBlock->IsLIR())
+            {
+                LIR::Range range = LIR::SeqTree(this, storeNode);
+                LIR::InsertBeforeTerminator(catchRetBlock, std::move(range));
+            }
+            else
+            {
+                Statement* const storeStmt = fgNewStmtNearEnd(catchRetBlock, storeNode);
+                gtSetStmtInfo(storeStmt);
+                fgSetStmtSeq(storeStmt);
+            }
+        }
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

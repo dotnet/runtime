@@ -11606,6 +11606,15 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
                 goto DASH;
 
+            case GT_SWITCH:
+                if (tree->gtFlags & GTF_SWITCH_WASM_EH)
+                {
+                    printf("W");
+                    --msgLength;
+                    break;
+                }
+                goto DASH;
+
             default:
             DASH:
                 printf("-");
