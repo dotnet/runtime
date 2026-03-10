@@ -349,7 +349,7 @@ namespace System.Formats.Tar
         // equals dataStart (mapBytesConsumed + padding), so no corrective seeking is needed.
         //
         // Returns the parsed segments and the data-start offset in rawStream.
-        private static async ValueTask<((long Offset, long Length)[] Segments, long DataStart)> ParseSparseMap(
+        private static async Task<((long Offset, long Length)[] Segments, long DataStart)> ParseSparseMap(
             bool isAsync, Stream rawStream, CancellationToken cancellationToken)
         {
             byte[] bytes = new byte[2 * TarHelpers.RecordSize];
