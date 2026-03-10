@@ -568,7 +568,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_LCLHEAP:
-            return LowerLclHeap(node);
+            LowerLclHeap(node);
+            break;
 
 #ifdef TARGET_XARCH
         case GT_INTRINSIC:
@@ -11704,22 +11705,9 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // Arguments:
 //    node - the LCLHEAP node we are lowering.
 //
-// Returns:
-//    The next node to lower.
-//
-GenTree* Lowering::LowerLclHeap(GenTree* node)
+void Lowering::LowerLclHeap(GenTree* node)
 {
     assert(node->OperIs(GT_LCLHEAP));
-
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(node, &use))
-    {
-        // Value is unused - no need to allocate anything, just keep the size for its side effects
-        GenTree* next = node->gtNext;
-        node->gtGetOp1()->SetUnusedValue();
-        BlockRange().Remove(node);
-        return next;
-    }
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (node->gtGetOp1()->IsCnsIntOrI())
@@ -11732,7 +11720,7 @@ GenTree* Lowering::LowerLclHeap(GenTree* node)
             // Replace with null for LCLHEAP(0)
             node->BashToZeroConst(TYP_I_IMPL);
             BlockRange().Remove(sizeNode);
-            return node->gtNext;
+            return;
         }
 
         if (m_compiler->info.compInitMem)
@@ -11741,30 +11729,38 @@ GenTree* Lowering::LowerLclHeap(GenTree* node)
             if ((size > UINT_MAX) || (alignedSize > UINT_MAX))
             {
                 // Size is too big - don't mark sizeNode as contained
-                return node->gtNext;
+                return;
             }
 
-            // Align LCLHEAP size for more efficient zeroing via BLK
-            sizeNode->SetIconValue(alignedSize);
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                // Align LCLHEAP size for more efficient zeroing via BLK
+                sizeNode->SetIconValue(alignedSize);
 
-            // Emit STORE_BLK to zero it
-            //
-            //  *  STORE_BLK struct<alignedSize> (init) (Unroll)
-            //  +--*  LCL_VAR   long   V01
-            //  \--*  CNS_INT   int    0
-            //
-            GenTree*    heapLcl = m_compiler->gtNewLclvNode(use.ReplaceWithLclVar(m_compiler), TYP_I_IMPL);
-            GenTree*    zero    = m_compiler->gtNewIconNode(0);
-            GenTreeBlk* storeBlk =
-                new (m_compiler, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero,
-                                                          m_compiler->typGetBlkLayout((unsigned)alignedSize));
-            storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
-            BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
+                // Emit STORE_BLK to zero it
+                //
+                //  *  STORE_BLK struct<alignedSize> (init) (Unroll)
+                //  +--*  LCL_VAR   long   V01
+                //  \--*  CNS_INT   int    0
+                //
+                GenTree*    heapLcl = m_compiler->gtNewLclvNode(use.ReplaceWithLclVar(m_compiler), TYP_I_IMPL);
+                GenTree*    zero    = m_compiler->gtNewIconNode(0);
+                GenTreeBlk* storeBlk =
+                    new (m_compiler, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero,
+                                                              m_compiler->typGetBlkLayout((unsigned)alignedSize));
+                storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+                BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
+            }
+            else
+            {
+                // Value is unused and we don't mark the size node as contained
+                return;
+            }
         }
     }
 #endif
     ContainCheckLclHeap(node->AsOp());
-    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
