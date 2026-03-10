@@ -29,7 +29,7 @@ PALTEST(miscellaneous_CloseHandle_test1_paltest_closehandle_test1, "miscellaneou
         return FAIL;
     }
 
-    WriteBuffer = (LPDWORD)malloc(sizeof(WORD));
+    WriteBuffer = (LPDWORD)malloc(sizeof(DWORD));
     
     if ( WriteBuffer == NULL )
     {
