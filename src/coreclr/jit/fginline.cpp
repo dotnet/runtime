@@ -760,7 +760,7 @@ private:
         struct Visitor : GenTreeVisitor<Visitor>
         {
         private:
-            GenTreeCall*  m_call;
+            GenTreeCall* m_call;
 
         public:
             enum
@@ -770,7 +770,7 @@ private:
                 UseExecutionOrder = true,
             };
 
-            GenTreeFlags Flags         = GTF_EMPTY;
+            GenTreeFlags Flags = GTF_EMPTY;
 
             Visitor(Compiler* comp, GenTreeCall* call)
                 : GenTreeVisitor(comp)
