@@ -1,6 +1,6 @@
 ---
 name: issue-triage
-description: Triage a dotnet/runtime GitHub issue with duplicate search, label check, reproduction, and ecosystem research, then recommend KEEP/CLOSE/NEEDS INFO.
+description: Triage a dotnet/runtime GitHub issue with duplicate search, label check, reproduction, and ecosystem research, then recommend KEEP/CLOSE/NEEDS INFO. Use when asked to triage, evaluate, assess, or check a specific GitHub issue. Also use when asked "is this a duplicate", "should we close this", "check this issue", "what do you think about this issue", or when given a dotnet/runtime issue URL or number and asked for an opinion. Handles bug reports, API proposals, enhancements, performance regressions, and questions.
 ---
 
 # Issue Triage for dotnet/runtime
@@ -152,12 +152,20 @@ Search dotnet/runtime for existing issues that cover the same request or bug.
 3. **Search by API name** -- If the issue references a specific type or method,
    search for it.
 
-4. **Check both open AND closed issues** -- A closed issue might be:
+4. **Search by exception type and stack trace** -- For bug reports with stack
+   traces, search for the exception type combined with key frames from the call
+   stack. Example: `"NullReferenceException" "JsonSerializer.Deserialize"`.
+
+5. **Search by affected .NET version** -- If the issue claims a regression from
+   a specific version, include the version in your search to find other reports
+   of the same regression: `"regression" "net9.0" "System.Text.Json"`.
+
+6. **Check both open AND closed issues** -- A closed issue might be:
    - Already fixed (no action needed, just link it)
    - Closed as won't-fix (important context for the recommendation)
    - Closed as duplicate (follow the chain to the canonical issue)
 
-5. **Evaluate match quality** -- Not every search hit is a true duplicate. Consider:
+7. **Evaluate match quality** -- Not every search hit is a true duplicate. Consider:
    - Same symptom but different root cause? → **Related**, not duplicate
    - Same feature request but different proposed API? → **Related**, not duplicate
    - Same bug, same repro, same root cause? → **Duplicate**
@@ -214,6 +222,26 @@ Consider these factors for all issue types:
   (assigned a milestone, commented with next steps)?
 - **Age and activity** -- When was the issue filed? Has there been recent
   activity, or has it gone stale?
+
+#### 6a-i: Stale issue assessment
+
+For issues that have been open for an extended period (roughly 1+ year) with
+no recent activity, apply additional checks:
+
+- **Verify the problem still exists** -- The reported bug may have been fixed
+  as a side effect of other changes. If a reproduction is available, test it
+  against the latest .NET version.
+- **Check for API or behavior changes** -- The affected API may have been
+  redesigned, deprecated, or removed since the issue was filed. If the API
+  surface has changed significantly, the issue may no longer be relevant.
+- **Assess author reachability** -- If the issue needs more information and
+  the author hasn't responded to prior requests, this factors into NEEDS INFO
+  vs. CLOSE decisions, but never dismiss solely because the author is inactive.
+- **Look for superseding issues** -- A newer, better-specified issue may have
+  replaced this one. Check whether newer issues reference or supersede it.
+- **Don't penalize age alone** -- A 3-year-old bug report with a valid
+  reproduction is just as actionable as a new one. Stale issues with community
+  +1 reactions indicate ongoing demand despite inactivity.
 
 #### 6b: Assign a Suggested Priority
 
@@ -370,151 +398,18 @@ maintainer responses for each recommendation type.
 
 ## Output Format
 
-The report uses these markers for status indicators:
+Use the report template in
+[references/output-format.md](references/output-format.md). The template
+includes status markers (`[ok]`, `[x]`, `[!]`, `[i]`), section-by-section
+guidance, conditional section rules, and formatting requirements for suggested
+responses.
 
-| Marker | Meaning |
-|--------|---------|
-| `[ok]` | Positive result -- check passed, item confirmed |
-| `[x]` | Negative result -- check did not pass (e.g., could not reproduce, not a regression) |
-| `[!]` | Warning or action needed -- something requires attention |
-| `[i]` | Informational -- neutral context, no action needed |
-
-```markdown
-# Triage Report: #{issue_number}
-
-**Issue:** {title}
-**Author:** @{author} | **Created:** {date} | **Last Activity:** {date}
-**Current Labels:** {labels}
-**Type:** {Bug | API Proposal | Enhancement | Performance | Question | Documentation | Other}
-
----
-
-## Safety Concerns {only if Step 0b flagged issues; omit entirely if clean}
-
-{List each concern with specifics, e.g.:}
-- [!] **Suspicious reproduction code** -- repro calls `HttpClient` to fetch from `http://{suspicious-domain}`. Reproduction skipped.
-- [!] **Binary attachment** -- issue includes a `.zip` file. Not downloaded; requested inline repro instead.
-
-## Label Check
-
-{One of:}
-- [ok] **Label is correct.** The `{area-label}` label correctly maps to this issue's subject.
-- [!] **Mislabeled.** This issue concerns {subject}, which maps to `{correct-area-label}` (not `{current-label}`). Reason: {explanation referencing area-owners.md}.
-- [!] **Wrong repo.** This issue belongs in `{correct-repo}`. Reason: {explanation}.
-- [!] **Transfer to dotnet/dotnet-api-docs.** This is an API documentation issue.
-- [!] **Transfer to dotnet/docs.** This is a conceptual documentation issue.
-- [!] **Convert to Discussion.** This is a question/support request, not a bug or feature request.
-- [!] **Missing area label.** Suggested: `{area-label}`. Reason: {explanation}.
-- [x] **Off-topic / Spam.** {explanation}.
-
-## Duplicate Search
-
-{One of:}
-- [ok] **No duplicates found.**
-- [!] **Potential duplicate(s) found:**
-  - #{number} -- {title} ({state}) -- {why it's related}
-  - #{number} -- {title} ({state}) -- {why it's related}
-- [i] **Related issues (not duplicates):**
-  - #{number} -- {title} -- {how it relates}
-
-## Prior Art & Ecosystem
-
-{Brief summary of ecosystem research: existing .NET packages, how other
-languages handle it, relevant prior discussions. 1-3 paragraphs max.}
-
-## Reproduction {only for bug reports}
-
-{One of:}
-- [ok] **Reproduced** on .NET {version}, {OS} {arch}. {Details.}
-- [x] **Could not reproduce** on .NET {version}, {OS} {arch}. {Details.}
-- [!] **Unable to verify** -- {reason, e.g., "macOS-only issue, current env is Windows"}.
-- [i] **No repro steps provided.**
-
-**Regression check:**
-{One of:}
-- [ok] **Confirmed regression** from .NET {old} → .NET {new}.
-- [x] **Not a regression** -- also fails on .NET {old}.
-- [!] **Unable to verify regression** -- {reason}.
-- [i] **Not claimed as regression.**
-
-**Minimal reproduction:** {only if a minimal repro was derived; omit if the
-issue already provided one or if reproduction was not attempted}
-
-{Self-contained code block that can be copy-pasted into a `dotnet new console`
-project. Must include all types, input data inline, and expected vs. actual
-output in comments.}
-
-## Root Cause Analysis {only for reproduced bug reports; omit if not attempted}
-
-**Likely mechanism:** {1-3 sentence hypothesis of what goes wrong}
-**Related code changes:** {link to relevant commit if found, or "N/A"}
-
-## Answer {only for questions/support requests}
-
-{Provide a helpful answer to the question, with code examples where appropriate.}
-
-**Answer verified:** {Yes -- tested in temp project | No -- based on documentation/inference}
-
-## Assessment
-
-{2-4 bullet points covering feasibility, impact, community interest, risks.}
-
-**Suggested Priority:** {High | Normal | Low} {only for KEEP recommendations}
-**Estimated Complexity:** {S | M | L | XL} -- {1-sentence rationale} {only for API proposals and enhancements}
-
-## Label Recommendations
-
-Recommend the **complete set of labels** that should be applied to the issue
-after triage. This includes:
-- The `area-*` label (confirm the existing one or recommend a change)
-- The `untriaged` label should be **removed** (triage is complete)
-- A primary type label if missing (`bug`, `api-suggestion`, `enhancement`, etc.)
-- Any applicable supplementary labels from
-  [references/supplementary-labels.md](references/supplementary-labels.md):
-  tenet labels, runtime/technology labels, qualifier labels, workflow labels
-  (e.g., `needs-author-action` for NEEDS INFO outcomes), and test labels
-- For **NEEDS INFO** outcomes, always recommend adding `needs-author-action`
-  to trigger the auto-close workflow if the author does not respond
-
-List every label action needed:
-
-- + **Add:** `{label}` -- {reason}
-- - **Remove:** `{label}` -- {reason}
-- [ok] **Keep:** `{label}` -- {reason, if non-obvious}
-
-## Recommendation: **{KEEP | CLOSE | NEEDS INFO}**
-
-**Confidence:** {High | Medium | Low} -- {1-sentence rationale, e.g., "Bug reproduced locally on .NET 10" or "Could not verify due to environment mismatch"}
-**Reason:** {1-2 sentence summary of the recommendation.}
-
-**Suggested response:**
-
-```markdown
-{Draft a response appropriate for the recommendation. Use markdown formatting
-suitable for a GitHub comment. See formatting instructions below the template.}
-```
-
-**Formatting rule for suggested and finalized responses:** The suggested
-response (and any finalized response produced later) MUST be rendered inside
-a **fenced code block** (triple backticks with the `markdown` language tag)
-so it displays as literal code in the terminal. This is critical because:
-- Blockquote (`>`) formatting gets rendered as styled text and cannot be copied.
-- Plain markdown gets word-wrapped by the terminal, inserting spurious line
-  breaks that corrupt the text when pasted.
-- A fenced code block preserves the text exactly as written and renders it
-  as code, making it safe to copy-paste into a GitHub comment.
-
-Example of the correct format:
-
-````
-**Suggested response:**
-
-```markdown
-Thanks for filing this, @user. This is a duplicate of #12345...
-
-Closing as duplicate of #12345.
-```
-````
+Key points:
+- Each section has multiple outcome variants -- pick the one that matches
+- Some sections are conditional (Reproduction only for bugs, Answer only for
+  questions) -- see the conditional sections table in the reference file
+- Suggested responses MUST be in fenced code blocks (not blockquotes) for
+  copy-paste safety
 
 ## Anti-Patterns
 
@@ -564,3 +459,15 @@ Closing as duplicate of #12345.
     - Each issue should have exactly one `area-*` label
     - Don't be afraid to say no -- just explain why and be polite
     - Don't be afraid to be wrong -- just be flexible when new information appears
+
+## Related Skills
+
+After triage is complete, the following skills can help with next steps
+depending on the outcome:
+
+| Condition | Skill | When to suggest |
+|-----------|-------|-----------------|
+| API proposal recommended as KEEP | **api-proposal** | Offer to draft a formal API proposal with working prototype |
+| Bug report with root cause identified | **jit-regression-test** | If the bug is JIT-related, offer to create a regression test |
+| Performance regression confirmed | **performance-benchmark** | Offer to validate the regression with ad hoc benchmarks |
+| Fix PR linked to the issue | **code-review** | Offer to review the fix PR for correctness and consistency |

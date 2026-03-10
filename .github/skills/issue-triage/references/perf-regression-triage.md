@@ -26,6 +26,42 @@ The goals of this triage are to:
 1. **Validate** that the regression is real and reproducible.
 2. **Bisect** to the exact commit that introduced it.
 
+## Feasibility Check
+
+Before investing time in benchmarking and bisection, assess whether the current
+environment can support the investigation. Full bisection requires building
+dotnet/runtime at multiple commits (each build takes 5-40 minutes) and running
+benchmarks, which is resource-intensive.
+
+| Factor | Feasible | Not feasible |
+|--------|----------|--------------|
+| **Disk space** | >50 GB free (for multiple builds) | <20 GB free |
+| **Build time budget** | User is willing to wait 30-60+ min | Quick-turnaround triage expected |
+| **OS/arch match** | Current environment matches the regression's OS/arch | Regression is Linux-only but running on Windows (or vice versa) |
+| **SDK availability** | Can build dotnet/runtime at the relevant commits | Build infrastructure has changed too much between commits |
+| **Benchmark complexity** | Simple, self-contained benchmark | Requires external services, databases, or specialized hardware |
+
+### When full bisection is not feasible
+
+Use the **lightweight analysis** path instead:
+
+1. **Analyze `git log`** -- Review commits in the regression range
+   (`git log --oneline {good}..{bad}`) and identify changes to the affected
+   code path. Look for algorithmic changes, removed optimizations, added
+   validation, or new allocations.
+2. **Check PR descriptions** -- For each suspicious commit, read the associated
+   PR description and review comments. Performance trade-offs are often
+   discussed there.
+3. **Narrow by code path** -- Use `git log --oneline {good}..{bad} -- path/`
+   to filter commits to the affected library or component.
+4. **Report the narrowed range** -- Include the list of candidate commits/PRs
+   in the triage report with an explanation of why each is suspicious. This
+   gives maintainers a head start even without a definitive bisect result.
+
+Note in the triage report that full bisection was not attempted and why
+(e.g., "environment mismatch", "time constraint"), so maintainers know to
+verify independently.
+
 ## Identifying the Bisect Range
 
 Before benchmarking, determine the good and bad commits that bound the

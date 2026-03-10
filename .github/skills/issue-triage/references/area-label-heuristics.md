@@ -60,6 +60,44 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | Single-file deployment | `area-Single-File` |
 | Exception handling (runtime-level) | `area-ExceptionHandling-coreclr` |
 | Debugger, debugging support | `area-Diagnostics-coreclr` |
+| `System.ComponentModel`, component model base types | `area-System.ComponentModel` |
+| `System.ComponentModel.DataAnnotations`, validation attributes | `area-System.ComponentModel.DataAnnotations` |
+| `System.ComponentModel.Composition`, MEF | `area-System.ComponentModel.Composition` |
+| `System.Data`, ADO.NET, DbConnection, DbCommand | `area-System.Data` |
+| `System.Data.Odbc`, ODBC provider | `area-System.Data.Odbc` |
+| `System.DirectoryServices`, Active Directory, LDAP | `area-System.DirectoryServices` |
+| `System.Linq.Expressions`, expression trees | `area-System.Linq.Expressions` |
+| `System.Linq.Parallel`, PLINQ | `area-System.Linq.Parallel` |
+| `System.Management`, WMI | `area-System.Management` |
+| `System.Reflection.Metadata`, metadata reading | `area-System.Reflection.Metadata` |
+| `System.Resources`, resource management, .resx | `area-System.Resources` |
+| `System.Runtime`, core runtime types | `area-System.Runtime` |
+| `System.Runtime.CompilerServices`, compiler services | `area-System.Runtime.CompilerServices` |
+| `System.Runtime.InteropServices.JavaScript`, JS interop, WASM | `area-System.Runtime.InteropServices.JavaScript` |
+| `System.ServiceProcess`, Windows services | `area-System.ServiceProcess` |
+| `System.Text.Encodings.Web`, HtmlEncoder, JavaScriptEncoder | `area-System.Text.Encodings.Web` |
+| `System.Threading.RateLimiting`, rate limiters | `area-System.Threading.RateLimiting` |
+| `System.Threading.Tasks`, Task, ValueTask (not channels/dataflow) | `area-System.Threading.Tasks` |
+| `System.Transactions`, distributed transactions | `area-System.Transactions` |
+| `System.DateTime`, DateOnly, TimeOnly, DateTimeOffset | `area-System.DateTime` |
+| `DataContractSerializer`, XML serialization, `System.Runtime.Serialization` | `area-Serialization` |
+| `System.IO.Hashing`, non-crypto hashing (XxHash, Crc32) | `area-System.IO.Hashing` |
+| `System.IO.Ports`, serial port communication | `area-System.IO.Ports` |
+| `System.Formats.Nrbf`, .NET Remoting Binary Format | `area-System.Formats.Nrbf` |
+| `System.Configuration`, app.config, ConfigurationManager | `area-System.Configuration` |
+| `System.Diagnostics.Process`, Process class | `area-System.Diagnostics.Process` |
+| `System.Diagnostics.Activity`, distributed tracing, OpenTelemetry | `area-System.Diagnostics.Activity` |
+| `System.Diagnostics.Metrics`, Meter, Counter, Histogram | `area-System.Diagnostics.Metric` |
+| EventPipe, ICorProfiler, ETW tracing | `area-Tracing-coreclr` |
+| Tiered compilation, on-stack replacement (OSR) | `area-TieredCompilation-coreclr` |
+| Mono interpreter, Blazor WASM runtime | `area-Codegen-Interpreter-mono` |
+| Mono AOT, iOS/Android ahead-of-time | `area-Codegen-AOT-mono` |
+| IL Linker, trimming, `ILLink` | `area-Tools-ILLink` |
+| `Microsoft.Extensions.DependencyModel` | `area-DependencyModel` |
+| `Microsoft.Extensions.Primitives`, ChangeToken | `area-Extensions-Primitives` |
+| `Microsoft.Win32`, Registry, SystemEvents | `area-Microsoft.Win32` |
+| `Microsoft.VisualBasic` runtime | `area-Microsoft.VisualBasic` |
+| Build/test infrastructure | `area-Infrastructure` |
 
 ## Wrong-Repo Heuristics
 
