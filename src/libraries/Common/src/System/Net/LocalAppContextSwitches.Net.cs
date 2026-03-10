@@ -1,21 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System
 {
     internal static partial class LocalAppContextSwitches
     {
-        internal static bool DisableIPv6 { get; } = InitializeDisableIPv6();
-
-        private static bool InitializeDisableIPv6()
+        private static int s_disableIPv6;
+        internal static bool DisableIPv6
         {
-            bool value = false;
-            if (GetSwitchValue("System.Net.DisableIPv6", ref value))
-            {
-                return value;
-            }
-
-            return GetBooleanEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6");
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("System.Net.DisableIPv6", "DOTNET_SYSTEM_NET_DISABLEIPV6", ref s_disableIPv6);
         }
     }
 }
