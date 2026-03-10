@@ -453,6 +453,10 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             // For block-level stub allocations, the memory may be reserved but not yet committed.
             // Emitting code bytes in that case can cause jitdump logging to fail, and the bytes
             // are optional in the jitdump specification.
+            //
+            // Even when the memory is committed, block-level stubs are reported at commit time
+            // before the actual stub code has been written, so the code bytes would be zeros or
+            // uninitialized. We therefore skip code bytes for block allocations entirely.
             PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
         }
     }
