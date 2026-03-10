@@ -3306,17 +3306,6 @@ namespace Internal.JitInterface
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
 
-                if ((typicalMethod.IsAsyncVariant() || typicalMethod.IsAsync || typicalMethod.IsCompilerGeneratedILBodyForAsync()) && !_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
-                {
-                    // TODO: fix this restriction in runtime async. https://github.com/dotnet/runtime/issues/124665
-                    // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
-                    // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
-                    // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear
-                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows
-                    // the cross module inline of async methods currently.
-                    throw new Exception("Inlining async methods is not supported in ReadyToRun compilation.");
-                }
-
                 MethodIL methodIL = _compilation.GetMethodIL(typicalMethod);
                 if (methodIL is ILStubMethodIL ilStubMethodIL && ilStubMethodIL.StubILHasGeneratedTokens)
                 {

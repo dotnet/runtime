@@ -72,11 +72,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
                 MethodDesc inliner = methodNode.Method;
-                if (inliner.IsCompilerGeneratedILBodyForAsync())
-                {
-                    // Async thunks are restricted from inlining. https://github.com/dotnet/runtime/issues/124665
-                    continue;
-                }
                 EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
                 if (inlinerDefinition.IsNonVersionable())
