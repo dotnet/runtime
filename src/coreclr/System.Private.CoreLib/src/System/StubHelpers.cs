@@ -1350,7 +1350,7 @@ namespace System.StubHelpers
         internal const int Free = 2;
     }
 
-    internal static unsafe class StructureMarshaler<T> where T : struct
+    internal static unsafe class StructureMarshaler<T>  where T : notnull
     {
         [Intrinsic]
         private static extern void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
@@ -1382,7 +1382,7 @@ namespace System.StubHelpers
         }
     }
 
-    internal static unsafe class LayoutClassMarshaler<T> where T : class
+    internal static unsafe class LayoutClassMarshaler<T> where T : notnull
     {
         private static readonly Lock s_stubGenLock = new();
 
@@ -1467,7 +1467,7 @@ namespace System.StubHelpers
             ConvertToManagedStub(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
-        private static void FreeCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        private static void FreeCore(T? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (managed is null)
             {
@@ -1479,10 +1479,57 @@ namespace System.StubHelpers
             }
         }
 
-        public static void Free(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(T? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
             FreeCore(managed, unmanaged, ref cleanupWorkList);
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+        }
+    }
+
+    // Marshaller for layout classes and boxed structs.
+    internal static unsafe class BoxedLayoutTypeMarshaler<T> where T : notnull
+    {
+        public static void ConvertToUnmanaged(object managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            if (typeof(T).IsValueType)
+            {
+                StructureMarshaler<T>.ConvertToUnmanaged(ref Unsafe.As<byte, T>(ref managed.GetRawData()), unmanaged, nativeSize, ref cleanupWorkList);
+            }
+            else
+            {
+                LayoutClassMarshaler<T>.ConvertToUnmanaged(Unsafe.As<object, T>(ref managed), unmanaged, nativeSize, ref cleanupWorkList);
+            }
+        }
+
+        public static void ConvertToManaged(object managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            if (typeof(T).IsValueType)
+            {
+                StructureMarshaler<T>.ConvertToManaged(ref Unsafe.As<byte, T>(ref managed.GetRawData()), unmanaged, ref cleanupWorkList);
+            }
+            else
+            {
+                LayoutClassMarshaler<T>.ConvertToManaged(Unsafe.As<object, T>(ref managed), unmanaged, ref cleanupWorkList);
+            }
+        }
+
+        public static void Free(object? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            if (typeof(T).IsValueType)
+            {
+                ref byte managedRef = ref Unsafe.NullRef<byte>();
+
+                if (managed != null)
+                {
+                    managedRef = ref managed.GetRawData();
+                }
+
+                StructureMarshaler<T>.Free(ref Unsafe.As<byte, T>(ref managedRef), unmanaged, nativeSize, ref cleanupWorkList);
+            }
+            else
+            {
+                LayoutClassMarshaler<T>.Free(Unsafe.As<object?, T?>(ref managed), unmanaged, nativeSize, ref cleanupWorkList);
+            }
         }
     }
 
@@ -1734,7 +1781,7 @@ namespace System.StubHelpers
                 return;
             }
 
-            Marshal.NonBlittableMarshalerMethods.MarshalMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            Marshal.NonBlittableMarshalerMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
 
             methods.ConvertToUnmanaged(obj, (byte*)pNative, size, ref pCleanupWorkList);
         }
@@ -1751,7 +1798,7 @@ namespace System.StubHelpers
                 return;
             }
 
-            Marshal.NonBlittableMarshalerMethods.MarshalMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            Marshal.NonBlittableMarshalerMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
 
             methods.ConvertToManaged(obj, (byte*)pNative, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }

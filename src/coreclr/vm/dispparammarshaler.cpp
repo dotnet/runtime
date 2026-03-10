@@ -397,32 +397,15 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             }
             else
             {
-                if (m_pRecordMT->IsValueType())
                 {
                     GCX_PREEMP();
-                    pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
-                }
-                else
-                {
-                    GCX_PREEMP();
-                    // Layout class
-                    pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
+                    pMD = GetStructMarshalingMethod(METHOD__BOXEDLAYOUTTYPE_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
                 }
 
                 PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-                DECLARE_ARGHOLDER_ARRAY(args, 3);
+                DECLARE_ARGHOLDER_ARRAY(args, 4);
 
-                if (m_pRecordMT->IsValueType())
-                {
-                    // For value types, we need to pass the address of the data
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(BoxedValueClass->GetData());
-                }
-                else
-                {
-                    // For layout classes, we need to pass the object reference
-                    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(BoxedValueClass);
-                }
-
+                args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(BoxedValueClass);
                 args[ARGNUM_1] = PTR_TO_ARGHOLDER(pvRecord);
                 args[ARGNUM_2] = DWORD_TO_ARGHOLDER(m_pRecordMT->GetNativeSize());
                 args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);

@@ -1089,7 +1089,7 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
     EmitLoadCleanupWorkList(pslILEmit);
 
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
 }
 
 
@@ -1104,7 +1104,7 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
 }
 
 void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -1115,7 +1115,7 @@ void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
 }
 
 
@@ -2306,7 +2306,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
 
     if (emittedTypeCheck)
     {
@@ -2338,7 +2338,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     EmitLoadNativeValue(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
 
     if (emittedTypeCheck)
     {
@@ -2365,7 +2365,7 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
 
     if (emittedTypeCheck)
     {
@@ -2512,7 +2512,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
 
     pslILEmit->EmitLabel(pNullRefLabel);
 }
@@ -2533,7 +2533,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
 }
 
 void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
@@ -2545,7 +2545,7 @@ void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
 }
 
 

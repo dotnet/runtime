@@ -5749,7 +5749,7 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     m_pPInvokeTarget = pTarget;
 }
 
-MethodDesc* GetStructMarshallingMethod(BinderMethodID methodId, MethodTable* pMT)
+MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT)
 {
     CONTRACT(MethodDesc*)
     {

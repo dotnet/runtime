@@ -1454,7 +1454,7 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
         MethodDesc* pMD;
         {
             GCX_PREEMP();
-            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT);
+            pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT);
         }
         PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 3);
@@ -1508,7 +1508,7 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
         MethodDesc* pMD;
         {
             GCX_PREEMP();
-            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT);
+            pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT);
         }
         PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 4);
@@ -1548,7 +1548,7 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
         MethodDesc* pMD;
         {
             GCX_PREEMP();
-            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
+            pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
         }
         PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
         DECLARE_ARGHOLDER_ARRAY(args, 4);
@@ -3837,27 +3837,14 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     else
     {
         MethodDesc* pMD;
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
 
-        if (pValueClassMT->IsValueType())
         {
-            {
-                GCX_PREEMP();
-                pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
-            }
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
+            GCX_PREEMP();
+            pMD = GetStructMarshalingMethod(METHOD__BOXEDLAYOUTTYPE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
         }
-        else
-        {
-            // Layout class
-            {
-                GCX_PREEMP();
-                pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
-            }
-            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pBoxedValueClass);
-        }
-
         PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pBoxedValueClass);
         args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
         args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);

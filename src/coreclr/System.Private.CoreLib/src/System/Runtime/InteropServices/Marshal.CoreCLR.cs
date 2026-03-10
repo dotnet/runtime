@@ -234,100 +234,55 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
-        internal static class NonBlittableMarshalerMethods
+        internal sealed class NonBlittableMarshalerMethods
         {
-            internal static MemberInfo ValueTypeConvertToUnmanaged => field ??= typeof(StubHelpers.StructureMarshaler<>).GetMethod(nameof(StubHelpers.StructureMarshaler<int>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
-            internal static MemberInfo ValueTypeConvertToManaged => field ??= typeof(StubHelpers.StructureMarshaler<>).GetMethod(nameof(StubHelpers.StructureMarshaler<int>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
-            internal static MemberInfo ValueTypeFree => field ??= typeof(StubHelpers.StructureMarshaler<>).GetMethod(nameof(StubHelpers.StructureMarshaler<int>.Free), BindingFlags.Public | BindingFlags.Static)!;
+            private static MemberInfo ConvertToUnmanagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
+            private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
+            private static MemberInfo FreeMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
 
-            internal static MemberInfo LayoutClassConvertToUnmanaged => field ??= typeof(StubHelpers.LayoutClassMarshaler<>).GetMethod(nameof(StubHelpers.LayoutClassMarshaler<object>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
-            internal static MemberInfo LayoutClassConvertToManaged => field ??= typeof(StubHelpers.LayoutClassMarshaler<>).GetMethod(nameof(StubHelpers.LayoutClassMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
-            internal static MemberInfo LayoutClassFree => field ??= typeof(StubHelpers.LayoutClassMarshaler<>).GetMethod(nameof(StubHelpers.LayoutClassMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
+            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void ConvertToManagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void FreeDelegate(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
 
-            internal sealed unsafe class MarshalMethods
+            private readonly ConvertToUnmanagedDelegate _convertToUnmanaged;
+            private readonly ConvertToManagedDelegate _convertToManaged;
+            private readonly FreeDelegate _free;
+
+            internal NonBlittableMarshalerMethods(Type instantiatedType)
             {
-                private readonly IntPtr _convertToUnmanaged;
-                private readonly IntPtr _convertToManaged;
-                private readonly IntPtr _free;
-                private readonly bool _isValueType;
-
-                internal MarshalMethods(bool isValueType, MemberInfo convertToUnmanaged, MemberInfo convertToManaged, MemberInfo free)
-                {
-                    _convertToUnmanaged = ((MethodInfo)convertToUnmanaged).MethodHandle.GetFunctionPointer();
-                    _convertToManaged = ((MethodInfo)convertToManaged).MethodHandle.GetFunctionPointer();
-                    _free = ((MethodInfo)free).MethodHandle.GetFunctionPointer();
-                    _isValueType = isValueType;
-                }
-
-                public void ConvertToManaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
-                {
-                    if (_isValueType)
-                    {
-                        ((delegate*<ref byte, byte*, ref CleanupWorkListElement?, void>)_convertToManaged)(ref obj.GetRawData(), native, ref cleanupWorkList);
-                    }
-                    else
-                    {
-                        ((delegate*<object, byte*, ref CleanupWorkListElement?, void>)_convertToManaged)(obj, native, ref cleanupWorkList);
-                    }
-                }
-
-                public void ConvertToUnmanaged(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
-                {
-                    if (_isValueType)
-                    {
-                        ((delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>)_convertToUnmanaged)(ref obj.GetRawData(), native, nativeSize, ref cleanupWorkList);
-                    }
-                    else
-                    {
-                        ((delegate*<object, byte*, int, ref CleanupWorkListElement?, void>)_convertToUnmanaged)(obj, native, nativeSize, ref cleanupWorkList);
-                    }
-                }
-
-                public void Free(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
-                {
-                    if (_isValueType && obj is not null)
-                    {
-                        ((delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>)_free)(ref obj.GetRawData(), native, nativeSize, ref cleanupWorkList);
-                    }
-                    else
-                    {
-                        ((delegate*<object?, byte*, int, ref CleanupWorkListElement?, void>)_free)(obj, native, nativeSize, ref cleanupWorkList);
-                    }
-                }
+                _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
+                _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
+                _free = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).CreateDelegate<FreeDelegate>();
             }
 
-            private static readonly ConditionalWeakTable<Type, MarshalMethods> s_marshalerCache = [];
+            public unsafe void ConvertToManaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                _convertToManaged(obj, native, ref cleanupWorkList);
+            }
+
+            public unsafe void ConvertToUnmanaged(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                _convertToUnmanaged(obj, native, nativeSize, ref cleanupWorkList);
+            }
+
+            public unsafe void Free(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                _free(obj, native, nativeSize, ref cleanupWorkList);
+            }
+
+            private static readonly ConditionalWeakTable<Type, NonBlittableMarshalerMethods> s_marshalerCache = [];
 
             [RequiresDynamicCode("Marshalling code for the object might not be available.")]
-            internal static MarshalMethods GetMarshalMethodsForType(Type t)
+            internal static NonBlittableMarshalerMethods GetMarshalMethodsForType(Type t)
             {
                 return s_marshalerCache.GetOrAdd(t, CreateMarshalMethods);
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
                     Justification = "Analysis can't flow back from this callback, so we put RequiresDynamicCode on the containing method.")]
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2071:UnrecognizedReflectionPattern",
-                    Justification = "'StructMarshaler<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because enumType's constructors are not annotated. " +
-                    "The generated code for struct marshalling does not call new T(), so this is safe.")]
-                static MarshalMethods CreateMarshalMethods(Type type)
+                static NonBlittableMarshalerMethods CreateMarshalMethods(Type type)
                 {
-                    if (type.IsValueType)
-                    {
-                        Type instantiatedMarshaler = typeof(StructureMarshaler<>).MakeGenericType([type]);
-                        return new MarshalMethods(
-                            isValueType: true,
-                            instantiatedMarshaler.GetMemberWithSameMetadataDefinitionAs(ValueTypeConvertToUnmanaged),
-                            instantiatedMarshaler.GetMemberWithSameMetadataDefinitionAs(ValueTypeConvertToManaged),
-                            instantiatedMarshaler.GetMemberWithSameMetadataDefinitionAs(ValueTypeFree));
-                    }
-                    else
-                    {
-                        Type instantiatedMarshaler = typeof(LayoutClassMarshaler<>).MakeGenericType([type]);
-                        return new MarshalMethods(
-                            isValueType: false,
-                            instantiatedMarshaler.GetMemberWithSameMetadataDefinitionAs(LayoutClassConvertToUnmanaged),
-                            instantiatedMarshaler.GetMemberWithSameMetadataDefinitionAs(LayoutClassConvertToManaged),
-                            instantiatedMarshaler.GetMemberWithSameMetadataDefinitionAs(LayoutClassFree));
-                    }
+                    Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
+                    return new NonBlittableMarshalerMethods(instantiatedMarshaler);
                 }
             }
         }
@@ -362,7 +317,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            NonBlittableMarshalerMethods.MarshalMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            NonBlittableMarshalerMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
 
             if (fDeleteOld)
             {
@@ -391,7 +346,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            NonBlittableMarshalerMethods.MarshalMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            NonBlittableMarshalerMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
 
             methods.ConvertToManaged(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
@@ -418,7 +373,7 @@ namespace System.Runtime.InteropServices
 
             if (!isBlittable)
             {
-                NonBlittableMarshalerMethods.MarshalMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(structuretype);
+                NonBlittableMarshalerMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(structuretype);
 
                 methods.Free(null, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }

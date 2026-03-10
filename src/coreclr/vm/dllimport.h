@@ -580,7 +580,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-MethodDesc* GetStructMarshallingMethod(BinderMethodID methodId, MethodTable* pMT);
+MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT);
 bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader);
 #endif // DACCESS_COMPILE
 

@@ -1184,19 +1184,24 @@ DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSaf
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
 
-DEFINE_CLASS(STRUCTURE_MARSHALER,         StubHelpers,                 StructureMarshaler`1)
+DEFINE_CLASS(STRUCTURE_MARSHALER,  StubHelpers,               StructureMarshaler`1)
 DEFINE_METHOD(STRUCTURE_MARSHALER, CONVERT_TO_MANAGED,        ConvertToManaged,       NoSig)
 DEFINE_METHOD(STRUCTURE_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnmanaged,     NoSig)
 DEFINE_METHOD(STRUCTURE_MARSHALER, CONVERT_TO_UNMANAGED_CORE, ConvertToUnmanagedCore, NoSig)
 DEFINE_METHOD(STRUCTURE_MARSHALER, FREE,                      Free,                   NoSig)
 DEFINE_METHOD(STRUCTURE_MARSHALER, FREE_CORE,                 FreeCore,               NoSig)
 
-DEFINE_CLASS(LAYOUTCLASS_MARSHALER,         StubHelpers,                 LayoutClassMarshaler`1)
+DEFINE_CLASS(LAYOUTCLASS_MARSHALER,  StubHelpers,               LayoutClassMarshaler`1)
 DEFINE_METHOD(LAYOUTCLASS_MARSHALER, CONVERT_TO_MANAGED,        ConvertToManaged,       NoSig)
 DEFINE_METHOD(LAYOUTCLASS_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnmanaged,     NoSig)
 DEFINE_METHOD(LAYOUTCLASS_MARSHALER, CONVERT_TO_UNMANAGED_CORE, ConvertToUnmanagedCore, NoSig)
 DEFINE_METHOD(LAYOUTCLASS_MARSHALER, FREE,                      Free,                   NoSig)
 DEFINE_METHOD(LAYOUTCLASS_MARSHALER, FREE_CORE,                 FreeCore,               NoSig)
+
+DEFINE_CLASS(BOXEDLAYOUTTYPE_MARSHALER,  StubHelpers,               BoxedLayoutTypeMarshaler`1)
+DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, CONVERT_TO_MANAGED,        ConvertToManaged,       NoSig)
+DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnmanaged,     NoSig)
+DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, FREE,                      Free,                   NoSig)
 
 DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 
