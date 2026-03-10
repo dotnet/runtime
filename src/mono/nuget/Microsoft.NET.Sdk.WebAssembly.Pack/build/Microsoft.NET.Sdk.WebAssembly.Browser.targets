@@ -86,7 +86,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
 
-    <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</CompressionEnabled>
+    <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(CompressionEnabled)' == ''">false</CompressionEnabled>
   </PropertyGroup>
 
   <ItemGroup>

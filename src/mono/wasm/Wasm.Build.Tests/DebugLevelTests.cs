@@ -118,12 +118,12 @@ public class DebugLevelTests : WasmTemplateTestsBase
     public void BundlerFriendlyBuildProvidesValidOutputForNpmBuild()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "DebugLevelTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
         // Project exists and contains <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>.
         BuildProject(info, config, noDefaultOptions: true, wasmFingerprintDotnetJs: false);
         string bootConfigPath = _provider.GetBootConfigPath(GetBinFrameworkDir(config, forPublish: false));
         string bootJSObject = ProjectProviderBase.GetBootJsonContent(bootConfigPath);
-        // Bundler-friendly doesn't produce JSON; it's technically a JS object literal. It cannot be JSON-parsed but can be checked to ensure it does not contain hot reload.
+        // The bundler-friendly boot config is emitted as a JavaScript object literal, not JSON, so it cannot be parsed as JSON. It can still be inspected to ensure it does not contain hot reload.
         Assert.DoesNotContain("Microsoft.DotNet.HotReload.WebAssembly.Browser", bootJSObject);
     }
 }
