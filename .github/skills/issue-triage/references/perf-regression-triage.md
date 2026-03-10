@@ -3,10 +3,11 @@
 Guidance for investigating and triaging performance regressions in
 dotnet/runtime. Referenced from the main [SKILL.md](../SKILL.md) during Step 5.
 
-> **Note:** The commands in this guide use Linux/macOS shell syntax (`build.sh`,
-> `cp -r`, forward-slash paths, `\` line continuation). On Windows, adapt
-> accordingly: use `build.cmd`, `Copy-Item` or `xcopy`, backslash paths, and
-> backtick (`` ` ``) line continuation.
+> **Note:** Build commands use the `build.cmd/sh` shorthand — run `build.cmd`
+> on Windows or `./build.sh` on Linux/macOS. Other shell commands use
+> Linux/macOS syntax (`cp -r`, forward-slash paths, `\` line continuation).
+> On Windows, adapt accordingly: use `Copy-Item` or `xcopy`, backslash paths,
+> and backtick (`` ` ``) line continuation.
 
 A performance regression is a report that something got measurably slower (or
 uses more memory/allocations) compared to a previous .NET version or a recent
@@ -129,7 +130,7 @@ exercises the reported code path:
 Build dotnet/runtime at the commit you want to test:
 
 ```
-build clr+libs -c release
+build.cmd/sh clr+libs -c release
 ```
 
 The key artifact is the **testhost** folder containing **CoreRun** at:
@@ -148,11 +149,11 @@ folder:
 
 ```
 git checkout {bad-sha}
-build clr+libs -c release
+build.cmd/sh clr+libs -c release
 cp -r artifacts/bin/testhost/net{ver}-{os}-Release-{arch} /tmp/corerun-bad
 
 git checkout {good-sha}
-build clr+libs -c release
+build.cmd/sh clr+libs -c release
 cp -r artifacts/bin/testhost/net{ver}-{os}-Release-{arch} /tmp/corerun-good
 ```
 
@@ -274,9 +275,9 @@ Full rebuilds are slow. Minimize per-step build time:
 | Component changed | Fast rebuild command |
 |-------------------|---------------------|
 | A single library (e.g., System.Text.Json) | `cd src/libraries/System.Text.Json/src && dotnet build -c Release --no-restore` |
-| CoreLib | `build.sh clr.corelib -c Release` |
-| CoreCLR (JIT, GC, runtime) | `build.sh clr -c Release` |
-| All libraries | `build.sh libs -c Release` |
+| CoreLib | `build.cmd/sh clr.corelib -c Release` |
+| CoreCLR (JIT, GC, runtime) | `build.cmd/sh clr -c Release` |
+| All libraries | `build.cmd/sh libs -c Release` |
 
 After an incremental library rebuild, the updated DLL is placed in the
 testhost folder automatically. CoreRun will pick up the new version on the
