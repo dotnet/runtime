@@ -62,15 +62,11 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
-
-        BuildProject(info, config, new BuildOptions());
-
-        // bin/{config}/{targetframework}/wwwroot/_framework/dotnet.js
+        // project exists and contains <BundlerFriendlyBootConfig>true</BundlerFriendlyBootConfig>
+        BuildProject(info, config, noDefaultOptions: true, wasmFingerprintDotnetJs: false);
         string bootConfigPath = _provider.GetBootConfigPath(GetBinFrameworkDir(config, forPublish: false));
-        BootJsonData bootJson = _provider.GetBootJson(bootConfigPath);
-
-        Assert.DoesNotContain(((AssetsData)bootJson.resources).libraryInitializers, f => f.name.Contains("Microsoft.DotNet.HotReload.WebAssembly.Browser"));
-        Assert.DoesNotContain(((AssetsData)bootJson.resources).modulesAfterConfigLoaded, f => f.name.Contains("Microsoft.DotNet.HotReload.WebAssembly.Browser"));
-        Assert.DoesNotContain(((AssetsData)bootJson.resources).assembly, f => f.name.Contains("Microsoft.DotNet.HotReload.WebAssembly.Browser"));
+        string bootJSObject = ProjectProviderBase.GetBootJsonContent(bootConfigPath);
+        // Bundler-friendly doesnt product json, its technically a js object literal. It cannot be json parsed can be checked if not contains hot reload.
+        Assert.DoesNotContain("Microsoft.DotNet.HotReload.WebAssembly.Browser", bootJSObject);
     }
 }

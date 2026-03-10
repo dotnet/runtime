@@ -119,8 +119,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             extraProperties +=
             """
                 <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
-                <WasmFingerprintAssets>false</WasmFingerprintAssets>
-                <CompressionEnabled>false</CompressionEnabled>
             """;
         }
 
@@ -190,9 +188,10 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
+        bool noDefaultOptions = false,
         bool? isNativeBuild = null,
         bool? wasmFingerprintDotnetJs = null) => // null for unset properties
-        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild, wasmFingerprintDotnetJs);
+        BuildProjectCore(info, configuration, noDefaultOptions ? new BuildOptions() : _defaultBuildOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
@@ -242,9 +241,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             return (_projectDir, res.Output);
         }
 
-        if (EnvironmentVariables.UseJavascriptBundler && buildOptions.IsPublish)
+        if (EnvironmentVariables.UseJavascriptBundler)
         {
-            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: true), ".."));
+            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: buildOptions.IsPublish), ".."));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "rollup.config.mjs"), Path.Combine(publicWwwrootDir, "rollup.config.mjs"));
 
