@@ -12,6 +12,9 @@
         subjectPublicKey     BIT STRING
     }
   -->
-  <asn:AsnType name="Algorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:AsnType
+    name="Algorithm"
+    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
   <asn:BitString name="SubjectPublicKey" />
 </asn:Sequence>

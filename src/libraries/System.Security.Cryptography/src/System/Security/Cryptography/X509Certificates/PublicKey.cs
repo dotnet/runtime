@@ -457,27 +457,34 @@ namespace System.Security.Cryptography.X509Certificates
             out AsnEncodedData? parameters,
             out AsnEncodedData keyValue)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+            ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
+
+            int read;
+            ValueSubjectPublicKeyInfoAsn spki;
+
+            try
             {
-                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
-
-                int read;
-                SubjectPublicKeyInfoAsn spki;
-
-                try
-                {
-                    read = reader.PeekEncodedValue().Length;
-                    SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out spki);
-                }
-                catch (AsnContentException e)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                }
-
-                DecodeSubjectPublicKeyInfo(ref spki, out oid, out parameters, out keyValue);
-                return read;
+                read = reader.PeekEncodedValue().Length;
+                ValueSubjectPublicKeyInfoAsn.Decode(ref reader, out spki);
             }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            DecodeSubjectPublicKeyInfo(ref spki, out oid, out parameters, out keyValue);
+            return read;
+        }
+
+        internal static PublicKey DecodeSubjectPublicKeyInfo(ref ValueSubjectPublicKeyInfoAsn spki)
+        {
+            DecodeSubjectPublicKeyInfo(
+                ref spki,
+                out Oid oid,
+                out AsnEncodedData? parameters,
+                out AsnEncodedData keyValue);
+
+            return new PublicKey(oid, parameters, keyValue, skipCopy: true);
         }
 
         internal static PublicKey DecodeSubjectPublicKeyInfo(ref SubjectPublicKeyInfoAsn spki)
@@ -504,6 +511,19 @@ namespace System.Security.Cryptography.X509Certificates
                 ReadOnlyMemory<byte> algParameters => new AsnEncodedData(algParameters.Span),
                 _ => null,
             };
+        }
+
+        private static void DecodeSubjectPublicKeyInfo(
+            ref ValueSubjectPublicKeyInfoAsn spki,
+            out Oid oid,
+            out AsnEncodedData? parameters,
+            out AsnEncodedData keyValue)
+        {
+            oid = new Oid(spki.Algorithm.Algorithm, null);
+            keyValue = new AsnEncodedData(spki.SubjectPublicKey);
+            parameters = spki.Algorithm.HasParameters ?
+                new AsnEncodedData(spki.Algorithm.Parameters) :
+                null;
         }
     }
 }

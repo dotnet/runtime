@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValueSubjectPublicKeyInfoAsn
     {
-        internal ReadOnlySpan<byte> Algorithm;
+        internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn Algorithm;
         internal ReadOnlySpan<byte> SubjectPublicKey;
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueSubjectPublicKeyInfoAsn decoded)
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Asn1
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
             ReadOnlySpan<byte> tmpSpan;
 
-            decoded.Algorithm = sequenceReader.ReadEncodedValue();
+            System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref sequenceReader, out decoded.Algorithm);
 
             if (sequenceReader.TryReadPrimitiveBitString(out _, out tmpSpan))
             {
