@@ -19,7 +19,7 @@ public:
         JIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         JIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        JIT_FLAG_PORTABLE_ENTRY_POINTS   = 10,
+        JIT_FLAG_PORTABLE_ENTRY_POINTS   = 10, // Use portable entrypoints for managed calling convention (see clr-abi.md for details)
         JIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         JIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
