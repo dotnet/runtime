@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -313,7 +311,14 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         public override void GetExceptionClauses(RangeSection range, CodeBlockHandle cbh, out TargetPointer startAddr, out TargetPointer endAddr)
         {
             Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(range);
-            ImageDataDirectory section = FindSection(r2rInfo, (uint)ReadyToRunSectionType.ExceptionInfo);
+            ImageDataDirectory? section = FindSection(r2rInfo, (uint)ReadyToRunSectionType.ExceptionInfo);
+            if (section == null)
+            {
+                startAddr = TargetPointer.Null;
+                endAddr = TargetPointer.Null;
+                return;
+            }
+
             uint count = section.Size / Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
             ulong exceptionLookupTableAddr = section.VirtualAddress + r2rInfo.LoadedImageBase;
 
@@ -323,7 +328,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             GetExceptionClauses(exceptionLookupTableAddr, count, rangeStart, methodRVA, out startAddr, out endAddr);
         }
 
-        private ImageDataDirectory FindSection(Data.ReadyToRunInfo r2rInfo, uint sectionType)
+        private ImageDataDirectory? FindSection(Data.ReadyToRunInfo r2rInfo, uint sectionType)
         {
             Data.ReadyToRunCoreInfo coreInfo = Target.ProcessedData.GetOrAdd<Data.ReadyToRunCoreInfo>(r2rInfo.Composite);
             foreach (Data.ReadyToRunSection section in coreInfo.Header.Sections)
@@ -331,7 +336,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 if (section.Type == sectionType)
                     return section.Section;
             }
-            throw new ArgumentException();
+            return null;
         }
 
         private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)

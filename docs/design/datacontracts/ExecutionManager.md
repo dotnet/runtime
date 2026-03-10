@@ -58,11 +58,11 @@ public struct ExceptionClauseInfo
 {
     public enum ExceptionClauseFlags : uint
     {
-        Fault = 0,
-        Finally = 0x1,
-        Filter = 0x2,
-        Typed = 0x3,
-        Unknown = 0x4
+        Unknown = 0,
+        Fault = 0x1,
+        Finally = 0x2,
+        Filter = 0x3,
+        Typed = 0x4
     }
     public ExceptionClauseFlags ClauseType;
     public bool? IsCatchAllHandler;

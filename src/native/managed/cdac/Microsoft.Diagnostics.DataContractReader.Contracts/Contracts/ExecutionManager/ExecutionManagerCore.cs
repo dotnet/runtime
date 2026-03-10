@@ -403,6 +403,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         bool isR2R = jitManager is ReadyToRunJitManager;
         DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
         uint clauseSize = _target.GetTypeInfo(clauseType).Size!.Value;
+        TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+        TypeHandle th = rts.GetTypeHandle(mtPtr);
+        TargetPointer handleModuleAddr = rts.GetModule(th);
 
         List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();
         for (TargetPointer addr = startAddr; addr < endAddr; addr += clauseSize)
@@ -417,22 +423,18 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             bool? isCatchAllHandler = null;
             TargetPointer? moduleAddr = null;
             uint? classToken = null;
-            if (HasCachedTypeHandle(entry))
+
+            if (HasCachedTypeHandle(entry) && !isR2R)
             {
                 typeHandle = ((EEExceptionClause)entry).TypeHandle;
             }
             else if (!IsFaultOrFinally(flags))
             {
-                if (IsTypedHandler(flags))
+                if (IsTypedHandler(flags) && !IsFilterHandler(flags))
                 {
                     isCatchAllHandler = entry.ClassToken == (uint)((ulong)TableIndex.TypeRef << 24);
+                    moduleAddr = handleModuleAddr;
                 }
-                TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
-                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
-                TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-                TypeHandle th = rts.GetTypeHandle(mtPtr);
-                moduleAddr = rts.GetModule(th);
                 classToken = entry.ClassToken;
             }
 

@@ -136,6 +136,8 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 
         ExceptionClauseInfo filterClause = clauses.First(c => c.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter);
         Assert.NotNull(filterClause.FilterOffset);
+        Assert.IsNull(filterClause.ClassToken);
+        Assert.IsNull(filterClause.TypeHandle);
     }
 
     [ConditionalTheory]
