@@ -12,6 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
+    private const string DefaultDomainFriendlyName = "DefaultDomain";
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
 
     private enum ModuleFlags_1 : uint
@@ -135,7 +136,7 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.FriendlyName != TargetPointer.Null
             ? _target.ReadUtf16String(appDomain.FriendlyName)
-            : string.Empty;
+            : DefaultDomainFriendlyName;
     }
 
     TargetPointer ILoader.GetModule(ModuleHandle handle)
