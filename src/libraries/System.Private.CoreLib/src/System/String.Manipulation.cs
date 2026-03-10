@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System
@@ -2121,6 +2123,53 @@ namespace System
             {
                 Vector512<ushort> v1 = Vector512.Create((ushort)c);
 
+                if (Avx512BW.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                {
+                    // Process in double chunks & check if either chunk is likely to contain matches at once.
+                    // If we get multiple matches in a single chunk, we assume they're likely to be close &
+                    // break out of this logic & use the more optimistic loop below.
+                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    Vector512<byte> packedComparand = Vector512.Create((byte)c);
+                    do
+                    {
+                        Vector512<ushort> vector1 = Vector512.LoadUnsafe(ref source, offset);
+                        Vector512<ushort> vector2 = Vector512.LoadUnsafe(ref source, offset + (nuint)Vector512<ushort>.Count);
+                        var packed = PackedSpanHelpers.PackSources(vector1, vector2);
+
+                        if (Vector512.EqualsAny(packed, packedComparand))
+                        {
+                            var cmp1 = Vector512.Equals(vector1, v1);
+                            var cmp2 = Vector512.Equals(vector2, v1);
+
+                            // Same logic as below, but for both vectors.
+                            ulong mask1 = cmp1.ExtractMostSignificantBits() & 0x5555555555555555;
+                            ulong mask2 = cmp2.ExtractMostSignificantBits() & 0x5555555555555555;
+                            bool shouldBreak = ulong.PopCount(mask1) + ulong.PopCount(mask2) > 1;
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos));
+                                mask1 = BitOperations.ResetLowestSetBit(mask1);
+                            } while (mask1 != 0);
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos) + Vector512<ushort>.Count);
+                                mask2 = BitOperations.ResetLowestSetBit(mask2);
+                            } while (mask2 != 0);
+
+                            // Break out of the loop if we had >1 match:
+                            if (shouldBreak)
+                            {
+                                offset += (nuint)(Vector512<ushort>.Count * 2);
+                                break;
+                            }
+                        }
+
+                        offset += (nuint)(Vector512<ushort>.Count * 2);
+                    } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count * 2));
+                }
+
                 do
                 {
                     Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
@@ -2146,6 +2195,53 @@ namespace System
             {
                 Vector256<ushort> v1 = Vector256.Create((ushort)c);
 
+                if (Avx2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                {
+                    // Process in double chunks & check if either chunk is likely to contain matches at once.
+                    // If we get multiple matches in a single chunk, we assume they're likely to be close &
+                    // break out of this logic & use the more optimistic loop below.
+                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    Vector256<byte> packedComparand = Vector256.Create((byte)c);
+                    do
+                    {
+                        Vector256<ushort> vector1 = Vector256.LoadUnsafe(ref source, offset);
+                        Vector256<ushort> vector2 = Vector256.LoadUnsafe(ref source, offset + (nuint)Vector256<ushort>.Count);
+                        var packed = PackedSpanHelpers.PackSources(vector1, vector2);
+
+                        if (Vector256.EqualsAny(packed, packedComparand))
+                        {
+                            var cmp1 = Vector256.Equals(vector1, v1);
+                            var cmp2 = Vector256.Equals(vector2, v1);
+
+                            // Same logic as below, but for both vectors.
+                            uint mask1 = cmp1.ExtractMostSignificantBits() & 0x55555555;
+                            uint mask2 = cmp2.ExtractMostSignificantBits() & 0x55555555;
+                            bool shouldBreak = uint.PopCount(mask1) + uint.PopCount(mask2) > 1;
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos));
+                                mask1 = BitOperations.ResetLowestSetBit(mask1);
+                            } while (mask1 != 0);
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos) + Vector256<ushort>.Count);
+                                mask2 = BitOperations.ResetLowestSetBit(mask2);
+                            } while (mask2 != 0);
+
+                            // Break out of the loop if we had > 1 match:
+                            if (shouldBreak)
+                            {
+                                offset += (nuint)(Vector256<ushort>.Count * 2);
+                                break;
+                            }
+                        }
+
+                        offset += (nuint)(Vector256<ushort>.Count * 2);
+                    } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count * 2));
+                }
+
                 do
                 {
                     Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
@@ -2170,6 +2266,53 @@ namespace System
             else if (Vector128.IsHardwareAccelerated)
             {
                 Vector128<ushort> v1 = Vector128.Create((ushort)c);
+
+                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                {
+                    // Process in double chunks & check if either chunk is likely to contain matches at once.
+                    // If we get multiple matches in a single chunk, we assume they're likely to be close &
+                    // break out of this logic & use the more optimistic loop below.
+                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    Vector128<byte> packedComparand = Vector128.Create((byte)c);
+                    do
+                    {
+                        Vector128<ushort> vector1 = Vector128.LoadUnsafe(ref source, offset);
+                        Vector128<ushort> vector2 = Vector128.LoadUnsafe(ref source, offset + (nuint)Vector128<ushort>.Count);
+                        var packed = PackedSpanHelpers.PackSources(vector1, vector2);
+
+                        if (Vector128.EqualsAny(packed, packedComparand))
+                        {
+                            var cmp1 = Vector128.Equals(vector1, v1);
+                            var cmp2 = Vector128.Equals(vector2, v1);
+
+                            // Same logic as below, but for both vectors.
+                            uint mask1 = cmp1.ExtractMostSignificantBits() & 0x5555;
+                            uint mask2 = cmp2.ExtractMostSignificantBits() & 0x5555;
+                            bool shouldBreak = uint.PopCount(mask1) + uint.PopCount(mask2) > 1;
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos));
+                                mask1 = BitOperations.ResetLowestSetBit(mask1);
+                            } while (mask1 != 0);
+                            do
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
+                                sepListBuilder.Append((int)(offset + bitPos) + Vector128<ushort>.Count);
+                                mask2 = BitOperations.ResetLowestSetBit(mask2);
+                            } while (mask2 != 0);
+
+                            // Break out of the loop if we had > 1 match:
+                            if (shouldBreak)
+                            {
+                                offset += (nuint)(Vector128<ushort>.Count * 2);
+                                break;
+                            }
+                        }
+
+                        offset += (nuint)(Vector128<ushort>.Count * 2);
+                    } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count * 2));
+                }
 
                 do
                 {
