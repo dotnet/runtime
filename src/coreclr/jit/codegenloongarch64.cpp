@@ -2285,8 +2285,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     // INS_bl/b are placeholders that is not the final instruction.
-    instruction ins = INS_bl;
-    emitAttr attr   = EA_PTRSIZE;
+    instruction ins  = INS_bl;
+    emitAttr    attr = EA_PTRSIZE;
     if (m_compiler->eeDataWithCodePointersNeedsRelocs())
     {
         ins  = INS_b;

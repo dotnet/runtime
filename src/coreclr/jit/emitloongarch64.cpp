@@ -3422,7 +3422,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 ins             = INS_addi_d;
                 *(code_t*)dstRW = 0x02c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
                 dstRW += 4;
-                emitRecordRelocation(dstRW - 8 - writeableOffset, emitDataOffsetToPtr(dataOffs), CorInfoReloc::LOONGARCH64_PC);
+                emitRecordRelocation(dstRW - 8 - writeableOffset, emitDataOffsetToPtr(dataOffs),
+                                     CorInfoReloc::LOONGARCH64_PC);
             }
             else if (id->idIsReloc())
             {
