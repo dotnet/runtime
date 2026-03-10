@@ -219,7 +219,7 @@ namespace System.Formats.Tar
                 SubReadStream? dataStream = _previouslyReadEntry._header._dataStream switch
                 {
                     SubReadStream srs => srs,
-                    GnuSparseStream gss => gss.AdvanceToEndAndGetSubReadStream(),
+                    GnuSparseStream gss => gss.GetSubReadStream(),
                     _ => null,
                 };
 
@@ -259,7 +259,7 @@ namespace System.Formats.Tar
                 SubReadStream? dataStream = _previouslyReadEntry._header._dataStream switch
                 {
                     SubReadStream srs => srs,
-                    GnuSparseStream gss => gss.AdvanceToEndAndGetSubReadStream(),
+                    GnuSparseStream gss => gss.GetSubReadStream(),
                     _ => null,
                 };
 

@@ -478,22 +478,24 @@ namespace System.Formats.Tar.Tests
             // - Data section: sparse map text + padding to 512-byte block + packed data
             //
             // Virtual file layout (realsize=1024):
-            //   [0..255]   = segment 0 data (0x42 bytes)
-            //   [256..1023] = sparse hole (zeros)
+            //   [0..255]   = sparse hole (zeros)
+            //   [256..511] = segment 0 data (0x42 bytes) — hole in the middle test
+            //   [512..1023] = sparse hole (zeros)
             const string PlaceholderName = "GNUSparseFile.0/realfile.txt";
             const string RealName = "realfile.txt";
             const long RealSize = 1024;
+            const long SegmentOffset = 256;
             const long SegmentLength = 256;
             byte[] packedData = new byte[SegmentLength];
             Array.Fill<byte>(packedData, 0x42);
 
             // Build the sparse data section:
             //   "1\n"       <- 1 segment
-            //   "0\n"       <- offset = 0
+            //   "256\n"     <- offset = 256
             //   "256\n"     <- numbytes = 256
             //   [zeros to pad to 512]
             //   [256 bytes of packed data]
-            byte[] mapText = System.Text.Encoding.ASCII.GetBytes("1\n0\n256\n");
+            byte[] mapText = System.Text.Encoding.ASCII.GetBytes("1\n256\n256\n");
             byte[] rawSparseData = new byte[512 + SegmentLength];
             mapText.CopyTo(rawSparseData, 0);
             packedData.CopyTo(rawSparseData, 512);
@@ -519,6 +521,9 @@ namespace System.Formats.Tar.Tests
             TarEntry readEntry = reader.GetNextEntry(copyData);
             Assert.NotNull(readEntry);
 
+            // PAX 1.0 sparse entries use RegularFile type flag ('0'), not SparseFile ('S').
+            Assert.Equal(TarEntryType.RegularFile, readEntry.EntryType);
+
             // Name should be the real file name from GNU.sparse.name.
             Assert.Equal(RealName, readEntry.Name);
 
@@ -537,13 +542,18 @@ namespace System.Formats.Tar.Tests
                 totalRead += read;
             }
 
-            // First 256 bytes should be the packed data (0x42).
-            for (int i = 0; i < SegmentLength; i++)
+            // First 256 bytes should be zeros (leading hole).
+            for (int i = 0; i < SegmentOffset; i++)
+            {
+                Assert.Equal(0, expanded[i]);
+            }
+            // Middle 256 bytes should be the packed data (0x42).
+            for (int i = (int)SegmentOffset; i < (int)(SegmentOffset + SegmentLength); i++)
             {
                 Assert.Equal(0x42, expanded[i]);
             }
-            // Remaining 768 bytes should be zeros (the sparse hole).
-            for (int i = (int)SegmentLength; i < RealSize; i++)
+            // Last 512 bytes should be zeros (trailing hole).
+            for (int i = (int)(SegmentOffset + SegmentLength); i < RealSize; i++)
             {
                 Assert.Equal(0, expanded[i]);
             }
@@ -562,6 +572,8 @@ namespace System.Formats.Tar.Tests
             TarEntry? entry = reader.GetNextEntry(copyData);
             Assert.NotNull(entry);
 
+            // PAX 1.0 sparse entries use RegularFile type flag ('0'), not SparseFile ('S').
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
             Assert.Equal("sparse.db", entry.Name);
             Assert.Equal(1000, entry.Length);
             Assert.NotNull(entry.DataStream);
@@ -598,6 +610,8 @@ namespace System.Formats.Tar.Tests
             TarEntry? entry = reader.GetNextEntry(copyData);
             Assert.NotNull(entry);
 
+            // PAX 1.0 sparse entries use RegularFile type flag ('0'), not SparseFile ('S').
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
             Assert.Equal("sparse.db", entry.Name);
             Assert.Equal(1000, entry.Length);
             Assert.NotNull(entry.DataStream);
@@ -631,11 +645,14 @@ namespace System.Formats.Tar.Tests
             TarEntry? entry = reader.GetNextEntry(copyData);
             Assert.NotNull(entry);
 
+            // PAX 1.0 sparse entries use RegularFile type flag ('0'), not SparseFile ('S').
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
             Assert.Equal("pax-sparse", entry.Name);
             Assert.Equal(60000000000L, entry.Length);
             Assert.NotNull(entry.DataStream);
             Assert.Equal(60000000000L, entry.DataStream.Length);
         }
+
     }
 }
 

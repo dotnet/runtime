@@ -117,7 +117,9 @@ namespace System.Formats.Tar
 
             // GNU sparse format 1.0 (encoded via PAX) stores the real file name in 'GNU.sparse.name',
             // which overrides the placeholder path (e.g. 'GNUSparseFile.0/...') stored in the 'path' attribute.
-            if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
+            // PAX 1.0 sparse entries use TarEntryType.RegularFile (typeFlag '0'), not SparseFile ('S').
+            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile &&
+                ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
             {
                 _name = gnuSparseName;
             }
@@ -148,15 +150,18 @@ namespace System.Formats.Tar
 
             // GNU sparse format 1.0 (encoded via PAX) stores the real (expanded) file size in 'GNU.sparse.realsize'.
             // This is stored separately so that the archive data size (_size) is preserved for correct data stream reading.
-            if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile &&
+                TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
             {
                 _gnuSparseRealSize = gnuSparseRealSize;
             }
 
-            // Set the flag for GNU sparse format 1.0 when 'GNU.sparse.major=1' is present. This indicates that
-            // the data section begins with an embedded text-format sparse map (offset/length pairs) followed by
-            // the packed non-zero data segments. The GnuSparseStream class handles expansion when reading.
-            if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1")
+            // Set the flag for GNU sparse format 1.0 when 'GNU.sparse.major=1' and 'GNU.sparse.minor=0' are present.
+            // This indicates the data section begins with an embedded text-format sparse map (offset/length pairs)
+            // followed by the packed non-zero data segments. The GnuSparseStream class handles expansion when reading.
+            if (_typeFlag is TarEntryType.RegularFile or TarEntryType.V7RegularFile &&
+                ExtendedAttributes.TryGetValue(PaxEaGnuSparseMajor, out string? gnuSparseMajor) && gnuSparseMajor == "1" &&
+                ExtendedAttributes.TryGetValue(PaxEaGnuSparseMinor, out string? gnuSparseMinor) && gnuSparseMinor == "0")
             {
                 _isGnuSparse10 = true;
             }
@@ -236,6 +241,9 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile: // Contains portion of a file
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
+                    // Save the data section start before GetDataStream in case we need to reposition
+                    // after GnuSparseStream.TryCreate reads the sparse map from a seekable stream.
+                    long dataSectionStart = archiveStream.CanSeek ? archiveStream.Position : -1;
                     Stream? rawStream = GetDataStream(archiveStream, copyData);
                     bool isSeekableStream = rawStream is SeekableSubReadStream;
                     bool isSubReadStream = rawStream is SubReadStream;
@@ -254,7 +262,17 @@ namespace System.Formats.Tar
 
                     if (isSeekableStream)
                     {
-                        TarHelpers.AdvanceStream(archiveStream, _size);
+                        if (_dataStream is GnuSparseStream && dataSectionStart >= 0)
+                        {
+                            // GnuSparseStream.TryCreate has already read bytes from the archive stream
+                            // to parse the sparse map. Use absolute positioning instead of a relative
+                            // advance to avoid double-counting those bytes.
+                            archiveStream.Position = dataSectionStart + _size;
+                        }
+                        else
+                        {
+                            TarHelpers.AdvanceStream(archiveStream, _size);
+                        }
                     }
                     else if (isSubReadStream)
                     {
@@ -313,6 +331,7 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile: // Contains portion of a file
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
+                    long dataSectionStartAsync = archiveStream.CanSeek ? archiveStream.Position : -1;
                     Stream? rawStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
                     bool isSeekableStream = rawStream is SeekableSubReadStream;
                     bool isSubReadStream = rawStream is SubReadStream;
@@ -331,7 +350,14 @@ namespace System.Formats.Tar
 
                     if (isSeekableStream)
                     {
-                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                        if (_dataStream is GnuSparseStream && dataSectionStartAsync >= 0)
+                        {
+                            archiveStream.Position = dataSectionStartAsync + _size;
+                        }
+                        else
+                        {
+                            await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                        }
                     }
                     else if (isSubReadStream)
                     {

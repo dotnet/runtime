@@ -43,6 +43,7 @@ namespace System.Formats.Tar
         private const string PaxEaGnuSparseName = "GNU.sparse.name";
         private const string PaxEaGnuSparseRealSize = "GNU.sparse.realsize";
         private const string PaxEaGnuSparseMajor = "GNU.sparse.major";
+        private const string PaxEaGnuSparseMinor = "GNU.sparse.minor";
 
         internal Stream? _dataStream;
         internal long _dataOffset;
