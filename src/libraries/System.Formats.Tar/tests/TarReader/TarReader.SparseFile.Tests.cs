@@ -615,6 +615,83 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public void CopySparseEntryToNewArchive_PreservesExpandedContent(bool copyData)
+        {
+            const string RealName = "realfile.txt";
+            const long RealSize = 2048;
+            const long Seg0Offset = 256, Seg0Length = 256;
+            const long Seg1Offset = 768, Seg1Length = 256;
+
+            byte[] packedData0 = new byte[Seg0Length];
+            Array.Fill<byte>(packedData0, 0x42);
+            byte[] packedData1 = new byte[Seg1Length];
+            Array.Fill<byte>(packedData1, 0x43);
+
+            byte[] mapText = Encoding.ASCII.GetBytes("2\n256\n256\n768\n256\n");
+            byte[] rawSparseData = new byte[512 + Seg0Length + Seg1Length];
+            mapText.CopyTo(rawSparseData, 0);
+            packedData0.CopyTo(rawSparseData, 512);
+            packedData1.CopyTo(rawSparseData, 512 + (int)Seg0Length);
+
+            var gnuSparseAttributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.major"] = "1",
+                ["GNU.sparse.minor"] = "0",
+                ["GNU.sparse.name"] = RealName,
+                ["GNU.sparse.realsize"] = RealSize.ToString(),
+            };
+
+            using var sourceArchive = new MemoryStream();
+            using (var writer = new TarWriter(sourceArchive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/" + RealName, gnuSparseAttributes);
+                entry.DataStream = new MemoryStream(rawSparseData);
+                writer.WriteEntry(entry);
+            }
+
+            sourceArchive.Position = 0;
+
+            using var destArchive = new MemoryStream();
+            using (var reader = new TarReader(sourceArchive))
+            {
+                TarEntry readEntry = reader.GetNextEntry(copyData);
+                Assert.NotNull(readEntry);
+                Assert.Equal(RealName, readEntry.Name);
+                Assert.Equal(RealSize, readEntry.Length);
+
+                // Create a fresh entry to write the expanded content as a plain regular file.
+                // The original PAX extended attributes include GNU.sparse.* keys that would
+                // cause a second TarReader to attempt sparse map parsing on the already-expanded data.
+                var freshEntry = new PaxTarEntry(TarEntryType.RegularFile, readEntry.Name);
+                freshEntry.DataStream = readEntry.DataStream;
+
+                using var writer2 = new TarWriter(destArchive, TarEntryFormat.Pax, leaveOpen: true);
+                writer2.WriteEntry(freshEntry);
+            }
+
+            destArchive.Position = 0;
+            using var reader2 = new TarReader(destArchive);
+            TarEntry copiedEntry = reader2.GetNextEntry();
+            Assert.NotNull(copiedEntry);
+            Assert.Equal(RealName, copiedEntry.Name);
+            Assert.Equal(RealSize, copiedEntry.Length);
+            Assert.NotNull(copiedEntry.DataStream);
+
+            byte[] content = new byte[RealSize];
+            copiedEntry.DataStream.ReadExactly(content);
+
+            for (int i = 0; i < Seg0Offset; i++) Assert.Equal(0, content[i]);
+            for (int i = (int)Seg0Offset; i < (int)(Seg0Offset + Seg0Length); i++) Assert.Equal(0x42, content[i]);
+            for (int i = (int)(Seg0Offset + Seg0Length); i < Seg1Offset; i++) Assert.Equal(0, content[i]);
+            for (int i = (int)Seg1Offset; i < (int)(Seg1Offset + Seg1Length); i++) Assert.Equal(0x43, content[i]);
+            for (int i = (int)(Seg1Offset + Seg1Length); i < RealSize; i++) Assert.Equal(0, content[i]);
+
+            Assert.Null(reader2.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public async Task GnuSparse10Pax_DataStreamExpandsSparseSections_Async(bool copyData)
         {
             const string PlaceholderName = "GNUSparseFile.0/realfile.txt";
