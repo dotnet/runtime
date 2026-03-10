@@ -375,23 +375,31 @@ private:
             return true;
         }
 
-        JITDUMP("Splitting is required\n");
         BasicBlock* callBlock = m_compiler->compCurBB;
-        Statement*  callStmt  = m_compiler->fgMorphStmt;
-        Statement*  newStmt   = nullptr;
-        GenTree**   use2      = nullptr;
-        m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false,
-                                /* early */ true);
-        assert(use2 == use);
+        Statement*  callStmt  = m_statement;
 
-        JITDUMP("After split:\n");
-        while ((newStmt != callStmt) && (newStmt != nullptr))
+        if (NeedToSplit(call))
         {
-            DISPSTMT(newStmt);
-            newStmt = newStmt->GetNextStmt();
-        }
+            JITDUMP("Splitting is required\n");
+            Statement* newStmt = nullptr;
+            GenTree**  use2    = nullptr;
+            m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false,
+                                    /* early */ true);
+            assert(use2 == use);
 
-        DISPSTMT(callStmt);
+            JITDUMP("After split:\n");
+            while ((newStmt != callStmt) && (newStmt != nullptr))
+            {
+                DISPSTMT(newStmt);
+                newStmt = newStmt->GetNextStmt();
+            }
+
+            DISPSTMT(callStmt);
+        }
+        else
+        {
+            JITDUMP("No splitting is needed; can allow reordering\n");
+        }
 
         Statement* predStmt = callStmt == callBlock->firstStmt() ? nullptr : callStmt->GetPrevStmt();
 
@@ -742,6 +750,66 @@ private:
             // IR may potentially contain nodes that requires mandatory BB flags to be set.
             // Propagate those flags from the containing BB.
             m_block->CopyFlags(inlineInfo.inlineCandidateInfo->result.substBB, BBF_COPY_PROPAGATE);
+        }
+
+        return true;
+    }
+
+    bool NeedToSplit(GenTreeCall* call)
+    {
+        struct Visitor : GenTreeVisitor<Visitor>
+        {
+        private:
+            GenTreeCall*  m_call;
+
+        public:
+            enum
+            {
+                DoPostOrder       = true,
+                UseExecutionOrder = true,
+            };
+
+            GenTreeFlags Flags = GTF_EMPTY;
+
+            Visitor(Compiler* comp, GenTreeCall* call)
+                : GenTreeVisitor(comp)
+                , m_call(call)
+            {
+            }
+
+            fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+            {
+                GenTree* tree = *use;
+                if (tree == m_call)
+                {
+                    return fgWalkResult::WALK_ABORT;
+                }
+
+                Flags |= tree->gtFlags & GTF_ALL_EFFECT;
+
+                if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                {
+                    LclVarDsc* dsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
+                    if (dsc->IsAddressExposed() || dsc->lvHasLdAddrOp)
+                    {
+                        Flags |= GTF_GLOB_REF;
+                    }
+                }
+
+                return fgWalkResult::WALK_CONTINUE;
+            }
+        };
+
+        Visitor visitor(m_compiler, call);
+        visitor.WalkTree(m_statement->GetRootNodePointer(), nullptr);
+
+        if ((visitor.Flags & GTF_ALL_EFFECT) == 0)
+        {
+            // No side effects before the call itself. This means we do not
+            // need to split; the only problem would be if the inlined call
+            // could somehow assign to locals before it, but that's not
+            // possible for inlinees.
+            return false;
         }
 
         return true;
