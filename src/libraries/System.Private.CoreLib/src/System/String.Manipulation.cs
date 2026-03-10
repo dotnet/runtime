@@ -2133,12 +2133,12 @@ namespace System
                     {
                         Vector512<ushort> vector1 = Vector512.LoadUnsafe(ref source, offset);
                         Vector512<ushort> vector2 = Vector512.LoadUnsafe(ref source, offset + (nuint)Vector512<ushort>.Count);
-                        var packed = PackedSpanHelpers.PackSources(vector1, vector2);
+                        var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
                         if (Vector512.EqualsAny(packed, packedComparand))
                         {
-                            var cmp1 = Vector512.Equals(vector1, v1);
-                            var cmp2 = Vector512.Equals(vector2, v1);
+                            var cmp1 = Vector512.Equals(vector1, v1).AsByte();
+                            var cmp2 = Vector512.Equals(vector2, v1).AsByte();
 
                             // Same logic as below, but for both vectors.
                             ulong mask1 = cmp1.ExtractMostSignificantBits() & 0x5555555555555555;
@@ -2169,7 +2169,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count*2));
                 }
 
-                do
+                while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count)
                 {
                     Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
                     Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
@@ -2188,7 +2188,7 @@ namespace System
                     }
 
                     offset += (nuint)Vector512<ushort>.Count;
-                } while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count);
+                }
             }
             else if (Vector256.IsHardwareAccelerated && lengthToExamine >= (uint)Vector256<ushort>.Count*2)
             {
@@ -2205,12 +2205,12 @@ namespace System
                     {
                         Vector256<ushort> vector1 = Vector256.LoadUnsafe(ref source, offset);
                         Vector256<ushort> vector2 = Vector256.LoadUnsafe(ref source, offset + (nuint)Vector256<ushort>.Count);
-                        var packed = PackedSpanHelpers.PackSources(vector1, vector2);
+                        var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
                         if (Vector256.EqualsAny(packed, packedComparand))
                         {
-                            var cmp1 = Vector256.Equals(vector1, v1);
-                            var cmp2 = Vector256.Equals(vector2, v1);
+                            var cmp1 = Vector256.Equals(vector1, v1).AsByte();
+                            var cmp2 = Vector256.Equals(vector2, v1).AsByte();
 
                             // Same logic as below, but for both vectors.
                             uint mask1 = cmp1.ExtractMostSignificantBits() & 0x55555555;
@@ -2241,7 +2241,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count*2));
                 }
 
-                do
+                while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count)
                 {
                     Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
                     Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
@@ -2260,7 +2260,7 @@ namespace System
                     }
 
                     offset += (nuint)Vector256<ushort>.Count;
-                } while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count);
+                }
             }
             else if (Vector128.IsHardwareAccelerated)
             {
@@ -2277,12 +2277,12 @@ namespace System
                     {
                         Vector128<ushort> vector1 = Vector128.LoadUnsafe(ref source, offset);
                         Vector128<ushort> vector2 = Vector128.LoadUnsafe(ref source, offset + (nuint)Vector128<ushort>.Count);
-                        var packed = PackedSpanHelpers.PackSources(vector1, vector2);
+                        var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
                         if (Vector128.EqualsAny(packed, packedComparand))
                         {
-                            var cmp1 = Vector128.Equals(vector1, v1);
-                            var cmp2 = Vector128.Equals(vector2, v1);
+                            var cmp1 = Vector128.Equals(vector1, v1).AsByte();
+                            var cmp2 = Vector128.Equals(vector2, v1).AsByte();
 
                             // Same logic as below, but for both vectors.
                             uint mask1 = cmp1.ExtractMostSignificantBits() & 0x5555;
@@ -2313,7 +2313,7 @@ namespace System
                     } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count*2));
                 }
 
-                do
+                while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
                     Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
@@ -2332,7 +2332,7 @@ namespace System
                     }
 
                     offset += (nuint)Vector128<ushort>.Count;
-                } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
+                }
             }
 
             while (offset < lengthToExamine)
