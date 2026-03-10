@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions.Generator
             // - Diagnostic in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
             // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
-            var collected =
+            IncrementalValueProvider<(ImmutableArray<object> Results, ImmutableArray<Diagnostic> Diagnostics)> collected =
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
