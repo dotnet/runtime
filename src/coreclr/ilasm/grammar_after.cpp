@@ -86,7 +86,7 @@ char* nextcharW(_In_ __nullterminated char* pos)
     return (pos+2);
 }
 /*--------------------------------------------------------------------------*/
-bool PtrIsWCHARAligned(char* ptr)
+static bool PtrIsWCHARAligned(char* ptr)
 {
     return ((uintptr_t)ptr & (sizeof(WCHAR) - 1)) == 0;
 }
