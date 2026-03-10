@@ -11,7 +11,6 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -78,12 +77,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
                             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
-                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, method.CompilationData)
-                            {
-                                DiagnosticLocation = method.DiagnosticLocation,
-                                Tree = regexTree,
-                                Analysis = analysis,
-                            };
+                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.DiagnosticLocation, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
                         }
                         catch (Exception e)
                         {
@@ -107,12 +101,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
                     {
-                        return (object)(
-                            regexMethod,
-                            (string?)null,
-                            (string?)reason,
-                            ImmutableEquatableArray<(string, ImmutableEquatableArray<string>)>.Empty,
-                            (Diagnostic?)Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation));
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), regexMethod.CompilationData);
                     }
 
                     // Generate the core logic for the regex.
@@ -123,25 +112,15 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, regexMethod.CompilationData.CheckOverflow);
                     writer.Indent -= 2;
-
-                    // Convert helpers to an equatable form for the incremental pipeline.
-                    var equatableHelpers = requiredHelpers
-                        .OrderBy(h => h.Key, StringComparer.Ordinal)
-                        .Select(h => (h.Key, h.Value.ToImmutableEquatableArray()))
-                        .ToImmutableEquatableArray();
-
-                    return (object)(regexMethod, (string?)sw.ToString(), (string?)null, equatableHelpers, (Diagnostic?)null);
+                    return (regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
                 })
 
                 // Combine all of the generated text outputs into a single batch, then split
                 // the source model from diagnostics so they can be emitted independently.
-                // The Results use ImmutableEquatableArray for deep value equality, ensuring the
-                // source output callback only fires when emitted code would actually change.
                 .Collect()
                 .Select(static (results, _) =>
                 {
                     ImmutableArray<Diagnostic>.Builder? diagnostics = null;
-                    var methods = new List<(RegexMethod Method, string? RunnerFactory, string? LimitedReason, ImmutableEquatableArray<(string Key, ImmutableEquatableArray<string> Lines)> Helpers)>();
 
                     foreach (object result in results)
                     {
@@ -149,25 +128,19 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(d);
                         }
-                        else if (result is ValueTuple<RegexMethod, string, string, ImmutableEquatableArray<(string, ImmutableEquatableArray<string>)>, Diagnostic> entry)
+                        else if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                         {
-                            methods.Add((entry.Item1, entry.Item2, entry.Item3, entry.Item4));
-                            if (entry.Item5 is Diagnostic diag)
-                            {
-                                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diag);
-                            }
+                            (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(limitedSupportResult.Item3);
                         }
                     }
 
-                    return (
-                        Results: methods.ToImmutableEquatableArray(),
-                        Diagnostics: diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+                    return (Results: results, Diagnostics: diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
                 });
 
-            // Project to just the equatable source model for code generation.
+            // Project to just the source model for code generation.
             context.RegisterSourceOutput(collected.Select(static (t, _) => t.Results), static (context, results) =>
             {
-                if (results.Count == 0)
+                if (results.All(static r => r is Diagnostic))
                 {
                     return;
                 }
@@ -197,34 +170,48 @@ namespace System.Text.RegularExpressions.Generator
                 // pair is the implementation used for the key.
                 var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
 
-                // Gather required helpers from all regex methods with full implementations.
-                var requiredHelpers = new Dictionary<string, ImmutableEquatableArray<string>>();
-                foreach ((RegexMethod method, string? runnerFactory, string? limitedReason, ImmutableEquatableArray<(string Key, ImmutableEquatableArray<string> Lines)> helpers) in results)
+                // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
+                // limited support and need to simply output boilerplate.
+                // If we have any (RegexMethod regexMethod, string generatedName, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers),
+                // those are generated implementations to be emitted.  We need to gather up their required helpers.
+                Dictionary<string, string[]> requiredHelpers = new();
+                foreach (object? result in results)
                 {
-                    var key = (method.Pattern, method.Options, method.MatchTimeout);
-                    if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
+                    RegexMethod? regexMethod = null;
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                     {
-                        method.IsDuplicate = true;
-                        method.GeneratedName = implementation.GeneratedName;
+                        regexMethod = limitedSupportResult.Item1;
                     }
-                    else
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
                     {
-                        method.IsDuplicate = false;
-                        method.GeneratedName = $"{method.MemberName}_{id++}";
-                        emittedExpressions.Add(key, method);
-                    }
-
-                    EmitRegexPartialMethod(method, writer);
-                    writer.WriteLine();
-
-                    foreach ((string helperKey, ImmutableEquatableArray<string> helperLines) in helpers)
-                    {
-#pragma warning disable CA1864 // Prefer Dictionary.TryAdd -- not available on netstandard2.0
-                        if (!requiredHelpers.ContainsKey(helperKey))
+                        foreach (KeyValuePair<string, string[]> helper in regexImpl.Item3)
                         {
-                            requiredHelpers.Add(helperKey, helperLines);
+                            if (!requiredHelpers.ContainsKey(helper.Key))
+                            {
+                                requiredHelpers.Add(helper.Key, helper.Value);
+                            }
                         }
-#pragma warning restore CA1864
+
+                        regexMethod = regexImpl.Item1;
+                    }
+
+                    if (regexMethod is not null)
+                    {
+                        var key = (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout);
+                        if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
+                        {
+                            regexMethod.IsDuplicate = true;
+                            regexMethod.GeneratedName = implementation.GeneratedName;
+                        }
+                        else
+                        {
+                            regexMethod.IsDuplicate = false;
+                            regexMethod.GeneratedName = $"{regexMethod.MemberName}_{id++}";
+                            emittedExpressions.Add(key, regexMethod);
+                        }
+
+                        EmitRegexPartialMethod(regexMethod, writer);
+                        writer.WriteLine();
                     }
                 }
 
@@ -250,18 +237,21 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Emit each Regex-derived type.
                 writer.Indent++;
-                foreach ((RegexMethod method, string? runnerFactory, string? limitedReason, _) in results)
+                foreach (object? result in results)
                 {
-                    if (!method.IsDuplicate)
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                     {
-                        if (limitedReason is not null)
+                        if (!limitedSupportResult.Item1.IsDuplicate)
                         {
-                            EmitRegexLimitedBoilerplate(writer, method, limitedReason, method.CompilationData.LanguageVersion);
+                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2, limitedSupportResult.Item4.LanguageVersion);
                             writer.WriteLine();
                         }
-                        else if (runnerFactory is not null)
+                    }
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
+                    {
+                        if (!regexImpl.Item1.IsDuplicate)
                         {
-                            EmitRegexDerivedImplementation(writer, method, runnerFactory, method.CompilationData.AllowUnsafe);
+                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2, regexImpl.Item4.AllowUnsafe);
                             writer.WriteLine();
                         }
                     }
@@ -278,7 +268,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"{{");
                     writer.Indent++;
                     bool sawFirst = false;
-                    foreach (KeyValuePair<string, ImmutableEquatableArray<string>> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
+                    foreach (KeyValuePair<string, string[]> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
                     {
                         if (sawFirst)
                         {
