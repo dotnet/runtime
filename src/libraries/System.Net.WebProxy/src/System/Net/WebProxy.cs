@@ -22,6 +22,7 @@ namespace System.Net
     /// </remarks>
     public partial class WebProxy : IWebProxy, ISerializable
     {
+        private Uri? _address;
         private ChangeTrackingArrayList? _bypassList;
         private Regex[]? _regexBypassList;
 
@@ -69,7 +70,10 @@ namespace System.Net
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
-            this.Credentials = Credentials ?? GetCredentialsFromUri(Address);
+            if (Credentials is not null)
+            {
+                this.Credentials = Credentials;
+            }
             this.BypassProxyOnLocal = BypassOnLocal;
             if (BypassList != null)
             {
@@ -144,7 +148,23 @@ namespace System.Net
         /// <value>
         /// A <see cref="Uri"/> instance that contains the address of the proxy server.
         /// </value>
-        public Uri? Address { get; set; }
+        /// <remarks>
+        /// If the specified <see cref="Uri"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
+        public Uri? Address
+        {
+            get => _address;
+            set
+            {
+                _address = value;
+                NetworkCredential? uriCredentials = GetCredentialsFromUri(value);
+                if (uriCredentials is not null)
+                {
+                    Credentials = uriCredentials;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value that indicates whether to bypass the proxy server for local addresses.
