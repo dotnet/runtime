@@ -2049,7 +2049,7 @@ namespace System
             else if (separators.Length <= 1)
             {
                 char sep0 = separators[0];
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count*2)
                 {
                     MakeSeparatorListVectorized(source, ref sepListBuilder, sep0);
                     return;
@@ -2072,7 +2072,7 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators[1];
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count*2)
                 {
                     MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
                     return;
@@ -2113,7 +2113,7 @@ namespace System
             {
                 throw new PlatformNotSupportedException();
             }
-            Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count);
+            Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
             nuint lengthToExamine = (uint)sourceSpan.Length;
             nuint offset = 0;
             ref char source = ref MemoryMarshal.GetReference(sourceSpan);
@@ -2144,29 +2144,29 @@ namespace System
                             ulong mask1 = cmp1.ExtractMostSignificantBits() & 0x5555555555555555;
                             ulong mask2 = cmp2.ExtractMostSignificantBits() & 0x5555555555555555;
                             bool shouldBreak = ulong.PopCount(mask1) + ulong.PopCount(mask2) > 1;
-                            do
+                            while (mask1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
                                 sepListBuilder.Append((int)(offset + bitPos));
                                 mask1 = BitOperations.ResetLowestSetBit(mask1);
-                            } while (mask1 != 0);
-                            do
+                            }
+                            while (mask2 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
                                 sepListBuilder.Append((int)(offset + bitPos) + Vector512<ushort>.Count);
                                 mask2 = BitOperations.ResetLowestSetBit(mask2);
-                            } while (mask2 != 0);
+                            }
 
                             // Break out of the loop if we had >1 match:
                             if (shouldBreak)
                             {
-                                offset += (nuint)(Vector512<ushort>.Count * 2);
+                                offset += (nuint)(Vector512<ushort>.Count*2);
                                 break;
                             }
                         }
 
-                        offset += (nuint)(Vector512<ushort>.Count * 2);
-                    } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count * 2));
+                        offset += (nuint)(Vector512<ushort>.Count*2);
+                    } while (offset <= lengthToExamine - (nuint)(Vector512<ushort>.Count*2));
                 }
 
                 do
@@ -2216,29 +2216,29 @@ namespace System
                             uint mask1 = cmp1.ExtractMostSignificantBits() & 0x55555555;
                             uint mask2 = cmp2.ExtractMostSignificantBits() & 0x55555555;
                             bool shouldBreak = uint.PopCount(mask1) + uint.PopCount(mask2) > 1;
-                            do
+                            while (mask1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
                                 sepListBuilder.Append((int)(offset + bitPos));
                                 mask1 = BitOperations.ResetLowestSetBit(mask1);
-                            } while (mask1 != 0);
-                            do
+                            }
+                            while (mask2 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
                                 sepListBuilder.Append((int)(offset + bitPos) + Vector256<ushort>.Count);
                                 mask2 = BitOperations.ResetLowestSetBit(mask2);
-                            } while (mask2 != 0);
+                            }
 
                             // Break out of the loop if we had > 1 match:
                             if (shouldBreak)
                             {
-                                offset += (nuint)(Vector256<ushort>.Count * 2);
+                                offset += (nuint)(Vector256<ushort>.Count*2);
                                 break;
                             }
                         }
 
-                        offset += (nuint)(Vector256<ushort>.Count * 2);
-                    } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count * 2));
+                        offset += (nuint)(Vector256<ushort>.Count*2);
+                    } while (offset <= lengthToExamine - (nuint)(Vector256<ushort>.Count*2));
                 }
 
                 do
@@ -2288,29 +2288,29 @@ namespace System
                             uint mask1 = cmp1.ExtractMostSignificantBits() & 0x5555;
                             uint mask2 = cmp2.ExtractMostSignificantBits() & 0x5555;
                             bool shouldBreak = uint.PopCount(mask1) + uint.PopCount(mask2) > 1;
-                            do
+                            while (mask1 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
                                 sepListBuilder.Append((int)(offset + bitPos));
                                 mask1 = BitOperations.ResetLowestSetBit(mask1);
-                            } while (mask1 != 0);
-                            do
+                            }
+                            while (mask2 != 0)
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
                                 sepListBuilder.Append((int)(offset + bitPos) + Vector128<ushort>.Count);
                                 mask2 = BitOperations.ResetLowestSetBit(mask2);
-                            } while (mask2 != 0);
+                            }
 
                             // Break out of the loop if we had > 1 match:
                             if (shouldBreak)
                             {
-                                offset += (nuint)(Vector128<ushort>.Count * 2);
+                                offset += (nuint)(Vector128<ushort>.Count*2);
                                 break;
                             }
                         }
 
-                        offset += (nuint)(Vector128<ushort>.Count * 2);
-                    } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count * 2));
+                        offset += (nuint)(Vector128<ushort>.Count*2);
+                    } while (offset <= lengthToExamine - (nuint)(Vector128<ushort>.Count*2));
                 }
 
                 do
