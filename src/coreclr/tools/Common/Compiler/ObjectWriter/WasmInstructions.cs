@@ -12,10 +12,13 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 {
     public enum WasmExprKind
     {
+        LocalGet = 0x20,
+        GlobalGet = 0x23,
         I32Const = 0x41,
         I64Const = 0x42,
-        GlobalGet = 0x23,
         I32Add = 0x6A,
+        // Sentinel value — not directly cast to a byte; WasmMemoryInitExpr overrides Encode().
+        MemoryInit = 0xFC08,
     }
 
     public static class WasmExprKindExtensions
@@ -30,15 +33,25 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return kind == WasmExprKind.I32Add;
         }
 
+        public static bool IsLocalVarExpr(this WasmExprKind kind)
+        {
+            return kind == WasmExprKind.LocalGet;
+        }
+
         public static bool IsGlobalVarExpr(this WasmExprKind kind)
         {
             return kind == WasmExprKind.GlobalGet;
+        }
+
+        public static bool IsMemoryExpr(this WasmExprKind kind)
+        {
+            return kind == WasmExprKind.MemoryInit;
         }
     }
 
     // Represents a group of Wasm instructions (expressions) which 
     // form a complete expression ending with the 'end' opcode.
-    class WasmInstructionGroup : IWasmEncodable
+    public class WasmInstructionGroup : IWasmEncodable
     {
         readonly WasmExpr[] _wasmExprs;
         public WasmInstructionGroup(WasmExpr[] wasmExprs)
@@ -116,6 +129,31 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
+    // Represents a local variable expression (e.g., (local.get <index>))
+    class WasmLocalVarExpr : WasmExpr
+    {
+        public readonly int LocalIndex;
+        public WasmLocalVarExpr(WasmExprKind kind, int localIndex) : base(kind)
+        {
+            Debug.Assert(localIndex >= 0);
+            Debug.Assert(kind.IsLocalVarExpr());
+            LocalIndex = localIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)LocalIndex);
+
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + (int)DwarfHelper.SizeOfULEB128((uint)LocalIndex);
+        }
+    }
+
     // Represents a global variable expression (e.g., (global.get <index))
     class WasmGlobalVarExpr : WasmExpr
     {
@@ -151,9 +189,55 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         // base class defaults are sufficient as the base class encodes just the opcode
     }
 
+    // Represents a memory.init expression.
+    // Binary encoding: 0xFC prefix + u32(8) sub-opcode + u32(dataSegmentIndex) + u32(memoryIndex)
+    class WasmMemoryInitExpr : WasmExpr
+    {
+        private const byte ExtendedPrefix = 0xFC;
+        private const uint MemoryInitSubOpcode = 8;
+
+        public readonly int DataSegmentIndex;
+        public readonly int MemoryIndex;
+
+        public WasmMemoryInitExpr(int dataSegmentIndex, int memoryIndex = 0) : base(WasmExprKind.MemoryInit)
+        {
+            Debug.Assert(dataSegmentIndex >= 0);
+            Debug.Assert(memoryIndex >= 0);
+            DataSegmentIndex = dataSegmentIndex;
+            MemoryIndex = memoryIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            buffer[pos++] = ExtendedPrefix;
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), MemoryInitSubOpcode);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)DataSegmentIndex);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)MemoryIndex);
+
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return 1
+                + (int)DwarfHelper.SizeOfULEB128(MemoryInitSubOpcode)
+                + (int)DwarfHelper.SizeOfULEB128((uint)DataSegmentIndex)
+                + (int)DwarfHelper.SizeOfULEB128((uint)MemoryIndex);
+        }
+    }
+
     // ************************************************
     // Simple DSL wrapper for creating Wasm expressions
     // ************************************************
+    static class Local
+    {
+        public static WasmExpr Get(int index)
+        {
+            return new WasmLocalVarExpr(WasmExprKind.LocalGet, index);
+        }
+    }
+
     static class Global
     {
         public static WasmExpr Get(int index)
@@ -170,5 +254,13 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
 
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
+    }
+
+    static class Memory
+    {
+        public static WasmExpr Init(int dataSegmentIndex, int memoryIndex = 0)
+        {
+            return new WasmMemoryInitExpr(dataSegmentIndex, memoryIndex);
+        }
     }
 }
