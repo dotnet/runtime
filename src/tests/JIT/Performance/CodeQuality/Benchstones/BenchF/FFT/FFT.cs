@@ -11,122 +11,122 @@ using TestLibrary;
 
 namespace Benchstone.BenchF
 {
-public static class FFT
-{
+    public static class FFT
+    {
 #if DEBUG
-    public const int Iterations = 1;
+        public const int Iterations = 1;
 #else
     public const int Iterations = 300000;
 #endif
 
-    private static readonly int s_points = 16;
+        private static readonly int s_points = 16;
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Escape(object _) { }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Escape(object _) { }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool Bench()
-    {
-        double[] fr = new double[17];
-        double[] fi = new double[17];
-
-        int i;
-        double t;
-
-        for (int iter = 1; iter <= Iterations; iter++)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool Bench()
         {
-            for (i = 1; i <= s_points; ++i)
+            double[] fr = new double[17];
+            double[] fi = new double[17];
+
+            int i;
+            double t;
+
+            for (int iter = 1; iter <= Iterations; iter++)
             {
-                t = ((double)0.375) * ((double)(i - 1));
-                fr[i] = System.Math.Exp(-t) * System.Math.Sin(t);
-                fi[i] = 0.0;
+                for (i = 1; i <= s_points; ++i)
+                {
+                    t = ((double)0.375) * ((double)(i - 1));
+                    fr[i] = System.Math.Exp(-t) * System.Math.Sin(t);
+                    fi[i] = 0.0;
+                }
+                FastFourierT(fr, fi, s_points);
             }
-            FastFourierT(fr, fi, s_points);
+
+            // Escape the results to live-out.
+            Escape(fr);
+            Escape(fi);
+
+            return Math.Abs(fr[1] - 0.25053) < 0.0001 && Math.Abs(fr[2] - 0.13494) < 0.0001;
         }
 
-        // Escape the results to live-out.
-        Escape(fr);
-        Escape(fi);
-
-        return true;
-    }
-
-    private static void FastFourierT(double[] fr, double[] fi, int n)
-    {
-        int i, j, l, m;
-        int istep, mr, nn;
-        double a, el, tr, ti, wr, wi;
-
-        mr = 0;
-        nn = n - 1;
-        m = 1;
-
-        do
+        private static void FastFourierT(double[] fr, double[] fi, int n)
         {
-            l = n;
-            for (l = l / 2; ((mr + l) > nn); l = l / 2)
-            {
-            }
-            // l <= n/2
-            // mr <= (mr % l) + l ==> mr <= (l - 1) + l = 2l - 1
-            // ==> mr <= n - 1
-            mr = (mr % l) + l;
+            int i, j, l, m;
+            int istep, mr, nn;
+            double a, el, tr, ti, wr, wi;
 
-            if (mr > m)
-            {
-                // Accessing upto m + 1 ==> nn + 1 ==> n - 1 + 1 ==> n
-                tr = fr[m + 1];
-                // Accessing upto mr + 1 ==> n - 1 + 1 ==> n
-                fr[m + 1] = fr[mr + 1];
-                fr[mr + 1] = tr;
-                ti = fi[m + 1];
-                fi[m + 1] = fi[mr + 1];
-                fi[mr + 1] = ti;
-            }
-            ++m;
-        } while (m <= nn);
-
-        for (l = 1; l < n; l = istep)
-        {
-            istep = 2 * l;
-
-            el = ((double)l);
+            mr = 0;
+            nn = n - 1;
             m = 1;
+
             do
             {
-                a = ((double)3.1415926535) * (((double)(1 - m)) / el);
-                wr = System.Math.Cos(a);
-                wi = System.Math.Sin(a);
-                i = m;
+                l = n;
+                for (l = l / 2; ((mr + l) > nn); l = l / 2)
+                {
+                }
+                // l <= n/2
+                // mr <= (mr % l) + l ==> mr <= (l - 1) + l = 2l - 1
+                // ==> mr <= n - 1
+                mr = (mr % l) + l;
+
+                if (mr > m)
+                {
+                    // Accessing upto m + 1 ==> nn + 1 ==> n - 1 + 1 ==> n
+                    tr = fr[m + 1];
+                    // Accessing upto mr + 1 ==> n - 1 + 1 ==> n
+                    fr[m + 1] = fr[mr + 1];
+                    fr[mr + 1] = tr;
+                    ti = fi[m + 1];
+                    fi[m + 1] = fi[mr + 1];
+                    fi[mr + 1] = ti;
+                }
+                ++m;
+            } while (m <= nn);
+
+            for (l = 1; l < n; l = istep)
+            {
+                istep = 2 * l;
+
+                el = ((double)l);
+                m = 1;
                 do
                 {
-                    // l can have a maximum value of 2^x where 2^x < n and 2^(x+1) = n, since n is even
-                    // ==> istep <= 2^(x+1) ==> i can only take the value of m and m <= l
-                    // Therefore, j <= l + l
-                    // or j <= 2^x + 2^x = 2^(x+1) = n
-                    // i.e. j <= n
-                    j = i + l;
+                    a = ((double)3.1415926535) * (((double)(1 - m)) / el);
+                    wr = System.Math.Cos(a);
+                    wi = System.Math.Sin(a);
+                    i = m;
+                    do
+                    {
+                        // l can have a maximum value of 2^x where 2^x < n and 2^(x+1) = n, since n is even
+                        // ==> istep <= 2^(x+1) ==> i can only take the value of m and m <= l
+                        // Therefore, j <= l + l
+                        // or j <= 2^x + 2^x = 2^(x+1) = n
+                        // i.e. j <= n
+                        j = i + l;
 
-                    // Accessing upto j <= n, i <= n
-                    tr = wr * fr[j] - wi * fi[j];
-                    ti = wr * fi[j] + wi * fr[j];
-                    fr[j] = fr[i] - tr;
-                    fi[j] = fi[i] - ti;
-                    fr[i] = fr[i] + tr;
-                    fi[i] = fi[i] + ti;
-                    i += istep;
-                } while (i <= n);
-                ++m;
-            } while (m <= l);
+                        // Accessing upto j <= n, i <= n
+                        tr = wr * fr[j] - wi * fi[j];
+                        ti = wr * fi[j] + wi * fr[j];
+                        fr[j] = fr[i] - tr;
+                        fi[j] = fi[i] - ti;
+                        fr[i] = fr[i] + tr;
+                        fi[i] = fi[i] + ti;
+                        i += istep;
+                    } while (i <= n);
+                    ++m;
+                } while (m <= l);
+            }
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            bool result = Bench();
+            return (result ? 100 : -1);
         }
     }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        bool result = Bench();
-        return (result ? 100 : -1);
-    }
-}
 }

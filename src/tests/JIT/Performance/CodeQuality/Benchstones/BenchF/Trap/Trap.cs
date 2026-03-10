@@ -10,70 +10,70 @@ using TestLibrary;
 
 namespace Benchstone.BenchF
 {
-public static class Trap
-{
+    public static class Trap
+    {
 #if DEBUG
-    public const int Iterations = 1;
+        public const int Iterations = 1;
 #else
     public const int Iterations = 240000;
 #endif
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool Bench()
-    {
-        int nm1, idbg;
-        double t2, cortrp, trap, a, b, h;
-        trap = 0.0;
-        cortrp = 0.0;
-
-        idbg = 0;
-        for (int j = 1; j <= Iterations; j++)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool Bench()
         {
-            a = 0;
-            b = 1;
-            if (idbg != 0)
-            {
-                System.Console.WriteLine("trapazoid sum    corr.trap sum \n");
-            }
+            int nm1, idbg;
+            double t2, cortrp, trap, a, b, h;
+            trap = 0.0;
+            cortrp = 0.0;
 
-            for (int n = 10; n <= 15; n++)
+            idbg = 0;
+            for (int j = 1; j <= Iterations; j++)
             {
-                h = (b - a) / n;
-                nm1 = n - 1;
-                trap = (F(a) + F(b)) / 2;
-                for (int i = 1; i <= nm1; i++)
-                {
-                    t2 = a + i * h;
-                    trap = trap + F(t2);
-                }
-                trap = trap * h;
-                cortrp = trap + h * h * (FPrime(a) - FPrime(b)) / 12;
+                a = 0;
+                b = 1;
                 if (idbg != 0)
                 {
-                    System.Console.WriteLine("{0}, {1}, {2}\n", n, trap, cortrp);
+                    System.Console.WriteLine("trapazoid sum    corr.trap sum \n");
+                }
+
+                for (int n = 10; n <= 15; n++)
+                {
+                    h = (b - a) / n;
+                    nm1 = n - 1;
+                    trap = (F(a) + F(b)) / 2;
+                    for (int i = 1; i <= nm1; i++)
+                    {
+                        t2 = a + i * h;
+                        trap = trap + F(t2);
+                    }
+                    trap = trap * h;
+                    cortrp = trap + h * h * (FPrime(a) - FPrime(b)) / 12;
+                    if (idbg != 0)
+                    {
+                        System.Console.WriteLine("{0}, {1}, {2}\n", n, trap, cortrp);
+                    }
                 }
             }
+
+            return System.Math.Abs(cortrp - 0.74682413) < 0.00001;
         }
 
-        return true;
-    }
+        private static double F(double x)
+        {
+            return (System.Math.Exp(-(x) * (x)));
+        }
 
-    private static double F(double x)
-    {
-        return (System.Math.Exp(-(x) * (x)));
-    }
+        private static double FPrime(double x)
+        {
+            return ((-2) * (x) * (F(x)));
+        }
 
-    private static double FPrime(double x)
-    {
-        return ((-2) * (x) * (F(x)));
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            bool result = Bench();
+            return (result ? 100 : -1);
+        }
     }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        bool result = Bench();
-        return (result ? 100 : -1);
-    }
-}
 }

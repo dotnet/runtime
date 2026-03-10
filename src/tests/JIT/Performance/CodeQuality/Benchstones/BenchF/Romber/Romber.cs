@@ -10,143 +10,143 @@ using TestLibrary;
 
 namespace Benchstone.BenchF
 {
-public static class Romber
-{
+    public static class Romber
+    {
 #if DEBUG
-    public const int Iterations = 1;
+        public const int Iterations = 1;
 #else
     public const int Iterations = 640000;
 #endif
 
-    private static T[][] AllocArray<T>(int n1, int n2)
-    {
-        T[][] a = new T[n1][];
-        for (int i = 0; i < n1; ++i)
+        private static T[][] AllocArray<T>(int n1, int n2)
         {
-            a[i] = new T[n2];
+            T[][] a = new T[n1][];
+            for (int i = 0; i < n1; ++i)
+            {
+                a[i] = new T[n2];
+            }
+            return a;
         }
-        return a;
-    }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool Bench()
-    {
-        double[][] r = AllocArray<double>(11, 11);
-        double[][] t = AllocArray<double>(11, 11);
-
-        int idbg, m, n, i, kmax, fourj, j, kmaxm2, l, k, mm1;
-        double sum, ratio, t1, h, a, b;
-
-        for (l = 1; l <= Iterations; l++)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool Bench()
         {
-            idbg = 0;
-            m = 2;
-            kmax = 6;
-            a = 0;
-            b = 1;
-            h = (b - a) / (m);
-            sum = (F(a) + F(b)) / 2;
+            double[][] r = AllocArray<double>(11, 11);
+            double[][] t = AllocArray<double>(11, 11);
 
-            mm1 = m - 1;
-            if (mm1 < 0)
-            {
-                goto L40;
-            }
-            if (mm1 == 0)
-            {
-                goto L10;
-            }
-            for (i = 1; i <= mm1; i++)
-            {
-                t1 = a + i * h;
-                sum = sum + F(t1);
-            }
+            int idbg, m, n, i, kmax, fourj, j, kmaxm2, l, k, mm1;
+            double sum, ratio, t1, h, a, b;
 
-        L10:
-            t[1][1] = sum * h;
-            if (idbg != 0)
+            for (l = 1; l <= Iterations; l++)
             {
-                System.Console.WriteLine(" romberg t-table \n");
-                System.Console.WriteLine("{0}\n", t[1][1]);
-            }
+                idbg = 0;
+                m = 2;
+                kmax = 6;
+                a = 0;
+                b = 1;
+                h = (b - a) / (m);
+                sum = (F(a) + F(b)) / 2;
 
-            for (k = 2; k <= kmax; k++)
-            {
-                h = h / 2;
-                n = m * 2;
-                sum = 0;
-                for (i = 1; i <= n / 2; i++)
+                mm1 = m - 1;
+                if (mm1 < 0)
                 {
-                    r[k][1] = r[k - 1][1] * System.Math.Sqrt(b * mm1);
+                    goto L40;
+                }
+                if (mm1 == 0)
+                {
+                    goto L10;
+                }
+                for (i = 1; i <= mm1; i++)
+                {
                     t1 = a + i * h;
                     sum = sum + F(t1);
                 }
 
-                t[k][1] = t[k - 1][1] / 2 + sum * h;
-                fourj = 1;
-                for (j = 2; j <= k; j++)
+            L10:
+                t[1][1] = sum * h;
+                if (idbg != 0)
                 {
-                    fourj = fourj * 4;
-                    t[k - 1][j - 1] = t[k][j - 1] - t[k - 1][j - 1];
-                    t[k][j] = t[k][j - 1] + t[k - 1][j - 1] / (fourj - 1);
+                    System.Console.WriteLine(" romberg t-table \n");
+                    System.Console.WriteLine("{0}\n", t[1][1]);
+                }
+
+                for (k = 2; k <= kmax; k++)
+                {
+                    h = h / 2;
+                    n = m * 2;
+                    sum = 0;
+                    for (i = 1; i <= n / 2; i++)
+                    {
+                        r[k][1] = r[k - 1][1] * System.Math.Sqrt(b * mm1);
+                        t1 = a + i * h;
+                        sum = sum + F(t1);
+                    }
+
+                    t[k][1] = t[k - 1][1] / 2 + sum * h;
+                    fourj = 1;
+                    for (j = 2; j <= k; j++)
+                    {
+                        fourj = fourj * 4;
+                        t[k - 1][j - 1] = t[k][j - 1] - t[k - 1][j - 1];
+                        t[k][j] = t[k][j - 1] + t[k - 1][j - 1] / (fourj - 1);
+                    }
+
+                    if (idbg != 0)
+                    {
+                        j = 1;
+                        System.Console.WriteLine("{0} {1} {2}d\n", t[k][j], j, k);
+                    }
+                }
+
+                kmaxm2 = kmax - 2;
+                if (kmaxm2 <= 0)
+                {
+                    goto L40;
+                }
+
+                if (idbg != 0)
+                {
+                    System.Console.WriteLine(" table of ratios \n");
+                }
+
+                for (k = 1; k <= kmaxm2; k++)
+                {
+                    for (j = 1; j <= k; j++)
+                    {
+                        ratio = 0;
+                        if (System.Math.Abs(t[k + 1][j]) > 0)
+                        {
+                            ratio = t[k][j] / t[k + 1][j];
+                        }
+                        t[k][j] = ratio;
+                    }
                 }
 
                 if (idbg != 0)
                 {
                     j = 1;
-                    System.Console.WriteLine("{0} {1} {2}d\n", t[k][j], j, k);
+                    System.Console.WriteLine("{0} {1} {2}\n", t[k][j], j, k);
                 }
-            }
 
-            kmaxm2 = kmax - 2;
-            if (kmaxm2 <= 0)
-            {
-                goto L40;
-            }
-
-            if (idbg != 0)
-            {
-                System.Console.WriteLine(" table of ratios \n");
-            }
-
-            for (k = 1; k <= kmaxm2; k++)
-            {
-                for (j = 1; j <= k; j++)
+            L40:
                 {
-                    ratio = 0;
-                    if (System.Math.Abs(t[k + 1][j]) > 0)
-                    {
-                        ratio = t[k][j] / t[k + 1][j];
-                    }
-                    t[k][j] = ratio;
                 }
             }
 
-            if (idbg != 0)
-            {
-                j = 1;
-                System.Console.WriteLine("{0} {1} {2}\n", t[k][j], j, k);
-            }
-
-        L40:
-            {
-            }
+            return System.Math.Abs(t[6][6] - 0.74682413) < 0.0001;
         }
 
-        return true;
-    }
+        private static double F(double x)
+        {
+            return (System.Math.Exp((-(x)) * (x)));
+        }
 
-    private static double F(double x)
-    {
-        return (System.Math.Exp((-(x)) * (x)));
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            bool result = Bench();
+            return (result ? 100 : -1);
+        }
     }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        bool result = Bench();
-        return (result ? 100 : -1);
-    }
-}
 }
