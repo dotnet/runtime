@@ -1862,7 +1862,6 @@ extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size
 // Forward declare some parameter marshalling structs
 struct ShouldAttachDebuggerParams;
 struct EnsureDebuggerAttachedParams;
-struct SendMDANotificationParams;
 class DebuggerSteppingInfo;
 
 // class Debugger:  This class implements DebugInterface to provide
@@ -1931,9 +1930,6 @@ public:
 
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
-
-    // Helper on startup to notify debugger
-    void RaiseStartupNotification();
 
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
@@ -2331,10 +2327,6 @@ public:
         SString *   pMessage);
 
 
-    // Helper function to send MDA notification
-    void SendRawMDANotification(SendMDANotificationParams * params);
-    static void SendMDANotificationOnHelperThreadProxy(SendMDANotificationParams * params);
-
     // Returns a bitfield reflecting the managed debugging state at the time of
     // the jit attach.
     CLR_DEBUGGING_PROCESS_FLAGS GetAttachStateFlags();
@@ -2512,16 +2504,6 @@ public:
     // send a custom debugger notification to the RS
     void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
 
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    );
-
 
     void EnableLogMessages (bool fOnOff) {LIMITED_METHOD_CONTRACT;  m_LoggingEnabled = fOnOff;}
     bool GetILOffsetFromNative (MethodDesc *PFD, const BYTE *pbAddr,
@@ -2683,6 +2665,7 @@ public:
 #ifndef DACCESS_COMPILE
     virtual void OnMethodEnter(void * pIP);
     virtual DWORD* GetJMCFlagAddr(Module * pModule);
+    virtual bool IsMethodEnterEnabled();
 #endif
 
     // GetJMCFlagAddr provides a unique flag for each module. UpdateModuleJMCFlag
@@ -2743,6 +2726,7 @@ private:
         // AppDomain, Thread, are already initialized
     }
 
+public:
     // Let this function to figure out the unique Id that we will use for Thread.
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type,
@@ -2764,6 +2748,7 @@ private:
         ipce->vmThread.SetRawPtr(pThread);
     }
 
+private:
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type)
     {

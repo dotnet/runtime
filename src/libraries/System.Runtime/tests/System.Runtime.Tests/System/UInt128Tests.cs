@@ -253,6 +253,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, UInt128 expected)
         {
             UInt128 result;
@@ -387,6 +388,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, UInt128 expected)
         {
             UInt128 result;
@@ -428,6 +430,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, UInt128 expected)
         {
             UInt128 result;

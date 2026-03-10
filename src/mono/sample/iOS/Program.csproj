@@ -10,7 +10,7 @@
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <SelfContained>true</SelfContained>
 
-    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == '' and '$(UseMonoRuntime)' == 'true'">true</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>

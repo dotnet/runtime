@@ -303,15 +303,9 @@ namespace System.Threading
             if ((t_comState & ComState.InitializedByUs) != 0)
                 return;
 
-#if ENABLE_WINRT
-            int hr = Interop.WinRT.RoInitialize(
-                (state == ApartmentState.STA) ? Interop.WinRT.RO_INIT_SINGLETHREADED
-                    : Interop.WinRT.RO_INIT_MULTITHREADED);
-#else
             int hr = Interop.Ole32.CoInitializeEx(IntPtr.Zero,
                 (state == ApartmentState.STA) ? Interop.Ole32.COINIT_APARTMENTTHREADED
                     : Interop.Ole32.COINIT_MULTITHREADED);
-#endif
             if (hr < 0)
             {
                 // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
@@ -339,11 +333,7 @@ namespace System.Threading
             if ((t_comState & ComState.InitializedByUs) == 0)
                 return;
 
-#if ENABLE_WINRT
-            Interop.WinRT.RoUninitialize();
-#else
             Interop.Ole32.CoUninitialize();
-#endif
 
             t_comState &= ~ComState.InitializedByUs;
         }

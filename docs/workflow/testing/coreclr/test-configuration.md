@@ -67,7 +67,7 @@ Therefore the managed portion of each test **must not contain**:
 * Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
 should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
-* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets) if the test fails due to active bug.
+* Add an `[ActiveIssue]` attribute if the test fails due to active bug.
 
 ### Creating a C# test project
 

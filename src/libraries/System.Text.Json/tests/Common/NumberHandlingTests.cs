@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
@@ -141,7 +143,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Number_AsBoxed_RootType()
         {
-            string numberAsString = @"""2""";
+            string numberAsString = """
+                "2"
+                """;
 
             int @int = 2;
             float @float = 2;
@@ -165,7 +169,7 @@ namespace System.Text.Json.Serialization.Tests
             int @int = 1;
             float? nullableFloat = 2;
 
-            string expected = @"{""MyInt"":""1"",""MyNullableFloat"":""2""}";
+            string expected = """{"MyInt":"1","MyNullableFloat":"2"}""";
 
             var obj = new Class_With_BoxedNumbers
             {
@@ -202,7 +206,7 @@ namespace System.Text.Json.Serialization.Tests
             int @int = 1;
             float? nullableFloat = 2;
 
-            string expected = @"[""1""]";
+            string expected = """["1"]""";
 
             var obj = new List<object> { @int };
             string serialized = await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr);
@@ -214,7 +218,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonValueKind.String, el.ValueKind);
             Assert.Equal("1", el.GetString());
 
-            expected = @"[""2""]";
+            expected = """["2"]""";
 
             IList obj2 = new object[] { nullableFloat };
             serialized = await Serializer.SerializeWrapper(obj2, s_optionReadAndWriteFromStr);
@@ -233,7 +237,7 @@ namespace System.Text.Json.Serialization.Tests
             int @int = 2;
             float? nullableFloat = 2;
 
-            string expected = @"{""MyInts"":[""2""],""MyNullableFloats"":[""2""]}";
+            string expected = """{"MyInts":["2"],"MyNullableFloats":["2"]}""";
 
             var obj = new Class_With_ListsOfBoxedNumbers
             {
@@ -747,12 +751,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Number_AsObjectWithParameterizedCtor_PropHasAttribute()
         {
-            string json = @"{""ListOfFloats"":[""1""]}";
+            string json = """{"ListOfFloats":["1"]}""";
             // Strict handling on property overrides loose global policy.
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<MyClassWithNumbers_PropsHasAttribute>(json, s_optionReadFromStr));
 
             // Serialize
-            json = @"{""ListOfFloats"":[1]}";
+            json = """{"ListOfFloats":[1]}""";
             MyClassWithNumbers_PropsHasAttribute obj = await Serializer.DeserializeWrapper<MyClassWithNumbers_PropsHasAttribute>(json);
 
             // Number serialized as JSON number due to strict handling on property which overrides loose global policy.
@@ -938,19 +942,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ReadFromString_AllowFloatingPoint()
         {
-            string json = @"{""IntNumber"":""1"",""FloatNumber"":""NaN""}";
+            string json = """{"IntNumber":"1","FloatNumber":"NaN"}""";
             ClassWithNumbers obj = await Serializer.DeserializeWrapper<ClassWithNumbers>(json, s_optionReadFromStrAllowFloatConstants);
 
             Assert.Equal(1, obj.IntNumber);
             Assert.Equal(float.NaN, obj.FloatNumber);
 
-            JsonTestHelper.AssertJsonEqual(@"{""IntNumber"":1,""FloatNumber"":""NaN""}", await Serializer.SerializeWrapper(obj, s_optionReadFromStrAllowFloatConstants));
+            JsonTestHelper.AssertJsonEqual("""{"IntNumber":1,"FloatNumber":"NaN"}""", await Serializer.SerializeWrapper(obj, s_optionReadFromStrAllowFloatConstants));
         }
 
         [Fact]
         public async Task WriteAsString_AllowFloatingPoint()
         {
-            string json = @"{""IntNumber"":""1"",""FloatNumber"":""NaN""}";
+            string json = """{"IntNumber":"1","FloatNumber":"NaN"}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithNumbers>(json, s_optionWriteAsStrAllowFloatConstants));
 
             var obj = new ClassWithNumbers
@@ -1001,9 +1005,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             string[] testCases = new[]
             {
-                @"""NaN""",
-                @"""Infinity""",
-                @"""-Infinity""",
+                """
+                    "NaN"
+                    """,
+                """
+                    "Infinity"
+                    """,
+                """
+                    "-Infinity"
+                    """,
             };
 
             foreach (string test in testCases)
@@ -1234,7 +1244,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Disallow_ArbritaryStrings_On_AllowFloatingPointConstants()
         {
-            string json = @"""12345""";
+            string json = """
+                "12345"
+                """;
 
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<byte>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<sbyte>(json, s_optionsAllowFloatConstants));
@@ -1274,13 +1286,13 @@ namespace System.Text.Json.Serialization.Tests
         public async Task Attributes_OnMembers_Work()
         {
             // Bad JSON because Int should not be string.
-            string intIsString = @"{""Float"":""1234.5"",""Int"":""12345""}";
+            string intIsString = """{"Float":"1234.5","Int":"12345"}""";
 
             // Good JSON because Float can be string.
-            string floatIsString = @"{""Float"":""1234.5"",""Int"":12345}";
+            string floatIsString = """{"Float":"1234.5","Int":12345}""";
 
             // Good JSON because Float can be number.
-            string floatIsNumber = @"{""Float"":1234.5,""Int"":12345}";
+            string floatIsNumber = """{"Float":1234.5,"Int":12345}""";
 
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWith_Attribute_OnNumber>(intIsString));
 
@@ -1308,10 +1320,10 @@ namespace System.Text.Json.Serialization.Tests
         public async Task Attribute_OnRootType_Works()
         {
             // Not allowed
-            string floatIsString = @"{""Float"":""1234"",""Int"":123}";
+            string floatIsString = """{"Float":"1234","Int":123}""";
 
             // Allowed
-            string floatIsNan = @"{""Float"":""NaN"",""Int"":123}";
+            string floatIsNan = """{"Float":"NaN","Int":123}""";
 
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Type_AllowFloatConstants>(floatIsString));
 
@@ -1334,17 +1346,17 @@ namespace System.Text.Json.Serialization.Tests
         public async Task AttributeOnType_WinsOver_GlobalOption()
         {
             // Global options strict, type options loose
-            string json = @"{""Float"":""12345""}";
+            string json = """{"Float":"12345"}""";
             var obj1 = await Serializer.DeserializeWrapper<ClassWith_LooseAttribute>(json);
 
-            Assert.Equal(@"{""Float"":""12345""}", await Serializer.SerializeWrapper(obj1));
+            Assert.Equal("""{"Float":"12345"}""", await Serializer.SerializeWrapper(obj1));
 
             // Global options loose, type options strict
-            json = @"{""Float"":""12345""}";
+            json = """{"Float":"12345"}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWith_StrictAttribute>(json, s_optionReadAndWriteFromStr));
 
             var obj2 = new ClassWith_StrictAttribute() { Float = 12345 };
-            Assert.Equal(@"{""Float"":12345}", await Serializer.SerializeWrapper(obj2, s_optionReadAndWriteFromStr));
+            Assert.Equal("""{"Float":12345}""", await Serializer.SerializeWrapper(obj2, s_optionReadAndWriteFromStr));
         }
 
         [JsonNumberHandling(JsonNumberHandling.Strict)]
@@ -1362,7 +1374,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AttributeOnMember_WinsOver_AttributeOnType()
         {
-            string json = @"{""Double"":""NaN""}";
+            string json = """{"Double":"NaN"}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWith_Attribute_On_TypeAndMember>(json));
 
             var obj = new ClassWith_Attribute_On_TypeAndMember { Double = float.NaN };
@@ -1379,11 +1391,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Attribute_OnNestedType_Works()
         {
-            string jsonWithShortProperty = @"{""Short"":""1""}";
+            string jsonWithShortProperty = """{"Short":"1"}""";
             ClassWith_ReadAsStringAttribute obj = await Serializer.DeserializeWrapper<ClassWith_ReadAsStringAttribute>(jsonWithShortProperty);
             Assert.Equal(1, obj.Short);
 
-            string jsonWithMyObjectProperty = @"{""MyObject"":{""Float"":""1""}}";
+            string jsonWithMyObjectProperty = """{"MyObject":{"Float":"1"}}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWith_ReadAsStringAttribute>(jsonWithMyObjectProperty));
         }
 
@@ -1412,7 +1424,7 @@ namespace System.Text.Json.Serialization.Tests
 
             async Task RunTest<T>()
             {
-                string json = @"{""MyList"":[""1"",""2""]}";
+                string json = """{"MyList":["1","2"]}""";
                 ClassWithSimpleCollectionProperty<T> obj = await Serializer.DeserializeWrapper<ClassWithSimpleCollectionProperty<T>>(json);
                 Assert.Equal(json, await Serializer.SerializeWrapper(obj));
             }
@@ -1428,7 +1440,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NestedCollectionElementTypeHandling_Overrides_GlobalOption()
         {
             // Strict policy on the collection element type overrides read-as-string on the collection property
-            string json = @"{""MyList"":[{""Float"":""1""}]}";
+            string json = """{"MyList":[{"Float":"1"}]}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithComplexListProperty>(json, s_optionReadAndWriteFromStr));
 
             // Strict policy on the collection element type overrides write-as-string on the collection property
@@ -1436,7 +1448,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 MyList = new List<ClassWith_StrictAttribute> { new ClassWith_StrictAttribute { Float = 1 } }
             };
-            Assert.Equal(@"{""MyList"":[{""Float"":1}]}", await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr));
+            Assert.Equal("""{"MyList":[{"Float":1}]}""", await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr));
         }
 
         public class ClassWithComplexListProperty
@@ -1468,7 +1480,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task MemberAttributeAppliesToDictionary_SimpleElements()
         {
-            string json = @"{""First"":""1"",""Second"":""2""}";
+            string json = """{"First":"1","Second":"2"}""";
             ClassWithSimpleDictionaryProperty obj = await Serializer.DeserializeWrapper<ClassWithSimpleDictionaryProperty>(json);
         }
 
@@ -1482,7 +1494,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NestedDictionaryElementTypeHandling_Overrides_GlobalOption()
         {
             // Strict policy on the dictionary element type overrides read-as-string on the collection property.
-            string json = @"{""MyDictionary"":{""Key"":{""Float"":""1""}}}";
+            string json = """{"MyDictionary":{"Key":{"Float":"1"}}}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithComplexDictionaryProperty>(json, s_optionReadFromStr));
 
             // Strict policy on the collection element type overrides write-as-string on the collection property
@@ -1490,7 +1502,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 MyDictionary = new Dictionary<string, ClassWith_StrictAttribute> { ["Key"] = new ClassWith_StrictAttribute { Float = 1 } }
             };
-            Assert.Equal(@"{""MyDictionary"":{""Key"":{""Float"":1}}}", await Serializer.SerializeWrapper(obj, s_optionReadFromStr));
+            Assert.Equal("""{"MyDictionary":{"Key":{"Float":1}}}""", await Serializer.SerializeWrapper(obj, s_optionReadFromStr));
         }
 
         public class ClassWithComplexDictionaryProperty
@@ -1501,7 +1513,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task TypeAttributeAppliesTo_CustomCollectionElements()
         {
-            string json = @"[""1""]";
+            string json = """["1"]""";
             MyCustomList obj = await Serializer.DeserializeWrapper<MyCustomList>(json);
             Assert.Equal(json, await Serializer.SerializeWrapper(obj));
         }
@@ -1512,7 +1524,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task TypeAttributeAppliesTo_CustomCollectionElements_HonoredWhenProperty()
         {
-            string json = @"{""List"":[""1""]}";
+            string json = """{"List":["1"]}""";
             ClassWithCustomList obj = await Serializer.DeserializeWrapper<ClassWithCustomList>(json);
             Assert.Equal(json, await Serializer.SerializeWrapper(obj));
         }
@@ -1525,7 +1537,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task TypeAttributeAppliesTo_CustomDictionaryElements()
         {
-            string json = @"{""Key"":""1""}";
+            string json = """{"Key":"1"}""";
             MyCustomDictionary obj = await Serializer.DeserializeWrapper<MyCustomDictionary>(json);
             Assert.Equal(json, await Serializer.SerializeWrapper(obj));
         }
@@ -1536,7 +1548,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task TypeAttributeAppliesTo_CustomDictionaryElements_HonoredWhenProperty()
         {
-            string json = @"{""Dictionary"":{""Key"":""1""}}";
+            string json = """{"Dictionary":{"Key":"1"}}""";
             ClassWithCustomDictionary obj = await Serializer.DeserializeWrapper<ClassWithCustomDictionary>(json);
             Assert.Equal(json, await Serializer.SerializeWrapper(obj));
         }
@@ -1551,14 +1563,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Recursive behavior, where number handling setting on a property is applied to subsequent
             // properties in its type closure, would allow a string number. This is not supported.
-            string json = @"{""NestedClass"":{""MyInt"":""1""}}";
+            string json = """{"NestedClass":{"MyInt":"1"}}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<AttributeAppliedToFirstLevelProp>(json));
 
             var obj = new AttributeAppliedToFirstLevelProp
             {
                 NestedClass = new NonNumberType { MyInt = 1 }
             };
-            Assert.Equal(@"{""NestedClass"":{""MyInt"":1}}", await Serializer.SerializeWrapper(obj));
+            Assert.Equal("""{"NestedClass":{"MyInt":1}}""", await Serializer.SerializeWrapper(obj));
         }
 
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
@@ -1575,14 +1587,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task HandlingOnMemberOverridesHandlingOnType_Enumerable()
         {
-            string json = @"{""List"":[""1""]}";
+            string json = """{"List":["1"]}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<MyCustomListWrapper>(json));
 
             var obj = new MyCustomListWrapper
             {
                 List = new MyCustomList { 1 }
             };
-            Assert.Equal(@"{""List"":[1]}", await Serializer.SerializeWrapper(obj));
+            Assert.Equal("""{"List":[1]}""", await Serializer.SerializeWrapper(obj));
         }
 
         public class MyCustomListWrapper
@@ -1594,14 +1606,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task HandlingOnMemberOverridesHandlingOnType_Dictionary()
         {
-            string json = @"{""Dictionary"":{""Key"":""1""}}";
+            string json = """{"Dictionary":{"Key":"1"}}""";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<MyCustomDictionaryWrapper>(json));
 
             var obj1 = new MyCustomDictionaryWrapper
             {
                 Dictionary = new MyCustomDictionary { ["Key"] = 1 }
             };
-            Assert.Equal(@"{""Dictionary"":{""Key"":1}}", await Serializer.SerializeWrapper(obj1));
+            Assert.Equal("""{"Dictionary":{"Key":1}}""", await Serializer.SerializeWrapper(obj1));
         }
 
         public class MyCustomDictionaryWrapper
@@ -1613,7 +1625,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Attribute_Allowed_On_NonNumber_NonCollection_Property()
         {
-            const string Json = @"{""MyProp"":{""MyInt"":1}}";
+            const string Json = """{"MyProp":{"MyInt":1}}""";
 
             ClassWith_NumberHandlingOn_ObjectProperty obj = await Serializer.DeserializeWrapper<ClassWith_NumberHandlingOn_ObjectProperty>(Json);
             Assert.Equal(1, obj.MyProp.MyInt);
@@ -1631,7 +1643,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Attribute_Allowed_On_Property_WithCustomConverter()
         {
-            string json = @"{""Prop"":1}";
+            string json = """{"Prop":1}""";
 
             // Converter returns 25 regardless of input.
             var obj = await Serializer.DeserializeWrapper<ClassWith_NumberHandlingOn_Property_WithCustomConverter>(json);
@@ -1652,7 +1664,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Attribute_Allowed_On_Type_WithCustomConverter()
         {
-            string json = @"{}";
+            string json = "{}";
             NotImplementedException ex;
 
             // Assert regular Read/Write methods on custom converter are called.
@@ -1690,7 +1702,9 @@ namespace System.Text.Json.Serialization.Tests
                 Converters = { new ConverterForInt32(), new ConverterForFloat() }
             };
 
-            string json = @"""32""";
+            string json = """
+                "32"
+                """;
 
             // Converter returns 25 regardless of input.
             Assert.Equal(25, await Serializer.DeserializeWrapper<int>(json, options));
@@ -1699,7 +1713,9 @@ namespace System.Text.Json.Serialization.Tests
             NotImplementedException ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(4, options));
             Assert.Equal("Converter was called", ex.Message);
 
-            json = @"""NaN""";
+            json = """
+                "NaN"
+                """;
 
             // Converter returns 25 if NaN.
             Assert.Equal(25, await Serializer.DeserializeWrapper<float?>(json, options));
@@ -1762,24 +1778,24 @@ namespace System.Text.Json.Serialization.Tests
 
             // Assert converter methods are called and not Read/WriteWithNumberHandling (which would throw InvalidOperationException).
             // Converter returns 25 regardless of input.
-            Assert.Equal(25, (await Serializer.DeserializeWrapper<List<int>>(@"[""1""]", options))[0]);
+            Assert.Equal(25, (await Serializer.DeserializeWrapper<List<int>>("""["1"]""", options))[0]);
             // Converter throws this exception regardless of input.
             ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(list, options));
             Assert.Equal("Converter was called", ex.Message);
 
             var list2 = new List<int?> { 1 };
-            Assert.Equal(25, (await Serializer.DeserializeWrapper<List<int?>>(@"[""1""]", options))[0]);
+            Assert.Equal(25, (await Serializer.DeserializeWrapper<List<int?>>("""["1"]""", options))[0]);
             ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(list2, options));
             Assert.Equal("Converter was called", ex.Message);
 
             // Okay to set number handling for number collection property when number is handled with custom converter;
             // converter Read/Write methods called.
-            ClassWithListPropAndAttribute obj1 = await Serializer.DeserializeWrapper<ClassWithListPropAndAttribute>(@"{""Prop"":[""1""]}", options);
+            ClassWithListPropAndAttribute obj1 = await Serializer.DeserializeWrapper<ClassWithListPropAndAttribute>("""{"Prop":["1"]}""", options);
             Assert.Equal(25, obj1.Prop[0]);
             ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(obj1, options));
             Assert.Equal("Converter was called", ex.Message);
 
-            ClassWithDictPropAndAttribute obj2 = await Serializer.DeserializeWrapper<ClassWithDictPropAndAttribute>(@"{""Prop"":{""1"":""1""}}", options);
+            ClassWithDictPropAndAttribute obj2 = await Serializer.DeserializeWrapper<ClassWithDictPropAndAttribute>("""{"Prop":{"1":"1"}}""", options);
             Assert.Equal(25, obj2.Prop[1]);
             ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(obj2, options));
             Assert.Equal("Converter was called", ex.Message);
@@ -1856,11 +1872,11 @@ namespace System.Text.Json.Serialization.Tests
 
             // Assert converter methods are called and not Read/WriteWithNumberHandling (which would throw InvalidOperationException).
             // Converter returns 25 regardless of input.
-            Assert.Equal(25, (await Serializer.DeserializeWrapper<Dictionary<int, int?>>(@"{""1"":""1""}", options))[1]);
+            Assert.Equal(25, (await Serializer.DeserializeWrapper<Dictionary<int, int?>>("""{"1":"1"}""", options))[1]);
             ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(dict, options));
             Assert.Equal("Converter was called", ex.Message);
 
-            var obj = await Serializer.DeserializeWrapper<ClassWithDictPropAndAttribute>(@"{""Prop"":{""1"":""1""}}", options);
+            var obj = await Serializer.DeserializeWrapper<ClassWithDictPropAndAttribute>("""{"Prop":{"1":"1"}}""", options);
             Assert.Equal(25, obj.Prop[1]);
             ex = await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(obj, options));
             await Assert.ThrowsAsync<NotImplementedException>(async () => await Serializer.SerializeWrapper(dict, options));
@@ -2004,6 +2020,330 @@ namespace System.Text.Json.Serialization.Tests
                 () => Serializer.DeserializeWrapper<T>(
                     $"\"{string.Concat(Enumerable.Repeat("a", size))}\"",
                     s_optionReadFromStr));
+        }
+
+        [Fact]
+        public void GetConverter_Int32_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<int>)options.GetConverter(typeof(int));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); // StartObject
+            reader.Read(); // PropertyName
+            reader.Read(); // String with number
+            var value = converter.Read(ref reader, typeof(int), options);
+            Assert.Equal(123, value);
+        }
+
+        [Fact]
+        public void GetConverter_Int32_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<int>)options.GetConverter(typeof(int));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject();
+            writer.WritePropertyName("x");
+            converter.Write(writer, 123, options);
+            writer.WriteEndObject();
+            writer.Flush();
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Equal("{\"x\":\"123\"}", json);
+        }
+
+        [Fact]
+        public void GetConverter_Double_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<double>)options.GetConverter(typeof(double));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.45\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); // StartObject
+            reader.Read(); // PropertyName
+            reader.Read(); // String with number
+            var value = converter.Read(ref reader, typeof(double), options);
+            Assert.Equal(123.45, value);
+        }
+
+        [Fact]
+        public void GetConverter_Double_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // GetConverter requires reflection and is not supported in source generation scenarios
+                return;
+            }
+
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+            var converter = (JsonConverter<double>)options.GetConverter(typeof(double));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); // StartObject
+            reader.Read(); // PropertyName
+            reader.Read(); // String with constant
+            var value = converter.Read(ref reader, typeof(double), options);
+            Assert.True(double.IsNaN(value));
+        }
+
+        // Tests for all integer types
+        [Fact]
+        public void GetConverter_Byte_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<byte>)options.GetConverter(typeof(byte));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((byte)123, converter.Read(ref reader, typeof(byte), options));
+        }
+
+        [Fact]
+        public void GetConverter_SByte_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<sbyte>)options.GetConverter(typeof(sbyte));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((sbyte)123, converter.Read(ref reader, typeof(sbyte), options));
+        }
+
+        [Fact]
+        public void GetConverter_Int16_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<short>)options.GetConverter(typeof(short));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((short)123, converter.Read(ref reader, typeof(short), options));
+        }
+
+        [Fact]
+        public void GetConverter_Int64_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<long>)options.GetConverter(typeof(long));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123L, converter.Read(ref reader, typeof(long), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt16_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<ushort>)options.GetConverter(typeof(ushort));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((ushort)123, converter.Read(ref reader, typeof(ushort), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt32_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<uint>)options.GetConverter(typeof(uint));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123U, converter.Read(ref reader, typeof(uint), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt64_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<ulong>)options.GetConverter(typeof(ulong));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123UL, converter.Read(ref reader, typeof(ulong), options));
+        }
+
+        [Fact]
+        public void GetConverter_Single_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.5\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123.5f, converter.Read(ref reader, typeof(float), options));
+        }
+
+        [Fact]
+        public void GetConverter_Decimal_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<decimal>)options.GetConverter(typeof(decimal));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123.45\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal(123.45m, converter.Read(ref reader, typeof(decimal), options));
+        }
+
+        // Write tests for key types
+        [Fact]
+        public void GetConverter_Byte_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<byte>)options.GetConverter(typeof(byte));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, (byte)123, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_Int64_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<long>)options.GetConverter(typeof(long));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123L, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_UInt64_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<ulong>)options.GetConverter(typeof(ulong));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123UL, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_Single_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123.5f, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123.5\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public void GetConverter_Decimal_RespectsNumberHandling_WriteAsString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.WriteAsString };
+            var converter = (JsonConverter<decimal>)options.GetConverter(typeof(decimal));
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
+            writer.WriteStartObject(); writer.WritePropertyName("x");
+            converter.Write(writer, 123.45m, options);
+            writer.WriteEndObject(); writer.Flush();
+            Assert.Equal("{\"x\":\"123.45\"}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+#if NET
+        [Fact]
+        public void GetConverter_Int128_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<Int128>)options.GetConverter(typeof(Int128));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((Int128)123, converter.Read(ref reader, typeof(Int128), options));
+        }
+
+        [Fact]
+        public void GetConverter_UInt128_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<UInt128>)options.GetConverter(typeof(UInt128));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"123\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((UInt128)123, converter.Read(ref reader, typeof(UInt128), options));
+        }
+
+        [Fact]
+        public void GetConverter_Half_RespectsNumberHandling_AllowReadingFromString()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            var converter = (JsonConverter<Half>)options.GetConverter(typeof(Half));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"1.5\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.Equal((Half)1.5, converter.Read(ref reader, typeof(Half), options));
+        }
+
+        [Fact]
+        public void GetConverter_Half_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+            var converter = (JsonConverter<Half>)options.GetConverter(typeof(Half));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.True(Half.IsNaN(converter.Read(ref reader, typeof(Half), options)));
+        }
+#endif
+
+        [Fact]
+        public void GetConverter_Single_RespectsNumberHandling_AllowNamedFloatingPointLiterals()
+        {
+            if (Serializer.IsSourceGeneratedSerializer) return;
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals };
+            var converter = (JsonConverter<float>)options.GetConverter(typeof(float));
+            ReadOnlySpan<byte> jsonReadOnlySpan = "{\"x\": \"NaN\"}"u8;
+            var reader = new Utf8JsonReader(jsonReadOnlySpan);
+            reader.Read(); reader.Read(); reader.Read();
+            Assert.True(float.IsNaN(converter.Read(ref reader, typeof(float), options)));
         }
     }
 }

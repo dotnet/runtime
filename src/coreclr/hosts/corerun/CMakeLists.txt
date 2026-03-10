@@ -52,8 +52,14 @@ else()
         target_include_directories(corerun PRIVATE ./wasm/)
         target_link_libraries(corerun PRIVATE
             coreclr_static
+            System.IO.Compression.Native-Static
             System.Native-Static
             System.Native.TimeZoneData.Invariant)
+
+        # additional requirements for System.IO.Compression.Native
+        include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+        append_extra_compression_libs(NATIVE_LIBS)
+
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_link_libraries(corerun PRIVATE
@@ -62,21 +68,23 @@ else()
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
-            set(JS_CORE_RUN
+            set(JS_CORE_RUN_EXTPOST
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
+            set(JS_CORE_RUN
+                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.js")
             set_target_properties(corerun PROPERTIES
-                LINK_DEPENDS "${JS_CORE_RUN};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
-                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --extern-post-js ${JS_CORE_RUN}"
+                LINK_DEPENDS "${JS_CORE_RUN};${JS_CORE_RUN_EXTPOST};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
+                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -sINITIAL_MEMORY=134217728
-                -sMAXIMUM_MEMORY=2147483648
+                -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
-                -sEXPORTED_RUNTIME_METHODS=ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_RUNTIME_METHODS=CORERUN,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web

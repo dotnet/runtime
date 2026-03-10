@@ -87,20 +87,50 @@ static void DetectCiphersuiteConfiguration(void)
 {
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
-    assert(ctx != NULL);
+    if (ctx == NULL)
+    {
+        // Sometimes when OpenSSL is misconfigured the call above fails on first try.
+        // This gives it one more chance and we bail out if it still fails.
+        ctx = SSL_CTX_new(TLS_method());
+        if (ctx == NULL)
+        {
+            ERR_clear_error();
+            return;
+        }
+    }
+
 
     // SSL_get_ciphers returns a shared pointer, no need to save/free it.
     // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
     SSL* ssl = SSL_new(ctx);
-    assert(ssl != NULL);
+    if (ssl == NULL)
+    {
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
     int defaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
-    assert(rv);
+    if (!rv)
+    {
+        // If cipher list configuration fails, assume no custom cipher configuration.
+        // This can happen with broken OpenSSL configurations. By returning early,
+        // g_config_specified_ciphersuites stays 0 and we use the default cipher list.
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
 
     ssl = SSL_new(ctx);
-    assert(ssl != NULL);
+    if (ssl == NULL)
+    {
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
+
     int allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
@@ -111,13 +141,29 @@ static void DetectCiphersuiteConfiguration(void)
     if (allCount == defaultCount)
     {
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
-        assert(rv);
+        if (!rv)
+        {
+            // If cipher list configuration fails, assume no custom cipher configuration.
+            ERR_clear_error();
+            SSL_CTX_free(ctx);
+            return;
+        }
         ssl = SSL_new(ctx);
-        assert(ssl != NULL);
+        if (ssl == NULL)
+        {
+            ERR_clear_error();
+            SSL_CTX_free(ctx);
+            return;
+        }
         allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
-        // If the implicit default, "ALL", and "RSA" all have the same cardinality, just fail.
-        assert(allCount != defaultCount);
+        // If the implicit default, "ALL", and "RSA" all have the same cardinality,
+        // we can't determine if there's a custom configuration, so treat it like not found.
+        if (allCount == defaultCount)
+        {
+            SSL_CTX_free(ctx);
+            return;
+        }
     }
 
     if (!SSL_CTX_config(ctx, "system_default"))
@@ -128,11 +174,13 @@ static void DetectCiphersuiteConfiguration(void)
     else
     {
         ssl = SSL_new(ctx);
-        assert(ssl != NULL);
-        int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
-        SSL_free(ssl);
+        if (ssl != NULL)
+        {
+            int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+            SSL_free(ssl);
 
-        g_config_specified_ciphersuites = (allCount != after);
+            g_config_specified_ciphersuites = (allCount != after);
+        }
     }
 
     SSL_CTX_free(ctx);

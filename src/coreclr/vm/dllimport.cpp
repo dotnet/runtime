@@ -229,10 +229,10 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
         return false;
     }
 
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags) && !SF_IsVarArgStub(dwStubFlags))
-    {
-        return false;
-    }
+    // Forward P/Invoke stubs (non-CALLI, non-vararg) are not shared across different
+    // target methods, but they still use the ILStubCache for de-duplication when
+    // multiple threads race to create a stub for the same target. The hash blob for
+    // these stubs is keyed by target MethodDesc rather than by signature.
 
     return true;
 }
@@ -489,7 +489,7 @@ public:
                 pStubMD->SetStatic();
             }
 
-#ifndef TARGET_X86
+#if !defined(TARGET_X86) && defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
             // we store the real managed argument stack size in the stub MethodDesc on non-X86
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
@@ -3476,6 +3476,7 @@ BOOL PInvoke::MarshalingRequired(
     if (!FitsInU2(dwStackSize))
         return TRUE;
 
+#ifdef TARGET_X86
     // do not set the stack size for varargs - the number is call site specific
     if (pMD != NULL && !pMD->IsVarArg())
     {
@@ -3491,6 +3492,7 @@ BOOL PInvoke::MarshalingRequired(
         }
 #endif // FEATURE_COMINTEROP
     }
+#endif // TARGET_X86
 
     return FALSE;
 }
@@ -3885,11 +3887,13 @@ static void CreatePInvokeStubWorker(StubState*               pss,
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
         if (fStubNeedsCOM)
             pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
+#endif
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -3983,11 +3987,13 @@ static void CreateStructStub(ILStubState* pss,
         pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
     }
 
+#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
         pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
+#endif
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
     // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
@@ -4075,9 +4081,36 @@ namespace
         PCCOR_SIGNATURE pvNativeType;
     };
 
-    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams)
+    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams, MethodDesc* pTargetMD)
     {
         STANDARD_VM_CONTRACT;
+
+        // The hash blob for a forward P/Invoke stub is just the target MethodDesc pointer.
+        // In order to help avoid collisions, ensure various blob sizes are different.
+        // See asserts below.
+        constexpr size_t forwardPInvokeHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
+
+        DWORD dwStubFlags = pParams->m_dwStubFlags;
+
+        // The target MethodDesc may be NULL for field marshalling.
+        // Forward P/Invoke stubs (non-CALLI, non-vararg) each target a specific method,
+        // so the hash blob is just the target MethodDesc pointer. This ensures racing
+        // threads for the same P/Invoke converge on the same DynamicMethodDesc in the
+        // ILStubCache, while different P/Invoke methods get distinct cache entries.
+        if (pTargetMD != NULL
+            && SF_IsForwardPInvokeStub(dwStubFlags)
+            && !SF_IsCALLIStub(dwStubFlags)
+            && !SF_IsVarArgStub(dwStubFlags))
+        {
+            const size_t blobSize = forwardPInvokeHashBlobSize;
+            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
+            ZeroMemory(pBytes, blobSize);
+            ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
+            pBlob->m_cbSizeOfBlob = blobSize;
+            memcpy(pBlob->m_rgbBlobData, &pTargetMD, sizeof(pTargetMD));
+            pBytes.SuppressRelease();
+            return pBlob;
+        }
 
         PInvokeStubHashBlob*    pBlob;
 
@@ -4132,6 +4165,8 @@ namespace
 
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
+
+        _ASSERTE(cbSizeOfBlob.Value() != forwardPInvokeHashBlobSize);
 
         static_assert(nltMaxValue   <= 0xFF);
         static_assert(nlfMaxValue   <= 0xFF);
@@ -4789,16 +4824,14 @@ namespace
     class ILStubCreatorHelper
     {
     public:
-        ILStubCreatorHelper(MethodDesc *pTargetMD,
-                            PInvokeStubParameters* pParams
-                            ) :
-            m_pTargetMD(pTargetMD),
-            m_pParams(pParams),
-            m_pStubMD(NULL),
-            m_bILStubCreator(false)
+        ILStubCreatorHelper(PInvokeStubParameters* pParams, MethodDesc *pTargetMD)
+            : m_pParams(pParams)
+            , m_pTargetMD(pTargetMD)
+            , m_pStubMD(NULL)
+            , m_bILStubCreator(false)
         {
             STANDARD_VM_CONTRACT;
-            m_pHashParams = CreateHashBlob(m_pParams);
+            m_pHashParams = CreateHashBlob(m_pParams, m_pTargetMD);
         }
 
         ~ILStubCreatorHelper()
@@ -4860,11 +4893,10 @@ namespace
         }
 
     private:
-        MethodDesc*                      m_pTargetMD;
         PInvokeStubParameters*           m_pParams;
-        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
-        AllocMemTracker*                 m_pAmTracker;
+        MethodDesc*                      m_pTargetMD;
         MethodDesc*                      m_pStubMD;
+        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
@@ -4960,7 +4992,7 @@ namespace
         // remove it from cache if OOM occurs
 
         {
-            ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
+            ILStubCreatorHelper ilStubCreatorHelper(&params, pTargetMD);
 
             // take the domain level lock
             ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
@@ -5679,18 +5711,12 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
         PInvokeLink(pNMD);
     }
 
-    //
-    // NOTE: there is a race in updating this MethodDesc.  We depend on all
-    // threads getting back the same DynamicMethodDesc for a particular
-    // PInvokeMethodDesc, in that case, the locking around the actual JIT
-    // operation will prevent the code from being jitted more than once.
-    // By the time we get here, all threads get the same address of code
-    // back from the JIT operation and they all just fill in the same value
-    // here.
-    //
-    // In the NGEN case, all threads will get the same preimplemented code
-    // address much like the JIT case.
-    //
+    // NOTE: For IL-stub-backed P/Invoke stubs (i.e., when *ppStubMD is non-null
+    // and the stub is obtained via JitILStub/ILStubCache), racing threads will
+    // resolve to the same DynamicMethodDesc via the ILStubCache (keyed by the
+    // target MethodDesc). The locking around the JIT operation prevents the
+    // code from being jitted more than once, and all threads get back the same
+    // PCODE. See CreateHashBlob() for the hashing logic.
 
     return pStub;
 }
@@ -5717,7 +5743,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             //
 
             pCode = pStubMD->PrepareInitialCode();
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
             // Interpreter-TODO: Figure out how to create the call stub for the IL stub only when it is
             // needed, like we do for the regular methods.
             InterpByteCodeStart *pInterpreterCode = pStubMD->GetInterpreterCode();
@@ -5725,7 +5751,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             {
                 CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
             }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && FEATURE_DYNAMIC_CODE_COMPILED
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());
         }
@@ -6162,7 +6188,7 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     pFrame->Pop(CURRENT_THREAD);
 }
 
-EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
 {
     CONTRACTL
     {
@@ -6179,7 +6205,24 @@ EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* 
     TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
     _ASSERTE(!type.IsTypeDesc());
 
-    *ppMD = MemberLoader::FindMethodByName(type.GetMethodTable(), methodName);
+    // Iterate the type looking for a method with the given name that has the
+    // UnmanagedCallersOnly attribute.
+    MethodTable* pMT = type.GetMethodTable();
+    MethodTable::MethodIterator it(pMT);
+    it.MoveToEnd();
+    for (; it.IsValid(); it.Prev())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        if (strcmp(pMD->GetNameOnNonArrayClass(), methodName) == 0
+            && pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+            *ppMD = pMD;
+            return;
+        }
+    }
+
+    // Fallback if no UCO match found.
+    *ppMD = MemberLoader::FindMethodByName(pMT, methodName);
 }
 
 namespace

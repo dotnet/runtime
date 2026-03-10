@@ -39,8 +39,6 @@ namespace System.Globalization.Tests
                 fileName = "IdnaTest_15_0.txt";
             else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 fileName = "IdnaTest_13.txt";
-            else if (PlatformDetection.IsWindows7)
-                fileName = "IdnaTest_Win7.txt";
             else if (PlatformDetection.IsWindows10Version1903OrGreater)
                 fileName = "IdnaTest_11.txt";
             else if (PlatformDetection.IsWindows10Version1703OrGreater)
@@ -82,8 +80,6 @@ namespace System.Globalization.Tests
                 return new Unicode_15_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 return new Unicode_13_0_IdnaTest(line, lineCount);
-            else if (PlatformDetection.IsWindows7)
-                return new Unicode_Win7_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows10Version1903OrGreater)
                 return new Unicode_11_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows10Version1703OrGreater)

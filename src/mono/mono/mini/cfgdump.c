@@ -13,7 +13,9 @@
 #include <glib.h>
 #include <mono/metadata/class-internals.h>
 
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>

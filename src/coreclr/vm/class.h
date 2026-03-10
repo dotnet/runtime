@@ -61,7 +61,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
@@ -342,7 +341,8 @@ class EEClassLayoutInfo
             Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
             Sequential,
             Explicit,
-            CStruct
+            CStruct,
+            CUnion
         };
     private:
         enum {
@@ -496,6 +496,12 @@ class EEClassLayoutInfo
             ULONG cFields
         );
 
+        ULONG InitializeCUnionFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
     private:
         void SetIsZeroSized(BOOL isZeroSized)
         {
@@ -640,12 +646,8 @@ class EEClassOptionalFields
     //
 
 #if defined(UNIX_AMD64_ABI)
-    // Number of eightBytes in the following arrays
-    int m_numberEightBytes;
-    // Classification of the eightBytes
-    SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
-    // Size of data the eightBytes
-    unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    // Information about the eightByte classifications for structs passed in registers
+    SystemVEightByteRegistersInfo m_eightByteRegistersInfo;
 #endif // UNIX_AMD64_ABI
 
     // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
@@ -723,6 +725,7 @@ class EEClass // DO NOT CREATE A NEW EEClass USING NEW!
     friend class FieldDesc;
     friend class CheckAsmOffsets;
     friend class ClrDataAccess;
+    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle, CorElementType, unsigned, AllocMemTracker*);
 
     /************************************
      *  PUBLIC INSTANCE METHODS
@@ -1421,41 +1424,19 @@ public:
 
 
 #if defined(UNIX_AMD64_ABI)
-    // Get number of eightbytes used by a struct passed in registers.
-    inline int GetNumberEightBytes()
+    inline SystemVEightByteRegistersInfo GetEightByteRegistersInfo()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_numberEightBytes;
-    }
-
-    // Get eightbyte classification for the eightbyte with the specified index.
-    inline SystemVClassificationType GetEightByteClassification(int index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_eightByteClassifications[index];
-    }
-
-    // Get size of the data in the eightbyte with the specified index.
-    inline unsigned int GetEightByteSize(int index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        return GetOptionalFields()->m_eightByteSizes[index];
+        return GetOptionalFields()->m_eightByteRegistersInfo;
     }
 
     // Set the eightByte classification
-    inline void SetEightByteClassification(int eightByteCount, SystemVClassificationType *eightByteClassifications, unsigned int *eightByteSizes)
+    inline void SetEightByteClassification(SystemVEightByteRegistersInfo eightByteInfo)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_numberEightBytes = eightByteCount;
-        for (int i = 0; i < eightByteCount; i++)
-        {
-            GetOptionalFields()->m_eightByteClassifications[i] = eightByteClassifications[i];
-            GetOptionalFields()->m_eightByteSizes[i] = eightByteSizes[i];
-        }
+        GetOptionalFields()->m_eightByteRegistersInfo = eightByteInfo;
     }
 #endif // UNIX_AMD64_ABI
 
@@ -1932,64 +1913,6 @@ public:
 };
 
 
-typedef DPTR(ArrayClass) PTR_ArrayClass;
-
-
-// Dynamically generated array class structure
-class ArrayClass : public EEClass
-{
-    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
-
-#ifndef DACCESS_COMPILE
-    ArrayClass() { LIMITED_METHOD_CONTRACT; }
-#else
-    friend class NativeImageDumper;
-#endif
-
-private:
-
-    DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    unsigned char   m_rank;
-
-public:
-    DWORD GetRank() {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_rank;
-    }
-    void SetRank (unsigned Rank) {
-        LIMITED_METHOD_CONTRACT;
-        // The only code path calling this function is code:ClassLoader::CreateTypeHandleForTypeKey, which has
-        // checked the rank already.  Assert that the rank is less than MAX_RANK and that it fits in one byte.
-        _ASSERTE((Rank <= MAX_RANK) && (Rank <= (unsigned char)(-1)));
-        m_rank = (unsigned char)Rank;
-    }
-
-    // Allocate a new MethodDesc for the methods we add to this class
-    void InitArrayMethodDesc(
-        ArrayMethodDesc* pNewMD,
-        PCCOR_SIGNATURE pShortSig,
-        DWORD   cShortSig,
-        DWORD   dwVtableSlot,
-        AllocMemTracker *pamTracker);
-
-    // Generate a short sig for an array accessor
-    VOID GenerateArrayAccessorCallSig(DWORD   dwRank,
-                                      DWORD   dwFuncType, // Load, store, or <init>
-                                      PCCOR_SIGNATURE *ppSig, // Generated signature
-                                      DWORD * pcSig,      // Generated signature size
-                                      LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker,
-                                      BOOL fForStubAsIL
-    );
-
-    friend struct ::cdac_data<ArrayClass>;
-};
-
-template<> struct cdac_data<ArrayClass>
-{
-    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
-};
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
 {

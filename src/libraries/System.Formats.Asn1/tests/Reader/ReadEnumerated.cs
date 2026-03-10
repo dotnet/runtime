@@ -7,8 +7,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadEnumerated
+    public sealed class ReadEnumeratedAsnReaderTests : ReadEnumeratedBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadEnumeratedValueAsnReaderTests : ReadEnumeratedBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadEnumeratedBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         public enum ByteBacked : byte
         {
             Zero = 0,
@@ -62,14 +89,14 @@ namespace System.Formats.Asn1.Tests.Reader
             Fluff = 0xFACEF00DCAFEBEEF,
         }
 
-        private static void GetExpectedValue<TEnum>(
+        private void GetExpectedValue<TEnum>(
             AsnEncodingRules ruleSet,
             TEnum expectedValue,
             string inputHex)
             where TEnum : Enum
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             TEnum value = reader.ReadEnumeratedValue<TEnum>();
             Assert.Equal(expectedValue, value);
         }
@@ -85,7 +112,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, (ByteBacked)128, "0A020080")]
         [InlineData(AsnEncodingRules.DER, (ByteBacked)129, "0A020081")]
         [InlineData(AsnEncodingRules.BER, (ByteBacked)254, "0A82000200FE")]
-        public static void GetExpectedValue_ByteBacked(
+        public void GetExpectedValue_ByteBacked(
             AsnEncodingRules ruleSet,
             ByteBacked expectedValue,
             string inputHex)
@@ -104,7 +131,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, (SByteBacked)sbyte.MinValue, "0A0180")]
         [InlineData(AsnEncodingRules.DER, (SByteBacked)sbyte.MinValue + 1, "0A0181")]
         [InlineData(AsnEncodingRules.BER, SByteBacked.Pillow, "0A820001EF")]
-        public static void GetExpectedValue_SByteBacked(
+        public void GetExpectedValue_SByteBacked(
             AsnEncodingRules ruleSet,
             SByteBacked expectedValue,
             string inputHex)
@@ -123,7 +150,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, (ShortBacked)short.MinValue, "0A028000")]
         [InlineData(AsnEncodingRules.DER, (ShortBacked)short.MinValue + 1, "0A028001")]
         [InlineData(AsnEncodingRules.BER, ShortBacked.Pillow, "0A820002FC00")]
-        public static void GetExpectedValue_ShortBacked(
+        public void GetExpectedValue_ShortBacked(
             AsnEncodingRules ruleSet,
             ShortBacked expectedValue,
             string inputHex)
@@ -143,7 +170,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.DER, (UShortBacked)0x7FED, "0A027FED")]
         [InlineData(AsnEncodingRules.BER, (UShortBacked)ushort.MaxValue, "0A82000300FFFF")]
         [InlineData(AsnEncodingRules.BER, (UShortBacked)0x8123, "0A820003008123")]
-        public static void GetExpectedValue_UShortBacked(
+        public void GetExpectedValue_UShortBacked(
             AsnEncodingRules ruleSet,
             UShortBacked expectedValue,
             string inputHex)
@@ -162,7 +189,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, (IntBacked)int.MinValue, "0A0480000000")]
         [InlineData(AsnEncodingRules.DER, (IntBacked)int.MinValue + 1, "0A0480000001")]
         [InlineData(AsnEncodingRules.BER, IntBacked.Pillow, "0A820003FEFFFF")]
-        public static void GetExpectedValue_IntBacked(
+        public void GetExpectedValue_IntBacked(
             AsnEncodingRules ruleSet,
             IntBacked expectedValue,
             string inputHex)
@@ -182,7 +209,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.DER, (UIntBacked)0x7FED, "0A027FED")]
         [InlineData(AsnEncodingRules.BER, (UIntBacked)uint.MaxValue, "0A82000500FFFFFFFF")]
         [InlineData(AsnEncodingRules.BER, (UIntBacked)0x8123, "0A820003008123")]
-        public static void GetExpectedValue_UIntBacked(
+        public void GetExpectedValue_UIntBacked(
             AsnEncodingRules ruleSet,
             UIntBacked expectedValue,
             string inputHex)
@@ -201,7 +228,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, (LongBacked)short.MinValue, "0A028000")]
         [InlineData(AsnEncodingRules.DER, (LongBacked)short.MinValue + 1, "0A028001")]
         [InlineData(AsnEncodingRules.BER, LongBacked.Pillow, "0A820005FF00000000")]
-        public static void GetExpectedValue_LongBacked(
+        public void GetExpectedValue_LongBacked(
             AsnEncodingRules ruleSet,
             LongBacked expectedValue,
             string inputHex)
@@ -222,7 +249,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, (ULongBacked)uint.MaxValue, "0A82000500FFFFFFFF")]
         [InlineData(AsnEncodingRules.BER, (ULongBacked)ulong.MaxValue, "0A82000900FFFFFFFFFFFFFFFF")]
         [InlineData(AsnEncodingRules.BER, (ULongBacked)0x8123, "0A820003008123")]
-        public static void GetExpectedValue_ULongBacked(
+        public void GetExpectedValue_ULongBacked(
             AsnEncodingRules ruleSet,
             ULongBacked expectedValue,
             string inputHex)
@@ -277,12 +304,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_Byte(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_Byte(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<ByteBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<ByteBacked>());
         }
 
         [Theory]
@@ -329,12 +356,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_SByte(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_SByte(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<SByteBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<SByteBacked>());
         }
 
         [Theory]
@@ -378,12 +405,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_Short(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_Short(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<ShortBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>());
         }
 
         [Theory]
@@ -430,12 +457,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_UShort(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_UShort(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<UShortBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<UShortBacked>());
         }
 
 
@@ -474,12 +501,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_Int(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_Int(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<IntBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<IntBacked>());
         }
 
         [Theory]
@@ -517,12 +544,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_UInt(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_UInt(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<UIntBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<UIntBacked>());
         }
 
         [Theory]
@@ -554,12 +581,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_Long(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_Long(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<LongBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<LongBacked>());
         }
 
         [Theory]
@@ -591,26 +618,27 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.DER, "0A09010203040506070809")]
         [InlineData(AsnEncodingRules.BER, "2A030A0100")]
-        public static void ReadEnumeratedValue_Invalid_ULong(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedValue_Invalid_ULong(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<ULongBacked>());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue<ULongBacked>());
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadEnumeratedValue_RequiresTypeArg(AsnEncodingRules ruleSet)
+        public void ReadEnumeratedValue_RequiresTypeArg(AsnEncodingRules ruleSet)
         {
             byte[] data = { 0x0A, 0x01, 0x00 };
-            AsnReader reader = new AsnReader(data, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(data, ruleSet);
 
-            AssertExtensions.Throws<ArgumentNullException>(
+            Assert.Throws<ArgumentNullException>(
+                ref reader,
                 "enumType",
-                () => reader.ReadEnumeratedValue(null!));
+                static (ref reader) => reader.ReadEnumeratedValue(null!));
 
             Assert.True(reader.HasData, "reader.HasData");
         }
@@ -619,41 +647,42 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadEnumeratedValue_NonEnumType(AsnEncodingRules ruleSet)
+        public void ReadEnumeratedValue_NonEnumType(AsnEncodingRules ruleSet)
         {
             byte[] data = { 0x0A, 0x01, 0x00 };
-            AsnReader reader = new AsnReader(data, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(data, ruleSet);
 
-            Assert.Throws<ArgumentException>(() => reader.ReadEnumeratedValue(typeof(Guid)));
+            Assert.Throws<ArgumentException>(ref reader, static (ref reader) => reader.ReadEnumeratedValue(typeof(Guid)));
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadEnumeratedValue_FlagsEnum(AsnEncodingRules ruleSet)
+        public void ReadEnumeratedValue_FlagsEnum(AsnEncodingRules ruleSet)
         {
             byte[] data = { 0x0A, 0x01, 0x00 };
-            AsnReader reader = new AsnReader(data, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(data, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "enumType",
-                () => reader.ReadEnumeratedValue<AssemblyFlags>());
+                static (ref reader) => reader.ReadEnumeratedValue<AssemblyFlags>());
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadEnumeratedBytes(AsnEncodingRules ruleSet)
+        public void ReadEnumeratedBytes(AsnEncodingRules ruleSet)
         {
             const string Payload = "0102030405060708090A0B0C0D0E0F10";
 
             // ENUMERATED (payload) followed by INTEGER (0)
             byte[] data = ("0A10" + Payload + "020100").HexToByteArray();
-            AsnReader reader = new AsnReader(data, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(data, ruleSet);
 
-            ReadOnlyMemory<byte> contents = reader.ReadEnumeratedBytes();
+            ReadOnlySpan<byte> contents = reader.ReadEnumeratedBytes();
             Assert.Equal(0x10, contents.Length);
             Assert.Equal(Payload, contents.ByteArrayToHex());
         }
@@ -680,31 +709,33 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "0A81")]
         [InlineData(AsnEncodingRules.CER, "0A81")]
         [InlineData(AsnEncodingRules.DER, "0A81")]
-        public static void ReadEnumeratedBytes_Throws(AsnEncodingRules ruleSet, string inputHex)
+        public void ReadEnumeratedBytes_Throws(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedBytes());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadEnumeratedBytes());
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x0A, 1, 0x7E };
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadEnumeratedValue<ShortBacked>(Asn1Tag.Null));
+                static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadEnumeratedValue<ShortBacked>(new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader,
+                static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
@@ -717,28 +748,33 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x87, 2, 0, 0x80 };
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadEnumeratedValue<ShortBacked>(Asn1Tag.Null));
+                static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.ReadEnumeratedValue<ShortBacked>());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadEnumeratedValue<ShortBacked>(new Asn1Tag(TagClass.Application, 0)));
+                ref reader,
+                static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>(new Asn1Tag(TagClass.Application, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadEnumeratedValue<ShortBacked>(new Asn1Tag(TagClass.ContextSpecific, 1)));
+                ref reader,
+                static (ref reader) => reader.ReadEnumeratedValue<ShortBacked>(new Asn1Tag(TagClass.ContextSpecific, 1)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
@@ -754,7 +790,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "8001FF", TagClass.ContextSpecific, 0)]
         [InlineData(AsnEncodingRules.CER, "4C01FF", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "DF8A4601FF", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
@@ -764,34 +800,34 @@ namespace System.Formats.Asn1.Tests.Reader
             Asn1Tag constructedTag = new Asn1Tag(tagClass, tagValue, true);
             byte[] inputData = inputHex.HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             ShortBacked val1 = reader.ReadEnumeratedValue<ShortBacked>(constructedTag);
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             ShortBacked val2 = reader.ReadEnumeratedValue<ShortBacked>(primitiveTag);
             Assert.False(reader.HasData);
 
             Assert.Equal(val1, val2);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             ShortBacked val3 = (ShortBacked)reader.ReadEnumeratedValue(typeof(ShortBacked), constructedTag);
             Assert.False(reader.HasData);
 
             Assert.Equal(val1, val3);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             ShortBacked val4 = (ShortBacked)reader.ReadEnumeratedValue(typeof(ShortBacked), primitiveTag);
             Assert.False(reader.HasData);
 
             Assert.Equal(val1, val4);
 
-            reader = new AsnReader(inputData, ruleSet);
-            ReadOnlyMemory<byte> bytes1 = reader.ReadEnumeratedBytes(constructedTag);
+            reader = CreateWrapper(inputData, ruleSet);
+            ReadOnlySpan<byte> bytes1 = reader.ReadEnumeratedBytes(constructedTag);
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
-            ReadOnlyMemory<byte> bytes2 = reader.ReadEnumeratedBytes(primitiveTag);
+            reader = CreateWrapper(inputData, ruleSet);
+            ReadOnlySpan<byte> bytes2 = reader.ReadEnumeratedBytes(primitiveTag);
             Assert.False(reader.HasData);
 
             Assert.Equal(bytes1.ByteArrayToHex(), bytes2.ByteArrayToHex());

@@ -14,7 +14,7 @@ namespace System.Reflection
                 return null;
 
             if (publicKey.Length == 0)
-                return Array.Empty<byte>();
+                return [];
 
             if (!IsValidPublicKey(publicKey))
                 throw new SecurityException(SR.Security_InvalidAssemblyPublicKey);

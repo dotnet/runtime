@@ -5,7 +5,7 @@
 //   This class is used to perform data flow optimizations.
 //   An example usage would be:
 //
-//     DataFlow flow(m_pCompiler);
+//     DataFlow flow(m_compiler);
 //     flow.ForwardAnalysis(callback);
 //
 //  The "callback" object needs to implement the following member
@@ -36,29 +36,29 @@ public:
     void ForwardAnalysis(TCallback& callback);
 
 private:
-    Compiler* m_pCompiler;
+    Compiler* m_compiler;
 };
 
 template <typename TCallback>
 void DataFlow::ForwardAnalysis(TCallback& callback)
 {
-    if (m_pCompiler->m_dfsTree == nullptr)
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        m_pCompiler->m_dfsTree = m_pCompiler->fgComputeDfs();
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
     }
 
     bool changed;
     do
     {
         changed = false;
-        for (unsigned i = m_pCompiler->m_dfsTree->GetPostOrderCount(); i > 0; i--)
+        for (unsigned i = m_compiler->m_dfsTree->GetPostOrderCount(); i > 0; i--)
         {
-            BasicBlock* block = m_pCompiler->m_dfsTree->GetPostOrder(i - 1);
+            BasicBlock* block = m_compiler->m_dfsTree->GetPostOrder(i - 1);
 
             callback.StartMerge(block);
-            if (m_pCompiler->bbIsHandlerBeg(block))
+            if (m_compiler->bbIsHandlerBeg(block))
             {
-                EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(block);
+                EHblkDsc* ehDsc = m_compiler->ehGetBlockHndDsc(block);
                 callback.MergeHandler(block, ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
             }
             else
@@ -71,5 +71,5 @@ void DataFlow::ForwardAnalysis(TCallback& callback)
 
             changed |= callback.EndMerge(block);
         }
-    } while (changed && m_pCompiler->m_dfsTree->HasCycle());
+    } while (changed && m_compiler->m_dfsTree->HasCycle());
 }

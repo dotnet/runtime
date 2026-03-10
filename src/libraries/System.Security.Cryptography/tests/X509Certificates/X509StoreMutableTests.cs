@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X509Store")]
     public static partial class X509StoreMutableTests
     {
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void AddToStoreTwice()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void AddPrivateAfterPublic()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void AddPublicAfterPrivate()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalTheory(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         [InlineData(true)]
         [InlineData(false)]
         public static void VerifyRemove(bool withPrivateKey)
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void RemovePublicDeletesPrivateKey()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))

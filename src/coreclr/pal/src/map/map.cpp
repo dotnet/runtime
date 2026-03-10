@@ -2551,7 +2551,7 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
 
     BOOL retval = TRUE;
 
-#ifndef TARGET_ANDROID
+#if !defined(TARGET_ANDROID) && !defined(TARGET_WASM)
     minipal_mutex_enter(&mapping_critsec);
     PLIST_ENTRY pLink, pLinkNext = NULL;
 
@@ -2581,7 +2581,7 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     }
 
     minipal_mutex_leave(&mapping_critsec);
-#endif // TARGET_ANDROID
+#endif // !TARGET_ANDROID && !TARGET_WASM
 
     TRACE_(LOADER)("MAPMarkSectionAsNotNeeded returning %d\n", retval);
     return retval;

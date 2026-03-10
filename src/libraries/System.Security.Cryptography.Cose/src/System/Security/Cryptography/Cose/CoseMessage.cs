@@ -293,10 +293,19 @@ namespace System.Security.Cryptography.Cose
 
         private static void DecodeBucket(CborReader reader, CoseHeaderMap headerParameters)
         {
-            int? length = reader.ReadStartMap();
-            for (int i = 0; i < length; i++)
+            reader.ReadStartMap();
+
+            while (true)
             {
-                CoseHeaderLabel label = reader.PeekState() switch
+                CborReaderState state = reader.PeekState();
+
+                if (state == CborReaderState.EndMap)
+                {
+                    reader.ReadEndMap();
+                    break;
+                }
+
+                CoseHeaderLabel label = state switch
                 {
                     CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
@@ -304,9 +313,23 @@ namespace System.Security.Cryptography.Cose
                 };
 
                 CoseHeaderValue value = CoseHeaderValue.FromEncodedValue(reader.ReadEncodedValue().Span);
-                headerParameters.Add(label, value);
+
+                try
+                {
+                    headerParameters.Add(label, value);
+                }
+                catch (ArgumentException e)
+                {
+                    // Lift the well-known header value validation into a CryptographicException.
+                    if (e.ParamName == "value")
+                    {
+                        throw new CryptographicException(e.Message);
+                    }
+
+                    Debug.Fail("Unexpected ArgumentException from CoseHeaderMap.Add");
+                    throw new CryptographicException(SR.DecodeErrorWhileDecodingSeeInnerEx, e);
+                }
             }
-            reader.ReadEndMap();
         }
 
         private static byte[]? DecodePayload(CborReader reader)
@@ -561,13 +584,23 @@ namespace System.Security.Cryptography.Cose
                 return false;
             }
 
-            var reader = new CborReader(critHeaderValue.EncodedValue);
-            int length = reader.ReadStartArray().GetValueOrDefault();
-            Debug.Assert(length > 0);
+            bool empty = true;
 
-            for (int i = 0; i < length; i++)
+            var reader = new CborReader(critHeaderValue.EncodedValue);
+            reader.ReadStartArray();
+
+            while (true)
             {
-                CoseHeaderLabel label = reader.PeekState() switch
+                CborReaderState state = reader.PeekState();
+
+                if (state == CborReaderState.EndArray)
+                {
+                    reader.ReadEndArray();
+                    break;
+                }
+
+                empty = false;
+                CoseHeaderLabel label = state switch
                 {
                     CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
@@ -579,6 +612,11 @@ namespace System.Security.Cryptography.Cose
                     labelName = label.LabelName;
                     return true;
                 }
+            }
+
+            if (empty)
+            {
+                throw new CryptographicException(SR.CriticalHeadersMustBeArrayOfAtLeastOne);
             }
 
             labelName = null;

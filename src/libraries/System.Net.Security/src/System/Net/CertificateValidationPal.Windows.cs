@@ -148,7 +148,7 @@ namespace System.Net
                             Debug.Assert(elements[i].cbSize > 0, $"Interop.SspiCli._CERT_CHAIN_ELEMENT size is not positive: {elements[i].cbSize}");
                             if (elements[i].cbSize > 0)
                             {
-                                byte[] x = new Span<byte>((byte*)elements[i].pCertContext, checked((int)elements[i].cbSize)).ToArray();
+                                ReadOnlySpan<byte> x = new ReadOnlySpan<byte>((byte*)elements[i].pCertContext, checked((int)elements[i].cbSize));
                                 var x500DistinguishedName = new X500DistinguishedName(x);
                                 issuers[i] = x500DistinguishedName.Name;
                                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(securityContext, $"IssuerListEx[{issuers[i]}]");

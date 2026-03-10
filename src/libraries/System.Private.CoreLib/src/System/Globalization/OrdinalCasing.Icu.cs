@@ -12,7 +12,7 @@ namespace System.Globalization
     internal static partial class OrdinalCasing
     {
         // NoCasingPage means the Unicode page doesn't support any casing and no case translation is needed.
-        private static ushort[] NoCasingPage => Array.Empty<ushort>();
+        private static ushort[] NoCasingPage => [];
 
         // s_basicLatin is covering the casing for the Basic Latin & C0 Controls range.
         // we are not lazy initializing this range because it is the most common used range and we'll cache it anyway very early.
@@ -140,17 +140,6 @@ namespace System.Globalization
             casingTable ??= InitOrdinalCasingPage(pageNumber);
 
             return (char)casingTable[((int)c) & 0xFF];
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char ToUpperInvariantMode(char c) => c <= '\u00FF' ? (char)s_basicLatin[(int)c] : c;
-
-        public static void ToUpperInvariantMode(this ReadOnlySpan<char> source, Span<char> destination)
-        {
-            for (int i = 0; i < source.Length; i++)
-            {
-                destination[i] = ToUpperInvariantMode(source[i]);
-            }
         }
 
         internal static void ToUpperOrdinal(ReadOnlySpan<char> source, Span<char> destination)

@@ -1582,17 +1582,8 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
 //**********************************************************************
 
 //
-// Native Link method custom value definitions. This is for N-direct support.
+// Native Link method custom value definitions. This is for P/Invoke support.
 //
-
-#include <pshpack1.h>
-typedef struct
-{
-    BYTE        m_linkType;       // see CorNativeLinkType below
-    BYTE        m_flags;          // see CorNativeLinkFlags below
-    mdMemberRef m_entryPoint;     // member ref token giving entry point, format is lib:entrypoint
-} COR_NATIVE_LINK;
-#include <poppack.h>
 
 typedef enum
 {

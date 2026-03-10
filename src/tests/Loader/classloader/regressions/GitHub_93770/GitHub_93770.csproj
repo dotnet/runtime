@@ -4,4 +4,7 @@
   <ItemGroup>
     <Compile Include="GitHub_93770.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

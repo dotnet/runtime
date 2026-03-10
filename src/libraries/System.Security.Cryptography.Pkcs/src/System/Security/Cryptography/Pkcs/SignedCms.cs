@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         using (var manager = new PointerMemoryManager<byte>(pin, encodedMessage.Length))
                         {
-                            AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
+                            ValueAsnReader reader = new ValueAsnReader(encodedMessage, AsnEncodingRules.BER);
 
                             // Windows (and thus NetFx) reads the leading data and ignores extra.
                             // So use the Decode overload which doesn't throw on extra data.

@@ -187,9 +187,11 @@ static ULONG WINAPI KickOffThread(void* pass)
     return 0;
 }
 
-extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
+extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception)
 {
     QCALL_CONTRACT;
+
+    BOOL result = TRUE;
 
     BEGIN_QCALL;
 
@@ -266,10 +268,13 @@ extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int thr
     {
         GCX_COOP();
 
-        pNewThread->HandleThreadStartupFailure();
+        result = FALSE;
+        exception.Set(pNewThread->GetExceptionDuringStartup());
     }
 
     END_QCALL;
+
+    return result;
 }
 
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)
@@ -850,7 +855,7 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
-    return obj->GetHeader()->AcquireHeaderThinLock(GetThread()->GetThreadId());
+    return obj->GetHeader()->AcquireHeaderThinLock(GetThread());
 }
 FCIMPLEND
 
@@ -858,7 +863,7 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
-    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread()->GetThreadId());
+    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread());
 }
 FCIMPLEND
 

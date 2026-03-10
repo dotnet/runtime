@@ -90,6 +90,11 @@ public:
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
 
+    virtual void CleanupTargetProcess()
+    {
+        // No-op on Windows.
+    }
+
 protected:
     // Cached value from DebugSetProcessKillOnExit.
     // This is thread-local, and impacts all debuggees on the thread.

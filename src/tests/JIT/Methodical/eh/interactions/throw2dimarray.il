@@ -23,6 +23,8 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -45,6 +47,11 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtimelab/issues/155: Non-exception throws')
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNativeAot')
+    }
     .entrypoint
     .maxstack  4
     .locals init (int32[,] V_0,
@@ -128,7 +135,7 @@
     ldloc.s    expectedOut
     ldstr      "6"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
-   
+
     ldloc.s    expectedOut
     newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
@@ -210,19 +217,19 @@
 
           leave    IL_00a3
         } finally {
-          ldstr      "In finally1"	
+          ldstr      "In finally1"
           call       void [System.Console]System.Console::WriteLine(string)
           ldc.i4.0
           stloc.3
           br.s       test_i_fin
 
-        inc_i_fin:  
+        inc_i_fin:
           ldloc.3
           ldc.i4.1
           add
           stloc.3
 
-        test_i_fin:  
+        test_i_fin:
           ldloc.3
           ldloc.0
           call       instance int32 [mscorlib]System.Array::get_Rank()
@@ -238,7 +245,7 @@
           add
           stloc.2
 
-        test_j_fin:  
+        test_j_fin:
           ldloc.2
           ldloc.0
           callvirt   instance int32 [mscorlib]System.Array::get_Length()
@@ -257,31 +264,31 @@
 
         doneinner_fin:  br.s       inc_i_fin
 
-        done_fin:  
+        done_fin:
           endfinally
-        } 
+        }
 
-      }  
-      catch [mscorlib]System.Object 
+      }
+      catch [mscorlib]System.Object
       {
         stloc.s    V_5
         ldloc.s    V_5
         castclass int32[0...,0...]
         stloc.1
-        ldstr      "In catch"	
+        ldstr      "In catch"
         call       void [System.Console]System.Console::WriteLine(string)
 
         ldc.i4.0
         stloc.3
         br.s       test_i
 
-      inc_i:  
+      inc_i:
         ldloc.3
         ldc.i4.1
         add
         stloc.3
 
-      test_i:  
+      test_i:
         ldloc.3
         ldloc.1
         call       instance int32 [mscorlib]System.Array::get_Rank()
@@ -297,7 +304,7 @@
         add
         stloc.2
 
-      test_j:  
+      test_j:
         ldloc.2
         ldloc.1
         callvirt   instance int32 [mscorlib]System.Array::get_Length()
@@ -314,28 +321,28 @@
         call       void [System.Console]System.Console::WriteLine(int32)
         br.s       inc_j
 
-      doneinner:  
+      doneinner:
         br.s       inc_i
 
-      done:  
+      done:
         leave.s    IL_00a3
 
 
-      }  
+      }
     } finally {
-      ldstr      "In finally2"	
+      ldstr      "In finally2"
       call       void [System.Console]System.Console::WriteLine(string)
       ldc.i4.0
       stloc.3
       br.s       test_i_fin2
 
-    inc_i_fin2:  
+    inc_i_fin2:
       ldloc.3
       ldc.i4.1
       add
       stloc.3
 
-    test_i_fin2:  
+    test_i_fin2:
       ldloc.3
       ldloc.0
       call       instance int32 [mscorlib]System.Array::get_Rank()
@@ -351,7 +358,7 @@
       add
       stloc.2
 
-    test_j_fin2:  
+    test_j_fin2:
       ldloc.2
       ldloc.0
       callvirt   instance int32 [mscorlib]System.Array::get_Length()
@@ -370,33 +377,33 @@
 
     doneinner_fin2:  br.s       inc_i_fin2
 
-    done_fin2:  
+    done_fin2:
       endfinally
     }
-    IL_00a3:  
+    IL_00a3:
        ldloc.s    testLog
 		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
-  
+
 		ldloc.s    testLog
 		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     IL_00a4:  ret
-  } 
+  }
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     .maxstack  1
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } 
+  }
 
-} 
+}
 
 .class private auto ansi beforefieldinit MyException
        extends [mscorlib]System.Exception
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor(string msg) cil managed
   {
     .maxstack  2
@@ -407,7 +414,7 @@
     IL_0008:  ldstr      "http://NotARealURL.Microsoft.com/help.html"
     IL_000d:  callvirt   instance void [mscorlib]System.Exception::set_HelpLink(string)
     IL_0012:  ret
-  } 
+  }
 
-} 
+}
 }

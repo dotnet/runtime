@@ -380,7 +380,7 @@ namespace System.Security.Cryptography
             int maxOutput = source.Length - 8;
             uint pad = (uint)maxOutput - len;
 
-            if (header != 0xA65959A6 || pad > 7 || destination.Slice(slen).IndexOfAnyExcept((byte)0) >= 0)
+            if (header != 0xA65959A6 || pad > 7 || destination.Slice(slen).ContainsAnyExcept((byte)0))
             {
                 throw new CryptographicException(SR.Cryptography_KeyWrap_DecryptFailed);
             }
