@@ -85,12 +85,20 @@ Copyright (c) .NET Foundation. All rights reserved.
     <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
+
+    <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</CompressionEnabled>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Configuration for the platform compatibility analyzer. See https://github.com/dotnet/designs/blob/main/accepted/2020/platform-exclusion/platform-exclusion.md#build-configuration-for-platforms -->
     <SupportedPlatform Remove="@(SupportedPlatform)" />
     <SupportedPlatform Include="browser" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(EnableDefaultItems)' == 'true' And '$(EnableDefaultContentItems)' == 'true' And '$(WasmBundlerFriendlyBootConfig)' == 'true'">
+    <!-- In js bundler scenarios, also copy to output dir-->
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Update="wwwroot\.well-known\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Wire-up static web assets -->
@@ -184,7 +192,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(_BlazorIcuDataFileName)')" Text="Could not find %24(BlazorIcuDataFileName)=$(BlazorIcuDataFileName), or when used as a path relative to the runtime pack (='$(_RuntimePackNativeDir)')."/>
   </Target>
 
-  <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
+  <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration" BeforeTargets="ResolveStaticWebAssetsConfiguration">
     <PropertyGroup>
       <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
       <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET100OrLater)' != 'true'">true</_BlazorCacheBootResources>
@@ -231,8 +239,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       
       <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
       <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
-      <WasmEnableHotReload Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true' and '$(WasmEnableHotReload)' == ''">false</WasmEnableHotReload>
-      
+      <_WasmFingerprintAssets Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintAssets>
+      <_WasmEnableHotReload Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmEnableHotReload>
+
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114 -->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
