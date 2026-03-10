@@ -563,6 +563,7 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void KillOnParentExit_KillsTheChild_WhenParentCrashes(bool enabled)
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
