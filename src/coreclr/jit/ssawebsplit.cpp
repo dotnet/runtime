@@ -135,6 +135,11 @@ PhaseStatus Compiler::fgSsaWebSplit()
     // Capture lvaCount before we start adding new locals.
     unsigned const lclCountBefore = lvaCount;
 
+    if (lclCountBefore == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     //------------------------------------------------------------------------
     // Step 1: Allocate a DisjointSet for every SSA local with >1 def.
     //------------------------------------------------------------------------
