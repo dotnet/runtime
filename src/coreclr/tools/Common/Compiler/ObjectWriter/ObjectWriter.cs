@@ -9,14 +9,14 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ILCompiler.DependencyAnalysis.Wasm;
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -186,7 +186,7 @@ namespace ILCompiler.ObjectWriter
                 definedSymbol.SectionIndex == sectionIndex)
             {
                 // Resolve the relocation to already defined symbol and write it into data
-                fixed (byte *pData = data)
+                fixed (byte* pData = data)
                 {
                     // RyuJIT generates the Thumb bit in the addend and we also get it from
                     // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
@@ -334,13 +334,13 @@ namespace ILCompiler.ObjectWriter
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
-            foreach (var symbolicRelocation in relocationList)
-            {
-                if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                foreach (var symbolicRelocation in relocationList)
                 {
-                    undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                    {
+                        undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    }
                 }
-            }
             return undefinedSymbolSet;
         }
 

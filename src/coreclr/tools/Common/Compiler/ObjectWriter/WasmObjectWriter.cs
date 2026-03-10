@@ -4,20 +4,19 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.Text;
 using Internal.TypeSystem;
-
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using System.Collections.Immutable;
-using ILCompiler.ObjectWriter.WasmInstructions;
-using ILCompiler.DependencyAnalysis.Wasm;
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -59,13 +58,9 @@ namespace ILCompiler.ObjectWriter
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
         private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
         {
-            if (classCode is SortableDependencyNode.ObjectNodeOrder.Win32ResourcesNode
-                or SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
-                or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode
-                or SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode)
+            if (classCode is SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
+                or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode)
             {
-                // These nodes represent directories in the PE header.
-                // We need to know what symbol name they have so we know where they are located during emit.
                 _wellKnownSymbols.Add(classCode, currentSymbolName);
             }
         }
@@ -212,6 +207,20 @@ namespace ILCompiler.ObjectWriter
 
                 return size;
             }
+
+            public long ResolveSymbolRVA(SymbolDefinition definition)
+            {
+                for (int i = 0; i < Sections.Length; i++)
+                {
+                    WebcilSection section = Sections[i];
+                    if (definition.SectionIndex == section.Index)
+                    {
+                        return section.Header.VirtualAddress + definition.Value;
+                    }
+                }
+
+                return 0;
+            }
         }
 
         const int WebcilSectionAlignment = 16;
@@ -256,6 +265,8 @@ namespace ILCompiler.ObjectWriter
                 PeDebugRva = 0, // This RVA will be resolved later
                 PeDebugSize = 0 // Resolved along with RVA
             };
+
+
             return new WebcilSegment(header, webcilSections.ToArray());
         }
 
@@ -309,7 +320,7 @@ namespace ILCompiler.ObjectWriter
         {
             // TODO-WASM: Reserve an extra page or two for runtime stack as a temporary measure
             // pages are 64 kb each, so we need to calculate how many pages we need
-            ulong numPages = (contentSize + (1<<16) - 1) >> 16;
+            ulong numPages = (contentSize + (1 << 16) - 1) >> 16;
 
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.MemorySection);
             writer.WriteByte(0x01); // number of memories
@@ -407,14 +418,39 @@ namespace ILCompiler.ObjectWriter
 
             Debug.Assert(_webcilSegment != null); // This should have been built in EmitSectionsAndLayout()
 
-            // We emit all Webcil sections into one stream, and resolve relocations directly
-            // into this stream. Note that this means the stream we pass to ResolveRelocations() contains the entire Webcil segment,
-            // so section-relative offsets need to be calculated based on the section's position within the Webcil segment. (see the explicit use of sectionStart in ResolveRelocations())
+            // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
+            // to be able to load this segment.
+            if (_wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.CorHeaderNode, out Utf8String corHeaderDefName))
+            {
+                SymbolDefinition corHeaderNode = _definedSymbols[corHeaderDefName];
+                _webcilSegment.Header.PeCliHeaderRva = (uint)_webcilSegment.ResolveSymbolRVA(corHeaderNode);
+                Debug.Assert(_webcilSegment.Header.PeCliHeaderRva != 0);
+                _webcilSegment.Header.PeCliHeaderSize = (uint)corHeaderNode.Size;
+            }
+            else
+                throw new InvalidDataException($"Cor header symbol definition {SortableDependencyNode.ObjectNodeOrder.CorHeaderNode} not found");
+
+            if (_wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode, out Utf8String debugDirectoryDefName))
+            {
+                SymbolDefinition debugDirectoryDef = _definedSymbols[debugDirectoryDefName];
+                _webcilSegment.Header.PeDebugRva = (uint)_webcilSegment.ResolveSymbolRVA(debugDirectoryDef);
+                Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
+                _webcilSegment.Header.PeDebugSize = (uint)debugDirectoryDef.Size;
+            }
+            else
+                throw new InvalidDataException($"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
+
 
             MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
             Console.WriteLine($"webcilSection has flat mapped size: {_webcilSegment.GetFlatMappedSize()}");
-            // TODO-Wasm: resolve RVAs for cor header, debug info here
+
+            Console.WriteLine($"Header.PEDebugRVA={_webcilSegment.Header.PeDebugRva}");
+            Console.WriteLine($"Header.PEDebugSize={_webcilSegment.Header.PeDebugSize}");
+            Console.WriteLine($"Header.PeCliHeaderRVA={_webcilSegment.Header.PeCliHeaderRva}");
+            Console.WriteLine($"Header.PeCliHeaderSize={_webcilSegment.Header.PeCliHeaderSize}");
+
             _webcilSegment.Header.Emit(webcilStream);
+
             foreach (WebcilSection section in _webcilSegment.Sections)
             {
                 section.Header.Encode(webcilStream);
@@ -435,13 +471,15 @@ namespace ILCompiler.ObjectWriter
                     section.Stream.CopyTo(webcilStream);
 
                     Console.WriteLine($"Resolving relocations for section: {section.Name}; Section start: {section.Header.PointerToRawData}");
+
+                    // We emit all Webcil sections into one stream, and resolve relocations directly into this combined stream.
+                    // so section-relative that our reloc list has need to be alculated based on the section's position within the Webcil segment
+                    // which should be section.Header.PointerToRawData
                     ResolveRelocations(section.Index, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData);
                 }
             }
 
             // TODO-Wasm: can dispose of individual streams here, all the data we need has been copied to the unified webcil stream
-
-            webcilStream.Position = 0;
             WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
                 WasmDataSectionType.Passive, null);
             WasmDataSection dataSection = new WasmDataSection([webcilContentsSegment], new Utf8String("data"));
@@ -552,18 +590,18 @@ namespace ILCompiler.ObjectWriter
 
                         case RelocType.IMAGE_REL_BASED_DIR64:
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                     //       Debug.Assert(betweenWebcilSections);
+                            //       Debug.Assert(betweenWebcilSections);
                             // This is an ImageBase-relative value in PE, but our image base
                             // for Webcil is virtual address 0
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + 0 + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_ADDR32NB:
-                     //       Debug.Assert(betweenWebcilSections);
+                            //       Debug.Assert(betweenWebcilSections);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_REL32:
                         case RelocType.IMAGE_REL_BASED_RELPTR32:
-                     //      Debug.Assert(betweenWebcilSections);
+                            //      Debug.Assert(betweenWebcilSections);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset - (virtualRelocOffset + relocLength) + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
@@ -584,14 +622,14 @@ namespace ILCompiler.ObjectWriter
 
             Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer, long sectionStart)
             {
-                Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type)); 
+                Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type));
                 Console.WriteLine($"Reading reloc at {reloc.Offset} + {sectionStart} to data span");
                 sectionStream.Position = reloc.Offset + sectionStart;
                 sectionStream.ReadExactly(relocContents);
                 return relocContents;
             }
 
-            void WriteRelocFromDataSpan(SymbolicRelocation reloc, byte *pData, long sectionStart)
+            void WriteRelocFromDataSpan(SymbolicRelocation reloc, byte* pData, long sectionStart)
             {
                 sectionStream.Position = reloc.Offset + sectionStart;
                 sectionStream.Write(new Span<byte>(pData, Relocation.GetSize(reloc.Type)));
@@ -894,15 +932,16 @@ namespace ILCompiler.ObjectWriter
 
             outputFileStream.Write(headerBuffer);
 
+            _stream.Position = 0;
             _stream.CopyTo(outputFileStream);
 
             return headerSize + (int)_stream.Length;
         }
     }
 
-    internal class WebcilSection : WasmSection
+    class WebcilSection : WasmSection
     {
-        public readonly int Index; 
+        public readonly int Index;
         public WebcilSectionHeader Header;
         public readonly Stream _stream;
 
