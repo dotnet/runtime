@@ -217,18 +217,24 @@ namespace System.Security.Cryptography.X509Certificates
 
                         foundCertExt = true;
 
-                        if (attr.AttrValues.Length != 1)
-                        {
-                            throw new CryptographicException(
-                                SR.Cryptography_CertReq_Load_DuplicateExtensionRequests);
-                        }
-
                         scoped ReadOnlySpan<byte> firstAttrValue = default;
+                        bool foundAttrValue = false;
 
                         foreach (ReadOnlySpan<byte> values in attr.GetAttrValues(AsnEncodingRules.DER))
                         {
+                            if (foundAttrValue)
+                            {
+                                throw new CryptographicException(
+                                    SR.Cryptography_CertReq_Load_DuplicateExtensionRequests);
+                            }
+
                             firstAttrValue = values;
-                            break;
+                            foundAttrValue = true;
+                        }
+
+                        if (!foundAttrValue)
+                        {
+                            throw new CryptographicException(SR.Cryptography_CertReq_Load_DuplicateExtensionRequests);
                         }
 
                         ValueAsnReader extsReader = new ValueAsnReader(
