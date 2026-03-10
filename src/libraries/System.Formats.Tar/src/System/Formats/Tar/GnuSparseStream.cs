@@ -299,19 +299,14 @@ namespace System.Formats.Tar
             return bytesRead;
         }
 
-        // Finds the segment containing virtualPosition, using _currentSegmentIndex as a hint
-        // to optimize sequential reads by scanning forward before falling back to binary search.
+        // Finds the segment containing virtualPosition using _currentSegmentIndex as a hint for O(1)
+        // sequential reads. Backward seeks must reset _currentSegmentIndex to 0 before calling this
+        // (done in Seek() and Position.set). For strictly forward sequential reads the index only ever
+        // advances, so no reset is needed here.
         // Returns the segment index if found, or the bitwise complement of the
         // insertion point (a negative number) if virtualPosition is in a hole.
         private int FindSegmentFromCurrent(long virtualPosition)
         {
-            // If the cached index is past the position (e.g. after a seek), reset to binary search.
-            if (_currentSegmentIndex > 0 && _currentSegmentIndex < _segments.Length &&
-                virtualPosition < _segments[_currentSegmentIndex].Offset)
-            {
-                _currentSegmentIndex = 0;
-            }
-
             // Scan forward from the current cached index (optimal for sequential reads).
             while (_currentSegmentIndex < _segments.Length)
             {

@@ -655,6 +655,7 @@ namespace System.Formats.Tar.Tests
             }
 
             sourceArchive.Position = 0;
+            long sourceArchiveLength = sourceArchive.Length;
 
             // Copy the sparse entry directly to a new archive. TarWriter writes the condensed
             // (raw) data because _header._dataStream is the raw stream, preserving the sparse
@@ -672,6 +673,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Re-read the destination archive and verify the sparse entry round-trips correctly.
+            Assert.Equal(sourceArchiveLength, destArchive.Length);
             destArchive.Position = 0;
             using var reader2 = new TarReader(destArchive);
             TarEntry copiedEntry = reader2.GetNextEntry();
