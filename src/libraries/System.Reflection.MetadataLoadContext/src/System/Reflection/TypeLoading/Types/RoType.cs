@@ -327,6 +327,23 @@ namespace System.Reflection.TypeLoading
         private volatile RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
+        // Nullable methods
+#if NET
+        public sealed override Type? GetNullableUnderlyingType()
+        {
+            if (IsConstructedGenericType)
+            {
+                RoType? nullableOfT = Loader.TryGetCoreType(CoreType.NullableT);
+                if (nullableOfT is not null && GetGenericTypeDefinition() == nullableOfT)
+                {
+                    return GenericTypeArguments[0];
+                }
+            }
+
+            return null;
+        }
+#endif
+
 #if NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Enum Types are not trimmed.")]

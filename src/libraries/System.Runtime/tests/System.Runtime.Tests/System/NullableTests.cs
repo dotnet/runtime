@@ -3,7 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -88,10 +91,76 @@ namespace System.Tests
             Assert.Equal(expected, Nullable.GetUnderlyingType(nullableType));
         }
 
+        [Theory]
+        [InlineData(typeof(int?), typeof(int))]
+        [InlineData(typeof(int), null)]
+        [InlineData(typeof(G<int>), null)]
+        public static void GetNullableUnderlyingType_RuntimeType(Type type, Type? expected)
+        {
+            Assert.Equal(expected, type.GetNullableUnderlyingType());
+        }
+
         [Fact]
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void GetUnderlyingType_MetadataLoadContext_NullableInt_ReturnsUnderlyingType()
+        {
+            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+            var resolver = new PathAssemblyResolver(runtimeAssemblies);
+            using var mlc = new MetadataLoadContext(resolver);
+
+            Assembly coreAssembly = mlc.LoadFromAssemblyName("System.Runtime");
+            Type intType = coreAssembly.GetType("System.Int32")!;
+            Type nullableIntType = coreAssembly.GetType("System.Nullable`1")!.MakeGenericType(intType);
+
+            // Test via Nullable.GetUnderlyingType (forwards to the virtual)
+            Type? underlying = Nullable.GetUnderlyingType(nullableIntType);
+            Assert.NotNull(underlying);
+            Assert.Equal("System.Int32", underlying.FullName);
+
+            // Test via Type.GetNullableUnderlyingType directly
+            Type? underlyingDirect = nullableIntType.GetNullableUnderlyingType();
+            Assert.NotNull(underlyingDirect);
+            Assert.Equal("System.Int32", underlyingDirect.FullName);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void GetUnderlyingType_MetadataLoadContext_NonNullableTypes_ReturnsNull()
+        {
+            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+            var resolver = new PathAssemblyResolver(runtimeAssemblies);
+            using var mlc = new MetadataLoadContext(resolver);
+
+            Assembly coreAssembly = mlc.LoadFromAssemblyName("System.Runtime");
+            Type intType = coreAssembly.GetType("System.Int32")!;
+            Type stringType = coreAssembly.GetType("System.String")!;
+            Type kvpType = coreAssembly.GetType("System.Collections.Generic.KeyValuePair`2")!.MakeGenericType(intType, stringType);
+
+            Assert.Null(Nullable.GetUnderlyingType(intType));
+            Assert.Null(Nullable.GetUnderlyingType(stringType));
+            Assert.Null(Nullable.GetUnderlyingType(kvpType));
+
+            Assert.Null(intType.GetNullableUnderlyingType());
+            Assert.Null(stringType.GetNullableUnderlyingType());
+            Assert.Null(kvpType.GetNullableUnderlyingType());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        public static void GetUnderlyingType_MetadataLoadContext_OpenNullable_ReturnsNull()
+        {
+            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+            var resolver = new PathAssemblyResolver(runtimeAssemblies);
+            using var mlc = new MetadataLoadContext(resolver);
+
+            Assembly coreAssembly = mlc.LoadFromAssemblyName("System.Runtime");
+            Type openNullableType = coreAssembly.GetType("System.Nullable`1")!;
+
+            Assert.Null(Nullable.GetUnderlyingType(openNullableType));
+            Assert.Null(openNullableType.GetNullableUnderlyingType());
         }
 
         [Fact]
