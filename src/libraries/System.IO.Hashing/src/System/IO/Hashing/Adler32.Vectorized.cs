@@ -138,11 +138,11 @@ file struct AdlerVector128 : ISimdStrategy
         // the reduction, resulting in a maximum possible residual of 0xFFFF0.
         //
         // This is further optimized to: `high * 16 - high + low`
-        // and implemented as: `(high << 4) - high + low`.
+        // and implemented as: `(high << 4) + (low - high)`.
 
         Vector128<uint> vlo = values & (Vector128<uint>.AllBitsSet >>> 16);
         Vector128<uint> vhi = values >>> 16;
-        return (vhi << 4) - vhi + vlo;
+        return (vhi << 4) + (vlo - vhi);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -159,8 +159,8 @@ file struct AdlerVector128 : ISimdStrategy
 
         while (vectors >= blockSize)
         {
-            Vector128<uint> vs3 = default;
-            Vector128<uint> vps = default;
+            Vector128<uint> vs3 = Vector128<uint>.Zero;
+            Vector128<uint> vps = Vector128<uint>.Zero;
 
             uint blocks = uint.Min(vectors, Adler32Simd.VMax) / blockSize;
             vectors -= blocks * blockSize;
@@ -197,17 +197,17 @@ file struct AdlerVector256 : ISimdStrategy
     {
         Vector256<uint> vlo = values & (Vector256<uint>.AllBitsSet >>> 16);
         Vector256<uint> vhi = values >>> 16;
-        return (vhi << 4) - vhi + vlo;
+        return (vhi << 4) + (vlo - vhi);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
-        => Avx2.SumAbsoluteDifferences(bytes, default).AsUInt32() + sums;
+        => Avx2.SumAbsoluteDifferences(bytes, Vector256<byte>.Zero).AsUInt32() + sums;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
     {
-        Vector256<byte> zero = default;
+        Vector256<byte> zero = Vector256<byte>.Zero;
         Vector256<uint> sad = Avx2.SumAbsoluteDifferences(bytes1, zero).AsUInt32();
         return sad + Avx2.SumAbsoluteDifferences(bytes2, zero).AsUInt32() + sums;
     }
@@ -236,8 +236,8 @@ file struct AdlerVector256 : ISimdStrategy
 
         while (vectors >= blockSize)
         {
-            Vector256<uint> ws3 = default;
-            Vector256<uint> wps = default;
+            Vector256<uint> ws3 = Vector256<uint>.Zero;
+            Vector256<uint> wps = Vector256<uint>.Zero;
 
             uint blocks = uint.Min(vectors, Adler32Simd.VMax) / blockSize;
             vectors -= blocks * blockSize;
@@ -287,12 +287,12 @@ file struct AccumulateX86 : ISimdAccumulate
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes)
-        => Sse2.SumAbsoluteDifferences(bytes, default).AsUInt32() + sums;
+        => Sse2.SumAbsoluteDifferences(bytes, Vector128<byte>.Zero).AsUInt32() + sums;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2)
     {
-        Vector128<byte> zero = default;
+        Vector128<byte> zero = Vector128<byte>.Zero;
         Vector128<uint> sad = Sse2.SumAbsoluteDifferences(bytes1, zero).AsUInt32();
         return sad + Sse2.SumAbsoluteDifferences(bytes2, zero).AsUInt32() + sums;
     }
@@ -324,7 +324,7 @@ file struct AccumulateXplat : ISimdAccumulate
     {
         (Vector128<ushort> b1l, Vector128<ushort> b1h) = Vector128.Widen(bytes1);
         (Vector128<ushort> b2l, Vector128<ushort> b2h) = Vector128.Widen(bytes2);
-        (Vector128<uint> sl, Vector128<uint> sh) = Vector128.Widen(b1l + b1h + b2l + b2h);
+        (Vector128<uint> sl, Vector128<uint> sh) = Vector128.Widen((b1l + b1h) + (b2l + b2h));
         return sums + sl + sh;
     }
 }
