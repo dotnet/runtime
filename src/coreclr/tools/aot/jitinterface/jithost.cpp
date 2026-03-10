@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdlib.h>
+#include <new>
 
 #include "dllexport.h"
 
@@ -37,7 +38,16 @@ public:
 
     virtual void* allocateMemory(size_t size)
     {
-        return malloc(size);
+        if (size == 0)
+        {
+            size++;
+        }
+        void* result = malloc(size);
+        if (result == nullptr)
+        {
+            throw std::bad_alloc();
+        }
+        return result;
     }
 
     virtual void freeMemory(void* block)
@@ -66,6 +76,10 @@ public:
 
         // getStringConfigValue returns required buffer size
         char* retBuffer = (char*)calloc(numRequired, sizeof(char));
+        if (retBuffer == nullptr)
+        {
+            throw std::bad_alloc();
+        }
         pConfigProvider->getStringConfigValue(name, retBuffer, numRequired);
 
         return retBuffer;
