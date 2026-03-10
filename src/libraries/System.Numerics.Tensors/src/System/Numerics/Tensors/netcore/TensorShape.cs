@@ -853,12 +853,21 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 int linearLength = array.Length;
+                nint stride = (linearLength > 1) ? 1 : 0;
+
+                TensorFlags flags = TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
+
+                if (stride == 0)
+                {
+                    flags |= TensorFlags.IsBroadcast;
+                }
+
                 return new TensorShape(
                     flattenedLength: linearLength,
                     linearLength: linearLength,
                     lengths: [linearLength],
-                    strides: [1],
-                    TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions
+                    strides: [stride],
+                    flags
                 );
             }
             return default;
@@ -908,14 +917,21 @@ namespace System.Numerics.Tensors
         {
             if (!Unsafe.IsNullRef(in reference))
             {
+                nint stride = (linearLength > 1) ? 1 : 0;
+
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 flags |= TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
+
+                if (stride == 0)
+                {
+                    flags |= TensorFlags.IsBroadcast;
+                }
 
                 return new TensorShape(
                     flattenedLength: linearLength,
                     linearLength: linearLength,
                     lengths: [linearLength],
-                    strides: [1],
+                    strides: [stride],
                     flags
                 );
             }
