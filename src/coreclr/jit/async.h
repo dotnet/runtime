@@ -19,6 +19,57 @@ struct LiveLocalInfo
     }
 };
 
+struct ContinuationLayoutBuilder
+{
+private:
+    Compiler* m_compiler;
+    bool m_needsOSRILOffset = false;
+    bool m_needsException = false;
+    bool m_needsContinuationContext = false;
+    bool m_needsKeepAlive = false;
+    bool m_needsExecutionContext = false;
+
+    var_types ReturnType = TYP_VOID;
+    ClassLayout* ReturnLayout = nullptr;
+
+    jitstd::vector<unsigned> m_locals;
+
+public:
+    ContinuationLayoutBuilder(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_locals(compiler->getAllocator(CMK_Async))
+    {
+    }
+
+    void SetNeedsOSRILOffset()
+    {
+        m_needsOSRILOffset = true;
+    }
+    void SetNeedsException()
+    {
+        m_needsException = true;
+    }
+    void SetNeedsContinuationContext()
+    {
+        m_needsContinuationContext = true;
+    }
+    void SetNeedsKeepAlive()
+    {
+        m_needsKeepAlive = true;
+    }
+    void SetNeedsExecutionContext()
+    {
+        m_needsExecutionContext = true;
+    }
+    void SetReturn(var_types type, ClassLayout* layout);
+    void AddLocal(unsigned lclNum);
+
+    const jitstd::vector<unsigned> Locals() const
+    {
+        return m_locals;
+    }
+};
+
 struct ContinuationLayout
 {
     unsigned                             Size                      = 0;
@@ -54,14 +105,27 @@ struct CallDefinitionInfo
     GenTree* InsertAfter = nullptr;
 };
 
+struct AsyncState
+{
+    AsyncState(ContinuationLayoutBuilder* layout, BasicBlock* suspensionBB, BasicBlock* resumptionBB)
+        : Layout(layout)
+        , SuspensionBB(suspensionBB)
+        , ResumptionBB(resumptionBB)
+    {
+    }
+
+    ContinuationLayoutBuilder* Layout;
+    BasicBlock* SuspensionBB;
+    BasicBlock* ResumptionBB;
+};
+
 class AsyncTransformation
 {
     friend class AsyncLiveness;
 
     Compiler*                     m_compiler;
-    jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
     CORINFO_ASYNC_INFO*           m_asyncInfo;
-    jitstd::vector<BasicBlock*>   m_resumptionBBs;
+    jitstd::vector<AsyncState>    m_states;
     unsigned                      m_returnedContinuationVar = BAD_VAR_NUM;
     unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
     unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
@@ -86,15 +150,20 @@ class AsyncTransformation
                                     GenTreeCall*                    call,
                                     const jitstd::vector<GenTree*>& defs,
                                     AsyncLiveness&                  life,
-                                    jitstd::vector<LiveLocalInfo>&  liveLocals);
+                                    ContinuationLayoutBuilder*      layoutBuilder);
 
     bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
 
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
-                      jitstd::vector<LiveLocalInfo>&  liveLocals);
+                      ContinuationLayoutBuilder*      layoutBuilder);
 
     bool ContinuationNeedsKeepAlive(class AsyncLiveness& life);
+
+    void BuildContinuation(BasicBlock* block,
+                           GenTreeCall* call,
+                           bool needsKeepAlive,
+                           ContinuationLayoutBuilder* layoutBuilder);
 
     ContinuationLayout LayOutContinuation(BasicBlock*                    block,
                                           GenTreeCall*                   call,
@@ -103,6 +172,7 @@ class AsyncTransformation
 
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
 
+    BasicBlock* CreateSuspensionBlock(BasicBlock* block, GenTreeCall* call, unsigned stateNum);
     BasicBlock* CreateSuspension(
         BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
     GenTreeCall* CreateAllocContinuationCall(AsyncLiveness&            life,
@@ -151,8 +221,7 @@ class AsyncTransformation
 public:
     AsyncTransformation(Compiler* comp)
         : m_compiler(comp)
-        , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
-        , m_resumptionBBs(comp->getAllocator(CMK_Async))
+        , m_states(comp->getAllocator(CMK_Async))
     {
     }
 

@@ -438,6 +438,17 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     return newReturnBB;
 }
 
+void ContinuationLayoutBuilder::SetReturn(var_types type, ClassLayout* layout)
+{
+    ReturnType = type;
+    ReturnLayout = layout;
+}
+
+void ContinuationLayoutBuilder::AddLocal(unsigned lclNum)
+{
+    m_locals.push_back(lclNum);
+}
+
 //------------------------------------------------------------------------
 // DefaultValueAnalysis:
 //   Computes which tracked locals have their default (zero) value at each
@@ -810,7 +821,7 @@ public:
     void Update(GenTree* node);
     bool IsLive(unsigned lclNum);
     template <typename Functor>
-    void GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, Functor includeLocal);
+    void GetLiveLocals(ContinuationLayoutBuilder* layoutBuilder, Functor includeLocal);
 
 private:
     bool IsLocalCaptureUnnecessary(unsigned lclNum);
@@ -999,17 +1010,17 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
 //   Get live locals that should be captured at this point.
 //
 // Parameters:
-//   liveLocals   - Vector to add live local information into
+//   builder      - Layout builder to add local into
 //   includeLocal - Functor to check if a local should be included
 //
 template <typename Functor>
-void AsyncLiveness::GetLiveLocals(jitstd::vector<LiveLocalInfo>& liveLocals, Functor includeLocal)
+void AsyncLiveness::GetLiveLocals(ContinuationLayoutBuilder* builder, Functor includeLocal)
 {
     for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
     {
         if (includeLocal(lclNum) && IsLive(lclNum))
         {
-            liveLocals.push_back(LiveLocalInfo(lclNum));
+            builder->AddLocal(lclNum);
         }
     }
 }
@@ -1313,16 +1324,16 @@ void AsyncTransformation::Transform(
     }
 #endif
 
-    m_liveLocalsScratch.clear();
-    jitstd::vector<LiveLocalInfo>& liveLocals = m_liveLocalsScratch;
+    ContinuationLayoutBuilder* layoutBuilder = new (m_compiler, CMK_Async) ContinuationLayoutBuilder(m_compiler);
 
-    CreateLiveSetForSuspension(block, call, defs, life, liveLocals);
+    CreateLiveSetForSuspension(block, call, defs, life, layoutBuilder);
 
-    ContinuationLayout layout = LayOutContinuation(block, call, ContinuationNeedsKeepAlive(life), liveLocals);
+    BuildContinuation(block, call, ContinuationNeedsKeepAlive(life), layoutBuilder);
+    //ContinuationLayout layout = LayOutContinuation(block, call, ContinuationNeedsKeepAlive(life), liveLocals);
 
     CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &life);
 
-    unsigned stateNum = (unsigned)m_resumptionBBs.size();
+    unsigned stateNum = (unsigned)m_states.size();
     JITDUMP("  Assigned state %u\n", stateNum);
 
     BasicBlock* suspendBB = CreateSuspension(block, call, stateNum, life, layout);
@@ -1331,7 +1342,7 @@ void AsyncTransformation::Transform(
 
     BasicBlock* resumeBB = CreateResumption(block, *remainder, call, callDefInfo, stateNum, layout);
 
-    m_resumptionBBs.push_back(resumeBB);
+    m_states.push_back(AsyncState(layoutBuilder, suspendBB, resumeBB));
 
     CreateDebugInfoForSuspensionPoint(layout);
 }
@@ -1342,17 +1353,17 @@ void AsyncTransformation::Transform(
 //   specified call.
 //
 // Parameters:
-//   block        - The block containing the async call
-//   call         - The async call
-//   defs         - Current live LIR edges
-//   life         - Liveness information about live locals
-//   liveLocals   - Information about each live local.
+//   block         - The block containing the async call
+//   call          - The async call
+//   defs          - Current live LIR edges
+//   life          - Liveness information about live locals
+//   layoutBuilder - Layout being built
 //
 void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                     block,
                                                      GenTreeCall*                    call,
                                                      const jitstd::vector<GenTree*>& defs,
                                                      AsyncLiveness&                  life,
-                                                     jitstd::vector<LiveLocalInfo>&  liveLocals)
+                                                     ContinuationLayoutBuilder*      layoutBuilder)
 {
     SmallHashTable<unsigned, bool> excludedLocals(m_compiler->getAllocator(CMK_Async));
 
@@ -1387,22 +1398,22 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         excludedLocals.AddOrUpdate(m_compiler->lvaAsyncExecutionContextVar, true);
     }
 
-    life.GetLiveLocals(liveLocals, [&](unsigned lclNum) {
+    life.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
         return !excludedLocals.Contains(lclNum);
     });
-    LiftLIREdges(block, defs, liveLocals);
+    LiftLIREdges(block, defs, layoutBuilder);
 
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
-        printf("  %zu live locals\n", liveLocals.size());
+        printf("  %zu live locals\n", layoutBuilder->Locals().size());
 
-        if (liveLocals.size() > 0)
+        if (layoutBuilder->Locals().size() > 0)
         {
             const char* sep = "    ";
-            for (LiveLocalInfo& inf : liveLocals)
+            for (unsigned lclNum : layoutBuilder->Locals())
             {
-                printf("%sV%02u (%s)", sep, inf.LclNum, varTypeName(m_compiler->lvaGetDesc(inf.LclNum)->TypeGet()));
+                printf("%sV%02u (%s)", sep, lclNum, varTypeName(m_compiler->lvaGetDesc(lclNum)->TypeGet()));
                 sep = ", ";
             }
 
@@ -1441,13 +1452,13 @@ bool AsyncTransformation::HasNonContextRestoreExceptionalFlow(BasicBlock* block)
 //   indicating that these locals are live.
 //
 // Parameters:
-//   block      - The block containing the definitions of the LIR edges
-//   defs       - Current outstanding LIR edges
-//   liveLocals - [out] Vector to add new live local information into
+//   block         - The block containing the definitions of the LIR edges
+//   defs          - Current outstanding LIR edges
+//   layoutBuilder - Continuation layout builder to add new locals to
 //
 void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
                                        const jitstd::vector<GenTree*>& defs,
-                                       jitstd::vector<LiveLocalInfo>&  liveLocals)
+                                       ContinuationLayoutBuilder*      layoutBuilder)
 {
     if (defs.size() <= 0)
     {
@@ -1475,7 +1486,7 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
         assert(gotUse); // Defs list should not contain unused values.
 
         unsigned newLclNum = use.ReplaceWithLclVar(m_compiler);
-        liveLocals.push_back(LiveLocalInfo(newLclNum));
+        layoutBuilder->AddLocal(newLclNum);
         GenTree* newUse = use.Def();
         LIR::AsRange(block).Remove(newUse);
         LIR::AsRange(block).InsertBefore(use.User(), newUse);
@@ -1563,6 +1574,53 @@ public:
         }
     }
 };
+
+void AsyncTransformation::BuildContinuation(BasicBlock* block, GenTreeCall* call, bool needsKeepAlive, ContinuationLayoutBuilder* layoutBuilder)
+{
+    layoutBuilder->SetReturn(call->gtReturnType, m_compiler->typGetObjLayout(call->gtRetClsHnd));
+    if (call->gtReturnType != TYP_VOID)
+    {
+        JITDUMP("Call has return; continuation will have return value\n");
+    }
+
+    // For OSR, we store the IL offset that inspired the OSR method at the
+    // beginning of the data (and store -1 in the tier0 version). This must be
+    // at the beginning because the tier0 and OSR versions need to agree on
+    // this.
+    if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
+    {
+        JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
+                m_compiler->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
+        // Must be pointer sized for compatibility with Continuation methods that access fields
+        layoutBuilder->SetNeedsOSRILOffset();
+    }
+
+    if (HasNonContextRestoreExceptionalFlow(block))
+    {
+        // If we are enclosed in any try region that isn't our special "context
+        // restore" try region then we need to rethrow an exception. For our
+        // special "context restore" try region we know that it is a no-op on
+        // the resumption path.
+        layoutBuilder->SetNeedsException();
+        JITDUMP("  " FMT_BB " is in try region %u; continuation will have exception\n", block->bbNum,
+                block->getTryIndex());
+    }
+
+    if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
+    {
+        layoutBuilder->SetNeedsContinuationContext();
+        JITDUMP("  Continuation continues on captured context; continuation will have context\n");
+    }
+
+    if (needsKeepAlive)
+    {
+        layoutBuilder->SetNeedsKeepAlive();
+        JITDUMP("  Continuation will have keep alive object\n");
+    }
+
+    layoutBuilder->SetNeedsExecutionContext();
+    JITDUMP("  Call has async-only save and restore of ExecutionContext; continuation will have ExecutionContext\n");
+}
 
 //------------------------------------------------------------------------
 // AsyncTransformation::LayOutContinuation:
@@ -1904,6 +1962,38 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
     }
 
     return callDefInfo;
+}
+
+BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, GenTreeCall* call, unsigned stateNum)
+{
+    if (m_lastSuspensionBB == nullptr)
+    {
+        m_lastSuspensionBB = m_compiler->fgLastBBInMainFunction();
+    }
+
+    BasicBlock* suspendBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
+    suspendBB->clearTryIndex();
+    suspendBB->clearHndIndex();
+    suspendBB->inheritWeightPercentage(block, 0);
+    m_lastSuspensionBB = suspendBB;
+
+    if (m_sharedReturnBB != nullptr)
+    {
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
+    }
+
+    JITDUMP("  Creating suspension " FMT_BB " for state %u\n", suspendBB->bbNum, stateNum);
+
+    GenTreeILOffset* ilOffsetNode =
+        m_compiler->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
+
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, ilOffsetNode));
+
+    GenTree* recordOffset =
+        new (m_compiler, GT_RECORD_ASYNC_RESUME) GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, stateNum);
+    LIR::AsRange(suspendBB).InsertAtEnd(recordOffset);
+
+    return suspendBB;
 }
 
 //------------------------------------------------------------------------
