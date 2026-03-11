@@ -143,7 +143,7 @@ PinnedHeapHandleBucket::~PinnedHeapHandleBucket()
         }
         else
         {
-            DestroyHandleUnsafe(m_hndHandleArray, HNDTYPE_STRONG);
+            DestroyHandleInPreemptiveMode(m_hndHandleArray, HNDTYPE_STRONG);
         }
         m_hndHandleArray = NULL;
     }

@@ -2296,12 +2296,6 @@ Thread::~Thread()
     {
         // Destroy any handles that we're using to hold onto exception objects
         SafeSetThrowables(NULL);
-
-        // The thread is already detached from TLS (GetThread() returns NULL),
-        // so GCX_COOP() cannot be used. Use DestroyHandleUnsafe which nulls
-        // the handle value before recycling the slot.
-        DestroyHandleUnsafe(m_ExposedObject, HNDTYPE_WEAK_SHORT);
-        DestroyHandleUnsafe(m_StrongHndToExposedObject, HNDTYPE_STRONG);
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
@@ -2588,6 +2582,15 @@ void Thread::CooperativeCleanup()
     OBJECTREF threadObjMaybe = GetExposedObjectRaw();
     if (threadObjMaybe != NULL)
         ((THREADBASEREF)threadObjMaybe)->SetIsDead();
+
+    // Destroy handles that we're using to hold onto exception objects and the exposed thread object.
+    // This runs under GCX_COOP() above, so it is safe to destroy handles here.
+    SafeSetThrowables(NULL);
+
+    DestroyShortWeakHandle(m_ExposedObject);
+    m_ExposedObject = NULL;
+    DestroyStrongHandle(m_StrongHndToExposedObject);
+    m_StrongHndToExposedObject = NULL;
 }
 
 // See general comments on thread destruction (code:#threadDestruction) above.

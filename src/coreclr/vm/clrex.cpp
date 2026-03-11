@@ -58,7 +58,7 @@ CLRException::~CLRException()
         }
         else
         {
-            DestroyHandleUnsafe(throwableHandle, HNDTYPE_DEFAULT);
+            DestroyHandleInPreemptiveMode(throwableHandle, HNDTYPE_DEFAULT);
         }
     }
 }

@@ -277,7 +277,7 @@ namespace InteropLibImports
         }
         else
         {
-            DestroyHandleUnsafe(objectHandle, HNDTYPE_REFCOUNTED);
+            DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_REFCOUNTED);
         }
     }
 

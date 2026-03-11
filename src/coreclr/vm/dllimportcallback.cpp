@@ -326,7 +326,7 @@ void UMEntryThunkData::Terminate()
         }
         else
         {
-            DestroyHandleUnsafe(pObjectHandle, HNDTYPE_WEAK_LONG);
+            DestroyHandleInPreemptiveMode(pObjectHandle, HNDTYPE_WEAK_LONG);
         }
     }
 

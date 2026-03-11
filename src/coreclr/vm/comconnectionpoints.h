@@ -57,7 +57,7 @@ struct ConnectionCookie
         }
         else
         {
-            DestroyHandleUnsafe(m_hndEventProvObj, HNDTYPE_DEFAULT);
+            DestroyHandleInPreemptiveMode(m_hndEventProvObj, HNDTYPE_DEFAULT);
         }
     }
 

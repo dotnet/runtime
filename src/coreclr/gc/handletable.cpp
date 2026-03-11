@@ -415,7 +415,7 @@ void HndDestroyHandleLocked(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE ha
     }
     CONTRACTL_END;
 
-    STRESS_LOG2(LF_GC, LL_INFO1000, "DestroyHandleLocked: *%p->%p\n", handle, *(_UNCHECKED_OBJECTREF *)handle);
+    STRESS_LOG1(LF_GC, LL_INFO1000, "DestroyHandleLocked: %p\n", handle);
 
     FIRE_EVENT(DestroyGCHandle, (void *)handle);
     FIRE_EVENT(PrvDestroyGCHandle, (void *)handle);

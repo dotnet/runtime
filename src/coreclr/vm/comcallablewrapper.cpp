@@ -2021,7 +2021,7 @@ void ComCallWrapper::ClearHandle()
         }
         else
         {
-            DestroyHandleUnsafe(pThis, HNDTYPE_REFCOUNTED);
+            DestroyHandleInPreemptiveMode(pThis, HNDTYPE_REFCOUNTED);
         }
     }
 }
