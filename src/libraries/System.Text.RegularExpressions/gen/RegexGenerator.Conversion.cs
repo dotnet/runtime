@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using SourceGenerators;
 
@@ -108,21 +107,6 @@ namespace System.Text.RegularExpressions.Generator
         private static ImmutableEquatableDictionary<TKey, TValue>? ConvertHashtable<TKey, TValue>(Hashtable? hashtable)
             where TKey : IEquatable<TKey>
             where TValue : IEquatable<TValue>
-        {
-            if (hashtable is null)
-            {
-                return null;
-            }
-
-            var dict = new Dictionary<TKey, TValue>(hashtable.Count);
-            foreach (DictionaryEntry entry in hashtable)
-            {
-                dict.Add((TKey)entry.Key, (TValue)entry.Value!);
-            }
-
-            return dict.Count == 0
-                ? ImmutableEquatableDictionary<TKey, TValue>.Empty
-                : ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(dict);
-        }
+            => hashtable?.ToImmutableEquatableDictionary<TKey, TValue>();
     }
 }

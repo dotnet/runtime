@@ -112,5 +112,24 @@ namespace SourceGenerators
                 ? ImmutableEquatableDictionary<TKey, TValue>.Empty
                 : ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(dict);
         }
+
+        public static ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(
+            this Hashtable source)
+            where TKey : IEquatable<TKey>
+            where TValue : IEquatable<TValue>
+        {
+            if (source.Count == 0)
+            {
+                return ImmutableEquatableDictionary<TKey, TValue>.Empty;
+            }
+
+            var dict = new Dictionary<TKey, TValue>(source.Count);
+            foreach (DictionaryEntry entry in source)
+            {
+                dict.Add((TKey)entry.Key, (TValue)entry.Value!);
+            }
+
+            return ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(dict);
+        }
     }
 }
