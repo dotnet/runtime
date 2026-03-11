@@ -7467,3 +7467,134 @@ void BlockReachabilitySets::Dump()
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::FlowGraphTryRegions: Constructor for FlowGraphTryRegions.
+//
+FlowGraphTryRegions::FlowGraphTryRegions(FlowGraphDfsTree* dfsTree, unsigned numRegions)
+    : m_dfsTree(dfsTree)
+    , m_tryRegions(numRegions, nullptr, dfsTree->GetCompiler()->getAllocator(CMK_BasicBlock))
+{
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::GetTryRegionByHeader: Find the (innermost) try region
+//   that begins at block, if any
+//
+// Arguments:
+//    block -- block in question
+//
+// Returns:
+//    Innermost try region that starts at block, or nullptr.
+//
+FlowGraphTryRegion* FlowGraphTryRegions::GetTryRegionByHeader(BasicBlock* block)
+{
+    if (!block->hasTryIndex())
+    {
+        return nullptr;
+    }
+
+    const EHblkDsc* dsc = GetCompiler()->ehGetBlockTryDsc(block);
+    return m_tryRegions[dsc->ebdID];
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::FlowGraphTryRegion: Constructor for FlowGraphTryRegion.
+//
+FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions)
+    : m_regions(regions)
+    , m_parent(nullptr)
+    , m_ehDsc(ehDsc)
+    , m_blocks(BitVecOps::UninitVal())
+{
+    BitVecTraits traits = regions->GetBlockBitVecTraits();
+    m_blocks            = BitVecOps::MakeEmpty(&traits);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::Build: Build the flow graph try regions.
+//
+FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree)
+{
+    unsigned const       numTryRegions = comp->compEHID;
+    FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(dfsTree, numTryRegions);
+    assert(numTryRegions <= comp->compHndBBtabCount);
+
+    for (EHblkDsc* ehDsc : EHClauses(comp))
+    {
+        FlowGraphTryRegion* region          = new (comp, CMK_BasicBlock) FlowGraphTryRegion(ehDsc, regions);
+        regions->m_tryRegions[ehDsc->ebdID] = region;
+
+        // add parent links for nested try regions
+
+        unsigned const parentTryIndex = ehDsc->ebdEnclosingTryIndex;
+        if (parentTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            EHblkDsc* parentTryDsc = &comp->compHndBBtab[parentTryIndex];
+            region->m_parent       = regions->m_tryRegions[parentTryDsc->ebdID];
+        }
+    }
+
+    if (regions->m_tryRegions.empty())
+    {
+        return regions; // No EH regions, nothing else to do.
+    }
+
+    // Else collect up the postorder numbers of each block in each region
+    //
+    BitVecTraits traits = regions->m_dfsTree->PostOrderTraits();
+
+    for (BasicBlock* block : comp->Blocks())
+    {
+        if (!block->hasTryIndex())
+        {
+            continue;
+        }
+
+        unsigned  tryIndex = block->getTryIndex();
+        EHblkDsc* dsc      = &comp->compHndBBtab[tryIndex];
+
+        FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
+        assert(region != nullptr);
+
+        // A block may be in more than one region, so walk up the ancestor chain
+        // adding the postorder number to each.
+        do
+        {
+            BasicBlock* tryBeg = region->m_ehDsc->ebdTryBeg;
+            BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
+            region = region->m_parent;
+        }
+
+        while (region != nullptr);
+    }
+
+    // Todo: verify that all try blocks that start at the same block have the same blocks?
+    // (only mutual-protect regions exactly overlap)
+
+    return regions;
+}
+
+#ifdef DEBUG
+
+void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
+{
+    unsigned const regionNum = region->m_regions->GetCompiler()->ehGetIndex(region->m_ehDsc);
+    BitVecTraits   traits    = region->m_regions->GetBlockBitVecTraits();
+    printf("EH#%02u: %u blocks", regionNum, BitVecOps::Count(&traits, region->m_blocks));
+}
+
+void FlowGraphTryRegions::Dump(FlowGraphTryRegions* regions)
+{
+    for (FlowGraphTryRegion* region : regions->m_tryRegions)
+    {
+        // Collection is indexed by EH ID, so may have gaps if we've deleted EH regions. Skip those.
+        if (region != nullptr)
+        {
+            region->Dump(region);
+            printf("\n");
+        }
+    }
+}
+
+#endif // debug

@@ -1918,6 +1918,9 @@ typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BlkVector> BlkToBl
 // Map from Block to Block.  Used for a variety of purposes.
 typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BasicBlock*> BlockToBlockMap;
 
+// Map from block to a bit vector
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, BitVec> BlockToBitVecMap;
+
 // BasicBlockIterator: forward iterator for the BasicBlock linked list.
 // It is allowed to make changes to the BasicBlock list as long as the current block remains in the list.
 // E.g., the current block `m_bbNext` pointer can be altered (such as when inserting a following block),

@@ -1071,6 +1071,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     if (hasBlocksOnlyReachableViaEH)
     {
+        assert(!hasBlocksOnlyReachableViaEH);
         JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
         NYI_WASM("Method has blocks only reachable via EH");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -1083,11 +1084,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     assert(loops->ImproperLoopHeaders() == 0);
 
+    // Create descriptions of the try regions that can be enumerated in RPO
+    //
+    FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
+
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
     //
     const unsigned dfsCount = dfsTree->GetPostOrderCount();
-    JITDUMP("\nCreating loop-aware RPO (%u blocks)\n", dfsCount);
+    JITDUMP("\nCreating try-aware / loop-aware RPO (%u blocks)\n", dfsCount);
 
     BasicBlock** const initialLayout = new (this, CMK_WasmCfgLowering) BasicBlock*[dfsCount + 1];
 
@@ -1102,7 +1107,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         initialLayout[numBlocks++] = block;
     };
 
-    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    fgVisitBlocksInTryAwareLoopAwareRPO(dfsTree, tryRegions, loops, addToSequence);
     assert(numBlocks == dfsCount);
 
     // Splice in a fake BB0. Heap-allocated because it is published
@@ -1134,6 +1139,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         if (loop != nullptr)
         {
+            // Fixme: if a loop contains a try start but the try extends
+            // past the end of the loop, the loop end must encompass all loop and try blocks.
+            //
             // Loop bodies are contiguous in the LaRPO, so the end position
             // is the header position plus the number of blocks in the loop.
             //

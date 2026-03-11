@@ -2240,6 +2240,64 @@ public:
 #endif // DEBUG
 };
 
+// Represents a try region in a method. Currently fairly lightweight.
+class FlowGraphTryRegion
+{
+    friend class FlowGraphTryRegions;
+    FlowGraphTryRegions* m_regions;
+    FlowGraphTryRegion* m_parent;
+    EHblkDsc* m_ehDsc;
+    BitVec m_blocks;
+
+    FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
+
+public:
+
+    template<typename TFunc>
+    BasicBlockVisit VisitTryRegionBlocksReversePostOrder(TFunc func);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegion* region);
+#endif
+};
+
+// Represents the try regions in a method
+class FlowGraphTryRegions
+{
+private:
+    FlowGraphDfsTree* m_dfsTree;
+    // Collection of try regions that were found, indexed by EhID
+    jitstd::vector<FlowGraphTryRegion*> m_tryRegions;
+
+    FlowGraphTryRegions(FlowGraphDfsTree* dfs, unsigned numRegions);
+
+public:
+
+    static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs);
+
+    FlowGraphTryRegion* GetRegionForBlock(BasicBlock* block);
+
+    BitVecTraits GetBlockBitVecTraits()
+    {
+        return m_dfsTree->PostOrderTraits();
+    }
+
+    Compiler* GetCompiler() const
+    {
+        return m_dfsTree->GetCompiler();
+    }
+
+    FlowGraphTryRegion* GetTryRegionByHeader(BasicBlock* block);
+
+    size_t NumTryRegions() const { return m_tryRegions.size(); }
+
+    FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegions* regions);
+#endif
+};
+
 // Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
@@ -6227,6 +6285,9 @@ public:
 
     template <typename TFunc>
     void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
+
+    template <typename TFunc>
+    void fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphTryRegions* tryRegions, FlowGraphNaturalLoops* loops, TFunc func);
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
