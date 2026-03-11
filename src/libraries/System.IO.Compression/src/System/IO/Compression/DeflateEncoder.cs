@@ -270,7 +270,9 @@ namespace System.IO.Compression
 
                     return errorCode switch
                     {
-                        ZLibNative.ErrorCode.Ok => OperationStatus.Done,
+                        ZLibNative.ErrorCode.Ok => _state.AvailOut == 0
+                            ? OperationStatus.DestinationTooSmall
+                            : OperationStatus.Done,
                         ZLibNative.ErrorCode.StreamEnd => OperationStatus.Done,
                         ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
                             ? OperationStatus.DestinationTooSmall
