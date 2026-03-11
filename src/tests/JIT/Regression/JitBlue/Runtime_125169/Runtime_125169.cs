@@ -19,7 +19,7 @@ public readonly ref struct RefWrapper
     public static readonly ByteArrayWrapper _data = new ByteArrayWrapper(new byte[] { 1, 2, 3, 4, 0 });
 }
 
-class Runtime_125169
+public class Runtime_125169
 {
     // Regression test for bug in JIT where ref struct static fields of reference type initialized in
     // its static constructor were missing calls to JIT_ByRefWriteBarrier for each such static field.
