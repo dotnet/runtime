@@ -3877,6 +3877,8 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     MethodDesc* pTypicalDefinition = pMD->LoadTypicalMethodDefinition();
 
+    _ASSERTE(pTypicalDefinition->GetClassInstantiation().GetNumArgs() == 1);
+
     MethodTable* pStructMT = pMD->GetClassInstantiation()[0].GetMethodTable();
 
     SigTypeContext genericContext;
@@ -3898,6 +3900,7 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
     }
     else
     {
+        _ASSERTE_MSG(false, "Unknown struct marshal method");
         return false;
     }
 
@@ -5747,32 +5750,6 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     CONTRACTL_END;
 
     m_pPInvokeTarget = pTarget;
-}
-
-MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT)
-{
-    CONTRACT(MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
-
-    TypeHandle th(pMT);
-
-    MethodDesc* pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-        pPrimaryMD,
-        TypeHandle(pPrimaryMD->GetMethodTable()).Instantiate(Instantiation(&th, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        FALSE);
-
-    RETURN pMD;
 }
 
 //==========================================================================

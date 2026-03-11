@@ -678,17 +678,15 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
     END_QCALL;
 }
 
-extern "C" PCODE QCALLTYPE StubHelpers_CreateLayoutClassMarshalStub(QCall::TypeHandle th, int operation)
+extern "C" void QCALLTYPE StubHelpers_CreateLayoutClassMarshalStubs(QCall::TypeHandle th, PCODE* pConvertToUnmanaged, PCODE* pConvertToManaged, PCODE* pFree)
 {
     QCALL_CONTRACT;
 
-    PCODE pStub = NULL;
-
     BEGIN_QCALL;
 
-    pStub = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), (MarshalOperation)operation)->GetMultiCallableAddrOfCode();
+    *pConvertToUnmanaged = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::ConvertToUnmanaged)->GetMultiCallableAddrOfCode();
+    *pConvertToManaged = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::ConvertToManaged)->GetMultiCallableAddrOfCode();
+    *pFree = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::Free)->GetMultiCallableAddrOfCode();
 
     END_QCALL;
-
-    return pStub;
 }

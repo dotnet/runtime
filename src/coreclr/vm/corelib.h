@@ -1057,6 +1057,13 @@ DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, G
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)
 
+DEFINE_METHOD(STUBHELPERS,          LAYOUT_TYPE_CONVERT_TO_UNMANAGED, LayoutTypeConvertToUnmanaged, SM_PtrObj_PtrByte_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          LAYOUT_TYPE_CONVERT_TO_MANAGED, LayoutTypeConvertToManaged, SM_PtrObj_PtrByte_PtrException_RetVoid)
+
+DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_UNMANAGED, NonBlittableStructureArrayConvertToUnmanaged, NoSig)
+DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_MANAGED,   NonBlittableStructureArrayConvertToManaged, NoSig)
+DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_FREE,                 NonBlittableStructureArrayFree, NoSig)
+
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_MANAGED_VA_LIST,         MarshalToManagedVaList,         SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_UNMANAGED_VA_LIST,       MarshalToUnmanagedVaList,       SM_IntPtr_UInt_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaListSize,                 SM_IntPtr_RetUInt)

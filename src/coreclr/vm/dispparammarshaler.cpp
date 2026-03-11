@@ -388,8 +388,6 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             // of the record into it.
             BoxedValueClass = m_pRecordMT->Allocate();
 
-            MethodDesc* pMD;
-
             if (m_pRecordMT->IsBlittable())
             {
                 // For blittable types, we can skip the managed conversion and just copy the data directly into the box.
@@ -397,19 +395,10 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             }
             else
             {
-                {
-                    GCX_PREEMP();
-                    pMD = GetStructMarshalingMethod(METHOD__BOXEDLAYOUTTYPE_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
-                }
-
-                PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-                DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-                args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(BoxedValueClass);
-                args[ARGNUM_1] = PTR_TO_ARGHOLDER(pvRecord);
-                args[ARGNUM_2] = PTR_TO_ARGHOLDER(nullptr);
-
-                CALL_MANAGED_METHOD_NORET(args);
+                UnmanagedCallersOnlyCaller convertToManaged(METHOD__STUBHELPERS__LAYOUT_TYPE_CONVERT_TO_MANAGED);
+                convertToManaged.InvokeThrowing(
+                    &BoxedValueClass,
+                    pvRecord);
             }
         }
 

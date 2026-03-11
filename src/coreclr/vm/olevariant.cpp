@@ -1442,34 +1442,8 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
 
     ASSERT_PROTECTED(pComArray);
 
-    SIZE_T elementCount = (*pComArray)->GetNumComponents();
-    SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
-
-    BYTE *pOle = (BYTE *) oleArray;
-    BYTE *pOleEnd = pOle + elemSize * elementCount;
-
-    BYTE *managedData = (*pComArray)->GetDataPtr();
-    GCPROTECT_BEGININTERIOR(managedData)
-    {
-        MethodDesc* pMD;
-        {
-            GCX_PREEMP();
-            pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT);
-        }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        while (pOle < pOleEnd)
-        {
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(managedData);
-            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
-            args[ARGNUM_2] = PTR_TO_ARGHOLDER(nullptr);
-
-            CALL_MANAGED_METHOD_NORET(args);
-            managedData += (*pComArray)->GetComponentSize();
-            pOle += elemSize;
-        }
-    }
-    GCPROTECT_END();
+    UnmanagedCallersOnlyCaller convertToManaged(METHOD__STUBHELPERS__NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_MANAGED);
+    convertToManaged.InvokeThrowing(pComArray, oleArray, pInterfaceMT, pInterfaceMT->GetNativeSize());
 }
 
 void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
@@ -1501,29 +1475,8 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
         FillMemory(pOle, pOleEnd - pOle, 0);
     }
 
-    BYTE *managedData = (*pComArray)->GetDataPtr();
-    GCPROTECT_BEGININTERIOR(managedData)
-    {
-        MethodDesc* pMD;
-        {
-            GCX_PREEMP();
-            pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT);
-        }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        while (pOle < pOleEnd)
-        {
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(managedData);
-            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
-            args[ARGNUM_2] = DWORD_TO_ARGHOLDER(elemSize);
-            args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
-
-            CALL_MANAGED_METHOD_NORET(args);
-            managedData += (*pComArray)->GetComponentSize();
-            pOle += elemSize;
-        }
-    }
-    GCPROTECT_END();
+    UnmanagedCallersOnlyCaller convertToUnmanaged(METHOD__STUBHELPERS__NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_UNMANAGED);
+    convertToUnmanaged.InvokeThrowing(pComArray, oleArray, pInterfaceMT, pInterfaceMT->GetNativeSize());
 }
 
 void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
@@ -1538,27 +1491,8 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
     }
     CONTRACTL_END;
 
-    SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
-    BYTE *pOle = (BYTE *) oleArray;
-    BYTE *pOleEnd = pOle + elemSize * cElements;
-
-    MethodDesc* pMD;
-    {
-        GCX_PREEMP();
-        pMD = GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT);
-    }
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
-    while (pOle < pOleEnd)
-    {
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(nullptr);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
-        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(elemSize);
-        args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
-
-        CALL_MANAGED_METHOD_NORET(args);
-        pOle += elemSize;
-    }
+    UnmanagedCallersOnlyCaller free(METHOD__STUBHELPERS__NONBLITTABLE_STRUCTURE_ARRAY_FREE);
+    free.InvokeThrowing(oleArray, cElements, pInterfaceMT, pInterfaceMT->GetNativeSize());
 }
 
 
@@ -3830,20 +3764,10 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     }
     else
     {
-        MethodDesc* pMD;
-
-        {
-            GCX_PREEMP();
-            pMD = GetStructMarshalingMethod(METHOD__BOXEDLAYOUTTYPE_MARSHALER__CONVERT_TO_UNMANAGED, pValueClassMT);
-        }
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pMD->GetSingleCallableAddrOfCode());
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pBoxedValueClass);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
-        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
-        args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
-
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller convertToUnmanaged(METHOD__STUBHELPERS__LAYOUT_TYPE_CONVERT_TO_UNMANAGED);
+        convertToUnmanaged.InvokeThrowing(
+            pBoxedValueClass,
+            V_RECORD(pRecHolder));
     }
 
     pRecHolder.SuppressRelease();
