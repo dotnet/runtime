@@ -8749,6 +8749,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
 
+    // Fold: (-(x)) == 0  ->  x == 0  (avoid neg on compare-to-zero)
     if (op1->OperIs(GT_NEG) && !op1->gtOverflowEx())
     {
         GenTree* negOp = op1->AsUnOp()->gtGetOp1();
@@ -8761,7 +8762,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             // On ARM64 negs with a shift can be more compact than shift; cmp #0.
             // Avoid folding when the negated operand is a simple shift so we keep the single
             // instruction form.
-            if (negOp->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+            if (negOp->OperIsShift())
             {
                 GenTree* shiftAmount = negOp->AsOp()->gtGetOp2();
                 if (shiftAmount->IsCnsIntOrI())
@@ -8773,7 +8774,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
             if (shouldFold)
             {
-                // Fold: (-(x)) == 0  ->  x == 0  (avoid neg on compare-to-zero)
                 cmp->gtOp1 = negOp;
                 DEBUG_DESTROY_NODE(op1);
                 op1 = negOp;
