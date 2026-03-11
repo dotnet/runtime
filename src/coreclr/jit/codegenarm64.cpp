@@ -5848,11 +5848,9 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 // Arguments:
 //    tree - the bitfield insert.
 //
-void CodeGen::genCodeForBfi(GenTreeOp* tree)
+void CodeGen::genCodeForBfi(GenTreeBfm* tree)
 {
     assert(tree->OperIs(GT_BFI));
-
-    GenTreeBfm* bfm = tree->AsBfm();
 
     emitAttr size    = emitActualTypeSize(tree);
     unsigned regBits = emitter::getBitWidth(size);
@@ -5860,10 +5858,10 @@ void CodeGen::genCodeForBfi(GenTreeOp* tree)
     GenTree* base = tree->gtGetOp1();
     GenTree* src  = tree->gtGetOp2();
 
-    genConsumeOperands(bfm);
+    genConsumeOperands(tree);
 
-    unsigned offset = bfm->GetOffset();
-    unsigned width  = bfm->GetWidth();
+    unsigned offset = tree->GetOffset();
+    unsigned width  = tree->GetWidth();
 
     assert(width >= 1 && width <= regBits);
     assert(offset < regBits && (offset + width) <= regBits);

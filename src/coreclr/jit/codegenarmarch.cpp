@@ -330,7 +330,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_BFI:
-            genCodeForBfi(treeNode->AsOp());
+            genCodeForBfi(treeNode->AsBfm());
             break;
 
         case GT_BFIZ:
