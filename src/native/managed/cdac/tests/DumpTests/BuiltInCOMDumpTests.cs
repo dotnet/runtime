@@ -47,7 +47,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
         return ccwPtrs;
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void BuiltInCOM_CCW_HasInterfaces(TestConfiguration config)
@@ -70,7 +70,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void BuiltInCOM_CCW_InterfaceMethodTablesAreReadable(TestConfiguration config)
@@ -99,7 +99,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void BuiltInCOM_CCW_RefCountIsPositive(TestConfiguration config)

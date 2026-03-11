@@ -19,7 +19,7 @@ public class PInvokeStubDumpTests : DumpTestBase
     protected override string DebuggeeName => "PInvokeStub";
     protected override string DumpType => "full";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "PInvokeStub debuggee uses msvcrt.dll (Windows only)")]

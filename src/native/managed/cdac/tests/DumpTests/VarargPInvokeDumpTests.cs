@@ -22,7 +22,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
     protected override string DebuggeeName => "VarargPInvoke";
     protected override string DumpType => "full";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
@@ -38,7 +38,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
@@ -69,7 +69,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
         Assert.True(foundILStub, "Expected to find a ILStub MethodDesc on the crashing thread stack");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
@@ -104,7 +104,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
         Assert.Fail("Expected to find an ILStub MethodDesc on the crashing thread stack");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
@@ -144,7 +144,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
         Assert.Fail("Expected to find an ILStub MethodDesc on the crashing thread stack");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]

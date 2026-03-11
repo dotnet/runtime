@@ -17,7 +17,7 @@ public class ServerGCDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ServerGC";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_IsServerGC(TestConfiguration config)
@@ -29,7 +29,7 @@ public class ServerGCDumpTests : DumpTestBase
         Assert.Contains(GCIdentifiers.Server, gcIdentifiers);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_MaxGenerationIsReasonable(TestConfiguration config)
@@ -41,7 +41,7 @@ public class ServerGCDumpTests : DumpTestBase
             $"Expected max generation between 1 and 4, got {maxGen}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_StructuresAreValid(TestConfiguration config)
@@ -52,7 +52,7 @@ public class ServerGCDumpTests : DumpTestBase
         Assert.True(valid, "Expected GC structures to be valid in a dump taken outside of GC");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_CanEnumerateHeaps(TestConfiguration config)
@@ -69,7 +69,7 @@ public class ServerGCDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_CanGetHeapData(TestConfiguration config)
@@ -87,7 +87,7 @@ public class ServerGCDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_BoundsAreReasonable(TestConfiguration config)
@@ -99,7 +99,7 @@ public class ServerGCDumpTests : DumpTestBase
             $"Expected GC min address (0x{minAddr:X}) < max address (0x{maxAddr:X})");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_EachHeapHasGenerationData(TestConfiguration config)
@@ -117,7 +117,7 @@ public class ServerGCDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_CanEnumerateExpectedHandles(TestConfiguration config)

@@ -17,10 +17,12 @@
 
     <!-- Avoids having to include InteropStateManager.cs to get files in Common/TypeSystem/Interop/IL building -->
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
+    <TestRunnerName>XUnitV3</TestRunnerName>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>

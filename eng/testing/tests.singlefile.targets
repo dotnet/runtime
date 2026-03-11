@@ -16,6 +16,13 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
+    <!-- NativeAOT compiles directly to a native executable and does not use an
+         application host. With OutputType=Exe, the SDK defaults UseAppHost=true
+         which causes MSB3030 because no apphost binary is produced. -->
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>false</PublishSingleFile>

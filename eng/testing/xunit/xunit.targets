@@ -19,5 +19,18 @@
     <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
   </PropertyGroup>
 
+  <!--
+    Override the xunit.v3.core.mtp-v1 validation target. The original target
+    errors when OutputType != Exe or UseAppHost != true on .NETCoreApp. In
+    dotnet/runtime, mobile and browser-wasm platforms legitimately use
+    OutputType=Library (they have custom test runners), and library tests use
+    UseAppHost=false (they are executed via dotnet exec or archived for Helix).
+    This target replaces the NuGet package's original.
+  -->
+  <Target Name="_XunitValidateBuild" BeforeTargets="BeforeBuild" Condition=" '$(TargetFramework)' != '' ">
+    <Error Text="xUnit.net v3 test projects must be executable (set project property '&lt;OutputType&gt;Exe&lt;/OutputType&gt;'). If this is not a test project, reference xunit.v3.extensibility.core instead."
+           Condition=" '$(OutputType)' != 'Exe' AND '$(TargetsMobile)' != 'true' " />
+  </Target>
+
   <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
 </Project>

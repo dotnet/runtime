@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Base class for dump-based cDAC integration tests.
-/// Each test is a <c>[ConditionalTheory]</c> parameterized by <see cref="TestConfiguration"/>.
+/// Each test is a <c>[Theory]</c> parameterized by <see cref="TestConfiguration"/>.
 /// Call <see cref="InitializeDumpTest"/> at the start of every test method to load
 /// the dump and evaluate skip attributes such as <see cref="SkipOnVersionAttribute"/>.
 /// </summary>

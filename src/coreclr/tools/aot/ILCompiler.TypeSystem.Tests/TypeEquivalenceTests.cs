@@ -14,8 +14,12 @@ namespace TypeSystemTests
     {
         class Logger : ITestOutputHelper
         {
-            void ITestOutputHelper.WriteLine(string message) => Console.WriteLine(message);
-            void ITestOutputHelper.WriteLine(string format, params object[] args) => Console.WriteLine(format, args);
+            private readonly System.Text.StringBuilder _output = new();
+            string ITestOutputHelper.Output => _output.ToString();
+            void ITestOutputHelper.Write(string message) { Console.Write(message); _output.Append(message); }
+            void ITestOutputHelper.Write(string format, params object[] args) { string msg = string.Format(format, args); Console.Write(msg); _output.Append(msg); }
+            void ITestOutputHelper.WriteLine(string message) { Console.WriteLine(message); _output.AppendLine(message); }
+            void ITestOutputHelper.WriteLine(string format, params object[] args) { string msg = string.Format(format, args); Console.WriteLine(msg); _output.AppendLine(msg); }
         }
 
         public static void NotQuiteMain()

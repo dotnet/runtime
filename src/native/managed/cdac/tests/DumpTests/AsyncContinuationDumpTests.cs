@@ -18,7 +18,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
     protected override string DebuggeeName => "AsyncContinuation";
     protected override string DumpType => "full";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Continuation support is not available in .NET 10")]
     public void ContinuationMethodTable_IsNonNull(TestConfiguration config)
@@ -30,7 +30,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, continuationMT);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Continuation support is not available in .NET 10")]
     public void ContinuationBaseClass_IsNotContinuation(TestConfiguration config)
@@ -49,7 +49,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         Assert.False(rts.IsContinuation(handle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Continuation support is not available in .NET 10")]
     public void ObjectMethodTable_IsNotContinuation(TestConfiguration config)
@@ -63,7 +63,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         Assert.False(rts.IsContinuation(objectHandle));
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Continuation support is not available in .NET 10")]
     public void ThreadLocalContinuation_IsContinuation(TestConfiguration config)

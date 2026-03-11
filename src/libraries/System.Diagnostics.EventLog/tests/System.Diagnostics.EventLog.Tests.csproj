@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Avoid namespace conflict between generated SelfRegisteredExtensions.cs and the System.Diagnostics.EventLog type -->
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />

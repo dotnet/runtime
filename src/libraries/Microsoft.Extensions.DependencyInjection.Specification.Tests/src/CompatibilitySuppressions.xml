@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- TheoryData type changed from xunit v2 to xunit v3 assembly origin -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>P:Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests.ServiceContainerPicksConstructorWithLongestMatchesData</Target>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>
