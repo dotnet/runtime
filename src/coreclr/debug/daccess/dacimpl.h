@@ -794,6 +794,48 @@ class DacStreamManager;
 
 //----------------------------------------------------------------------------
 //
+// DacPatchCache - Caches debugger breakpoint patches from the target process.
+//
+// DacReplacePatchesInHostMemory needs to iterate the target's patch hash table
+// to replace breakpoint instructions with original opcodes. This iteration is
+// expensive because it walks all hash buckets and entries via cross-process
+// reads. Since the target is not running during DAC operations, the patches
+// cannot change, so we cache them on first access and reuse across frames
+// within a single DAC session. The cache is invalidated on Flush().
+//
+//----------------------------------------------------------------------------
+
+struct DacPatchCacheEntry
+{
+    CORDB_ADDRESS address;
+    PRD_TYPE opcode;
+};
+
+class DacPatchCache
+{
+public:
+    DacPatchCache()
+        : m_isPopulated(false)
+    {
+    }
+
+    const SArray<DacPatchCacheEntry>& GetEntries();
+
+    void Flush()
+    {
+        m_entries.Clear();
+        m_isPopulated = false;
+    }
+
+private:
+    void Populate();
+
+    SArray<DacPatchCacheEntry> m_entries;
+    bool m_isPopulated;
+};
+
+//----------------------------------------------------------------------------
+//
 // ClrDataAccess.
 //
 //----------------------------------------------------------------------------
@@ -1417,6 +1459,8 @@ public:
     DacInstanceManager m_instances;
     ULONG32 m_instanceAge;
     bool m_debugMode;
+
+    DacPatchCache m_patchCache;
 
     // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
