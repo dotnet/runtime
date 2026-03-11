@@ -4476,6 +4476,11 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     }
 #endif // DEBUG
 
+    if (JitConfig.JitPacEnabled() != 0)
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+
     // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
     // generate based on various sizes.
     int frameType = 0;
