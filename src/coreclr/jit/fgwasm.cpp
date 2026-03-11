@@ -1087,6 +1087,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Create descriptions of the try regions that can be enumerated in RPO
     //
     FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
+    JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
 
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
@@ -1139,23 +1140,30 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         if (loop != nullptr)
         {
-            // Fixme: if a loop contains a try start but the try extends
-            // past the end of the loop, the loop end must encompass all loop and try blocks.
-            //
-            // Loop bodies are contiguous in the LaRPO, so the end position
-            // is the header position plus the number of blocks in the loop.
-            //
-            unsigned endCursor = cursor + loop->NumLoopBlocks();
-            assert(endCursor <= numBlocks);
+            unsigned endCursor = 0;
+
+            if (tryRegions->NumTryRegions() == 0)
+            {
+                // Loop bodies are contiguous in the LaRPO, so the end position
+                // is the header position plus the number of blocks in the loop.
+                //
+                unsigned endCursor = cursor + loop->NumLoopBlocks();
+                assert(endCursor <= numBlocks);
 
 #ifdef DEBUG
-            unsigned endCursorCheck = cursor;
-            while ((endCursorCheck < numBlocks) && loop->ContainsBlock(initialLayout[endCursorCheck]))
-            {
-                endCursorCheck++;
-            }
-            assert(endCursor == endCursorCheck);
+                unsigned endCursorCheck = cursor;
+                while ((endCursorCheck < numBlocks) && loop->ContainsBlock(initialLayout[endCursorCheck]))
+                {
+                    endCursorCheck++;
+                }
+                assert(endCursor == endCursorCheck);
 #endif
+            }
+            else
+            {
+                // We may have increased the loop extent (moved the end) to accomodate try regions
+                // that begin in the loop but can end outside. Find the last such block... (how?)
+            }
 
             WasmInterval* const loopInterval = WasmInterval::NewLoop(this, block, initialLayout[endCursor]);
 

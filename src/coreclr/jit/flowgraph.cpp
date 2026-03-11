@@ -7577,22 +7577,47 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
 #ifdef DEBUG
 
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::Dump: Dump description of a try region.
+//
+// Arguments:
+//    region -- region to dump
+//
 void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
 {
     unsigned const regionNum = region->m_regions->GetCompiler()->ehGetIndex(region->m_ehDsc);
     BitVecTraits   traits    = region->m_regions->GetBlockBitVecTraits();
     printf("EH#%02u: %u blocks", regionNum, BitVecOps::Count(&traits, region->m_blocks));
+
+    // print block ranges like loops do?
 }
 
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::Dump: Dump description of all try regions.
+//
+// Arguments:
+//    regions -- region collection to dump
+//
 void FlowGraphTryRegions::Dump(FlowGraphTryRegions* regions)
 {
-    for (FlowGraphTryRegion* region : regions->m_tryRegions)
+    if (regions->NumTryRegions() == 0)
     {
-        // Collection is indexed by EH ID, so may have gaps if we've deleted EH regions. Skip those.
-        if (region != nullptr)
+        printf("No try regions in this method\n");
+    }
+    else
+    {
+        printf("%u try regions:\n", regions->NumTryRegions());
+
+        // show nesting? We currently only have parent links
+
+        for (FlowGraphTryRegion* region : regions->m_tryRegions)
         {
-            region->Dump(region);
-            printf("\n");
+            // Collection is indexed by EH ID, so may have gaps if we've deleted EH regions. Skip those.
+            if (region != nullptr)
+            {
+                region->Dump(region);
+                printf("\n");
+            }
         }
     }
 }
