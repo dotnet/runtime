@@ -114,23 +114,21 @@ namespace System.Formats.Tar.Tests
         public static IEnumerable<object[]> SparseLayoutTestCases()
         {
             // (realSize, segments as flat array [off0, len0, off1, len1, ...], copyData, useAsync)
-            long[][] layouts =
+            (long, long[])[] layouts =
             [
-                [512, 0, 512],                        // single segment, no holes
-                [1024, 256, 256],                     // leading + trailing hole
-                [2048, 0, 256, 512, 256, 1024, 256],  // 3 segments with holes
-                [1000, 1000, 0],                      // all holes (zero-length segment)
+                (512, [0, 512]),                        // single segment, no holes
+                (1024, [256, 256]),                     // leading + trailing hole
+                (2048, [0, 256, 512, 256, 1024, 256]),  // 3 segments with holes in between
+                (1000, [1000, 0]),                      // all holes (zero-length segment)
             ];
 
-            foreach (long[] layout in layouts)
+            foreach ((long size, long[] layout) in layouts)
             {
-                long realSize = layout[0];
-                long[] segmentPairs = layout[1..];
                 foreach (bool copyData in new[] { false, true })
                 {
                     foreach (bool useAsync in new[] { false, true })
                     {
-                        yield return new object[] { realSize, segmentPairs, copyData, useAsync };
+                        yield return new object[] { size, layout, copyData, useAsync };
                     }
                 }
             }
