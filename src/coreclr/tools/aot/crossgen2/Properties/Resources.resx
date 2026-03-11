@@ -441,7 +441,4 @@
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>
   </data>
-  <data name="StripILBodiesOption" xml:space="preserve">
-    <value>Strip IL method bodies from component assemblies in composite mode. Replaces IL bodies with a single 'ret' instruction.</value>
-  </data>
 </root>
