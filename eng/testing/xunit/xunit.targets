@@ -37,14 +37,15 @@
     checks _RuntimeIdentifierUsesAppHost to decide whether NETSDK1067
     applies.  Set it to false to prevent the error.
 
-    NativeAOT test projects become Exe (xunit v3) and self-contained, so
-    the SDK validates referenced Exe projects for SelfContained consistency
-    (NETSDK1150).  Disable that check since test helper Exe projects like
-    System.Reflection.TestExe aren't self-contained.
+    NativeAOT and mobile/WASM test projects become Exe (xunit v3) and
+    self-contained, so the SDK validates referenced Exe projects for
+    SelfContained consistency (NETSDK1150).  Disable that check since
+    test helper Exe projects aren't self-contained.
   -->
   <PropertyGroup Condition="'$(TestSingleFile)' != 'true'">
     <UseAppHost>false</UseAppHost>
     <_RuntimeIdentifierUsesAppHost Condition="'$(SelfContained)' == 'true'">false</_RuntimeIdentifierUsesAppHost>
+    <ValidateExecutableReferencesMatchSelfContained Condition="'$(SelfContained)' == 'true'">false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <UseAppHost>false</UseAppHost>

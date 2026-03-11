@@ -30,13 +30,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' != 'true' and '$(TestSingleFile)' != 'true'">
-    <!-- xunit v3: .NETCoreApp test projects produce executables with an embedded in-process runner. -->
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(RunScriptWindowsCmd)' != 'true'">./$(AssemblyName)</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(RunScriptWindowsCmd)' == 'true'">$(AssemblyName).exe</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(XunitConsolePath)</RunScriptCommand>
+    <!--
+      xunit v3: All test projects (both .NETCoreApp and .NETFramework) produce
+      executables with an embedded in-process runner.  Run them directly.
+    -->
+    <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true'">./$(AssemblyName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true'">$(AssemblyName).exe</RunScriptCommand>
 
-    <!-- .NETFramework still uses the external xunit console runner and needs the test DLL as an argument. -->
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(RunScriptCommand) $(TargetFileName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -noLogo</RunScriptCommand>
     <RunScriptCommand Condition="'$(ArchiveTests)' == 'true'">$(RunScriptCommand) -noColor</RunScriptCommand>
