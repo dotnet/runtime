@@ -2659,7 +2659,9 @@ AGAIN:
         switch (oper)
         {
             case GT_CNS_INT:
-                if (op1->AsIntCon()->gtIconVal == op2->AsIntCon()->gtIconVal)
+                if ((op1->AsIntCon()->gtIconVal == op2->AsIntCon()->gtIconVal) &&
+                    (op1->GetIconHandleFlag() == op2->GetIconHandleFlag()) &&
+                    (op1->AsIntCon()->gtFieldSeq == op2->AsIntCon()->gtFieldSeq))
                 {
                     return true;
                 }
@@ -2747,11 +2749,49 @@ AGAIN:
                 }
                 return true;
 
+            case GT_PHI_ARG:
+                if ((op1->AsLclVarCommon()->GetLclNum() != op2->AsLclVarCommon()->GetLclNum()) ||
+                    (op1->AsPhiArg()->gtPredBB != op2->AsPhiArg()->gtPredBB) ||
+                    (op1->AsLclVarCommon()->GetSsaNum() != op2->AsLclVarCommon()->GetSsaNum()))
+                {
+                    break;
+                }
+                return true;
+
+            case GT_FTN_ADDR:
+                if ((op1->AsFptrVal()->gtFptrMethod != op2->AsFptrVal()->gtFptrMethod) ||
+                    (op1->AsFptrVal()->gtFptrDelegateTarget != op2->AsFptrVal()->gtFptrDelegateTarget))
+                {
+                    break;
+                }
+#ifdef FEATURE_READYTORUN
+                if (op1->AsFptrVal()->gtEntryPoint.addr != op2->AsFptrVal()->gtEntryPoint.addr)
+                {
+                    break;
+                }
+#endif
+                return true;
+
             case GT_NOP:
             case GT_LABEL:
             case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+                return true;
+
+            case GT_JCC:
+            case GT_SETCC:
+                if (op1->AsCC()->gtCondition.GetCode() != op2->AsCC()->gtCondition.GetCode())
+                {
+                    break;
+                }
+                return true;
+
+            case GT_PHYSREG:
+                if (op1->AsPhysReg()->gtSrcReg != op2->AsPhysReg()->gtSrcReg)
+                {
+                    break;
+                }
                 return true;
 
             default:
@@ -2846,6 +2886,20 @@ AGAIN:
                 case GT_ARR_ADDR:
                     break;
 
+                case GT_ALLOCOBJ:
+                    if ((op1->AsAllocObj()->gtNewHelper != op2->AsAllocObj()->gtNewHelper) ||
+                        (op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd))
+                    {
+                        return false;
+                    }
+#ifdef FEATURE_READYTORUN
+                    if (op1->AsAllocObj()->gtEntryPoint.addr != op2->AsAllocObj()->gtEntryPoint.addr)
+                    {
+                        return false;
+                    }
+#endif
+                    break;
+
                 default:
                     assert(!"unexpected unary ExOp operator");
             }
@@ -2861,6 +2915,29 @@ AGAIN:
             // these should be included in the hash code.
             switch (oper)
             {
+                case GT_JCMP:
+                case GT_JTEST:
+                case GT_SELECTCC:
+#ifdef TARGET_ARM64
+                case GT_SELECT_INCCC:
+                case GT_SELECT_INVCC:
+                case GT_SELECT_NEGCC:
+#endif
+                    if (op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode())
+                    {
+                        return false;
+                    }
+                    break;
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+                case GT_CCMP:
+                    if ((op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode()) ||
+                        (op1->AsCCMP()->gtFlagsVal != op2->AsCCMP()->gtFlagsVal))
+                    {
+                        return false;
+                    }
+                    break;
+#endif
                 case GT_STORE_BLK:
                     if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
                     {
@@ -2898,7 +2975,11 @@ AGAIN:
                     }
                     break;
                 case GT_INDEX_ADDR:
-                    if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
+                    if ((op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize) ||
+                        (op1->AsIndexAddr()->gtElemType != op2->AsIndexAddr()->gtElemType) ||
+                        (op1->AsIndexAddr()->gtStructElemClass != op2->AsIndexAddr()->gtStructElemClass) ||
+                        (op1->AsIndexAddr()->gtLenOffset != op2->AsIndexAddr()->gtLenOffset) ||
+                        (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset))
                     {
                         return false;
                     }
@@ -2976,7 +3057,10 @@ AGAIN:
                 return false;
             }
 
-            // NOTE: gtArrElemSize may need to be handled
+            if (op1->AsArrElem()->gtArrElemSize != op2->AsArrElem()->gtArrElemSize)
+            {
+                return false;
+            }
 
             unsigned dim;
             for (dim = 0; dim < op1->AsArrElem()->gtArrRank; dim++)
@@ -3001,6 +3085,10 @@ AGAIN:
             return Compare(op1->AsCmpXchg()->Addr(), op2->AsCmpXchg()->Addr()) &&
                    Compare(op1->AsCmpXchg()->Data(), op2->AsCmpXchg()->Data()) &&
                    Compare(op1->AsCmpXchg()->Comparand(), op2->AsCmpXchg()->Comparand());
+
+        case GT_SELECT:
+            return Compare(op1->AsConditional()->gtCond, op2->AsConditional()->gtCond) &&
+                   Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp1) && Compare(op1->AsOp()->gtOp2, op2->AsOp()->gtOp2);
 
         default:
             assert(!"unexpected operator");
