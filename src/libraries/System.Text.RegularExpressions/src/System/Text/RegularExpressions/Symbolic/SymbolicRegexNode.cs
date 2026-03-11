@@ -423,7 +423,7 @@ namespace System.Text.RegularExpressions.Symbolic
             //  - a == 1 && b == 0 (outer can take 0 iterations for ε, or n iterations of R+ for any n ≥ 1).
             // Counterexample: (R{2,∞})* cannot match a single R, so it's NOT equivalent to R*.
             // This is critical for performance: without it, deeply nested patterns like ((a)*)*
-            // cause exponential blowup in derivative computation (https://github.com/dotnet/runtime/issues/84188).
+            // cause exponential blowup in derivative computation.
             // The blowup is in the per-character cost (pattern-dependent constant), not in input-length
             // scaling — the engine remains O(input_length) for any given pattern — but the constant
             // grows exponentially with nesting depth, making matching impractically slow.
