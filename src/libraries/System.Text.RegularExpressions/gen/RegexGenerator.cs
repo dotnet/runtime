@@ -36,24 +36,21 @@ namespace System.Text.RegularExpressions.Generator
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Step 1: Find all members decorated with [GeneratedRegex].
-            IncrementalValuesProvider<GeneratorAttributeSyntaxContext> attributeContexts =
+            // Step 1: Find all members decorated with [GeneratedRegex], collect them
+            // into a single batch, and run the Parser to build an equatable model.
+            // The output RegexGenerationSpec is deeply equatable via records and
+            // ImmutableEquatableArray/Set/Dictionary, enabling Roslyn to skip the
+            // emitter on cache hits.
+            IncrementalValueProvider<(RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics)> parsed =
                 context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
-                    static (context, _) => context);
-
-            // Step 2: Collect all contexts into a single batch, then run the Parser
-            // to build an equatable model. The output RegexGenerationSpec is deeply
-            // equatable via records and ImmutableEquatableArray/Dictionary, enabling
-            // Roslyn to skip the emitter on cache hits.
-            IncrementalValueProvider<(RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics)> parsed =
-                attributeContexts
+                    static (context, _) => context)
                 .Collect()
                 .Select(static (contexts, cancellationToken) => Parse(contexts, cancellationToken));
 
-            // Step 3: Project to just the source model, discarding diagnostics.
+            // Step 2: Project to just the source model, discarding diagnostics.
             // RegexGenerationSpec has deep value equality, so Roslyn skips the
             // RegisterSourceOutput callback when the model hasn't changed.
             IncrementalValueProvider<RegexGenerationSpec?> sourceModel =
@@ -67,7 +64,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             });
 
-            // Step 4: Project to just the diagnostics, discarding the model.
+            // Step 3: Project to just the diagnostics, discarding the model.
             IncrementalValueProvider<ImmutableArray<Diagnostic>> diagnosticResults =
                 parsed.Select(static (t, _) => t.Diagnostics);
 
