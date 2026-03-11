@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -780,6 +781,59 @@ namespace System.IO.Pipes.Tests
             var client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle);
             return (server, client);
         }
+    }
+
+    public abstract class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeStreamConformanceTests
+    {
+        protected abstract bool AsyncReads { get; }
+        protected abstract bool AsyncWrites { get; }
+
+        protected override (AnonymousPipeServerStream Server, AnonymousPipeClientStream Client) CreateServerAndClientStreams()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: AsyncReads, asyncWrite: AsyncWrites);
+
+            SafePipeHandle readPipeHandle = TransferOwnershipToPipeHandle(readHandle);
+            SafePipeHandle writePipeHandle = TransferOwnershipToPipeHandle(writeHandle);
+
+            AnonymousPipeServerStream server = new(PipeDirection.Out, serverSafePipeHandle: writePipeHandle, clientSafePipeHandle: readPipeHandle);
+            AnonymousPipeClientStream client = new(PipeDirection.In, server.ClientSafePipeHandle);
+            return (server, client);
+        }
+
+        private static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
+        {
+            SafePipeHandle pipeHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+            handle.Dispose();
+            return pipeHandle;
+        }
+    }
+
+    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_SyncRead_SyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => false;
+        protected override bool AsyncWrites => false;
+    }
+
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // AnonymousPipeStreams don't support async I/O on Windows
+    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_AsyncRead_SyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => true;
+        protected override bool AsyncWrites => false;
+    }
+
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // AnonymousPipeStreams don't support async I/O on Windows
+    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_SyncRead_AsyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => false;
+        protected override bool AsyncWrites => true;
+    }
+
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // AnonymousPipeStreams don't support async I/O on Windows
+    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_AsyncRead_AsyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => true;
+        protected override bool AsyncWrites => true;
     }
 
     public abstract class NamedPipeTest_ServerOut_ClientIn : NamedPipeStreamConformanceTests

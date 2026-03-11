@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO.Pipes;
-using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -102,105 +100,12 @@ namespace System.IO.Tests
             static void Verify(SafeFileHandle fileHandle, bool useAsyncIO)
             {
                 Assert.Equal(useAsyncIO, fileHandle.IsAsync);
+                Assert.Equal(FileHandleType.Pipe, fileHandle.Type);
 
                 // The following code exercises the code path where the information is fetched from OS.
                 using SafeFileHandle createdFromIntPtr = new(fileHandle.DangerousGetHandle(), ownsHandle: false);
                 Assert.Equal(useAsyncIO, createdFromIntPtr.IsAsync);
-            }
-        }
-
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
-        public static async Task SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
-        {
-            byte[] message = "Hello, Pipe!"u8.ToArray();
-            byte[] buffer = new byte[message.Length];
-
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
-            Assert.Equal(asyncRead, readHandle.IsAsync);
-            Assert.Equal(asyncWrite, writeHandle.IsAsync);
-            Assert.Equal(FileHandleType.Pipe, readHandle.Type);
-            Assert.Equal(FileHandleType.Pipe, writeHandle.Type);
-
-            using (readHandle)
-            using (writeHandle)
-            using (Stream readStream = CreatePipeStream(readHandle, FileAccess.Read, asyncRead))
-            using (Stream writeStream = CreatePipeStream(writeHandle, FileAccess.Write, asyncWrite))
-            {
-                Task writeTask = writeStream.WriteAsync(message, 0, message.Length);
-                Task readTask = readStream.ReadExactlyAsync(buffer).AsTask();
-                await Task.WhenAll(writeTask, readTask);
-                Assert.Equal(message, buffer);
-
-                // Now let's test a different order,
-                // which is going to test the E_WOULDBLOCK code path on Unix.
-                buffer.AsSpan().Reverse();
-
-                readTask = readStream.ReadExactlyAsync(buffer).AsTask();
-                writeTask = writeStream.WriteAsync(message, 0, message.Length);
-                await Task.WhenAll(readTask, writeTask);
-                Assert.Equal(message, buffer);
-            }
-        }
-
-        private static Stream CreatePipeStream(SafeFileHandle readHandle, FileAccess access, bool asyncIO)
-        {
-            if (!OperatingSystem.IsWindows() && asyncIO)
-            {
-                PipeDirection direction = access == FileAccess.Read ? PipeDirection.In : PipeDirection.Out;
-                return new AnonymousPipeClientStream(direction, TransferOwnershipToPipeHandle(readHandle));
-            }
-
-            return new FileStream(readHandle, access, 1, asyncIO);
-
-            static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
-            {
-                SafePipeHandle pipeHandle = new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: true);
-                handle.SetHandleAsInvalid();
-                handle.Dispose();
-                return pipeHandle;
-            }
-        }
-
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
-        public static async Task SafeFileHandle_CreateAnonymousPipe_FileStream_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
-        {
-            byte[] message = "Hello, Pipe!"u8.ToArray();
-            byte[] buffer = new byte[message.Length];
-
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
-            Assert.Equal(asyncRead, readHandle.IsAsync);
-            Assert.Equal(asyncWrite, writeHandle.IsAsync);
-            Assert.Equal(FileHandleType.Pipe, readHandle.Type);
-            Assert.Equal(FileHandleType.Pipe, writeHandle.Type);
-
-            using (readHandle)
-            using (writeHandle)
-            using (FileStream readStream = new FileStream(readHandle, FileAccess.Read, 1, asyncRead))
-            using (FileStream writeStream = new FileStream(writeHandle, FileAccess.Write, 1, asyncWrite))
-            {
-                Task writeTask = writeStream.WriteAsync(message, 0, message.Length);
-                Task readTask = readStream.ReadExactlyAsync(buffer).AsTask();
-                await Task.WhenAll(writeTask, readTask);
-                Assert.Equal(message, buffer);
-
-                // Now let's test a different order,
-                // which is going to test the E_WOULDBLOCK code path on Unix.
-                buffer.AsSpan().Reverse();
-
-                readTask = readStream.ReadExactlyAsync(buffer).AsTask();
-                writeTask = writeStream.WriteAsync(message, 0, message.Length);
-                await Task.WhenAll(readTask, writeTask);
-                Assert.Equal(message, buffer);
+                Assert.Equal(FileHandleType.Pipe, createdFromIntPtr.Type);
             }
         }
 
