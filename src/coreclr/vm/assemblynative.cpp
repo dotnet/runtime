@@ -1745,7 +1745,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         }
 
         COUNT_T assemblyTargetCount = 0;
-        ProcessPrecachedTypeMapInfo(
+        bool hasPrecachedTargets = ProcessPrecachedTypeMapInfo(
             [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
             [&](PTR_ReadyToRunInfo pR2RInfo)
              {
@@ -1768,14 +1768,20 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         );
 #endif // FEATURE_READYTORUN
 
-        if (!hasPrecachedExternal || !hasPrecachedProxy)
+        if ((newExternalTypeEntry != nullptr && !hasPrecachedExternal) ||
+            (newProxyTypeEntry != nullptr && !hasPrecachedProxy) ||
+            !hasPrecachedTargets)
         {
-            ProcessTypeMapAttribute(
-                TypeMapAssemblyTargetAttributeName,
-                assemblies,
-                groupTypeMT,
-                currAssembly);
-
+            // Only fall back to attribute parsing for the assembly targets if they were
+            // not found in the pre-cached R2R section.
+            if (!hasPrecachedTargets)
+            {
+                ProcessTypeMapAttribute(
+                    TypeMapAssemblyTargetAttributeName,
+                    assemblies,
+                    groupTypeMT,
+                    currAssembly);
+            }
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.

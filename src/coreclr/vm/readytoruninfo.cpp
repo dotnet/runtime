@@ -1632,6 +1632,11 @@ namespace
         PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
         COUNT_T cbData;
         TADDR pData = pR2RInfo->GetImage()->GetDirectoryData(&pImportSection->Section, &cbData);
+        if (fixupIndex >= cbData / sizeof(TADDR))
+        {
+            _ASSERTE(!"Malformed type map fixup index out of bounds");
+            return TypeHandle();
+        }
         PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
         if (!pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
         {
@@ -1657,6 +1662,11 @@ namespace
         PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
         COUNT_T cbData;
         TADDR pData = pR2RInfo->GetImage()->GetDirectoryData(&pImportSection->Section, &cbData);
+        if (fixupIndex >= cbData / sizeof(TADDR))
+        {
+            _ASSERTE(!"Malformed type map fixup index out of bounds");
+            return nullptr;
+        }
         PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
         if (!pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
         {
@@ -1706,6 +1716,8 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
     }
 
     UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    uint32_t keyLen = (uint32_t)strlen(pKey);
+    UINT32 typeArgHash = ComputeNameHashCode(pKey);
     NativeHashtable::Enumerator lookup = m_externalTypeMaps.Lookup(hash);
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
@@ -1726,10 +1738,8 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
 
         NativeHashtable typeMapTable = NativeHashtable(entryParser);
 
-        UINT32 typeArgHash = ComputeNameHashCode(pKey);
         NativeHashtable::Enumerator typeMapLookup = typeMapTable.Lookup(typeArgHash);
         NativeParser typeMapEntryParser;
-        uint32_t keyLen = (uint32_t)strlen(pKey);
         while (typeMapLookup.GetNext(typeMapEntryParser))
         {
             if (typeMapEntryParser.StringEquals(pKey, keyLen))

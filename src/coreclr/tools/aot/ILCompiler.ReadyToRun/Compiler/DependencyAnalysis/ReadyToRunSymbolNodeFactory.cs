@@ -301,7 +301,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<string, Import> _instructionSetSupportFixups;
-        private NodeCache<MethodWithGCInfo, ISymbolNode> _resumptionStubEntryPointFixups;
+        private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
         {
@@ -746,7 +746,7 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeTargetNodes.GetOrAdd(new PInvokeTargetKey(methodWithToken, isIndirect: false));
         }
 
-        internal ISymbolNode ResumptionStubEntryPoint(MethodWithGCInfo resumptionStub)
+        internal Import ResumptionStubEntryPoint(MethodWithGCInfo resumptionStub)
         {
             return _resumptionStubEntryPointFixups.GetOrAdd(resumptionStub);
         }

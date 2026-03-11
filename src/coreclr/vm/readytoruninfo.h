@@ -110,11 +110,7 @@ public:
     static const key_t GetKey(_In_ const element_t& e) { return e; }
     static count_t Hash(_In_ key_t key)
     {
-        CQuickBytes tempBuffer;
-        tempBuffer.ReSizeThrows(key.length + 1);
-        memcpy(tempBuffer, key.str, key.length);
-        ((char *)tempBuffer.Ptr())[key.length] = '\0';
-        return ComputeNameHashCode((char *)tempBuffer.Ptr());
+        return ComputeNameHashCode(key.str, key.length);
     }
     static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return strncmp(lhs.str, rhs.str, min(lhs.length, rhs.length)) == 0 && lhs.length == rhs.length; }
     static bool IsNull(_In_ const element_t& e) { return e.str == nullptr; }
