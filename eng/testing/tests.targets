@@ -7,7 +7,6 @@
     and '$(TargetOS)' != 'browser'
     and '$(TargetOS)' != 'wasi'
     and '$(TargetOS)' != 'android'
-    and '$(TargetsAppleMobile)' != 'true'
     and '$(RuntimeFlavor)' != 'Mono'
     and '$(UseRuntimeAsync)' != 'false'">
     <EnablePreviewFeatures>true</EnablePreviewFeatures>

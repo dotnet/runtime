@@ -12,6 +12,35 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public class CustomAttributeDecoderTests
     {
+        // After ILLink/trimming, type references may point to System.Private.CoreLib
+        // instead of System.Runtime. Read the actual assembly reference from metadata
+        // so that expected values match what the decoder produces.
+        private static readonly string s_systemTypeString = GetSystemTypeStringFromMetadata();
+
+        private static string GetSystemTypeStringFromMetadata()
+        {
+            string location = AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).Assembly);
+            if (string.IsNullOrEmpty(location) || !File.Exists(location))
+                return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
+
+            using FileStream stream = File.OpenRead(location);
+            using PEReader peReader = new PEReader(stream);
+            MetadataReader reader = peReader.GetMetadataReader();
+
+            foreach (TypeReferenceHandle trh in reader.TypeReferences)
+            {
+                TypeReference tr = reader.GetTypeReference(trh);
+                if (reader.GetString(tr.Name) == "Type" && reader.GetString(tr.Namespace) == "System"
+                    && tr.ResolutionScope.Kind == HandleKind.AssemblyReference)
+                {
+                    AssemblyReference asmRef = reader.GetAssemblyReference((AssemblyReferenceHandle)tr.ResolutionScope);
+                    return $"[{reader.GetString(asmRef.Name)}]System.Type";
+                }
+            }
+
+            return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsMonoRuntime))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoder()
@@ -86,7 +115,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73593", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void TestCustomAttributeDecoderUsingReflection()
         {
             Type type = typeof(HasAttributes);
@@ -595,7 +623,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         private string TypeToString(Type type)
         {
             if (type == typeof(Type))
-                return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
+                return s_systemTypeString;
 
             if (type.IsArray)
             {
@@ -674,13 +702,13 @@ namespace System.Reflection.Metadata.Decoding.Tests
         {
             public string GetSystemType()
             {
-                return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
+                return s_systemTypeString;
             }
 
             public bool IsSystemType(string type)
             {
-                return type == $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type"  // encountered as typeref
-                    || Type.GetType(type) == typeof(Type);    // encountered as serialized to reflection notation
+                return type == s_systemTypeString                          // encountered as typeref
+                    || Type.GetType(type) == typeof(Type);                 // encountered as serialized to reflection notation
             }
 
             public string GetTypeFromSerializedName(string name)
@@ -690,36 +718,36 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
             public PrimitiveTypeCode GetUnderlyingEnumType(string type)
             {
-                Type runtimeType = Type.GetType(type.Replace('/', '+')); // '/' vs '+' is only difference between ilasm and reflection notation for fixed set below.
+                string normalizedType = type.Replace('/', '+');
 
-                if (runtimeType == typeof(SByteEnum))
+                if (normalizedType == typeof(SByteEnum).FullName)
                     return PrimitiveTypeCode.SByte;
 
-                if (runtimeType == typeof(Int16Enum))
+                if (normalizedType == typeof(Int16Enum).FullName)
                     return PrimitiveTypeCode.Int16;
 
-                if (runtimeType == typeof(Int32Enum))
+                if (normalizedType == typeof(Int32Enum).FullName)
                     return PrimitiveTypeCode.Int32;
 
-                if (runtimeType == typeof(Int64Enum))
+                if (normalizedType == typeof(Int64Enum).FullName)
                     return PrimitiveTypeCode.Int64;
 
-                if (runtimeType == typeof(ByteEnum))
+                if (normalizedType == typeof(ByteEnum).FullName)
                     return PrimitiveTypeCode.Byte;
 
-                if (runtimeType == typeof(UInt16Enum))
+                if (normalizedType == typeof(UInt16Enum).FullName)
                     return PrimitiveTypeCode.UInt16;
 
-                if (runtimeType == typeof(UInt32Enum))
+                if (normalizedType == typeof(UInt32Enum).FullName)
                     return PrimitiveTypeCode.UInt32;
 
-                if (runtimeType == typeof(UInt64Enum))
+                if (normalizedType == typeof(UInt64Enum).FullName)
                     return PrimitiveTypeCode.UInt64;
 
-                if (runtimeType == typeof(MyEnum))
+                if (normalizedType == typeof(MyEnum).FullName)
                     return PrimitiveTypeCode.Byte;
 
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(type), $"Unexpected enum type: '{type}'");
             }
         }
     }
