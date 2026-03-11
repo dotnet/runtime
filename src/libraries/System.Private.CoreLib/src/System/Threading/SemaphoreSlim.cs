@@ -678,6 +678,31 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<bool>(cancellationToken);
 
+            // Fast path: try a lock-free acquire; falls through to the lock if it fails.
+            // Skipped when m_waitHandle is non-null to keep its state consistent under the lock.
+            if (m_waitHandle is null)
+            {
+                int current = m_currentCount;
+                // The waiter checks are best-effort: a sync waiter incrementing m_waitCount inside
+                // the lock may not be visible yet, but the CAS will fail if the count has changed.
+                if (current > 0
+                    && Volatile.Read(ref m_asyncHead) is null
+                    && Volatile.Read(ref m_waitCount) == 0
+                    && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) == current)
+                {
+                    // Handle the rare race where AvailableWaitHandle was initialised concurrently.
+                    if (current == 1 && m_waitHandle is not null)
+                    {
+                        lock (m_lockObjAndDisposed)
+                        {
+                            if (m_waitHandle is not null && m_currentCount == 0)
+                                m_waitHandle.Reset();
+                        }
+                    }
+                    return Task.FromResult(true);
+                }
+            }
+
             lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
