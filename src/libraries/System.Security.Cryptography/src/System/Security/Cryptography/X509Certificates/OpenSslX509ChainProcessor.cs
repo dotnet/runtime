@@ -1219,8 +1219,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(authorityInformationAccess.Span, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(authorityInformationAccess.Span, AsnEncodingRules.DER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 while (sequenceReader.HasData)

@@ -17,7 +17,7 @@ internal sealed class Assembly : IData<Assembly>
         IsDynamic = target.Read<byte>(address + (ulong)type.Fields[nameof(IsDynamic)].Offset) != 0;
         Error = target.ReadPointer(address + (ulong)type.Fields[nameof(Error)].Offset);
         NotifyFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(NotifyFlags)].Offset);
-        Level = target.Read<uint>(address + (ulong)type.Fields[nameof(Level)].Offset);
+        IsLoaded = target.Read<byte>(address + (ulong)type.Fields[nameof(IsLoaded)].Offset) != 0;
     }
 
     public TargetPointer Module { get; init; }
@@ -25,7 +25,7 @@ internal sealed class Assembly : IData<Assembly>
     public bool IsDynamic { get; init; }
     public TargetPointer Error { get; init; }
     public uint NotifyFlags { get; init; }
-    public uint Level { get; init; }
+    public bool IsLoaded { get; init; }
 
     public bool IsError => Error != TargetPointer.Null;
 }

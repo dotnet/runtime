@@ -64,6 +64,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
     [InlineData(Configuration.Release, true)]
+    [TestCategory("native")]
     public async Task BlazorPublishRunTest(Configuration config, bool aot)
     {
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_publish");

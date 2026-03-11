@@ -30,6 +30,17 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void LoadFromStream_EmptyStream_ThrowsBadImageFormatException()
+        {
+            using (var emptyStream = new MemoryStream())
+            {
+                BadImageFormatException ex = Assert.Throws<BadImageFormatException>(
+                    () => AssemblyLoadContext.Default.LoadFromStream(emptyStream));
+                Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        [Fact]
         public void EntryPoint()
         {
             MethodInfo entryPoint = typeof(TestExe).GetTypeInfo().Assembly.EntryPoint;

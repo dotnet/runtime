@@ -562,6 +562,283 @@ public static class CheckedContext
     }
 
     // =====================================================================
+    //  CAST — safe (checked context should be removed)
+    // =====================================================================
+
+    // --- Signed int → smaller signed types ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastIntToByte_Guarded(int a)
+    {
+        if (a < 0 || a > 255)
+            return 0;
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastIntToSByte_Guarded(int a)
+    {
+        if (a < -128 || a > 127)
+            return 0;
+        return checked((sbyte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastIntToShort_Guarded(int a)
+    {
+        if (a < -32768 || a > 32767)
+            return 0;
+        return checked((short)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ushort CastIntToUShort_Guarded(int a)
+    {
+        if (a < 0 || a > 65535)
+            return 0;
+        return checked((ushort)a);
+    }
+
+    // --- Unsigned int → smaller types ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastUIntToByte_Guarded(uint a)
+    {
+        if (a > 255)
+            return 0;
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ushort CastUIntToUShort_Guarded(uint a)
+    {
+        if (a > 65535)
+            return 0;
+        return checked((ushort)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastUIntToShort_Guarded(uint a)
+    {
+        if (a > 32767)
+            return 0;
+        return checked((short)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastUIntToSByte_Guarded(uint a)
+    {
+        if (a > 127)
+            return 0;
+        return checked((sbyte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CastUIntToInt_Guarded(uint a)
+    {
+        if (a > (uint)int.MaxValue)
+            return 0;
+        return checked((int)a);
+    }
+
+    // --- Tighter range guards (range well inside target type) ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastIntToByte_TightRange(int a)
+    {
+        if (a < 10 || a > 100)
+            return 0;
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastIntToSByte_PositiveOnly(int a)
+    {
+        if (a < 0 || a > 50)
+            return 0;
+        return checked((sbyte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastIntToSByte_NegativeRange(int a)
+    {
+        if (a < -100 || a > -1)
+            return 0;
+        return checked((sbyte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastIntToShort_NarrowRange(int a)
+    {
+        if (a < -1000 || a > 1000)
+            return 0;
+        return checked((short)a);
+    }
+
+    // --- Cast from non-LCL_VAR (field load) — overflow flag cleared, cast kept ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastFieldToByte()
+    {
+        int v = s_intField;
+        if (v < 0 || v > 200)
+            return 0;
+        return checked((byte)v);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastFieldToShort()
+    {
+        int v = s_intField;
+        if (v < -1000 || v > 1000)
+            return 0;
+        return checked((short)v);
+    }
+
+    // --- Cast with guard using array length ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastArrayLengthToByte(int[] arr)
+    {
+        if (arr.Length > 200)
+            return 0;
+        return checked((byte)arr.Length);
+    }
+
+    // --- Signed cast after arithmetic narrowing ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastAfterAdd_Safe(int a, int b)
+    {
+        if (a < 0 || a > 100)
+            return 0;
+        if (b < 0 || b > 100)
+            return 0;
+        int sum = a + b; // [0..200]
+        return checked((byte)sum);
+    }
+
+    // --- LE/GE style guards ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastIntToByte_LEGuard(int a)
+    {
+        if (a >= 0 && a <= 255)
+            return checked((byte)a);
+        return 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastIntToSByte_LEGuard(int a)
+    {
+        if (a >= -128 && a <= 127)
+            return checked((sbyte)a);
+        return 0;
+    }
+
+    // --- Boundary-exact: value exactly at target type boundary ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastIntToByte_ExactBoundary(int a)
+    {
+        if (a < 0 || a > 255)
+            return 0;
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastIntToShort_ExactBoundary(int a)
+    {
+        if (a < short.MinValue || a > short.MaxValue)
+            return 0;
+        return checked((short)a);
+    }
+
+    // =====================================================================
+    //  CAST — must overflow (checked must NOT be removed)
+    // =====================================================================
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastIntToByte_NoGuard(int a)
+    {
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastIntToSByte_NoGuard(int a)
+    {
+        return checked((sbyte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastIntToShort_NoGuard(int a)
+    {
+        return checked((short)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ushort CastIntToUShort_NoGuard(int a)
+    {
+        return checked((ushort)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastUIntToByte_NoGuard(uint a)
+    {
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int CastUIntToInt_NoGuard(uint a)
+    {
+        return checked((int)a);
+    }
+
+    // --- Guard too loose — range exceeds target ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastIntToByte_GuardTooLoose(int a)
+    {
+        if (a < 0 || a > 300)
+            return 0;
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static sbyte CastIntToSByte_GuardTooLoose(int a)
+    {
+        if (a < -200 || a > 200)
+            return 0;
+        return checked((sbyte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static short CastIntToShort_GuardTooLoose(int a)
+    {
+        if (a < -50000 || a > 50000)
+            return 0;
+        return checked((short)a);
+    }
+
+    // --- Negative value cast to unsigned ---
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte CastNegativeIntToByte(int a)
+    {
+        if (a < -10 || a > 10)
+            return 0;
+        return checked((byte)a);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ushort CastNegativeIntToUShort(int a)
+    {
+        if (a < -100 || a > 100)
+            return 0;
+        return checked((ushort)a);
+    }
+
+    // =====================================================================
     //  XUnit entry point
     // =====================================================================
 
@@ -812,6 +1089,144 @@ public static class CheckedContext
             return 0;
 
         if (SubArrayLengths(arr200, arr10) != 190)
+            return 0;
+
+        // ----- CAST safe cases -----
+
+        if (CastIntToByte_Guarded(OpaqueVal(200)) != 200)
+            return 0;
+
+        if (CastIntToSByte_Guarded(OpaqueVal(-50)) != -50)
+            return 0;
+
+        if (CastIntToShort_Guarded(OpaqueVal(-10000)) != -10000)
+            return 0;
+
+        if (CastIntToUShort_Guarded(OpaqueVal(50000)) != 50000)
+            return 0;
+
+        if (CastUIntToByte_Guarded(OpaqueVal((uint)100)) != 100)
+            return 0;
+
+        if (CastUIntToUShort_Guarded(OpaqueVal((uint)40000)) != 40000)
+            return 0;
+
+        if (CastUIntToShort_Guarded(OpaqueVal((uint)30000)) != 30000)
+            return 0;
+
+        if (CastUIntToSByte_Guarded(OpaqueVal((uint)100)) != 100)
+            return 0;
+
+        if (CastUIntToInt_Guarded(OpaqueVal((uint)1_000_000)) != 1_000_000)
+            return 0;
+
+        if (CastIntToByte_TightRange(OpaqueVal(50)) != 50)
+            return 0;
+
+        if (CastIntToSByte_PositiveOnly(OpaqueVal(25)) != 25)
+            return 0;
+
+        if (CastIntToSByte_NegativeRange(OpaqueVal(-50)) != -50)
+            return 0;
+
+        if (CastIntToShort_NarrowRange(OpaqueVal(-500)) != -500)
+            return 0;
+
+        s_intField = OpaqueVal(150);
+        if (CastFieldToByte() != 150)
+            return 0;
+
+        s_intField = OpaqueVal(-500);
+        if (CastFieldToShort() != -500)
+            return 0;
+
+        int[] arr150 = new int[OpaqueVal(150)];
+        if (CastArrayLengthToByte(arr150) != 150)
+            return 0;
+
+        if (CastAfterAdd_Safe(OpaqueVal(80), OpaqueVal(80)) != 160)
+            return 0;
+
+        if (CastIntToByte_LEGuard(OpaqueVal(128)) != 128)
+            return 0;
+
+        if (CastIntToSByte_LEGuard(OpaqueVal(-100)) != -100)
+            return 0;
+
+        if (CastIntToByte_ExactBoundary(OpaqueVal(255)) != 255)
+            return 0;
+
+        if (CastIntToShort_ExactBoundary(OpaqueVal(short.MaxValue)) != short.MaxValue)
+            return 0;
+
+        // ----- CAST overflow cases -----
+
+        threw = false;
+        try { CastIntToByte_NoGuard(OpaqueVal(256)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastIntToSByte_NoGuard(OpaqueVal(128)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastIntToShort_NoGuard(OpaqueVal(40000)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastIntToUShort_NoGuard(OpaqueVal(-1)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastUIntToByte_NoGuard(OpaqueVal((uint)300)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastUIntToInt_NoGuard(OpaqueVal(uint.MaxValue)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        // guard too loose — value in guard range but overflows cast
+        threw = false;
+        try { CastIntToByte_GuardTooLoose(OpaqueVal(260)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastIntToSByte_GuardTooLoose(OpaqueVal(130)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastIntToShort_GuardTooLoose(OpaqueVal(40000)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        // negative value to unsigned — must throw
+        threw = false;
+        try { CastNegativeIntToByte(OpaqueVal(-5)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
+            return 0;
+
+        threw = false;
+        try { CastNegativeIntToUShort(OpaqueVal(-50)); }
+        catch (OverflowException) { threw = true; }
+        if (!threw)
             return 0;
 
         return 100;
