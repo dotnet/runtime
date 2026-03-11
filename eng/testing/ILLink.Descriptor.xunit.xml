@@ -15,7 +15,7 @@
     <namespace fullname="Xunit" />
     <namespace fullname="Xunit.Sdk" />
   </assembly>
-  <assembly fullname="xunit.assert">
+  <assembly fullname="xunit.v3.assert">
     <type fullname="Xunit.Sdk.CollectionTracker">
       <method name="CompareTypedSets" />
     </type>
