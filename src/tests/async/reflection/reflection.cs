@@ -287,7 +287,6 @@ public class Async2Reflection
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void FromStack(int level)
     {
@@ -349,8 +348,6 @@ public class Async2Reflection
         return await FromStackTask(level);
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
