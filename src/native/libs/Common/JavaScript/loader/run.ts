@@ -32,7 +32,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
         validateLoaderConfig();
 
-        const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
+        const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
         await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
 
         // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
