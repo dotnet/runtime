@@ -40,5 +40,38 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             Assert.Throws<DirectoryNotFoundException>(() => TarFile.CreateFromDirectory(sourceDirectoryName: dirPath, destination: archive, includeBaseDirectory: false));
         }
+
+        [Theory]
+        [MemberData(nameof(GetTarEntryFormats))]
+        public void CreateFromDirectory_WithFormat(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+            string fileName = "file.txt";
+            File.Create(Path.Join(source.Path, fileName)).Dispose();
+
+            using MemoryStream archive = new MemoryStream();
+            TarFile.CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format);
+
+            archive.Position = 0;
+            using TarReader reader = new TarReader(archive);
+
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalidTarEntryFormats))]
+        public void CreateFromDirectory_InvalidFormat_Throws(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+            using MemoryStream archive = new MemoryStream();
+
+            Assert.Throws<ArgumentOutOfRangeException>("format", () =>
+                TarFile.CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format));
+        }
     }
 }

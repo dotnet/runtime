@@ -461,6 +461,10 @@ function _marshalArrayToJs_impl(arg: JSMarshalerArgument, elementType: Marshaler
         const bufferOffset = fixupPointer(bufferPtr, 3);
         const sourceView = dotnetApi.localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
+    } else if (elementType == MarshalerType.Single) {
+        const bufferOffset = fixupPointer(bufferPtr, 2);
+        const sourceView = dotnetApi.localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
+        result = sourceView.slice();//copy
     } else {
         throw new Error(`NotImplementedException ${elementType}. ${jsinteropDoc}`);
     }
@@ -480,6 +484,8 @@ function _marshalSpanToJs(arg: JSMarshalerArgument, elementType?: MarshalerType)
         result = new Span(<any>bufferPtr, length, MemoryViewType.Int32);
     } else if (elementType == MarshalerType.Double) {
         result = new Span(<any>bufferPtr, length, MemoryViewType.Double);
+    } else if (elementType == MarshalerType.Single) {
+        result = new Span(<any>bufferPtr, length, MemoryViewType.Single);
     } else {
         throw new Error(`NotImplementedException ${elementType}. ${jsinteropDoc}`);
     }
@@ -498,6 +504,8 @@ function _marshalArraySegmentToJs(arg: JSMarshalerArgument, elementType?: Marsha
         result = new ArraySegment(<any>bufferPtr, length, MemoryViewType.Int32);
     } else if (elementType == MarshalerType.Double) {
         result = new ArraySegment(<any>bufferPtr, length, MemoryViewType.Double);
+    } else if (elementType == MarshalerType.Single) {
+        result = new ArraySegment(<any>bufferPtr, length, MemoryViewType.Single);
     } else {
         throw new Error(`NotImplementedException ${elementType}. ${jsinteropDoc}`);
     }

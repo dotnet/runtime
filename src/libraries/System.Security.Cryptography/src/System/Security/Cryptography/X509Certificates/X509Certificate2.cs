@@ -1835,9 +1835,9 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (rdn.HasMultipleElements)
                     {
-                        AsnValueReader reader = new AsnValueReader(rdn.RawData.Span, AsnEncodingRules.DER);
+                        ValueAsnReader reader = new ValueAsnReader(rdn.RawData.Span, AsnEncodingRules.DER);
                         // Be lax with the sort order because Windows is
-                        AsnValueReader set = reader.ReadSetOf(skipSortOrderValidation: true);
+                        ValueAsnReader set = reader.ReadSetOf(skipSortOrderValidation: true);
 
                         while (set.HasData)
                         {
@@ -1845,7 +1845,7 @@ namespace System.Security.Cryptography.X509Certificates
                             // is malformed here, because X500RelativeDistinguishedName already ensures it.
                             // So we don't bother checking that there's a value after the OID and then nothing
                             // after that.
-                            AsnValueReader attributeTypeAndValue = set.ReadSequence();
+                            ValueAsnReader attributeTypeAndValue = set.ReadSequence();
                             Oid? type = Oids.GetSharedOrNullOid(ref attributeTypeAndValue);
 
                             if (Oids.CommonNameOid.ValueEquals(type))

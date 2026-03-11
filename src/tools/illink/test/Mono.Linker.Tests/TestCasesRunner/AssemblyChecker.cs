@@ -67,14 +67,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     return s.FullName;
                 }), StringComparer.Ordinal);
 
-                // Workaround for compiler injected attribute to describe the language version
-                linkedMembers.Remove("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
-                linkedMembers.Remove("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
-                linkedMembers.Remove("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
-
-                // Workaround for compiler injected attribute to describe the language version
-                verifiedGeneratedTypes.Add("Microsoft.CodeAnalysis.EmbeddedAttribute");
-                verifiedGeneratedTypes.Add("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+                PrepareToVerifyAssembly(originalAssembly);
 
                 var membersToAssert = originalAssembly.MainModule.Types;
                 foreach (var originalMember in membersToAssert)
@@ -102,6 +95,25 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     foreach (var err in linkedMembers.Select(m => $"Member `{m}' was not expected to be kept"))
                         yield return err;
             }
+        }
+
+        /// <summary>
+        /// An opportunity to adjust what has been verified.  Helpful for dealing with polyfills or compiler generated types
+        /// </summary>
+        /// <param name="original"></param>
+        protected virtual void PrepareToVerifyAssembly(AssemblyDefinition original)
+        {
+        }
+
+        /// <summary>
+        /// The type will not be verified
+        /// </summary>
+        /// <param name="type"></param>
+        protected void IgnoreGeneratedTypeAndItsMembers(TypeDefinition type)
+        {
+            verifiedGeneratedTypes.Add(type.FullName);
+            foreach (var member in type.AllMembers())
+                linkedMembers.Remove(member.FullName);
         }
 
         static bool IsBackingField(FieldDefinition field) => field.Name.StartsWith("<") && field.Name.EndsWith(">k__BackingField");

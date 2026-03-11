@@ -25,8 +25,10 @@ using Internal.Pgo;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 #if READYTORUN
+using ILCompiler.ReadyToRun.TypeSystem;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
@@ -118,7 +120,7 @@ namespace Internal.JitInterface
         private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitLibrary)]
-        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private static extern IntPtr GetJitHost(IntPtr configProvider);
@@ -696,8 +698,8 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
-            _asyncResumptionStub = null;
 #endif
+            _asyncResumptionStub = null;
 
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -1383,7 +1385,9 @@ namespace Internal.JitInterface
                 // cases where the virtual function resolution algorithm either does not function, or is not used
                 // correctly.
 #if DEBUG
-                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
+                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN
+                    // TODO: resolution and devirtualization of async variants https://github.com/dotnet/runtime/issues/124620
+                    && !decl.IsAsyncVariant())
                 {
                     Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targeting type {objType}");
                     Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
@@ -1554,6 +1558,27 @@ namespace Internal.JitInterface
             *methodArg = null;
             *classArg = null;
             return null;
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            if (method.IsAsyncVariant())
+            {
+                method = method.GetTargetOfAsyncVariant();
+            }
+            else if (method.Signature.ReturnsTaskOrValueTask())
+            {
+                method = method.GetAsyncVariant();
+            }
+            else
+            {
+                variantIsThunk = false;
+                return null;
+            }
+
+            variantIsThunk = method?.IsAsyncThunk() ?? false;
+            return ObjectToHandle(method);
         }
 
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
@@ -1776,7 +1801,7 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
-            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
 
             return result;
@@ -1866,7 +1891,7 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+                if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 {
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
@@ -3447,9 +3472,6 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
             Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
-#if READYTORUN
-            throw new NotImplementedException("getContinuationType");
-#else
             GCPointerMapBuilder gcMapBuilder = new GCPointerMapBuilder((int)dataSize, PointerSize);
             ReadOnlySpan<bool> bools = MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize);
             for (int i = 0; i < bools.Length; i++)
@@ -3459,7 +3481,6 @@ namespace Internal.JitInterface
             }
 
             return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap()));
-#endif
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3642,6 +3663,52 @@ namespace Internal.JitInterface
             }
         }
 
+        private CorInfoWasmType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
+        {
+            TypeDesc type = HandleToObject(structHnd);
+
+#if READYTORUN
+            LayoutInt classSize = type.GetElementSize();
+
+            if (classSize.IsIndeterminate)
+            {
+                throw new RequiresRuntimeJitException(type);
+            }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+
+            TypeDesc abiType = WasmLowering.LowerToAbiType(type);
+
+            if (abiType == null)
+            {
+                // Indicate type should be passed by-ref.
+                return CorInfoWasmType.CORINFO_WASM_TYPE_VOID;
+            }
+
+            WasmValueType wasmAbiType = WasmLowering.LowerType(abiType);
+
+            switch (wasmAbiType)
+            {
+                case WasmValueType.I32:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32;
+                case WasmValueType.I64:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I64;
+                case WasmValueType.F32:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F32;
+                case WasmValueType.F64:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F64;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32; // unreachable
+
+            }
+        }
+
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
@@ -3799,20 +3866,6 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException(nameof(getTailCallHelpers));
 #else
             return false;
-#endif
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
-#pragma warning restore CA1822 // Mark members as static
-        {
-#if READYTORUN
-            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
-#else
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
-            return ObjectToHandle(_asyncResumptionStub);
 #endif
         }
 
@@ -4189,6 +4242,12 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_CALL_PLT => RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT,
                 CorInfoReloc.RISCV64_PCREL_I => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I,
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
+                CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
+                CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
+                CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
+                CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
@@ -4427,10 +4486,25 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.IsAsyncCall())
+            if (this.MethodBeingCompiled.IsAsyncCall()
+#if !READYTORUN
+                || (_compilation.TypeSystemContext.IsSpecialUnboxingThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(this.MethodBeingCompiled).IsAsyncCall())
+                || (_compilation.TypeSystemContext.IsDefaultInterfaceMethodImplementationInstantiationThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfDefaultInterfaceMethodImplementationInstantiationThunk(this.MethodBeingCompiled).IsAsyncCall())
+#endif
+                )
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
+
+                // Runtime cannot handle hot/cold splitting for async methods
+                flags.Clear(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
             }
+
+#if READYTORUN
+            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+            }
+#endif
 
             return (uint)sizeof(CORJIT_FLAGS);
         }

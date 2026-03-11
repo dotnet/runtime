@@ -48,6 +48,9 @@ public interface IThread : IContract
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
+    void GetThreadAllocContext(TargetPointer thread, out long allocBytes, out long allocBytesLoh) => throw new NotImplementedException();
+    void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase,
+                           out TargetPointer stackLimit, out TargetPointer frameAddress) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();

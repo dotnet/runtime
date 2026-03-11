@@ -484,6 +484,9 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
+#ifdef TARGET_WASM
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
+#endif
 };
 
 class emitter
@@ -628,18 +631,21 @@ protected:
 
     struct instrDescDebugInfo
     {
-        unsigned          idNum;
-        size_t            idSize;        // size of the instruction descriptor
-        unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
-        size_t            idMemCookie;   // compile time handle (check idFlags)
-        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
-        bool              idFinallyCall; // Branch instruction is a call to finally
-        bool              idCatchRet;    // Instruction is for a catch 'return'
-        CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
-        BasicBlock*       idTargetBlock; // Target block for branches
+        unsigned          idNum         = 0;
+        size_t            idSize        = 0;         // size of the instruction descriptor
+        unsigned          idVarRefOffs  = 0;         // IL offset for LclVar reference
+        unsigned          idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie   = 0;         // compile time handle (check idFlags)
+        GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
+        bool              idFinallyCall = false;     // Branch instruction is a call to finally
+        bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+        CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
+
 #ifdef TARGET_WASM
-        int lclOffset; // Base index of the WASM locals being declared
+        int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
+        unsigned idLclNum     = BAD_VAR_NUM; // LclVar number for this instruction
+        unsigned idLclOffset  = 0;           // LclVar field offset for this instruction
 #endif
     };
 
@@ -3554,10 +3560,32 @@ public:
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data, BasicBlock*
-        // array in the block cases, or emitLocation for the asyncResumeInfo
-        // case.
-        BYTE dsCont[0];
+    private:
+        union
+        {
+            BYTE*         dsData;      // for data blobs
+            BasicBlock**  dsBlocks;    // for block-based sections
+            emitLocation* dsLocations; // for async resume info
+        };
+
+    public:
+        BYTE*& Data()
+        {
+            assert(dsType == sectionType::data);
+            return dsData;
+        }
+
+        BasicBlock**& Blocks()
+        {
+            assert((dsType == sectionType::blockAbsoluteAddr) || (dsType == sectionType::blockRelative32));
+            return dsBlocks;
+        }
+
+        emitLocation*& Locations()
+        {
+            assert(dsType == sectionType::asyncResumeInfo);
+            return dsLocations;
+        }
     };
 
     /* These describe the entire initialized/uninitialized data sections */

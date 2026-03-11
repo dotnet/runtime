@@ -23,8 +23,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
+      - ios_arm64
       - tvos_arm64
     variables:
       # map dependencies variables to local variables
@@ -65,8 +64,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
+      - ios_arm64
       - tvos_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
@@ -110,8 +108,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
+      - ios_arm64
       - tvos_arm64
     variables:
       # map dependencies variables to local variables
@@ -144,8 +141,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
+      - ios_arm64
       - tvos_arm64
     variables:
       - name: timeoutPerTestInMinutes
@@ -183,8 +179,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
+      - ios_arm64
       - tvos_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
@@ -211,9 +206,9 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: tree baseservices /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=false
+            testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=false
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # Build the whole product using CoreCLR R2R and run library tests
@@ -227,8 +222,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
+      - ios_arm64
       - tvos_arm64
     variables:
       # map dependencies variables to local variables
@@ -240,12 +234,13 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_CoreCLR_Smoke
-      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
-      timeoutInMinutes: 120
+      nameSuffix: AllSubsets_CoreCLR
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+      timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true

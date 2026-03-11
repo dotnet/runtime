@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
 
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
@@ -18,6 +18,9 @@
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs) @(NativeCMakeArg, ' ')</_BuildNativeArgs>
+    <BuildNativeCommonDependsOnTargets>GenerateNativeVersionFile</BuildNativeCommonDependsOnTargets>
+    <BuildNativeCommonDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildNativeCommonDependsOnTargets)</BuildNativeCommonDependsOnTargets>
+    <BuildNativeCommonDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildNativeCommonDependsOnTargets);GenerateEmccExports</BuildNativeCommonDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +30,7 @@
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 
   <Target Name="BuildNativeCommon"
-          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile;GenerateEmccExports">
+          DependsOnTargets="$(BuildNativeCommonDependsOnTargets)">
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
       <_BuildNativeEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>
@@ -39,6 +42,7 @@
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
       <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
+      <_BuildNativeArgs Condition="'$(Ninja)' != 'true'">$(_BuildNativeArgs) ninja false</_BuildNativeArgs>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
         then we should consider calling Environment.ProcessorCount

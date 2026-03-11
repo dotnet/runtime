@@ -8,7 +8,7 @@ include(CheckStructHasMember)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 
-if(CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
@@ -16,7 +16,7 @@ endif()
 
 if(CLR_CMAKE_TARGET_APPLE)
   set(CMAKE_REQUIRED_DEFINITIONS -D_XOPEN_SOURCE)
-elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
+elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD AND NOT CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
 
@@ -141,7 +141,6 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
-check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -367,21 +366,7 @@ int main()
 }" HAVE_WORKING_CLOCK_GETTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
 
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
@@ -609,14 +594,14 @@ if(CLR_CMAKE_TARGET_APPLE)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
-elseif(CLR_CMAKE_TARGET_FREEBSD)
+elseif(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     set(BSD_REGS_STYLE "((reg).r_##rr)")
   elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     set(BSD_REGS_STYLE "((reg).rr)")
   else()
-    message(FATAL_ERROR "Unknown FreeBSD architecture")
+    message(FATAL_ERROR "Unknown architecture")
   endif()
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_NETBSD)

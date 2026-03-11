@@ -75,21 +75,20 @@ static void OpenLibraryOnce(void)
         // Android OpenSSL has no soname
         DlOpen(LIBNAME);
     }
-#endif
-
-    if (libssl == NULL)
-    {
-        // Prefer OpenSSL 3.x
-        DlOpen(MAKELIB("3"));
-    }
-
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("1.1"));
-    }
-
-#ifdef __FreeBSD__
+#elif defined(__FreeBSD__)
     // The ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpen(MAKELIB("17"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from base as found in FreeBSD 15.0
+        DlOpen(MAKELIB("35"));
+    }
+
     if (libssl == NULL)
     {
         // OpenSSL 3.0 from ports
@@ -114,6 +113,16 @@ static void OpenLibraryOnce(void)
     }
 #endif
 
+    if (libssl == NULL)
+    {
+        // Prefer OpenSSL 3.x
+        DlOpen(MAKELIB("3"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("1.1"));
+    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
