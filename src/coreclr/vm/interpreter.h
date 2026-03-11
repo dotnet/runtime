@@ -1244,6 +1244,27 @@ private:
     template<typename T>
     __forceinline void OpStackSet(unsigned ind, T val)
     {
+#ifdef BIGENDIAN
+        // On big-endian, ArgSlotEndiannessFixup places sub-8-byte values at an offset
+        // within the 8-byte slot (e.g. 4-byte values go to bytes 4-7). The leading bytes
+        // are never written, so a later 8-byte read (e.g. OpStackGet<NativeInt> on a slot
+        // that was written as INT32) picks up stale data.  Pre-fill the entire slot with
+        // the correct extension: sign-extend for signed integers so that negative values
+        // survive a wider read, zero-extend for everything else.
+        if constexpr(sizeof(T) < sizeof(INT64))
+        {
+            INT64 extended;
+            if constexpr(std::is_integral<T>::value && std::is_signed<T>::value)
+                extended = static_cast<INT64>(val);
+            else
+                extended = 0;
+#if COMBINE_OPSTACK_VAL_TYPE
+            m_operandStackX[ind].m_val = extended;
+#else
+            m_operandStack[ind] = extended;
+#endif
+        }
+#endif
         *OpStackGetAddr<T>(ind) = val;
     }
 

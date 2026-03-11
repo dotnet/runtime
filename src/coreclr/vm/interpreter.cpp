@@ -7140,7 +7140,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                  (cit2 == CORINFO_TYPE_VALUECLASS
                   && CorInfoTypeStackNormalize(GetTypeForPrimitiveValueClass(t2.ToClassHandle())) == CORINFO_TYPE_NATIVEINT))
         {
-            NativeInt val1 = OpStackGet<NativeInt>(op1idx);
+            NativeInt val1 = static_cast<NativeInt>(OpStackGet<INT32>(op1idx));
             NativeInt val2 = OpStackGet<NativeInt>(op2idx);
             if (op == CO_EQ)
             {
@@ -8926,6 +8926,21 @@ void Interpreter::Box()
         {
             // Operand stack entry *is* the data.
             size_t classSize = getClassSize(boxTypeClsHnd);
+            CorInfoType stackCit = valIt.ToCorInfoType();
+	    CorInfoType boxCit = GetTypeForPrimitiveValueClass(boxTypeClsHnd);
+
+            // Float and double have incompatible IEEE 754 encodings -- a raw
+            // memcpy of the wrong width produces garbage.  Perform the same
+            // implicit conversion the JIT does (importer.cpp:3635-3638).
+            if (stackCit == CORINFO_TYPE_FLOAT && boxCit == CORINFO_TYPE_DOUBLE)
+            {
+                OpStackSet<double>(ind, static_cast<double>(OpStackGet<float>(ind)));
+            }
+            else if (stackCit == CORINFO_TYPE_DOUBLE && boxCit == CORINFO_TYPE_FLOAT)
+            {
+                OpStackSet<float>(ind, static_cast<float>(OpStackGet<double>(ind)));
+            }
+
             valPtr = OpStackGetAddr(ind, classSize);
         }
 
