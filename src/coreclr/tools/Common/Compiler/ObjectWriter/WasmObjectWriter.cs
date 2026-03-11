@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
@@ -24,6 +26,7 @@ namespace ILCompiler.ObjectWriter
     {
         // TODO-WASM: Consider alignment needs for data sections
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
+        public static readonly ObjectNodeSection DataCountSection = new ObjectNodeSection("wasm.datacount", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
@@ -38,6 +41,10 @@ namespace ILCompiler.ObjectWriter
     internal sealed class WasmObjectWriter : ObjectWriter
     {
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
+
+        // We use 2 Wasm data segments for webcil,
+        // 1 for the payload size, and the second for the payload itself.
+        const int NumDataSegments = 2;
 
         public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
@@ -165,8 +172,10 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
             { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
-            { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
+            { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
+            { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount }
         };
+
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
         {
             if (!_sectionToType.ContainsKey(section))
@@ -199,6 +208,7 @@ namespace ILCompiler.ObjectWriter
                 int size = 0;
                 size += WebcilHeader.EncodeSize(); // include header
                 size += Sections.Length * WebcilSectionHeader.EncodeSize(); // include size of all section headers
+                size = AlignmentHelper.AlignUp(size, WebcilSectionAlignment); // account for padding before first section
 
                 foreach (WebcilSection section in Sections)
                 {
@@ -221,6 +231,69 @@ namespace ILCompiler.ObjectWriter
 
                 return 0;
             }
+        }
+
+        static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
+            new WasmFuncType(new([WasmValueType.I32]), new([WasmValueType.I32])), // (func (destPtr i32) (result i32))
+                [
+                    Local.Get(0), // (local.get $destPtr)
+                    I32.Const(0),
+                    I32.Const(4),
+                    Memory.Init(0)
+                ]
+        );
+
+        static WasmFunctionBody GetWebcilPayload = new WasmFunctionBody(
+            new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
+                [
+                    Local.Get(0), // (local.get $d)
+                    I32.Const(0),
+                    Local.Get(1), // (local.get $n)
+                    Memory.Init(1)
+                ]
+        );
+
+        // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
+        // represented by nodes in the dependency graph.
+        // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
+        private void RegisterStubIndexAndSignature(WasmFunctionBody body)
+        {
+            Utf8String signatureKey = body.Signature.GetMangledName(_nodeFactory.NameMangler);
+            if (!_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
+            {
+                Console.WriteLine($"Adding signature: {signatureKey}");
+                signatureIndex = _uniqueSignatures.Count;
+                _uniqueSignatures.Add(signatureKey, signatureIndex);
+
+                SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
+                byte[] encodedSignature = new byte[body.Signature.EncodeSize()];
+                body.Signature.Encode(encodedSignature);
+                typeSectionWriter.EmitData(encodedSignature);
+            }
+
+            SectionWriter functionSectionWriter = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
+            functionSectionWriter.WriteULEB128((ulong)signatureIndex);
+        }
+
+        private void InsertWasmStub(Utf8String name, WasmFunctionBody body)
+        {
+            Console.WriteLine($"Inserting stub: {name}");
+            Console.WriteLine($"method count: {_methodCount}");
+            Console.WriteLine($"unique signature count: {_uniqueSignatures.Count}");
+
+            SectionWriter codeWriter = GetOrCreateSection(ObjectNodeSection.WasmCodeSection);
+
+            int codeSize = body.EncodeSize();
+            byte[] data = new byte[codeSize];
+            body.Encode(data);
+
+            // The code writer should already be set up to write the function body size as a prefix, so just emit the function body here
+            Debug.Assert(codeWriter.HasLengthPrefix);
+            codeWriter.EmitData(data);
+            _uniqueSymbols.Add(name.ToString(), _methodCount);
+            _methodCount++;
+
+            RegisterStubIndexAndSignature(body);
         }
 
         const int WebcilSectionAlignment = 16;
@@ -328,10 +401,24 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(numPages); // memory limits: initial size in pages (64kb each)
         }
 
+        private void WriteDataCountSection()
+        {
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.DataCountSection);
+            writer.WriteULEB128(NumDataSegments); // number of data segments
+        }
+
         private WebcilSegment _webcilSegment = null;
         private protected override void EmitSectionsAndLayout()
         {
+
             _webcilSegment = BuildWebcilDataSegment();
+            InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
+            InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
+            WriteDataCountSection();
+
+            Console.WriteLine("Done inserting stubs...");
+            Console.WriteLine($"method count: {_methodCount}");
+            Console.WriteLine($"unique signature count: {_uniqueSignatures.Count}");
 
             WriteTableSection();
 
@@ -367,6 +454,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.FunctionSection.Name,
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
+            WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
             WasmObjectNodeSection.DataSection.Name,
         ];
@@ -388,13 +476,18 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void PadStream(MemoryStream s, int n, byte padding = 0)
+        {
+            for (int i = 0; i < n; i++)
+                s.WriteByte(padding);
+        }
+
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             EmitWasmHeader(outputFileStream);
             foreach (int index in SectionEmitOrder)
             {
                 WasmSection section = _sections[index];
-                // TODO-WASM: handle data section relocations (this is dependent on the WebCIL structure being in place)
                 if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
                     section.Type is not WasmSectionType.Data)
                 {
@@ -440,7 +533,6 @@ namespace ILCompiler.ObjectWriter
             else
                 throw new InvalidDataException($"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
 
-
             MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
             Console.WriteLine($"webcilSection has flat mapped size: {_webcilSegment.GetFlatMappedSize()}");
 
@@ -458,31 +550,43 @@ namespace ILCompiler.ObjectWriter
 
             foreach (WebcilSection section in _webcilSegment.Sections)
             {
+                // Stream position forward to pad implicitly
+                webcilStream.Position = section.Header.PointerToRawData;
+                section.Stream.Position = 0;
+                section.Stream.CopyTo(webcilStream);
+                long bytesWritten = (long)webcilStream.Position - (long)section.Header.PointerToRawData;
+                Debug.Assert(section.Header.SizeOfRawData - bytesWritten == section.Padding, $"Unexpected padding: {section.Header.SizeOfRawData - bytesWritten} != {section.Padding}");
+
                 if (_resolvableRelocations.TryGetValue(section.Index, out List<SymbolicRelocation> relocations))
                 {
-                    Console.WriteLine($"Stream prior position: {webcilStream.Position}");
-                    Debug.Assert(section.Header.PointerToRawData >= webcilStream.Position);
-                    Console.WriteLine($"Section raw start: {section.Header.PointerToRawData}; Section raw end: {section.Header.PointerToRawData + section.Header.SizeOfRawData}");
-                    Console.WriteLine($"Section virtual start: {section.Header.VirtualAddress}; Section virtual end: {section.Header.VirtualAddress + section.Header.VirtualSize}");
-
-                    // Seek the stream forward to the next section start, to account for inter-section padding.
-                    webcilStream.Position = section.Header.PointerToRawData;
-                    section.Stream.Position = 0;
-                    section.Stream.CopyTo(webcilStream);
-
-                    Console.WriteLine($"Resolving relocations for section: {section.Name}; Section start: {section.Header.PointerToRawData}");
-
                     // We emit all Webcil sections into one stream, and resolve relocations directly into this combined stream.
-                    // so section-relative that our reloc list has need to be alculated based on the section's position within the Webcil segment
-                    // which should be section.Header.PointerToRawData
+                    // As a result, the section-relative offsets that relocs in our list have need to be calculated based on the section's
+                    // position within the Webcil segment
                     ResolveRelocations(section.Index, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData);
                 }
             }
 
-            // TODO-Wasm: can dispose of individual streams here, all the data we need has been copied to the unified webcil stream
+            if (_webcilSegment.Sections.Length > 0)
+            {
+                // Write final padding
+                WebcilSection lastSection = _webcilSegment.Sections[_webcilSegment.Sections.Length - 1];
+                webcilStream.Seek(0, SeekOrigin.End);
+                PadStream(webcilStream, (int)lastSection.Padding);
+            }
+            Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
+
+            // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit int)
+            MemoryStream webcilSizeSegmentStream = new MemoryStream(sizeof(uint));
+            BinaryPrimitives.WriteUInt32LittleEndian(webcilSizeSegmentStream.GetBuffer(), (uint)_webcilSegment.GetFlatMappedSize());
+            WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
+                WasmDataSectionType.Passive, null);
+
+            // Passive data segment for webcil payload contents
             WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
                 WasmDataSectionType.Passive, null);
-            WasmDataSection dataSection = new WasmDataSection([webcilContentsSegment], new Utf8String("data"));
+
+            // Create combined data section and emit 
+            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"));
             dataSection.Emit(outputFileStream);
         }
 
@@ -944,6 +1048,7 @@ namespace ILCompiler.ObjectWriter
         public readonly int Index;
         public WebcilSectionHeader Header;
         public readonly Stream _stream;
+        public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
 
         public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
             : base(WasmSectionType.Data, stream, name)

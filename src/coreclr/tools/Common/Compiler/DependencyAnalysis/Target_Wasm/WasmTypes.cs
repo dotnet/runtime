@@ -17,10 +17,10 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     // require a more complex encoding.
     public enum WasmValueType : byte
     {
-        I32  = 0x7F,
-        I64  = 0x7E,
-        F32  = 0x7D,
-        F64  = 0x7C,
+        I32 = 0x7F,
+        I64 = 0x7E,
+        F32 = 0x7D,
+        F64 = 0x7C,
         V128 = 0x7B
     }
 
@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     }
 
     // Represents a Wasm function body in the code section.
-    // Encodes as: ULEB128(bodySize) + ULEB128(0) (zero local declarations) + instructions + 0x0B end
+    // Encodes as: ULEB128(0) (zero local declarations) + instructions + 0x0B end
     public class WasmFunctionBody : IWasmEncodable
     {
         public readonly WasmFuncType Signature;
@@ -292,16 +292,12 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public int EncodeSize()
         {
-            int contentSize = BodyContentSize();
-
-            return (int)DwarfHelper.SizeOfULEB128((uint)contentSize) + contentSize;
+            return BodyContentSize();
         }
 
         public int Encode(Span<byte> buffer)
         {
-            int contentSize = BodyContentSize();
             int pos = 0;
-            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)contentSize);
             buffer[pos++] = 0x00; // zero local declarations
             pos += _body.Encode(buffer.Slice(pos));
 
