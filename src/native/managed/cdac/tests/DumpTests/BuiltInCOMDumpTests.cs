@@ -10,13 +10,13 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the BuiltInCOM contract.
-/// Uses the CCWInterfaces debuggee dump, which creates COM callable wrappers (CCWs)
+/// Uses the CCW debuggee dump, which creates COM callable wrappers (CCWs)
 /// on Windows then crashes via FailFast.
 /// All tests are skipped on non-Windows dumps because CCWs require Windows COM support.
 /// </summary>
 public class BuiltInCOMDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "CCWInterfaces";
+    protected override string DebuggeeName => "CCW";
     protected override string DumpType => "full";
 
     /// <summary>
@@ -62,8 +62,8 @@ public class BuiltInCOMDumpTests : DumpTestBase
         {
             List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
 
-            Assert.True(interfaces.Count > 0,
-                $"Expected at least one interface entry for CCW at 0x{ccwPtr:X}");
+            Assert.True(interfaces.Count == 1,
+                $"Expected exactly one interface entry for CCW at 0x{ccwPtr:X}");
 
             // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
             Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
@@ -129,11 +129,6 @@ public class BuiltInCOMDumpTests : DumpTestBase
             TargetPointer objectPtr = Target.ReadPointer(handle);
             Assert.NotEqual(TargetPointer.Null, objectPtr,
                 $"Expected handle for CCW at 0x{ccwPtr:X} to reference a managed object");
-
-            // InterfaceCount should be consistent with GetCCWInterfaces().
-            int ifaceCount = builtInCOM.GetCCWInterfaces(ccwPtr).Count();
-            Assert.True(ifaceCount > 0,
-                $"Expected positive interface count for CCW at 0x{ccwPtr:X}");
         }
     }
 }

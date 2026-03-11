@@ -15,17 +15,11 @@ public readonly struct COMInterfacePointerData
 /// <summary>Data read from a SimpleComCallWrapper.</summary>
 public readonly struct SimpleComCallWrapperData
 {
-    /// <summary>The visible reference count (raw refcount with CLEANUP_SENTINEL and other non-count bits masked off via COM_REFCOUNT_MASK).</summary>
     public ulong RefCount { get; init; }
-    /// <summary>True if the CCW has been neutered (CLEANUP_SENTINEL bit was set in the raw ref count).</summary>
     public bool IsNeutered { get; init; }
-    /// <summary>True if the CCW is aggregated (IsAggregated flag, bit 0x1).</summary>
     public bool IsAggregated { get; init; }
-    /// <summary>True if the managed class extends a COM object (IsExtendsCom flag, bit 0x2).</summary>
     public bool IsExtendsCOMObject { get; init; }
-    /// <summary>True if the GC handle is weak (IsHandleWeak flag, bit 0x4).</summary>
     public bool IsHandleWeak { get; init; }
-    /// <summary>Outer IUnknown pointer for aggregated CCWs (m_pOuter).</summary>
     public TargetPointer OuterIUnknown { get; init; }
 }
 

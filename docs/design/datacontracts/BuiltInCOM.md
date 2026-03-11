@@ -149,7 +149,7 @@ public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
     };
 }
 
-// Returns the GC object handle (m_ppThis) from the given ComCallWrapper.
+// Returns the GC object handle from the given ComCallWrapper.
 public TargetPointer GetObjectHandle(TargetPointer ccw)
     => _target.ReadPointer(ccw + /* ComCallWrapper::Handle offset */);
 

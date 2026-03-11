@@ -37,7 +37,7 @@ internal static class Program
             GC.WaitForPendingFinalizers();
         }
 
-        Environment.FailFast("cDAC dump test: CCWInterfaces debuggee intentional crash");
+        Environment.FailFast("cDAC dump test: CCW debuggee intentional crash");
     }
 }
 
