@@ -2297,9 +2297,11 @@ Thread::~Thread()
         // Destroy any handles that we're using to hold onto exception objects
         SafeSetThrowables(NULL);
 
-        GCX_COOP();
-        DestroyShortWeakHandle(m_ExposedObject);
-        DestroyStrongHandle(m_StrongHndToExposedObject);
+        // The thread is already detached from TLS (GetThread() returns NULL),
+        // so GCX_COOP() cannot be used. Use DestroyHandleUnsafe which nulls
+        // the handle value before recycling the slot.
+        DestroyHandleUnsafe(m_ExposedObject, HNDTYPE_WEAK_SHORT);
+        DestroyHandleUnsafe(m_StrongHndToExposedObject, HNDTYPE_STRONG);
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());

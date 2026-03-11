@@ -256,6 +256,28 @@ inline void DestroyHandleCommon(OBJECTHANDLE handle, HandleType type)
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, type);
 }
 
+// Variant of DestroyHandleCommon that is safe to call from preemptive mode
+// and from threads that the runtime does not know about.
+// It nulls the handle value first to prevent GC from seeing stale references,
+// skips the profiler notification (no managed thread context), then recycles
+// the handle slot through the GC handle manager.
+inline void DestroyHandleUnsafe(OBJECTHANDLE handle, HandleType type)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    // Null the handle value first so that GC will not follow a stale
+    // object reference while we recycle the slot.
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, NULL);
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, type);
+}
+
 inline void DestroyHandle(OBJECTHANDLE handle)
 {
     DestroyHandleCommon(handle, HNDTYPE_DEFAULT);

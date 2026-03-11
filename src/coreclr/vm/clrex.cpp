@@ -51,8 +51,15 @@ CLRException::~CLRException()
         // clear the handle first, so if we SO on destroying it, we don't have a dangling reference
         SetThrowableHandle(NULL);
 
-        GCX_COOP();
-        DestroyHandle(throwableHandle);
+        if (GetThreadNULLOk() != NULL)
+        {
+            GCX_COOP();
+            DestroyHandle(throwableHandle);
+        }
+        else
+        {
+            DestroyHandleUnsafe(throwableHandle, HNDTYPE_DEFAULT);
+        }
     }
 }
 

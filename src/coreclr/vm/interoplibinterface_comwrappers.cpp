@@ -268,9 +268,8 @@ namespace InteropLibImports
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
         // This can be called from threads without a managed Thread (e.g. via
-        // COM release on a native thread). Only switch to cooperative mode
-        // when a managed thread exists; otherwise the MODE_COOPERATIVE
-        // contract check in DestroyHandleCommon is a no-op.
+        // COM release on a native thread). Use the unsafe variant that nulls
+        // the handle before recycling when we cannot enter cooperative mode.
         if (GetThreadNULLOk() != nullptr)
         {
             GCX_COOP();
@@ -278,7 +277,7 @@ namespace InteropLibImports
         }
         else
         {
-            DestroyRefcountedHandle(objectHandle);
+            DestroyHandleUnsafe(objectHandle, HNDTYPE_REFCOUNTED);
         }
     }
 
