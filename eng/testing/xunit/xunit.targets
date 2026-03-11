@@ -32,17 +32,24 @@
     TestSingleFile condition preserves that, and the NativeAOT condition
     overrides it back to false.
 
-    The SDK exempts mobile/WASM/NativeAOT RIDs from the NETSDK1067 error
-    (SelfContained + UseAppHost=false) via _RuntimeIdentifierUsesAppHost.
-    For NativeAOT during build (_IsPublishing is false), we must also set
-    _RuntimeIdentifierUsesAppHost=false to prevent NETSDK1067.
+    When SelfContained=true (e.g., mobile/WASM builds set this via
+    tests.props, NativeAOT sets it via tests.singlefile.targets), the SDK
+    checks _RuntimeIdentifierUsesAppHost to decide whether NETSDK1067
+    applies.  Set it to false to prevent the error.
+
+    NativeAOT test projects become Exe (xunit v3) and self-contained, so
+    the SDK validates referenced Exe projects for SelfContained consistency
+    (NETSDK1150).  Disable that check since test helper Exe projects like
+    System.Reflection.TestExe aren't self-contained.
   -->
   <PropertyGroup Condition="'$(TestSingleFile)' != 'true'">
     <UseAppHost>false</UseAppHost>
+    <_RuntimeIdentifierUsesAppHost Condition="'$(SelfContained)' == 'true'">false</_RuntimeIdentifierUsesAppHost>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <UseAppHost>false</UseAppHost>
     <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
 
   <!--

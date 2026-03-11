@@ -41,6 +41,7 @@
   -->
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(TestSingleFile)' != 'true'">
     <UseAppHost>false</UseAppHost>
+    <_RuntimeIdentifierUsesAppHost Condition="'$(SelfContained)' == 'true'">false</_RuntimeIdentifierUsesAppHost>
   </PropertyGroup>
   <Target Name="_XunitValidateBuild" BeforeTargets="BeforeBuild" Condition=" '$(TargetFramework)' != '' AND '$(IsTestProject)' == 'true' ">
     <Error Text="xUnit.net v3 test projects must be executable (set project property '&lt;OutputType&gt;Exe&lt;/OutputType&gt;')."
