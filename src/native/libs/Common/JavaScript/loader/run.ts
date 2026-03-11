@@ -23,6 +23,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
     if (!loaderConfig.resources || !loaderConfig.resources.coreAssembly || !loaderConfig.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
     try {
         runtimeState.creatingRuntime = true;
+        const resources = loaderConfig.resources;
 
         await validateEngineFeatures();
 
@@ -31,39 +32,39 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
         validateLoaderConfig();
 
-        const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(loaderConfig.resources.modulesAfterRuntimeReady).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
+        const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
 
         // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
         await initPolyfills();
 
-        if (loaderConfig.resources.jsModuleDiagnostics && loaderConfig.resources.jsModuleDiagnostics.length > 0) {
-            const diagnosticsModule = await loadDotnetModule(loaderConfig.resources.jsModuleDiagnostics[0]);
+        if (resources.jsModuleDiagnostics && resources.jsModuleDiagnostics.length > 0) {
+            const diagnosticsModule = await loadDotnetModule(resources.jsModuleDiagnostics[0]);
             diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
-            if (loaderConfig.resources.wasmSymbols && loaderConfig.resources.wasmSymbols.length > 0) {
-                await fetchNativeSymbols(loaderConfig.resources.wasmSymbols[0]);
+            if (resources.wasmSymbols && resources.wasmSymbols.length > 0) {
+                await fetchNativeSymbols(resources.wasmSymbols[0]);
             }
         }
-        const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleNative[0]);
-        const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleRuntime[0]);
-        const wasmNativePromise: Promise<Response> = fetchMainWasm(loaderConfig.resources.wasmNative[0]);
+        const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(resources.jsModuleNative[0]);
+        const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(resources.jsModuleRuntime[0]);
+        const wasmNativePromise: Promise<Response> = fetchMainWasm(resources.wasmNative[0]);
 
-        const coreAssembliesPromise = forEachResource(loaderConfig.resources.coreAssembly, fetchAssembly);
-        const coreVfsPromise = forEachResource(loaderConfig.resources.coreVfs, fetchVfs);
+        const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchAssembly);
+        const coreVfsPromise = forEachResource(resources.coreVfs, fetchVfs);
 
         const icuResourceName = getIcuResourceName();
-        const icuDataPromise = forEachResource(loaderConfig.resources.icu, fetchIcu, asset => asset.name === icuResourceName);
+        const icuDataPromise = forEachResource(resources.icu, fetchIcu, asset => asset.name === icuResourceName);
 
-        const assembliesPromise = forEachResource(loaderConfig.resources.assembly, fetchAssembly);
-        const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && loaderConfig.resources.satelliteResources
-            ? fetchSatelliteAssemblies(Object.keys(loaderConfig.resources.satelliteResources))
+        const assembliesPromise = forEachResource(resources.assembly, fetchAssembly);
+        const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && resources.satelliteResources
+            ? fetchSatelliteAssemblies(Object.keys(resources.satelliteResources))
             : Promise.resolve();
-        const vfsPromise = forEachResource(loaderConfig.resources.vfs, fetchVfs);
+        const vfsPromise = forEachResource(resources.vfs, fetchVfs);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
-        const corePDBsPromise = forEachResource(loaderConfig.resources.corePdb, fetchPdb, () => isDebuggingSupported);
-        const pdbsPromise = forEachResource(loaderConfig.resources.pdb, fetchPdb, () => isDebuggingSupported);
-        const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(loaderConfig.resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
+        const corePDBsPromise = forEachResource(resources.corePdb, fetchPdb, () => isDebuggingSupported);
+        const pdbsPromise = forEachResource(resources.pdb, fetchPdb, () => isDebuggingSupported);
+        const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
 
         const nativeModule = await nativeModulePromise;
         const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
@@ -79,6 +80,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         await vfsPromise;
         await icuDataPromise;
         await wasmNativePromise; // this is just to propagate errors
+
         if (!downloadOnly) {
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
