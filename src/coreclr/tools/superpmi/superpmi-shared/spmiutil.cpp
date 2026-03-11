@@ -518,6 +518,7 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     INT32 hi20 = INT32(offset - lo12);
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
     pCode[0] &= 0x00000FFF; // keep bits 11-0 (opcode + rd)
     pCode[0] |= hi20;
     int bottomBitsPos = isStype ? 7 : 20;

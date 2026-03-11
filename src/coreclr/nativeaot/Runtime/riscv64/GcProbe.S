@@ -4,11 +4,11 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define PROBE_FRAME_SIZE 0xC0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
+#define PROBE_FRAME_SIZE 0xB0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, ra, m_pThread, m_Flags) +
                                // 11 * 8 for callee saved registers +
                                // 1 * 8  for caller SP +
                                // 3 * 8  for int returns (a0, a1, a2) +
-                               // 4 * 8  for FP returns +
+                               // 2 * 8  for FP returns (fa0, fa1) +
                                // 1 * 8  for alignment padding
 
 // Define the prolog for setting up the PInvokeTransitionFrame
@@ -41,8 +41,7 @@
     # Save the FP return registers
     fsd  fa0, 0x98(sp)
     fsd  fa1, 0xa0(sp)
-    fsd  fa2, 0xa8(sp)
-    fsd  fa3, 0xb0(sp)
+    # Slot at sp+0xa8 is alignment padding
 
     # Perform the rest of the PInvokeTransitionFrame initialization.
     sd  \threadReg, OFFSETOF__PInvokeTransitionFrame__m_pThread(sp)        # Thread * (unused by stackwalker)
@@ -67,8 +66,6 @@
     // Restore the FP return registers
     fld  fa0, 0x98(sp)
     fld  fa1, 0xa0(sp)
-    fld  fa2, 0xa8(sp)
-    fld  fa3, 0xb0(sp)
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR s1, s2,  0x20
