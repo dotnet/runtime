@@ -54,8 +54,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         [Fact]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
-            throw new Exception("test foo bar");
-            /*
             var randValue = Guid.NewGuid().ToString();
             var configKey = "MyDummySetting";
 
@@ -65,11 +63,9 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
                 .Build();
 
             Assert.Equal(randValue, config[configKey]);
-            */
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60584", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
             var randValue = Guid.NewGuid().ToString();
@@ -123,7 +119,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60584", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {
             var userSecretsId = Guid.NewGuid().ToString();

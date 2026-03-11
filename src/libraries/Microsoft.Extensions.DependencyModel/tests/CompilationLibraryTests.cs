@@ -51,7 +51,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void ResolveReferencePathsAcceptsNullCustomResolvers()
         {
             var library = TestLibraryFactory.Create();
