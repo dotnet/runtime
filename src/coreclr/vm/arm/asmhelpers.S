@@ -1095,34 +1095,6 @@ LOCAL_LABEL(CopyLoop_4B):
     EPILOG_BRANCH_REG r5
 LEAF_END Load_Stack_4B
 
-LEAF_ENTRY Store_Stack
-    ldr r9, [r6], #4 // SP offset
-    ldr r8, [r6], #4 // number of stack slots
-    add r9, sp, r9
-    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
-LOCAL_LABEL(StoreCopyLoop):
-    ldr r5, [r9], #4
-    str r5, [r7], #8
-    subs r8, r8, #4
-    bne LOCAL_LABEL(StoreCopyLoop)
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_Stack
-
-LEAF_ENTRY Store_Stack_4B
-    ldr r9, [r6], #4 // SP offset
-    ldr r8, [r6], #4 // number of stack slots
-    add r9, sp, r9
-    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
-LOCAL_LABEL(StoreCopyLoop_4B):
-    ldr r5, [r9], #4
-    str r5, [r7], #4
-    subs r8, r8, #4
-    bne LOCAL_LABEL(StoreCopyLoop_4B)
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_Stack_4B
-
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     PROLOG_PUSH "{r4-r10,lr}"
     mov r4, sp
@@ -1402,6 +1374,35 @@ NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
     free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetBuffR1, _TEXT
+
+LEAF_ENTRY Store_Stack
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ldr r5, [r9], #4
+    str r5, [r7], #8
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack
+
+LEAF_ENTRY Store_Stack_4B
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop_4B):
+    ldr r5, [r9], #4
+    str r5, [r7], #4
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop_4B)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack_4B
+
 
 // ------------------------------------------------------------------
 // Create a real TransitionBlock and call CallInterpreterFuncletWorker
