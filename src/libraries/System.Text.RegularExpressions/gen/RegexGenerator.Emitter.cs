@@ -55,10 +55,9 @@ namespace System.Text.RegularExpressions.Generator
             // RegexTree/AnalysisResults needed by the emitter). This re-parse is fast and only
             // happens on incremental cache misses.
             Dictionary<string, string[]> requiredHelpers = new();
-            var methods = new RegexMethod[spec.RegexMethods.Count];
-            for (int i = 0; i < spec.RegexMethods.Count; i++)
+            var methods = new List<(RegexMethodSpec Spec, RegexMethod Method)>();
+            foreach (RegexMethodSpec methodSpec in spec.RegexMethods)
             {
-                RegexMethodSpec methodSpec = spec.RegexMethods[i];
                 RegexType regexType = ConvertRegexTypeSpecToRegexType(methodSpec.DeclaringType);
 
                 CultureInfo culture = methodSpec.Tree?.CultureName is not null
@@ -84,13 +83,13 @@ namespace System.Text.RegularExpressions.Generator
                     emittedExpressions.Add(key, regexMethod);
                 }
 
-                methods[i] = regexMethod;
+                methods.Add((methodSpec, regexMethod));
             }
 
             // Emit partial method definitions.
-            for (int i = 0; i < methods.Length; i++)
+            foreach ((RegexMethodSpec _, RegexMethod rm) in methods)
             {
-                EmitRegexPartialMethod(methods[i], writer);
+                EmitRegexPartialMethod(rm, writer);
                 writer.WriteLine();
             }
 
@@ -110,15 +109,14 @@ namespace System.Text.RegularExpressions.Generator
 
             // Emit each Regex-derived type.
             writer.Indent++;
-            for (int i = 0; i < methods.Length; i++)
+            foreach ((RegexMethodSpec methodSpec, RegexMethod rm) in methods)
             {
-                if (methods[i].IsDuplicate)
+                if (rm.IsDuplicate)
                 {
                     continue;
                 }
 
-                RegexMethod rm = methods[i];
-                if (spec.RegexMethods[i].Tree is not null)
+                if (methodSpec.Tree is not null)
                 {
                     // Generate the RunnerFactory implementation.
                     var runnerSw = new StringWriter();
@@ -133,8 +131,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    Debug.Assert(spec.RegexMethods[i].LimitedSupportReason is not null);
-                    EmitRegexLimitedBoilerplate(writer, rm, spec.RegexMethods[i].LimitedSupportReason!, rm.CompilationData.LanguageVersion);
+                    Debug.Assert(methodSpec.LimitedSupportReason is not null);
+                    EmitRegexLimitedBoilerplate(writer, rm, methodSpec.LimitedSupportReason!, rm.CompilationData.LanguageVersion);
                     writer.WriteLine();
                 }
             }

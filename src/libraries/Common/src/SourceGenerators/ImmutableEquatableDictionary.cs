@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics.Hashing;
 
 namespace SourceGenerators
@@ -56,7 +55,7 @@ namespace SourceGenerators
             foreach (KeyValuePair<TKey, TValue> entry in _values)
             {
                 if (!other._values.TryGetValue(entry.Key, out TValue? otherValue) ||
-                    !entry.Value.Equals(otherValue))
+                    !EqualityComparer<TValue>.Default.Equals(entry.Value, otherValue))
                 {
                     return false;
                 }
@@ -91,28 +90,6 @@ namespace SourceGenerators
 
     internal static class ImmutableEquatableDictionary
     {
-        public static ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TSource, TKey, TValue>(
-            this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector)
-            where TKey : IEquatable<TKey>
-            where TValue : IEquatable<TValue>
-        {
-            Dictionary<TKey, TValue> dict = source.ToDictionary(keySelector, valueSelector);
-            return dict.Count == 0
-                ? ImmutableEquatableDictionary<TKey, TValue>.Empty
-                : ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(dict);
-        }
-
-        public static ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(
-            this IEnumerable<KeyValuePair<TKey, TValue>> source)
-            where TKey : IEquatable<TKey>
-            where TValue : IEquatable<TValue>
-        {
-            Dictionary<TKey, TValue> dict = source.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            return dict.Count == 0
-                ? ImmutableEquatableDictionary<TKey, TValue>.Empty
-                : ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(dict);
-        }
-
         public static ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(
             this Hashtable source)
             where TKey : IEquatable<TKey>

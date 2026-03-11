@@ -24,8 +24,8 @@ namespace System.Text.RegularExpressions.Generator
                 CaptureCount: tree.CaptureCount,
                 CultureName: tree.Culture?.Name,
                 CaptureNames: tree.CaptureNames?.ToImmutableEquatableArray(),
-                CaptureNameToNumberMapping: ConvertHashtable<string, int>(tree.CaptureNameToNumberMapping),
-                CaptureNumberSparseMapping: ConvertHashtable<int, int>(tree.CaptureNumberSparseMapping),
+                CaptureNameToNumberMapping: tree.CaptureNameToNumberMapping?.ToImmutableEquatableDictionary<string, int>(),
+                CaptureNumberSparseMapping: tree.CaptureNumberSparseMapping?.ToImmutableEquatableDictionary<int, int>(),
                 FindOptimizations: ConvertFindOptimizations(tree.FindOptimizations, analysis),
                 HasIgnoreCase: analysis.HasIgnoreCase,
                 HasRightToLeft: analysis.HasRightToLeft);
@@ -102,11 +102,5 @@ namespace System.Text.RegularExpressions.Generator
                 FixedDistanceSets: fixedDistanceSets,
                 LiteralAfterLoop: literalAfterLoop);
         }
-
-        /// <summary>Converts a <see cref="Hashtable"/> to an <see cref="ImmutableEquatableDictionary{TKey, TValue}"/>.</summary>
-        private static ImmutableEquatableDictionary<TKey, TValue>? ConvertHashtable<TKey, TValue>(Hashtable? hashtable)
-            where TKey : IEquatable<TKey>
-            where TValue : IEquatable<TValue>
-            => hashtable?.ToImmutableEquatableDictionary<TKey, TValue>();
     }
 }

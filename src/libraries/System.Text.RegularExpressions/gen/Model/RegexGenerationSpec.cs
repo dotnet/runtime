@@ -13,6 +13,6 @@ namespace System.Text.RegularExpressions.Generator
     /// </summary>
     internal sealed record RegexGenerationSpec
     {
-        public required ImmutableEquatableArray<RegexMethodSpec> RegexMethods { get; init; }
+        public required ImmutableEquatableSet<RegexMethodSpec> RegexMethods { get; init; }
     }
 }

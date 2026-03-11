@@ -32,6 +32,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(CommonPath)SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
     <Compile Include="$(CommonPath)SourceGenerators\ImmutableEquatableDictionary.cs" Link="Common\SourceGenerators\ImmutableEquatableDictionary.cs" />
+    <Compile Include="$(CommonPath)SourceGenerators\ImmutableEquatableSet.cs" Link="Common\SourceGenerators\ImmutableEquatableSet.cs" />
 
     <!-- Code included from System.Text.RegularExpressions -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
