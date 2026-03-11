@@ -3438,6 +3438,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 regNumber tmpReg = internalRegisters.GetSingle(call);
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)params.addr);
                 params.callType = EC_INDIR_R;
+                params.addr     = nullptr;
                 params.ireg     = tmpReg;
                 genEmitCallWithCurrentGC(params);
             }
