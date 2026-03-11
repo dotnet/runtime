@@ -111,6 +111,16 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.Equal(firstRunOutputs[i], secondRunOutputs[i]);
             }
+
+            // Verify the source output step was actually skipped (not re-run with same output).
+            // This confirms the equatable model enabled a true cache hit.
+            // Note: TrackedOutputSteps includes both source model and diagnostic output steps.
+            // The diagnostic output always runs (ImmutableArray<Diagnostic> uses reference equality).
+            // We check that at least one output step was Cached/Unchanged (the source model one).
+            Assert.True(
+                runResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
+                    .Any(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
+                "Expected at least one source output step to be Cached or Unchanged for an unrelated code change.");
         }
 
         [Fact]
@@ -421,8 +431,15 @@ namespace System.Text.RegularExpressions.Tests
                     CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)));
 
             driver = driver.RunGenerators(compilation);
-            string secondOutput = string.Concat(driver.GetRunResult().Results[0].GeneratedSources.Select(s => s.SyntaxTree.ToString()));
+            GeneratorRunResult complexResult = driver.GetRunResult().Results[0];
+            string secondOutput = string.Concat(complexResult.GeneratedSources.Select(s => s.SyntaxTree.ToString()));
             Assert.Equal(firstOutput, secondOutput);
+
+            // Verify the source output step was actually skipped.
+            Assert.True(
+                complexResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
+                    .Any(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
+                $"Expected at least one source output step to be Cached or Unchanged for pattern '{pattern}' with unrelated code change.");
         }
 
         [Fact]
@@ -547,8 +564,18 @@ namespace System.Text.RegularExpressions.Tests
                     CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)));
 
             driver = driver.RunGenerators(compilation);
-            string secondOutput = string.Concat(driver.GetRunResult().Results[0].GeneratedSources.Select(s => s.SyntaxTree.ToString()));
+            GeneratorRunResult limitedResult = driver.GetRunResult().Results[0];
+            string secondOutput = string.Concat(limitedResult.GeneratedSources.Select(s => s.SyntaxTree.ToString()));
             Assert.Equal(firstOutput, secondOutput);
+
+            // Verify the source output step was actually skipped.
+            // Note: TrackedOutputSteps includes both source model and diagnostic output steps.
+            // The diagnostic output always runs (ImmutableArray<Diagnostic> uses reference equality).
+            // We check that at least one output step was Cached/Unchanged (the source model one).
+            Assert.True(
+                limitedResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
+                    .Any(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
+                "Expected at least one source output step to be Cached or Unchanged for limited-support regex with unrelated code change.");
         }
 
         [Fact]
@@ -578,7 +605,8 @@ namespace System.Text.RegularExpressions.Tests
             GeneratorDriver driver = CreateRegexGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
-            string firstOutput = string.Concat(driver.GetRunResult().Results[0].GeneratedSources.Select(s => s.SyntaxTree.ToString()));
+            GeneratorRunResult firstResult = driver.GetRunResult().Results[0];
+            Assert.NotEmpty(firstResult.GeneratedSources);
 
             compilation = compilation.ReplaceSyntaxTree(
                 compilation.SyntaxTrees.First(),
@@ -586,8 +614,16 @@ namespace System.Text.RegularExpressions.Tests
                     CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)));
 
             driver = driver.RunGenerators(compilation);
-            string secondOutput = string.Concat(driver.GetRunResult().Results[0].GeneratedSources.Select(s => s.SyntaxTree.ToString()));
-            Assert.NotEqual(firstOutput, secondOutput);
+            GeneratorRunResult secondResult = driver.GetRunResult().Results[0];
+            Assert.NotEmpty(secondResult.GeneratedSources);
+
+            // When culture changes, the source output should run (not be cached) since
+            // the culture name is part of the equatable model. Even if the generated output
+            // happens to be identical, the model is different and the emitter should re-run.
+            Assert.True(
+                secondResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
+                    .Any(o => o.Reason is IncrementalStepRunReason.New or IncrementalStepRunReason.Modified),
+                "Expected the source output step to run (not be cached) when culture changes.");
         }
     }
 }

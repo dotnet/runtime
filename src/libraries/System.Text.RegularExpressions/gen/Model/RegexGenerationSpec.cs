@@ -14,6 +14,5 @@ namespace System.Text.RegularExpressions.Generator
     internal sealed record RegexGenerationSpec
     {
         public required ImmutableEquatableArray<RegexMethodSpec> RegexMethods { get; init; }
-        public required RegexGenerator.CompilationData CompilationData { get; init; }
     }
 }

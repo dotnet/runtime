@@ -18,7 +18,7 @@ namespace System.Text.RegularExpressions.Generator
         int? MaxPossibleLength,
         string LeadingPrefix,
         ImmutableEquatableArray<string> LeadingPrefixes,
-        (char Char, string? String, int Distance)? FixedDistanceLiteral,
+        (char Char, string? String, int Distance) FixedDistanceLiteral,
         ImmutableEquatableArray<FixedDistanceSetSpec>? FixedDistanceSets,
         (RegexNodeSpec LoopNode, (char Char, string? String, StringComparison StringComparison, ImmutableEquatableArray<char>? Chars) Literal)? LiteralAfterLoop);
 }
