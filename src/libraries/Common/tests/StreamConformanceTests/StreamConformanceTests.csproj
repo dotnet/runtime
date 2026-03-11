@@ -17,7 +17,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
-    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />

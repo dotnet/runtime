@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
-    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
     <PackageReference Include="xunit.extensibility.core" Version="$(XUnitVersion)" />
   </ItemGroup>
 

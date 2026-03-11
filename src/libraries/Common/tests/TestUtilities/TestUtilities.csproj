@@ -110,8 +110,9 @@
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- Use the arcade fork of xunit.assert for AOT-compat -->
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -121,6 +122,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
 
 </Project>
