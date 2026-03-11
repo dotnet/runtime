@@ -64,6 +64,7 @@ namespace ILCompiler.DependencyAnalysis
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
+        public bool StripILBodies;
     }
 
     // To make the code future compatible to the composite R2R story
