@@ -130,6 +130,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `PEImageLayout` | `Base` | Base address of the image layout |
 | `PEImageLayout` | `Size` | Size of the image layout |
 | `PEImageLayout` | `Flags` | Flags associated with the PEImageLayout |
+| `PEImageLayout` | `Format` | Format discriminator (PE or Webcil) for the image layout |
 | `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
@@ -228,6 +229,13 @@ internal readonly struct Loader_1 : ILoader
         return offset;
     }
 
+    // WebcilSectionHeader field offsets — must match the native WebcilSectionHeader
+    // packed struct layout in src/coreclr/inc/webcildecoder.h.
+    private const uint WebcilSectionVirtualSizeOffset = 0;
+    private const uint WebcilSectionVirtualAddressOffset = 4;
+    private const uint WebcilSectionSizeOfRawDataOffset = 8;
+    private const uint WebcilSectionPointerToRawDataOffset = 12;
+
     private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
         TargetPointer headerBase = imageLayout.Base;
@@ -237,6 +245,7 @@ internal readonly struct Loader_1 : ILoader
         int webcilHeaderSize = _target.ReadGlobal<int>(Constants.Globals.WebcilHeaderSize);
         int webcilSectionHeaderSize = _target.ReadGlobal<int>(Constants.Globals.WebcilSectionHeaderSize);
         int webcilCoffSectionsOffset = _target.ReadGlobal<int>(Constants.Globals.WebcilCoffSectionsOffset);
+        Debug.Assert(webcilSectionHeaderSize == 16, "Webcil section header size changed — update field offset constants.");
         ushort numSections = _target.Read<ushort>(headerBase + (uint)webcilCoffSectionsOffset);
         if (numSections == 0 || numSections > 16)
             throw new InvalidOperationException("Invalid Webcil section count.");
@@ -245,10 +254,10 @@ internal readonly struct Loader_1 : ILoader
         for (int i = 0; i < numSections; i++)
         {
             TargetPointer sectionPtr = sectionTableBase + (uint)(i * webcilSectionHeaderSize);
-            uint virtualSize = _target.Read<uint>(sectionPtr);         // VirtualSize at offset 0
-            uint virtualAddress = _target.Read<uint>(sectionPtr + 4);  // VirtualAddress at offset 4
-            uint sizeOfRawData = _target.Read<uint>(sectionPtr + 8);   // SizeOfRawData at offset 8
-            uint pointerToRawData = _target.Read<uint>(sectionPtr + 12); // PointerToRawData at offset 12
+            uint virtualSize = _target.Read<uint>(sectionPtr + WebcilSectionVirtualSizeOffset);
+            uint virtualAddress = _target.Read<uint>(sectionPtr + WebcilSectionVirtualAddressOffset);
+            uint sizeOfRawData = _target.Read<uint>(sectionPtr + WebcilSectionSizeOfRawDataOffset);
+            uint pointerToRawData = _target.Read<uint>(sectionPtr + WebcilSectionPointerToRawDataOffset);
 
             uint rvaUnsigned = (uint)rva;
             if (rvaUnsigned >= virtualAddress)

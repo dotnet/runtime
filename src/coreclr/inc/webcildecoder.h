@@ -225,7 +225,13 @@ private:
     BOOL IsPlatformNeutral() { return TRUE; }
 
     // VTable fixups — not supported
-    IMAGE_COR_VTABLEFIXUP *GetVTableFixups(COUNT_T *pCount = NULL) const { return NULL; }
+    IMAGE_COR_VTABLEFIXUP *GetVTableFixups(COUNT_T *pCount = NULL) const
+    {
+        if (pCount != NULL)
+            *pCount = 0;
+
+        return NULL;
+    }
 
     // Exports — not supported
     PTR_VOID GetExport(LPCSTR exportName) const { return NULL; }
