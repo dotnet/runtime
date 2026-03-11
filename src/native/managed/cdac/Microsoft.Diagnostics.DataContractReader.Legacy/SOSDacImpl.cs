@@ -3750,6 +3750,8 @@ public sealed unsafe partial class SOSDacImpl
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+            if (!ppEnum.IsNullRef)
+                ppEnum.Interface = default;
         }
 
 #if DEBUG
