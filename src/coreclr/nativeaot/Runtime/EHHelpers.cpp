@@ -276,18 +276,14 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
     return false;
 }
 
-#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
 EXTERN_C CODE_LOCATION RhpResolveInterfaceMethodFast;
-#endif
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
 #ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t interfaceDispatchAVLocations[] =
     {
-#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
         (uintptr_t)&RhpResolveInterfaceMethodFast,
-#endif
     };
 
     // compare the IP against the list of known possible AV locations in the interface dispatch helpers
