@@ -1686,9 +1686,10 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
         UINT32 typeArgHash = ComputeNameHashCode(pKey);
         NativeHashtable::Enumerator typeMapLookup = typeMapTable.Lookup(typeArgHash);
         NativeParser typeMapEntryParser;
+        uint32_t keyLen = (uint32_t)strlen(pKey);
         while (typeMapLookup.GetNext(typeMapEntryParser))
         {
-            if (typeMapEntryParser.StringEquals(pKey, (uint32_t)strlen(pKey)))
+            if (typeMapEntryParser.StringEquals(pKey, keyLen))
             {
                 typeMapEntryParser.SkipString();
                 uint32_t resultImportSection = typeMapEntryParser.GetUnsigned();

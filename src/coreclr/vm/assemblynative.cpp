@@ -1715,13 +1715,14 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             GCX_COOP();
             context->_currAssembly = currAssembly->GetExposedObject();
         }
-        bool hasPrecachedInfo = false;
+        bool hasPrecachedExternal = false;
+        bool hasPrecachedProxy = false;
 
 #ifdef FEATURE_READYTORUN
         // Only process the external type map if requested.
         if (newExternalTypeEntry != nullptr)
         {
-            hasPrecachedInfo = ProcessPrecachedTypeMapInfo(
+            hasPrecachedExternal = ProcessPrecachedTypeMapInfo(
                 [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedExternalTypeMap(groupTypeMT); },
                 [=, &seenPreprocessedExternalEntries](PTR_ReadyToRunInfo pR2RInfo) -> BOOL
                 {
@@ -1737,7 +1738,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         // Only process the proxy type map if requested.
         if (newProxyTypeEntry != nullptr)
         {
-            hasPrecachedInfo = ProcessPrecachedTypeMapInfo(
+            hasPrecachedProxy = ProcessPrecachedTypeMapInfo(
                 [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
                 [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
                 currAssembly);
@@ -1754,6 +1755,10 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                 _ASSERTE(numReturnedTargets == assemblyTargetCount);
                 for (COUNT_T i = 0; i < assemblyTargetCount; i++)
                 {
+                    if (targetModules[i] == nullptr)
+                    {
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
                     Assembly* targetAssembly = targetModules[i]->GetAssembly();
                     assemblies.Add(targetAssembly);
                 }
@@ -1763,7 +1768,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         );
 #endif // FEATURE_READYTORUN
 
-        if (!hasPrecachedInfo)
+        if (!hasPrecachedExternal || !hasPrecachedProxy)
         {
             ProcessTypeMapAttribute(
                 TypeMapAssemblyTargetAttributeName,
@@ -1774,7 +1779,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.
-            if (newExternalTypeEntry != NULL)
+            if (newExternalTypeEntry != NULL && !hasPrecachedExternal)
             {
                 MappingsProcessor onExternalType{ newExternalTypeEntry, context };
                 ProcessTypeMapAttribute(
@@ -1784,7 +1789,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                     currAssembly);
             }
 
-            if (newProxyTypeEntry != NULL)
+            if (newProxyTypeEntry != NULL && !hasPrecachedProxy)
             {
                 MappingsProcessor onProxyType{ newProxyTypeEntry, context };
                 ProcessTypeMapAttribute(

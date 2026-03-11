@@ -253,6 +253,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
+                    // Module lookups can also be used in scenarios (e.g. certain module fixups)
+                    // where there is no actual image reference available. In those cases we
+                    // record a default MVID instead of enforcing that the module must have
+                    // been tracked as "indexable" earlier in the pipeline.
                     _manifestAssemblyMvids.Add(default(Guid));
                 }
             }
