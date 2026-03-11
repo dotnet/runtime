@@ -148,6 +148,7 @@ public enum DataType
     RCWCleanupList,
     RCW,
     CtxEntry,
+    InterfaceEntry,
 
 
     /* GC Data Types */

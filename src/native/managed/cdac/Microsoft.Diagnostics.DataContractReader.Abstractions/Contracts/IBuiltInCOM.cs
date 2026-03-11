@@ -30,6 +30,8 @@ public interface IBuiltInCOM : IContract
     // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw) => throw new NotImplementedException();
+    TargetPointer GetRCWContext(TargetPointer rcw) => throw new NotImplementedException();
 }
 
 public readonly struct BuiltInCOM : IBuiltInCOM
