@@ -20,9 +20,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         static BasicConstraintsAsn()
         {
             BasicConstraintsAsn decoded = default;
-            AsnValueReader reader;
+            ValueAsnReader reader;
 
-            reader = new AsnValueReader(DefaultCA, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(DefaultCA, AsnEncodingRules.DER);
             decoded.CA = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, out BasicConstraintsAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -80,12 +80,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out BasicConstraintsAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, out BasicConstraintsAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out BasicConstraintsAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, out BasicConstraintsAsn decoded)
         {
             try
             {
@@ -97,11 +97,11 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out BasicConstraintsAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, out BasicConstraintsAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader defaultReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
 
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Boolean))
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(DefaultCA, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(DefaultCA, AsnEncodingRules.DER);
                 decoded.CA = defaultReader.ReadBoolean();
             }
 

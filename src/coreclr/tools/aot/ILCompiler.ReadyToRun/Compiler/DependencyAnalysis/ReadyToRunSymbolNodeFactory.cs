@@ -8,6 +8,7 @@ using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -63,6 +64,13 @@ namespace ILCompiler.DependencyAnalysis
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
                     new ReadyToRunInstructionSetSupportSignature(key));
+            });
+
+            _resumptionStubEntryPointFixups = new NodeCache<MethodWithGCInfo, Import>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new ResumptionStubEntryPointSignature(key));
             });
 
             _fieldAddressCache = new NodeCache<FieldWithToken, Import>(key =>
@@ -293,6 +301,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<string, Import> _instructionSetSupportFixups;
+        private NodeCache<MethodWithGCInfo, ISymbolNode> _resumptionStubEntryPointFixups;
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
         {
@@ -735,6 +744,11 @@ namespace ILCompiler.DependencyAnalysis
         public Import GetPInvokeTargetNode(MethodWithToken methodWithToken)
         {
             return _pInvokeTargetNodes.GetOrAdd(new PInvokeTargetKey(methodWithToken, isIndirect: false));
+        }
+
+        internal ISymbolNode ResumptionStubEntryPoint(MethodWithGCInfo resumptionStub)
+        {
+            return _resumptionStubEntryPointFixups.GetOrAdd(resumptionStub);
         }
     }
 }

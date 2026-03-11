@@ -54,6 +54,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    // True if the MethodTable represents a continuation type used by the async continuation feature
+    public virtual bool IsContinuation(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
@@ -370,8 +372,10 @@ The contract depends on the following globals
 
 | Global name | Meaning |
 | --- | --- |
+| `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
+| `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
 The contract additionally depends on these data descriptors
 
@@ -403,7 +407,6 @@ The contract additionally depends on these data descriptors
 | `EEClass` | `NumStaticFields` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `FieldDescList` | A list of fields in the type |
-| `ArrayClass` | `Rank` | Rank of the associated array MethodTable |
 | `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
 | `ParamTypeDesc` | `TypeArg` | Associated type argument |
 | `TypeVarTypeDesc` | `Module` | Pointer to module which defines the type variable |
@@ -429,6 +432,7 @@ Contracts used:
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
 
     internal TargetPointer FreeObjectMethodTablePointer {get; }
+    internal TargetPointer ContinuationMethodTablePointer {get; }
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
@@ -695,8 +699,9 @@ Contracts used:
             switch (typeHandle.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
             {
                 case WFLAGS_HIGH.Category_Array:
-                    TargetPointer clsPtr = GetClassPointer(typeHandle);
-                    rank = // Read Rank field from ArrayClass contract using address clsPtr
+                    // Multidim array: BaseSize = ArrayBaseSize + Rank * sizeof(uint) * 2
+                    uint arrayBaseSize = target.ReadGlobal<uint>("ArrayBaseSize");
+                    rank = (typeHandle.Flags.BaseSize - arrayBaseSize) / (sizeof(uint) * 2);
                     return true;
 
                 case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:

@@ -4015,9 +4015,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if (mapping.RegisterSegment->GetRegister() == reg)
         {
             return &mapping;
@@ -4047,9 +4046,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
         {
             return &mapping;
@@ -6329,8 +6327,6 @@ void Compiler::compCompileFinish()
         JitMemStatsInfo::finishMemStats(compArenaAllocator);
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
-
-        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6341,6 +6337,11 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
+
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    }
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6545,7 +6546,10 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
-    Metrics.report(this);
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
@@ -6584,7 +6588,12 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#endif // DEBUG
+#else  // DEBUG
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
+#endif // !DEBUG
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -10428,7 +10437,7 @@ bool Compiler::killGCRefs(GenTree* tree)
 // Return Value:
 //    true       - this is an OSR compile and this local requires special treatment
 //    false      - not an OSR compile, or not an interesting local for OSR
-
+//
 bool Compiler::lvaIsOSRLocal(unsigned varNum)
 {
     LclVarDsc* const varDsc = lvaGetDesc(varNum);
@@ -10455,6 +10464,37 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 #endif
 
     return varDsc->lvIsOSRLocal;
+}
+
+//------------------------------------------------------------------------
+// lvaOSRLocalTier0FrameOffset:
+//   Get the offset in the tier0 frame for a specified OSR local.
+//
+// Arguments:
+//   varNum - variable of interest
+//
+// Return Value:
+//   The offset into the tier 0 frame.
+//
+int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
+{
+    assert(lvaIsOSRLocal(varNum));
+
+    if (varNum == lvaMonAcquired)
+    {
+        return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaAsyncExecutionContextVar)
+    {
+        return info.compPatchpointInfo->AsyncExecutionContextOffset();
+    }
+    if (varNum == lvaAsyncSynchronizationContextVar)
+    {
+        return info.compPatchpointInfo->AsyncSynchronizationContextOffset();
+    }
+
+    assert(varNum < info.compPatchpointInfo->NumberOfLocals());
+    return info.compPatchpointInfo->Offset(varNum);
 }
 
 //------------------------------------------------------------------------------

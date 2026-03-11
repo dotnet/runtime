@@ -460,7 +460,7 @@ namespace System.Security.Cryptography.X509Certificates
             fixed (byte* ptr = &MemoryMarshal.GetReference(source))
             using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
             {
-                AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
 
                 int read;
                 SubjectPublicKeyInfoAsn spki;

@@ -106,10 +106,10 @@ void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDoma
 //
 void CordbAssembly::DbgAssertAssemblyDeleted()
 {
-    GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
+    IfFailThrow(GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
         GetAppDomain()->GetADToken(),
         CordbAssembly::DbgAssertAssemblyDeletedCallback,
-        this);
+        this));
 }
 #endif // _DEBUG
 
@@ -245,7 +245,8 @@ HRESULT CordbAssembly::GetName(ULONG32 cchName,
         if (!m_strAssemblyFileName.IsSet())
         {
             IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-            BOOL fNonEmpty = pDac->GetAssemblyPath(m_vmAssembly, &m_strAssemblyFileName); // throws
+            BOOL fNonEmpty;
+            IfFailThrow(pDac->GetAssemblyPath(m_vmAssembly, &m_strAssemblyFileName, &fNonEmpty)); // throws
             _ASSERTE(m_strAssemblyFileName.IsSet());
 
 
@@ -302,7 +303,8 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
         CordbProcess * pProcess = m_pAppDomain->GetProcess();
         IDacDbiInterface * pDac = pProcess->GetDAC();
 
-        BOOL fIsFullTrust = pDac->IsAssemblyFullyTrusted(m_vmDomainAssembly);
+        BOOL fIsFullTrust;
+        IfFailThrow(pDac->IsAssemblyFullyTrusted(m_vmDomainAssembly, &fIsFullTrust));
 
         // Once the trust level of an assembly is known, it cannot change.
         m_foptIsFullTrust = fIsFullTrust;

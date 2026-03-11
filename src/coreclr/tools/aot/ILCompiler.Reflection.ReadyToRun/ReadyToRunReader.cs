@@ -601,6 +601,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 //initialize R2RMethods
                 ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSection(section, reader, isEntryPoint));
                 ParseInstanceMethodEntrypoints(isEntryPoint);
+                MarkResumptionStubEntryPoints(isEntryPoint, runtimeFunctionSection, nRuntimeFunctions);
                 CountRuntimeFunctions(isEntryPoint, dHotColdMap, firstColdRuntimeFunction);
             }
         }
@@ -1159,6 +1160,62 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 version = (int)(versionAndFlags >> 2);
                 pgoDataOffset = offset;
+            }
+        }
+
+        /// <summary>
+        /// Scan method fixups for ResumptionStubEntryPoint entries, mark the corresponding
+        /// runtime functions as entry points, and create ReadyToRunMethod entries for them
+        /// using the parent async method's metadata with a [RESUME] prefix.
+        /// </summary>
+        private void MarkResumptionStubEntryPoints(bool[] isEntryPoint, ReadyToRunSection runtimeFunctionSection, int nRuntimeFunctions)
+        {
+            EnsureImportSections();
+
+            int runtimeFunctionSize = CalculateRuntimeFunctionSize();
+            int runtimeFunctionsOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+
+            Dictionary<uint, int> stubRvaToMethodIndexMap = new Dictionary<uint, int>(nRuntimeFunctions);
+            for (int i = 0; i < nRuntimeFunctions; i++)
+            {
+                int entryOffset = runtimeFunctionsOffset + i * runtimeFunctionSize;
+                uint beginAddress = BitConverter.ToUInt32(Image, entryOffset);
+                stubRvaToMethodIndexMap[beginAddress] = i;
+            }
+
+            foreach (ReadyToRunMethod method in Methods.ToList())
+            {
+                if (method.Fixups is null)
+                    continue;
+
+                foreach (FixupCell fixup in method.Fixups)
+                {
+                    ReadyToRunImportSection importSection = ImportSections[(int)fixup.TableIndex];
+                    ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixup.CellOffset];
+                    int sigOffset = GetOffset((int)entry.SignatureRVA);
+                    byte kind = Image[sigOffset];
+
+                    if (kind != (byte)ReadyToRunFixupKind.ResumptionStubEntryPoint)
+                        continue;
+
+                    // Signature format: [0x38] [4-byte RVA of resumption stub code]
+                    uint stubRVA = BitConverter.ToUInt32(Image, sigOffset + 1);
+                    if (stubRvaToMethodIndexMap.TryGetValue(stubRVA, out int index))
+                    {
+                        isEntryPoint[index] = true;
+                        ReadyToRunMethod stubMethod = new ReadyToRunMethod(
+                            this,
+                            method.ComponentReader,
+                            method.MethodHandle,
+                            index,
+                            owningType: null,
+                            constrainedType: null,
+                            instanceArgs: method.InstanceArgs,
+                            signaturePrefixes: ["[RESUME]"],
+                            fixupOffset: null);
+                        _instanceMethods.Add(new InstanceMethod(0, stubMethod));
+                    }
+                }
             }
         }
 

@@ -74,8 +74,8 @@ namespace <xsl:value-of select="@namespace" />
         {
             <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
             ReadOnlyMemory&lt;byte&gt; rebind = default;</xsl:if>
-            AsnValueReader reader;<xsl:if test="asn:SequenceOf[@defaultDerInit] | asn:SetOf[@defaultDerInit]">
-            AsnValueReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
+            ValueAsnReader reader;<xsl:if test="asn:SequenceOf[@defaultDerInit] | asn:SetOf[@defaultDerInit]">
+            ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
         }
 #endif
 </xsl:if>
@@ -100,7 +100,7 @@ namespace <xsl:value-of select="@namespace" />
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">encoded, </xsl:if>out <xsl:value-of select="@name" /> decoded);
                 reader.ThrowIfNotEmpty();
@@ -112,12 +112,12 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
+        internal static void Decode(ref ValueAsnReader reader,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
         {
             try
             {
@@ -129,13 +129,13 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);<xsl:if test="*[@explicitTag]">
-            AsnValueReader explicitReader;</xsl:if><xsl:if test="*[@defaultDerInit]">
-            AsnValueReader defaultReader;</xsl:if><xsl:if test="asn:SequenceOf | asn:SetOf">
-            AsnValueReader collectionReader;</xsl:if><xsl:if test="$hasMemoryField &gt; 0">
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);<xsl:if test="*[@explicitTag]">
+            ValueAsnReader explicitReader;</xsl:if><xsl:if test="*[@defaultDerInit]">
+            ValueAsnReader defaultReader;</xsl:if><xsl:if test="asn:SequenceOf | asn:SetOf">
+            ValueAsnReader collectionReader;</xsl:if><xsl:if test="$hasMemoryField &gt; 0">
             ReadOnlySpan&lt;byte&gt; rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan&lt;byte&gt; tmpSpan;</xsl:if>
@@ -193,7 +193,7 @@ namespace <xsl:value-of select="@namespace" />
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, <xsl:if test="not(@rebind='false')">encoded, </xsl:if>out <xsl:value-of select="@name" /> decoded);
                 reader.ThrowIfNotEmpty();
@@ -205,7 +205,7 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, <xsl:if test="not(@rebind='false')">ReadOnlyMemory&lt;byte&gt; rebind, </xsl:if>out <xsl:value-of select="@name" /> decoded)
+        internal static void Decode(ref ValueAsnReader reader, <xsl:if test="not(@rebind='false')">ReadOnlyMemory&lt;byte&gt; rebind, </xsl:if>out <xsl:value-of select="@name" /> decoded)
         {
             try
             {
@@ -217,12 +217,12 @@ namespace <xsl:value-of select="@namespace" />
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, <xsl:if test="not(@rebind='false')">ReadOnlyMemory&lt;byte&gt; rebind, </xsl:if>out <xsl:value-of select="@name" /> decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, <xsl:if test="not(@rebind='false')">ReadOnlyMemory&lt;byte&gt; rebind, </xsl:if>out <xsl:value-of select="@name" /> decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();<xsl:if test="*[@explicitTag]">
-            AsnValueReader explicitReader;</xsl:if><xsl:if test="asn:SequenceOf | asn:SetOf">
-            AsnValueReader collectionReader;</xsl:if><xsl:if test="$hasMemoryField &gt; 0">
+            ValueAsnReader explicitReader;</xsl:if><xsl:if test="asn:SequenceOf | asn:SetOf">
+            ValueAsnReader collectionReader;</xsl:if><xsl:if test="$hasMemoryField &gt; 0">
             ReadOnlySpan&lt;byte&gt; rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan&lt;byte&gt; tmpSpan;</xsl:if>
@@ -258,7 +258,7 @@ namespace <xsl:value-of select="@namespace" />
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">
 
-            reader = new AsnValueReader(<xsl:call-template name="DefaultValueField"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
+            reader = new ValueAsnReader(<xsl:call-template name="DefaultValueField"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
             reader.ThrowIfNotEmpty();</xsl:template>
 
   <xsl:template match="*" mode="EnsureUniqueTag" xml:space="default">
@@ -938,7 +938,7 @@ namespace <xsl:value-of select="@namespace" />
   <xsl:template name="DefaultValueDecoder"><xsl:if test="@defaultDerInit">
             else
             {
-                defaultReader = new AsnValueReader(<xsl:call-template name="DefaultValueField"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'defaultReader'"/><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                defaultReader = new ValueAsnReader(<xsl:call-template name="DefaultValueField"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'defaultReader'"/><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
             }</xsl:if></xsl:template>
 
   <xsl:template name="DefaultOrContextTag" xml:space="default">
