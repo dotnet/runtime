@@ -255,10 +255,10 @@ namespace System.IO.Tests
         {
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: AsyncReads, asyncWrite: AsyncWrites);
 
-            FileStream readStream = new(writeHandle, FileAccess.Write);
-            FileStream writeStream = new(readHandle, FileAccess.Read);
+            FileStream writeStream = new(writeHandle, FileAccess.Write);
+            FileStream readStream = new(readHandle, FileAccess.Read);
 
-            return Task.FromResult<StreamPair>((readStream, writeStream));
+            return Task.FromResult<StreamPair>((writeStream, readStream));
         }
     }
 
