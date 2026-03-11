@@ -62,6 +62,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
+    <CompressionIncludePatterns Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'"></CompressionIncludePatterns>
     <DisableBuildCompression Condition="'$(WasmBuildingForNestedPublish)' == 'true'">true</DisableBuildCompression>
   </PropertyGroup>
 
@@ -86,7 +87,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
 
-    <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(CompressionEnabled)' == ''">false</CompressionEnabled>
     <_WasmEnableHotReload Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmEnableHotReload>
   </PropertyGroup>
 
@@ -213,11 +213,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
-      <_WasmFingerprintAssets Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintAssets>
+      <_WasmFingerprintAssets Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == '' and '$(_TargetingNET90OrLater)' == 'true'">true</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
       <!-- true = dotnet.js will have hard fingerprint; false = dotnet.js will have soft fingerprint -->
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
+      <_WasmFingerprintDotnetJs Condition="'$(WasmBundlerFriendlyBootConfig)' == ''">false</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
@@ -666,7 +667,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="EnsureBundlerFriendlyFilesInOutputDirectory"
-          BeforeTargets="CopyStaticWebAssetsToOutputDirectory"
+          BeforeTargets="ResolveBuildStaticWebAssets"
           Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">
     <ItemGroup>
       <StaticWebAsset Update="@(StaticWebAsset)">
