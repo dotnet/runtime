@@ -10,7 +10,7 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly extern xunit.assert {}
+.assembly extern xunit.v3.assert {}
 
 .assembly genericjmp { }
 
@@ -63,7 +63,7 @@
         {
             call void JmpGenericToRegular::Source<int32>()
             ldstr "JMP from generic to regular method is not allowed"
-			call void [xunit.assert]Xunit.Assert::Fail(string)
+			call void [xunit.v3.assert]Xunit.Assert::Fail(string)
             leave END
         }
         catch [System.Runtime]System.InvalidProgramException
@@ -99,7 +99,7 @@
         {
             call void JmpRegularToGeneric::Source()
             ldstr "JMP from regular to generic method is not allowed"
- 			call void [xunit.assert]Xunit.Assert::Fail(string)
+ 			call void [xunit.v3.assert]Xunit.Assert::Fail(string)
             leave END
         }
         catch [System.Runtime]System.InvalidProgramException

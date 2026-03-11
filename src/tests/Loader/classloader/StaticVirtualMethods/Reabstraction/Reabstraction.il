@@ -13,10 +13,10 @@
   .ver 8:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly extern xunit.assert
+.assembly extern xunit.v3.assert
 {
   .publickeytoken = (8D 05 B1 BB 7A 6F DB 6C )                         // ....zo.l
-  .ver 2:4:2:0
+  .ver 3:2:2:0
 }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
@@ -362,7 +362,7 @@
                                                                             native int)
     IL_001a:  dup
     IL_001b:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_0'
-    IL_0020:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0020:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_0025:  pop
     IL_0026:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_1'
     IL_002b:  dup
@@ -375,7 +375,7 @@
                                                                             native int)
     IL_003f:  dup
     IL_0040:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_1'
-    IL_0045:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0045:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_004a:  pop
     IL_004b:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_2'
     IL_0050:  dup
@@ -388,7 +388,7 @@
                                                                             native int)
     IL_0064:  dup
     IL_0065:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_2'
-    IL_006a:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_006a:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_006f:  pop
     IL_0070:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_3'
     IL_0075:  dup
@@ -401,7 +401,7 @@
                                                                             native int)
     IL_0089:  dup
     IL_008a:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_3'
-    IL_008f:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_008f:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_0094:  pop
     IL_0095:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_4'
     IL_009a:  dup
@@ -414,7 +414,7 @@
                                                                             native int)
     IL_00ae:  dup
     IL_00af:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_4'
-    IL_00b4:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_00b4:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_00b9:  pop
     IL_00ba:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_5'
     IL_00bf:  dup
@@ -427,7 +427,7 @@
                                                                             native int)
     IL_00d3:  dup
     IL_00d4:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_5'
-    IL_00d9:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_00d9:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_00de:  pop
     IL_00df:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_6'
     IL_00e4:  dup
@@ -440,7 +440,7 @@
                                                                             native int)
     IL_00f8:  dup
     IL_00f9:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_6'
-    IL_00fe:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_00fe:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_0103:  pop
     IL_0104:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_7'
     IL_0109:  dup
@@ -453,7 +453,7 @@
                                                                             native int)
     IL_011d:  dup
     IL_011e:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_7'
-    IL_0123:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0123:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_0128:  pop
     IL_0129:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_8'
     IL_012e:  dup
@@ -466,7 +466,7 @@
                                                                             native int)
     IL_0142:  dup
     IL_0143:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_8'
-    IL_0148:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0148:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_014d:  pop
     IL_014e:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_9'
     IL_0153:  dup
@@ -479,7 +479,7 @@
                                                                             native int)
     IL_0167:  dup
     IL_0168:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_9'
-    IL_016d:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_016d:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_0172:  pop
     IL_0173:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_10'
     IL_0178:  dup
@@ -492,7 +492,7 @@
                                                                             native int)
     IL_018c:  dup
     IL_018d:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_10'
-    IL_0192:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0192:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_0197:  pop
     IL_0198:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_11'
     IL_019d:  dup
@@ -505,7 +505,7 @@
                                                                             native int)
     IL_01b1:  dup
     IL_01b2:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_11'
-    IL_01b7:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_01b7:  call       !!0 [xunit.v3.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_01bc:  pop
     IL_01bd:  ldc.i4.s   100
     IL_01bf:  stloc.0
