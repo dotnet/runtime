@@ -4357,22 +4357,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
             delta += lvaLclStackHomeSize(lvaMonAcquired);
         }
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-        if ((lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !opts.IsOSR())
-        {
-            int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + (compCalleeRegsPushed << 3);
-            lvaTable[lvaAsyncExecutionContextVar].SetStackOffset(offset);
-            delta += lvaLclStackHomeSize(lvaAsyncExecutionContextVar);
-        }
-
-        if ((lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !opts.IsOSR())
-        {
-            int offset = lvaTable[lvaAsyncSynchronizationContextVar].GetStackOffset() + (compCalleeRegsPushed << 3);
-            lvaTable[lvaAsyncSynchronizationContextVar].SetStackOffset(offset);
-            delta += lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar);
-        }
-#endif
-
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
 #elif defined(TARGET_WASM)

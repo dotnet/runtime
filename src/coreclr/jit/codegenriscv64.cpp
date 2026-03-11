@@ -5938,6 +5938,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 #ifdef FEATURE_REMAP_FUNCTION
     if (m_compiler->opts.compDbgEnC)
     {
+        // TODO: lvaMonAcquired, lvaAsyncExecutionContextVar and lvaAsyncSynchronizationContextVar locals are special
+        // that is necessary to allocate in the top of the stack frame and included as part of the EnC frame header
+        // for EnC to work.
         NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
 #endif // FEATURE_REMAP_FUNCTION
