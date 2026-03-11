@@ -177,7 +177,6 @@ CHECK WebcilDecoder::CheckWebcilHeaders() const
 CHECK WebcilDecoder::CheckNTHeaders() const
 {
     CHECK_FAIL("Not a PE image");
-    CHECK_OK;
 }
 
 // ------------------------------------------------------------
