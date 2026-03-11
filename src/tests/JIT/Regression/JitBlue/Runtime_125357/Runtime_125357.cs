@@ -8,8 +8,8 @@
 // This can cause tail merge to incorrectly merge stores to different fields
 // that happen to be at the same offset, propagating the wrong field sequence.
 // After inlining, redundant branch opts (which uses the liberal VN) can fold
-// the type check using the wrong field-based alias information, producing
-// incorrect results.
+// branches using the wrong field-based alias information, producing incorrect
+// results.
 
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -44,7 +44,15 @@ namespace Runtime_125357
             }
 
             Unsafe.As<ClassTwo>(obj).Field = 999;
-            return Unsafe.As<ClassOne>(obj).Field;
+
+            if (obj.GetType() == typeof(ClassOne))
+            {
+                return Unsafe.As<ClassOne>(obj).Field;
+            }
+            else
+            {
+                return Unsafe.As<ClassTwo>(obj).Field;
+            }
         }
 
         [Fact]

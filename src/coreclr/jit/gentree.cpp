@@ -2888,8 +2888,7 @@ AGAIN:
 
                 case GT_ALLOCOBJ:
                     if ((op1->AsAllocObj()->gtNewHelper != op2->AsAllocObj()->gtNewHelper) ||
-                        (op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd) ||
-                        (op1->AsAllocObj()->gtHelperHasSideEffects != op2->AsAllocObj()->gtHelperHasSideEffects))
+                        (op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd))
                     {
                         return false;
                     }
