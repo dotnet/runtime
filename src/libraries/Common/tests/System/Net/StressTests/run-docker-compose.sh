@@ -23,7 +23,9 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 repo_root=$(git -C "$scriptroot" rev-parse --show-toplevel)
 major_version=$(grep -oP '(?<=<MajorVersion>).*?(?=</MajorVersion>)' "$repo_root/eng/Versions.props")
 minor_version=$(grep -oP '(?<=<MinorVersion>).*?(?=</MinorVersion>)' "$repo_root/eng/Versions.props")
+patch_version=$(grep -oP '(?<=<PatchVersion>).*?(?=</PatchVersion>)' "$repo_root/eng/Versions.props")
 version="$major_version.$minor_version"
+productversion="$version.$patch_version"
 imagename="dotnet-sdk-libs-current"
 configuration="Release"
 buildcurrentlibraries=0
@@ -95,7 +97,7 @@ fi
 compose_file="$projectdir/docker-compose.yml"
 
 if [[ "$nobuild" -eq 0 ]]; then
-    build_args="--build-arg VERSION=$version --build-arg CONFIGURATION=$configuration"
+    build_args="--build-arg VERSION=$version --build-arg PRODUCTVERSION=$productversion --build-arg CONFIGURATION=$configuration"
     if [[ -n "$imagename" ]]; then
         build_args="$build_args --build-arg SDK_BASE_IMAGE=$imagename"
     fi

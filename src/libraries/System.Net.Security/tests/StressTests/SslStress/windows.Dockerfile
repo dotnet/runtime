@@ -11,9 +11,11 @@ WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
 ARG VERSION=9.0
 ARG CONFIGURATION=Release
+ARG PRODUCTVERSION
 
 RUN dotnet build -c $env:CONFIGURATION `
     -p:NetCoreAppCurrentVersion=$env:VERSION `
+    -p:ProductVersion=$env:PRODUCTVERSION `
     -p:TargetingPacksTargetsLocation=C:/live-runtime-artifacts/targetingpacks.targets `
     -p:MicrosoftNetCoreAppRefPackDir=C:/live-runtime-artifacts/microsoft.netcore.app.ref/ `
     -p:MicrosoftNetCoreAppRuntimePackDir=C:/live-runtime-artifacts/microsoft.netcore.app.runtime.win-x64/$env:CONFIGURATION/

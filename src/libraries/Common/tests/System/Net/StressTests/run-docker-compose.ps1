@@ -20,6 +20,7 @@ $REPO_ROOT_DIR = $(git -C "$PSScriptRoot" rev-parse --show-toplevel)
 $COMPOSE_FILE = "$TestProjectDir/docker-compose.yml"
 [xml]$xml = Get-Content (Join-Path $RepoRoot "eng\Versions.props")
 $VERSION = "$($xml.Project.PropertyGroup.MajorVersion[0]).$($xml.Project.PropertyGroup.MinorVersion[0])"
+$PRODUCTVERSION = "$VERSION.$($xml.Project.PropertyGroup.PatchVersion[0])"
 
 if (!$dumpsSharePath) {
     $dumpsSharePath = "$TestProjectDir/dumps"
@@ -53,6 +54,7 @@ if (!$noBuild) {
     # Dockerize the stress app using docker-compose
     $BuildArgs = @(
         "--build-arg", "VERSION=$Version",
+        "--build-arg", "PRODUCTVERSION=$PRODUCTVERSION",
         "--build-arg", "CONFIGURATION=$configuration"
     )
     if ($sdkImageName) {

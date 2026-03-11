@@ -22,6 +22,7 @@ RUN cd msquic/build/bin/Debug && \
 
 ARG VERSION
 ARG CONFIGURATION
+ARG PRODUCTVERSION
 
 # Build the stress server
 WORKDIR /app
@@ -29,6 +30,7 @@ COPY . .
 
 RUN dotnet build -c $CONFIGURATION \
     -p:NetCoreAppCurrentVersion=$VERSION \
+    -p:ProductVersion=$PRODUCTVERSION \
     -p:MsQuicInteropIncludes="/live-runtime-artifacts/msquic-interop/*.cs" \
     -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
     -p:MicrosoftNetCoreAppRefPackDir=/live-runtime-artifacts/microsoft.netcore.app.ref/ \
