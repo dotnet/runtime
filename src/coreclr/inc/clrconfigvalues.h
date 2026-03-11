@@ -678,6 +678,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntri
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,                    W("EnableAVX"),                 1, "Allows AVX and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,                   W("EnableAVX2"),                1, "Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512,                 W("EnableAVX512"),              1, "Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BMM,              W("EnableAVX512BMM"),           1, "Allows AVX512BMM and depdendent hardware intrinsics to be disabled")
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v2,               W("EnableAVX512v2"),            1, "Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512v3,               W("EnableAVX512v3"),            1, "Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled")

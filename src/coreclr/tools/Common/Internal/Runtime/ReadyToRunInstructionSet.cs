@@ -95,11 +95,11 @@ namespace Internal.ReadyToRunConstants
         Avx512Vpopcntdq=82,
         Avx512Vpopcntdq_VL=83,
         Zbs=84,
-        Sha3=85,
-        Sm4=86,
-        SveAes=87,
-        SveSha3=88,
-        SveSm4=89,
-
+        Avx512Bmm=85,
+        Sha3=86,
+        Sm4=87,
+        SveAes=88,
+        SveSha3=89,
+        SveSm4=90,
     }
 }

@@ -6378,6 +6378,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<float> ConvertToSingleEvenRoundToOdd(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<float> ConvertToSingleOdd(System.Numerics.Vector<float> even, System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<float> ConvertToSingleOddRoundToOdd(System.Numerics.Vector<float> even, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<uint> CountMatchingElements(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CountMatchingElements(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<uint> CountMatchingElements(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> CountMatchingElements(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> CountMatchingElementsIn128BitSegments(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<byte> CountMatchingElementsIn128BitSegments(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<long> DotProductRotateComplex(System.Numerics.Vector<long> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
@@ -6406,6 +6412,95 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> FusedSubtractHalving(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> FusedSubtractHalving(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> FusedSubtractHalving(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        // public static System.Numerics.Vector<int> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<int> mask, byte* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<long> mask, byte* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<long> mask, byte* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        // public static System.Numerics.Vector<uint> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorByteZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        // public static System.Numerics.Vector<int> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        // public static System.Numerics.Vector<uint> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<ulong> mask, short* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt16SignExtendNonTemporal(System.Numerics.Vector<ulong> mask, short* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<uint> mask, short* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, short* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, short* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorInt32SignExtendNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt32SignExtendNonTemporal(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt32SignExtendNonTemporal(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorInt32SignExtendNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt32SignExtendNonTemporal(System.Numerics.Vector<ulong> mask, int* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt32SignExtendNonTemporal(System.Numerics.Vector<ulong> mask, int* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, int* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, int* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static System.Numerics.Vector<double> GatherVectorNonTemporal(System.Numerics.Vector<double> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        // public static System.Numerics.Vector<int> GatherVectorNonTemporal(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        // public static System.Numerics.Vector<float> GatherVectorNonTemporal(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static System.Numerics.Vector<uint> GatherVectorNonTemporal(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<float> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorWithByteOffsetsNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        // public static System.Numerics.Vector<int> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<int> mask, sbyte* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<long> mask, sbyte* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<long> mask, sbyte* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        // public static System.Numerics.Vector<uint> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<uint> mask, sbyte* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, sbyte* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorSByteSignExtendNonTemporal(System.Numerics.Vector<ulong> mask, sbyte* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<int> mask, ushort* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<long> mask, ushort* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<long> mask, ushort* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        // public static System.Numerics.Vector<int> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<long> mask, ushort* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<long> mask, ushort* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        // public static System.Numerics.Vector<uint> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt16ZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<long> mask, uint* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<long> mask, uint* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static System.Numerics.Vector<long> GatherVectorUInt32ZeroExtendNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt32ZeroExtendNonTemporal(System.Numerics.Vector<long> mask, uint* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorUInt32ZeroExtendNonTemporal(System.Numerics.Vector<long> mask, uint* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static System.Numerics.Vector<ulong> GatherVectorUInt32ZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt32ZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt32ZeroExtendNonTemporal(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> indices) { throw null; }
         public static System.Numerics.Vector<byte> InterleavingXorEvenOdd(System.Numerics.Vector<byte> odd, System.Numerics.Vector<byte> leftEven, System.Numerics.Vector<byte> rightOdd) { throw null; }
         public static System.Numerics.Vector<short> InterleavingXorEvenOdd(System.Numerics.Vector<short> odd, System.Numerics.Vector<short> leftEven, System.Numerics.Vector<short> rightOdd) { throw null; }
         public static System.Numerics.Vector<int> InterleavingXorEvenOdd(System.Numerics.Vector<int> odd, System.Numerics.Vector<int> leftEven, System.Numerics.Vector<int> rightOdd) { throw null; }
@@ -6424,6 +6519,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> InterleavingXorOddEven(System.Numerics.Vector<ulong> even, System.Numerics.Vector<ulong> leftOdd, System.Numerics.Vector<ulong> rightEven) { throw null; }
         public static System.Numerics.Vector<int> Log2(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<long> Log2(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<byte> Match(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> Match(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> Match(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Match(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<double> MaxNumberPairwise(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> MaxNumberPairwise(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<byte> MaxPairwise(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
@@ -6612,6 +6711,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<short> NegateSaturate(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<int> NegateSaturate(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> NegateSaturate(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> NoMatch(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> NoMatch(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> NoMatch(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> NoMatch(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<byte> PolynomialMultiply(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<sbyte> PolynomialMultiply(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
@@ -8577,6 +8680,25 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<short> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
             public static Vector512<int> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<int> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<short> right) { throw null; }
             public static Vector512<uint> MultiplyWideningAndAddSaturate(System.Runtime.Intrinsics.Vector512<uint> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512Bmm : System.Runtime.Intrinsics.X86.Avx512F
+    {
+        internal Avx512Bmm() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<byte> ReverseBits(System.Runtime.Intrinsics.Vector128<byte> values) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> ReverseBits(System.Runtime.Intrinsics.Vector256<byte> values) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> ReverseBits(System.Runtime.Intrinsics.Vector512<byte> values) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> BitMultiplyMatrix16x16WithOrReduction(System.Runtime.Intrinsics.Vector256<ushort> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> BitMultiplyMatrix16x16WithOrReduction(System.Runtime.Intrinsics.Vector512<ushort> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> BitMultiplyMatrix16x16WithXorReduction(System.Runtime.Intrinsics.Vector256<ushort> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(System.Runtime.Intrinsics.Vector512<ushort> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
         }
     }
 

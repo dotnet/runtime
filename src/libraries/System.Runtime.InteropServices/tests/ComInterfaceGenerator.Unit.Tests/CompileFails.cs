@@ -15,7 +15,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 using static Microsoft.Interop.UnitTests.TestUtils;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.Interop.Analyzers.ComInterfaceGeneratorDiagnosticsAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {

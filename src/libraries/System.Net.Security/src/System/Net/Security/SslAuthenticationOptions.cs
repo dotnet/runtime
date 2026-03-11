@@ -182,8 +182,6 @@ namespace System.Net.Security
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2
-                // On Windows10 SSL2 flag has no effect but on earlier versions of the OS
-                // opting into both SSL2 and >= TLS1.2 causes negotiation to always fail.
                 protocols &= ~SslProtocols.Ssl2;
 #pragma warning restore 0618
             }

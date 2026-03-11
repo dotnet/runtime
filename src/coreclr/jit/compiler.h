@@ -4120,6 +4120,8 @@ public:
     // located on the original method stack frame.
     bool lvaIsOSRLocal(unsigned varNum);
 
+    int lvaOSRLocalTier0FrameOffset(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -4603,6 +4605,8 @@ protected:
     bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+
+    bool impCanReorderWithNullCheck(GenTree* tree);
 
     bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
@@ -6229,6 +6233,7 @@ public:
     void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
+    bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false);
 
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
@@ -8679,6 +8684,11 @@ public:
 
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
+
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
