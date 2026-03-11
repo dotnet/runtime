@@ -159,6 +159,7 @@ namespace System.Formats.Tar
         {
             ThrowIfDisposed();
             EnsureInitialized();
+            Debug.Assert(_segments is not null && _packedStartOffsets is not null);
 
             if (destination.IsEmpty || _virtualPosition >= _realSize)
             {
@@ -228,6 +229,7 @@ namespace System.Formats.Tar
         private async ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            Debug.Assert(_segments is not null && _packedStartOffsets is not null);
 
             int toRead = (int)Math.Min(buffer.Length, _realSize - _virtualPosition);
             buffer = buffer.Slice(0, toRead);
@@ -304,6 +306,8 @@ namespace System.Formats.Tar
         // insertion point (a negative number) if virtualPosition is in a hole.
         private int FindSegmentFromCurrent(long virtualPosition)
         {
+            Debug.Assert(_segments is not null);
+
             // Scan forward from the current cached index (optimal for sequential reads).
             while (_currentSegmentIndex < _segments.Length)
             {
