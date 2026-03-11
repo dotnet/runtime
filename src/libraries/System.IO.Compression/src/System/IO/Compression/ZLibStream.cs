@@ -54,6 +54,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
         public ZLibStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
             // Compute windowBits for zlib format: positive windowLog
