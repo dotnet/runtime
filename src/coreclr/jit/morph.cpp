@@ -10459,26 +10459,23 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             ssize_t              consVal     = offsetNode->IconValue();
 
-            if (FitsIn<uint16_t>(consVal))
+            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.
+            if (FitsIn<uint16_t>(consVal) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)consVal))
             {
                 ClrSafeInt<uint16_t> newOffset =
                     ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
+                assert(!newOffset.IsOverflow());
 
-                // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.  We check the bounds of a
-                // 1-byte access at the address, offset by the constant, to determine if this is a valid address.
-                if (!newOffset.IsOverflow() && !IsWideAccess(lclAddrNode->GetLclNum(), newOffset.Value(), ValueSize(1)))
-                {
-                    lclAddrNode->SetOper(GT_LCL_ADDR);
-                    lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
-                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
+                lclAddrNode->SetOper(GT_LCL_ADDR);
+                lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
+                assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                    lclAddrNode->SetVNsFromNode(add);
+                lclAddrNode->SetVNsFromNode(add);
 
-                    DEBUG_DESTROY_NODE(offsetNode);
-                    DEBUG_DESTROY_NODE(add);
+                DEBUG_DESTROY_NODE(offsetNode);
+                DEBUG_DESTROY_NODE(add);
 
-                    return lclAddrNode;
-                }
+                return lclAddrNode;
             }
         }
 
