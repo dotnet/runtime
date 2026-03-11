@@ -87,7 +87,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
 
     <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(CompressionEnabled)' == ''">false</CompressionEnabled>
-    <WasmEnableHotReload Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</WasmEnableHotReload>
+    <_WasmEnableHotReload Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmEnableHotReload>
   </PropertyGroup>
 
   <ItemGroup>
