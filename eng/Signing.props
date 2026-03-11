@@ -54,6 +54,7 @@
     <FileExtensionSignInfo Update=".js" CertificateName="None" />
 
     <!-- Third-party components which should be signed.  -->
+    <FileSignInfo Include="Antlr4.Runtime.Standard.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
