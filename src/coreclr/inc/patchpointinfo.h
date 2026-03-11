@@ -219,7 +219,7 @@ struct PatchpointInfo
     }
 
 private:
-    template<typename U> friend struct cdac_data;
+    friend struct cdac_data<PatchpointInfo>;
 
     enum
     {

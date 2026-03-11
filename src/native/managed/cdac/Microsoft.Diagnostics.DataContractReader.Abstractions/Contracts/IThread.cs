@@ -20,12 +20,12 @@ public record struct ThreadStoreCounts(
 [Flags]
 public enum ThreadState
 {
-    Unknown = 0x00000000,
-    Hijacked = 0x00000080,   // Return address has been hijacked
-    Background = 0x00000200,   // Thread is a background thread
-    Unstarted = 0x00000400,   // Thread has never been started
-    Dead = 0x00000800,   // Thread is dead
-    ThreadPoolWorker = 0x01000000,   // Thread is a thread pool worker thread
+    Unknown             = 0x00000000,
+    Hijacked            = 0x00000080,   // Return address has been hijacked
+    Background          = 0x00000200,   // Thread is a background thread
+    Unstarted           = 0x00000400,   // Thread has never been started
+    Dead                = 0x00000800,   // Thread is dead
+    ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
 }
 
 public record struct ThreadData(
