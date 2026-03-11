@@ -1,14 +1,7 @@
-<!-- xunit v3 trimming descriptor: preserve assemblies and types that ILLink cannot statically track -->
+<!-- xunit v3 trimming descriptor: preserve assemblies that ILLink cannot statically track -->
 <linker>
-  <assembly fullname="xunit.v3.mtp-v1">
-    <namespace fullname="Xunit" />
-    <namespace fullname="Xunit.Sdk" />
-  </assembly>
+  <assembly fullname="xunit.v3.mtp-v1" />
   <assembly fullname="Microsoft.DotNet.XUnitV3Extensions" />
-  <assembly fullname="xunit.v3.assert">
-    <type fullname="Xunit.Sdk.CollectionTracker">
-      <method name="CompareTypedSets" />
-    </type>
-  </assembly>
+  <assembly fullname="xunit.v3.assert" />
   <assembly fullname="xunit.v3.runner.common" />
 </linker>

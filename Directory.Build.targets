@@ -39,7 +39,7 @@
     Directory.Build.targets, which is imported after the NuGet package targets.
     Library tests also have an override in eng/testing/xunit/xunit.targets.
   -->
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(TestSingleFile)' != 'true' and '$(TargetsMobile)' != 'true'">
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(TestSingleFile)' != 'true'">
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
   <Target Name="_XunitValidateBuild" BeforeTargets="BeforeBuild" Condition=" '$(TargetFramework)' != '' AND '$(IsTestProject)' == 'true' ">

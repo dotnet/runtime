@@ -21,16 +21,28 @@
 
   <!--
     The xunit.v3.core.mtp-v1 package's buildTransitive props unconditionally
-    set UseAppHost=true.  Library tests are executed via dotnet exec or archived
-    for Helix, never via a native application host.  Override UseAppHost here
-    (in targets, which is imported after the NuGet package props) so our value
-    wins.  Single-file/NativeAOT test builds keep UseAppHost=true (from the
-    xunit v3 package) since they need it for SelfContained builds.  Mobile/WASM
-    tests also keep UseAppHost=true (they use OutputType=Library so it is
-    irrelevant and avoids NETSDK1067 with SelfContained=true).
+    set UseAppHost=true.  Override UseAppHost=false here (in targets, imported
+    after NuGet package props) so our value wins.  Library tests run via
+    dotnet exec or Helix.  Mobile/WASM tests use OutputType=Library.
+    NativeAOT generates native executables directly via ILC.  None of these
+    need an apphost.
+
+    For non-NativeAOT SingleFile tests, tests.singlefile.targets already
+    sets UseAppHost=true and SelfContained=true, which is correct.  The
+    TestSingleFile condition preserves that, and the NativeAOT condition
+    overrides it back to false.
+
+    The SDK exempts mobile/WASM/NativeAOT RIDs from the NETSDK1067 error
+    (SelfContained + UseAppHost=false) via _RuntimeIdentifierUsesAppHost.
+    For NativeAOT during build (_IsPublishing is false), we must also set
+    _RuntimeIdentifierUsesAppHost=false to prevent NETSDK1067.
   -->
-  <PropertyGroup Condition="'$(TestSingleFile)' != 'true' and '$(TargetsMobile)' != 'true'">
+  <PropertyGroup Condition="'$(TestSingleFile)' != 'true'">
     <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
+    <UseAppHost>false</UseAppHost>
+    <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
   </PropertyGroup>
 
   <!--
