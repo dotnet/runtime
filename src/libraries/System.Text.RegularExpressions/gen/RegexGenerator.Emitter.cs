@@ -50,12 +50,36 @@ namespace System.Text.RegularExpressions.Generator
             // Regex type per unique expression/options/timeout/culture. The value is the implementation used for the key.
             Dictionary<(string Pattern, RegexOptions Options, int? Timeout, string? CultureName), RegexMethod> emittedExpressions = new();
 
+            // Sort specs first to ensure deterministic output order regardless of
+            // HashSet iteration order (which varies with string hash randomization).
+            List<RegexMethodSpec> sortedSpecs = new(spec.RegexMethods);
+            sortedSpecs.Sort(static (a, b) =>
+            {
+                int cmp = StringComparer.Ordinal.Compare(
+                    GetFullyQualifiedTypeName(a.DeclaringType),
+                    GetFullyQualifiedTypeName(b.DeclaringType));
+
+                return cmp != 0
+                    ? cmp
+                    : StringComparer.Ordinal.Compare(a.MemberName, b.MemberName);
+
+                static string GetFullyQualifiedTypeName(RegexTypeSpec type)
+                {
+                    if (type.Parent is null)
+                    {
+                        return $"{type.Namespace}.{type.Name}";
+                    }
+
+                    return $"{GetFullyQualifiedTypeName(type.Parent)}.{type.Name}";
+                }
+            });
+
             // Convert each spec to a RegexMethod (re-parsing the regex to obtain the full
             // RegexTree/AnalysisResults needed by the emitter). This re-parse is fast and only
             // happens on incremental cache misses.
             Dictionary<string, string[]> requiredHelpers = new();
             List<(RegexMethodSpec Spec, RegexMethod Method)> methods = new();
-            foreach (RegexMethodSpec methodSpec in spec.RegexMethods)
+            foreach (RegexMethodSpec methodSpec in sortedSpecs)
             {
                 RegexType regexType = ConvertRegexTypeSpecToRegexType(methodSpec.DeclaringType);
 

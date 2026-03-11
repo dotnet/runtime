@@ -630,5 +630,40 @@ namespace System.Text.RegularExpressions.Tests
                     .Any(o => o.Reason is IncrementalStepRunReason.New or IncrementalStepRunReason.Modified),
                 "Expected the source output step to run (not be cached) when culture changes.");
         }
+
+        [Fact]
+        public static void CompilationOptionsChange_Regenerates()
+        {
+            string source = """
+                using System.Text.RegularExpressions;
+                public partial class C
+                {
+                    [GeneratedRegex(@"abc")]
+                    public static partial Regex GetRegex();
+                }
+                """;
+
+            Compilation compilation = CreateCompilation(source);
+            GeneratorDriver driver = CreateRegexGeneratorDriver(compilation);
+
+            driver = driver.RunGenerators(compilation);
+            GeneratorRunResult firstResult = driver.GetRunResult().Results[0];
+            Assert.NotEmpty(firstResult.GeneratedSources);
+
+            // Change AllowUnsafe compilation option — this is part of CompilationData
+            // which feeds into the equatable model.
+            CSharpCompilationOptions newOptions = ((CSharpCompilationOptions)compilation.Options)
+                .WithAllowUnsafe(true);
+            compilation = compilation.WithOptions(newOptions);
+
+            driver = driver.RunGenerators(compilation);
+            GeneratorRunResult secondResult = driver.GetRunResult().Results[0];
+            Assert.NotEmpty(secondResult.GeneratedSources);
+
+            Assert.True(
+                secondResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
+                    .Any(o => o.Reason is IncrementalStepRunReason.New or IncrementalStepRunReason.Modified),
+                "Expected the source output step to run when AllowUnsafe compilation option changes.");
+        }
     }
 }
