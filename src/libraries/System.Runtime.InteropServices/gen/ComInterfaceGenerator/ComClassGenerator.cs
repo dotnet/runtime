@@ -8,6 +8,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using Microsoft.Interop.Analyzers;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Microsoft.Interop.SyntaxFactoryExtensions;
 
@@ -18,24 +20,28 @@ namespace Microsoft.Interop
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var unsafeCodeIsEnabled = context.CompilationProvider.Select((comp, ct) => comp.Options is CSharpCompilationOptions { AllowUnsafe: true }); // Unsafe code enabled
             // Get all types with the [GeneratedComClassAttribute] attribute.
-            var attributedClassesOrDiagnostics = context.SyntaxProvider
+            var attributedClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComClassAttribute,
                     static (node, ct) => node is ClassDeclarationSyntax,
-                    static (context, ct) => context)
-                .Combine(unsafeCodeIsEnabled)
-                .Select(static (data, ct) =>
+                    static (context, _) =>
                     {
-                        var context = data.Left;
-                        var unsafeCodeIsEnabled = data.Right;
                         var type = (INamedTypeSymbol)context.TargetSymbol;
                         var syntax = (ClassDeclarationSyntax)context.TargetNode;
-                        return ComClassInfo.From(type, syntax, unsafeCodeIsEnabled);
-                    });
+                        var compilation = context.SemanticModel.Compilation;
+                        var unsafeCodeIsEnabled = compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
+                        INamedTypeSymbol? generatedComInterfaceAttributeType = compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
 
-            var attributedClasses = context.FilterAndReportDiagnostics(attributedClassesOrDiagnostics);
+                        // Currently all reported diagnostics are fatal to the generator
+                        if (ComClassGeneratorDiagnosticsAnalyzer.GetDiagnosticsForAnnotatedClass(type, unsafeCodeIsEnabled, generatedComInterfaceAttributeType).Any())
+                        {
+                            return null;
+                        }
+
+                        return ComClassInfo.From(type, syntax, generatedComInterfaceAttributeType);
+                    })
+                .Where(static info => info is not null);
 
             var classInfoType = attributedClasses
                 .Select(static (info, ct) => new ItemAndSyntaxes<ComClassInfo>(info,
