@@ -31,8 +31,6 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
             CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
         if (type.Fields.ContainsKey(nameof(CallerOfActualHandlerFrame)))
             CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
-        if (type.Fields.ContainsKey(nameof(LastReportedFuncletInfo)))
-            LastReportedFuncletInfo = target.ProcessedData.GetOrAdd<Data.LastReportedFuncletInfo>(address + (ulong)type.Fields[nameof(LastReportedFuncletInfo)].Offset);
     }
 
     public TargetPointer PreviousNestedInfo { get; }
@@ -45,5 +43,4 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     public TargetPointer CSFEHClause { get; }
     public TargetPointer CSFEnclosingClause { get; }
     public TargetPointer CallerOfActualHandlerFrame { get; }
-    public LastReportedFuncletInfo? LastReportedFuncletInfo { get; }
 }

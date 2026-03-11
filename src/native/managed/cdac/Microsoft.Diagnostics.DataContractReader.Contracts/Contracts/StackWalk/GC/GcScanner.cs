@@ -8,15 +8,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal class GcScanner
 {
-    public enum CodeManagerFlags : uint
-    {
-        ActiveStackFrame = 0x1,
-        ExecutionAborted = 0x2,
-        ParentOfFuncletStackFrame = 0x40,
-        NoReportUntracked = 0x80,
-        ReportFPBasedSlotsOnly = 0x200,
-    }
-
     private readonly Target _target;
     private readonly IExecutionManager _eman;
     private readonly IGCInfo _gcInfo;
@@ -52,7 +43,7 @@ internal class GcScanner
 
         return decoder.EnumerateLiveSlots(
             (uint)relativeOffset.Value,
-            (uint)flags,
+            flags,
             (bool isRegister, uint registerNumber, int spOffset, uint spBase, uint gcFlags) =>
             {
                 GcScanFlags scanFlags = GcScanFlags.None;

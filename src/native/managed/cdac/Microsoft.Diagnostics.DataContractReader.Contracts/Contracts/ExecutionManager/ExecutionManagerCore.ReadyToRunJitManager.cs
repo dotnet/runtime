@@ -180,16 +180,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             };
         }
 
-        private uint GetUnwindDataSize()
-        {
-            RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            return arch switch
-            {
-                RuntimeInfoArchitecture.X86 => sizeof(uint),
-                _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
-            };
-        }
-
         public override IEnumerable<EHClause> GetEHClauses(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             // ReadyToRunJitManager::GetEHClauses

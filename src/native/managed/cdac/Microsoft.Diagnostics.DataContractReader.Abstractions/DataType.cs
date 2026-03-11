@@ -37,7 +37,6 @@ public enum DataType
     ExceptionLookupTableEntry,
     EEILException,
     R2RExceptionClause,
-    LastReportedFuncletInfo,
     RuntimeThreadLocals,
     IdDispenser,
     Module,

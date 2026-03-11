@@ -149,6 +149,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private sealed class EHClause
     {
+        // ECMA-335 Partition II, Section 25.4.6 — Exception handling clause flags.
         public enum CorExceptionFlag : uint
         {
             COR_ILEXCEPTION_CLAUSE_NONE = 0x0,
@@ -340,16 +341,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         if (!eman.IsFunclet(codeInfoHandle))
             return false;
 
-        TargetPointer codeAddress = info.StartAddress.Value + info.RelativeOffset.Value;
         TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
-
-        uint relativeOffsetInFunclet = (uint)(codeAddress - funcletStartAddress);
-        Debug.Assert(eman.GetRelativeOffset(codeInfoHandle).Value >= relativeOffsetInFunclet);
-
-        uint funcletStartOffset = (uint)(eman.GetRelativeOffset(codeInfoHandle).Value - relativeOffsetInFunclet);
-        // can we calculate this much more simply??
-        uint funcletStartOffset2 = (uint)(funcletStartAddress - info.StartAddress);
-        Debug.Assert(funcletStartOffset == funcletStartOffset2);
+        uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
 
         IEnumerable<EHClause> ehClauses = jitManager.GetEHClauses(range, codeInfoHandle.Address.Value);
         foreach (EHClause ehClause in ehClauses)

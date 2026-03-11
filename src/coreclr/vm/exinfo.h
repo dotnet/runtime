@@ -194,9 +194,6 @@ struct ExInfo
     int            m_longJmpReturnValue;
 #endif
 
-    // Last reported funclet info for cDAC stack walking
-    LastReportedFuncletInfo m_lastReportedFunclet;
-
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);
 #endif // TARGET_UNIX

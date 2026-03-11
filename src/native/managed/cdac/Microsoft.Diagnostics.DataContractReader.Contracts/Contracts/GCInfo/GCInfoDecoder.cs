@@ -537,10 +537,10 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     bool IGCInfoDecoder.EnumerateLiveSlots(
         uint instructionOffset,
-        uint inputFlags,
+        CodeManagerFlags flags,
         LiveSlotCallback reportSlot)
     {
-        return EnumerateLiveSlots(instructionOffset, inputFlags,
+        return EnumerateLiveSlots(instructionOffset, flags,
             (uint slotIndex, GcSlotDesc slot, uint gcFlags) =>
             {
                 reportSlot(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags);
@@ -552,32 +552,26 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     /// This is the managed equivalent of the native GcInfoDecoder::EnumerateLiveSlots.
     /// </summary>
     /// <param name="instructionOffset">The current instruction offset (relative to method start).</param>
-    /// <param name="inputFlags">CodeManagerFlags controlling reporting behavior.</param>
+    /// <param name="flags">CodeManagerFlags controlling reporting behavior.</param>
     /// <param name="reportSlot">Called for each live slot with (slotIndex, slotDesc, gcFlags).
     /// gcFlags contains GC_SLOT_INTERIOR/GC_SLOT_PINNED from the slot descriptor.</param>
     /// <returns>True if enumeration succeeded.</returns>
     public bool EnumerateLiveSlots(
         uint instructionOffset,
-        uint inputFlags,
+        CodeManagerFlags flags,
         Action<uint, GcSlotDesc, uint> reportSlot)
     {
-        const uint ActiveStackFrame = 0x1;
-        const uint ParentOfFuncletStackFrame = 0x40;
-        const uint NoReportUntracked = 0x80;
-        const uint ExecutionAborted = 0x2;
-        const uint ReportFPBasedSlotsOnly = 0x200;
-
         EnsureDecodedTo(DecodePoints.SlotTable);
 
-        bool executionAborted = (inputFlags & ExecutionAborted) != 0;
-        bool reportScratchSlots = (inputFlags & ActiveStackFrame) != 0;
-        bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly) != 0;
+        bool executionAborted = flags.HasFlag(CodeManagerFlags.ExecutionAborted);
+        bool reportScratchSlots = flags.HasFlag(CodeManagerFlags.ActiveStackFrame);
+        bool reportFpBasedSlotsOnly = flags.HasFlag(CodeManagerFlags.ReportFPBasedSlotsOnly);
 
         _reportScratchSlots = reportScratchSlots;
         _reportFpBasedSlotsOnly = reportFpBasedSlotsOnly;
 
         // WantsReportOnlyLeaf is always true for non-legacy formats
-        if ((inputFlags & ParentOfFuncletStackFrame) != 0)
+        if (flags.HasFlag(CodeManagerFlags.ParentOfFuncletStackFrame))
             return true;
 
         uint numTracked = NumTrackedSlots;
@@ -829,7 +823,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         }
 
     ReportUntracked:
-        if (_numUntrackedSlots > 0 && (inputFlags & (ParentOfFuncletStackFrame | NoReportUntracked)) == 0)
+        if (_numUntrackedSlots > 0 && (flags & (CodeManagerFlags.ParentOfFuncletStackFrame | CodeManagerFlags.NoReportUntracked)) == 0)
         {
             for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
                 ReportSlot(slotIndex, reportSlot);

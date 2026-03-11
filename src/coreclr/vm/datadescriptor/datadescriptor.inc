@@ -144,13 +144,7 @@ CDAC_TYPE_FIELD(ExceptionInfo, /*uint8*/, PassNumber, offsetof(ExInfo, m_passNum
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEHClause, offsetof(ExInfo, m_csfEHClause))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEnclosingClause, offsetof(ExInfo, m_csfEnclosingClause))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CallerOfActualHandlerFrame, offsetof(ExInfo, m_sfCallerOfActualHandlerFrame))
-CDAC_TYPE_FIELD(ExceptionInfo, /*LastReportedFuncletInfo*/, LastReportedFuncletInfo, offsetof(ExInfo, m_lastReportedFunclet))
 CDAC_TYPE_END(ExceptionInfo)
-
-CDAC_TYPE_BEGIN(LastReportedFuncletInfo)
-CDAC_TYPE_INDETERMINATE(LastReportedFuncletInfo)
-CDAC_TYPE_FIELD(LastReportedFuncletInfo, /*PCODE*/, IP, offsetof(LastReportedFuncletInfo, IP))
-CDAC_TYPE_END(LastReportedFuncletInfo)
 
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Linq;
 
@@ -180,8 +181,8 @@ internal partial class StackWalk_1 : IStackWalk
                         // IsActiveFrame was computed during CreateStackWalk, matching native
                         // CrawlFrame::IsActiveFunc() semantics. Active frames report scratch
                         // registers; non-active frames skip them.
-                        GcScanner.CodeManagerFlags codeManagerFlags = gcFrame.Frame.IsActiveFrame
-                            ? GcScanner.CodeManagerFlags.ActiveStackFrame
+                        CodeManagerFlags codeManagerFlags = gcFrame.Frame.IsActiveFrame
+                            ? CodeManagerFlags.ActiveStackFrame
                             : 0;
 
                         GcScanner gcScanner = new(_target);
@@ -286,18 +287,15 @@ internal partial class StackWalk_1 : IStackWalk
                 if (!movedPastFirstExInfo)
                 {
                     Data.ExceptionInfo exInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(pExInfo);
+                    // TODO: The native StackFrameIterator::Filter checks pExInfo->m_lastReportedFunclet.IP
+                    // to handle the case where a finally funclet was reported in a previous GC run.
+                    // This requires runtime support to persist LastReportedFuncletInfo on ExInfo,
+                    // which is not yet implemented. Until then this block is unreachable.
                     if (exInfo.PassNumber == 2 &&
                         exInfo.CSFEnclosingClause != TargetPointer.Null &&
                         funcletParentStackFrame == TargetPointer.Null &&
-                        exInfo.LastReportedFuncletInfo is not null &&
-                        exInfo.LastReportedFuncletInfo.IP != TargetCodePointer.Null)
+                        false) // TODO: check lastReportedFunclet.IP != 0 when runtime support is added
                     {
-                        // We are in the 2nd pass and we have already called an exceptionally called
-                        // finally funclet and reported that to GC in a previous GC run. But we have
-                        // not seen any funclet on the call stack yet.
-                        // Simulate that we have actualy seen a finally funclet during this pass and
-                        // that it didn't report GC references to ensure that the references will be
-                        // reported by the parent correctly.
                         funcletParentStackFrame = exInfo.CSFEnclosingClause;
                         parentStackFrame = exInfo.CSFEnclosingClause;
                         processNonFilterFunclet = true;
