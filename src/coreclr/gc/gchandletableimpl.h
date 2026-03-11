@@ -51,6 +51,8 @@ public:
 
     virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type);
 
+    virtual void DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type);
+
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle);
 
     virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo);

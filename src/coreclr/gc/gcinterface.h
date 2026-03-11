@@ -619,6 +619,10 @@ public:
 
     virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type) PURE_VIRTUAL
 
+    // Variant of DestroyHandleOfType that takes the handle table lock.
+    // Safe to call from preemptive mode or from threads not known to the runtime.
+    virtual void DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type) PURE_VIRTUAL
+
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) PURE_VIRTUAL
 
     virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo) PURE_VIRTUAL

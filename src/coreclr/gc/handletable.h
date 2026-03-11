@@ -68,6 +68,7 @@ uint32_t        HndGetHandleTableIndex(HHANDLETABLE hTable);
  */
 OBJECTHANDLE    HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF object, uintptr_t lExtraInfo = 0);
 void            HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle);
+void            HndDestroyHandleLocked(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle);
 
 void            HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle);
 

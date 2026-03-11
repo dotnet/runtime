@@ -397,6 +397,53 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
 
 
 /*
+ * HndDestroyHandleLocked
+ *
+ * Entrypoint for freeing an individual handle under the handle table lock.
+ * Safe to call from preemptive mode or from threads not known to the runtime
+ * because the lock prevents races with GC scanning.
+ *
+ */
+void HndDestroyHandleLocked(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    STRESS_LOG2(LF_GC, LL_INFO1000, "DestroyHandleLocked: *%p->%p\n", handle, *(_UNCHECKED_OBJECTREF *)handle);
+
+    FIRE_EVENT(DestroyGCHandle, (void *)handle);
+    FIRE_EVENT(PrvDestroyGCHandle, (void *)handle);
+
+    // sanity check handle we are being asked to free
+    _ASSERTE(handle);
+
+    // fetch the handle table pointer
+    HandleTable *pTable = Table(hTable);
+
+    // sanity check the type index
+    _ASSERTE(uType < pTable->uTypeCount);
+
+    _ASSERTE(HandleFetchType(handle) == uType);
+
+    // Take the handle table lock to prevent races with GC scanning.
+    CrstHolder ch(&pTable->Lock);
+
+    // return the handle to the table's cache (under lock)
+    TableFreeSingleHandleToCache(pTable, uType, handle);
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles--;
+#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+}
+
+
+/*
  * HndDestroyHandleOfUnknownType
  *
  * Entrypoint for freeing an individual handle whose type is unknown.
