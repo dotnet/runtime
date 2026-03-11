@@ -482,6 +482,16 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
+                // Async methods are not emitted in composite mode nor on ARM32
+                // The mutable module tokens emission is not well tested for composite mode and we should find a real solution for that problem
+                // ARM32 relocs require the thumb bit set, and the JIT/crossgen doesn't set it properly for the usages in async methods.
+                // https://github.com/dotnet/runtime/issues/125337
+                // https://github.com/dotnet/runtime/issues/125338
+                if ((CompilationModuleGroup.IsCompositeBuildMode || Target.Architecture == TargetArchitecture.ARM)
+                    && (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
+                {
+                    continue;
+                }
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())

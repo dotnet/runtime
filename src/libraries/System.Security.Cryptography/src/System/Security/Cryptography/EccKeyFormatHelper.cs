@@ -313,8 +313,8 @@ namespace System.Security.Cryptography
             {
                 case Oids.EcPrimeField:
                     prime = true;
-                    AsnReader primeReader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
-                    ReadOnlySpan<byte> primeValue = primeReader.ReadIntegerBytes().Span;
+                    ValueAsnReader primeReader = new(specifiedParameters.FieldID.Parameters.Span, AsnEncodingRules.BER);
+                    ReadOnlySpan<byte> primeValue = primeReader.ReadIntegerBytes();
                     primeReader.ThrowIfNotEmpty();
 
                     if (primeValue[0] == 0)
@@ -331,8 +331,8 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.EcChar2Field:
                     prime = false;
-                    AsnReader char2Reader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
-                    AsnReader innerReader = char2Reader.ReadSequence();
+                    ValueAsnReader char2Reader = new(specifiedParameters.FieldID.Parameters.Span, AsnEncodingRules.BER);
+                    ValueAsnReader innerReader = char2Reader.ReadSequence();
                     char2Reader.ThrowIfNotEmpty();
 
                     // Characteristic-two ::= SEQUENCE
@@ -368,7 +368,7 @@ namespace System.Security.Cryptography
                             //     k2 INTEGER, -- k2 > k1
                             //     k3 INTEGER -- k3 > k2
                             // }
-                            AsnReader pentanomialReader = innerReader.ReadSequence();
+                            ValueAsnReader pentanomialReader = innerReader.ReadSequence();
 
                             if (!pentanomialReader.TryReadInt32(out k1) ||
                                 !pentanomialReader.TryReadInt32(out k2) ||

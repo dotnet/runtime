@@ -6588,7 +6588,12 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#endif // DEBUG
+#else  // DEBUG
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
+#endif // !DEBUG
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -10432,7 +10437,7 @@ bool Compiler::killGCRefs(GenTree* tree)
 // Return Value:
 //    true       - this is an OSR compile and this local requires special treatment
 //    false      - not an OSR compile, or not an interesting local for OSR
-
+//
 bool Compiler::lvaIsOSRLocal(unsigned varNum)
 {
     LclVarDsc* const varDsc = lvaGetDesc(varNum);
@@ -10459,6 +10464,37 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 #endif
 
     return varDsc->lvIsOSRLocal;
+}
+
+//------------------------------------------------------------------------
+// lvaOSRLocalTier0FrameOffset:
+//   Get the offset in the tier0 frame for a specified OSR local.
+//
+// Arguments:
+//   varNum - variable of interest
+//
+// Return Value:
+//   The offset into the tier 0 frame.
+//
+int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
+{
+    assert(lvaIsOSRLocal(varNum));
+
+    if (varNum == lvaMonAcquired)
+    {
+        return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaAsyncExecutionContextVar)
+    {
+        return info.compPatchpointInfo->AsyncExecutionContextOffset();
+    }
+    if (varNum == lvaAsyncSynchronizationContextVar)
+    {
+        return info.compPatchpointInfo->AsyncSynchronizationContextOffset();
+    }
+
+    assert(varNum < info.compPatchpointInfo->NumberOfLocals());
+    return info.compPatchpointInfo->Offset(varNum);
 }
 
 //------------------------------------------------------------------------------

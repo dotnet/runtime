@@ -7,8 +7,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadGeneralizedTime
+    public sealed class ReadGeneralizedTimeAsnReaderTests : ReadGeneralizedTimeBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadGeneralizedTimeValueAsnReaderTests : ReadGeneralizedTimeBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadGeneralizedTimeBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         [Theory]
         // yyyyMMddHH (2017090821)
         [InlineData(AsnEncodingRules.BER, "180A32303137303930383231", 2017, 9, 8, 21, 0, 0, 0, null, 0)]
@@ -66,7 +93,7 @@ namespace System.Formats.Asn1.Tests.Reader
         // yyyyMMddHHmmss.secondFracZ (20161106012345,7654Z)
         [InlineData(AsnEncodingRules.CER, "181432303136313130363031323334352E373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
         [InlineData(AsnEncodingRules.DER, "181432303136313130363031323334352E373635345A", 2016, 11, 6, 1, 23, 45, 765, 0, 0)]
-        public static void ParseTime_Valid(
+        public void ParseTime_Valid(
             AsnEncodingRules ruleSet,
             string inputHex,
             int year,
@@ -81,7 +108,7 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             DateTimeOffset value = reader.ReadGeneralizedTime();
             Assert.False(reader.HasData, "reader.HasData");
 
@@ -189,17 +216,21 @@ namespace System.Formats.Asn1.Tests.Reader
               "040131" +
               "0405323334355A" +
               "0000")]
-        public static void ParseTime_BerOnly(string inputHex)
+        public void ParseTime_BerOnly(string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader cerReader = new AsnReader(inputData, AsnEncodingRules.CER);
-            AsnReader derReader = new AsnReader(inputData, AsnEncodingRules.DER);
+            AsnReaderWrapper cerReader = CreateWrapper(inputData, AsnEncodingRules.CER);
+            AsnReaderWrapper derReader = CreateWrapper(inputData, AsnEncodingRules.DER);
 
-            Assert.Throws<AsnContentException>(() => cerReader.ReadGeneralizedTime());
-            Assert.Throws<AsnContentException>(() => derReader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(
+                ref cerReader,
+                static (ref reader) => reader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(
+                ref derReader,
+                static (ref reader) => reader.ReadGeneralizedTime());
 
             // Prove it was not just corrupt input
-            AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper berReader = CreateWrapper(inputData, AsnEncodingRules.BER);
             berReader.ReadGeneralizedTime();
             Assert.False(berReader.HasData, "berReader.HasData");
             Assert.True(cerReader.HasData, "cerReader.HasData");
@@ -212,7 +243,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "20171219000406.9999991Z")]
         [InlineData(AsnEncodingRules.CER, "20171219000406.9999991Z")]
         [InlineData(AsnEncodingRules.DER, "20171219000406.9999991Z")]
-        public static void MaximumEffectivePrecision(AsnEncodingRules ruleSet, string dateAscii)
+        public void MaximumEffectivePrecision(AsnEncodingRules ruleSet, string dateAscii)
         {
             DateTimeOffset expectedTime = new DateTimeOffset(2017, 12, 19, 0, 4, 6, TimeSpan.Zero);
             expectedTime += new TimeSpan(TimeSpan.TicksPerSecond - 9);
@@ -222,16 +253,16 @@ namespace System.Formats.Asn1.Tests.Reader
             inputData[1] = (byte)dateAscii.Length;
             Text.Encoding.ASCII.GetBytes(dateAscii, 0, dateAscii.Length, inputData, 2);
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             Assert.Equal(expectedTime, reader.ReadGeneralizedTime());
         }
 
         [Fact]
-        public static void ExcessivelyPreciseFraction()
+        public void ExcessivelyPreciseFraction()
         {
             byte[] inputData = "\u0018\u002A2017092118.012345678901234567890123456789Z"u8.ToArray();
 
-            AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper berReader = CreateWrapper(inputData, AsnEncodingRules.BER);
             DateTimeOffset value = berReader.ReadGeneralizedTime();
             Assert.False(berReader.HasData, "berReader.HasData");
 
@@ -242,11 +273,11 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void ExcessivelyPreciseFraction_OneTenthPlusEpsilon()
+        public void ExcessivelyPreciseFraction_OneTenthPlusEpsilon()
         {
             byte[] inputData = "\u0018\u002A20170921180044.10000000000000000000000001Z"u8.ToArray();
 
-            AsnReader derReader = new AsnReader(inputData, AsnEncodingRules.DER);
+            AsnReaderWrapper derReader = CreateWrapper(inputData, AsnEncodingRules.DER);
             DateTimeOffset value = derReader.ReadGeneralizedTime();
             Assert.False(derReader.HasData, "derReader.HasData");
 
@@ -258,7 +289,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
-        public static void MultiSegmentExcessivelyPreciseFraction(AsnEncodingRules ruleSet)
+        public void MultiSegmentExcessivelyPreciseFraction(AsnEncodingRules ruleSet)
         {
             // This builds "20171207173522.0000...0001Z" where the Z required a second CER segment.
             // This is a bit of nonsense, really, because it is encoding 1e-985 seconds, which is
@@ -278,37 +309,43 @@ namespace System.Formats.Asn1.Tests.Reader
             byte[] cdr = { 0x04, 0x01, (byte)'Z', 0x00, 0x00 };
             byte[] inputData = header.Concat(contents0).Concat(cdr).ToArray();
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             DateTimeOffset value = reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 0));
             DateTimeOffset expected = new DateTimeOffset(2017, 12, 7, 17, 35, 22, TimeSpan.Zero);
             Assert.Equal(expected, value);
         }
 
         [Fact]
-        public static void ExcessivelyPreciseFraction_OneTenthPlusEpsilonAndZero()
+        public void ExcessivelyPreciseFraction_OneTenthPlusEpsilonAndZero()
         {
             byte[] inputData = "\u0018\u002A20170921180044.10000000000000000000000010Z"u8.ToArray();
 
-            AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper berReader = CreateWrapper(inputData, AsnEncodingRules.BER);
             DateTimeOffset value = berReader.ReadGeneralizedTime();
             Assert.False(berReader.HasData, "berReader.HasData");
 
             DateTimeOffset expected = new DateTimeOffset(2017, 9, 21, 18, 0, 44, 100, TimeSpan.Zero);
             Assert.Equal(expected, value);
 
-            AsnReader cerReader = new AsnReader(inputData, AsnEncodingRules.CER);
-            AsnReader derReader = new AsnReader(inputData, AsnEncodingRules.DER);
-            Assert.Throws<AsnContentException>(() => cerReader.ReadGeneralizedTime());
-            Assert.Throws<AsnContentException>(() => derReader.ReadGeneralizedTime());
+            AsnReaderWrapper cerReader = CreateWrapper(inputData, AsnEncodingRules.CER);
+            AsnReaderWrapper derReader = CreateWrapper(inputData, AsnEncodingRules.DER);
+            Assert.Throws<AsnContentException>(
+                ref cerReader,
+                static (ref reader) => reader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(
+                ref derReader,
+                static (ref reader) => reader.ReadGeneralizedTime());
         }
 
         [Fact]
-        public static void ExcessivelyPreciseNonFraction()
+        public void ExcessivelyPreciseNonFraction()
         {
             byte[] inputData = "\u0018\u002A2017092118.012345678901234567890123Q56789Z"u8.ToArray();
-            AsnReader berReader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper berReader = CreateWrapper(inputData, AsnEncodingRules.BER);
 
-            Assert.Throws<AsnContentException>(() => berReader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(
+                ref berReader,
+                static (ref reader) => reader.ReadGeneralizedTime());
         }
 
         [Theory]
@@ -376,32 +413,36 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("yyyyMMddHHmm.minuteFrac-HH:mm", "18183230313730393038323335382E30303030352D30313A3138")]
         [InlineData("yyyyMMddHHmmss,secondFrac-HH:mm", "181932303136313130363031323334352C393939392D30313A3138")]
         [InlineData("yyyyMMddHHmmss.secondFrac-HH:mm", "181932303136313130363031323334352E393939392D30313A3138")]
-        public static void GetGeneralizedTime_Throws(string description, string inputHex)
+        public void GetGeneralizedTime_Throws(string description, string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.BER);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadGeneralizedTime());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadGeneralizedTime());
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "180F32303136313130363031323334355A".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadGeneralizedTime(Asn1Tag.Null));
+                static (ref reader) => reader.ReadGeneralizedTime(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader,
+                static (ref reader) => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
@@ -416,28 +457,33 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "850F32303136313130363031323334355A".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadGeneralizedTime(Asn1Tag.Null));
+                static (ref reader) => reader.ReadGeneralizedTime(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.ReadUtcTime());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadGeneralizedTime());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.Application, 5)));
+                ref reader,
+                static (ref reader) => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.Application, 5)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 7)));
+                ref reader,
+                static (ref reader) => reader.ReadGeneralizedTime(new Asn1Tag(TagClass.ContextSpecific, 7)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
@@ -455,20 +501,20 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "800F31393530303130323132333435365A", TagClass.ContextSpecific, 0)]
         [InlineData(AsnEncodingRules.CER, "4C0F31393530303130323132333435365A", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "DF8A460F31393530303130323132333435365A", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             DateTimeOffset val1 = reader.ReadGeneralizedTime(new Asn1Tag(tagClass, tagValue, true));
 
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             DateTimeOffset val2 = reader.ReadGeneralizedTime(new Asn1Tag(tagClass, tagValue, false));
 
