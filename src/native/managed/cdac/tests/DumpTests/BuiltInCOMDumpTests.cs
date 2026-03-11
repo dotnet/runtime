@@ -124,7 +124,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
 
             // The handle should be populated and dereferenceable to a managed object.
             TargetPointer handle = builtInCOM.GetObjectHandle(ccwPtr);
-            Assert.NotEqual(TargetPointer.Null, handle,
+            Assert.True(handle != TargetPointer.Null,
                 $"Expected non-null handle for CCW at 0x{ccwPtr:X}");
 
             // InterfaceCount should be consistent with GetCCWInterfaces().
