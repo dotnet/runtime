@@ -37,7 +37,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexMethodSpec? spec = ParseMethod(context, ref diagnostics, cancellationToken);
                 if (spec is not null)
                 {
-                    (methods ??= new List<RegexMethodSpec>()).Add(spec);
+                    (methods ??= []).Add(spec);
                 }
             }
 
@@ -70,8 +70,7 @@ namespace System.Text.RegularExpressions.Generator
                 // of being able to flag invalid use when [GeneratedRegex] is applied incorrectly.
                 // Otherwise, if the ForAttributeWithMetadataName call excluded these, [GeneratedRegex]
                 // could be applied to them and we wouldn't be able to issue a diagnostic.
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, context.TargetNode.GetLocation()));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, context.TargetNode.GetLocation()));
                 return null;
             }
 
@@ -103,24 +102,21 @@ namespace System.Text.RegularExpressions.Generator
             ImmutableArray<AttributeData> boundAttributes = context.Attributes;
             if (boundAttributes.Length != 1)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, memberSyntax.GetLocation()));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, memberSyntax.GetLocation()));
                 return null;
             }
             AttributeData generatedRegexAttr = boundAttributes[0];
 
             if (generatedRegexAttr.ConstructorArguments.Any(ca => ca.Kind == TypedConstantKind.Error))
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
                 return null;
             }
 
             ImmutableArray<TypedConstant> items = generatedRegexAttr.ConstructorArguments;
             if (items.Length is 0 or > 4)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
                 return null;
             }
 
@@ -153,8 +149,7 @@ namespace System.Text.RegularExpressions.Generator
 
             if (pattern is null || cultureName is null)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "(null)"));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "(null)"));
                 return null;
             }
 
@@ -167,8 +162,7 @@ namespace System.Text.RegularExpressions.Generator
                     regexMethodSymbol.Arity != 0 ||
                     !SymbolEqualityComparer.Default.Equals(regexMethodSymbol.ReturnType, regexSymbol))
                 {
-                    AddDiagnostic(ref diagnostics,
-                        Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
                     return null;
                 }
 
@@ -183,8 +177,7 @@ namespace System.Text.RegularExpressions.Generator
                     regexPropertySymbol.SetMethod is not null ||
                     !SymbolEqualityComparer.Default.Equals(regexPropertySymbol.Type, regexSymbol))
                 {
-                    AddDiagnostic(ref diagnostics,
-                        Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
                     return null;
                 }
 
@@ -207,8 +200,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             catch (Exception e)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
                 return null;
             }
 
@@ -217,8 +209,7 @@ namespace System.Text.RegularExpressions.Generator
                 if ((regexOptions & RegexOptions.CultureInvariant) != 0)
                 {
                     // User passed in both a culture name and set RegexOptions.CultureInvariant which causes an explicit conflict.
-                    AddDiagnostic(ref diagnostics,
-                        Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
                     return null;
                 }
 
@@ -228,8 +219,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 catch (CultureNotFoundException)
                 {
-                    AddDiagnostic(ref diagnostics,
-                        Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
                     return null;
                 }
             }
@@ -248,16 +238,14 @@ namespace System.Text.RegularExpressions.Generator
                 RegexOptions.Singleline;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "options"));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "options"));
                 return null;
             }
 
             // Validate the timeout
             if (matchTimeout is 0 or < -1)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "matchTimeout"));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "matchTimeout"));
                 return null;
             }
 
@@ -311,8 +299,7 @@ namespace System.Text.RegularExpressions.Generator
                 if (!SupportsCodeGeneration(regexTree.Root, compilationData.LanguageVersion, out limitedSupportReason))
                 {
                     // Limited support — emit a boilerplate Regex wrapper, no tree needed
-                    AddDiagnostic(ref diagnostics,
-                        Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, memberSyntax.GetLocation()));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, memberSyntax.GetLocation()));
                     treeSpec = null;
                 }
                 else
@@ -323,8 +310,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             catch (Exception e)
             {
-                AddDiagnostic(ref diagnostics,
-                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
                 return null;
             }
 
@@ -407,11 +393,6 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
         }
-
-        /// <summary>Adds a diagnostic to the list, lazily initializing it if necessary.</summary>
-        private static void AddDiagnostic(ref List<Diagnostic>? diagnostics, Diagnostic diagnostic)
-            => (diagnostics ??= new List<Diagnostic>()).Add(diagnostic);
-
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
         private sealed class RegexMethod(RegexType declaringType, bool isProperty, string memberName, string modifiers, bool nullableRegex, string pattern, RegexOptions options, int? matchTimeout, RegexTree tree, AnalysisResults analysis, CompilationData compilationData)
         {
