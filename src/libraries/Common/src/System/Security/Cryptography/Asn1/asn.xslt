@@ -1218,6 +1218,22 @@ namespace <xsl:value-of select="@namespace" />
   <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueDecodeSimpleValue" xml:space="default">
     <xsl:param name="readerName" />
     <xsl:param name="indent" />
+    <xsl:if test="not(@optional) or @explicitTag">
+      <xsl:variable name="expectedTag">
+        <xsl:choose>
+          <xsl:when test="@implicitTag"><xsl:call-template name="ContextTag"/></xsl:when>
+          <xsl:when test="self::asn:SetOf">Asn1Tag.SetOf</xsl:when>
+          <xsl:otherwise>Asn1Tag.Sequence</xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:if test="1" xml:space="preserve">
+
+            <xsl:value-of select="$indent"/>if (!<xsl:value-of select="$readerName"/>.PeekTag().HasSameClassAndValue(<xsl:value-of select="$expectedTag"/>))
+            <xsl:value-of select="$indent"/>{
+            <xsl:value-of select="$indent"/>    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            <xsl:value-of select="$indent"/>}
+</xsl:if>
+    </xsl:if>
     <xsl:if test="1" xml:space="preserve">
             <xsl:value-of select="$indent"/>decoded.<xsl:value-of select="@name"/> = <xsl:value-of select="$readerName"/>.ReadEncodedValue();</xsl:if>
   </xsl:template>

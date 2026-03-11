@@ -191,6 +191,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             decoded.Subject = sequenceReader.ReadEncodedValue();
             System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn.Decode(ref sequenceReader, out decoded.SubjectPublicKeyInfo);
+
+            if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
             decoded.Attributes = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();

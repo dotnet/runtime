@@ -169,6 +169,12 @@ namespace System.Security.Cryptography.Asn1
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             decoded.AttrType = sequenceReader.ReadObjectIdentifier();
+
+            if (!sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.SetOf))
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
             decoded.AttrValues = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();
