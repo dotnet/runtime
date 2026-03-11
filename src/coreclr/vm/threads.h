@@ -2518,6 +2518,9 @@ private:
     void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
+#ifdef TARGET_ARM64
+    VOID        *m_pSpForPacSign;         // stack pointer value that was used to sign LR with PACIASP
+#endif
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 

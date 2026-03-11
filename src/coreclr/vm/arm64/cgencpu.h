@@ -45,6 +45,10 @@ class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
+#ifndef DACCESS_COMPILE
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
+#endif
+
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
@@ -208,7 +212,7 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 
 inline PCODE GetIP(const T_CONTEXT * context) {
     LIMITED_METHOD_DAC_CONTRACT;
-    return context->Pc;
+    return (PCODE) context->Pc;
 }
 
 inline void SetIP(T_CONTEXT *context, PCODE eip) {

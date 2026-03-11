@@ -798,4 +798,3 @@ typedef TGcInfoDecoder<InterpreterGcInfoEncoding> InterpreterGcInfoDecoder;
 
 
 #endif // _GC_INFO_DECODER_
-

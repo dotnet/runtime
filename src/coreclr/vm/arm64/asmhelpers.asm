@@ -311,10 +311,44 @@ NoFloatingPointRetVal
     EPILOG_RESTORE_REG_PAIR   x25, x26, #64
     EPILOG_RESTORE_REG_PAIR   x27, x28, #80
     EPILOG_RESTORE_REG_PAIR   fp, lr,   #192!
+
+    DCD     0xD50320FF  ; xpaclri instruction in binary to avoid error while compiling with non-PAC enabled compilers
     EPILOG_RETURN
     NESTED_END
 
 #endif ; FEATURE_HIJACK
+
+; void* PacStripPtr(void *);
+; This function strips the pointer of PAC info that is passed as an argument.
+; We prefer to strip a pointer where it's not going to be used to branch execution to.
+    LEAF_ENTRY PacStripPtr
+        DCD     0xDAC143E0  ; xpaci x0 instruction in binary to avoid requiring PAC-enabled assemblers
+        ret
+    LEAF_END PacStripPtr
+
+; void* PacSignPtr(void *, void *);
+; This function signs the input pointer using x1 as salt.
+; To avoid failing on non-PAC enabled machines, we use pacib1716 which signs lr explicitly.
+; Thus we need to move input in lr, sign it and then copy it back to the result register.
+    LEAF_ENTRY PacSignPtr
+        mov x17, x0
+        mov x16, x1
+        DCD 0xD503215F  ; pacib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        mov x0, x17
+        ret
+    LEAF_END PacSignPtr
+
+; void* PacAuthPtr(void *, void *);
+; This function authenticates the input signed-pointer using x1 as salt.
+; To avoid failing on non-PAC enabled machines, we use autib1716 which authenticates lr explicitly.
+; Thus we need to move input in lr, authenticate it and then copy it back to the result register.
+    LEAF_ENTRY PacAuthPtr
+        mov x17, x0
+        mov x16, x1
+        DCD 0xD50321DF  ; autib1716 instruction in binary to avoid error while compiling with non-PAC enabled compilers
+        mov x0, x17
+        ret
+    LEAF_END PacAuthPtr
 
 ;; ------------------------------------------------------------------
 ;; Redirection Stub for GC in fully interruptible method

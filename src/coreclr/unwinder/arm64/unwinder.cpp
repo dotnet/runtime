@@ -31,6 +31,10 @@
 #define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
 #endif
 
+#if !defined(DACCESS_COMPILE)
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
+#endif // !defined(DACCESS_COMPILE)
+
 #ifdef HOST_UNIX
 #define RtlZeroMemory ZeroMemory
 
@@ -251,16 +255,75 @@ do {                                                                            
 
 #endif // !defined(DEBUGGER_UNWIND)
 
-//
 // Macros for stripping pointer authentication (PAC) bits.
-//
+#if !defined(DACCESS_COMPILE)
 
-#if !defined(DEBUGGER_STRIP_PAC)
+#define HANDLE_PAC(pointer, sp)    RtlHandlePacOnline(pointer, sp)
 
-// NOTE: Pointer authentication is not used by .NET, so the implementation does nothing
-#define STRIP_PAC(Params, pointer)
+FORCEINLINE
+VOID RtlHandlePacOnline(_Inout_ PULONG64 Pointer, _In_ ULONG64 Sp)
 
-#endif
+/*++
+
+Routine Description:
+
+   This routine authenticates an ARM64 pointer authenticated with PACIASP
+   using the supplied stack pointer as the modifier. Hence this should only
+   be called when authenticating a pointer at runtime (not debugger).
+
+Arguments:
+
+   Pointer - Supplies a pointer to the pointer whose PAC will be authenticated.
+
+   Sp - Supplies the stack pointer value that was used as the PAC modifier.
+
+Return Value:
+
+   None.
+
+--*/
+
+{
+    *Pointer = (ULONG64)PacAuthPtr((void *)(*Pointer), (void *)Sp);
+}
+#else
+
+#define HANDLE_PAC(pointer, sp)    RtlStripPacManual(pointer, sp)
+
+FORCEINLINE
+VOID
+RtlStripPacManual(
+    _Inout_ PULONG64 Pointer,
+    _In_ ULONG64 Sp
+    )
+/*++
+
+Routine Description:
+
+    This routine manually strips the ARM64 Pointer Authentication Code (PAC)
+    from a pointer. This is functionally similar to the XPAC family of
+    instructions.
+
+    N.B. Even though PAC is only supported on ARM64, this routine is available
+         on all architectures to conveniently enable scenarios such as the
+         Debugger.
+
+Arguments:
+
+    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+
+Return Value:
+
+    None.
+
+--*/
+{
+    UNREFERENCED_PARAMETER(Sp);
+    *Pointer &= 0x0000FFFFFFFFFFFF;
+    return;
+}
+
+#endif // !defined(DACCESS_COMPILE)
 
 //
 // Macros to clarify opcode parsing
@@ -2343,7 +2406,7 @@ ExecuteCodes:
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
-            STRIP_PAC(UnwindParams, &ContextRecord->Lr);
+            HANDLE_PAC(&ContextRecord->Lr, ContextRecord->Sp);
 
             //
             // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
