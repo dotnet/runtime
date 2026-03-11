@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -464,6 +465,85 @@ namespace System.Formats.Tar.Tests
 
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void Read_PaxEntryWithOnlyLinkpath_PreservesUstarPrefix()
+        {
+            // macOS bsdtar writes symlinks whose link target exceeds 100 bytes as a
+            // PAX extended attributes entry (typeflag 'x') containing only "linkpath",
+            // followed by a standard USTAR entry that uses the prefix/name split.
+            // Because the entry name fits in prefix+name, bsdtar does NOT include the
+            // "path" extended attribute.  TarReader must still combine prefix+name.
+
+            string expectedName = "./sdk/tools/net11.0/any/SomeAssembly.dll";
+            string prefix = "./sdk";
+            string nameField = "tools/net11.0/any/SomeAssembly.dll";
+            string longLinkTarget = "../../../../../dotnet-format/BuildHost-netcore/Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll";
+
+            using MemoryStream archiveStream = new MemoryStream();
+
+            // --- PAX extended attributes header (typeflag 'x') ---
+            byte[] paxHeader = new byte[512];
+            Encoding.UTF8.GetBytes("./PaxHeaders.12345/SomeAssembly.dll").CopyTo(paxHeader.AsSpan(0));
+            Encoding.UTF8.GetBytes("0000644\0").CopyTo(paxHeader.AsSpan(100, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(paxHeader.AsSpan(108, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(paxHeader.AsSpan(116, 8));
+            Encoding.UTF8.GetBytes("00000000000\0").CopyTo(paxHeader.AsSpan(136, 12));
+            paxHeader[156] = (byte)'x';
+            Encoding.UTF8.GetBytes("ustar\0").CopyTo(paxHeader.AsSpan(257, 6));
+            Encoding.UTF8.GetBytes("00").CopyTo(paxHeader.AsSpan(263, 2));
+
+            // Build PAX data containing only "linkpath" (no "path" key).
+            string paxPayload = $"linkpath={longLinkTarget}\n";
+            int totalLen = 1 + paxPayload.Length; // start with 1-digit length placeholder
+            // Iteratively determine the total length including the length field itself.
+            while (totalLen.ToString().Length + 1 + paxPayload.Length != totalLen)
+            {
+                totalLen = totalLen.ToString().Length + 1 + paxPayload.Length;
+            }
+            string paxData = $"{totalLen} {paxPayload}";
+            byte[] paxDataBytes = Encoding.UTF8.GetBytes(paxData);
+
+            string sizeOctal = Convert.ToString(paxDataBytes.Length, 8).PadLeft(11, '0') + "\0";
+            Encoding.UTF8.GetBytes(sizeOctal).CopyTo(paxHeader.AsSpan(124, 12));
+
+            WriteHeaderChecksum(paxHeader);
+            archiveStream.Write(paxHeader);
+            archiveStream.Write(paxDataBytes);
+            int padding = (512 - (paxDataBytes.Length % 512)) % 512;
+            if (padding > 0) archiveStream.Write(new byte[padding]);
+
+            // --- Actual USTAR symlink entry ---
+            byte[] entryHeader = new byte[512];
+            Encoding.UTF8.GetBytes(nameField).CopyTo(entryHeader.AsSpan(0));
+            Encoding.UTF8.GetBytes("0000777\0").CopyTo(entryHeader.AsSpan(100, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(entryHeader.AsSpan(108, 8));
+            Encoding.UTF8.GetBytes("0000000\0").CopyTo(entryHeader.AsSpan(116, 8));
+            Encoding.UTF8.GetBytes("00000000000\0").CopyTo(entryHeader.AsSpan(124, 12));
+            Encoding.UTF8.GetBytes("14751414000\0").CopyTo(entryHeader.AsSpan(136, 12));
+            entryHeader[156] = (byte)'2'; // SymbolicLink
+            // Write truncated link target (first 100 bytes) into the linkname field.
+            Encoding.UTF8.GetBytes(longLinkTarget.Substring(0, Math.Min(100, longLinkTarget.Length)))
+                .CopyTo(entryHeader.AsSpan(157));
+            Encoding.UTF8.GetBytes("ustar\0").CopyTo(entryHeader.AsSpan(257, 6));
+            Encoding.UTF8.GetBytes("00").CopyTo(entryHeader.AsSpan(263, 2));
+            Encoding.UTF8.GetBytes(prefix).CopyTo(entryHeader.AsSpan(345));
+
+            WriteHeaderChecksum(entryHeader);
+            archiveStream.Write(entryHeader);
+
+            // End-of-archive markers.
+            archiveStream.Write(new byte[1024]);
+            archiveStream.Seek(0, SeekOrigin.Begin);
+
+            using TarReader reader2 = new TarReader(archiveStream);
+            TarEntry entry = reader2.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(expectedName, entry.Name);
+            Assert.Equal(longLinkTarget, entry.LinkName);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+            Assert.Null(reader2.GetNextEntry());
         }
     }
 }
