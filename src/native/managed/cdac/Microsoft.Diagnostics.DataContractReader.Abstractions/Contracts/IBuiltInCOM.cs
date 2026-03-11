@@ -51,6 +51,8 @@ public interface IBuiltInCOM : IContract
     // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
     TargetPointer GetStartWrapper(TargetPointer ccw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw) => throw new NotImplementedException();
+    TargetPointer GetRCWContext(TargetPointer rcw) => throw new NotImplementedException();
 }
 
 public readonly struct BuiltInCOM : IBuiltInCOM

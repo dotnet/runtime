@@ -554,6 +554,30 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
 }
 
+public struct DacpCCWData
+{
+    public ClrDataAddress outerIUnknown;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress handle;
+    public ClrDataAddress ccwAddress;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isNeutered;
+    public int jupiterRefCount;
+    public Interop.BOOL isPegged;
+    public Interop.BOOL isGlobalPegged;
+    public Interop.BOOL hasStrongRef;
+    public Interop.BOOL isExtendsCOMObject;
+    public Interop.BOOL isAggregated;
+}
+
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 public unsafe partial interface ISOSDacInterface
@@ -753,7 +777,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
     [PreserveSig]
-    int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
     int GetCCWData(ClrDataAddress ccw, DacpCCWData* data);
     [PreserveSig]
@@ -794,30 +818,6 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 };
-
-public struct DacpCCWData
-{
-    public ClrDataAddress outerIUnknown;
-    public ClrDataAddress managedObject;
-    public ClrDataAddress handle;
-    public ClrDataAddress ccwAddress;
-    public int refCount;
-    public int interfaceCount;
-    public Interop.BOOL isNeutered;
-    public int jupiterRefCount;
-    public Interop.BOOL isPegged;
-    public Interop.BOOL isGlobalPegged;
-    public Interop.BOOL hasStrongRef;
-    public Interop.BOOL isExtendsCOMObject;
-    public Interop.BOOL isAggregated;
-}
-
-public struct DacpCOMInterfacePointerData
-{
-    public ClrDataAddress methodTable;
-    public ClrDataAddress interfacePtr;
-    public ClrDataAddress comContext;
-}
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 public struct DacpExceptionObjectData

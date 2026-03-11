@@ -41,8 +41,25 @@ public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw);
 // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
 public TargetPointer GetStartWrapper(TargetPointer ccw);
 // Enumerates entries in the RCW cleanup list.
+public record struct RCWCleanupInfo(
+    TargetPointer RCW,
+    TargetPointer Context,
+    TargetPointer STAThread,
+    bool IsFreeThreaded);
+
+// Resolves a COM interface pointer to the ComCallWrapper.
+// Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
+public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
+// Enumerate the COM interfaces exposed by the ComCallWrapper chain.
+// ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
+public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
+// Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
+// Enumerate the interface entries cached in an RCW.
+public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw);
+// Get the COM context cookie for an RCW.
+public TargetPointer GetRCWContext(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -68,6 +85,9 @@ Data descriptors used:
 | `RCW` | `CtxCookie` | COM context cookie for the RCW |
 | `RCW` | `CtxEntry` | Pointer to `CtxEntry` (bit 0 is a synchronization flag; must be masked off before use) |
 | `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
+| `RCW` | `InterfaceEntries` | Offset of the inline interface entry cache array within the RCW struct |
+| `InterfaceEntry` | `MethodTable` | MethodTable pointer for the cached COM interface |
+| `InterfaceEntry` | `Unknown` | `IUnknown*` pointer for the cached COM interface |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -78,6 +98,7 @@ Global variables used:
 | `TearOffAddRefSimple` | pointer | Address of `Unknown_AddRefSpecial`; identifies `SimpleComCallWrapper` interface pointers |
 | `TearOffAddRefSimpleInner` | pointer | Address of `Unknown_AddRefInner`; identifies inner `SimpleComCallWrapper` interface pointers |
 | `RCWCleanupList` | `pointer` | Pointer to the global `g_pRCWCleanupList` instance |
+| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (`INTERFACE_ENTRY_CACHE_SIZE`) |
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
@@ -115,18 +136,25 @@ private const ulong CleanupSentinel = 0x80000000UL;
 // COM_REFCOUNT_MASK: lower 31 bits of m_llRefCount hold the visible refcount
 private const ulong ComRefCountMask = 0x000000007FFFFFFFUL;
 
-// Navigates to the start ComCallWrapper in a linked chain.
-// If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
-public TargetPointer GetStartWrapper(TargetPointer ccw)
+// See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
+// Resolves a COM interface pointer to the ComCallWrapper.
+// Returns TargetPointer.Null if interfacePointer is not a recognised COM IP.
+public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) { ... }
+
+public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
 {
-    TargetPointer next = _target.ReadPointer(ccw + /* ComCallWrapper::Next offset */);
-    if (next != Null)
-    {
-        TargetPointer sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
-        ccw = _target.ReadPointer(sccw + /* SimpleComCallWrapper::MainWrapper offset */);
-    }
-    return ccw;
+    // Navigate to the start of the linked chain (ccw may be any wrapper in the chain).
+    // Walk the linked list of ComCallWrapper nodes starting at the start wrapper.
+    // For each node, iterate the IPtrs[] slots:
+    //   - skip null slots
+    //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
+    //   - yield COMInterfacePointerData { InterfacePointerAddress = address of slot, MethodTable }
+    //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
 }
+
+// Returns the GC object handle from the given ComCallWrapper.
+public TargetPointer GetObjectHandle(TargetPointer ccw)
+    => _target.ReadPointer(ccw + /* ComCallWrapper::Handle offset */);
 
 // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
 public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
@@ -149,24 +177,17 @@ public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
     };
 }
 
-// Returns the GC object handle from the given ComCallWrapper.
-public TargetPointer GetObjectHandle(TargetPointer ccw)
-    => _target.ReadPointer(ccw + /* ComCallWrapper::Handle offset */);
-
-// See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
-// Resolves a COM interface pointer to the ComCallWrapper.
-// Returns TargetPointer.Null if interfacePointer is not a recognised COM IP.
-public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) { ... }
-
-public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
+// Navigates to the start ComCallWrapper in a linked chain.
+// If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
+public TargetPointer GetStartWrapper(TargetPointer ccw)
 {
-    // Navigate to the start of the linked chain (ccw may be any wrapper in the chain).
-    // Walk the linked list of ComCallWrapper nodes starting at the start wrapper.
-    // For each node, iterate the IPtrs[] slots:
-    //   - skip null slots
-    //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
-    //   - yield COMInterfacePointerData { InterfacePointerAddress = address of slot, MethodTable }
-    //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
+    TargetPointer next = _target.ReadPointer(ccw + /* ComCallWrapper::Next offset */);
+    if (next != Null)
+    {
+        TargetPointer sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
+        ccw = _target.ReadPointer(sccw + /* SimpleComCallWrapper::MainWrapper offset */);
+    }
+    return ccw;
 }
 
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
@@ -202,6 +223,29 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
 
         bucketPtr = _target.ReadPointer(bucketPtr + /* RCW::NextCleanupBucket offset */);
     }
+}
+
+public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw)
+{
+    // InterfaceEntries is an inline array — the offset gives the address of the first element.
+    TargetPointer interfaceEntriesAddr = rcw + /* RCW::InterfaceEntries offset */;
+    uint cacheSize = _target.ReadGlobal<uint>("RCWInterfaceCacheSize");
+    uint entrySize = /* size of InterfaceEntry */;
+
+    for (uint i = 0; i < cacheSize; i++)
+    {
+        TargetPointer entryAddress = interfaceEntriesAddr + i * entrySize;
+        TargetPointer methodTable = _target.ReadPointer(entryAddress + /* InterfaceEntry::MethodTable offset */);
+        TargetPointer unknown = _target.ReadPointer(entryAddress + /* InterfaceEntry::Unknown offset */);
+        // An entry is free if Unknown == null (matches InterfaceEntry::IsFree())
+        if (unknown != TargetPointer.Null)
+            yield return (methodTable, unknown);
+    }
+}
+
+public TargetPointer GetRCWContext(TargetPointer rcw)
+{
+    return _target.ReadPointer(rcw + /* RCW::CtxCookie offset */);
 }
 ```
 
