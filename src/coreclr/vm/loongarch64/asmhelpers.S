@@ -637,10 +637,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     st.d  $a0, $sp, 88
     st.d  $a1, $sp, 96
+    // save async continuation return value
+    st.d  $a2, $sp, 104
 
     // save any FP return value(s)
-    fst.d  $f0, $sp, 104
-    fst.d  $f1, $sp, 112
+    fst.d  $f0, $sp, 112
+    fst.d  $f1, $sp, 120
 
     ori  $a0, $sp, 0
     bl C_FUNC(OnHijackWorker)
@@ -650,10 +652,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld.d  $a0, $sp, 88
     ld.d  $a1, $sp, 96
+    // restore async continuation return value
+    ld.d  $a2, $sp, 104
 
     // restore any FP return value(s)
-    fld.d  $f0, $sp, 104
-    fld.d  $f1, $sp, 112
+    fld.d  $f0, $sp, 112
+    fld.d  $f1, $sp, 120
 
     EPILOG_RESTORE_REG_PAIR   23, 24, 16
     EPILOG_RESTORE_REG_PAIR   25, 26, 32

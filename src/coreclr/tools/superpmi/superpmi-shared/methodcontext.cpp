@@ -1196,6 +1196,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ALT_JIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
         return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PORTABLE_ENTRY_POINTS:
+        return "CORJIT_FLAG_PORTABLE_ENTRY_POINTS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_AOT:
         return "CORJIT_FLAG_AOT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
@@ -1237,6 +1239,9 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
         return "CORJIT_FLAG_SOFTFP_ABI";
 #endif // defined(TARGET_ARM)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
+        return "CORJIT_FLAG_ASYNC";
 
     default:
         return "<unknown>";
