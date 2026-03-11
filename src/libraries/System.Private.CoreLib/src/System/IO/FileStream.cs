@@ -82,10 +82,6 @@ namespace System.IO
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
-            else if (!OperatingSystem.IsWindows() && handle.IsAsync)
-            {
-                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
-            }
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
