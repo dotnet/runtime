@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Data;
-using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalk_1;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 

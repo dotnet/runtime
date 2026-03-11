@@ -161,7 +161,7 @@ internal partial class StackWalk_1 : IStackWalk
         {
             try
             {
-                TargetPointer pMethodDesc = ((IStackWalk)this).GetMethodDescPtr(gcFrame.Frame);
+                _ = ((IStackWalk)this).GetMethodDescPtr(gcFrame.Frame);
 
                 bool reportGcReferences = gcFrame.ShouldCrawlFrameReportGCReferences;
 
@@ -906,4 +906,4 @@ internal partial class StackWalk_1 : IStackWalk
                 break;
         }
     }
-};
+}

@@ -2432,7 +2432,7 @@ public sealed unsafe partial class SOSDacImpl
             ClrDataAddress ppMDLocal;
             int hrLocal = _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, &ppMDLocal);
 
-            Debug.Assert(hrLocal == hr);
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(*ppMD == ppMDLocal);
@@ -3655,6 +3655,7 @@ public sealed unsafe partial class SOSDacImpl
                 if (pFetched is null || refs is null)
                     throw new NullReferenceException();
 
+                count = Math.Min(count, (uint)refs.Length);
                 uint written = 0;
                 while (written < count && _index < _refs.Length)
                     refs[written++] = _refs[(int)_index++];
