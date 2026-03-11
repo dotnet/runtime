@@ -1919,6 +1919,15 @@ private:
             if (indir->IsPartialLclFld(m_compiler))
             {
                 lclNodeFlags |= GTF_VAR_USEASG;
+
+                // A partial def of a small-typed local can leave upper bits in an
+                // incorrect state. Address-expose such locals to make them
+                // normalize-on-load, ensuring correct upper bits on every read.
+                LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+                if (varTypeIsSmall(varDsc->TypeGet()) && !varDsc->lvIsStructField)
+                {
+                    m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::SMALL_TYPE_PARTIAL_DEF));
+                }
             }
         }
 
