@@ -23,198 +23,18 @@ namespace System.Text.RegularExpressions.Generator
         private const string GeneratedRegexAttributeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
 
         /// <summary>
-        /// Extracts essential data from a <see cref="GeneratorAttributeSyntaxContext"/> into a
-        /// lightweight <see cref="RegexMethodInput"/> that does not hold Roslyn symbols.
-        /// Returns <see langword="null"/> for cases that should be silently skipped (no diagnostic needed).
-        /// </summary>
-        private static RegexMethodInput? ExtractRegexMethodData(
-            GeneratorAttributeSyntaxContext context, CancellationToken _)
-        {
-            // Handle indexer/accessor: needs diagnostic, pass through with flag
-            if (context.TargetNode is IndexerDeclarationSyntax or AccessorDeclarationSyntax)
-            {
-                return new RegexMethodInput { IsIndexerOrAccessor = true, DiagnosticLocation = context.TargetNode.GetLocation() };
-            }
-
-            MemberDeclarationSyntax memberSyntax = (MemberDeclarationSyntax)context.TargetNode;
-
-            // Prefilter: required Regex type must be available
-            Compilation compilation = context.SemanticModel.Compilation;
-            INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
-            if (regexSymbol is null)
-            {
-                return null;
-            }
-
-            // Prefilter: must be inside a type declaration
-            if (memberSyntax.Parent is not TypeDeclarationSyntax typeDec)
-            {
-                return null;
-            }
-
-            // Prefilter: must be a method or property symbol
-            if (context.TargetSymbol is not (IMethodSymbol or IPropertySymbol))
-            {
-                return null;
-            }
-
-            // Extract attribute data
-            ImmutableArray<AttributeData> boundAttributes = context.Attributes;
-            int attributeCount = boundAttributes.Length;
-            bool hasAttributeError = false;
-            int argCount = 0;
-            string? pattern = null;
-            int? options = null;
-            int? matchTimeout = null;
-            string? cultureName = string.Empty;
-
-            if (attributeCount == 1)
-            {
-                AttributeData attr = boundAttributes[0];
-                hasAttributeError = attr.ConstructorArguments.Any(ca => ca.Kind == TypedConstantKind.Error);
-
-                if (!hasAttributeError)
-                {
-                    ImmutableArray<TypedConstant> items = attr.ConstructorArguments;
-                    argCount = items.Length;
-                    if (argCount >= 1)
-                    {
-                        pattern = items[0].Value as string;
-                    }
-
-                    if (argCount >= 2)
-                    {
-                        options = items[1].Value as int?;
-                        if (argCount == 4)
-                        {
-                            matchTimeout = items[2].Value as int?;
-                            cultureName = items[3].Value as string;
-                        }
-                        else if (argCount == 3)
-                        {
-                            if (items[2].Type?.SpecialType == SpecialType.System_Int32)
-                            {
-                                matchTimeout = items[2].Value as int?;
-                            }
-                            else
-                            {
-                                cultureName = items[2].Value as string;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Validate member signature and extract nullability
-            bool hasValidSignature;
-            bool nullableRegex;
-            bool isProperty;
-            if (context.TargetSymbol is IMethodSymbol regexMethodSymbol)
-            {
-                isProperty = false;
-                hasValidSignature =
-                    regexMethodSymbol.IsPartialDefinition &&
-                    !regexMethodSymbol.IsAbstract &&
-                    regexMethodSymbol.Parameters.Length == 0 &&
-                    regexMethodSymbol.Arity == 0 &&
-                    SymbolEqualityComparer.Default.Equals(regexMethodSymbol.ReturnType, regexSymbol);
-                nullableRegex = regexMethodSymbol.ReturnNullableAnnotation == NullableAnnotation.Annotated;
-            }
-            else
-            {
-                IPropertySymbol regexPropertySymbol = (IPropertySymbol)context.TargetSymbol;
-                isProperty = true;
-                hasValidSignature =
-                    memberSyntax.Modifiers.Any(SyntaxKind.PartialKeyword) && // TODO: Switch to using regexPropertySymbol.IsPartialDefinition when available
-                    !regexPropertySymbol.IsAbstract &&
-                    regexPropertySymbol.SetMethod is null &&
-                    SymbolEqualityComparer.Default.Equals(regexPropertySymbol.Type, regexSymbol);
-                nullableRegex = regexPropertySymbol.NullableAnnotation == NullableAnnotation.Annotated;
-            }
-
-            // Determine the namespace the class is declared in, if any
-            string? ns = context.TargetSymbol.ContainingType?.ContainingNamespace?.ToDisplayString(
-                SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
-
-            // Build the declaring type hierarchy from outside in.
-            RegexTypeSpec? parentSpec = null;
-            TypeDeclarationSyntax? parentDec = typeDec.Parent as TypeDeclarationSyntax;
-            if (parentDec is not null)
-            {
-                List<TypeDeclarationSyntax> parents = [];
-                while (parentDec is not null && IsAllowedKind(parentDec.Kind()))
-                {
-                    parents.Add(parentDec);
-                    parentDec = parentDec.Parent as TypeDeclarationSyntax;
-                }
-
-                for (int i = parents.Count - 1; i >= 0; i--)
-                {
-                    TypeDeclarationSyntax p = parents[i];
-                    parentSpec = new RegexTypeSpec(
-                        p is RecordDeclarationSyntax rds2 ? $"{p.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : p.Keyword.ValueText,
-                        ns ?? string.Empty,
-                        $"{p.Identifier}{p.TypeParameterList}",
-                        Parent: parentSpec);
-                }
-            }
-
-            RegexTypeSpec declaringType = new(
-                typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
-                ns ?? string.Empty,
-                $"{typeDec.Identifier}{typeDec.TypeParameterList}",
-                Parent: parentSpec);
-
-            CompilationData compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
-                ? new CompilationData(compilationOptions.AllowUnsafe, compilationOptions.CheckOverflow, langVersion)
-                : default;
-
-            return new RegexMethodInput
-            {
-                DiagnosticLocation = memberSyntax.GetLocation(),
-                MemberName = context.TargetSymbol.Name,
-                Modifiers = memberSyntax.Modifiers.ToString(),
-                IsProperty = isProperty,
-                NullableRegex = nullableRegex,
-                HasValidSignature = hasValidSignature,
-                AttributeCount = attributeCount,
-                HasAttributeError = hasAttributeError,
-                ArgCount = argCount,
-                Pattern = pattern,
-                Options = options,
-                MatchTimeout = matchTimeout,
-                CultureName = cultureName,
-                DeclaringType = declaringType,
-                CompilationData = compilationData,
-            };
-
-            static bool IsAllowedKind(SyntaxKind kind) => kind is
-                SyntaxKind.ClassDeclaration or
-                SyntaxKind.StructDeclaration or
-                SyntaxKind.RecordDeclaration or
-                SyntaxKind.RecordStructDeclaration or
-                SyntaxKind.InterfaceDeclaration;
-        }
-
-        /// <summary>
-        /// Parses all collected method inputs into an equatable generation model.
+        /// Parses all collected attribute contexts into an equatable generation model.
         /// This runs in a <c>Select</c> step of the incremental pipeline after <c>Collect</c>.
         /// </summary>
         private static (RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics) Parse(
-            ImmutableArray<RegexMethodInput?> inputs, CancellationToken cancellationToken)
+            ImmutableArray<GeneratorAttributeSyntaxContext> contexts, CancellationToken cancellationToken)
         {
             List<RegexMethodSpec>? methods = null;
             List<Diagnostic>? diagnostics = null;
 
-            foreach (RegexMethodInput? input in inputs)
+            foreach (GeneratorAttributeSyntaxContext context in contexts)
             {
-                if (input is null)
-                {
-                    continue;
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-                RegexMethodSpec? spec = ParseMethod(input, ref diagnostics);
+                RegexMethodSpec? spec = ParseMethod(context, ref diagnostics, cancellationToken);
                 if (spec is not null)
                 {
                     (methods ??= []).Add(spec);
@@ -235,45 +55,136 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>
-        /// Parses a single <see cref="RegexMethodInput"/> into a <see cref="RegexMethodSpec"/>.
+        /// Parses a single <see cref="GeneratorAttributeSyntaxContext"/> into a <see cref="RegexMethodSpec"/>.
         /// Returns <see langword="null"/> if the member should be skipped. Appends any diagnostics
-        /// to the provided list.
+        /// to the provided builder.
         /// </summary>
         private static RegexMethodSpec? ParseMethod(
-            RegexMethodInput input,
-            ref List<Diagnostic>? diagnostics)
+            GeneratorAttributeSyntaxContext context,
+            ref List<Diagnostic>? diagnostics,
+            CancellationToken cancellationToken)
         {
-            if (input.IsIndexerOrAccessor)
+            if (context.TargetNode is IndexerDeclarationSyntax or AccessorDeclarationSyntax)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, input.DiagnosticLocation));
+                // We allow these to be used as a target node for the sole purpose
+                // of being able to flag invalid use when [GeneratedRegex] is applied incorrectly.
+                // Otherwise, if the ForAttributeWithMetadataName call excluded these, [GeneratedRegex]
+                // could be applied to them and we wouldn't be able to issue a diagnostic.
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, context.TargetNode.GetLocation()));
                 return null;
             }
 
-            if (input.AttributeCount != 1)
+            MemberDeclarationSyntax memberSyntax = (MemberDeclarationSyntax)context.TargetNode;
+            SemanticModel sm = context.SemanticModel;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Compilation compilation = sm.Compilation;
+            INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
+
+            if (regexSymbol is null)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, input.DiagnosticLocation));
+                // Required types aren't available
                 return null;
             }
 
-            if (input.HasAttributeError || input.ArgCount is 0 or > 4)
+            TypeDeclarationSyntax? typeDec = memberSyntax.Parent as TypeDeclarationSyntax;
+            if (typeDec is null)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, input.DiagnosticLocation));
                 return null;
             }
 
-            if (input.Pattern is null || input.CultureName is null)
+            ISymbol? regexMemberSymbol = context.TargetSymbol is IMethodSymbol or IPropertySymbol ? context.TargetSymbol : null;
+            if (regexMemberSymbol is null)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, "(null)"));
                 return null;
             }
 
-            if (!input.HasValidSignature)
+            ImmutableArray<AttributeData> boundAttributes = context.Attributes;
+            if (boundAttributes.Length != 1)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, input.DiagnosticLocation));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, memberSyntax.GetLocation()));
+                return null;
+            }
+            AttributeData generatedRegexAttr = boundAttributes[0];
+
+            if (generatedRegexAttr.ConstructorArguments.Any(ca => ca.Kind == TypedConstantKind.Error))
+            {
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
                 return null;
             }
 
-            RegexOptions regexOptions = input.Options is not null ? (RegexOptions)input.Options : RegexOptions.None;
+            ImmutableArray<TypedConstant> items = generatedRegexAttr.ConstructorArguments;
+            if (items.Length is 0 or > 4)
+            {
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
+                return null;
+            }
+
+            string? pattern = items[0].Value as string;
+            int? options = null;
+            int? matchTimeout = null;
+            string? cultureName = string.Empty;
+            if (items.Length >= 2)
+            {
+                options = items[1].Value as int?;
+                if (items.Length == 4)
+                {
+                    matchTimeout = items[2].Value as int?;
+                    cultureName = items[3].Value as string;
+                }
+                // If there are 3 parameters, we need to check if the third argument is
+                // int matchTimeoutMilliseconds, or string cultureName.
+                else if (items.Length == 3)
+                {
+                    if (items[2].Type?.SpecialType == SpecialType.System_Int32)
+                    {
+                        matchTimeout = items[2].Value as int?;
+                    }
+                    else
+                    {
+                        cultureName = items[2].Value as string;
+                    }
+                }
+            }
+
+            if (pattern is null || cultureName is null)
+            {
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "(null)"));
+                return null;
+            }
+
+            bool nullableRegex;
+            if (regexMemberSymbol is IMethodSymbol regexMethodSymbol)
+            {
+                if (!regexMethodSymbol.IsPartialDefinition ||
+                    regexMethodSymbol.IsAbstract ||
+                    regexMethodSymbol.Parameters.Length != 0 ||
+                    regexMethodSymbol.Arity != 0 ||
+                    !SymbolEqualityComparer.Default.Equals(regexMethodSymbol.ReturnType, regexSymbol))
+                {
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
+                    return null;
+                }
+
+                nullableRegex = regexMethodSymbol.ReturnNullableAnnotation == NullableAnnotation.Annotated;
+            }
+            else
+            {
+                Debug.Assert(regexMemberSymbol is IPropertySymbol);
+                IPropertySymbol regexPropertySymbol = (IPropertySymbol)regexMemberSymbol;
+                if (!memberSyntax.Modifiers.Any(SyntaxKind.PartialKeyword) || // TODO: Switch to using regexPropertySymbol.IsPartialDefinition when available
+                    regexPropertySymbol.IsAbstract ||
+                    regexPropertySymbol.SetMethod is not null ||
+                    !SymbolEqualityComparer.Default.Equals(regexPropertySymbol.Type, regexSymbol))
+                {
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
+                    return null;
+                }
+
+                nullableRegex = regexPropertySymbol.NullableAnnotation == NullableAnnotation.Annotated;
+            }
+
+            RegexOptions regexOptions = options is not null ? (RegexOptions)options : RegexOptions.None;
 
             // If RegexOptions.IgnoreCase was specified or the inline ignore case option `(?i)` is present in the pattern, then we will (in priority order):
             // - If a culture name was passed in:
@@ -285,30 +196,30 @@ namespace System.Text.RegularExpressions.Generator
             RegexOptions regexOptionsWithPatternOptions;
             try
             {
-                regexOptionsWithPatternOptions = regexOptions | RegexParser.ParseOptionsInPattern(input.Pattern, regexOptions);
+                regexOptionsWithPatternOptions = regexOptions | RegexParser.ParseOptionsInPattern(pattern, regexOptions);
             }
             catch (Exception e)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, e.Message));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
                 return null;
             }
 
-            if ((regexOptionsWithPatternOptions & RegexOptions.IgnoreCase) != 0 && !string.IsNullOrEmpty(input.CultureName))
+            if ((regexOptionsWithPatternOptions & RegexOptions.IgnoreCase) != 0 && !string.IsNullOrEmpty(cultureName))
             {
                 if ((regexOptions & RegexOptions.CultureInvariant) != 0)
                 {
                     // User passed in both a culture name and set RegexOptions.CultureInvariant which causes an explicit conflict.
-                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, "cultureName"));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
                     return null;
                 }
 
                 try
                 {
-                    culture = CultureInfo.GetCultureInfo(input.CultureName);
+                    culture = CultureInfo.GetCultureInfo(cultureName);
                 }
                 catch (CultureNotFoundException)
                 {
-                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, "cultureName"));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
                     return null;
                 }
             }
@@ -327,29 +238,68 @@ namespace System.Text.RegularExpressions.Generator
                 RegexOptions.Singleline;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, "options"));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "options"));
                 return null;
             }
 
             // Validate the timeout
-            if (input.MatchTimeout is 0 or < -1)
+            if (matchTimeout is 0 or < -1)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, "matchTimeout"));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "matchTimeout"));
                 return null;
             }
+
+            // Determine the namespace the class is declared in, if any
+            string? ns = regexMemberSymbol.ContainingType?.ContainingNamespace?.ToDisplayString(
+                SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
+
+            // Build the declaring type hierarchy from outside in.
+            RegexTypeSpec? parentSpec = null;
+            TypeDeclarationSyntax? parentDec = typeDec.Parent as TypeDeclarationSyntax;
+            if (parentDec is not null)
+            {
+                // Collect parent types from inner to outer.
+                List<TypeDeclarationSyntax> parents = new();
+                while (parentDec is not null && IsAllowedKind(parentDec.Kind()))
+                {
+                    parents.Add(parentDec);
+                    parentDec = parentDec.Parent as TypeDeclarationSyntax;
+                }
+
+                // Build chain from outermost to innermost.
+                for (int i = parents.Count - 1; i >= 0; i--)
+                {
+                    TypeDeclarationSyntax p = parents[i];
+                    parentSpec = new RegexTypeSpec(
+                        p is RecordDeclarationSyntax rds2 ? $"{p.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : p.Keyword.ValueText,
+                        ns ?? string.Empty,
+                        $"{p.Identifier}{p.TypeParameterList}",
+                        Parent: parentSpec);
+                }
+            }
+
+            RegexTypeSpec regexTypeSpec = new(
+                typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
+                ns ?? string.Empty,
+                $"{typeDec.Identifier}{typeDec.TypeParameterList}",
+                Parent: parentSpec);
+
+            CompilationData compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
+                ? new CompilationData(compilationOptions.AllowUnsafe, compilationOptions.CheckOverflow, langVersion)
+                : default;
 
             // Parse the regex and build the equatable model.
             RegexTreeSpec? treeSpec;
             string? limitedSupportReason;
             try
             {
-                RegexTree regexTree = RegexParser.Parse(input.Pattern, regexOptions | RegexOptions.Compiled, culture);
+                RegexTree regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture);
                 AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
 
-                if (!SupportsCodeGeneration(regexTree.Root, input.CompilationData.LanguageVersion, out limitedSupportReason))
+                if (!SupportsCodeGeneration(regexTree.Root, compilationData.LanguageVersion, out limitedSupportReason))
                 {
                     // Limited support — emit a boilerplate Regex wrapper, no tree needed
-                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, input.DiagnosticLocation));
+                    (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, memberSyntax.GetLocation()));
                     treeSpec = null;
                 }
                 else
@@ -360,24 +310,31 @@ namespace System.Text.RegularExpressions.Generator
             }
             catch (Exception e)
             {
-                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, input.DiagnosticLocation, e.Message));
+                (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
                 return null;
             }
 
             return new RegexMethodSpec
             {
-                DeclaringType = input.DeclaringType!,
-                IsProperty = input.IsProperty,
-                MemberName = input.MemberName!,
-                Modifiers = input.Modifiers!,
-                NullableRegex = input.NullableRegex,
-                Pattern = input.Pattern,
+                DeclaringType = regexTypeSpec,
+                IsProperty = regexMemberSymbol is IPropertySymbol,
+                MemberName = regexMemberSymbol.Name,
+                Modifiers = memberSyntax.Modifiers.ToString(),
+                NullableRegex = nullableRegex,
+                Pattern = pattern,
                 Options = regexOptions,
-                MatchTimeout = input.MatchTimeout,
+                MatchTimeout = matchTimeout,
                 Tree = treeSpec,
                 LimitedSupportReason = limitedSupportReason,
-                CompilationData = input.CompilationData,
+                CompilationData = compilationData,
             };
+
+            static bool IsAllowedKind(SyntaxKind kind) => kind is
+                SyntaxKind.ClassDeclaration or
+                SyntaxKind.StructDeclaration or
+                SyntaxKind.RecordDeclaration or
+                SyntaxKind.RecordStructDeclaration or
+                SyntaxKind.InterfaceDeclaration;
         }
 
         /// <summary>Determines whether the passed in node supports C# code generation.</summary>
@@ -436,29 +393,6 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
         }
-
-        /// <summary>Lightweight data extracted from <see cref="GeneratorAttributeSyntaxContext"/> by the transform delegate.
-        /// Does not hold Roslyn symbol or compilation references.</summary>
-        private sealed class RegexMethodInput
-        {
-            public bool IsIndexerOrAccessor { get; init; }
-            public required Location DiagnosticLocation { get; init; }
-            public string? MemberName { get; init; }
-            public string? Modifiers { get; init; }
-            public bool IsProperty { get; init; }
-            public bool NullableRegex { get; init; }
-            public bool HasValidSignature { get; init; }
-            public int AttributeCount { get; init; }
-            public bool HasAttributeError { get; init; }
-            public int ArgCount { get; init; }
-            public string? Pattern { get; init; }
-            public int? Options { get; init; }
-            public int? MatchTimeout { get; init; }
-            public string? CultureName { get; init; } = string.Empty;
-            public RegexTypeSpec? DeclaringType { get; init; }
-            public CompilationData CompilationData { get; init; }
-        }
-
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
         private sealed class RegexMethod(RegexType declaringType, bool isProperty, string memberName, string modifiers, bool nullableRegex, string pattern, RegexOptions options, int? matchTimeout, RegexTree tree, AnalysisResults analysis, CompilationData compilationData)
         {

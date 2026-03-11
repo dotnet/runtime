@@ -46,10 +46,9 @@ namespace System.Text.RegularExpressions.Generator
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
-                    ExtractRegexMethodData)
-                .Where(static m => m is not null)
+                    static (context, _) => context)
                 .Collect()
-                .Select(static (inputs, cancellationToken) => Parse(inputs, cancellationToken));
+                .Select(static (contexts, cancellationToken) => Parse(contexts, cancellationToken));
 
             // Step 2: Project to just the source model, discarding diagnostics.
             // RegexGenerationSpec has deep value equality, so Roslyn skips the
