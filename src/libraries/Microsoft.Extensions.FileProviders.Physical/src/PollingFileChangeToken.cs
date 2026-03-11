@@ -108,7 +108,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Does not actually register callbacks.
+        /// Registers a callback that will be invoked when the token changes, if <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>.
+        /// If <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>, no callback is registered and an empty disposable is returned.
         /// </summary>
         /// <param name="callback">The callback to invoke. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
         /// <param name="state">The state to pass to <paramref name="callback"/>. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
