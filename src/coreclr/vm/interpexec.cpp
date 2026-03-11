@@ -3054,7 +3054,7 @@ SWITCH_OPCODE:
                         {
                             // pDataItems[calliCookie] = sig token (immutable)
                             // pDataItems[calliCookie + 1] = cached cookie (initially NULL)
-                            cookie = pMethod->pDataItems[calliCookie + 1];
+                            cookie = VolatileLoadWithoutBarrier(&pMethod->pDataItems[calliCookie + 1]);
                             if (cookie == nullptr)
                             {
                                 mdToken sigToken = (mdToken)(size_t)pMethod->pDataItems[calliCookie];
@@ -3062,10 +3062,12 @@ SWITCH_OPCODE:
                                 Module* pModule = pCallerMD->GetModule();
                                 PCCOR_SIGNATURE pSig;
                                 ULONG cbSig;
-                                pModule->GetMDImport()->GetSigFromToken(sigToken, &cbSig, &pSig);
+                                IfFailThrow(pModule->GetMDImport()->GetSigFromToken(sigToken, &cbSig, &pSig));
+                                // nullptr type context is safe here — this path is only reached for
+                                // JIT helper portable entry points which are non-generic.
                                 MetaSig sig(pSig, cbSig, pModule, nullptr);
                                 cookie = GetCookieForCalliSig(sig);
-                                pMethod->pDataItems[calliCookie + 1] = cookie;
+                                VolatileStoreWithoutBarrier(&pMethod->pDataItems[calliCookie + 1], cookie);
                             }
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
