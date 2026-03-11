@@ -1133,6 +1133,7 @@ private:
 public :
     enum : LONGLONG
     {
+        // [cDAC] [BuiltInCOM] : Contract depends on the values of CLEANUP_SENTINEL and COM_REFCOUNT_MASK
         CLEANUP_SENTINEL        = 0x0000000080000000,       // Sentinel -> 1 bit
         COM_REFCOUNT_MASK       = 0x000000007FFFFFFF,       // COM -> 31 bits
         EXT_COM_REFCOUNT_MASK   = 0x00000000FFFFFFFF,       // For back-compat, preserve the higher-bit so that outside can observe it
