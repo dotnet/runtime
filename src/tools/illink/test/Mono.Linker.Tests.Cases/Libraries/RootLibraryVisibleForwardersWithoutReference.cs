@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
 
     [SetupCompileBefore("library.dll", new[] { "Dependencies/RootLibraryVisibleForwarders_Lib.cs" }, outputSubFolder: "isolated")]
     [SetupLinkerLinkPublicAndFamily]
-    [SetupLinkerArgument("-d", "isolated")]
+    [SetupLinkerArgument("-reference", "isolated/library.dll")]
     [SetupLinkerArgument("-a", "library", "visible")] // Checks for no-eager exported type resolving
     [Define("RootLibraryVisibleForwarders")]
 
