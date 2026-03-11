@@ -72,6 +72,7 @@
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexCompilationInfoTests.cs" />
     <Compile Include="GeneratedRegexAttributeTests.cs" />
+    <Compile Include="RegexGeneratorIncrementalTests.cs" />
     <Compile Include="RegexGeneratorOutputTests.cs" />
     <Compile Include="RegexGeneratorParserTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
