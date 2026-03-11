@@ -8529,16 +8529,6 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
             if (addr->OperIs(GT_STORE_LCL_FLD) && addr->IsPartialLclFld(this))
             {
                 addr->gtFlags |= GTF_VAR_USEASG;
-
-                // A partial def of a small-typed local can leave upper bits in an
-                // incorrect state. Address-expose such locals to make them
-                // normalize-on-load, ensuring correct upper bits on every read.
-                unsigned   lclNum = addr->AsLclFld()->GetLclNum();
-                LclVarDsc* varDsc = lvaGetDesc(lclNum);
-                if (varTypeIsSmall(varDsc->TypeGet()) && !varDsc->lvIsStructField)
-                {
-                    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::SMALL_TYPE_PARTIAL_DEF));
-                }
             }
 
             return addr;

@@ -13,10 +13,7 @@ public class Runtime_125301
         short swapped = Swap(expected);
         short result = Swap(swapped);
 
-        if (result != expected)
-        {
-            Assert.True(false, $"Expected: {expected}, Actual: {result}");
-        }
+        Assert.Equal(expected, result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
