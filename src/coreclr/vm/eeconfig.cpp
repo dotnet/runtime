@@ -233,6 +233,7 @@ HRESULT EEConfig::Init()
     fGDBJitEmitDebugFrame = false;
 #endif
 
+    // Runtime async is always enabled; the UNSUPPORTED_RuntimeAsync config knob has been removed.
     runtimeAsync = true;
 
     return S_OK;
