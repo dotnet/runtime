@@ -216,11 +216,11 @@ namespace Microsoft.Interop.Analyzers
             // If forwarders are not being generated, we need to run stub generation logic to get those diagnostics too
             if (!options.GenerateForwarders)
             {
-                IMarshallingGeneratorResolver resolver = DefaultMarshallingGeneratorResolver.Create(
+                IMarshallingGeneratorResolver resolver = new ByValueContentsMarshalKindValidator(DefaultMarshallingGeneratorResolver.Create(
                     environment.EnvironmentFlags,
                     MarshalDirection.ManagedToUnmanaged,
                     TypeNames.LibraryImportAttribute_ShortName,
-                    []);
+                    []));
 
                 // Check marshalling generators - this collects diagnostics for marshalling issues
                 _ = new ManagedToNativeStubGenerator(
