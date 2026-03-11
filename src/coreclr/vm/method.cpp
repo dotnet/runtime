@@ -2392,13 +2392,6 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
 
 MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
-    // Without runtime async, every declared method is classified as a NormalMethod.
-    // Thus code that handles runtime async scenarios becomes unreachable.
-    if (!g_pConfig->RuntimeAsync())
-    {
-        return MethodReturnKind::NormalMethod;
-    }
-
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
     uint32_t data;
     IfFailThrow(sig.GetCallingConvInfo(&data));
