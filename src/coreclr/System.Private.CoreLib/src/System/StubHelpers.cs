@@ -1352,8 +1352,24 @@ namespace System.StubHelpers
 
     internal static unsafe class StructureMarshaler<T>  where T : notnull
     {
+        [Conditional("DEBUG")]
+        private static void Validate()
+        {
+            Debug.Assert(typeof(T).IsValueType, "StructureMarshaler can only be used for value types");
+            RuntimeType type = (RuntimeType)typeof(T);
+            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int _);
+            Debug.Assert(hasLayout, "Non-layout structs should not be marshalable");
+            Debug.Assert(isBlittable, "Non-blittable structs should have a custom IL body generated with the marshaling logic.");
+        }
+
         [Intrinsic]
-        private static extern void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+#pragma warning disable IDE0060 // Remove unused parameter
+        private static void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            Validate();
+            SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
+        }
 
         public static void ConvertToUnmanaged(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
@@ -1372,10 +1388,21 @@ namespace System.StubHelpers
         }
 
         [Intrinsic]
-        public static extern void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+#pragma warning disable IDE0060 // Remove unused parameter
+        public static void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            Validate();
+            SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
+        }
 
         [Intrinsic]
-        private static extern void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+#pragma warning disable IDE0060 // Remove unused parameter
+        private static void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            Validate();
+        }
 
         public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
@@ -1393,7 +1420,39 @@ namespace System.StubHelpers
         static LayoutClassMarshaler()
         {
             RuntimeTypeHandle th = typeof(T).TypeHandle;
-            StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
+            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int _);
+            Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
+            if (isBlittable)
+            {
+                _convertToUnmanaged = &BlittableConvertToUnmanaged;
+                _convertToManaged = &BlittableConvertToManaged;
+                _free = &BlittableFree;
+            }
+            else
+            {
+                StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
+            }
+        }
+
+#pragma warning disable IDE0060 // Remove unused parameter
+        private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            SpanHelpers.Memmove(ref *unmanaged, ref managed, RuntimeHelpers.SizeOf<T>());
+        }
+
+#pragma warning disable IDE0060 // Remove unused parameter
+        private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            SpanHelpers.Memmove(ref managed, ref *unmanaged, RuntimeHelpers.SizeOf<T>());
+        }
+
+#pragma warning disable IDE0060 // Remove unused parameter
+        private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            // Nothing to do for blittable types.
         }
 
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1736,7 +1795,7 @@ namespace System.StubHelpers
                 return;
             }
 
-            Marshal.NonBlittableMarshalerMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            Marshal.LayoutTypeMarshalerMethods methods = Marshal.LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
             methods.ConvertToUnmanaged(obj, pNative, size, ref pCleanupWorkList);
         }
@@ -1766,7 +1825,7 @@ namespace System.StubHelpers
                 return;
             }
 
-            Marshal.NonBlittableMarshalerMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            Marshal.LayoutTypeMarshalerMethods methods = Marshal.LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
             methods.ConvertToManaged(obj, pNative, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }

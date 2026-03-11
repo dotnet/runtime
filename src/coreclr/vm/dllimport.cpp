@@ -3866,20 +3866,27 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(resolver));
         PRECONDITION(CheckPointer(methodILDecoder));
+        PRECONDITION(pMD->IsIntrinsic());
+        PRECONDITION(CoreLibBinder::IsClass(pMD->GetMethodTable()->GetTypicalMethodTable(), CLASS__STRUCTURE_MARSHALER));
     }
     CONTRACTL_END;
-
-    if (!pMD->IsIntrinsic())
-        return false;
-
-    if (pMD->GetMethodTable()->GetTypicalMethodTable() != CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER))
-        return false;
 
     MethodDesc* pTypicalDefinition = pMD->LoadTypicalMethodDefinition();
 
     _ASSERTE(pTypicalDefinition->GetClassInstantiation().GetNumArgs() == 1);
 
     MethodTable* pStructMT = pMD->GetClassInstantiation()[0].GetMethodTable();
+
+    _ASSERTE(pStructMT->IsValueType());
+
+    if (pStructMT->IsBlittable())
+    {
+        // No need to generate stubs for blittable types since they can be marshaled by value without any transformation.
+        // The default IL implementation is correct.
+        return false;
+    }
+
+    _ASSERTE(IsStructMarshalable(TypeHandle(pStructMT)));
 
     SigTypeContext genericContext;
     SigTypeContext::InitTypeContext(pMD, &genericContext);

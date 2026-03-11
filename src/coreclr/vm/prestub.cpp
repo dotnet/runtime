@@ -1071,11 +1071,6 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
         return true;
     }
 
-    if (StructMarshalStubs::TryGenerateStructMarshallingMethod(this, resolver, methodILDecoder))
-    {
-        return true;
-    }
-
     return false;
 }
 

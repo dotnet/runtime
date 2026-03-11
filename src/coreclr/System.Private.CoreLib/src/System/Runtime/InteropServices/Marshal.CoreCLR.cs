@@ -234,7 +234,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
-        internal sealed class NonBlittableMarshalerMethods
+        internal sealed class LayoutTypeMarshalerMethods
         {
             private static MemberInfo ConvertToUnmanagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
@@ -248,7 +248,7 @@ namespace System.Runtime.InteropServices
             private readonly ConvertToManagedDelegate _convertToManaged;
             private readonly FreeDelegate _free;
 
-            internal NonBlittableMarshalerMethods(Type instantiatedType)
+            internal LayoutTypeMarshalerMethods(Type instantiatedType)
             {
                 _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
                 _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
@@ -270,17 +270,17 @@ namespace System.Runtime.InteropServices
                 _free(obj, native, nativeSize, ref cleanupWorkList);
             }
 
-            private static readonly ConditionalWeakTable<Type, NonBlittableMarshalerMethods> s_marshalerCache = [];
+            private static readonly ConditionalWeakTable<Type, LayoutTypeMarshalerMethods> s_marshalerCache = [];
 
             [RequiresDynamicCode("Marshalling code for the object might not be available.")]
-            internal static NonBlittableMarshalerMethods GetMarshalMethodsForType(Type t)
+            internal static LayoutTypeMarshalerMethods GetMarshalMethodsForType(Type t)
             {
                 return s_marshalerCache.GetOrAdd(t, CreateMarshalMethods);
 
-                static NonBlittableMarshalerMethods CreateMarshalMethods(Type type)
+                static LayoutTypeMarshalerMethods CreateMarshalMethods(Type type)
                 {
                     Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
-                    return new NonBlittableMarshalerMethods(instantiatedMarshaler);
+                    return new LayoutTypeMarshalerMethods(instantiatedMarshaler);
                 }
             }
         }
@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            NonBlittableMarshalerMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
             if (fDeleteOld)
             {
@@ -344,7 +344,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            NonBlittableMarshalerMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
             methods.ConvertToManaged(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
@@ -371,7 +371,7 @@ namespace System.Runtime.InteropServices
 
             if (!isBlittable)
             {
-                NonBlittableMarshalerMethods methods = NonBlittableMarshalerMethods.GetMarshalMethodsForType(structuretype);
+                LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(structuretype);
 
                 methods.Free(null, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
