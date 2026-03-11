@@ -4357,7 +4357,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
             delta += lvaLclStackHomeSize(lvaMonAcquired);
         }
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         if ((lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !opts.IsOSR())
         {
             int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + (compCalleeRegsPushed << 3);
