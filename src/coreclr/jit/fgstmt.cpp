@@ -10,10 +10,20 @@
 // Flowgraph Statements
 
 #ifdef DEBUG
-// Check to see if block contains a statement but don't spend more than a certain
-// budget doing this per method compiled.
-// If the budget is exceeded, return 'answerOnBoundExceeded' as the answer.
-/* static */
+//------------------------------------------------------------------------
+// fgBlockContainsStatementBounded: Check if a block contains a statement,
+//    with a budget limit to avoid excessive cost.
+//
+// Arguments:
+//    block                 - the block to search
+//    stmt                  - the statement to look for
+//    answerOnBoundExceeded - value to return if the budget is exceeded
+//
+// Return Value:
+//    true if the block contains the statement, or "answerOnBoundExceeded"
+//    if the budget is exceeded.
+//
+// static
 bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
                                                Statement*  stmt,
                                                bool        answerOnBoundExceeded /*= true*/)
@@ -382,10 +392,17 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     return stmtLast;
 }
 
-/*****************************************************************************
- *
- *  Create a new statement from tree and wire the links up.
- */
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree and wire the links up.
+//
+// Arguments:
+//    tree  - the root node of the new statement
+//    block - the block to use for debug checks (may be nullptr)
+//    di    - debug info for the new statement
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
     Statement* stmt = gtNewStmt(tree, di);
@@ -410,16 +427,45 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const D
     return stmt;
 }
 
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree with no debug info.
+//
+// Arguments:
+//    tree - the root node of the new statement
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
     return fgNewStmtFromTree(tree, nullptr, DebugInfo());
 }
 
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree in the given block.
+//
+// Arguments:
+//    tree  - the root node of the new statement
+//    block - the block to use for debug checks (may be nullptr)
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
     return fgNewStmtFromTree(tree, block, DebugInfo());
 }
 
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree with the given debug info.
+//
+// Arguments:
+//    tree - the root node of the new statement
+//    di   - debug info for the new statement
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, const DebugInfo& di)
 {
     return fgNewStmtFromTree(tree, nullptr, di);
@@ -468,8 +514,8 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 
     if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().IsValid())
     {
-        /* TODO: For debuggable code, should we remove significant
-           statement boundaries. Or should we leave a GT_NO_OP in its place? */
+        // TODO: For debuggable code, should we remove significant
+        // statement boundaries. Or should we leave a GT_NO_OP in its place?
     }
 
     Statement* firstStmt = block->firstStmt();
@@ -479,7 +525,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
         {
             assert(firstStmt == block->lastStmt());
 
-            /* this is the only statement - basic block becomes empty */
+            // this is the only statement - basic block becomes empty
             block->SetFirstStmt(nullptr);
         }
         else
@@ -518,9 +564,16 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 #endif // DEBUG
 }
 
-/******************************************************************************/
-// Returns true if the operator is involved in control-flow.
+//------------------------------------------------------------------------
+// OperIsControlFlow: Returns true if the operator is involved in control-flow.
+//
 // TODO-Cleanup: Make this a GenTreeOperKind.
+//
+// Arguments:
+//    oper - the operator to check
+//
+// Return Value:
+//    true if the operator is a control-flow operator; false otherwise.
 //
 inline bool OperIsControlFlow(genTreeOps oper)
 {
@@ -547,11 +600,17 @@ inline bool OperIsControlFlow(genTreeOps oper)
     }
 }
 
-/******************************************************************************
- *  Tries to throw away a stmt. The statement can be anywhere in block's statement list.
- *  Returns true if it did remove the statement.
- */
-
+//------------------------------------------------------------------------
+// fgCheckRemoveStmt: Tries to remove a statement if it has no side effects.
+//    The statement can be anywhere in block's statement list.
+//
+// Arguments:
+//    block - the block containing the statement
+//    stmt  - the statement to try to remove
+//
+// Return Value:
+//    true if the statement was removed, false otherwise
+//
 bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
 {
     if (opts.compDbgCode)

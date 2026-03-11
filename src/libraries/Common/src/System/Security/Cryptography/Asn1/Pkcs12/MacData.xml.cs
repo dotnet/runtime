@@ -21,9 +21,9 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         static MacData()
         {
             MacData decoded = default;
-            AsnValueReader reader;
+            ValueAsnReader reader;
 
-            reader = new AsnValueReader(DefaultIterationCount, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(DefaultIterationCount, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.IterationCount))
             {
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out MacData decoded);
                 reader.ThrowIfNotEmpty();
@@ -82,12 +82,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out MacData decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out MacData decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out MacData decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out MacData decoded)
         {
             try
             {
@@ -99,11 +99,11 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out MacData decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out MacData decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader defaultReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
             else
             {
-                defaultReader = new AsnValueReader(DefaultIterationCount, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(DefaultIterationCount, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.IterationCount))
                 {
