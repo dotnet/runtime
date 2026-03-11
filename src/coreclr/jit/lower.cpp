@@ -2867,6 +2867,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 #endif
 
+    call->gtDirectCallAddress = nullptr; // Clear out any stale data from the union.
     call->ClearOtherRegs();
 
 #if HAS_FIXED_REGISTER_SET
@@ -3974,7 +3975,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //
 void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
-    assert(node->OperIsPutArg() || node->OperIsFieldList());
+    assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
 
     if (node->OperIsFieldList())
     {
@@ -3985,7 +3986,7 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
             MovePutArgUpToCall(call, operand.GetNode());
         }
     }
-    else
+    else if (node->OperIsPutArg())
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
@@ -4000,6 +4001,12 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
         {
             JITDUMP("...no, operand has side effects or is not invariant\n");
         }
+    }
+    else
+    {
+        assert(!HAS_FIXED_REGISTER_SET);
+        // No moving necessary
+        return;
     }
 
     JITDUMP("Moving\n");
@@ -4024,14 +4031,14 @@ void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 }
@@ -5698,7 +5705,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             {
                 if (slotCount > 1)
                 {
-#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_WASM)
                     assert(call->HasMultiRegRetVal());
 #endif
                 }
@@ -6374,12 +6381,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
+#ifndef TARGET_WASM
             // If we are using an indirection cell for a direct call then apply
             // an optimization that loads the call target directly from the
             // indirection cell, instead of duplicating the tree.
             bool hasIndirectionCell = call->GetIndirectionCellArgKind() != WellKnownArg::None;
 
             if (!hasIndirectionCell)
+#endif // !TARGET_WASM
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
@@ -8037,6 +8046,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     }
 #endif
 
+#if defined(TARGET_WASM)
+    if (node->OperIs(GT_ADD))
+    {
+        LowerBinaryArithmetic(node);
+    }
+#endif
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
@@ -8911,6 +8927,8 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    AfterLowerBlocks();
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -9545,16 +9563,15 @@ void Lowering::LowerBlock(BasicBlock* block)
     {
         node = LowerNode(node);
     }
-    AfterLowerBlock();
 
     assert(CheckBlock(m_compiler, block));
 }
 
 #ifndef TARGET_WASM
 //------------------------------------------------------------------------
-// AfterLowerBlock: target-specific post-processing of the lowered block.
+// AfterLowerBlocks: target-specific post-processing of the lowered blocks.
 //
-void Lowering::AfterLowerBlock()
+void Lowering::AfterLowerBlocks()
 {
 }
 #endif // !TARGET_WASM
@@ -10879,7 +10896,11 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#if defined(TARGET_WASM)
+        return LowerStoreIndir(ind);
+#else
         return ind->gtNext;
+#endif
     }
 
 #ifndef TARGET_XARCH
@@ -11682,7 +11703,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // LowerLclHeap: a common logic to lower LCLHEAP.
 //
 // Arguments:
-//    blkNode - the LCLHEAP node we are lowering.
+//    node - the LCLHEAP node we are lowering.
 //
 void Lowering::LowerLclHeap(GenTree* node)
 {

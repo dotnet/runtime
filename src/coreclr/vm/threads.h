@@ -2834,28 +2834,30 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
-        return m_dwProfilerEvacuationCounters[slot];
+        return m_dwProfilerEvacuationCounters[slot].Load();
     }
 
     FORCEINLINE void IncProfilerEvacuationCounter(size_t slot)
     {
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        ++m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() + 1;
         _ASSERTE(newValue != 0U);
     }
 
     FORCEINLINE void DecProfilerEvacuationCounter(size_t slot)
     {
         LIMITED_METHOD_CONTRACT;
+        // All manipulation of the evacuation counters must be done from within the thread. A value of 0 or non-zero signals to other threads that various behavior should occur.
         _ASSERTE(slot >= 0 && slot <= MAX_NOTIFICATION_PROFILERS);
 #ifdef _DEBUG
         DWORD newValue =
 #endif // _DEBUG
-        --m_dwProfilerEvacuationCounters[slot];
+        m_dwProfilerEvacuationCounters[slot] = m_dwProfilerEvacuationCounters[slot].Load() - 1;
         _ASSERTE(newValue != (DWORD)-1);
     }
 

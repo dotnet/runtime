@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
                 // By using the default/empty ReadOnlyMemory value, the Decode method will have to
                 // make copies of the data when assigning ReadOnlyMemory fields.
                 ReadOnlyMemory<byte> rebind = skipCopy ? source : default;
