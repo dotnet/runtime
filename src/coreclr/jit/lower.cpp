@@ -12223,7 +12223,6 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
     GenTreeBfm* bfm =
         m_compiler->gtNewBfiNode(ty, bfiPattern.base, bfiPattern.value, static_cast<unsigned>(bfiPattern.offset),
                                  static_cast<unsigned>(bfiPattern.width));
-    bfm->CopyCosts(tree);
 
     ContainCheckNode(bfm);
 
@@ -12471,7 +12470,6 @@ bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
 
     GenTreeBfm* bfm =
         m_compiler->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
-    bfm->CopyCosts(tree);
 
     ContainCheckNode(bfm);
 
