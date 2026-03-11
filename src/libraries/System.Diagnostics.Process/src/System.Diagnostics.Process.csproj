@@ -308,6 +308,8 @@
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"

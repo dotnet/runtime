@@ -77,13 +77,10 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
         {
             SetValue (value, i);
 
-            // On multiprocessors we should make sure that
-            // the value is propagated before we proceed.
-            // inline memory barrier call, refer to
-            // function description at the beginning of this
-            MemoryBarrier();
-
-            m_rgKeys[i] = key;
+            // Release store: ensures the value is visible before the
+            // key that publishes it. Pairs with the acquire load in
+            // LookupValue/ReplaceValue/DeleteValue.
+            VolatileStore(&m_rgKeys[i], key);
             return true;
         }
     }       // for i= 0; i < SLOTS_PER_BUCKET; loop
@@ -153,7 +150,7 @@ PTR_Bucket HashMap::Buckets()
     LIMITED_METHOD_DAC_CONTRACT;
 
 #if !defined(DACCESS_COMPILE)
-    _ASSERTE (!m_fAsyncMode || g_HashMapEbr.InCriticalRegion());
+    _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
 #endif
     return GetBucketPointer(m_rgBuckets);
 }
@@ -503,7 +500,7 @@ void HashMap::InsertValue (UPTR key, UPTR value)
 
     // Enter EBR critical region to protect against concurrent bucket array
     // deletion during async mode.
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
 
@@ -567,7 +564,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -590,13 +587,11 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
         PTR_Bucket pBucket = rgBuckets+(seed % cbSize);
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            if (pBucket->m_rgKeys[i] == key) // keys match
+            // Acquire load: ensures the value load below is ordered
+            // after the key load. Pairs with the release store in
+            // Bucket::InsertValue.
+            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
-
-                // inline memory barrier call, refer to
-                // function description at the beginning of this
-                MemoryBarrier();
-
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -639,7 +634,7 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
 
     _ASSERTE(OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -661,13 +656,11 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
         Bucket* pBucket = &rgBuckets[seed % cbSize];
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            if (pBucket->m_rgKeys[i] == key) // keys match
+            // Acquire load: ensures the value load below observes the
+            // value that was stored when this key was first published
+            // via Bucket::InsertValue.
+            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
-
-                // inline memory barrier call, refer to
-                // function description at the beginning of this
-                MemoryBarrier();
-
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -675,13 +668,14 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
                 {
                     ProfileLookup(ntry,storedVal); //no-op in non HASHTABLE_PROFILE code
 
+                    // Plain store the new value, then release-store the
+                    // key to re-publish it. Readers acquire-load the key
+                    // via VolatileLoad(&m_rgKeys[i]), forming a proper
+                    // release-acquire pair on the same address and
+                    // ensuring they observe either the old or fully-
+                    // updated new value.
                     pBucket->SetValue(value, i);
-
-                    // On multiprocessors we should make sure that
-                    // the value is propagated before we proceed.
-                    // inline memory barrier call, refer to
-                    // function description at the beginning of this
-                    MemoryBarrier();
+                    VolatileStore(&pBucket->m_rgKeys[i], key);
 
                     // return the previous stored value
                     return storedVal;
@@ -712,7 +706,7 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     // check proper use in synchronous mode
     SyncAccessHolder holoder(this);  //no-op in non DEBUG code
@@ -737,12 +731,11 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
         Bucket* pBucket = &rgBuckets[seed % cbSize];
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            if (pBucket->m_rgKeys[i] == key) // keys match
+            // Acquire load: ensures the value load below is ordered
+            // after the key load. Pairs with the release store in
+            // Bucket::InsertValue.
+            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
-                // inline memory barrier call, refer to
-                // function description at the beginning of this
-                MemoryBarrier();
-
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -883,9 +876,9 @@ void HashMap::Rehash()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
-    _ASSERTE (!m_fAsyncMode || g_HashMapEbr.InCriticalRegion());
+    _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
     _ASSERTE (OwnLock());
 
     UPTR newPrimeIndex = NewSize();
@@ -943,7 +936,7 @@ LDone:
         // all threads have exited their critical regions or later.
         // If we fail to queue for deletion, throw an OOM.
         size_t obsoleteSize = currentBucketsSize;
-        if (!g_HashMapEbr.QueueForDeletion(
+        if (!g_EbrCollector.QueueForDeletion(
             pObsoleteBucketsAlloc,
             DeleteObsoleteBuckets,
             (obsoleteSize + 1) * sizeof(Bucket))) // See AllocateBuckets for +1
@@ -960,11 +953,12 @@ LDone:
     rgCurrentBuckets = NULL;
     currentBucketsSize = 0;
 
-    // memory barrier, to replace the pointer to array of bucket
-    MemoryBarrier();
-
-    // Update the HashMap state
-    m_rgBuckets = rgNewBuckets;
+    // Release store: ensures all writes to the new bucket array are
+    // visible before the pointer is published. Readers observe these
+    // writes because they enter an EBR critical region (see
+    // EbrCriticalRegionHolder::EnterCriticalRegion and Buckets()), which
+    // executes a full MemoryBarrier() before reading m_rgBuckets.
+    VolatileStore(&m_rgBuckets, rgNewBuckets);
     m_iPrimeIndex = newPrimeIndex;
     m_cbInserts = cbValidSlotsInit; // reset insert count to the new valid count
     m_cbPrevSlotsInUse = cbValidSlotsInit; // track the previous delete count
@@ -1036,7 +1030,7 @@ void HashMap::Compact()
     _ASSERTE (OwnLock());
 
     //
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
     ASSERT(m_rgBuckets != NULL);
 
     // Try to resize if that makes sense (reduce the size of the table), but

@@ -55,6 +55,14 @@ namespace Internal.JitInterface
             return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
+        {
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
+            return ObjectToHandle(_asyncResumptionStub);
+        }
+
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -391,8 +399,8 @@ namespace Internal.JitInterface
                 }
                 else if (directMethod != null)
                 {
-                    // We resolved on a canonical form of the valuetype. Now find the method on the runtime determined form.
-                    Debug.Assert(directMethod.OwningType.IsValueType);
+                    // We resolved on a canonical form. Now find the method on the runtime determined form.
+                    Debug.Assert(directMethod.OwningType.IsValueType || directMethod.Signature.IsStatic);
                     Debug.Assert(!forceRuntimeLookup);
 
                     MethodDesc targetOfLookup;
