@@ -29,29 +29,29 @@ namespace System.Text.RegularExpressions.Generator
         private static (RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics) Parse(
             ImmutableArray<GeneratorAttributeSyntaxContext> contexts, CancellationToken cancellationToken)
         {
-            ImmutableArray<Diagnostic>.Builder? diagnostics = null;
-            HashSet<RegexMethodSpec>? methods = null;
+            List<RegexMethodSpec>? methods = null;
+            List<Diagnostic>? diagnostics = null;
 
             foreach (GeneratorAttributeSyntaxContext context in contexts)
             {
                 RegexMethodSpec? spec = ParseMethod(context, ref diagnostics, cancellationToken);
                 if (spec is not null)
                 {
-                    (methods ??= new HashSet<RegexMethodSpec>()).Add(spec);
+                    (methods ??= new List<RegexMethodSpec>()).Add(spec);
                 }
             }
 
             if (methods is null)
             {
-                return (null, diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+                return (null, diagnostics?.ToImmutableArray() ?? ImmutableArray<Diagnostic>.Empty);
             }
 
             RegexGenerationSpec generationSpec = new()
             {
-                RegexMethods = ImmutableEquatableSet<RegexMethodSpec>.UnsafeCreateFromHashSet(methods),
+                RegexMethods = methods.ToImmutableEquatableSet(),
             };
 
-            return (generationSpec, diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+            return (generationSpec, diagnostics?.ToImmutableArray() ?? ImmutableArray<Diagnostic>.Empty);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace System.Text.RegularExpressions.Generator
         /// </summary>
         private static RegexMethodSpec? ParseMethod(
             GeneratorAttributeSyntaxContext context,
-            ref ImmutableArray<Diagnostic>.Builder? diagnostics,
+            ref List<Diagnostic>? diagnostics,
             CancellationToken cancellationToken)
         {
             if (context.TargetNode is IndexerDeclarationSyntax or AccessorDeclarationSyntax)
@@ -408,9 +408,9 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        /// <summary>Adds a diagnostic to the builder, lazily initializing it if necessary.</summary>
-        private static void AddDiagnostic(ref ImmutableArray<Diagnostic>.Builder? diagnostics, Diagnostic diagnostic)
-            => (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
+        /// <summary>Adds a diagnostic to the list, lazily initializing it if necessary.</summary>
+        private static void AddDiagnostic(ref List<Diagnostic>? diagnostics, Diagnostic diagnostic)
+            => (diagnostics ??= new List<Diagnostic>()).Add(diagnostic);
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
         private sealed class RegexMethod(RegexType declaringType, bool isProperty, string memberName, string modifiers, bool nullableRegex, string pattern, RegexOptions options, int? matchTimeout, RegexTree tree, AnalysisResults analysis, CompilationData compilationData)

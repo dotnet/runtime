@@ -20,6 +20,6 @@ namespace System.Text.RegularExpressions.Generator
         public required int? MatchTimeout { get; init; }
         public required RegexTreeSpec? Tree { get; init; }
         public required string? LimitedSupportReason { get; init; }
-        public required RegexGenerator.CompilationData CompilationData { get; init; }
+        public required CompilationData CompilationData { get; init; }
     }
 }

@@ -34,8 +34,6 @@ namespace System.Text.RegularExpressions.Generator
 #endif
         ];
 
-        internal record struct CompilationData(bool AllowUnsafe, bool CheckOverflow, LanguageVersion LanguageVersion);
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // Step 1: Find all members decorated with [GeneratedRegex].
