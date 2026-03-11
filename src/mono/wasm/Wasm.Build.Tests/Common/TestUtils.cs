@@ -95,7 +95,7 @@ public static class TestUtils
             return;
 
         throw EqualException.ForMismatchedValues(
-            expected?.ToString(), actual?.ToString(),
+            $"{expected}", $"{actual}",
             $"[{label}]\n");
     }
 
