@@ -706,9 +706,13 @@ namespace System.Threading
             lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
-                if (m_currentCount > 0)
+                // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
+                // can decrement m_currentCount concurrently (it holds no lock).
+                int current = m_currentCount;
+                while (current > 0 && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) != current)
+                    current = m_currentCount;
+                if (current > 0)
                 {
-                    --m_currentCount;
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
                     return Task.FromResult(true);
                 }
