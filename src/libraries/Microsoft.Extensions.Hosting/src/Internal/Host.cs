@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
         private bool _hostStopped;
-        private readonly List<Exception> _backgroundServiceExceptions = new();
+        private List<Exception>? _backgroundServiceExceptions;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -198,9 +198,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
                     _logger.BackgroundServiceStoppingHost(ex);
-                    lock (_backgroundServiceExceptions)
+                    List<Exception> exceptions = LazyInitializer.EnsureInitialized(ref _backgroundServiceExceptions);
+                    lock (exceptions)
                     {
-                        _backgroundServiceExceptions.Add(ex);
+                        exceptions.Add(ex);
                     }
 
                     // This catches all exceptions and does not re-throw.
@@ -290,9 +291,13 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 // If background services faulted and caused the host to stop, rethrow the exceptions
                 // so they propagate and cause a non-zero exit code.
-                lock (_backgroundServiceExceptions)
+                List<Exception>? backgroundServiceExceptions = Volatile.Read(ref _backgroundServiceExceptions);
+                if (backgroundServiceExceptions is not null)
                 {
-                    exceptions.AddRange(_backgroundServiceExceptions);
+                    lock (backgroundServiceExceptions)
+                    {
+                        exceptions.AddRange(backgroundServiceExceptions);
+                    }
                 }
 
                 if (exceptions.Count > 0)
