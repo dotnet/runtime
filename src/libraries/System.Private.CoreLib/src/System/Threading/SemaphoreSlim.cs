@@ -401,10 +401,14 @@ namespace System.Threading
                     // that synchronous waiter succeeds so that they have a chance to release.
                     Debug.Assert(!waitSuccessful || m_currentCount > 0,
                         "If the wait was successful, there should be count available.");
-                    if (m_currentCount > 0)
+                    // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
+                    // can decrement m_currentCount concurrently (it holds no lock).
+                    int currentCount = m_currentCount;
+                    while (currentCount > 0 && Interlocked.CompareExchange(ref m_currentCount, currentCount - 1, currentCount) != currentCount)
+                        currentCount = m_currentCount;
+                    if (currentCount > 0)
                     {
                         waitSuccessful = true;
-                        m_currentCount--;
                     }
                     else if (oce is not null)
                     {
