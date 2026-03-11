@@ -5905,18 +5905,17 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 // Arguments:
 //    tree - the bitfield extract.
 //
-void CodeGen::genCodeForBfx(GenTreeOp* tree)
+void CodeGen::genCodeForBfx(GenTreeBfm* tree)
 {
     assert(tree->OperIs(GT_BFX));
 
-    GenTreeBfm* bfm  = tree->AsBfm();
-    emitAttr    size = emitActualTypeSize(tree);
+    emitAttr size = emitActualTypeSize(tree);
 
     GenTree* src = tree->gtGetOp1();
 
     const unsigned bitWidth = emitter::getBitWidth(size);
-    const unsigned lsb      = bfm->GetOffset();
-    const unsigned width    = bfm->GetWidth();
+    const unsigned lsb      = tree->GetOffset();
+    const unsigned width    = tree->GetWidth();
 
     assert((bitWidth == 32) || (bitWidth == 64));
     assert(lsb < bitWidth);

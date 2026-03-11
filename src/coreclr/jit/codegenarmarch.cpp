@@ -338,7 +338,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_BFX:
-            genCodeForBfx(treeNode->AsOp());
+            genCodeForBfx(treeNode->AsBfm());
             break;
 #endif // TARGET_ARM64
 
