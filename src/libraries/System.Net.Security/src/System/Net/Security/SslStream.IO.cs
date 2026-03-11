@@ -616,25 +616,12 @@ namespace System.Net.Security
                 // 1. The session was resumed — the cert is available from the SSL handle
                 //    but OpenSSL skips the verify callback.
                 // 2. The peer didn't provide a certificate at all.
-
-                X509Certificate2? remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext);
-                if (remoteCert is not null)
+                // In both cases, run VerifyRemoteCertificate to invoke the user's callback
+                // and perform full validation.
+                if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
                 {
-                    // Resumed session: the cert was already validated in the original handshake.
-                    _remoteCertificate = remoteCert;
-                    sslPolicyErrors = SslPolicyErrors.None;
-                    chainStatus = X509ChainStatusFlags.NoError;
-                }
-                else
-                {
-                    // No certificate was provided by the peer. Run verification so that
-                    // the user's RemoteCertificateValidationCallback is invoked with
-                    // SslPolicyErrors.RemoteCertificateNotAvailable.
-                    if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
-                    {
-                        _handshakeCompleted = false;
-                        return false;
-                    }
+                    _handshakeCompleted = false;
+                    return false;
                 }
             }
             else
