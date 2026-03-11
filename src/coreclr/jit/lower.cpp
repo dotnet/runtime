@@ -12233,6 +12233,10 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
     {
         use.ReplaceWith(bfm);
     }
+    else
+    {
+        bfm->SetUnusedValue();
+    }
 
     // Remove old nodes depending on pattern kind
     switch (bfiPattern.kind)
@@ -12479,6 +12483,10 @@ bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
     if (BlockRange().TryGetUse(tree, &use))
     {
         use.ReplaceWith(bfm);
+    }
+    else
+    {
+        bfm->SetUnusedValue();
     }
 
     BlockRange().Remove(shiftConst);
