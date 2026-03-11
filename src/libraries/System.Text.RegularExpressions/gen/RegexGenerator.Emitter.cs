@@ -16,6 +16,7 @@ using System.Threading;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using SourceGenerators;
 
 // NOTE: The logic in this file is largely a duplicate of logic in RegexCompiler, emitting C# instead of MSIL.
 // Most changes made to this file should be kept in sync, so far as bug fixes and relevant optimizations
@@ -27,6 +28,164 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
+        /// <summary>Emits generated source code for the provided specification.</summary>
+        private static void Emit(SourceProductionContext context, RegexGenerationSpec spec)
+        {
+            // Create a writer to hold all generated code.
+            using StringWriter sw = new();
+            using IndentedTextWriter writer = new(sw);
+
+            // Add file headers and required usings.
+            foreach (string header in s_headers)
+            {
+                writer.WriteLine(header);
+            }
+            writer.WriteLine();
+
+            // For every generated type, we give it an incrementally increasing ID, in order to create
+            // unique type names even in situations where method names were the same, while also keeping
+            // the type names short.
+            int id = 0;
+
+            // To minimize generated code in the event of duplicated regexes, we only emit one derived
+            // Regex type per unique expression/options/timeout. The value is the implementation used for the key.
+            var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
+
+            // Convert each spec to a RegexMethod (re-parsing the regex to obtain the full
+            // RegexTree/AnalysisResults needed by the emitter). This re-parse is fast and only
+            // happens on incremental cache misses.
+            Dictionary<string, string[]> requiredHelpers = new();
+            var methods = new RegexMethod[spec.RegexMethods.Count];
+            for (int i = 0; i < spec.RegexMethods.Count; i++)
+            {
+                RegexMethodSpec methodSpec = spec.RegexMethods[i];
+                RegexType regexType = ConvertRegexTypeSpecToRegexType(methodSpec.DeclaringType);
+
+                CultureInfo culture = methodSpec.Tree?.CultureName is not null
+                    ? CultureInfo.GetCultureInfo(methodSpec.Tree.CultureName)
+                    : CultureInfo.InvariantCulture;
+                RegexTree regexTree = RegexParser.Parse(methodSpec.Pattern, methodSpec.Options | RegexOptions.Compiled, culture);
+                AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
+
+                RegexMethod regexMethod = new(regexType, methodSpec.IsProperty, methodSpec.MemberName, methodSpec.Modifiers,
+                    methodSpec.NullableRegex, methodSpec.Pattern, methodSpec.Options, methodSpec.MatchTimeout,
+                    regexTree, analysis, methodSpec.CompilationData);
+
+                var key = (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout);
+                if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
+                {
+                    regexMethod.IsDuplicate = true;
+                    regexMethod.GeneratedName = implementation.GeneratedName;
+                }
+                else
+                {
+                    regexMethod.IsDuplicate = false;
+                    regexMethod.GeneratedName = $"{regexMethod.MemberName}_{id++}";
+                    emittedExpressions.Add(key, regexMethod);
+                }
+
+                methods[i] = regexMethod;
+            }
+
+            // Emit partial method definitions.
+            for (int i = 0; i < methods.Length; i++)
+            {
+                EmitRegexPartialMethod(methods[i], writer);
+                writer.WriteLine();
+            }
+
+            // Emit the generated Regex-derived implementations inside a shared namespace.
+            writer.WriteLine($"namespace {GeneratedNamespace}");
+            writer.WriteLine($"{{");
+            writer.WriteLine($"    using System;");
+            writer.WriteLine($"    using System.Buffers;");
+            writer.WriteLine($"    using System.CodeDom.Compiler;");
+            writer.WriteLine($"    using System.Collections;");
+            writer.WriteLine($"    using System.ComponentModel;");
+            writer.WriteLine($"    using System.Globalization;");
+            writer.WriteLine($"    using System.Runtime.CompilerServices;");
+            writer.WriteLine($"    using System.Text.RegularExpressions;");
+            writer.WriteLine($"    using System.Threading;");
+            writer.WriteLine($"");
+
+            // Emit each Regex-derived type.
+            writer.Indent++;
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].IsDuplicate)
+                {
+                    continue;
+                }
+
+                RegexMethod rm = methods[i];
+                if (spec.RegexMethods[i].Tree is not null)
+                {
+                    // Generate the RunnerFactory implementation.
+                    var runnerSw = new StringWriter();
+                    var runnerWriter = new IndentedTextWriter(runnerSw);
+                    runnerWriter.Indent += 2;
+                    runnerWriter.WriteLine();
+                    EmitRegexDerivedTypeRunnerFactory(runnerWriter, rm, requiredHelpers, rm.CompilationData.CheckOverflow);
+                    runnerWriter.Indent -= 2;
+
+                    EmitRegexDerivedImplementation(writer, rm, runnerSw.ToString(), rm.CompilationData.AllowUnsafe);
+                    writer.WriteLine();
+                }
+                else
+                {
+                    Debug.Assert(spec.RegexMethods[i].LimitedSupportReason is not null);
+                    EmitRegexLimitedBoilerplate(writer, rm, spec.RegexMethods[i].LimitedSupportReason!, rm.CompilationData.LanguageVersion);
+                    writer.WriteLine();
+                }
+            }
+            writer.Indent--;
+
+            // If any of the Regex-derived types asked for helper methods, emit those now.
+            if (requiredHelpers.Count != 0)
+            {
+                writer.Indent++;
+                writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
+                writer.WriteLine($"[{s_generatedCodeAttribute}]");
+                writer.WriteLine($"file static class {HelpersTypeName}");
+                writer.WriteLine($"{{");
+                writer.Indent++;
+                bool sawFirst = false;
+                foreach (KeyValuePair<string, string[]> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
+                {
+                    if (sawFirst)
+                    {
+                        writer.WriteLine();
+                    }
+                    sawFirst = true;
+
+                    foreach (string value in helper.Value)
+                    {
+                        writer.WriteLine(value);
+                    }
+                }
+                writer.Indent--;
+                writer.WriteLine($"}}");
+                writer.Indent--;
+            }
+
+            writer.WriteLine($"}}");
+
+            // Save out the source
+            context.AddSource("RegexGenerator.g.cs", sw.ToString());
+        }
+
+        /// <summary>Converts a <see cref="RegexTypeSpec"/> back to a <see cref="RegexType"/> for the emitter.</summary>
+        private static RegexType ConvertRegexTypeSpecToRegexType(RegexTypeSpec typeSpec)
+        {
+            var regexType = new RegexType(typeSpec.Keyword, typeSpec.Namespace, typeSpec.Name);
+            if (typeSpec.Parent is not null)
+            {
+                regexType.Parent = ConvertRegexTypeSpecToRegexType(typeSpec.Parent);
+            }
+
+            return regexType;
+        }
+
         /// <summary>Escapes characters that are invalid in XML comments.</summary>
         private static string EscapeXmlComment(string text)
         {

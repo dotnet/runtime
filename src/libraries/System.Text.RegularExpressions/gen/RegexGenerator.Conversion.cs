@@ -79,12 +79,15 @@ namespace System.Text.RegularExpressions.Generator
                     Range: s.Range)).ToImmutableEquatableArray();
             }
 
-            (RegexNodeSpec LoopNode, (char Char, string? String, StringComparison StringComparison, ImmutableEquatableArray<char>? Chars) Literal)? literalAfterLoop = null;
+            LiteralAfterLoopSpec? literalAfterLoop = null;
             if (opts.LiteralAfterLoop is { } lal)
             {
-                literalAfterLoop = (
+                literalAfterLoop = new LiteralAfterLoopSpec(
                     LoopNode: ConvertNode(lal.LoopNode, analysis),
-                    Literal: (lal.Literal.Char, lal.Literal.String, lal.Literal.StringComparison, lal.Literal.Chars?.ToImmutableEquatableArray()));
+                    LiteralChar: lal.Literal.Char,
+                    LiteralString: lal.Literal.String,
+                    LiteralStringComparison: lal.Literal.StringComparison,
+                    LiteralChars: lal.Literal.Chars?.ToImmutableEquatableArray());
             }
 
             return new FindOptimizationsSpec(

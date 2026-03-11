@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -11,6 +12,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using SourceGenerators;
 
 namespace System.Text.RegularExpressions.Generator
 {
@@ -20,11 +22,46 @@ namespace System.Text.RegularExpressions.Generator
         private const string GeneratedRegexAttributeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
 
         /// <summary>
-        /// Returns null if nothing to do, a <see cref="Diagnostic"/> if there's an error to report,
-        /// or <see cref="RegexPatternAndSyntax"/> if the type was analyzed successfully.
+        /// Parses all collected attribute contexts into an equatable generation model.
+        /// This runs in a <c>Select</c> step of the incremental pipeline after <c>Collect</c>.
         /// </summary>
-        private static object? GetRegexMethodDataOrFailureDiagnostic(
-            GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
+        private static (RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics) Parse(
+            ImmutableArray<GeneratorAttributeSyntaxContext> contexts, CancellationToken cancellationToken)
+        {
+            ImmutableArray<Diagnostic>.Builder? diagnostics = null;
+            ImmutableArray<RegexMethodSpec>.Builder? methods = null;
+
+            foreach (GeneratorAttributeSyntaxContext context in contexts)
+            {
+                RegexMethodSpec? spec = ParseMethod(context, ref diagnostics, cancellationToken);
+                if (spec is not null)
+                {
+                    (methods ??= ImmutableArray.CreateBuilder<RegexMethodSpec>()).Add(spec);
+                }
+            }
+
+            if (methods is null)
+            {
+                return (null, diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+            }
+
+            var generationSpec = new RegexGenerationSpec
+            {
+                RegexMethods = methods.ToImmutable().ToImmutableEquatableArray(),
+            };
+
+            return (generationSpec, diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+        }
+
+        /// <summary>
+        /// Parses a single <see cref="GeneratorAttributeSyntaxContext"/> into a <see cref="RegexMethodSpec"/>.
+        /// Returns <see langword="null"/> if the member should be skipped. Appends any diagnostics
+        /// to the provided builder.
+        /// </summary>
+        private static RegexMethodSpec? ParseMethod(
+            GeneratorAttributeSyntaxContext context,
+            ref ImmutableArray<Diagnostic>.Builder? diagnostics,
+            CancellationToken cancellationToken)
         {
             if (context.TargetNode is IndexerDeclarationSyntax or AccessorDeclarationSyntax)
             {
@@ -32,11 +69,14 @@ namespace System.Text.RegularExpressions.Generator
                 // of being able to flag invalid use when [GeneratedRegex] is applied incorrectly.
                 // Otherwise, if the ForAttributeWithMetadataName call excluded these, [GeneratedRegex]
                 // could be applied to them and we wouldn't be able to issue a diagnostic.
-                return Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, context.TargetNode.GetLocation());
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, context.TargetNode.GetLocation()));
+                return null;
             }
 
             var memberSyntax = (MemberDeclarationSyntax)context.TargetNode;
             SemanticModel sm = context.SemanticModel;
+            cancellationToken.ThrowIfCancellationRequested();
 
             Compilation compilation = sm.Compilation;
             INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
@@ -62,19 +102,25 @@ namespace System.Text.RegularExpressions.Generator
             ImmutableArray<AttributeData> boundAttributes = context.Attributes;
             if (boundAttributes.Length != 1)
             {
-                return Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, memberSyntax.GetLocation());
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, memberSyntax.GetLocation()));
+                return null;
             }
             AttributeData generatedRegexAttr = boundAttributes[0];
 
             if (generatedRegexAttr.ConstructorArguments.Any(ca => ca.Kind == TypedConstantKind.Error))
             {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation());
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
+                return null;
             }
 
             ImmutableArray<TypedConstant> items = generatedRegexAttr.ConstructorArguments;
             if (items.Length is 0 or > 4)
             {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation());
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, memberSyntax.GetLocation()));
+                return null;
             }
 
             string? pattern = items[0].Value as string;
@@ -106,7 +152,9 @@ namespace System.Text.RegularExpressions.Generator
 
             if (pattern is null || cultureName is null)
             {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "(null)");
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "(null)"));
+                return null;
             }
 
             bool nullableRegex;
@@ -118,7 +166,9 @@ namespace System.Text.RegularExpressions.Generator
                     regexMethodSymbol.Arity != 0 ||
                     !SymbolEqualityComparer.Default.Equals(regexMethodSymbol.ReturnType, regexSymbol))
                 {
-                    return Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation());
+                    (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                        Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
+                    return null;
                 }
 
                 nullableRegex = regexMethodSymbol.ReturnNullableAnnotation == NullableAnnotation.Annotated;
@@ -132,7 +182,9 @@ namespace System.Text.RegularExpressions.Generator
                     regexPropertySymbol.SetMethod is not null ||
                     !SymbolEqualityComparer.Default.Equals(regexPropertySymbol.Type, regexSymbol))
                 {
-                    return Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation());
+                    (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                        Diagnostic.Create(DiagnosticDescriptors.RegexMemberMustHaveValidSignature, memberSyntax.GetLocation()));
+                    return null;
                 }
 
                 nullableRegex = regexPropertySymbol.NullableAnnotation == NullableAnnotation.Annotated;
@@ -154,7 +206,9 @@ namespace System.Text.RegularExpressions.Generator
             }
             catch (Exception e)
             {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message);
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
+                return null;
             }
 
             if ((regexOptionsWithPatternOptions & RegexOptions.IgnoreCase) != 0 && !string.IsNullOrEmpty(cultureName))
@@ -162,7 +216,9 @@ namespace System.Text.RegularExpressions.Generator
                 if ((regexOptions & RegexOptions.CultureInvariant) != 0)
                 {
                     // User passed in both a culture name and set RegexOptions.CultureInvariant which causes an explicit conflict.
-                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName");
+                    (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                        Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
+                    return null;
                 }
 
                 try
@@ -171,7 +227,9 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 catch (CultureNotFoundException)
                 {
-                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName");
+                    (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                        Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "cultureName"));
+                    return null;
                 }
             }
 
@@ -189,56 +247,100 @@ namespace System.Text.RegularExpressions.Generator
                 RegexOptions.Singleline;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "options");
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "options"));
+                return null;
             }
 
             // Validate the timeout
             if (matchTimeout is 0 or < -1)
             {
-                return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "matchTimeout");
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "matchTimeout"));
+                return null;
             }
 
             // Determine the namespace the class is declared in, if any
             string? ns = regexMemberSymbol.ContainingType?.ContainingNamespace?.ToDisplayString(
                 SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 
-            var regexType = new RegexType(
+            // Build the declaring type hierarchy from outside in.
+            RegexTypeSpec? parentSpec = null;
+            TypeDeclarationSyntax? parentDec = typeDec.Parent as TypeDeclarationSyntax;
+            if (parentDec is not null)
+            {
+                // Collect parent types from inner to outer.
+                var parents = new System.Collections.Generic.List<TypeDeclarationSyntax>();
+                while (parentDec is not null && IsAllowedKind(parentDec.Kind()))
+                {
+                    parents.Add(parentDec);
+                    parentDec = parentDec.Parent as TypeDeclarationSyntax;
+                }
+
+                // Build chain from outermost to innermost.
+                for (int i = parents.Count - 1; i >= 0; i--)
+                {
+                    TypeDeclarationSyntax p = parents[i];
+                    parentSpec = new RegexTypeSpec(
+                        p is RecordDeclarationSyntax rds2 ? $"{p.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : p.Keyword.ValueText,
+                        ns ?? string.Empty,
+                        $"{p.Identifier}{p.TypeParameterList}",
+                        Parent: parentSpec);
+                }
+            }
+
+            var regexTypeSpec = new RegexTypeSpec(
                 typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
                 ns ?? string.Empty,
-                $"{typeDec.Identifier}{typeDec.TypeParameterList}");
+                $"{typeDec.Identifier}{typeDec.TypeParameterList}",
+                Parent: parentSpec);
 
             var compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
                 ? new CompilationData(compilationOptions.AllowUnsafe, compilationOptions.CheckOverflow, langVersion)
                 : default;
 
-            var result = new RegexPatternAndSyntax(
-                regexType,
-                IsProperty: regexMemberSymbol is IPropertySymbol,
-                memberSyntax.GetLocation(),
-                regexMemberSymbol.Name,
-                memberSyntax.Modifiers.ToString(),
-                nullableRegex,
-                pattern,
-                regexOptions,
-                matchTimeout,
-                culture,
-                compilationData);
-
-            RegexType current = regexType;
-            var parent = typeDec.Parent as TypeDeclarationSyntax;
-
-            while (parent is not null && IsAllowedKind(parent.Kind()))
+            // Parse the regex and build the equatable model.
+            RegexTreeSpec? treeSpec;
+            string? limitedSupportReason;
+            try
             {
-                current.Parent = new RegexType(
-                    parent is RecordDeclarationSyntax rds2 ? $"{parent.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : parent.Keyword.ValueText,
-                    ns ?? string.Empty,
-                    $"{parent.Identifier}{parent.TypeParameterList}");
+                RegexTree regexTree = RegexParser.Parse(pattern, regexOptions | RegexOptions.Compiled, culture);
+                AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
 
-                current = current.Parent;
-                parent = parent.Parent as TypeDeclarationSyntax;
+                if (!SupportsCodeGeneration(regexTree.Root, compilationData.LanguageVersion, out limitedSupportReason))
+                {
+                    // Limited support — emit a boilerplate Regex wrapper, no tree needed
+                    (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                        Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, memberSyntax.GetLocation()));
+                    treeSpec = null;
+                }
+                else
+                {
+                    treeSpec = CreateRegexTreeSpec(regexTree, analysis);
+                    limitedSupportReason = null;
+                }
+            }
+            catch (Exception e)
+            {
+                (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(
+                    Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), e.Message));
+                return null;
             }
 
-            return result;
+            return new RegexMethodSpec
+            {
+                DeclaringType = regexTypeSpec,
+                IsProperty = regexMemberSymbol is IPropertySymbol,
+                MemberName = regexMemberSymbol.Name,
+                Modifiers = memberSyntax.Modifiers.ToString(),
+                NullableRegex = nullableRegex,
+                Pattern = pattern,
+                Options = regexOptions,
+                MatchTimeout = matchTimeout,
+                Tree = treeSpec,
+                LimitedSupportReason = limitedSupportReason,
+                CompilationData = compilationData,
+            };
 
             static bool IsAllowedKind(SyntaxKind kind) => kind is
                 SyntaxKind.ClassDeclaration or
@@ -248,8 +350,62 @@ namespace System.Text.RegularExpressions.Generator
                 SyntaxKind.InterfaceDeclaration;
         }
 
-        /// <summary>Data about a regex directly from the GeneratedRegex attribute.</summary>
-        internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, bool IsProperty, Location DiagnosticLocation, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData);
+        /// <summary>Determines whether the passed in node supports C# code generation.</summary>
+        /// <remarks>
+        // It also provides a human-readable string to explain the reason. It will be emitted by the source generator
+        // as a comment into the C# code, hence there's no need to localize.
+        /// </remarks>
+        private static bool SupportsCodeGeneration(RegexNode root, LanguageVersion languageVersion, [NotNullWhen(false)] out string? reason)
+        {
+            if (languageVersion < LanguageVersion.CSharp11)
+            {
+                reason = "the language version must be C# 11 or higher.";
+                return false;
+            }
+
+            if (!root.SupportsCompilation(out reason))
+            {
+                // If the pattern doesn't support Compilation, then code generation won't be supported either.
+                return false;
+            }
+
+            if (HasCaseInsensitiveBackReferences(root))
+            {
+                // For case-insensitive patterns, we use our internal Regex case equivalence table when doing character comparisons.
+                // Most of the use of this table is done at Regex construction time by substituting all characters that are involved in
+                // case conversions into sets that contain all possible characters that could match. That said, there is still one case
+                // where you may need to do case-insensitive comparisons at match time which is the case for backreferences. For that reason,
+                // and given the Regex case equivalence table is internal and can't be called by the source generated emitted type, if
+                // the pattern contains case-insensitive backreferences, we won't try to create a source generated Regex-derived type.
+                reason = "the expression contains case-insensitive backreferences which are not supported by the source generator";
+                return false;
+            }
+
+            // If Compilation is supported and pattern doesn't have case insensitive backreferences, then code generation is supported.
+            reason = null;
+            return true;
+
+            static bool HasCaseInsensitiveBackReferences(RegexNode node)
+            {
+                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    return true;
+                }
+
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    // This recursion shouldn't hit issues with stack depth since this gets checked after
+                    // SupportCompilation has ensured that the max depth is not greater than 40.
+                    if (HasCaseInsensitiveBackReferences(node.Child(i)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
         internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData)

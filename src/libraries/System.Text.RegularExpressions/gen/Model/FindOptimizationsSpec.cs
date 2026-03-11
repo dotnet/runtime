@@ -6,6 +6,17 @@ using SourceGenerators;
 namespace System.Text.RegularExpressions.Generator
 {
     /// <summary>
+    /// Immutable, structurally equatable representation of a literal that follows
+    /// an atomic loop in the regex find optimizations.
+    /// </summary>
+    internal sealed record LiteralAfterLoopSpec(
+        RegexNodeSpec LoopNode,
+        char LiteralChar,
+        string? LiteralString,
+        StringComparison LiteralStringComparison,
+        ImmutableEquatableArray<char>? LiteralChars);
+
+    /// <summary>
     /// Immutable, structurally equatable representation of the regex find optimizations.
     /// Mirrors the data in <see cref="RegexFindOptimizations"/> to enable effective
     /// incremental caching by the Roslyn pipeline.
@@ -20,5 +31,5 @@ namespace System.Text.RegularExpressions.Generator
         ImmutableEquatableArray<string> LeadingPrefixes,
         (char Char, string? String, int Distance) FixedDistanceLiteral,
         ImmutableEquatableArray<FixedDistanceSetSpec>? FixedDistanceSets,
-        (RegexNodeSpec LoopNode, (char Char, string? String, StringComparison StringComparison, ImmutableEquatableArray<char>? Chars) Literal)? LiteralAfterLoop);
+        LiteralAfterLoopSpec? LiteralAfterLoop);
 }
