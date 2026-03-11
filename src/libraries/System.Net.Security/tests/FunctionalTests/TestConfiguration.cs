@@ -27,7 +27,7 @@ namespace System.Net.Security.Tests
 
         public static bool SupportsNullEncryption { get { return s_supportsNullEncryption.Value; } }
         public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsFreeBSD(); } }
-        public static bool SupportsRenegotiation { get { return (OperatingSystem.IsWindows() && !PlatformDetection.IsWindows7) || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
+        public static bool SupportsRenegotiation { get { return OperatingSystem.IsWindows() || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
 
         public static readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
 
@@ -39,15 +39,9 @@ namespace System.Net.Security.Tests
             // On Windows, null ciphers (no encryption) are supported.
             if (OperatingSystem.IsWindows())
             {
-                if (!PlatformDetection.IsWindows10OrLater)
-                {
-                    // All old versions support null encryption
-                    return true;
-                }
-
                 try
                 {
-                    // New Windows can support null but it may be disabled in Azure images
+                    // Null encryption may be disabled in Azure images
                     using (Process p = Process.Start(new ProcessStartInfo("powershell", "-Command Get-TlsCipherSuite") { RedirectStandardOutput = true, RedirectStandardError = true }))
                     {
                         using StreamReader reader = p.StandardOutput;

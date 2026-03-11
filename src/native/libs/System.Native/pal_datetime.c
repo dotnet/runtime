@@ -21,10 +21,6 @@ static const int64_t NANOSECONDS_PER_TICK = 100;
 static const int64_t TICKS_PER_MICROSECOND = 10; /* 1000 / 100 */
 #endif
 
-#if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-extern bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
-#endif
-
 //
 // SystemNative_GetSystemTimeAsTicks return the system time as ticks (100 nanoseconds) 
 // since 00:00 01 January 1970 UTC (Unix epoch) 
@@ -69,27 +65,12 @@ char* SystemNative_GetDefaultTimeZone(void)
 }
 #endif
 
+#if !defined(TARGET_WASM)
 const char* SystemNative_GetTimeZoneData(const char* name, int* length)
 {
-    assert(name != NULL);
-    assert(length != NULL);
-#if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-    const uint8_t *data = NULL;
-    uint32_t data_len = 0;
-
-    mono_bundled_resources_get_data_resource_values (name, &data, &data_len);
-    assert (data_len <= INT_MAX);
-    if (data_len > INT_MAX) {
-        data_len = 0;
-        data = NULL;
-    }
-
-    *length = (int)data_len;
-    return (const char *)data;
-#else
     assert_msg(false, "Not supported on this platform", 0);
-    (void)name; // unused
-    (void)length; // unused
+    (void)name;
+    (void)length;
     return NULL;
-#endif
 }
+#endif

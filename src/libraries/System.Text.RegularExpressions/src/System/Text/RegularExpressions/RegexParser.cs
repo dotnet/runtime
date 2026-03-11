@@ -150,7 +150,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Escapes all metacharacters (including |,(,),[,{,|,^,$,*,+,?,\, spaces and #)</summary>
         public static string Escape(string input)
         {
-            int indexOfMetachar = IndexOfMetachar(input.AsSpan());
+            int indexOfMetachar = input.AsSpan().IndexOfAny(s_metachars);
             return indexOfMetachar < 0
                 ? input
                 : EscapeImpl(input.AsSpan(), indexOfMetachar);
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions
                 vsb.Append(ch);
                 input = input.Slice(1);
 
-                indexOfMetachar = IndexOfMetachar(input);
+                indexOfMetachar = input.IndexOfAny(s_metachars);
                 if (indexOfMetachar < 0)
                 {
                     indexOfMetachar = input.Length;
@@ -543,7 +543,11 @@ namespace System.Text.RegularExpressions
             return _concatenation;
         }
 
-        /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass</summary>
+        /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass.</summary>
+        /// <remarks>
+        /// Character class subtractions (e.g. [a-z-[aeiou]]) are handled iteratively using an
+        /// explicit parent stack to avoid stack overflow with deeply nested subtractions.
+        /// </remarks>
         private RegexCharClass? ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
             char ch;
@@ -551,6 +555,9 @@ namespace System.Text.RegularExpressions
             bool inRange = false;
             bool firstChar = true;
             bool closed = false;
+            bool startingNewLevel = false;
+
+            List<RegexCharClass?>? parents = null;
 
             RegexCharClass? charClass = scanOnly ? null : new RegexCharClass();
 
@@ -569,12 +576,60 @@ namespace System.Text.RegularExpressions
 
             for (; _pos < _pattern.Length; firstChar = false)
             {
+                // When entering a new subtraction level, reset state for the nested character class.
+                if (startingNewLevel)
+                {
+                    startingNewLevel = false;
+                    firstChar = true;
+                    if (_pos < _pattern.Length && _pattern[_pos] == '^')
+                    {
+                        _pos++;
+                        if (!scanOnly)
+                        {
+                            charClass!.Negate = true;
+                        }
+                        if ((_options & RegexOptions.ECMAScript) != 0 && _pos < _pattern.Length && _pattern[_pos] == ']')
+                        {
+                            firstChar = false;
+                        }
+                    }
+                    if (_pos >= _pattern.Length)
+                    {
+                        break;
+                    }
+                }
+
                 bool translatedChar = false;
                 ch = _pattern[_pos++];
                 if (ch == ']')
                 {
                     if (!firstChar)
                     {
+                        // Finalize this character class level.
+                        if (!scanOnly && caseInsensitive)
+                        {
+                            charClass!.AddCaseEquivalences(_culture);
+                        }
+
+                        // If there are parent levels, pop back to the parent and set the
+                        // current class as its subtraction.
+                        if (parents is { Count: > 0 })
+                        {
+                            RegexCharClass? parent = parents[parents.Count - 1];
+                            parents.RemoveAt(parents.Count - 1);
+                            if (!scanOnly)
+                            {
+                                parent!.AddSubtraction(charClass!);
+
+                                if (_pos < _pattern.Length && _pattern[_pos] != ']')
+                                {
+                                    throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
+                                }
+                            }
+                            charClass = parent;
+                            continue;
+                        }
+
                         closed = true;
                         break;
                     }
@@ -675,14 +730,13 @@ namespace System.Text.RegularExpressions
                         {
                             // We thought we were in a range, but we're actually starting a subtraction.
                             // In that case, we'll add chPrev to our char class, skip the opening [, and
-                            // scan the new character class recursively.
+                            // scan the new character class iteratively.
                             charClass!.AddChar(chPrev);
-                            charClass.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly)!);
-
-                            if (_pos < _pattern.Length && _pattern[_pos] != ']')
-                            {
-                                throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
-                            }
+                            (parents ??= new List<RegexCharClass?>()).Add(charClass);
+                            charClass = new RegexCharClass();
+                            chPrev = '\0';
+                            startingNewLevel = true;
+                            continue;
                         }
                         else
                         {
@@ -707,16 +761,14 @@ namespace System.Text.RegularExpressions
                     // we aren't in a range, and now there is a subtraction.  Usually this happens
                     // only when a subtraction follows a range, like [a-z-[b]]
                     _pos++;
-                    RegexCharClass? rcc = ScanCharClass(caseInsensitive, scanOnly);
+                    (parents ??= new List<RegexCharClass?>()).Add(scanOnly ? null : charClass);
                     if (!scanOnly)
                     {
-                        charClass!.AddSubtraction(rcc!);
-
-                        if (_pos < _pattern.Length && _pattern[_pos] != ']')
-                        {
-                            throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
-                        }
+                        charClass = new RegexCharClass();
                     }
+                    chPrev = '\0';
+                    startingNewLevel = true;
+                    continue;
                 }
                 else
                 {
@@ -730,11 +782,6 @@ namespace System.Text.RegularExpressions
             if (!closed)
             {
                 throw MakeException(RegexParseError.UnterminatedBracket, SR.UnterminatedBracket);
-            }
-
-            if (!scanOnly && caseInsensitive)
-            {
-                charClass!.AddCaseEquivalences(_culture);
             }
 
             return charClass;
@@ -1929,7 +1976,7 @@ namespace System.Text.RegularExpressions
         private static ReadOnlySpan<byte> Category =>
         [
             // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-               0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, 0, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             //    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
                W, 0, 0, Z, S, 0, 0, 0, S, S, Q, Q, 0, 0, S, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q,
             // @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _
@@ -1938,26 +1985,8 @@ namespace System.Text.RegularExpressions
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0
         ];
 
-#if NET
         private static readonly SearchValues<char> s_metachars =
             SearchValues.Create("\t\n\f\r #$()*+.?[\\^{|");
-
-        private static int IndexOfMetachar(ReadOnlySpan<char> input) =>
-            input.IndexOfAny(s_metachars);
-#else
-        private static int IndexOfMetachar(ReadOnlySpan<char> input)
-        {
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (input[i] <= '|' && Category[input[i]] > 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-#endif
 
         /// <summary>Returns true for those characters that terminate a string of ordinary chars.</summary>
         private static bool IsSpecial(char ch) => ch <= '|' && Category[ch] >= S;

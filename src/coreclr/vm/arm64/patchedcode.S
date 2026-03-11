@@ -5,6 +5,12 @@
 #include "unixasmmacros.inc"
 #include "patchedcodeconstants.h"
 
+// On Apple platforms we emit the whole patched region as single function
+// with .alt_entry labels for individual write barrier helpers. This ensures
+// the linker doesn't relocate or split the code and treats it as single
+// atom. We also need to be careful to produce the correct unwinding
+// information.
+
 //-----------------------------------------------------------------------------
 // The following Macros help in WRITE_BARRIER Implementations
 // WRITE_BARRIER_ENTRY
@@ -13,7 +19,17 @@
 // to declare a write barrier function.
 //
 .macro WRITE_BARRIER_ENTRY name
+#if defined(__APPLE__)
+    // .cfi_startproc/.cfi_endproc is workaround for https://github.com/dotnet/runtime/issues/119005
+    .cfi_endproc
+    .p2align        2
+    .alt_entry C_FUNC(\name)
+    .private_extern C_FUNC(\name)
+C_FUNC(\name):
+    .cfi_startproc
+#else
     LEAF_ENTRY \name, _TEXT
+#endif
 .endm
 
 // WRITE_BARRIER_END
@@ -21,15 +37,33 @@
 // The partner to WRITE_BARRIER_ENTRY, used like NESTED_END.
 //
 .macro WRITE_BARRIER_END name
+#if defined(__APPLE__)
+    // .cfi_startproc/.cfi_endproc is workaround for https://github.com/dotnet/runtime/issues/119005
+    .cfi_endproc
+    .alt_entry C_FUNC(\name\()_End)
+    .private_extern C_FUNC(\name\()_End)
+C_FUNC(\name\()_End):
+    .cfi_startproc
+    // make sure this symbol gets its own address
+    nop
+#else
     LEAF_END_MARKED \name, _TEXT
+#endif
 .endm
 
 .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 //------------------------------------------
 // Start of the writeable code region
+#if defined(__APPLE__)
+    .global C_FUNC(JIT_PatchedCodeStart)
+C_FUNC(JIT_PatchedCodeStart):
+    .cfi_startproc
+    ret  lr
+#else
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeStart, _TEXT
+#endif
 
 //-----------------------------------------------------------------------------
 // void JIT_ByRefWriteBarrier
@@ -145,10 +179,17 @@ WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 // ------------------------------------------------------------------
 // End of the writeable code region
+#if defined(__APPLE__)
+    .private_extern C_FUNC(JIT_PatchedCodeLast)
+    .alt_entry C_FUNC(JIT_PatchedCodeLast)
+C_FUNC(JIT_PatchedCodeLast):
+    .cfi_endproc
+    ret  lr
+#else
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeLast, _TEXT
-
+#endif
 
 
 //-----------------------------------------------------------------------------

@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace SIMD
 {
@@ -64,10 +65,12 @@ namespace SIMD
             Console.WriteLine("In benchmark mode, a larger set is computed but nothing is dumped.");
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {
-            return Test(Array.Empty<string>());
+            Bench(0, -1);
+            return Pass;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -148,7 +151,7 @@ namespace SIMD
             float ymin = YC - Range;
             float ymax = YC + Range;
             float step = Range / 1000f; // This will render one million pixels
-            float warm = Range / 100f; // To warm up, just render 10000 pixels :-)
+            float warm = Range / 50f; // To warm up, just render 2500 pixels :-)
             Algorithms.FractalRenderer.Render[] renderers = new Algorithms.FractalRenderer.Render[24];
             // Warm up each renderer
             if (!s_silent)
@@ -179,6 +182,10 @@ namespace SIMD
             {
                 Console.WriteLine(" Run Type                       :      Min      Max    Average    Std-Dev");
             }
+
+            // iters == 0: just do warmup runs
+            if (iters == 0) return;
+
             for (int i = firstRenderer; i <= lastRenderer; i++)
             {
                 long totalTime = 0;

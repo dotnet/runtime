@@ -177,10 +177,7 @@ namespace System.Text.RegularExpressions
             {
                 int[] oldmatches = matches[cap];
                 int[] newmatches = new int[capcount * 8];
-                for (int j = 0; j < capcount * 2; j++)
-                {
-                    newmatches[j] = oldmatches[j];
-                }
+                Array.Copy(oldmatches, newmatches, capcount * 2);
 
                 matches[cap] = newmatches;
             }

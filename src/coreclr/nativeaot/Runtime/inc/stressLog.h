@@ -236,7 +236,7 @@ public:
     CrstStatic *pLock;                      // lock
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
-    FILETIME startTime;                     // time the application started
+    uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)
     size_t   moduleOffset;                  // Used to compute format strings.
 
 #ifndef DACCESS_COMPILE
@@ -312,7 +312,7 @@ public:
     template<typename T>
     static void* ConvertArgument(T arg)
     {
-        C_ASSERT(sizeof(T) <= sizeof(void*));
+        static_assert(sizeof(T) <= sizeof(void*));
         return (void*)(size_t)arg;
     }
 

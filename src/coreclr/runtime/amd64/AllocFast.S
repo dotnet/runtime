@@ -87,7 +87,7 @@ NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
         xor         edx, edx    // numElements
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call        C_FUNC(RhpGcAlloc)
 
         test        rax, rax
@@ -273,7 +273,7 @@ NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         // passing pTransitionFrame in rcx
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call        C_FUNC(RhpGcAlloc)
 
         test        rax, rax

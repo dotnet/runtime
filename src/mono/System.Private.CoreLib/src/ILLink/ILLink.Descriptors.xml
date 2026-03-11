@@ -2,7 +2,7 @@
 <linker>
 	<assembly fullname="System.Private.CoreLib">
 		<!-- assembly-load-context.c: -->
-		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
+		<!-- object-internals.h: MonoAssemblyLoadContext -->
 		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
 			<!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
 			<method name="MonoResolveUsingLoad" />
@@ -276,6 +276,12 @@
 			<!-- class.c: initialize_object_slots -->
 			<method name="Finalize" />
 			<method name="GetHashCode" />
+		</type>
+
+		<!-- domain.c: mono_defaults.gc_class -->
+		<type fullname="System.GC">
+			<!-- gc.c: mono_gc_run_finalize -->
+			<method name="GuardedFinalize" />
 		</type>
 
 		<!-- appdomain.c (create_domain_objects) domain->out_of_memory_ex -->

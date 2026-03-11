@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
@@ -20,7 +21,7 @@ namespace Internal.IL.Stubs
             TypeSystemContext context = owningType.Context;
 
             Signature = new MethodSignature(MethodSignatureFlags.Static, 0,
-                context.SystemModule.GetKnownType("System.Reflection", "Assembly"), TypeDesc.EmptyTypes);
+                context.SystemModule.GetKnownType("System.Reflection"u8, "Assembly"u8), TypeDesc.EmptyTypes);
         }
 
         public override TypeSystemContext Context
@@ -36,11 +37,11 @@ namespace Internal.IL.Stubs
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return $"GetExecutingAssembly_{ExecutingAssembly.GetName().Name}";
+                return "GetExecutingAssembly_"u8.Append(ExecutingAssembly.Name);
             }
         }
 
@@ -67,7 +68,7 @@ namespace Internal.IL.Stubs
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", "GetExecutingAssembly");
+            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers"u8, "GetExecutingAssembly"u8);
 
             // Use the global module type as "a type from the assembly that has metadata"
             // Our reflection policy always makes sure this has metadata.

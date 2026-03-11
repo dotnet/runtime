@@ -826,7 +826,7 @@ namespace System.Text.RegularExpressions
                             return s1Frequency.CompareTo(s2Frequency);
                         }
 
-                        if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                        if (!Ascii.IsValid(s1Chars) && !Ascii.IsValid(s2Chars))
                         {
                             // Prefer the set with fewer values.
                             return s1CharsLength.CompareTo(s2CharsLength);
@@ -910,7 +910,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static string? FindLastCharClass(RegexNode root) => FindFirstOrLastCharClass(root, findFirst: false);
 
-        private static string? FindFirstOrLastCharClass(RegexNode root, bool findFirst)
+        public static string? FindFirstOrLastCharClass(RegexNode root, bool findFirst)
         {
             // Explore the graph, adding found chars into a result set, which is lazily initialized so that
             // we can initialize it to a parsed set if we discover one first (this is helpful not just for allocation
@@ -1354,8 +1354,6 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Start:
                     case RegexNodeKind.EndZ:
                     case RegexNodeKind.End:
-                    case RegexNodeKind.Boundary:
-                    case RegexNodeKind.ECMABoundary:
                         // Return any anchor found.
                         return node.Kind;
 
@@ -1389,6 +1387,7 @@ namespace System.Text.RegularExpressions
                                     {
                                         case RegexNodeKind.Empty or RegexNodeKind.NegativeLookaround:
                                         case RegexNodeKind.PositiveLookaround when ((node.Options | tmpChild.Options) & RegexOptions.RightToLeft) != 0:
+                                        case RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
                                             // Skip over zero-width assertions.
                                             continue;
 
@@ -1508,7 +1507,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static ReadOnlySpan<float> Frequency =>
+        internal static ReadOnlySpan<float> Frequency =>
         [
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,

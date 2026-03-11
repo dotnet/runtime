@@ -7,9 +7,13 @@
 // Reduced from 168.4 KiB to 0.2 KiB in 00:05:13
 // Hits JIT assert in Release:
 // Assertion failed '!"Write to unaliased local overlaps outstanding read"' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Rationalize IR' (IL size 26)
-// 
+//
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1397
-// 
+//
+
+using TestLibrary;
+namespace Runtime_64883;
+
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -18,13 +22,16 @@ using Xunit;
 public class Runtime_64883
 {
     public static uint s_29;
+    [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         // This needs an ALC because the "static access" helper is different in ALCs.
         CollectibleALC alc = new CollectibleALC();
         Assembly asm = alc.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-        MethodInfo mi = asm.GetType(nameof(Runtime_64883)).GetMethod(nameof(MainT));
+        MethodInfo mi = asm.GetType($"{nameof(Runtime_64883)}.{nameof(Runtime_64883)}").GetMethod(nameof(MainT));
         mi.Invoke(null, new object[0]);
     }
 
@@ -37,7 +44,7 @@ public class Runtime_64883
         uint vr6 = s_29;
     }
 #pragma warning restore xUnit1013
-    
+
     private class CollectibleALC : AssemblyLoadContext
     {
         public CollectibleALC() : base(true)

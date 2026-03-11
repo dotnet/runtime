@@ -11,9 +11,12 @@ namespace ILCompiler
 {
     partial class CompilerTypeSystemContext
     {
+        private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
+            _continuationTypeHashtable = new(this);
             _genericsMode = genericsMode;
         }
 
@@ -55,30 +58,34 @@ namespace ILCompiler
         public ReadyToRunCompilerContext(
             TargetDetails details,
             SharedGenericsMode genericsMode,
-            bool bubbleIncludesCorelib,
+            bool bubbleIncludesCoreModule,
             InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
+            BubbleIncludesCoreModule = bubbleIncludesCoreModule;
             InstructionSetSupport = instructionSetSupport;
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
-            // Only the Arm64 JIT respects the OS rules for vector type abi currently
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
+            // There are a few types which require special layout algorithms and which could change based on hardware
+            // or to better match the underlying native ABI in the future. However, these are also fairly core types
+            // which are used in many perf critical functions that exist on startup and which are often tied to an ISA.
+            //
+            // Given that, we treat them as ABI stable today to ensure that R2R works well. If we end up modifying the
+            // ABI handling in the future, we would need to take a major version bump to R2R, which is deemed worthwhile.
 
-            string matchingVectorType = "Unknown";
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+
+            ReadOnlySpan<byte> matchingVectorType = "Unknown"u8;
             if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
-                matchingVectorType = "Vector128`1";
+                matchingVectorType = "Vector128`1"u8;
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
-                matchingVectorType = "Vector256`1";
+                matchingVectorType = "Vector256`1"u8;
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
-                matchingVectorType = "Vector512`1";
+                matchingVectorType = "Vector512`1"u8;
 
-            // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
-            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
-
-            // Int128 and UInt128 should be ABI stable on all currently supported platforms
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
@@ -89,7 +96,31 @@ namespace ILCompiler
             }
         }
 
+        public bool BubbleIncludesCoreModule { get; }
+
         public InstructionSetSupport InstructionSetSupport { get; }
+
+        public bool TargetAllowsRuntimeCodeGeneration
+        {
+            get
+            {
+#if FEATURE_DYNAMIC_CODE_COMPILED
+                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
+                {
+                    return false;
+                }
+
+                if (Target.Architecture is TargetArchitecture.Wasm32)
+                {
+                    return false;
+                }
+
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
@@ -179,7 +210,7 @@ namespace ILCompiler
             {
                 if (_asyncStateMachineBox == null)
                 {
-                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices", "AsyncTaskMethodBuilder`1").GetNestedType("AsyncStateMachineBox`1");
+                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncTaskMethodBuilder`1"u8).GetNestedType("AsyncStateMachineBox`1"u8);
                     if (_asyncStateMachineBox == null)
                         throw new Exception();
                 }
@@ -196,26 +227,24 @@ namespace ILCompiler
     {
         private FieldLayoutAlgorithm _fallbackAlgorithm;
         private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
-        private string _similarVectorName;
+        private byte[] _similarVectorName;
         private DefType _similarVectorOpenType;
-        private bool _vectorAbiIsStable;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector, bool vectorAbiIsStable = true)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, ReadOnlySpan<byte> similarVector)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
             _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
-            _similarVectorName = similarVector;
-            _vectorAbiIsStable = vectorAbiIsStable;
+            _similarVectorName = similarVector.ToArray();
         }
 
         private DefType GetSimilarVector(DefType vectorOfTType)
         {
             if (_similarVectorOpenType == null)
             {
-                if (_similarVectorName == "Unknown")
+                if (_similarVectorName.SequenceEqual("Unknown"u8))
                     return null;
 
-                _similarVectorOpenType = ((MetadataType)vectorOfTType.GetTypeDefinition()).Module.GetType("System.Runtime.Intrinsics", _similarVectorName);
+                _similarVectorOpenType = ((MetadataType)vectorOfTType.GetTypeDefinition()).Module.GetType("System.Runtime.Intrinsics"u8, _similarVectorName);
             }
 
             return ((MetadataType)_similarVectorOpenType).MakeInstantiatedType(vectorOfTType.Instantiation);
@@ -256,7 +285,7 @@ namespace ILCompiler
                     ByteCountUnaligned = LayoutInt.Indeterminate,
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
-                    LayoutAbiStable = false,
+                    LayoutAbiStable = true,
                     IsVectorTOrHasVectorTFields = true,
                 };
                 return instanceLayout;
@@ -275,7 +304,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromSimilarIntrinsicVector.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
-                    LayoutAbiStable = _vectorAbiIsStable,
+                    LayoutAbiStable = true,
                     IsVectorTOrHasVectorTFields = true,
                 };
 #else
@@ -286,7 +315,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
-                    LayoutAbiStable = _vectorAbiIsStable,
+                    LayoutAbiStable = true,
                     IsVectorTOrHasVectorTFields = true,
                 };
 #endif
@@ -314,7 +343,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
+            return type.IsIntrinsic && type.Namespace.SequenceEqual("System.Numerics"u8) && type.Name.SequenceEqual("Vector`1"u8);
         }
     }
 }

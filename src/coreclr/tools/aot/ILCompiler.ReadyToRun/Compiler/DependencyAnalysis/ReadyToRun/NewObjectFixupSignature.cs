@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
 
             if (!relocsOnly)
             {

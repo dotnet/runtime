@@ -1036,18 +1036,48 @@ void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
 
 bool DefaultPolicy::PropagateNeverToRuntime() const
 {
-    //
-    // Do not propagate the "no return" observation. If we do this then future inlining
-    // attempts will fail immediately without marking the call node as "no return".
-    // This can have an adverse impact on caller's code quality as it may have to preserve
-    // registers across the call.
-    // TODO-Throughput: We should persist the "no return" information in the runtime
-    // so we don't need to re-analyze the inlinee all the time.
-    //
+    if (m_Observation == InlineObservation::CALLEE_DOES_NOT_RETURN)
+    {
+        // Do not propagate the "no return" observation. If we do this then future inlining
+        // attempts will fail immediately without marking the call node as "no return".
+        // This can have an adverse impact on caller's code quality as it may have to preserve
+        // registers across the call.
+        // TODO-Throughput: We should persist the "no return" information in the runtime
+        // so we don't need to re-analyze the inlinee all the time.
+        //
+        return false;
+    }
 
-    bool propagate = (m_Observation != InlineObservation::CALLEE_DOES_NOT_RETURN);
+    InlineTarget target = InlGetTarget(GetObservation());
+    InlineImpact impact = InlGetImpact(GetObservation());
 
-    return propagate;
+    if ((target == InlineTarget::CALLEE) && (impact == InlineImpact::FATAL))
+    {
+        // This callee will never inline.
+        //
+        return true;
+    }
+
+    if (m_InsideThrowBlock)
+    {
+        // We inline only trivial methods inside BBJ_THROW call-sites - no need to record that.
+        //
+        return false;
+    }
+
+    if (m_RootCompiler->fgPgoDynamic)
+    {
+        // If dynamic pgo is active, only propagate noinline back to metadata
+        // when there is a CALLEE FATAL observation. We want to make sure
+        // not to block future inlines based on performance or throughput considerations.
+        //
+        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
+        // In particular this value does not depend on the root method having PGO data.
+        //
+        return false;
+    }
+
+    return true;
 }
 
 #if defined(DEBUG)

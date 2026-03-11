@@ -12,6 +12,9 @@
 // we still correctly mark the load of vr3[0] as loop variant.
 //
 
+
+namespace Runtime_58877;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 

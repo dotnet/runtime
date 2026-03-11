@@ -4,12 +4,14 @@
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     internal sealed class OleDbMetaDataFactory : DbMetaDataFactory
     { // V1.2.3300
 
@@ -137,7 +139,7 @@ namespace System.Data.OleDb
                         }
                     }
                     // if not delete the row from the table
-                    if (isSchemaRowsetSupported == false)
+                    if (!isSchemaRowsetSupported)
                     {
                         // but first delete any related restrictions
                         if (restrictionsTable != null)
@@ -499,7 +501,7 @@ namespace System.Data.OleDb
             DataTable? resultTable = null;
             if (collectionName == DbMetaDataCollectionNames.DataSourceInformation)
             {
-                if (ADP.IsEmptyArray(restrictions) == false)
+                if (!ADP.IsEmptyArray(restrictions))
                 {
                     throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.DataSourceInformation);
                 }
@@ -507,7 +509,7 @@ namespace System.Data.OleDb
             }
             else if (collectionName == DbMetaDataCollectionNames.DataTypes)
             {
-                if (ADP.IsEmptyArray(restrictions) == false)
+                if (!ADP.IsEmptyArray(restrictions))
                 {
                     throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.DataTypes);
                 }
@@ -515,7 +517,7 @@ namespace System.Data.OleDb
             }
             else if (collectionName == DbMetaDataCollectionNames.ReservedWords)
             {
-                if (ADP.IsEmptyArray(restrictions) == false)
+                if (!ADP.IsEmptyArray(restrictions))
                 {
                     throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.ReservedWords);
                 }

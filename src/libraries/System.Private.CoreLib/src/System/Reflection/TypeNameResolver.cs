@@ -74,7 +74,7 @@ namespace System.Reflection
                 do
                 {
                     nestingDepth++;
-                    current = current.DeclaringType!;
+                    current = current.DeclaringType;
                 }
                 while (current.IsNested);
 
@@ -83,7 +83,7 @@ namespace System.Reflection
                 while (current.IsNested)
                 {
                     nestedTypeNames[--nestingDepth] = TypeName.Unescape(current.Name);
-                    current = current.DeclaringType!;
+                    current = current.DeclaringType;
                 }
 
                 return GetType(current.FullName, nestedTypeNames, typeName);

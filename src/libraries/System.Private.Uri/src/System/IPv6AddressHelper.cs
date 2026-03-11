@@ -111,59 +111,38 @@ namespace System.Net
                                        || (numbers[5] == 0xFFFF))));
         }
 
-        //
-        // InternalIsValid
-        //
-        //  Determine whether a name is a valid IPv6 address. Rules are:
-        //
-        //   *  8 groups of 16-bit hex numbers, separated by ':'
-        //   *  a *single* run of zeros can be compressed using the symbol '::'
-        //   *  an optional string of a ScopeID delimited by '%'
-        //   *  an optional (last) 1 or 2 character prefix length field delimited by '/'
-        //   *  the last 32 bits in an address can be represented as an IPv4 address
-        //
-        // Inputs:
-        //  <argument>  name
-        //      Domain name field of a URI to check for pattern match with
-        //      IPv6 address
-        //  validateStrictAddress: if set to true, it expects strict ipv6 address. Otherwise it expects
-        //      part of the string in ipv6 format.
-        //
-        // Outputs:
-        //  Nothing
-        //
-        // Assumes:
-        //  the correct name is terminated by  ']' character
-        //
-        // Returns:
-        //  true if <name> has IPv6 format/ipv6 address based on validateStrictAddress, else false
-        //
-        // Throws:
-        //  Nothing
-        //
-
-        //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
-        //           start must be next to '[' position, or error is reported
-        private static unsafe bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
+        /// <summary>
+        /// Determine whether a name is a valid IPv6 address. Rules are:
+        /// <para>*  8 groups of 16-bit hex numbers, separated by ':'</para>
+        /// <para>*  a *single* run of zeros can be compressed using the symbol '::'</para>
+        /// <para>*  an optional string of a ScopeID delimited by '%'</para>
+        /// <para>*  the last 32 bits in an address can be represented as an IPv4 address</para>
+        /// </summary>
+        /// <param name="name">The host to validate.</param>
+        /// <param name="length">The length of the IPv6 address (index of ']' + 1).</param>
+        /// <remarks>Assumes that the caller already checked that the first character is '['.</remarks>
+        public static bool IsValid(ReadOnlySpan<char> name, out int length)
         {
+            Debug.Assert(name.StartsWith('['));
+
+            length = 0; // Default value in case of failure
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;
             bool haveIPv4Address = false;
-            bool havePrefix = false;
             bool expectingNumber = true;
             int lastSequence = 1;
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == ':' && (start + 1 >= end || name[start + 1] != ':'))
+            if (name.Length < 3 || (name[1] == ':' && name[2] != ':'))
             {
                 return false;
             }
 
             int i;
-            for (i = start; i < end; ++i)
+            for (i = 1; i < name.Length; ++i)
             {
-                if (havePrefix ? char.IsAsciiDigit(name[i]) : char.IsAsciiHexDigit(name[i]))
+                if (char.IsAsciiHexDigit(name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -174,36 +153,49 @@ namespace System.Net
                     {
                         return false;
                     }
+
                     if (sequenceLength != 0)
                     {
                         ++sequenceCount;
                         lastSequence = i - sequenceLength;
                     }
+
                     switch (name[i])
                     {
                         case '%':
                             while (true)
                             {
-                                //accept anything in scopeID
-                                if (++i == end)
+                                if (++i == name.Length)
                                 {
                                     // no closing ']', fail
                                     return false;
                                 }
+
                                 if (name[i] == ']')
                                 {
                                     goto case ']';
                                 }
-                                else if (name[i] == '/')
+
+                                // Our general IPv6 parsing rules are very lenient on the ZoneID.
+                                // Since this is the logic specific to Uri, we restrict the set of allowed characters (mainly to exclude delimiters).
+                                if (name[i] != '%' && !UriHelper.Unreserved.Contains(name[i]))
                                 {
-                                    goto case '/';
+                                    return false;
                                 }
                             }
+
                         case ']':
-                            start = i;
-                            i = end;
-                            //this will make i = end+1
-                            continue;
+                            const int ExpectedSequenceCount = 8;
+
+                            if (!expectingNumber &&
+                                (haveCompressor ? (sequenceCount < ExpectedSequenceCount) : (sequenceCount == ExpectedSequenceCount)))
+                            {
+                                length = i + 1;
+                                return true;
+                            }
+
+                            return false;
+
                         case ':':
                             if ((i > 0) && (name[i - 1] == ':'))
                             {
@@ -224,30 +216,18 @@ namespace System.Net
                             }
                             break;
 
-                        case '/':
-                            if (validateStrictAddress)
-                            {
-                                return false;
-                            }
-                            if ((sequenceCount == 0) || havePrefix)
-                            {
-                                return false;
-                            }
-                            havePrefix = true;
-                            expectingNumber = true;
-                            break;
-
                         case '.':
                             if (haveIPv4Address)
                             {
                                 return false;
                             }
 
-                            i = end;
-                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
+                            i = name.Length;
+                            if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence, i - lastSequence), out int seqEnd, true, false, false))
                             {
                                 return false;
                             }
+                            i = lastSequence + seqEnd;
                             // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                             ++sequenceCount;
                             haveIPv4Address = true;
@@ -261,69 +241,7 @@ namespace System.Net
                 }
             }
 
-            //
-            // if the last token was a prefix, check number of digits
-            //
-
-            if (havePrefix && ((sequenceLength < 1) || (sequenceLength > 2)))
-            {
-                return false;
-            }
-
-            //
-            // these sequence counts are -1 because it is implied in end-of-sequence
-            //
-
-            int expectedSequenceCount = 8 + (havePrefix ? 1 : 0);
-
-            if (!expectingNumber && (sequenceLength <= 4) && (haveCompressor ? (sequenceCount < expectedSequenceCount) : (sequenceCount == expectedSequenceCount)))
-            {
-                if (i == end + 1)
-                {
-                    // ']' was found
-                    end = start + 1;
-                    return true;
-                }
-                return false;
-            }
             return false;
-        }
-
-        //
-        // IsValid
-        //
-        //  Determine whether a name is a valid IPv6 address. Rules are:
-        //
-        //   *  8 groups of 16-bit hex numbers, separated by ':'
-        //   *  a *single* run of zeros can be compressed using the symbol '::'
-        //   *  an optional string of a ScopeID delimited by '%'
-        //   *  an optional (last) 1 or 2 character prefix length field delimited by '/'
-        //   *  the last 32 bits in an address can be represented as an IPv4 address
-        //
-        // Inputs:
-        //  <argument>  name
-        //      Domain name field of a URI to check for pattern match with
-        //      IPv6 address
-        //
-        // Outputs:
-        //  Nothing
-        //
-        // Assumes:
-        //  the correct name is terminated by  ']' character
-        //
-        // Returns:
-        //  true if <name> has IPv6 format, else false
-        //
-        // Throws:
-        //  Nothing
-        //
-
-        //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
-        //           start must be next to '[' position, or error is reported
-
-        internal static unsafe bool IsValid(char* name, int start, ref int end)
-        {
-            return InternalIsValid(name, start, ref end, false);
         }
     }
 }

@@ -15,8 +15,19 @@ namespace
     {
         // Load cdac from next to current module (DAC binary)
         PathString path;
+
+        // On Unix, GetCurrentModuleBase() returns a raw dladdr base address, not a PAL HMODULE.
+        // The DAC is typically loaded externally (e.g. by CLRMD via dlopen) and is not registered
+        // in the PAL module list. Use PAL_GetPalHostModule() which properly registers the module.
+#ifdef HOST_UNIX
+        HMODULE hMod = PAL_GetPalHostModule();
+        if (hMod == NULL || WszGetModuleFileName(hMod, path) == 0)
+#else
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
+#endif
+        {
             return false;
+        }
 
         SString::Iterator iter = path.End();
         if (!path.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
@@ -43,6 +54,16 @@ namespace
         return S_OK;
     }
 
+    int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
+    {
+        ICorDebugMutableDataTarget* target = static_cast<ICorDebugMutableDataTarget*>(context);
+        HRESULT hr = target->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
     int ReadThreadContext(uint32_t threadId, uint32_t contextFlags, uint32_t contextBufferSize, uint8_t* contextBuffer, void* context)
     {
         ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
@@ -54,7 +75,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -64,7 +85,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     _ASSERTE(init != nullptr);
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

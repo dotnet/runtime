@@ -4,6 +4,7 @@
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -11,6 +12,7 @@ namespace System.Data.OleDb
 {
     // SafeHandle wrapper around 'DataLinks' object which pools the native OLE DB providers.
     // expect 1 per app-domain
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     internal sealed class OleDbServicesWrapper : WrappedIUnknown
     {
         // we expect to store IDataInitialize instance pointer in base.handle
@@ -37,7 +39,7 @@ namespace System.Data.OleDb
                 // since IDataInitialize is a public,shipped COM interface, its layout will not change (ever)
                 IntPtr vtable = Marshal.ReadIntPtr(base.handle, 0);
                 IntPtr method = Marshal.ReadIntPtr(vtable, 3 * IntPtr.Size); // GetDataSource is the 4'th vtable entry
-                DangerousIDataInitializeGetDataSource = (UnsafeNativeMethods.IDataInitializeGetDataSource)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDataInitializeGetDataSource));
+                DangerousIDataInitializeGetDataSource = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IDataInitializeGetDataSource>(method);
             }
         }
 
@@ -143,7 +145,7 @@ namespace System.Data.OleDb
                 // we double check before each usage to verify the delegates function pointer
                 if ((null == QueryInterface) || (method != Marshal.GetFunctionPointerForDelegate(QueryInterface)))
                 {
-                    QueryInterface = (UnsafeNativeMethods.IUnknownQueryInterface)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IUnknownQueryInterface));
+                    QueryInterface = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IUnknownQueryInterface>(method);
                     constr.DangerousDataSourceIUnknownQueryInterface = QueryInterface;
                 }
 
@@ -160,7 +162,7 @@ namespace System.Data.OleDb
                 // we double check before each usage to verify the delegates function pointer
                 if ((null == Initialize) || (method != Marshal.GetFunctionPointerForDelegate(Initialize)))
                 {
-                    Initialize = (UnsafeNativeMethods.IDBInitializeInitialize)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBInitializeInitialize));
+                    Initialize = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IDBInitializeInitialize>(method);
                     constr.DangerousIDBInitializeInitialize = Initialize;
                 }
 
@@ -189,7 +191,7 @@ namespace System.Data.OleDb
                         // we double check before each usage to verify the delegates function pointer
                         if ((null == CreateSession) || (method != Marshal.GetFunctionPointerForDelegate(CreateSession)))
                         {
-                            CreateSession = (UnsafeNativeMethods.IDBCreateSessionCreateSession)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBCreateSessionCreateSession));
+                            CreateSession = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IDBCreateSessionCreateSession>(method);
                             constr.DangerousIDBCreateSessionCreateSession = CreateSession;
                         }
 
@@ -335,7 +337,7 @@ namespace System.Data.OleDb
                     // since IUnknown is a public,shipped COM interface, its layout will not change (ever)
                     IntPtr vtable = Marshal.ReadIntPtr(base.handle, 0);
                     IntPtr method = Marshal.ReadIntPtr(vtable, 0);
-                    UnsafeNativeMethods.IUnknownQueryInterface QueryInterface = (UnsafeNativeMethods.IUnknownQueryInterface)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IUnknownQueryInterface));
+                    UnsafeNativeMethods.IUnknownQueryInterface QueryInterface = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IUnknownQueryInterface>(method);
 
                     int hresult;
                     fixed (Guid* riid = &ODB.IID_IDBCreateCommand)
@@ -347,7 +349,7 @@ namespace System.Data.OleDb
                         vtable = Marshal.ReadIntPtr(idbCreateCommand, 0);
                         method = Marshal.ReadIntPtr(vtable, 3 * IntPtr.Size);
 
-                        DangerousIDBCreateCommandCreateCommand = (UnsafeNativeMethods.IDBCreateCommandCreateCommand)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBCreateCommandCreateCommand));
+                        DangerousIDBCreateCommandCreateCommand = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IDBCreateCommandCreateCommand>(method);
                         constr.DangerousIDBCreateCommandCreateCommand = DangerousIDBCreateCommandCreateCommand;
                     }
 
@@ -388,7 +390,7 @@ namespace System.Data.OleDb
             // we double check before each usage to verify the delegates function pointer
             if ((null == CreateCommand) || (method != Marshal.GetFunctionPointerForDelegate(CreateCommand)))
             {
-                CreateCommand = (UnsafeNativeMethods.IDBCreateCommandCreateCommand)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IDBCreateCommandCreateCommand));
+                CreateCommand = Marshal.GetDelegateForFunctionPointer<UnsafeNativeMethods.IDBCreateCommandCreateCommand>(method);
                 constr.DangerousIDBCreateCommandCreateCommand = CreateCommand;
             }
             // since this instance can be used to create multiple commands

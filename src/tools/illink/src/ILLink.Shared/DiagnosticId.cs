@@ -58,6 +58,7 @@ namespace ILLink.Shared
         UnexpectedAttributeArgumentType = 1045,
         InvalidMetadataOption = 1046,
         InvalidDependenciesFileFormat = 1047,
+        MultipleEntryPointRoots = 1048,
 
         // Trimming diagnostic ids.
         TypeHasNoFieldsToPreserve = 2001,
@@ -101,7 +102,7 @@ namespace ILLink.Shared
         XmlInvalidValueForAttributeActionForResource = 2039,
         XmlCouldNotFindResourceToRemoveInAssembly = 2040,
         DynamicallyAccessedMembersIsNotAllowedOnMethods = 2041,
-        DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
+        unused_DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
         DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor = 2043,
         XmlCouldNotFindAnyTypeInNamespace = 2044,
         AttributeIsReferencedButTrimmerRemoveAllInstances = 2045,
@@ -173,7 +174,7 @@ namespace ILLink.Shared
         DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings = 2106,
         MethodsAreAssociatedWithStateMachine = 2107,
         InvalidScopeInUnconditionalSuppressMessage = 2108,
-        RequiresUnreferencedCodeOnBaseClass = 2109,
+        _unused_RequiresUnreferencedCodeOnBaseClass = 2109,
         DynamicallyAccessedMembersFieldAccessedViaReflection = 2110,
         DynamicallyAccessedMembersMethodAccessedViaReflection = 2111,
         DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode = 2112,
@@ -189,6 +190,9 @@ namespace ILLink.Shared
         TypeNameIsNotAssemblyQualified = 2122,
         RequiresUnreferencedCodeOnEntryPoint = 2123,
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
+        ReferenceNotMarkedIsTrimmable = 2125,
+        DataflowAnalysisDidNotConverge = 2126,
+        DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties = 2127,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.
@@ -208,11 +212,22 @@ namespace ILLink.Shared
         CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
         RequiresDynamicCodeOnStaticConstructor = 3056,
         RequiresDynamicCodeOnEntryPoint = 3057,
+        ReferenceNotMarkedIsAotCompatible = 3058,
+
         _EndAotAnalysisWarningsSentinel,
 
         // Feature guard diagnostic ids.
         ReturnValueDoesNotMatchFeatureGuards = 4000,
-        InvalidFeatureGuard = 4001
+        InvalidFeatureGuard = 4001,
+
+#if DEBUG
+        // RequiresUnsafe diagnostics are in the 5000 range, separate from other diagnostics.
+        RequiresUnsafe = 5000,
+        RequiresUnsafeAttributeMismatch = 5001,
+        RequiresUnsafeOnStaticConstructor = 5002,
+        RequiresUnsafeOnEntryPoint = 5003,
+        _EndRequiresUnsafeWarningsSentinel,
+#endif
     }
 
     public static class DiagnosticIdExtensions
@@ -236,7 +251,10 @@ namespace ILLink.Shared
                 2107 => MessageSubCategory.TrimAnalysis,
                 >= 2109 and < (int)DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
                 >= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
-                >= 3054 and < (int)DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
+                >= 3054 and <= 3058 => MessageSubCategory.AotAnalysis,
+#if DEBUG
+                >= 5000 and < (int)DiagnosticId._EndRequiresUnsafeWarningsSentinel => MessageSubCategory.None,
+#endif
                 _ => MessageSubCategory.None,
             };
 

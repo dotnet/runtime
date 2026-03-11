@@ -43,9 +43,20 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var (key, value) in _mapEntries)
             {
                 yield return new CombinedDependencyListEntry(
-                    context.MaximallyConstructableType(value),
+                    context.MetadataTypeSymbol(value),
                     context.MaximallyConstructableType(key),
                     "Proxy type map entry");
+
+                // If the key type has a canonical form, it could be created at runtime by the type loader.
+                // If there is a type loader template for it, create the generic type instantiation eagerly.
+                TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (canonKey != key)
+                {
+                    yield return new CombinedDependencyListEntry(
+                        context.MaximallyConstructableType(key),
+                        context.NativeLayout.TemplateTypeLayout(canonKey),
+                        "Proxy map entry that could be loaded at runtime");
+                }
             }
         }
 
@@ -60,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
                 IEETypeNode keyNode = factory.MaximallyConstructableType(key);
                 if (keyNode.Marked)
                 {
-                    IEETypeNode valueNode = factory.MaximallyConstructableType(value);
+                    IEETypeNode valueNode = factory.MetadataTypeSymbol(value);
                     Debug.Assert(valueNode.Marked);
                     yield return (keyNode, valueNode);
                 }

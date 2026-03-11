@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportPkcs8PrivateKeyPem());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPublicKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.PublicKeySizeInBytes)));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaSecretKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.SecretKeySizeInBytes)));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSlhDsaPrivateKey(tempBuffer.AsSpan(0, slhDsa.Algorithm.PrivateKeySizeInBytes)));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfo());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportSubjectPublicKeyInfoPem());
             Assert.Throws<ObjectDisposedException>(() => slhDsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters, [], out _));
@@ -76,16 +76,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 SubjectPublicKey = publicKey,
             };
 
-            AssertImportSubjectKeyPublicInfo(import => testEmbeddedCall(() => import(spki.Encode())));
+            AssertImportSubjectPublicKeyInfo(import => testEmbeddedCall(() => import(spki.Encode())));
         }
 
-        internal delegate SlhDsa ImportSubjectKeyPublicInfoCallback(byte[] spki);
-        internal static void AssertImportSubjectKeyPublicInfo(Action<ImportSubjectKeyPublicInfoCallback> test) =>
-            AssertImportSubjectKeyPublicInfo(test, test);
+        internal delegate SlhDsa ImportSubjectPublicKeyInfoCallback(byte[] spki);
+        internal static void AssertImportSubjectPublicKeyInfo(Action<ImportSubjectPublicKeyInfoCallback> test) =>
+            AssertImportSubjectPublicKeyInfo(test, test);
 
-        internal static void AssertImportSubjectKeyPublicInfo(
-            Action<ImportSubjectKeyPublicInfoCallback> testDirectCall,
-            Action<ImportSubjectKeyPublicInfoCallback> testEmbeddedCall)
+        internal static void AssertImportSubjectPublicKeyInfo(
+            Action<ImportSubjectPublicKeyInfoCallback> testDirectCall,
+            Action<ImportSubjectPublicKeyInfoCallback> testEmbeddedCall)
         {
             testDirectCall(spki => SlhDsa.ImportSubjectPublicKeyInfo(spki));
             testDirectCall(spki => SlhDsa.ImportSubjectPublicKeyInfo(spki.AsSpan()));
@@ -94,21 +94,21 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             testEmbeddedCall(spki => SlhDsa.ImportFromPem(PemEncoding.WriteString("PUBLIC KEY", spki).AsSpan()));
         }
 
-        internal static void AssertImportSecretKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] secretKey) =>
-            AssertImportSecretKey(test, test, algorithm, secretKey);
+        internal static void AssertImportPrivateKey(Action<Func<SlhDsa>> test, SlhDsaAlgorithm algorithm, byte[] PrivateKey) =>
+            AssertImportPrivateKey(test, test, algorithm, PrivateKey);
 
-        internal static void AssertImportSecretKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] secretKey)
+        internal static void AssertImportPrivateKey(Action<Func<SlhDsa>> testDirectCall, Action<Func<SlhDsa>> testEmbeddedCall, SlhDsaAlgorithm algorithm, byte[] PrivateKey)
         {
-            testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, secretKey));
+            testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, PrivateKey));
 
-            if (secretKey?.Length == 0)
+            if (PrivateKey?.Length == 0)
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, Array.Empty<byte>().AsSpan()));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, ReadOnlySpan<byte>.Empty));
             }
             else
             {
-                testDirectCall(() => SlhDsa.ImportSlhDsaSecretKey(algorithm, secretKey.AsSpan()));
+                testDirectCall(() => SlhDsa.ImportSlhDsaPrivateKey(algorithm, PrivateKey.AsSpan()));
             }
 
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
-                PrivateKey = secretKey,
+                PrivateKey = PrivateKey,
             };
 
             AssertImportPkcs8PrivateKey(import =>
@@ -220,14 +220,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     SubjectPublicKeyInfoAsn.Decode(exportSpki(slhDsa), AsnEncodingRules.DER).SubjectPublicKey.Span.ToArray()));
         }
 
-        internal static void AssertExportSlhDsaSecretKey(Action<Func<SlhDsa, byte[]>> callback)
+        internal static void AssertExportSlhDsaPrivateKey(Action<Func<SlhDsa, byte[]>> callback)
         {
-            callback(slhDsa => slhDsa.ExportSlhDsaSecretKey());
+            callback(slhDsa => slhDsa.ExportSlhDsaPrivateKey());
             callback(
                 slhDsa =>
                 {
-                    byte[] buffer = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-                    slhDsa.ExportSlhDsaSecretKey(buffer.AsSpan());
+                    byte[] buffer = new byte[slhDsa.Algorithm.PrivateKeySizeInBytes];
+                    slhDsa.ExportSlhDsaPrivateKey(buffer.AsSpan());
                     return buffer;
                 });
 

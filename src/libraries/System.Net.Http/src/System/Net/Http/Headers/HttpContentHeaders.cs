@@ -7,7 +7,7 @@ namespace System.Net.Http.Headers
 {
     public sealed class HttpContentHeaders : HttpHeaders
     {
-        private readonly HttpContent _parent;
+        internal HttpContent _parent;
         private bool _contentLengthSet;
 
         private HttpHeaderValueCollection<string>? _allow;

@@ -239,13 +239,8 @@ namespace Microsoft.Interop
 
             // If we aren't overriding the marshalling at usage time,
             // then fall back to the information on the element type itself.
-            foreach (AttributeData typeAttribute in type.GetAttributes())
-            {
-                if (GetMarshallingInfoForAttribute(typeAttribute, type, indirectionDepth, useSiteAttributes, GetMarshallingInfo) is MarshallingInfo marshallingInfo)
-                {
-                    return marshallingInfo;
-                }
-            }
+            if (GetMarshallingInfoForAttributes(type.GetAttributes().AsSpan(), type, indirectionDepth, useSiteAttributes, GetMarshallingInfo) is MarshallingInfo info)
+                return info;
 
             // If the type doesn't have custom attributes that dictate marshalling,
             // then consider the type itself.
@@ -254,13 +249,19 @@ namespace Microsoft.Interop
 
         private MarshallingInfo? GetMarshallingInfoForAttribute(AttributeData attribute, ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
+            return GetMarshallingInfoForAttributes([attribute], type, indirectionDepth, useSiteAttributes, marshallingInfoCallback);
+        }
+
+        private MarshallingInfo? GetMarshallingInfoForAttributes(ReadOnlySpan<AttributeData> attrs, ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
+        {
             foreach (var parser in _marshallingAttributeParsers)
             {
-                // Automatically ignore invalid attributes.
-                // The compiler will already error on them.
-                if (attribute.AttributeConstructor is not null && parser.CanParseAttributeType(attribute.AttributeClass))
+                foreach (var attr in attrs)
                 {
-                    return parser.ParseAttribute(attribute, type, indirectionDepth, useSiteAttributes, marshallingInfoCallback);
+                    if (attr.AttributeConstructor is not null && parser.CanParseAttributeType(attr.AttributeClass))
+                    {
+                        return parser.ParseAttribute(attr, type, indirectionDepth, useSiteAttributes, marshallingInfoCallback);
+                    }
                 }
             }
             return null;

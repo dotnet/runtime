@@ -5,11 +5,13 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [Kept]
     [ExpectedNoWarnings]
+    [SetupIlcWholeProgramAnalysis]
     class AttributeFieldDataflow
     {
         public static void Main()
@@ -40,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         [Kept]
         [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
-        [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+        [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
         [KeepsPublicMethods(TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributeFieldDataflow+ClassWithKeptPublicMethods, test")]
         public static void TestKeepsPublicMethodsString()
         {

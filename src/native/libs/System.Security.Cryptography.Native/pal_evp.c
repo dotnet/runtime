@@ -10,31 +10,37 @@
 
 #define SUCCESS 1
 
-static const EVP_MD* g_evpFetchMd5 = NULL;
-static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
-
-static void EnsureFetchEvpMdAlgorithms(void)
-{
-    // This is called from a pthread_once - this method should not be called directly.
-
 #ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_MD_fetch))
-    {
-        ERR_clear_error();
-
-        // Try to fetch an MD5 implementation that will work regardless if
-        // FIPS is enforced or not.
-        g_evpFetchMd5 = EVP_MD_fetch(NULL, "MD5", "-fips");
+#define BUILD_MD_FETCH(export, fn, name, query) \
+    static const EVP_MD* g_evpFetch##export = NULL; \
+    static pthread_once_t g_evpFetchInit##export = PTHREAD_ONCE_INIT; \
+    static void EnsureFetchEvpMd##export(void) \
+    { \
+        if (API_EXISTS(EVP_MD_fetch)) \
+        { \
+            ERR_clear_error(); \
+            g_evpFetch##export = EVP_MD_fetch(NULL, name, query); \
+        } \
+\
+        if (g_evpFetch##export == NULL) \
+        { \
+            g_evpFetch##export = fn(); \
+        } \
+    } \
+    \
+    const EVP_MD* export(void) \
+    { \
+        pthread_once(&g_evpFetchInit##export, EnsureFetchEvpMd##export); \
+        return g_evpFetch##export; \
+    }
+#else
+#define BUILD_MD_FETCH(export, fn, name, query) \
+    const EVP_MD* export(void) \
+    { \
+        return fn(); \
     }
 #endif
 
-    // No error queue impact.
-    // If EVP_MD_fetch is unavailable, use the implicit loader. If it failed, use the implicit loader as a last resort.
-    if (g_evpFetchMd5 == NULL)
-    {
-        g_evpFetchMd5 = EVP_md5();
-    }
-}
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
@@ -104,43 +110,31 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 
 int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
 {
-    #if HAVE_OPENSSL_SHA3
-        if (API_EXISTS(EVP_DigestFinalXOF))
-        {
-            ERR_clear_error();
+    ERR_clear_error();
 
-            // https://github.com/openssl/openssl/issues/9431
-            // EVP_DigestFinalXOF has a bug in some arch-optimized code paths where it cannot tolerate a zero length
-            // digest.
-            // If the caller asked for no bytes, use a temporary buffer to ask for 1 byte, then throw away the result.
-            // We don't want to skip calling FinalXOF entirely because we want to make sure the EVP_MD_CTX is in a
-            // finalized state regardless of the length of the digest.
-            // We can remove this work around when OpenSSL 3.0 is the minimum OpenSSL requirement.
-            if (len == 0)
-            {
-                uint8_t single[1] = { 0 };
-                int result = EVP_DigestFinalXOF(ctx, single, 1);
-                OPENSSL_cleanse(single, sizeof(single));
-                return result;
-            }
-            else if (!md)
-            {
-                // Length is not zero but we don't have a buffer to write to.
-                return -1;
-            }
-            else
-            {
-                return EVP_DigestFinalXOF(ctx, md, len);
-            }
-        }
-    #else
-        // Use each parameter to avoid unused parameter warnings.
-        (void)(ctx);
-        (void)(md);
-        (void)(len);
-    #endif
-
-    return 0;
+    // https://github.com/openssl/openssl/issues/9431
+    // EVP_DigestFinalXOF has a bug in some arch-optimized code paths where it cannot tolerate a zero length
+    // digest.
+    // If the caller asked for no bytes, use a temporary buffer to ask for 1 byte, then throw away the result.
+    // We don't want to skip calling FinalXOF entirely because we want to make sure the EVP_MD_CTX is in a
+    // finalized state regardless of the length of the digest.
+    // We can remove this work around when OpenSSL 3.0 is the minimum OpenSSL requirement.
+    if (len == 0)
+    {
+        uint8_t single[1] = { 0 };
+        int result = EVP_DigestFinalXOF(ctx, single, 1);
+        OPENSSL_cleanse(single, sizeof(single));
+        return result;
+    }
+    else if (!md)
+    {
+        // Length is not zero but we don't have a buffer to write to.
+        return -1;
+    }
+    else
+    {
+        return EVP_DigestFinalXOF(ctx, md, len);
+    }
 }
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx)
@@ -291,100 +285,18 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
     return EVP_MD_get_size(md);
 }
 
-const EVP_MD* CryptoNative_EvpMd5(void)
-{
-    pthread_once(&g_evpFetch, EnsureFetchEvpMdAlgorithms);
-    return g_evpFetchMd5;
-}
-
-const EVP_MD* CryptoNative_EvpSha1(void)
-{
-    // No error queue impact.
-    return EVP_sha1();
-}
-
-const EVP_MD* CryptoNative_EvpSha256(void)
-{
-    // No error queue impact.
-    return EVP_sha256();
-}
-
-const EVP_MD* CryptoNative_EvpSha384(void)
-{
-    // No error queue impact.
-    return EVP_sha384();
-}
-
-const EVP_MD* CryptoNative_EvpSha512(void)
-{
-    // No error queue impact.
-    return EVP_sha512();
-}
-
-const EVP_MD* CryptoNative_EvpSha3_256(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_sha3_256))
-    {
-        return EVP_sha3_256();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpSha3_384(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_sha3_384))
-    {
-        return EVP_sha3_384();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpSha3_512(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_sha3_512))
-    {
-        return EVP_sha3_512();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpShake128(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_shake128))
-    {
-        return EVP_shake128();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpShake256(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_shake256))
-    {
-        return EVP_shake256();
-    }
-#endif
-
-    return NULL;
-}
+// MD5 should use a non-FIPS implementation if it is available. We should not fail
+// to fetch MD5 even on a FIPS enforced system.
+BUILD_MD_FETCH(CryptoNative_EvpMd5, EVP_md5, "MD5", "-fips")
+BUILD_MD_FETCH(CryptoNative_EvpSha1, EVP_sha1, "SHA1", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha256, EVP_sha256, "SHA256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha384, EVP_sha384, "SHA384", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha512, EVP_sha512, "SHA512", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha3_256, EVP_sha3_256, "SHA3-256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha3_384, EVP_sha3_384, "SHA3-384", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha3_512, EVP_sha3_512, "SHA3-512", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpShake128, EVP_shake128, "SHAKE-128", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpShake256, EVP_shake256, "SHAKE-256", NULL)
 
 int32_t CryptoNative_GetMaxMdSize(void)
 {

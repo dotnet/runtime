@@ -339,7 +339,7 @@ namespace System.Reflection
         {
             NullabilityState state = NullabilityState.Unknown;
             NullabilityInfo? elementState = null;
-            NullabilityInfo[] genericArgumentsState = Array.Empty<NullabilityInfo>();
+            NullabilityInfo[] genericArgumentsState = [];
             Type underlyingType = type;
 
             if (underlyingType.IsByRef || underlyingType.IsPointer)
@@ -422,7 +422,7 @@ namespace System.Reflection
 
             if (metaType != null)
             {
-                CheckGenericParameters(nullability, metaMember!, metaType, memberInfo.ReflectedType);
+                CheckGenericParameters(nullability, metaMember, metaType, memberInfo.ReflectedType);
             }
         }
 

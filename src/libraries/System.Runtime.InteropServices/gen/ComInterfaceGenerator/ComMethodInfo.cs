@@ -17,7 +17,7 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed record ComMethodInfo
     {
-        public MethodDeclarationSyntax Syntax { get; init; }
+        public MethodDeclarationSyntax? Syntax { get; init; }
         public string MethodName { get; init; }
         public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
         public bool IsUserDefinedShadowingMethod { get; init; }
@@ -94,7 +94,7 @@ namespace Microsoft.Interop
             if (ifaceContext.IsExternallyDefined)
             {
                 return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((
-                    new ComMethodInfo(null!, method.Name, method.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), false),
+                    new ComMethodInfo(null, method.Name, method.GetAttributes().Select(AttributeInfo.From).ToImmutableArray().ToSequenceEqual(), false),
                     method));
             }
 

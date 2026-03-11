@@ -51,13 +51,45 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 {
                     // If the address is in the cold part, the relative offset is the size of the
                     // hot part plus the offset from the address to the start of the cold part
-                    uint hotSize = _runtimeFunctions.GetFunctionLength(function);
+                    uint hotSize = _runtimeFunctions.GetFunctionLength(imageBase, function);
                     relativeOffset = new TargetNUInt(hotSize + addr - coldStart);
                 }
             }
 
             info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
+        }
+
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
+        {
+            coldSize = 0;
+            coldStart = TargetPointer.Null;
+
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                return;
+
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
+            {
+                Data.RuntimeFunction coldStartFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx);
+                Data.RuntimeFunction coldEndFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldEndIdx);
+                uint coldBeginOffset = coldStartFunc.BeginAddress;
+                uint coldEndOffset = coldEndFunc.BeginAddress + _runtimeFunctions.GetFunctionLength(imageBase, coldEndFunc);
+                coldSize = coldEndOffset - coldBeginOffset;
+                coldStart = imageBase + coldBeginOffset;
+
+                hotSize -= coldSize;
+            }
         }
 
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
@@ -68,6 +100,40 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return TargetPointer.Null;
 
             return _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
+        }
+
+        public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
+        {
+            // ReadyToRun does not contain PatchpointInfo
+            hasFlagByte = false;
+
+            // ReadyToRunJitManager::GetDebugInfo
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                return TargetPointer.Null;
+
+            index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
+            index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
+
+            Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfoSection);
+
+            ILCompiler.Reflection.ReadyToRun.NativeReader imageReader = new(
+                new TargetStream(Target, imageBase, debugInfoData.VirtualAddress + debugInfoData.Size),
+                Target.IsLittleEndian
+            );
+            ILCompiler.Reflection.ReadyToRun.NativeArray debugInfoArray = new(imageReader, debugInfoData.VirtualAddress);
+
+            int offset = 0;
+            if (!debugInfoArray.TryGetAt(index, ref offset))
+                // If the index is not found in the debug info array, return null
+                return TargetPointer.Null;
+
+            uint lookBack = 0;
+            uint debugInfoOffset = imageReader.DecodeUnsigned((uint)offset, ref lookBack);
+            if (lookBack != 0)
+                debugInfoOffset = (uint)offset - lookBack;
+
+            return imageBase + debugInfoOffset;
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
@@ -86,7 +152,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
-            uint unwindDataSize = GetUnwindDataSize();
+            uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }
@@ -104,16 +170,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 < 11 => 3,
                 >= 11 => 4,
-            };
-        }
-
-        private uint GetUnwindDataSize()
-        {
-            RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            return arch switch
-            {
-                RuntimeInfoArchitecture.X86 => sizeof(uint),
-                _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
             };
         }
 

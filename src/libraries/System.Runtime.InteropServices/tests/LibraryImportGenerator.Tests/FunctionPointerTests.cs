@@ -63,7 +63,7 @@ namespace LibraryImportGenerator.IntegrationTests
                 wasCalled = true;
             }
 
-            [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
             static void CallbackUnmanagedStdcall()
             {
                 wasCalled = true;
@@ -109,7 +109,7 @@ namespace LibraryImportGenerator.IntegrationTests
                 return Callback(a, b);
             }
 
-            [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
             static int CallbackUnmanagedStdcall(int a, int b)
             {
                 return Callback(a, b);

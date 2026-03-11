@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (trimmingTargetType is not null)
                 {
                     yield return new CombinedDependencyListEntry(
-                        context.MaximallyConstructableType(targetType),
+                        context.MetadataTypeSymbol(targetType),
                         context.NecessaryTypeSymbol(trimmingTargetType),
                         "Type in external type map is cast target");
                 }
@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (trimmingTargetType is null)
                 {
                     yield return new DependencyListEntry(
-                        context.MaximallyConstructableType(targetType),
+                        context.MetadataTypeSymbol(targetType),
                         "External type map entry target type");
                 }
             }
@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (trimmingTargetType is null
                     || factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
                 {
-                    IEETypeNode targetNode = factory.MaximallyConstructableType(targetType);
+                    IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
                     yield return (entry.Key, targetNode);
                 }

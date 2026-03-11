@@ -149,7 +149,7 @@ namespace System.Globalization.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
-        public void CurrentCulture_DefaultWithNoLang(string langEnvVar)
+        public void CurrentCulture_DefaultWithNoLang(string? langEnvVar)
         {
             var psi = new ProcessStartInfo();
             TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);

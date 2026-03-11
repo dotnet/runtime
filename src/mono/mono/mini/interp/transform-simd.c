@@ -148,6 +148,7 @@ static guint16 sri_packedsimd_methods [] = {
 static guint16 packedsimd_alias_methods [] = {
 	SN_Abs,
 	SN_Add,
+	SN_AddSaturate,
 	SN_AndNot,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
@@ -175,6 +176,7 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_Store,
 	SN_StoreUnsafe,
 	SN_Subtract,
+	SN_SubtractSaturate,
 	SN_Sqrt,
 	SN_SquareRoot,
 	SN_Truncate,
@@ -1256,8 +1258,10 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				cmethod_name = "Store";
 				break;
 			case SN_Add:
+			case SN_AddSaturate:
 			case SN_AndNot:
 			case SN_Subtract:
+			case SN_SubtractSaturate:
 			case SN_Ceiling:
 			case SN_ConvertToSingle:
 			case SN_Floor:

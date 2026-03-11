@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Dsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSACreateTests
     {
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
-
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
         [InlineData(512)]
         [InlineData(960)]
@@ -28,32 +26,34 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
-        [InlineData(1024)]
-        public static void CreateWithKeysize(int keySizeInBits)
+        [Fact]
+        public static void CreateWithKeysize()
         {
-            using (DSA dsa = DSA.Create(keySizeInBits))
+            const int KeySizeInBits = 1024;
+
+            using (DSA dsa = DSA.Create(KeySizeInBits))
             {
-                Assert.Equal(keySizeInBits, dsa.KeySize);
+                Assert.Equal(KeySizeInBits, dsa.KeySize);
 
                 DSAParameters parameters = dsa.ExportParameters(false);
-                Assert.Equal(keySizeInBits, parameters.Y.Length << 3);
-                Assert.Equal(keySizeInBits, dsa.KeySize);
+                Assert.Equal(KeySizeInBits, parameters.Y.Length << 3);
+                Assert.Equal(KeySizeInBits, dsa.KeySize);
             }
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration), nameof(SupportsFips186_3))]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Android only supports key sizes that are a multiple of 1024")]
-        [InlineData(1088)]
-        public static void CreateWithKeysize_BigKeys(int keySizeInBits)
+        public static void CreateWithKeysize_BigKey()
         {
-            using (DSA dsa = DSA.Create(keySizeInBits))
+            const int KeySizeInBits = 1088;
+
+            using (DSA dsa = DSA.Create(KeySizeInBits))
             {
-                Assert.Equal(keySizeInBits, dsa.KeySize);
+                Assert.Equal(KeySizeInBits, dsa.KeySize);
 
                 DSAParameters parameters = dsa.ExportParameters(false);
-                Assert.Equal(keySizeInBits, parameters.Y.Length << 3);
-                Assert.Equal(keySizeInBits, dsa.KeySize);
+                Assert.Equal(KeySizeInBits, parameters.Y.Length << 3);
+                Assert.Equal(KeySizeInBits, dsa.KeySize);
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Tests
             CreateWithParameters(DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsFips186_3))]
         public static void CreateWithParameters_2048()
         {
             CreateWithParameters(DSATestData.GetDSA2048Params());

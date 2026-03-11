@@ -287,10 +287,10 @@ namespace System.Threading
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
-            uint startTime = 0;
+            long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout != 0)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = Environment.TickCount64;
             }
 
             if (IsThreadOwnerTrackingEnabled)
@@ -404,7 +404,7 @@ namespace System.Threading
         /// <summary>
         /// ContinueTryEnter for the thread tracking mode enabled
         /// </summary>
-        private void ContinueTryEnterWithThreadTracking(int millisecondsTimeout, uint startTime, ref bool lockTaken)
+        private void ContinueTryEnterWithThreadTracking(int millisecondsTimeout, long startTime, ref bool lockTaken)
         {
             Debug.Assert(IsThreadOwnerTrackingEnabled);
 

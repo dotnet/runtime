@@ -66,7 +66,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public SyncHttpHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;
-        protected override bool SupportsIdna => true;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

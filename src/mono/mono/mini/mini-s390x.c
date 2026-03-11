@@ -1606,7 +1606,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			continue;
 
 		/*--------------------------------------------------*/
-		/* inst->backend.is_pinvoke indicates native sized  */
+		/* inst->backend.is_pinvoke indicates native-sized  */
 		/* value types this is used by the pinvoke wrappers */
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
@@ -4844,7 +4844,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					s390_lnebr (code, ins->dreg, ins->dreg);
 			} else {
 				S390_SET (code, s390_r13, ins->inst_p0);
-				s390_le (code, ins->dreg, 0, s390_r13, 0);
 				s390_le (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}

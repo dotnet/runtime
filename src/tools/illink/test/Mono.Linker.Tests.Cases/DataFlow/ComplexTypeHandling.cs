@@ -4,9 +4,11 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+    [SetupIlcWholeProgramAnalysis]
     [ExpectedNoWarnings]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Applying DAM PublicMethods on an array will mark Array.CreateInstance which has RDC on it")]
     [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
@@ -175,7 +177,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             // Have to access the method through reflection, otherwise NativeAOT will remove all attributes on it
             // since they're not accessible.
-            typeof(ComplexTypeHandling).GetMethod(nameof(TestArrayInAttributeParameterImpl), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Invoke(null, new object[] { });
+            typeof(ComplexTypeHandling).GetMethod(nameof(TestArrayInAttributeParameterImpl), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).GetCustomAttributes(false);
         }
 
         [Kept]

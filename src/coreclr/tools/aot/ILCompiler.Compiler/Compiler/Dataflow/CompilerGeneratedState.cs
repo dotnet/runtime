@@ -35,7 +35,7 @@ namespace ILCompiler.Dataflow
 
         public CompilerGeneratedState(ILProvider ilProvider, Logger logger, bool disableGeneratedCodeHeuristics)
         {
-            _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
+            _typeCacheHashtable = new TypeCacheHashtable(new AsyncMaskingILProvider(ilProvider));
             _logger = logger;
             _disableGeneratedCodeHeuristics = disableGeneratedCodeHeuristics;
         }
@@ -175,8 +175,8 @@ namespace ILCompiler.Dataflow
                                         // Find calls to state machine constructors that occur outside the type
                                         if (referencedMethod.IsConstructor &&
                                             referencedMethod.OwningType is MetadataType generatedType &&
-                                            // Don't consider calls in the same type, like inside a static constructor
-                                            method.OwningType != generatedType &&
+                                            // Don't consider calls in the same/nested type, like inside a static constructor
+                                            !IsSameOrNestedType(method.OwningType, generatedType) &&
                                             CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
@@ -216,8 +216,8 @@ namespace ILCompiler.Dataflow
                                         field = field.GetTypicalFieldDefinition();
 
                                         if (field.OwningType is MetadataType generatedType &&
-                                            // Don't consider field accesses in the same type, like inside a static constructor
-                                            method.OwningType != generatedType &&
+                                            // Don't consider field accesses in the same/nested type, like inside a static constructor
+                                            !IsSameOrNestedType(method.OwningType, generatedType) &&
                                             CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
@@ -258,6 +258,22 @@ namespace ILCompiler.Dataflow
                         // Already warned above if multiple methods map to the same type
                         // Fill in null for argument providers now, the real providers will be filled in later
                         generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
+                    }
+
+                    static bool IsSameOrNestedType(TypeDesc type, TypeDesc potentialOuterType)
+                    {
+                        do
+                        {
+                            if (type == potentialOuterType)
+                                return true;
+
+                            if (type is not EcmaType ecmaType)
+                                return false;
+
+                            type = ecmaType.ContainingType;
+                        } while (type != null);
+
+                        return false;
                     }
                 }
 
@@ -720,6 +736,10 @@ namespace ILCompiler.Dataflow
             userMethod = null;
             if (sourceMember == null)
                 return false;
+
+            Debug.Assert(sourceMember is not MethodDesc sourceMethod || sourceMethod.IsTypicalMethodDefinition);
+            if (sourceMember is AsyncMethodVariant asyncVariant)
+                sourceMember = asyncVariant.Target;
 
             TypeSystemEntity member = sourceMember;
             MethodDesc? userMethodCandidate;

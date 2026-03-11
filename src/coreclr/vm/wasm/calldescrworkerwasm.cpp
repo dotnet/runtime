@@ -4,18 +4,52 @@
 
 #include <interpexec.h>
 
-extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff);
+// Forward declaration
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp);
 
-extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData)
+#define SPECIAL_ARG_ADDR(pos) (void**)(((int8_t*)pCallDescrData->pSrc) + ((pos)*INTERP_STACK_SLOT_SIZE))
+
+extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
 {
-    MethodDesc* pMethod = pCallDescrData->pMD;
+    _ASSERTE(pCallDescrData != NULL);
+    _ASSERTE(pCallDescrData->pTarget != (PCODE)NULL);
+
+    // WASM-TODO: This path has a flaw. The DoPrestub call may trigger a GC, and there is no
+    // explicit protection for the arguments. All platforms assume part of the call is
+    // a no GC trigger region, but DoPrestub may trigger a GC. Therefore this needs to be
+    // revisited to ensure correctness.
+
+    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(pCallDescrData->pTarget);
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
     if (targetIp == NULL)
     {
         GCX_PREEMP();
-        pMethod->PrepareInitialCode(CallerGCMode::Coop);
+        (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMethod->GetInterpreterCode();
     }
 
-    ExecuteInterpretedMethodWithArgs(pCallDescrData->pTransitionBlock, (TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, pCallDescrData->returnValue);
+    size_t argsSize = pCallDescrData->nArgsSize;
+    void* retBuff;
+    int8_t* args;
+    if (pCallDescrData->hasRetBuff)
+    {
+        argsSize -= INTERP_STACK_SLOT_SIZE;
+        if (pCallDescrData->hasThis)
+        {
+            retBuff = *SPECIAL_ARG_ADDR(1);
+            *SPECIAL_ARG_ADDR(1) = *SPECIAL_ARG_ADDR(0);
+        }
+        else
+        {
+            retBuff = *SPECIAL_ARG_ADDR(0);
+        }
+        args = (int8_t*)SPECIAL_ARG_ADDR(1);
+    }
+    else
+    {
+        args = (int8_t*)pCallDescrData->pSrc;
+        retBuff = pCallDescrData->returnValue;
+    }
+
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
 }

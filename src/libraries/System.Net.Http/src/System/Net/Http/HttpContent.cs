@@ -67,6 +67,15 @@ namespace System.Net.Http
 
         public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
+        internal void SetHeaders(HttpContentHeaders headers)
+        {
+            Debug.Assert(_headers is null);
+            Debug.Assert(headers is not null);
+
+            headers._parent = this;
+            _headers = headers;
+        }
+
         [MemberNotNullWhen(true, nameof(_bufferedContent))]
         private bool IsBuffered => _bufferedContent is not null;
 
@@ -1103,12 +1112,22 @@ namespace System.Net.Http
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
                 Write(buffer, offset, count);
                 return Task.CompletedTask;
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ValueTask.FromCanceled(cancellationToken);
+                }
+
                 Write(buffer.Span);
                 return default;
             }

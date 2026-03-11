@@ -35,17 +35,13 @@ namespace System
             public TimeSpan TotalTime => UserTime + PrivilegedTime;
         }
 
-        public static int ProcessorCount { get; } = GetProcessorCount();
-
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
-#if !FEATURE_SINGLE_THREADED
-        internal static bool IsSingleProcessor => ProcessorCount == 1;
-#else
-        internal const bool IsSingleProcessor = true;
-#endif
-        private static volatile sbyte s_privilegedProcess;
+        internal static bool IsSingleProcessor => RuntimeFeature.IsMultithreadingSupported ? ProcessorCount == 1 : true;
+        public static int ProcessorCount { get; } = RuntimeFeature.IsMultithreadingSupported ? GetProcessorCount() : 1;
+
+        private static volatile NullableBool s_privilegedProcess;
 
         /// <summary>
         /// Gets whether the current process is authorized to perform security-relevant functions.
@@ -54,12 +50,12 @@ namespace System
         {
             get
             {
-                sbyte privilegedProcess = s_privilegedProcess;
-                if (privilegedProcess == 0)
+                NullableBool privilegedProcess = s_privilegedProcess;
+                if (privilegedProcess == NullableBool.Undefined)
                 {
-                    s_privilegedProcess = privilegedProcess = IsPrivilegedProcessCore() ? (sbyte)1 : (sbyte)-1;
+                    s_privilegedProcess = privilegedProcess = IsPrivilegedProcessCore() ? NullableBool.True : NullableBool.False;
                 }
-                return privilegedProcess > 0;
+                return privilegedProcess == NullableBool.True;
             }
         }
 
@@ -148,15 +144,20 @@ namespace System
             return ExpandEnvironmentVariablesCore(name);
         }
 
-        public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
+        public static string GetFolderPath(SpecialFolder folder) => GetFolderPathCore(folder, SpecialFolderOption.None);
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
         {
-            if (!Enum.IsDefined(folder))
-                throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
+            // No need to validate if 'folder' is defined; GetFolderPathCore handles this check.
 
-            if (option != SpecialFolderOption.None && !Enum.IsDefined(option))
-                throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            if (option is not SpecialFolderOption.None and not SpecialFolderOption.Create and not SpecialFolderOption.DoNotVerify)
+            {
+                // Use a throw helper so that if 'option' is a constant,
+                // the JIT can inline this method and remove the validation check entirely.
+                Throw(option);
+                static void Throw(SpecialFolderOption option) =>
+                    throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            }
 
             return GetFolderPathCore(folder, option);
         }

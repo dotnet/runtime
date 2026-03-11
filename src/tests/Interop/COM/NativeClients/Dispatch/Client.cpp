@@ -12,6 +12,7 @@ void Validate_Double_In_ReturnAndUpdateByRef();
 void Validate_LCID_Marshaled();
 void Validate_Enumerator();
 void Validate_ParamCoerce();
+void Validate_TriggerCustomMarshaler();
 
 template<COINIT TM>
 struct ComInit
@@ -50,6 +51,7 @@ int __cdecl main()
         Validate_LCID_Marshaled();
         Validate_Enumerator();
         Validate_ParamCoerce();
+        Validate_TriggerCustomMarshaler();
     }
     catch (HRESULT hr)
     {
@@ -462,6 +464,76 @@ void Validate_Enumerator()
     ValidateReturnedEnumerator(&result);
 }
 
+struct DummyObject final : public UnknownImpl, public IUnknown
+{
+    STDMETHOD(QueryInterface)(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    {
+        return DoQueryInterface(riid, ppvObject, static_cast<IUnknown*>(this));
+    }
+
+    DEFINE_REF_COUNTING();
+};
+
+void Validate_TriggerCustomMarshaler()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchTesting") };
+
+    ComSmartPtr<IDispatchTesting> dispatchTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchTesting, nullptr, CLSCTX_INPROC, IID_IDispatchTesting, (void**)&dispatchTesting));
+
+    LPOLESTR numericMethodName = (LPOLESTR)W("TriggerCustomMarshaler");
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+    DISPID methodId;
+
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
+    THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
+        IID_NULL,
+        &numericMethodName,
+        1,
+        lcid,
+        &methodId));
+
+    DISPPARAMS params{};
+    VARIANTARG args[2] = {};
+    params.cArgs = ARRAY_SIZE(args);
+    params.rgvarg = args;
+
+    ComSmartPtr<IUnknown> objIn;
+    objIn.Attach(new DummyObject());
+    ComSmartPtr<IUnknown> objRef;
+    objRef.Attach(new DummyObject());
+
+    ComSmartPtr<IUnknown> pObjRef{ objRef.p };
+
+    // IDispatch::Invoke expects arguments in reverse order
+    V_VT(&args[0]) = VT_UNKNOWN | VT_BYREF;
+    V_UNKNOWNREF(&args[0]) = &pObjRef;
+    V_VT(&args[1]) = VT_UNKNOWN;
+    V_UNKNOWN(&args[1]) = objIn;
+
+    VARIANT result{};
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    THROW_FAIL_IF_FALSE(V_VT(&result) == VT_UNKNOWN);
+    THROW_FAIL_IF_FALSE(V_UNKNOWN(&result) == objRef);
+    THROW_FAIL_IF_FALSE(pObjRef == objIn);
+
+    ::VariantClear(&result);
+}
+
 void Validate_ParamCoerce_Success(ComSmartPtr<IDispatchCoerceTesting>& dispatchCoerceTesting, int lcid, DISPID methodId, VARIANT arg, int expected)
 {
     HRESULT hr;
@@ -538,19 +610,19 @@ void Validate_ParamCoerce()
         1,
         lcid,
         &methodId));
-    
+
     VARIANT arg;
 
     ::wprintf(W("Validating VT_UI4\n"));
     V_VT(&arg) = VT_UI4;
     V_UI4(&arg) = 0x1234ABCD;
     Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 0x1234ABCD);
-    
+
     ::wprintf(W("Validating VT_I2\n"));
     V_VT(&arg) = VT_I2;
     V_I2(&arg) = 123;
     Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 123);
-    
+
     ::wprintf(W("Validating VT_I8\n"));
     V_VT(&arg) = VT_I8;
     V_I8(&arg) = int64_t(1) << 32;

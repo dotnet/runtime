@@ -29,8 +29,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 EcmaType type => (type.Module.Assembly.GetName().Name, MetadataTokens.GetToken(type.Handle)),
                 EcmaMethod method => (method.Module.Assembly.GetName().Name, MetadataTokens.GetToken(method.Handle)),
                 EcmaField field => (field.Module.Assembly.GetName().Name, MetadataTokens.GetToken(field.Handle)),
-                PropertyPseudoDesc property => (((EcmaType)property.OwningType).Module.Assembly.GetName().Name, MetadataTokens.GetToken(property.Handle)),
-                EventPseudoDesc @event => (((EcmaType)@event.OwningType).Module.Assembly.GetName().Name, MetadataTokens.GetToken(@event.Handle)),
+                PropertyPseudoDesc property => (property.OwningType.Module.Assembly.GetName().Name, MetadataTokens.GetToken(property.Handle)),
+                EventPseudoDesc @event => (@event.OwningType.Module.Assembly.GetName().Name, MetadataTokens.GetToken(@event.Handle)),
                 ILStubMethod => (null, 0), // Ignore compiler generated methods
                 MetadataType mt when mt.GetType().Name == "BoxedValueType" => (null, 0),
                 _ => throw new NotSupportedException($"The infra doesn't support getting a token for {entity} yet.")
@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public override int GetHashCode() => AssemblyName == null ? 0 : AssemblyName.GetHashCode() ^ Token.GetHashCode();
         public override string ToString() => $"{AssemblyName}: {Token}";
         public bool Equals(AssemblyQualifiedToken other) =>
-            string.CompareOrdinal(AssemblyName, other.AssemblyName) == 0 && Token == other.Token;
+            AssemblyName == other.AssemblyName && Token == other.Token;
         public override bool Equals([NotNullWhen(true)] object? obj) => ((AssemblyQualifiedToken?)obj)?.Equals(this) == true;
 
         public bool IsNil => AssemblyName == null;

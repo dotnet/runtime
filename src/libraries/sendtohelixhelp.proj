@@ -108,11 +108,6 @@
     <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" />
-    <__HelixDependenciesToStageThatDontExist Remove="@(HelixDependenciesToStage->Exists())" />
-  </ItemGroup>
-
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
   -->
@@ -178,14 +173,7 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RunGrpcTestsOnly)' == 'true' and '$(BuildGrpcServerDockerImage)' == 'true'">
-    <HelixCorrelationPayload Include="$(GrpcServerDockerImageDir)" Destination="grpcserver" />
-    <HelixPreCommand Include="docker load -i $HELIX_CORRELATION_PAYLOAD/grpcserver/grpcserver.tar" />
-    <HelixPreCommand Include="docker run --name grpc-server -d -p 50052:50052 -p 80:80 grpc-server:latest" />
-    <HelixPostCommand Include="docker stop grpc-server" />
-    <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
+    <HelixProperties Condition="'$(WorkItemPrefix)' != ''" Include="jobName" Value="$(WorkItemPrefix.TrimEnd('-'))" />
   </ItemGroup>
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
@@ -356,13 +344,24 @@
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
   </Target>
 
+  <Target Name="SetHelixJobName" BeforeTargets="CoreTest">
+    <PropertyGroup>
+      <HelixJobName Condition="'$(WorkItemPrefix)' != ''">$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
+    </PropertyGroup>
+  </Target>
+
   <!--
       Helix tasks will attempt to write a .payload file to the payload directory. But if the
       directory is not writable, for example when it is a system installed dependency like
         `WASI_SDK_PATH=/usr/local/wasi-sdk`
       .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
   -->
-  <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">
+  <Target Name="StageDependenciesForHelix"
+          Condition="'@(HelixDependenciesToStage->Exists())' != '@(HelixDependenciesToStage)'">
+    <ItemGroup>
+      <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" Condition="!Exists('%(Identity)')" />
+    </ItemGroup>
+
     <Error Condition="'%(__HelixDependenciesToStageThatDontExist.SourcePath)' == '' or !Exists(%(__HelixDependenciesToStageThatDontExist.SourcePath))"
            Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
 

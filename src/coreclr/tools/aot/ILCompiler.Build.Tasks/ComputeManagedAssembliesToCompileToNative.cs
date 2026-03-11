@@ -130,7 +130,9 @@ namespace Build.Tasks
                     continue;
                 }
 
-                if (isFromRuntimePack && taskItem.GetMetadata("AssetType")?.Equals("native", StringComparison.OrdinalIgnoreCase) == true)
+                if (isFromRuntimePack && taskItem.GetMetadata("AssetType")?.Equals("native", StringComparison.OrdinalIgnoreCase) == true
+                    && !assemblyFileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)
+                    && !assemblyFileName.EndsWith(".dex", StringComparison.OrdinalIgnoreCase))
                 {
                     // Skip the native components of the runtime pack, we don't need them for NativeAOT.
                     assembliesToSkipPublish.Add(taskItem);
@@ -157,6 +159,14 @@ namespace Build.Tasks
                     }
 
                     assembliesToSkipPublish.Add(taskItem);
+                    continue;
+                }
+
+                // Only classify files that the SDK has identified as managed runtime assemblies.
+                // Other files (e.g. Content items that happen to be managed assemblies) should be
+                // left alone and allowed to be published as-is.
+                if (!taskItem.GetMetadata("PostprocessAssembly").Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
                     continue;
                 }
 

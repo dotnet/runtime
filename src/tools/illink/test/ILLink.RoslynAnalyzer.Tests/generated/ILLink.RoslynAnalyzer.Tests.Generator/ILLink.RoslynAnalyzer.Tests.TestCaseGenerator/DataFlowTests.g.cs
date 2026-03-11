@@ -8,6 +8,12 @@ namespace ILLink.RoslynAnalyzer.Tests
     {
 
         [Fact]
+        public Task DataflowFailsToConverge()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task ExponentialDataFlow()
         {
             return RunTest(allowMissingWarnings: true);
@@ -33,6 +39,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task ModifierDataFlow()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
+        public Task RuntimeAsyncMethods()
         {
             return RunTest(allowMissingWarnings: true);
         }

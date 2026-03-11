@@ -144,7 +144,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(null)]
         [InlineData(new byte[0])]
         [InlineData(new byte[3] { 0, 0, 0 })]
-        public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[] buffer)
+        public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[]? buffer)
         {
             if (PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0))
             {

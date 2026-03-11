@@ -79,7 +79,7 @@ namespace Internal.IL
         {
             get
             {
-                _invokeMethod ??= _delegateType.GetKnownMethod("Invoke", null);
+                _invokeMethod ??= _delegateType.GetKnownMethod("Invoke"u8, null);
                 return _invokeMethod;
             }
         }

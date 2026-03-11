@@ -88,7 +88,6 @@ namespace System.PrivateUri.Tests
         [InlineData("http", "host", "http", "host")]
         [InlineData("HTTP", "host", "http", "host")]
         [InlineData("http", "[::1]", "http", "[::1]")]
-        [InlineData("https", "::1]", "https", "[::1]]")]
         [InlineData("http", "::1", "http", "[::1]")]
         [InlineData("http1:http2", "host", "http1", "host")]
         [InlineData("http", "", "http", "")]
@@ -97,7 +96,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, "http", "")]
         [InlineData(null, "", "", "")]
         [InlineData(null, null, "", "")]
-        public void Ctor_String_String(string schemeName, string hostName, string expectedScheme, string expectedHost)
+        public void Ctor_String_String(string? schemeName, string? hostName, string expectedScheme, string expectedHost)
         {
             var uriBuilder = new UriBuilder(schemeName, hostName);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, -1, "/", "", "");
@@ -107,7 +106,6 @@ namespace System.PrivateUri.Tests
         [InlineData("http", "host", 0, "http", "host")]
         [InlineData("HTTP", "host", 20, "http", "host")]
         [InlineData("http", "[::1]", 40, "http", "[::1]")]
-        [InlineData("https", "::1]", 60, "https", "[::1]]")]
         [InlineData("http", "::1", 80, "http", "[::1]")]
         [InlineData("http1:http2", "host", 100, "http1", "host")]
         [InlineData("http", "", 120, "http", "")]
@@ -116,7 +114,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, 180, "http", "")]
         [InlineData(null, "", -1, "", "")]
         [InlineData(null, null, 65535, "", "")]
-        public void Ctor_String_String_Int(string scheme, string host, int port, string expectedScheme, string expectedHost)
+        public void Ctor_String_String_Int(string? scheme, string? host, int port, string expectedScheme, string expectedHost)
         {
             var uriBuilder = new UriBuilder(scheme, host, port);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, port, "/", "", "");
@@ -126,7 +124,6 @@ namespace System.PrivateUri.Tests
         [InlineData("http", "host", 0, "/path", "http", "host", "/path")]
         [InlineData("HTTP", "host", 20, "/path1/path2", "http", "host", "/path1/path2")]
         [InlineData("http", "[::1]", 40, "/", "http", "[::1]", "/")]
-        [InlineData("https", "::1]", 60, "/path1/", "https", "[::1]]", "/path1/")]
         [InlineData("http", "::1", 80, null, "http", "[::1]", "/")]
         [InlineData("http1:http2", "host", 100, "path1", "http1", "host", "path1")]
         [InlineData("http", "", 120, "path1/path2", "http", "", "path1/path2")]
@@ -135,7 +132,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, 180, @"path1\path2\", "http", "", "path1/path2/")]
         [InlineData(null, "", -1, "\u1234", "", "", "%E1%88%B4")]
         [InlineData(null, null, 65535, "\u1234\u2345", "", "", "%E1%88%B4%E2%8D%85")]
-        public void Ctor_String_String_Int_String(string schemeName, string hostName, int port, string pathValue, string expectedScheme, string expectedHost, string expectedPath)
+        public void Ctor_String_String_Int_String(string? schemeName, string? hostName, int port, string? pathValue, string expectedScheme, string expectedHost, string expectedPath)
         {
             var uriBuilder = new UriBuilder(schemeName, hostName, port, pathValue);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, port, expectedPath, "", "");
@@ -145,7 +142,6 @@ namespace System.PrivateUri.Tests
         [InlineData("http", "host", 0, "/path", "?query#fragment", "http", "host", "/path", "?query", "#fragment")]
         [InlineData("HTTP", "host", 20, "/path1/path2", "?query&query2=value#fragment", "http", "host", "/path1/path2", "?query&query2=value", "#fragment")]
         [InlineData("http", "[::1]", 40, "/", "#fragment?query", "http", "[::1]", "/", "", "#fragment?query")]
-        [InlineData("https", "::1]", 60, "/path1/", "?query", "https", "[::1]]", "/path1/", "?query", "")]
         [InlineData("http", "::1", 80, null, "#fragment", "http", "[::1]", "/", "", "#fragment")]
         [InlineData("http", "", 120, "path1/path2", "?#", "http", "", "path1/path2", "", "")]
         [InlineData("", "host", 140, "path1/path2/path3/", "?", "", "host", "path1/path2/path3/", "", "")]
@@ -153,7 +149,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", null, 180, @"path1\path2\", "?\u1234#\u2345", "http", "", "path1/path2/", "?\u1234", "#\u2345")]
         [InlineData(null, "", -1, "\u1234", "", "", "", "%E1%88%B4", "", "")]
         [InlineData(null, null, 65535, "\u1234\u2345", null, "", "", "%E1%88%B4%E2%8D%85", "", "")]
-        public void Ctor_String_String_Int_String_String(string schemeName, string hostName, int port, string pathValue, string extraValue, string expectedScheme, string expectedHost, string expectedPath, string expectedQuery, string expectedFragment)
+        public void Ctor_String_String_Int_String_String(string? schemeName, string? hostName, int port, string? pathValue, string? extraValue, string expectedScheme, string expectedHost, string expectedPath, string expectedQuery, string expectedFragment)
         {
             var uriBuilder = new UriBuilder(schemeName, hostName, port, pathValue, extraValue);
             VerifyUriBuilder(uriBuilder, expectedScheme, "", "", expectedHost, port, expectedPath, expectedQuery, expectedFragment);
@@ -171,7 +167,7 @@ namespace System.PrivateUri.Tests
         [InlineData("https", "https")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Scheme_Get_Set(string value, string expected)
+        public void Scheme_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.Scheme = value;
@@ -196,7 +192,7 @@ namespace System.PrivateUri.Tests
         [InlineData("username", "username")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void UserName_Get_Set(string value, string expected)
+        public void UserName_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.UserName = value;
@@ -212,7 +208,7 @@ namespace System.PrivateUri.Tests
         [InlineData("password", "password")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Password_Get_Set(string value, string expected)
+        public void Password_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo1:PLACEHOLDER@domain/path?query#fragment");
             uriBuilder.Password = value;
@@ -227,7 +223,7 @@ namespace System.PrivateUri.Tests
         [InlineData("host", "host")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Host_Get_Set(string value, string expected)
+        public void Host_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.Host = value;
@@ -264,7 +260,7 @@ namespace System.PrivateUri.Tests
         [InlineData(@"\path1\path2", "/path1/path2")]
         [InlineData("", "/")]
         [InlineData(null, "/")]
-        public void Path_Get_Set(string value, string expected)
+        public void Path_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder("http://userinfo@domain/path?query#fragment");
             uriBuilder.Path = value;
@@ -275,7 +271,7 @@ namespace System.PrivateUri.Tests
         [InlineData("query", "?query")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Query_Get_Set(string value, string expected)
+        public void Query_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder();
             uriBuilder.Query = value;
@@ -306,7 +302,7 @@ namespace System.PrivateUri.Tests
         [InlineData("fragment", "#fragment")]
         [InlineData("", "")]
         [InlineData(null, "")]
-        public void Fragment_Get_Set(string value, string expected)
+        public void Fragment_Get_Set(string? value, string expected)
         {
             var uriBuilder = new UriBuilder();
             uriBuilder.Fragment = value;
@@ -368,6 +364,7 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new UriBuilder() { Host = "host", Query = "query" }, "http://host/?query" };
             yield return new object[] { new UriBuilder() { Host = "host", Fragment = "fragment" }, "http://host/#fragment" };
             yield return new object[] { new UriBuilder() { Host = "host", Query = "query", Fragment = "fragment" }, "http://host/?query#fragment" };
+            yield return new object[] { new UriBuilder() { Host = "::%foo" }, "http://[::%foo]/" };
         }
 
         [Theory]
@@ -399,6 +396,51 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedToString, uriBuilder.ToString());
             Assert.Equal(username, uriBuilder.UserName);
             Assert.Equal(password, uriBuilder.Password);
+        }
+
+        public static IEnumerable<object[]> InvalidHostStrings_TestData()
+        {
+            // Bool indicates whether the exception is expected to be thrown by the Host setter (true) or when creating the Uri (false)
+
+            // Presence of ':' is treated as a likely IPv6 address and the input is transformed into [host:80], which is invalid
+            yield return ["host:", false];
+            yield return ["host:80", false];
+
+            // Trailing space after IPv6 address
+            yield return ["[::] ", true];
+
+            // Invalid characters escape into other Uri components
+            yield return ["host/path", true];
+            yield return ["host?query", true];
+            yield return ["host#fragment", true];
+            yield return ["user@host", true];
+
+            yield return ["[::]/path", true];
+            yield return ["::]/path", true];
+            yield return ["::/path", true];
+            yield return ["::?query", true];
+            yield return ["::#fragment", true];
+            yield return ["[0::%/64]/path", true];
+
+            yield return ["[host]", true];
+            yield return ["[127.0.0.1]", true];
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidHostStrings_TestData))]
+        public void Host_Set_InvalidHostStrings_ThrowsArgumentException(string invalidHost, bool caughtByHostSetter)
+        {
+            var builder = new UriBuilder();
+
+            if (caughtByHostSetter)
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => builder.Host = invalidHost);
+            }
+            else
+            {
+                builder.Host = invalidHost;
+                Assert.Throws<UriFormatException>(() => builder.Uri);
+            }
         }
 
         private static void VerifyUriBuilder(UriBuilder uriBuilder, string scheme, string userName, string password, string host, int port, string path, string query, string fragment)

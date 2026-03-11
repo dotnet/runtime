@@ -3,6 +3,7 @@
 
 using System.Linq;
 using Wasm.Build.Tests;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -10,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
+    [TestCategory("native")]
     public class NoopNativeRebuildTest : NativeRebuildTestsBase
     {
         public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -19,7 +21,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public async void NoOpRebuildForNativeBuilds(Configuration config, bool aot, bool nativeRelink, bool invariant)
+        public async Task NoOpRebuildForNativeBuilds(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_noop");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);

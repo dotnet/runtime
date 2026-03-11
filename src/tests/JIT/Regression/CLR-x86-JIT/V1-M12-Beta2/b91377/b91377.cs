@@ -3,6 +3,9 @@
 //
 
 //COMMAND LINE: csc /nologo /optimize- /debug- /w:0 bug.cs
+
+namespace b91377;
+
 using System;
 using Xunit;
 public class BB

@@ -228,4 +228,3 @@ namespace DependencyLogViewer
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }
-

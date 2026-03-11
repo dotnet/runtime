@@ -41,7 +41,7 @@ namespace System.IO.Tests
             Assert.Equal(0, GetEntries(containingFolder.FullName).Count());
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         public void EnumerateFilesOverLegacyMaxPath()
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
@@ -61,7 +61,7 @@ namespace System.IO.Tests
             Assert.Equal(6, files.Length);
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         public void EnumerateFilesDirectoryOverLegacyMaxPath()
         {
             // Check enumerating when the entire path is over MAX_PATH
@@ -191,6 +191,56 @@ namespace System.IO.Tests
             // so they never change.
             string[] files = GetEntries(root + (IsDirectoryInfo ? trailing : ""), "*", SearchOption.AllDirectories);
             FSAssert.EqualWhenOrdered(new string[] { rootFile, nestedFile }, files);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void EnumerateFilesWithProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            File.Create(Path.Combine(testDir.FullName, fileName)).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Single(files);
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsEnumerateFilesWithTrailingSpacePeriod(string fileName)
+        {
+            // Files with trailing spaces/periods must be created with \\?\ on Windows
+            // but enumeration can find them.
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(@"\\?\" + filePath).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Single(files);
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113120")]
+        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string dirName)
+        {
+            DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
+            string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
+            Directory.CreateDirectory(problematicDirPath);
+
+            string normalFileName = "normalfile.txt";
+            string filePath = Path.Combine(Path.GetFullPath(problematicDirPath), normalFileName);
+            File.Create(filePath).Dispose();
+
+            string[] files = GetEntries(problematicDirPath);
+            Assert.Single(files);
+            
+            string returnedPath = files[0];
+            Assert.True(File.Exists(returnedPath), 
+                $"File.Exists should work on path returned by Directory.GetFiles. Path: '{returnedPath}'");
         }
     }
 }

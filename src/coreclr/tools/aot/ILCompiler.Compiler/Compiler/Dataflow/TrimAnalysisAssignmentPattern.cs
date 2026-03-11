@@ -7,6 +7,8 @@ using ILCompiler.Logging;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 
+using Internal.TypeSystem;
+
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 #nullable enable
@@ -22,9 +24,9 @@ namespace ILCompiler.Dataflow
         // For assignment of a method parameter, we store the parameter index to disambiguate
         // assignments from different out parameters of a single method call.
         public int? ParameterIndex { get; init; }
-        internal string Reason { get; init; }
+        internal TypeSystemEntity Reason { get; init; }
 
-        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, int? parameterIndex, string reason)
+        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, int? parameterIndex, TypeSystemEntity reason)
         {
             Source = source.DeepCopy();
             Target = target.DeepCopy();

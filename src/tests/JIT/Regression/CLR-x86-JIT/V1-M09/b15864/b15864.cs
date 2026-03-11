@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace DefaultNamespace
+namespace b15864
 {
     //@BEGINRENAME; Verify this renames
     using System.Security;

@@ -72,9 +72,9 @@ namespace System.Text.Tests
         }
 
         [Theory]
-        [InlineData(0, 4*1024*1024)]
-        [InlineData(1025, 4*1024*1024)]
-        [InlineData(3*1024*1024, 6*1024*1024)]
+        [InlineData(0, 4 * 1024 * 1024)]
+        [InlineData(1025, 4 * 1024 * 1024)]
+        [InlineData(3 * 1024 * 1024, 6 * 1024 * 1024)]
         public void Append_String_Large_MatchesStringBuilder(int initialLength, int stringLength)
         {
             var sb = new StringBuilder(initialLength);
@@ -101,6 +101,18 @@ namespace System.Text.Tests
 
             Assert.Equal(sb.Length, vsb.Length);
             Assert.Equal(sb.ToString(), vsb.ToString());
+        }
+
+        [Fact]
+        public void AppendSpan_Capacity()
+        {
+            var vsb = new ValueStringBuilder();
+
+            vsb.AppendSpan(17);
+            Assert.Equal(32, vsb.Capacity);
+
+            vsb.AppendSpan(100);
+            Assert.Equal(128, vsb.Capacity);
         }
 
         [Fact]
@@ -144,6 +156,39 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        public void Insert_IntString_MatchesStringBuilder()
+        {
+            var sb = new StringBuilder();
+            var vsb = new ValueStringBuilder();
+
+            sb.Insert(0, new string('a', 6));
+            vsb.Insert(0, new string('a', 6));
+            Assert.Equal(6, vsb.Length);
+            Assert.Equal(16, vsb.Capacity);
+
+            sb.Insert(0, new string('b', 11));
+            vsb.Insert(0, new string('b', 11));
+            Assert.Equal(17, vsb.Length);
+            Assert.Equal(32, vsb.Capacity);
+
+            sb.Insert(0, new string('c', 15));
+            vsb.Insert(0, new string('c', 15));
+            Assert.Equal(32, vsb.Length);
+            Assert.Equal(32, vsb.Capacity);
+
+            sb.Length = 24;
+            vsb.Length = 24;
+
+            sb.Insert(0, new string('d', 40));
+            vsb.Insert(0, new string('d', 40));
+            Assert.Equal(64, vsb.Length);
+            Assert.Equal(64, vsb.Capacity);
+
+            Assert.Equal(sb.Length, vsb.Length);
+            Assert.Equal(sb.ToString(), vsb.ToString());
+        }
+
+        [Fact]
         public void AsSpan_ReturnsCorrectValue_DoesntClearBuilder()
         {
             var sb = new StringBuilder();
@@ -178,46 +223,6 @@ namespace System.Text.Tests
 
             Assert.Equal(0, vsb.Length);
             Assert.Equal(string.Empty, vsb.ToString());
-            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
-
-            const string Text2 = "another test";
-            vsb.Append(Text2);
-            Assert.Equal(Text2.Length, vsb.Length);
-            Assert.Equal(Text2, vsb.ToString());
-        }
-
-        [Fact]
-        public void TryCopyTo_FailsWhenDestinationIsTooSmall_SucceedsWhenItsLargeEnough()
-        {
-            var vsb = new ValueStringBuilder();
-
-            const string Text = "expected text";
-            vsb.Append(Text);
-            Assert.Equal(Text.Length, vsb.Length);
-
-            Span<char> dst = new char[Text.Length - 1];
-            Assert.False(vsb.TryCopyTo(dst, out int charsWritten));
-            Assert.Equal(0, charsWritten);
-            Assert.Equal(0, vsb.Length);
-        }
-
-        [Fact]
-        public void TryCopyTo_ClearsBuilder_ThenReusable()
-        {
-            const string Text1 = "test";
-            var vsb = new ValueStringBuilder();
-
-            vsb.Append(Text1);
-            Assert.Equal(Text1.Length, vsb.Length);
-
-            Span<char> dst = new char[Text1.Length];
-            Assert.True(vsb.TryCopyTo(dst, out int charsWritten));
-            Assert.Equal(Text1.Length, charsWritten);
-            Assert.Equal(Text1, new string(dst));
-
-            Assert.Equal(0, vsb.Length);
-            Assert.Equal(string.Empty, vsb.ToString());
-            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
 
             const string Text2 = "another test";
             vsb.Append(Text2);
@@ -238,7 +243,6 @@ namespace System.Text.Tests
 
             Assert.Equal(0, vsb.Length);
             Assert.Equal(string.Empty, vsb.ToString());
-            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
 
             const string Text2 = "another test";
             vsb.Append(Text2);

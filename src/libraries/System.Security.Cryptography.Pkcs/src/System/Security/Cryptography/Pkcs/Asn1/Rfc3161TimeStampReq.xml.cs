@@ -25,9 +25,9 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         static Rfc3161TimeStampReq()
         {
             Rfc3161TimeStampReq decoded = default;
-            AsnValueReader reader;
+            ValueAsnReader reader;
 
-            reader = new AsnValueReader(DefaultCertReq, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(DefaultCertReq, AsnEncodingRules.DER);
             decoded.CertReq = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out Rfc3161TimeStampReq decoded);
                 reader.ThrowIfNotEmpty();
@@ -113,12 +113,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Rfc3161TimeStampReq decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out Rfc3161TimeStampReq decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161TimeStampReq decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161TimeStampReq decoded)
         {
             try
             {
@@ -130,12 +130,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161TimeStampReq decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Rfc3161TimeStampReq decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader defaultReader;
-            AsnValueReader collectionReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
+            ValueAsnReader collectionReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(DefaultCertReq, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(DefaultCertReq, AsnEncodingRules.DER);
                 decoded.CertReq = defaultReader.ReadBoolean();
             }
 

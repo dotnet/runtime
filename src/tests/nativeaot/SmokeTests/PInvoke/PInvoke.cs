@@ -307,7 +307,7 @@ namespace PInvokeTests
         [UnmanagedCallersOnly]
         internal unsafe static void UnmanagedMethod(byte* address, byte value) => *address = value;
 
-        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall)})]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
         internal unsafe static void StdcallMethod(byte* address, byte value) => *address = value;
 
         internal enum MagicEnum
@@ -680,7 +680,7 @@ namespace PInvokeTests
             funcDelegate(0x204);
             ThrowIfNotEquals(0x204, Marshal.GetLastWin32Error(), "Not match");
 		}
-		
+
 		private static unsafe void TestFunctionPointers()
 		{
             IntPtr procAddress = GetNativeFuncFunctionPointer();

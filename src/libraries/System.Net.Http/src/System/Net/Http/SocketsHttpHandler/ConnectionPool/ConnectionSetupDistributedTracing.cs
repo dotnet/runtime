@@ -73,10 +73,7 @@ namespace System.Net.Http
         public static Activity? StartWaitForConnectionActivity(HttpAuthority authority)
         {
             Activity? activity = s_connectionsActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
-            if (activity is not null)
-            {
-                activity.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
-            }
+            activity?.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
 
             return activity;
         }

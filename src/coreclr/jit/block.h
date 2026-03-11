@@ -415,37 +415,37 @@ enum BasicBlockFlags : uint64_t
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 7), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 8), // Last block of a cloned finally region
     BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG( 9), // BB contains a call to a method with SuppressGCTransitionAttribute
-    BBF_RUN_RARELY           = MAKE_BBFLAG(10), // BB is rarely run (catch clauses, blocks with throws etc)
-    BBF_HAS_LABEL            = MAKE_BBFLAG(11), // BB needs a label
-    BBF_LOOP_ALIGN           = MAKE_BBFLAG(12), // Block is lexically the first block in a loop we intend to align.
-    BBF_HAS_ALIGN            = MAKE_BBFLAG(13), // BB ends with 'align' instruction
-    BBF_HAS_JMP              = MAKE_BBFLAG(14), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(15), // BB has a GC safe point (e.g. a call)
-    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(16), // Block has a multi-dimensional array reference
-    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(17), // BB contains 'new' of an object type.
+    BBF_HAS_LABEL            = MAKE_BBFLAG(10), // BB needs a label
+    BBF_LOOP_ALIGN           = MAKE_BBFLAG(11), // Block is lexically the first block in a loop we intend to align.
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(12), // BB ends with 'align' instruction
+    BBF_HAS_JMP              = MAKE_BBFLAG(13), // BB executes a JMP instruction (instead of return)
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(14), // BB has a GC safe point (e.g. a call)
+    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(15), // Block has a multi-dimensional array reference
+    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(16), // BB contains 'new' of an object type.
 
-    BBF_RETLESS_CALL                   = MAKE_BBFLAG(18), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+    BBF_RETLESS_CALL                   = MAKE_BBFLAG(17), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
                                                           // BBJ_CALLFINALLYRET); see isBBCallFinallyPair().
-    BBF_COLD                           = MAKE_BBFLAG(19), // BB is cold
-    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(20), // BB weight is computed from profile data
-    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(21), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+    BBF_COLD                           = MAKE_BBFLAG(18), // BB is cold
+    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(19), // BB weight is computed from profile data
+    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(20), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                                           // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
-    BBF_HAS_CALL                       = MAKE_BBFLAG(22), // BB contains a call
-    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(23), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(24), // BB is surrounded by a backward jump/switch arc
-    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(25), // Block is a source of a backward jump
-    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(26), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(27), // Block is a patchpoint
-    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(28), // Block is a partial compilation patchpoint
-    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(29), // BB contains a call needing a histogram profile
-    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(30), // BB has pred that has potential tail call
-    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(31), // Block has recursive tailcall that may turn into a loop
-    BBF_NO_CSE_IN                      = MAKE_BBFLAG(32), // Block should kill off any incoming CSE
-    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(33), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(34), // Block has a node that needs a value probing
-    BBF_HAS_NEWARR                     = MAKE_BBFLAG(35), // BB contains 'new' of an array type.
-    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(36), // BB *likely* has a bounds check (after rangecheck phase).
-    BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(37), // Block is a resumption block in an async method
+    BBF_HAS_CALL                       = MAKE_BBFLAG(21), // BB contains a call
+    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(22), // Block is dominated by exceptional entry.
+    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(23), // BB is surrounded by a backward jump/switch arc
+    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(24), // Block is a source of a backward jump
+    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(25), // Block is a target of a backward jump
+    BBF_PATCHPOINT                     = MAKE_BBFLAG(26), // Block is a patchpoint
+    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(27), // Block is a partial compilation patchpoint
+    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(28), // BB contains a call needing a histogram profile
+    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(29), // BB has pred that has potential tail call
+    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(30), // Block has recursive tailcall that may turn into a loop
+    BBF_NO_CSE_IN                      = MAKE_BBFLAG(31), // Block should kill off any incoming CSE
+    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(32), // Ok to add pred edge to this block, even when "safe" edge creation disabled
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(33), // Block has a node that needs a value probing
+    BBF_HAS_NEWARR                     = MAKE_BBFLAG(34), // BB contains 'new' of an array type.
+    BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(35), // BB *likely* has a bounds check (after rangecheck phase).
+    BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
+    BBF_THROW_HELPER                   = MAKE_BBFLAG(37), // Block is a call to a throw helper
 
     // The following are sets of flags.
 
@@ -456,7 +456,7 @@ enum BasicBlockFlags : uint64_t
 
     // Flags a block should not have had before it is split.
 
-    BBF_SPLIT_NONEXIST = BBF_RETLESS_CALL | BBF_COLD,
+    BBF_SPLIT_NONEXIST = BBF_RETLESS_CALL | BBF_COLD | BBF_THROW_HELPER,
 
     // Flags lost by the top block when a block is split.
     // Note, this is a conservative guess.
@@ -468,7 +468,6 @@ enum BasicBlockFlags : uint64_t
     // Flags gained by the bottom block when a block is split.
     // Note, this is a conservative guess.
     // For example, the bottom block might or might not have BBF_HAS_NEWARR, but we assume it has BBF_HAS_NEWARR.
-    // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
                        BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_MAY_HAVE_BOUNDS_CHECKS | BBF_ASYNC_RESUMPTION,
@@ -531,9 +530,8 @@ enum class BasicBlockVisit
 // (The list of zero edges is represented by NULL.)
 // Every BasicBlock has a field called bbPreds of this type.  This field
 // represents the list of "edges" that flow into this BasicBlock.
-// The FlowEdge type only stores the BasicBlock* of the source for the
-// control flow edge.  The destination block for the control flow edge
-// is implied to be the block which contained the bbPreds field.
+// The FlowEdge type stores the BasicBlock* of both the source and
+// destination for the control flow edge.
 //
 // For a switch branch target there may be multiple "edges" that have
 // the same source block (and destination block).  We need to count the
@@ -541,16 +539,8 @@ enum class BasicBlockVisit
 // we have zero of them.  Rather than have extra FlowEdge entries we
 // track this via the DupCount property.
 //
-// When we have Profile weight for the BasicBlocks we can usually compute
-// the number of times each edge was executed by examining the adjacent
-// BasicBlock weights.  As we are doing for BasicBlocks, we call the number
-// of times that a control flow edge was executed the "edge weight".
-// In order to compute the edge weights we need to use a bounded range
-// for every edge weight. These two fields, 'flEdgeWeightMin' and 'flEdgeWeightMax'
-// are used to hold a bounded range.  Most often these will converge such
-// that both values are the same and that value is the exact edge weight.
-// Sometimes we are left with a rage of possible values between [Min..Max]
-// which represents an inexact edge weight.
+// Each edge has a likelihood value in [0..1] indicating the probability
+// that the source block transfers control along this edge.
 //
 // The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
 // and is incrementally kept up to date.
@@ -644,7 +634,7 @@ public:
     }
 
     void setLikelihood(weight_t likelihood);
-    void addLikelihood(weight_t addedLikelihod);
+    void addLikelihood(weight_t addedLikelihood);
 
     void clearLikelihood()
     {
@@ -706,6 +696,16 @@ public:
     }
 };
 
+// Special values for bbCatchType, which is normally a class token of the catch handler.
+// These special values will not collide with real tokens.
+//
+#define BBCT_NONE                   0x00000000
+#define BBCT_FAULT                  0xFFFFFFFC
+#define BBCT_FINALLY                0xFFFFFFFD
+#define BBCT_FILTER                 0xFFFFFFFE
+#define BBCT_FILTER_HANDLER         0xFFFFFFFF
+#define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
+
 //------------------------------------------------------------------------
 // BasicBlock: describes a basic block in the flowgraph.
 //
@@ -722,6 +722,13 @@ private:
     BasicBlock* bbPrev;
 
     BBKinds bbKind; // jump (if any) at the end of this block
+
+    Statement* bbStmtList; // Head of the statement list for this block
+
+    unsigned bbCatchType =
+        BBCT_NONE; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
+
+    EntryState* bbEntryState = nullptr; // verifier tracked state of all entries in stack.
 
     /* The following union describes the jump target(s) of this block */
     union
@@ -1161,17 +1168,24 @@ public:
         bbFlags = flags;
     }
 
-    static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
-    static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
+    static_assert((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
+    static_assert((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
 
     unsigned bbNum; // the block's number
 
     unsigned bbRefs; // number of blocks that can reach here, either by fall-through or a branch. If this falls to zero,
                      // the block is unreachable.
 
+#define BB_UNITY_WEIGHT          100.0 // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
+#define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
+#define BB_ZERO_WEIGHT           0.0
+#define BB_COLD_WEIGHT           0.01    // Upper bound for cold weights; used during block layout
+#define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight -- needs rethinking.
+
     bool isRunRarely() const
     {
-        return HasFlag(BBF_RUN_RARELY);
+        return (bbWeight == BB_ZERO_WEIGHT);
     }
 
     bool isLoopAlign() const
@@ -1195,13 +1209,6 @@ public:
 
     const char* dspToString(int blockNumPadding = 0) const;
 #endif // DEBUG
-
-#define BB_UNITY_WEIGHT          100.0 // how much a normal execute once block weighs
-#define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
-#define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
-#define BB_ZERO_WEIGHT           0.0
-#define BB_COLD_WEIGHT           0.01    // Upper bound for cold weights; used during block layout
-#define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
 
@@ -1235,15 +1242,6 @@ public:
     {
         this->SetFlags(BBF_PROF_WEIGHT);
         this->bbWeight = weight;
-
-        if (weight == BB_ZERO_WEIGHT)
-        {
-            this->SetFlags(BBF_RUN_RARELY);
-        }
-        else
-        {
-            this->RemoveFlags(BBF_RUN_RARELY);
-        }
     }
 
     // increaseBBProfileWeight -- Increase the profile-derived weight for a basic block
@@ -1272,31 +1270,16 @@ public:
     // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
     // So, specify a percentage (0 to 100) of the weight the block should inherit.
     //
-    // Can be invoked as a self-rescale, eg: block->inheritWeightPecentage(block, 50))
+    // Can be invoked as a self-rescale, eg: block->inheritWeightPercentage(block, 50)
     //
     void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
     {
-        assert(0 <= percentage && percentage <= 100);
+        assert(percentage <= 100);
 
-        this->bbWeight = (bSrc->bbWeight * percentage) / 100;
-
-        if (bSrc->hasProfileWeight())
-        {
-            this->SetFlags(BBF_PROF_WEIGHT);
-        }
-        else
-        {
-            this->RemoveFlags(BBF_PROF_WEIGHT);
-        }
-
-        if (this->bbWeight == BB_ZERO_WEIGHT)
-        {
-            this->SetFlags(BBF_RUN_RARELY);
-        }
-        else
-        {
-            this->RemoveFlags(BBF_RUN_RARELY);
-        }
+        this->bbWeight                         = (bSrc->bbWeight * percentage) / 100;
+        const BasicBlockFlags hasProfileWeight = bSrc->GetFlagsRaw() & BBF_PROF_WEIGHT;
+        this->RemoveFlags(BBF_PROF_WEIGHT);
+        this->SetFlags(hasProfileWeight);
     }
 
     // Scale a blocks' weight by some factor.
@@ -1304,18 +1287,9 @@ public:
     void scaleBBWeight(weight_t scale)
     {
         this->bbWeight = this->bbWeight * scale;
-
-        if (this->bbWeight == BB_ZERO_WEIGHT)
-        {
-            this->SetFlags(BBF_RUN_RARELY);
-        }
-        else
-        {
-            this->RemoveFlags(BBF_RUN_RARELY);
-        }
     }
 
-    // Set block weight to zero, and set run rarely flag.
+    // Set block weight to zero.
     //
     void bbSetRunRarely()
     {
@@ -1357,7 +1331,7 @@ public:
         return KindIs(kind) || KindIs(rest...);
     }
 
-    bool HasTerminator()
+    bool HasTerminator() const
     {
         return KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN);
     }
@@ -1416,7 +1390,10 @@ public:
         return bbRefs;
     }
 
-    Statement* bbStmtList;
+    void SetFirstStmt(Statement* stmt)
+    {
+        bbStmtList = stmt;
+    }
 
     GenTree* GetFirstLIRNode() const
     {
@@ -1438,7 +1415,15 @@ public:
         m_lastNode = tree;
     }
 
-    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+    EntryState* GetEntryState() const
+    {
+        return bbEntryState;
+    }
+
+    void SetEntryState(EntryState* entryState)
+    {
+        bbEntryState = entryState;
+    }
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
@@ -1496,8 +1481,26 @@ public:
         }
     }
 
-    // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
-    unsigned bbCatchTyp;
+    unsigned GetCatchType() const
+    {
+        return bbCatchType;
+    }
+
+    bool CatchTypeIs(unsigned CatchType) const
+    {
+        return bbCatchType == CatchType;
+    }
+
+    template <typename... T>
+    bool CatchTypeIs(unsigned CatchType, T... rest) const
+    {
+        return CatchTypeIs(CatchType) || CatchTypeIs(rest...);
+    }
+
+    void SetCatchType(unsigned CatchType)
+    {
+        bbCatchType = CatchType;
+    }
 
     bool hasTryIndex() const
     {
@@ -1567,17 +1570,6 @@ public:
 
     bool hasEHBoundaryIn() const;
     bool hasEHBoundaryOut() const;
-
-// Some non-zero value that will not collide with real tokens for bbCatchTyp
-#define BBCT_NONE                   0x00000000
-#define BBCT_FAULT                  0xFFFFFFFC
-#define BBCT_FINALLY                0xFFFFFFFD
-#define BBCT_FILTER                 0xFFFFFFFE
-#define BBCT_FILTER_HANDLER         0xFFFFFFFF
-#define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
-
-    // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
-    unsigned short bbStkDepth; // stack depth on entry
 
     // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
     // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
@@ -1779,7 +1771,9 @@ public:
     //
     unsigned StatementCount();
     bool     StatementCountExceeds(unsigned limit, unsigned* count = nullptr);
-    bool     ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* complexity = nullptr);
+
+    template <typename TFunc>
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity);
 
     GenTree* lastNode() const;
 
@@ -1805,71 +1799,6 @@ public:
         , bbLiveOut(VarSetOps::UninitVal())
     {
     }
-
-    // Iteratable collection of successors of a block.
-    template <typename TPosition>
-    class Successors
-    {
-        Compiler*   m_comp;
-        BasicBlock* m_block;
-
-    public:
-        Successors(Compiler* comp, BasicBlock* block)
-            : m_comp(comp)
-            , m_block(block)
-        {
-        }
-
-        class iterator
-        {
-            Compiler*   m_comp;
-            BasicBlock* m_block;
-            TPosition   m_pos;
-
-        public:
-            iterator(Compiler* comp, BasicBlock* block)
-                : m_comp(comp)
-                , m_block(block)
-                , m_pos(comp, block)
-            {
-            }
-
-            iterator()
-                : m_pos()
-            {
-            }
-
-            void operator++(void)
-            {
-                m_pos.Advance(m_comp, m_block);
-            }
-
-            BasicBlock* operator*()
-            {
-                return m_pos.Current(m_comp, m_block);
-            }
-
-            bool operator==(const iterator& other)
-            {
-                return m_pos == other.m_pos;
-            }
-
-            bool operator!=(const iterator& other)
-            {
-                return m_pos != other.m_pos;
-            }
-        };
-
-        iterator begin()
-        {
-            return iterator(m_comp, m_block);
-        }
-
-        iterator end()
-        {
-            return iterator();
-        }
-    };
 
     template <typename TFunc>
     BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
@@ -1926,7 +1855,7 @@ public:
     // SuccEdges: convenience method for enabling range-based `for` iteration over unique successor edges, e.g.:
     //    for (FlowEdge* const edge : block->SuccEdges()) ...
     //
-    BBSuccList<FlowEdgeArrayIterator> SuccEdges()
+    BBSuccList<FlowEdgeArrayIterator> SuccEdges() const
     {
         return BBSuccList<FlowEdgeArrayIterator>(this);
     }
@@ -2086,7 +2015,8 @@ public:
         return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
 
-    bool ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count = nullptr);
+    template <typename TFunc>
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity);
 };
 
 // BBJumpTable -- descriptor blocks with N successors

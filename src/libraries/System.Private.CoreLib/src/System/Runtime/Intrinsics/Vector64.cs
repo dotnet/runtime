@@ -24,6 +24,84 @@ namespace System.Runtime.Intrinsics
             get => IsHardwareAccelerated;
         }
 
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector64<T>)
+            where T : IFloatingPointConstants<T>
+        {
+            /// <inheritdoc cref="Vector128.get_E{T}" />
+            public static Vector64<T> E
+            {
+                [Intrinsic]
+                get => Create(T.E);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Pi{T}" />
+            public static Vector64<T> Pi
+            {
+                [Intrinsic]
+                get => Create(T.Pi);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Tau{T}" />
+            public static Vector64<T> Tau
+            {
+                [Intrinsic]
+                get => Create(T.Tau);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector64<T>)
+            where T : IFloatingPointIeee754<T>
+        {
+            /// <inheritdoc cref="Vector128.get_Epsilon{T}" />
+            public static Vector64<T> Epsilon
+            {
+                [Intrinsic]
+                get => Create(T.Epsilon);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NaN{T}" />
+            public static Vector64<T> NaN
+            {
+                [Intrinsic]
+                get => Create(T.NaN);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeInfinity{T}" />
+            public static Vector64<T> NegativeInfinity
+            {
+                [Intrinsic]
+                get => Create(T.NegativeInfinity);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeZero{T}" />
+            public static Vector64<T> NegativeZero
+            {
+                [Intrinsic]
+                get => Create(T.NegativeZero);
+            }
+
+            /// <inheritdoc cref="Vector128.get_PositiveInfinity{T}" />
+            public static Vector64<T> PositiveInfinity
+            {
+                [Intrinsic]
+                get => Create(T.PositiveInfinity);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector64<T>)
+            where T : ISignedNumber<T>
+        {
+            /// <inheritdoc cref="Vector128.get_NegativeOne{T}" />
+            public static Vector64<T> NegativeOne
+            {
+                [Intrinsic]
+                get => Create(T.NegativeOne);
+            }
+        }
+
         /// <summary>Computes the absolute value of each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector that will have its absolute value computed.</param>
@@ -895,7 +973,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{T}" /> from a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="values">The array from which the vector is created.</param>
-        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to begin reading elements.</param>
         /// <returns>A new <see cref="Vector64{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector64{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
@@ -1820,11 +1898,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return ~IsZero(AndNot(Create<uint>(float.PositiveInfinityBits), vector.AsUInt32())).As<uint, T>();
+                return ~IsZero(AndNot(Vector64<float>.PositiveInfinity.AsUInt32(), vector.AsUInt32())).As<uint, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return ~IsZero(AndNot(Create<ulong>(double.PositiveInfinityBits), vector.AsUInt64())).As<ulong, T>();
+                return ~IsZero(AndNot(Vector64<double>.PositiveInfinity.AsUInt64(), vector.AsUInt64())).As<ulong, T>();
             }
             return Vector64<T>.AllBitsSet;
         }
@@ -1899,11 +1977,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+                return Equals(vector, Vector64<float>.NegativeInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+                return Equals(vector, Vector64<double>.NegativeInfinity.As<double, T>());
             }
             return Vector64<T>.Zero;
         }
@@ -1974,11 +2052,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+                return Equals(vector, Vector64<float>.PositiveInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+                return Equals(vector, Vector64<double>.PositiveInfinity.As<double, T>());
             }
             return Vector64<T>.Zero;
         }

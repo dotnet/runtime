@@ -11,6 +11,9 @@ namespace Mono.Linker
     // Copied from https://github.com/jbevain/cecil/blob/master/Mono.Cecil/TypeReferenceComparer.cs
     internal sealed class TypeReferenceEqualityComparer : EqualityComparer<TypeReference>
     {
+        [Obsolete("Default will point to default object equality comparer. Use the constructor to create an instance with a resolver.")]
+        public static new object Default => throw new InvalidOperationException();
+
         public readonly ITryResolveMetadata _resolver;
 
         public TypeReferenceEqualityComparer(ITryResolveMetadata resolver)

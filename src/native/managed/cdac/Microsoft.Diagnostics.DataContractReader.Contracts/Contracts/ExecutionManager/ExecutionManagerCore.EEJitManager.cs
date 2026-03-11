@@ -44,6 +44,24 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
+        {
+            // cold regions are not supported for JITted code
+            coldStart = TargetPointer.Null;
+            coldSize = 0;
+
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+            Debug.Assert(hotSize > 0);
+        }
+
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.IsRangeList)
@@ -73,6 +91,30 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return TargetPointer.Null;
 
             return _runtimeFunctions.GetRuntimeFunctionAddress(realCodeHeader.UnwindInfos, index);
+        }
+
+        public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
+        {
+            hasFlagByte = false;
+            if (rangeSection.IsRangeList)
+                return TargetPointer.Null;
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null)
+                return TargetPointer.Null;
+            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
+
+            if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
+                return TargetPointer.Null;
+
+            bool featureOnStackReplacement = Target.ReadGlobal<byte>(Constants.Globals.FeatureOnStackReplacement) != 0;
+            Data.EEJitManager eeJitManager = Target.ProcessedData.GetOrAdd<Data.EEJitManager>(rangeSection.Data.JitManager);
+            if (featureOnStackReplacement || eeJitManager.StoreRichDebugInfo)
+                hasFlagByte = true;
+
+            return realCodeHeader.DebugInfo;
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)

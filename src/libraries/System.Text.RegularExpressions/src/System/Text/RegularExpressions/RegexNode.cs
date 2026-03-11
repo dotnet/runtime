@@ -790,6 +790,11 @@ namespace System.Text.RegularExpressions
                             start = endExclusive;
                         }
 
+                        // Force a re-reduction if we know we've exposed new opportunities that'll be handled.
+                        reordered |=
+                            child.ChildCount() == 2 &&
+                            (child.Child(0).Kind is RegexNodeKind.Empty || child.Child(1).Kind is RegexNodeKind.Empty); // can be transformed into a ? or ??
+
                         // If anything was reordered, there may be new optimization opportunities inside
                         // of the alternation, so reduce it again.
                         if (reordered)
@@ -893,8 +898,7 @@ namespace System.Text.RegularExpressions
 
             // If the Loop or Lazyloop now only has one child node and its a Set, One, or Notone,
             // reduce to just Setloop/lazy, Oneloop/lazy, or Notoneloop/lazy.  The parser will
-            // generally have only produced the latter, but other reductions could have exposed
-            // this.
+            // generally have only produced the latter, but other reductions could have exposed this.
             if (u.ChildCount() == 1)
             {
                 RegexNode child = u.Child(0);
@@ -905,6 +909,30 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Set:
                         child.MakeRep(u.Kind == RegexNodeKind.Lazyloop ? RegexNodeKind.Onelazy : RegexNodeKind.Oneloop, u.M, u.N);
                         u = child;
+                        break;
+
+                    case RegexNodeKind.Empty:
+                        // A loop around an empty is itself empty, regardless of iteration counts.
+                        u = child;
+                        break;
+
+                    case RegexNodeKind.PositiveLookaround when ContainsKind(child, [RegexNodeKind.Capture]) is false:
+                    case RegexNodeKind.NegativeLookaround or
+                         RegexNodeKind.Beginning or RegexNodeKind.Start or
+                         RegexNodeKind.Bol or RegexNodeKind.Eol or
+                         RegexNodeKind.End or RegexNodeKind.EndZ or
+                         RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
+                        // A loop around (most) zero-width assertions can also be reduced. If it has a lower bound of 0,
+                        // then it's either asserting something or not, and is thus useless and replaceable by empty.
+                        // If it has a lower bound > 0, then the contents are still needed, but the loop isn't, since
+                        // it's non-consuming and thus any more repetitions than 1 are redundant. The one zero-width assertion
+                        // that can't be handled in this way is a PositiveLookaround, because it might contain capture groups
+                        // with captures that must persist past the lookaround (in contrast, negative lookarounds undo all
+                        // captures); if it were to be removed, it could affect both subsequent backreferences as well as access
+                        // to capture information in the resulting Match. Thus, we can only transform a PositiveLookaround in
+                        // this manner if it doesn't contain any captures.
+                        u = u.M == 0 ? new RegexNode(RegexNodeKind.Empty, Options) : child;
                         break;
                 }
             }
@@ -968,6 +996,17 @@ namespace System.Text.RegularExpressions
                 case RegexCharClass.NotSpaceSpaceClass:
                     Str = RegexCharClass.AnyClass;
                     break;
+
+                // Different ways of saying \D, \S, \W
+                case RegexCharClass.NegatedDigitClass: // [^\d]
+                    Str = RegexCharClass.NotDigitClass;
+                    break;
+                case RegexCharClass.NegatedSpaceClass: // [^\s]
+                    Str = RegexCharClass.NotSpaceClass;
+                    break;
+                case RegexCharClass.NegatedWordClass: // [^\w]
+                    Str = RegexCharClass.NotWordClass;
+                    break;
             }
 
             return this;
@@ -998,6 +1037,22 @@ namespace System.Text.RegularExpressions
                             if (node.Kind == RegexNodeKind.Alternate)
                             {
                                 node = RemoveRedundantEmptiesAndNothings(node);
+
+                                // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
+                                //     (a|) becomes a?
+                                //     (|a) becomes a??
+                                // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
+                                if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                                {
+                                    if (node.Child(1).Kind is RegexNodeKind.Empty)
+                                    {
+                                        node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
+                                    }
+                                    else if (node.Child(0).Kind is RegexNodeKind.Empty)
+                                    {
+                                        node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
+                                    }
+                                }
                             }
                         }
                     }
@@ -1138,24 +1193,16 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                // Only handle the case where each branch is a concatenation
-                foreach (RegexNode child in children)
-                {
-                    if (child.Kind != RegexNodeKind.Concatenate || child.ChildCount() < 2)
-                    {
-                        return alternation;
-                    }
-                }
-
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
-                    Debug.Assert(children[startingIndex].Children is List<RegexNode> { Count: >= 2 });
-
                     // Only handle the case where each branch begins with the same One, Notone, Set (individual or loop), or Anchor.
                     // Note that while we can do this for individual characters, fixed length loops, and atomic loops, doing
                     // it for non-atomic variable length loops could change behavior as each branch could otherwise have a
                     // different number of characters consumed by the loop based on what's after it.
-                    RegexNode required = children[startingIndex].Child(0);
+                    // A branch may be either a Concatenation (get its first child) or a single node (e.g., a Set
+                    // that was reduced from a single-child Concatenation after prior prefix extraction).
+                    RegexNode startingNode = children[startingIndex];
+                    RegexNode required = startingNode.Kind == RegexNodeKind.Concatenate ? startingNode.Child(0) : startingNode;
                     switch (required.Kind)
                     {
                         case RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set:
@@ -1175,7 +1222,8 @@ namespace System.Text.RegularExpressions
                     int endingIndex = startingIndex + 1;
                     for (; endingIndex < children.Count; endingIndex++)
                     {
-                        RegexNode other = children[endingIndex].Child(0);
+                        RegexNode endingNode = children[endingIndex];
+                        RegexNode other = endingNode.Kind == RegexNodeKind.Concatenate ? endingNode.Child(0) : endingNode;
                         if (required.Kind != other.Kind ||
                             required.Options != other.Options ||
                             required.M != other.M ||
@@ -1197,8 +1245,16 @@ namespace System.Text.RegularExpressions
                     var newAlternate = new RegexNode(RegexNodeKind.Alternate, alternation.Options);
                     for (int i = startingIndex; i < endingIndex; i++)
                     {
-                        ((List<RegexNode>)children[i].Children!).RemoveAt(0);
-                        newAlternate.AddChild(children[i]);
+                        if (children[i].Kind == RegexNodeKind.Concatenate)
+                        {
+                            ((List<RegexNode>)children[i].Children!).RemoveAt(0);
+                            newAlternate.AddChild(children[i]);
+                        }
+                        else
+                        {
+                            // The entire branch was the extracted prefix; what remains is Empty.
+                            newAlternate.AddChild(new RegexNode(RegexNodeKind.Empty, children[i].Options));
+                        }
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
@@ -1443,6 +1499,76 @@ namespace System.Text.RegularExpressions
             Debug.Assert(Kind is RegexNodeKind.One or RegexNodeKind.Multi || (IsOneFamily && M > 0));
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
             return IsOneFamily ? Ch : Str![0];
+        }
+
+        /// <summary>
+        /// Determines whether every branch of this alternation node begins with one or more unique starting characters.
+        /// </summary>
+        /// <param name="seenChars">The set of unique starting characters across all branches.</param>
+        /// <returns>true if all branches have unique starting characters; otherwise, false.</returns>
+        /// <remarks>
+        /// This method is used to determine if an alternation can be optimized using a switch on the first character.
+        /// </remarks>
+        public bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
+        {
+            Debug.Assert(Kind is RegexNodeKind.Alternate);
+            Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
+
+            const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
+            Span<char> setChars = stackalloc char[SetCharsSize];
+            seenChars = new HashSet<char>();
+
+            // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
+            // If we can, extract its starting char (or multiple in the case of a set), validate that all such
+            // starting characters are unique relative to all the branches.
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                // Look for the guaranteed starting node that's a one, multi, set,
+                // or loop of one of those with at least one minimum iteration. We need to exclude notones.
+                if (Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
+                    startingLiteralNode.IsNotoneFamily)
+                {
+                    seenChars = null;
+                    return false;
+                }
+
+                // If it's a One or a Multi, get the first character and add it to the set.
+                // If it was already in the set, we can't apply this optimization.
+                if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
+                {
+                    if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
+                    {
+                        seenChars = null;
+                        return false;
+                    }
+                }
+                else
+                {
+                    // The branch begins with a set.  Make sure it's a set of only a few characters
+                    // and get them.  If we can't, we can't apply this optimization.
+                    Debug.Assert(startingLiteralNode.IsSetFamily);
+                    int numChars;
+                    if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
+                        (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
+                    {
+                        seenChars = null;
+                        return false;
+                    }
+
+                    // Check to make sure each of the chars is unique relative to all other branches examined.
+                    foreach (char c in setChars.Slice(0, numChars))
+                    {
+                        if (!seenChars.Add(c))
+                        {
+                            seenChars = null;
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
@@ -1832,6 +1958,16 @@ namespace System.Text.RegularExpressions
                             currentNode.MakeRep(RegexNodeKind.Oneloop, 2, 2);
                             next++;
                             continue;
+
+                        // Coalescing identical anchors (e.g. \b\b). These don't need to become loops, as they collapse to a single anchor.
+                        case RegexNodeKind.Beginning or RegexNodeKind.Start or
+                             RegexNodeKind.End or RegexNodeKind.EndZ or
+                             RegexNodeKind.Bol or RegexNodeKind.Eol or
+                             RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or
+                             RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary
+                             when nextNode.Kind == currentNode.Kind:
+                            next++;
+                            continue;
                     }
                 }
 
@@ -1953,12 +2089,18 @@ namespace System.Text.RegularExpressions
                                 loopChild = loopChild.Child(loopChild.ChildCount() - 1);
                             }
 
+                            // MakeLoopAtomic wraps the loop in an Atomic group, which discards all backtracking
+                            // state from within the body. CanBeMadeAtomic only proves that giving back iterations
+                            // is unnecessary, but the Atomic wrapper also prevents within-body backtracking from
+                            // being triggered by subsequent failures. That's only safe when the body has no
+                            // backtracking of its own and the last descendant is a type that won't be adversely
+                            // affected by seeing an Atomic ancestor.
                             if (loopChild.Kind is
-                                RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
-                                RegexNodeKind.Multi or
-                                RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
+                                    RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                                    RegexNodeKind.Multi or
+                                    RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set &&
+                                !MayContainBacktracking(node.Child(0)))
                             {
-                                // For types on the allow list, we can make the loop itself atomic.
                                 node.MakeLoopAtomic();
                             }
                             else if (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
@@ -2021,26 +2163,118 @@ namespace System.Text.RegularExpressions
             Debug.Assert(Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround);
             Debug.Assert(ChildCount() == 1);
 
+            // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
+            // inside of the negative lookaround that relies on or impacts persisted state, we can remove the capture.
+            // This includes backreferences (because backreferences within the lookaround still need to refer to that
+            // capture group) and balancing groups (because they can impact and are impacted by capture stacks from
+            // captures outside of the lookaround).
+            if (Kind is RegexNodeKind.NegativeLookaround && ContainsKind(Child(0), [RegexNodeKind.Backreference, RegexNodeKind.BackreferenceConditional]) is false)
+            {
+                if (RemoveCaptures(this, 0))
+                {
+                    // If we removed captures, we may have changed the structure of the tree in a way that exposed more
+                    // optimization possibility, so re-reduce the children.
+                    ReplaceChild(0, Child(0));
+                }
+
+                static bool RemoveCaptures(RegexNode parent, int nodeIndex)
+                {
+                    RegexNode node = parent.Child(nodeIndex);
+
+                    // Only remove captures that don't rely on or impact persisted state.
+                    // Balancing groups (N != -1) impact capture stacks and must be preserved.
+                    if (node is { Kind: RegexNodeKind.Capture, N: -1 })
+                    {
+                        parent.ReplaceChild(nodeIndex, node.Child(0));
+                        RemoveCaptures(parent, nodeIndex);
+                        return true;
+                    }
+
+                    bool changesMade = false;
+                    if (StackHelper.TryEnsureSufficientExecutionStack())
+                    {
+                        int childCount = node.ChildCount();
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            changesMade |= RemoveCaptures(node, i);
+                        }
+                    }
+
+                    return changesMade;
+                }
+            }
+
             // A lookaround is a zero-width atomic assertion.
             // As it's atomic, nothing will backtrack into it, and we can
             // eliminate any ending backtracking from it.
             EliminateEndingBacktracking();
 
-            // A positive lookaround wrapped around an empty is a nop, and we can reduce it
-            // to simply Empty.  A developer typically doesn't write this, but rather it evolves
-            // due to optimizations resulting in empty.
+            RegexNode child = Child(0);
 
-            // A negative lookaround wrapped around an empty child, i.e. (?!), is
-            // sometimes used as a way to insert a guaranteed no-match into the expression,
-            // often as part of a conditional. We can reduce it to simply Nothing.
-
-            if (Child(0).Kind == RegexNodeKind.Empty)
+            // A positive lookahead that wraps a zero-width assertion is useless wrapping and can be removed.
+            // Similarly, a positive lookaround wrapped around an empty can be reduced simply to Empty.
+            // A developer typically doesn't write this, but rather it evolves due to optimizations resulting in empty.
+            if (Kind is RegexNodeKind.PositiveLookaround)
             {
-                Kind = Kind == RegexNodeKind.PositiveLookaround ? RegexNodeKind.Empty : RegexNodeKind.Nothing;
-                Children = null;
+                if (((Options & RegexOptions.RightToLeft) == 0 && IsZeroWidthAssertion(child.Kind)) ||
+                    child.Kind is RegexNodeKind.Empty)
+                {
+                    return child;
+                }
+            }
+            else if (Kind is RegexNodeKind.NegativeLookaround)
+            {
+                // A negative lookaround wrapped around an empty child, i.e. (?!), is
+                // sometimes used as a way to insert a guaranteed no-match into the expression,
+                // often as part of a conditional. We can reduce it to simply Nothing.
+                if (child.Kind is RegexNodeKind.Empty)
+                {
+                    Kind = RegexNodeKind.Nothing;
+                    Children = null;
+                }
             }
 
             return this;
+        }
+
+        private static bool IsZeroWidthAssertion(RegexNodeKind kind) => kind is
+            RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
+            RegexNodeKind.Beginning or RegexNodeKind.Start or
+            RegexNodeKind.Bol or RegexNodeKind.Eol or
+            RegexNodeKind.End or RegexNodeKind.EndZ or
+            RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+            RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary or
+            RegexNodeKind.UpdateBumpalong;
+
+        /// <summary>Gets whether the node contains any of the specified kinds anywhere in its tree.</summary>
+        /// <returns><see langword="true"/> if it does, <see langword="false"/> if it does't, and <see langword="null"/> if it can't be determined.</returns>
+        private static bool? ContainsKind(RegexNode node, ReadOnlySpan<RegexNodeKind> kinds)
+        {
+            foreach (RegexNodeKind kind in kinds)
+            {
+                if (node.Kind == kind)
+                {
+                    return true;
+                }
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // If we can't recur further, just stop optimizing. We need to return null to signal
+                // that the result can't be trusted.
+                return null;
+            }
+
+            int childCount = node.ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                if (ContainsKind(node.Child(i), kinds) is true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Optimizations for backreference conditionals.</summary>
@@ -2125,10 +2359,23 @@ namespace System.Text.RegularExpressions
                 {
                     switch (subsequent.Kind)
                     {
+                        // Concatenate, capture, and atomic do not impact what comes at the beginning of their children,
+                        // so we can skip down to the first child.
                         case RegexNodeKind.Concatenate:
                         case RegexNodeKind.Capture:
                         case RegexNodeKind.Atomic:
+
+                        // Similarly, as long as a loop is guaranteed to iterate at least once, we can skip down to the child,
+                        // as whatever starts it is guaranteed to come after the predecessor.
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when subsequent.M > 0:
+
+                        // Positive lookaheads can also be skipped through. The lookahead logically comes after the predecessor,
+                        // and even though it's zero width, we don't need to look at whatever comes after the lookahead, because
+                        // the lookahead ends up overlapping with its successor. If the node is disjoint from the lookahead, then
+                        // it's also disjoint from the intersection of the lookahead and the lookahead's successor, since the
+                        // intersection can only narrow the possible set of characters that need to be considered for overlap with
+                        // the predecessor node.
+                        case RegexNodeKind.PositiveLookaround when (subsequent.Options & RegexOptions.RightToLeft) == 0:
                             subsequent = subsequent.Child(0);
                             continue;
                     }
@@ -2164,9 +2411,8 @@ namespace System.Text.RegularExpressions
                         return true;
                 }
 
-                // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
-                // Doing so avoids unnecessary backtracking.
+                // If this node is a loop, see if it overlaps with its successor in the concatenation.
+                // If it doesn't, then we can upgrade it to being atomic to avoid unnecessary backtracking.
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Oneloop:
@@ -2182,15 +2428,15 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when node.Ch != subsequent.Str![0]:
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when node.Ch != '\n':
+                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.NonBoundary when node.M > 0 && !RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.ECMABoundary when node.M > 0 && RegexCharClass.IsECMAWordChar(node.Ch):
+                            case RegexNodeKind.NonECMABoundary when node.M > 0 && !RegexCharClass.IsECMAWordChar(node.Ch):
                                 return true;
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && node.Ch != subsequent.Ch:
                             case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic when subsequent.M == 0 && node.Ch == subsequent.Ch:
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.NonBoundary when node.M > 0 && !RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.ECMABoundary when node.M > 0 && RegexCharClass.IsECMAWordChar(node.Ch):
-                            case RegexNodeKind.NonECMABoundary when node.M > 0 && !RegexCharClass.IsECMAWordChar(node.Ch):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2229,14 +2475,14 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                                return true;
-
-                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(node.Str!):
                             case RegexNodeKind.NonBoundary when node.M > 0 && node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
                             case RegexNodeKind.ECMABoundary when node.M > 0 && node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
+                                return true;
+
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2276,14 +2522,14 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !CharInStartingOrEndingSet(subsequent.Str![0]):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !CharInStartingOrEndingSet('\n'):
-                                return true;
-
-                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !CharInStartingOrEndingSet(subsequent.Ch):
-                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !MayOverlapStartingOrEndingSet(subsequent.Str!):
                             case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(loopStartingSet) && RegexCharClass.IsKnownWordClassSubset(loopEndingSet):
                             case RegexNodeKind.NonBoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass):
                             case RegexNodeKind.ECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass) && (loopEndingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass):
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass):
+                                return true;
+
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !CharInStartingOrEndingSet(subsequent.Ch):
+                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !MayOverlapStartingOrEndingSet(subsequent.Str!):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2343,6 +2589,101 @@ namespace System.Text.RegularExpressions
                     }
 
                     break;
+                }
+            }
+        }
+
+        /// <summary>Gets whether this node is itself a backtracking construct.</summary>
+        /// <remarks>
+        /// This checks the node in isolation (not its children). A node is a backtracking construct
+        /// if it's a variable-width loop or an alternation.
+        /// </remarks>
+        public bool IsBacktrackingConstruct => Kind switch
+        {
+            RegexNodeKind.Alternate => true,
+            RegexNodeKind.Loop or RegexNodeKind.Lazyloop when M != N => true,
+            RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or
+            RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy or
+            RegexNodeKind.Setloop or RegexNodeKind.Setlazy when M != N => true,
+            _ => false,
+        };
+
+        /// <summary>
+        /// Checks whether a node tree may contain backtracking constructs (variable-width loops or alternations).
+        /// </summary>
+        private static bool MayContainBacktracking(RegexNode node)
+        {
+            // If we can't recur, just assume the worst and say that it may contain backtracking constructs.
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return true;
+            }
+
+            // If this node is a backtracking construct, then obviously it may contain backtracking constructs.
+            if (node.IsBacktrackingConstruct)
+            {
+                return true;
+            }
+
+            // Otherwise, we need to check the children to see if any of them may contain backtracking constructs.
+            int childCount = node.ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                if (MayContainBacktracking(node.Child(i)))
+                {
+                    return true;
+                }
+            }
+
+            // No backtracking is possible.
+            return false;
+        }
+
+        /// <summary>Gets whether this node is known to be immediately preceded by a word character.</summary>
+        public bool IsKnownPrecededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(false);
+
+        /// <summary>Gets whether this node is known to be immediately succeeded by a word character.</summary>
+        public bool IsKnownSucceededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(true);
+
+        private bool IsKnownPrecededOrSucceededByWordChar(bool succeeded)
+        {
+            RegexNode node = this;
+            Debug.Assert(node.Kind is not RegexNodeKind.Concatenate, "The existing logic assumes that the node itself isn't a concatenation.");
+
+            // As in CanBeMadeAtomic, conservatively walk up through a limited set of constructs to the next concatenation.
+            while (true)
+            {
+                if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+                    node.Parent is not RegexNode parent)
+                {
+                    return false;
+                }
+
+                switch (parent.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Capture:
+                        node = parent;
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        var peers = (List<RegexNode>)parent.Children!;
+                        int index = peers.IndexOf(node) + (succeeded ? 1 : -1);
+                        if ((uint)index < (uint)peers.Count)
+                        {
+                            // Now that we've found the concatenation, build a set that represents the characters that could come
+                            // before or after this node, depending on whether we're looking for a preceding or succeeding word character.
+                            return
+                                RegexPrefixAnalyzer.FindFirstOrLastCharClass(peers[index], findFirst: succeeded) is string set &&
+                                RegexCharClass.IsKnownWordClassSubset(set);
+                        }
+
+                        node = parent;
+                        continue;
+
+                    default:
+                        return false;
                 }
             }
         }
@@ -2646,7 +2987,7 @@ namespace System.Text.RegularExpressions
                 {
                     // As with RegexNodeKind.One, the string needs to be composed solely of ASCII characters that
                     // don't participate in case conversion.
-                    if (!RegexCharClass.IsAscii(child.Str.AsSpan()) ||
+                    if (!Ascii.IsValid(child.Str) ||
                         RegexCharClass.ParticipatesInCaseConversion(child.Str.AsSpan()))
                     {
                         break;
@@ -2671,25 +3012,10 @@ namespace System.Text.RegularExpressions
                     // Skip over empty nodes, as they're pure nops. They would ideally have been optimized away,
                     // but can still remain in some situations.
                 }
-                else if (consumeZeroWidthNodes &&
-                         // anchors
-                         child.Kind is RegexNodeKind.Beginning or
-                                       RegexNodeKind.Bol or
-                                       RegexNodeKind.Start or
-                                       // boundaries
-                                       RegexNodeKind.Boundary or
-                                       RegexNodeKind.ECMABoundary or
-                                       RegexNodeKind.NonBoundary or
-                                       RegexNodeKind.NonECMABoundary or
-                                       // lookarounds
-                                       RegexNodeKind.NegativeLookaround or
-                                       RegexNodeKind.PositiveLookaround or
-                                       // logic
-                                       RegexNodeKind.UpdateBumpalong)
+                else if (consumeZeroWidthNodes && IsZeroWidthAssertion(child.Kind))
                 {
-                    // Skip over zero-width nodes that might be reasonable at the beginning of or within a substring.
-                    // We can only do these if consumeZeroWidthNodes is true, as otherwise we'd be producing a string that
-                    // may not fully represent the semantics of this portion of the pattern.
+                    // Skip over zero-width nodes. We can only do these if consumeZeroWidthNodes is true, as otherwise we'd
+                    // be producing a string that may not fully represent the semantics of this portion of the pattern.
                 }
                 else
                 {
@@ -2957,7 +3283,7 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Child(curChild);
                     curChild = 0;
 
-                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Describe()).AppendLine();
+                    sb.Append(' ', stack.Count * 2).Append(curNode.Describe()).AppendLine();
                 }
                 else
                 {

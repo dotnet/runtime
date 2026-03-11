@@ -1039,7 +1039,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (t))
 			continue;
 
-		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
+		/* inst->backend.is_pinvoke indicates native-sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
 			size = mono_class_native_size (mono_class_from_mono_type_internal (t), &align);
@@ -1348,7 +1348,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (t))
 			continue;
 
-		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
+		/* inst->backend.is_pinvoke indicates native-sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
 			size = mono_class_native_size (mono_class_from_mono_type_internal (t), &align);

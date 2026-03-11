@@ -22,17 +22,21 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override bool EmitVirtualSlots => true;
 
+        protected override bool IsReflectionVisible => true;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
-            // Ensure that we track the necessary type symbol if we are working with a constructed type symbol.
+            if (_type.IsIDynamicInterfaceCastable)
+            {
+                dependencyList.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
+            }
+
+            // Ensure that we track the metadata type symbol if we are working with a constructed type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
-            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
-
-            if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
+            dependencyList.Add(factory.MetadataTypeSymbol(_type), "MetadataType for constructed type");
 
             DefType closestDefType = _type.GetClosestDefType();
 
@@ -53,19 +57,8 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                // Track generic virtual methods that will get added to the GVM tables
-                if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
-                {
-                    dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
-                }
-            }
-            else
-            {
-                // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
                 factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
             }
 
@@ -80,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
             Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
-            return factory.SerializedConstructedRuntimeTypeObject(_type);
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)

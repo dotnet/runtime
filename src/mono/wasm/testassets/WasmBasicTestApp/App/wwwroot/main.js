@@ -21,10 +21,7 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet
-    .withElementOnExit()
-    .withExitCodeLogging()
-    .withExitOnUnhandledError();
+dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -95,6 +92,12 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput(`Asset '${name}' has integrity '${integrity}'`);
+            return defaultUri;
+        });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -109,7 +112,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConsoleForwarding()
+            .withConfig({ forwardConsole: true })
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
@@ -123,7 +126,7 @@ switch (testCase) {
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
-        const maxParallelDownloads = params.get("maxParallelDownloads");
+        const maxParallelDownloads = parseInt(params.get("maxParallelDownloads"), 10) || 16;
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
         globalThis.fetch = async (...args) => {
@@ -168,6 +171,8 @@ switch (testCase) {
         break;
     case "HttpNoStreamingTest":
         break;
+    case "DevServer_UploadPattern":
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -209,24 +214,40 @@ try {
                 }
 
                 await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                exports.LazyLoadingTest.Run();
+                await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
+                const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
+                const resLazy = LazyLibrary.Foo.Bar();
+                exit(resLazy == 42 ? 0 : 1);
             }
-            exports.LazyLoadingTest.Run();
-            exit(0);
+            else {
+                exports.LazyLoadingTest.Run();
+                exit(0);
+            }
             break;
         case "LibraryInitializerTest":
+            exit(0);
+            break;
+        case "ZipArchiveInteropTest":
+            exports.ZipArchiveInteropTest.Run();
             exit(0);
             break;
         case "AppSettingsTest":
             exports.AppSettingsTest.Run();
             exit(0);
             break;
+        case "FilesToIncludeInFileSystemTest":
+            exports.FilesToIncludeInFileSystemTest.Run();
+            exit(0);
+            break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
-            dotnet.run();
+            await dotnet.runMainAndExit();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
@@ -256,6 +277,15 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "DevServer_UploadPattern":
+            console.log("not ready yet");
+            const dsExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            console.log("ready");
+            await dsExportsHttp.HttpTest.GoodUpload();
+            await dsExportsHttp.HttpTest.BadUpload();
+            console.log("done");
             exit(0);
             break;
         case "HttpNoStreamingTest":
@@ -341,5 +371,7 @@ try {
             break;
     }
 } catch (e) {
-    exit(1, e);
+    if (e.name != "ExitStatus") {
+        exit(1, e);
+    }
 }

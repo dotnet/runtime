@@ -21,7 +21,11 @@ char* SystemNative_GetUnixRelease(void)
 #if defined(TARGET_ANDROID)
     // get the Android API level
     char sdk_ver_str[PROP_VALUE_MAX];
-    if (__system_property_get("ro.build.version.sdk", sdk_ver_str))
+    if (__system_property_get("ro.build.version.sdk_full", sdk_ver_str))
+    {
+        return strdup(sdk_ver_str);
+    }
+    else if (__system_property_get("ro.build.version.sdk", sdk_ver_str))
     {
         return strdup(sdk_ver_str);
     }

@@ -111,7 +111,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
+                    UnsafeNativeMethods.ReleaseComWrappersObject(errorInfo);
                 }
             }
 
@@ -144,7 +144,7 @@ namespace System.Data.OleDb
                         IntPtr vptr = ADP.IntPtrOffset(rgProperties, ODB.OffsetOf_tagDBPROP_Value);
                         for (int k = 0; k < cProperties; ++k, vptr = ADP.IntPtrOffset(vptr, ODB.SizeOf_tagDBPROP))
                         {
-                            Interop.OleAut32.VariantClear(vptr);
+                            Interop.Ole32.PropVariantClear(vptr);
                         }
                         Interop.Ole32.CoTaskMemFree(rgProperties);
                     }

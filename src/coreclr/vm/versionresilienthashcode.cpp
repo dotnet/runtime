@@ -368,6 +368,7 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
 {
     uint32_t maxStack;
     uint32_t EHCount;
+    COR_ILMETHOD* pILHeader;
     const BYTE* pILCode;
     uint32_t cbILCode;
     bool initLocals;
@@ -388,15 +389,9 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
 
         initLocals = (options & CORINFO_OPT_INIT_LOCALS) == CORINFO_OPT_INIT_LOCALS;
     }
-    else if (!pMD->HasILHeader())
+    else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
-        // Dynamically generated IL methods like UnsafeAccessors may not have
-        // an IL header.
-        return false;
-    }
-    else
-    {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
 
         pILCode = header.Code;
         cbILCode = header.GetCodeSize();
@@ -421,6 +416,11 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
             }
             // Do not hash the classToken field, as is possibly token dependent
         }
+    }
+    else
+    {
+        // Dynamically generated IL methods like UnsafeAccessors are not handled yet.
+        return false;
     }
 
     hashILData.Add(maxStack);

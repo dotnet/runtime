@@ -24,7 +24,7 @@
         PROLOG_PUSH         {\VASigCookieReg}
 
         // get the stub
-        ldr                 \VASigCookieReg, [\VASigCookieReg,#VASigCookie__pNDirectILStub]
+        ldr                 \VASigCookieReg, [\VASigCookieReg,#VASigCookie__pPInvokeILStub]
 
         // if null goto stub generation
         cbz                 \VASigCookieReg, \__PInvokeStubFuncName\()Label

@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -165,16 +166,16 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Ssl.SslCtxSetData(this, (IntPtr)_gch);
         }
 
-        internal bool TryAddSession(IntPtr namePtr, IntPtr session)
+        internal unsafe bool TryAddSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null && session != IntPtr.Zero);
 
-            if (_sslSessions == null || namePtr == IntPtr.Zero)
+            if (_sslSessions == null || namePtr == null)
             {
                 return false;
             }
 
-            string? targetName = Marshal.PtrToStringUTF8(namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (!string.IsNullOrEmpty(targetName))
@@ -215,11 +216,11 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal unsafe void RemoveSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 
-            string? targetName = Marshal.PtrToStringUTF8(namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (_sslSessions != null && targetName != null)

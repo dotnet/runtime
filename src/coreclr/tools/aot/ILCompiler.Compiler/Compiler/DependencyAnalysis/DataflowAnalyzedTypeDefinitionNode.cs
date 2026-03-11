@@ -69,15 +69,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_typeDefinition.HasBaseType)
             {
-                if (_typeDefinition.BaseType.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out var requiresAttribute) &&
-                    !_typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
-                {
-                    UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                    string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
-                    string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
-                    metadataManager.Logger.LogWarning(new MessageOrigin(_typeDefinition), DiagnosticId.RequiresUnreferencedCodeOnBaseClass, _typeDefinition.GetDisplayName(), _typeDefinition.BaseType.GetDisplayName(), arg1, arg2);
-                }
-
                 GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), _typeDefinition.BaseType, _typeDefinition);
             }
 

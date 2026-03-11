@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -40,8 +39,8 @@ namespace Microsoft.NET.Build.Tasks
     /// Results in LogCore getting a Message instance with Code="NETSDK1234"
     /// and Text="Something is wrong."
     ///
-    /// Pattern inspired by <se cref="TaskLoggingHelper.LogErrorWithCodeFromResources"/>,
-    /// but retains completion via generated <see cref="Strings"/> instead of
+    /// Pattern inspired by TaskLoggingHelper.LogErrorWithCodeFromResources,
+    /// but retains completion via generated Strings instead of
     /// passing resource keys by name.
     ///
     /// All actual logging is deferred to subclass in <see cref="LogCore"/>,
@@ -65,9 +64,6 @@ namespace Microsoft.NET.Build.Tasks
         public void LogError(string format, params string[] args)
             => Log(CreateMessage(MessageLevel.Error, format, args));
 
-        public void LogNonSdkError(string code, string format, params string[] args)
-            => Log(new Message(MessageLevel.Error, string.Format(format, args), code));
-
         public void Log(in Message message)
         {
             HasLoggedErrors |= message.Level == MessageLevel.Error;
@@ -78,7 +74,7 @@ namespace Microsoft.NET.Build.Tasks
 
         private static Message CreateMessage(MessageLevel level, string format, string[] args)
         {
-            string code;
+            string? code;
 
             if (format.Length >= 12
                 && format[0] == 'N'
@@ -111,7 +107,7 @@ namespace Microsoft.NET.Build.Tasks
         }
 
         [Conditional("DEBUG")]
-        private static void DebugThrowMissingOrIncorrectCode(string code, string message, MessageLevel level)
+        private static void DebugThrowMissingOrIncorrectCode(string? code, string message, MessageLevel level)
         {
             // NB: This is not localized because it represents a bug in our code base, not a user error.
             //     To log message with external codes, use Log.Log(in Message, string[]) directly.
@@ -130,11 +126,14 @@ namespace Microsoft.NET.Build.Tasks
                     break;
 
                 default:
+
                     if (code != null)
                     {
-                       throw new ArgumentException(
-                           "Message is prefixed with NETSDK error, but error codes should not be used for informational messages: "
-                           + $"{code}:{message}");
+                        //  Previously we would throw an error here, but that makes it hard to allow errors to be turned off but still displayed as messages
+                        //  (which ResolveApppHosts does).  So let's just let messages have NETSDK error codes if they want to also.
+                        //throw new ArgumentException(
+                        //    "Message is prefixed with NETSDK error, but error codes should not be used for informational messages: "
+                        //    + $"{code}:{message}");
                     }
                     break;
             }

@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+namespace box_unbox_generics044;
 public class NullableTest
 {
     private static bool BoxUnboxToNQ<T>(T o)
@@ -28,6 +29,7 @@ public class NullableTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         WithOnlyFXTypeStruct? s = Helper.Create(default(WithOnlyFXTypeStruct));

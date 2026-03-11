@@ -18,7 +18,7 @@ namespace System.PrivateUri.Tests
         private const string AlphaNumeric = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private const string RFC2396Unreserved = AlphaNumeric + "-_.!~*'()";
         private const string RFC2396Reserved = @";/:@&=+$,?";
-        private const string RFC3986Unreserved = AlphaNumeric + "-._~";
+        public const string RFC3986Unreserved = AlphaNumeric + "-._~";
         private const string RFC3986Reserved = @":/[]@!$&'()*+,;=?#";
         private const string GB18030CertificationString1 =
             "\u6570\u636E eq '\uD840\uDC00\uD840\uDC01\uD840\uDC02\uD840\uDC03\uD869\uDED1\uD869\uDED2\uD869\uDED3"
@@ -298,6 +298,18 @@ namespace System.PrivateUri.Tests
                 Assert.Equal(expectedOutput.Length, charsWritten);
                 Assert.Equal(expectedOutput, destination.AsSpan(1, charsWritten));
             }
+        }
+
+        [Theory]
+        [InlineData("aa%", 0)]
+        [InlineData("aa%", 1)]
+        [InlineData("aaa%41", 0)]
+        [InlineData("aaa%41", 1)]
+        [InlineData("aaa%41", 2)]
+        public void TryUnescapeDataString_SmallDestination_ReturnsFalse(string input, int destinationLength)
+        {
+            Assert.False(Uri.TryUnescapeDataString(input, new char[destinationLength], out int charsWritten));
+            Assert.Equal(0, charsWritten);
         }
 
         [Fact]

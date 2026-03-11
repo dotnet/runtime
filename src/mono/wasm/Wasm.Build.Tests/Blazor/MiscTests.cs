@@ -30,6 +30,7 @@ public class MiscTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, true)]
     [InlineData(Configuration.Release, false)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
+    [TestCategory("native")]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(Configuration config, bool nativeRelink)
     {
         string extraProperties = config == Configuration.Debug
@@ -57,6 +58,7 @@ public class MiscTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData(Configuration.Release)]
+    [TestCategory("native")]
     public void DefaultTemplate_AOT_InProjectFile(Configuration config)
     {
         string extraProperties = config == Configuration.Debug
@@ -66,17 +68,18 @@ public class MiscTests : BlazorWasmTestBase
                                     : "<RunAOTCompilation>true</RunAOTCompilation>";
         ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_aot_prj_file", extraProperties: extraProperties);
 
-        // No relinking, no AOT
-        BlazorBuild(info, config);
+        // build relinks
+        BlazorBuild(info, config, isNativeBuild: true);
 
         // will aot
         BlazorPublish(info, config, new PublishOptions(UseCache: false, AOT: true));
 
         // build again
-        BlazorBuild(info, config, new BuildOptions(UseCache: false));
+        BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
     }
 
     [Fact]
+    [TestCategory("native")]
     public void BugRegression_60479_WithRazorClassLib()
     {
         Configuration config = Configuration.Release;

@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tests
         /// ctrpp.exe -legacy provider.man
         /// rc.exe /r /i "c:\Program Files\Microsoft SDKs\Windows\v6.0\Include" provider.rc
         /// </summary>
-        [ConditionalFact(nameof(PerformanceDataTests.IsRunnableEnvironment))]
+        [ConditionalFact(typeof(PerformanceDataTests), nameof(PerformanceDataTests.IsRunnableEnvironment))]
         public void PerformanceCounter_PerformanceData()
         {
             // We run test in isolated process to avoid interferences on internal performance counter shared state with other tests.
@@ -138,7 +138,7 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         [InlineData("", typeof(ArgumentException))]
         [InlineData(null, typeof(ArgumentNullException))]
-        public void PerformanceCounter_PerformanceData_CounterSet_InvalidInstanceName(string instanceName, Type exceptionType)
+        public void PerformanceCounter_PerformanceData_CounterSet_InvalidInstanceName(string? instanceName, Type exceptionType)
         {
             using (CounterSet typingCounterSet = new CounterSet(_fixture._providerId, _fixture._typingCounterSetId, CounterSetInstanceType.Single))
             {
@@ -151,7 +151,7 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         [InlineData("", "counterName", "counterName", typeof(ArgumentException))]
         [InlineData(null, "counterName", "CounterName", typeof(ArgumentNullException))]
-        public void PerformanceCounter_PerformanceData_AddCounter_InvalidCounterName(string counterName, string netCoreParameterName, string netfxParameterName, Type exceptionType)
+        public void PerformanceCounter_PerformanceData_AddCounter_InvalidCounterName(string? counterName, string netCoreParameterName, string netfxParameterName, Type exceptionType)
         {
             using (CounterSet typingCounterSet = new CounterSet(_fixture._providerId, _fixture._typingCounterSetId, CounterSetInstanceType.Single))
             {
@@ -163,7 +163,7 @@ namespace System.Diagnostics.Tests
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         [InlineData("")]
         [InlineData(null)]
-        public void PerformanceCounter_PerformanceData_InvalidCounterName_Indexer(string counterName)
+        public void PerformanceCounter_PerformanceData_InvalidCounterName_Indexer(string? counterName)
         {
             using (CounterSet typingCounterSet = new CounterSet(_fixture._providerId, _fixture._typingCounterSetId, CounterSetInstanceType.Single))
             {

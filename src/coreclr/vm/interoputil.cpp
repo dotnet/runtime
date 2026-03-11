@@ -259,6 +259,8 @@ ErrExit:
     return iLCIDParam;
 }
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
@@ -273,26 +275,50 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     }
     CONTRACTL_END;
 
-    OBJECTREF CultureObj = NULL;
-    GCPROTECT_BEGIN(CultureObj)
-    {
-        // Allocate a CultureInfo with the specified LCID.
-        CultureObj = AllocateObject(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
-
-        MethodDescCallSite cultureInfoCtor(METHOD__CULTURE_INFO__INT_CTOR, &CultureObj);
-
-        // Call the CultureInfo(int culture) constructor.
-        ARG_SLOT pNewArgs[] = {
-            ObjToArgSlot(CultureObj),
-            (ARG_SLOT)lcid
-        };
-        cultureInfoCtor.Call(pNewArgs);
-
-        // Set the returned culture object.
-        *pCultureObj = CultureObj;
-    }
-    GCPROTECT_END();
+    UnmanagedCallersOnlyCaller cultureInfoCtor(METHOD__CULTUREINFOMARSHALER__CREATE_CULTURE_INFO);
+    cultureInfoCtor.InvokeThrowing((int)lcid, pCultureObj);
 }
+
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF pCurrentCulture = NULL;
+    GCPROTECT_BEGIN(pCurrentCulture);
+
+    UnmanagedCallersOnlyCaller propGet(METHOD__CULTUREINFOMARSHALER__GET_CURRENT_CULTURE);
+    propGet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), &pCurrentCulture);
+
+    GCPROTECT_END();
+
+    return pCurrentCulture;
+}
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF* CultureObj, BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
+    propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
+}
+
+#endif // FEATURE_COMINTEROP
 
 
 //---------------------------------------------------------------------------
@@ -1372,14 +1398,13 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     return hr;
 }
 
-VOID EnsureComStarted(BOOL fCoInitCurrentThread)
+VOID EnsureComStarted()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
         PRECONDITION(g_fEEStarted);
     }
     CONTRACTL_END;
@@ -1388,7 +1413,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     _ASSERTE(g_fComStarted);
 }
 
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
+HRESULT EnsureComStartedNoThrow()
 {
     CONTRACTL
     {
@@ -1396,7 +1421,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(g_fEEStarted);
-        PRECONDITION(GetThreadNULLOk() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
     CONTRACTL_END;
 
@@ -2148,14 +2172,8 @@ void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColo
     }
     CONTRACTL_END;
 
-    MethodDescCallSite oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED);
-
-    ARG_SLOT Args[] =
-    {
-        PtrToArgSlot(&SrcOleColor)
-    };
-
-    *pDestSysColor = oleColorToSystemColor.Call_RetOBJECTREF(Args);
+    UnmanagedCallersOnlyCaller oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED_UCO);
+    oleColorToSystemColor.InvokeThrowing((int)SrcOleColor, pDestSysColor);
 }
 
 //--------------------------------------------------------------------------------
@@ -2171,22 +2189,10 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     CONTRACTL_END;
 
     OLE_COLOR result;
-    OBJECTREF sysColor = NULL;
 
-    GCPROTECT_BEGIN(sysColor);
+    UnmanagedCallersOnlyCaller sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE_UCO);
+    sysColorToOleColor.InvokeThrowing(pSrcObj, &result);
 
-    sysColor = *pSrcObj;
-
-    MethodDescCallSite sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE);
-
-    ARG_SLOT Args[] =
-    {
-        ObjToArgSlot(sysColor)
-    };
-
-    result = (OLE_COLOR)sysColorToOleColor.Call_RetI4(Args);
-
-    GCPROTECT_END();
     return result;
 }
 
@@ -2260,9 +2266,9 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
                 {
                     pDeclaringMT = pProps->pMeth->GetMethodTable();
                     tkMb = pProps->pMeth->GetMemberDef();
-                    // TODO: (async) revisit and examine if this needs to be supported somehow
-                    if (pProps->pMeth->IsAsyncMethod())
-                        ThrowHR(COR_E_NOTSUPPORTED);
+
+                    // ComMTMemberInfoMap should not contain any async methods.
+                    _ASSERTE(!pProps->pMeth->IsAsyncMethod());
 
                     cbCur = GetStringizedMethodDef(pDeclaringMT, tkMb, rDef, cbCur);
                 }
@@ -2474,7 +2480,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdProperty  pd;
     LPCUTF8     pPropName;
     ULONG       uSemantic;
-    // TODO: (async) revisit and examine if this needs to be supported somehow
+    // Async methods are not visible from COM.
     if (pMD->IsAsyncMethod())
         return false;
 
@@ -3092,19 +3098,49 @@ void IUInvokeDispMethod(
         }
     }
 
-
     //
     // Retrieve the IDispatch interface that will be invoked on.
     //
 
     if (pInvokedMT->IsInterface())
     {
-        // The invoked type is a dispatch or dual interface so we will make the
-        // invocation on it.
-        pUnk = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
-        hr = SafeQueryInterface(pUnk, IID_IDispatch, (IUnknown**)&pDisp);
+        // COMPAT: We must invoke any methods on this specific IDispatch implementation,
+        // as the canonical implementation (returned by QueryInterface) may not
+        // expose all members.
+        // This can occur when pTarget is a CCW for a .NET object and that object's class
+        // has a custom default interface (specified by the System.Runtime.InteropServices.ComDefaultInterfaceAttribute attribute).
+        // In that case, the default IDispatch pointer will only resolve members defined on that interface,
+        // not all members defined on the class.
+        //
+        // We will still do the QI here because we want to protect the user from the following scenario:
+        // - The user has a COM object that implements one IUnknown interface, which we'll call ICallback.
+        // - The user defines a managed interface (represented by pInvokedMT)to represent ICallback
+        //   - The user incorrectly marks ICallback as "implements IDispatch and not dual".
+        // - The user tries to call a method on ICallback.
+        //
+        // In this case, pInvokedMT will represent the managed ICallback definition.
+        // The underlying COM object will not implement IDispatch.
+        //
+        // We cannot verify that the vtable of the COM object returned by pInvokedMT will have the IDispatch methods,
+        // but we must use that IDispatch implementation (see above).
+        // To catch the simple case above (where there is no IDispatch implementation at all),
+        // we do a QI for IDispatch and throw away the result just to make sure we don't try to invoke on an object that doesn't implement IDispatch.
+        //
+        // If the underlying COM object implements IDispatch but the COM interface represented by pInvokedMT is not dispatch or dual,
+        // we will not correctly detect that the user did something wrong and will crash.
+        // This is a known issue with no solution.
+        // Our check here is best effort to catch the simple case where a user may make a mistake.
+        SafeComHolder<IUnknown> pInvokedMTUnknown = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+
+        // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
+        SafeComHolder<IUnknown> pCanonicalDisp;
+        hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
+
+        _ASSERTE(IsDispatchBasedItf(pInvokedMT->GetComInterfaceType()));
+        // Extract the IDispatch pointer that is associated with pInvokedMT specifically.
+        pDisp = (IDispatch*)pInvokedMTUnknown.Extract();
     }
     else
     {

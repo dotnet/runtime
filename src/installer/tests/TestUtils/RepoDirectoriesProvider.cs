@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 string repoRoot = GetRepoRootDirectory();
                 BaseArtifactsFolder = Path.Combine(repoRoot, "artifacts");
 
-                string osPlatformConfig = $"{TestContext.BuildRID}.{TestContext.Configuration}";
+                string osPlatformConfig = $"{HostTestContext.BuildRID}.{HostTestContext.Configuration}";
                 string artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
                 HostArtifacts = Path.Combine(artifacts, "corehost");
                 HostTestArtifacts = Path.Combine(artifacts, "corehost_test");

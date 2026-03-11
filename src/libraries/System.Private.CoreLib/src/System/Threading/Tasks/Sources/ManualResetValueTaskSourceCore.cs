@@ -221,28 +221,30 @@ namespace System.Threading.Tasks.Sources
 
             if (continuation is not null)
             {
-                Debug.Assert(continuation is not null, $"{nameof(continuation)} is null");
-
+                object? state = _continuationState;
+                _continuationState = null;
                 object? context = _capturedContext;
+                _capturedContext = null;
+
                 if (context is null)
                 {
                     if (_runContinuationsAsynchronously)
                     {
-                        ThreadPool.UnsafeQueueUserWorkItem(continuation, _continuationState, preferLocal: true);
+                        ThreadPool.UnsafeQueueUserWorkItem(continuation, state, preferLocal: true);
                     }
                     else
                     {
-                        continuation(_continuationState);
+                        continuation(state);
                     }
                 }
                 else if (context is ExecutionContext or CapturedSchedulerAndExecutionContext)
                 {
-                    ManualResetValueTaskSourceCoreShared.InvokeContinuationWithContext(context, continuation, _continuationState, _runContinuationsAsynchronously);
+                    ManualResetValueTaskSourceCoreShared.InvokeContinuationWithContext(context, continuation, state, _runContinuationsAsynchronously);
                 }
                 else
                 {
                     Debug.Assert(context is TaskScheduler or SynchronizationContext, $"context is {context}");
-                    ManualResetValueTaskSourceCoreShared.ScheduleCapturedContext(context, continuation, _continuationState);
+                    ManualResetValueTaskSourceCoreShared.ScheduleCapturedContext(context, continuation, state);
                 }
             }
         }

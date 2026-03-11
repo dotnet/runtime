@@ -21,9 +21,9 @@ namespace System.Security.Cryptography.Asn1
         static X509ExtensionAsn()
         {
             X509ExtensionAsn decoded = default;
-            AsnValueReader reader;
+            ValueAsnReader reader;
 
-            reader = new AsnValueReader(DefaultCritical, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(DefaultCritical, AsnEncodingRules.DER);
             decoded.Critical = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out X509ExtensionAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -84,12 +84,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out X509ExtensionAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out X509ExtensionAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out X509ExtensionAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out X509ExtensionAsn decoded)
         {
             try
             {
@@ -101,11 +101,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out X509ExtensionAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out X509ExtensionAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader defaultReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(DefaultCritical, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(DefaultCritical, AsnEncodingRules.DER);
                 decoded.Critical = defaultReader.ReadBoolean();
             }
 

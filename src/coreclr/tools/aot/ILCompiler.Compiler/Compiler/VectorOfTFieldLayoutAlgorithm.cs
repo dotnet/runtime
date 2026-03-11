@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -96,7 +98,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
+            return type.IsIntrinsic && type.Namespace.SequenceEqual("System.Numerics"u8) && type.Name.SequenceEqual("Vector`1"u8);
         }
     }
 }

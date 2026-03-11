@@ -93,13 +93,25 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpCompletionOption completionOption) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpCompletionOption completionOption, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpCompletionOption completionOption) { throw null; }
@@ -159,10 +171,10 @@ namespace System.Net.Http
         // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
         // API compat will fail until this is fixed
         //
-        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("ios")]
-        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -227,7 +239,10 @@ namespace System.Net.Http
         public HttpMessageInvoker(System.Net.Http.HttpMessageHandler handler, bool disposeHandler) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         public virtual System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }

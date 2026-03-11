@@ -7,7 +7,7 @@
 class CDAC final
 {
 public: // static
-    static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget, IUnknown* legacyImpl);
+    static CDAC Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget *pDataTarget, IUnknown* legacyImpl);
 
 public:
     CDAC() = default;

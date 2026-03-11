@@ -21,10 +21,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="T">The type of the elements within the tensor span.</typeparam>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
-    public readonly ref struct ReadOnlyTensorSpan<T>
-#if NET9_0_OR_GREATER
-        : IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>
-#endif
+    public readonly ref struct ReadOnlyTensorSpan<T> : IReadOnlyTensor<ReadOnlyTensorSpan<T>, T>
     {
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Empty" />
         public static ReadOnlyTensorSpan<T> Empty => default;
@@ -432,9 +429,20 @@ namespace System.Numerics.Tensors
             );
         }
 
-        /// <summary>Returns the string representation of the tensor span.</summary>
-        /// <returns>The string representation of the tensor span.</returns>
-        public override string ToString() => $"System.Numerics.Tensors.ReadOnlyTensorSpan<{typeof(T).Name}>[{_shape}]";
+        /// <summary>Returns the string representation of the tensor.</summary>
+        /// <returns>The string representation of the tensor.</returns>
+        /// <remarks>This API only lists the shape of the tensor, it does not include the contents.</remarks>
+        public override string ToString() => ToString([]);
+
+        /// <summary>Creates a <see cref="string"/> representation of the tensor.</summary>
+        /// <param name="maximumLengths">The maximum number of elements to print for each dimension of the tensor.</param>
+        /// <returns>A <see cref="string"/> representation of the tensor.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumLengths" /> is not empty and does not contain <see cref="Rank" /> elements.</exception>
+        /// <remarks>
+        ///   <para>No contents will be printed if <paramref name="maximumLengths" /> is empty.</para>
+        ///   <para>If a given dimension contains more elements then the corresponding limit specified by <paramref name="maximumLengths" />, remaining elements will be represented by <c>..</c>.</para>
+        /// </remarks>
+        public string ToString(params scoped ReadOnlySpan<nint> maximumLengths) => Tensor.ToString(this, maximumLengths, "System.Numerics.Tensors.ReadOnlyTensorSpan");
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryCopyTo(in TensorSpan{T})" />
         public bool TryCopyTo(scoped in TensorSpan<T> destination)
@@ -490,7 +498,6 @@ namespace System.Numerics.Tensors
             return true;
         }
 
-#if NET9_0_OR_GREATER
         //
         // IReadOnlyTensor
         //
@@ -524,7 +531,6 @@ namespace System.Numerics.Tensors
 
             return result;
         }
-#endif
 
         /// <summary>Enumerates the elements of a tensor span.</summary>
         public ref struct Enumerator : IEnumerator<T>

@@ -449,7 +449,7 @@ namespace System.Xml
 
             _inAttributeValue = true;
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
         }
 
         internal override void WriteEndNamespaceDeclaration()
@@ -614,7 +614,7 @@ namespace System.Xml
         {
             Debug.Assert(text != null);
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
 
             fixed (char* pSrc = text)
             {
@@ -653,7 +653,7 @@ namespace System.Xml
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0 && index + count <= buffer.Length);
 
-            if (_trackTextContent && _inTextContent != true) { ChangeTextContentMark(true); }
+            if (_trackTextContent && !_inTextContent) { ChangeTextContentMark(true); }
 
             fixed (char* pSrcBegin = &buffer[index])
             {
@@ -850,10 +850,7 @@ namespace System.Xml
             int bEnc;
             while (startOffset < endOffset)
             {
-                if (_charEntityFallback != null)
-                {
-                    _charEntityFallback.StartOffset = startOffset;
-                }
+                _charEntityFallback?.StartOffset = startOffset;
                 _encoder!.Convert(_bufChars, startOffset, endOffset - startOffset, _bufBytes!, _bufBytesUsed, _bufBytes!.Length - _bufBytesUsed, false, out chEnc, out bEnc, out _);
                 startOffset += chEnc;
                 _bufBytesUsed += bEnc;

@@ -1,11 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <!-- Needed for NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      This test expects module intializers to run on first use of module. NativeAOT runs module initializers on startup.
+      https://github.com/dotnet/runtimelab/issues/155: compat for exceptions thrown from module cctor
+    -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="vsw529206ModuleCctor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="moduleCctorThrow.ilproj" />

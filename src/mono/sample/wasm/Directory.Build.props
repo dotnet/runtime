@@ -8,13 +8,17 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <!-- Suppress experimental trim warnings. This can be removed when we get a preview6 SDK. -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
+
+    <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>
 
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
-    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\wwwroot\</WasmAppDir>
+    <CompressionEnabled>false</CompressionEnabled>
+    <DisableBuildCompression>true</DisableBuildCompression>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
@@ -34,6 +38,13 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CommonAssemblyInfo.cs" />
   </ItemGroup>
+
+  <Target Name="CopyWwwrootToOutputDirectory" BeforeTargets="ResolveProjectStaticWebAssets">
+    <!-- StaticWebAssetsSDK by default doesn't copy wwwroot content to build output (only during publish) and we need it for running the samples with simple server (without DevServer) -->
+    <ItemGroup>
+      <Content CopyToOutputDirectory="PreserveNewest" Condition="$([MSBuild]::ValueOrDefault('%(Content.Identity)', '').Contains('wwwroot'))" />
+    </ItemGroup>
+  </Target>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props" />

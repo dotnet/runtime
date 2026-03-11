@@ -18,7 +18,7 @@ record struct ExceptionData(
 
 ``` csharp
 TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo);
-ExceptionData GetExceptionData(TargetPointer exceptionAddr)
+ExceptionData GetExceptionData(TargetPointer exceptionAddr);
 ```
 
 ## Version 1
@@ -53,4 +53,5 @@ ExceptionData GetExceptionData(TargetPointer exceptionAddr)
         target.Read<int>(exceptionAddr + /* Exception::XCode offset */),
     );
 }
+
 ```

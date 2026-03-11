@@ -517,12 +517,14 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders));
         }
 
-        [Fact]
-        public void SignWithCriticalHeaders()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SignWithCriticalHeaders(bool useIndefiniteLength)
         {
             CoseHeaderMap protectedHeaders = GetHeaderMapWithAlgorithm(DefaultAlgorithm);
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedProtectedHeaders = GetExpectedProtectedHeaders(DefaultAlgorithm);
-            AddCriticalHeaders(protectedHeaders, expectedProtectedHeaders, includeSpecifiedCritHeader: true);
+            AddCriticalHeaders(protectedHeaders, expectedProtectedHeaders, includeSpecifiedCritHeader: true, useIndefiniteLength);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, protectedHeaders);
             ReadOnlySpan<byte> encodedMessage = Sign(s_sampleContent, signer);
@@ -530,18 +532,22 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertCoseSignMessage(encodedMessage, s_sampleContent, DefaultKey, DefaultAlgorithm, expectedProtectedHeaders);
         }
 
-        [Fact]
-        public void SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows(bool useIndefiniteLength)
         {
             CoseHeaderMap protectedHeaders = GetHeaderMapWithAlgorithm(DefaultAlgorithm);
-            AddCriticalHeaders(protectedHeaders, null, includeSpecifiedCritHeader: false);
+            AddCriticalHeaders(protectedHeaders, null, includeSpecifiedCritHeader: false, useIndefiniteLength);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, protectedHeaders);
             Assert.Throws<ArgumentException>("signer", () => Sign(s_sampleContent, signer));
         }
 
-        [Fact]
-        public void MultiSign_SignWithCriticalHeaders_BodyHeaders()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultiSign_SignWithCriticalHeaders_BodyHeaders(bool useIndefiniteLength)
         {
             if (MessageKind != CoseMessageKind.MultiSign)
             {
@@ -550,7 +556,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             CoseHeaderMap bodyProtectedHeaders = GetEmptyHeaderMap();
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedBodyProtected = GetEmptyExpectedHeaders();
-            AddCriticalHeaders(bodyProtectedHeaders, expectedBodyProtected, includeSpecifiedCritHeader: true);
+            AddCriticalHeaders(bodyProtectedHeaders, expectedBodyProtected, includeSpecifiedCritHeader: true, useIndefiniteLength);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
             ReadOnlySpan<byte> encodedMessage = Sign(s_sampleContent, signer, bodyProtectedHeaders);
@@ -558,8 +564,10 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertCoseSignMessage(encodedMessage, s_sampleContent, DefaultKey, DefaultAlgorithm, expectedMultiSignBodyProtectedHeaders: expectedBodyProtected);
         }
 
-        [Fact]
-        public void MultiSign_SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows_BodyHeaders()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultiSign_SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows_BodyHeaders(bool useIndefiniteLength)
         {
             if (MessageKind != CoseMessageKind.MultiSign)
             {
@@ -567,14 +575,16 @@ namespace System.Security.Cryptography.Cose.Tests
             }
 
             CoseHeaderMap bodyProtectedHeaders = GetEmptyHeaderMap();
-            AddCriticalHeaders(bodyProtectedHeaders, null, includeSpecifiedCritHeader: false);
+            AddCriticalHeaders(bodyProtectedHeaders, null, includeSpecifiedCritHeader: false, useIndefiniteLength);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
             Assert.Throws<ArgumentException>("protectedHeaders", () => Sign(s_sampleContent, signer, bodyProtectedHeaders));
         }
 
-        [Fact]
-        public void MultiSign_SignWithCriticalHeaders_AddSignature()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultiSign_SignWithCriticalHeaders_AddSignature(bool useIndefiniteLength)
         {
             if (MessageKind != CoseMessageKind.MultiSign)
             {
@@ -588,7 +598,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             CoseHeaderMap signProtectedHeaders = GetHeaderMapWithAlgorithm(DefaultAlgorithm);
             List<(CoseHeaderLabel, ReadOnlyMemory<byte>)> expectedSignProtected = GetExpectedProtectedHeaders(DefaultAlgorithm);
-            AddCriticalHeaders(signProtectedHeaders, expectedSignProtected, includeSpecifiedCritHeader: true);
+            AddCriticalHeaders(signProtectedHeaders, expectedSignProtected, includeSpecifiedCritHeader: true, useIndefiniteLength);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, signProtectedHeaders);
             AddSignature(multiSignMsg, s_sampleContent, signer);
@@ -596,8 +606,10 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertCoseSignMessage(multiSignMsg.Encode(), s_sampleContent, DefaultKey, DefaultAlgorithm, expectedProtectedHeaders: expectedSignProtected);
         }
 
-        [Fact]
-        public void MultiSign_SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows_AddSignature()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultiSign_SignWithCriticalHeaders_NotTransportingTheSpecifiedCriticalHeaderThrows_AddSignature(bool useIndefiniteLength)
         {
             if (MessageKind != CoseMessageKind.MultiSign)
             {
@@ -610,18 +622,21 @@ namespace System.Security.Cryptography.Cose.Tests
             multiSignMsg.RemoveSignature(0);
 
             CoseHeaderMap signProtectedHeaders = GetHeaderMapWithAlgorithm(DefaultAlgorithm);
-            AddCriticalHeaders(signProtectedHeaders, null, includeSpecifiedCritHeader: false);
+            AddCriticalHeaders(signProtectedHeaders, null, includeSpecifiedCritHeader: false, useIndefiniteLength);
 
             CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash, signProtectedHeaders);
             Assert.Throws<ArgumentException>("signer", () => AddSignature(multiSignMsg, s_sampleContent, signer));
         }
 
         private static void AddCriticalHeaders(
-            CoseHeaderMap protectedHeaders, List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedHeaders, bool includeSpecifiedCritHeader)
+            CoseHeaderMap protectedHeaders,
+            List<(CoseHeaderLabel, ReadOnlyMemory<byte>)>? expectedHeaders,
+            bool includeSpecifiedCritHeader,
+            bool useIndefiniteLength)
         {
             Assert.Equal(expectedHeaders != null, includeSpecifiedCritHeader);
 
-            CoseHeaderValue critValue = CoseHeaderValue.FromEncodedValue(GetDummyCritHeaderValue());
+            CoseHeaderValue critValue = CoseHeaderValue.FromEncodedValue(GetDummyCritHeaderValue(useIndefiniteLength));
             protectedHeaders[CoseHeaderLabel.CriticalHeaders] = critValue;
             expectedHeaders?.Add((CoseHeaderLabel.CriticalHeaders, critValue.EncodedValue));
 

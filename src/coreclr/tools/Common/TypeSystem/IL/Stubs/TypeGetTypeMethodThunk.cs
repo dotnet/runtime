@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -33,11 +34,11 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return $"{_helperMethod.Name}_{Signature.Length}_{DefaultAssemblyName}";
+                return System.Text.Encoding.UTF8.GetBytes($"{_helperMethod.GetName()}_{Signature.Length}_{DefaultAssemblyName}");
             }
         }
 
@@ -169,14 +170,14 @@ namespace Internal.IL.Stubs
 
                 // We only need 2 helpers to support this. Use the second parameter to pick the right one.
 
-                string helperName;
+                ReadOnlySpan<byte> helperName;
                 MethodSignature signature = key.GetTypeOverload.Signature;
                 if (signature.Length > 1 && signature[1].HasInstantiation)
-                    helperName = "ExtensibleGetType";
+                    helperName = "ExtensibleGetType"u8;
                 else
-                    helperName = "GetType";
+                    helperName = "GetType"u8;
 
-                MethodDesc helper = context.GetHelperEntryPoint("ReflectionHelpers", helperName);
+                MethodDesc helper = context.GetHelperEntryPoint("ReflectionHelpers"u8, helperName);
 
                 return new TypeGetTypeMethodThunk(_parent._owningTypeForThunks, signature, helper, key.DefaultAssemblyName);
             }

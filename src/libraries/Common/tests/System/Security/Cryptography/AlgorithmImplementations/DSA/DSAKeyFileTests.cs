@@ -10,12 +10,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAKeyFileTests
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsKeyGeneration))]
+        [Fact]
         public static void UseAfterDispose_NewKey()
         {
             UseAfterDispose(false);
@@ -87,7 +87,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
                 DSATestData.Dsa512Parameters);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048DeficientXPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -192,7 +192,7 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
                 DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048EncryptedPkcs8()
         {
             ReadBase64EncryptedPkcs8(
@@ -219,7 +219,7 @@ EDVKgNkAxxCnPVjTUalttxCxTv7FC/vxfN7ulB2uKzicegsf6t/nS6i2dpJjUYDF
                 DSATestData.GetDSA2048Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048DeficientXEncryptedPkcs8()
         {
             ReadBase64EncryptedPkcs8(
@@ -278,7 +278,7 @@ pfTBO6zjtLRN4Q==",
                 DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -305,7 +305,6 @@ vAB5Wz646GeWztKawSR/9xIqHq8IECV1FXI=",
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX, "DSASecurityTransforms goes straight to OS, has different failure mode")]
         public static void ImportNonsensePublicParameters()
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

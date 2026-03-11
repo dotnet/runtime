@@ -66,9 +66,7 @@ class TargetClass
     private Type M_S1Array(S1[][][] c) => typeof(S1[][][]);
     private Type M_S1Array(S1[][,] c) => typeof(S1[][,]);
 
-#pragma warning disable CS8500
     private unsafe void M_C1Pointer(C1* c) { }
-#pragma warning restore CS8500
 
     private class InnerClass
     {

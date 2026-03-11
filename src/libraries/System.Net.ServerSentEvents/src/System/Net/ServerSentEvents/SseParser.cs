@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading;
 
 namespace System.Net.ServerSentEvents
 {
@@ -26,7 +24,7 @@ namespace System.Net.ServerSentEvents
         /// that decodes the data of each event using <see cref="Encoding.UTF8"/>'s GetString method.
         /// </remarks>
         public static SseParser<string> Create(Stream sseStream) =>
-            Create(sseStream, static (_, bytes) => Utf8GetString(bytes));
+            Create(sseStream, static (_, bytes) => Encoding.UTF8.GetString(bytes));
 
         /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{T}"/> values.</summary>
         /// <typeparam name="T">Specifies the type of data in each event.</typeparam>
@@ -47,24 +45,6 @@ namespace System.Net.ServerSentEvents
             }
 
             return new SseParser<T>(sseStream, itemParser);
-        }
-
-        /// <summary>Encoding.UTF8.GetString(bytes)</summary>
-        internal static string Utf8GetString(ReadOnlySpan<byte> bytes)
-        {
-#if NET
-            return Encoding.UTF8.GetString(bytes);
-#else
-            unsafe
-            {
-                fixed (byte* ptr = bytes)
-                {
-                    return ptr is null ?
-                        string.Empty :
-                        Encoding.UTF8.GetString(ptr, bytes.Length);
-                }
-            }
-#endif
         }
     }
 }

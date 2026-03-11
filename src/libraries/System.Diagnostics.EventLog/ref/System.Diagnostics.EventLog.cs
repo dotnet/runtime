@@ -227,7 +227,7 @@ namespace System.Diagnostics.Eventing.Reader
     {
         public EventLogException() { }
         protected EventLogException(int errorCode) { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -235,7 +235,7 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogException(string message) { }
         public EventLogException(string message, System.Exception innerException) { }
         public override string Message { get { throw null; } }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -256,7 +256,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogInvalidDataException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogInvalidDataException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -286,7 +286,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogNotFoundException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogNotFoundException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -303,7 +303,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogProviderDisabledException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogProviderDisabledException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -339,7 +339,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogReadingException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogReadingException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif

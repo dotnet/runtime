@@ -56,7 +56,7 @@ struct ECClass
 class ECall
 {
     public:
-        static PCODE GetFCallImpl(MethodDesc* pMD, bool throwForInvalidFCall = true);
+        static PCODE GetFCallImpl(MethodDesc* pMD, bool throwForInvalidFCall = true, bool* pHasManagedImpl = nullptr);
         static DWORD GetIDForMethod(MethodDesc *pMD);
 
         static BOOL CheckUnusedECalls(SetSHash<DWORD>& usedIDs);

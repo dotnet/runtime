@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.InteropServices;
 using Xunit;
-
-using InteropServices = System.Runtime.InteropServices;
-using JitInfo = System.Runtime.JitInfo;
+using TestLibrary;
 
 public class JittedMethodsCountingTest
 {
     private const int MAX_JITTED_METHODS_ACCEPTED = 70;
 
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -43,10 +46,11 @@ public class JittedMethodsCountingTest
 
     private static bool IsHardwareIntrinsicsEnabled()
     {
-        string? dotnetEnableHWIntrinsics =
-            Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic");
-
-        return (string.IsNullOrEmpty(dotnetEnableHWIntrinsics)
-                || dotnetEnableHWIntrinsics != "0");
+        return RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X86 or Architecture.X64 => OperatingSystem.IsMacOS() ? Sse42.IsSupported : Avx2.IsSupported,
+            Architecture.Arm64 => AdvSimd.IsSupported,
+            _ => true,
+        };
     }
 }

@@ -64,7 +64,7 @@ internal sealed class WebServerStartup
             do
             {
                 current = Random.Shared.Next(range.Start.Value, range.End.Value);
-            } while (Array.IndexOf(except, current) > -1);
+            } while (Array.IndexOf(except, current) >= 0);
 
             return current;
         }

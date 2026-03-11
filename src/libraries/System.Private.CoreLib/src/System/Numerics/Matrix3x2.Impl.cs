@@ -357,7 +357,7 @@ namespace System.Numerics
 
                 if (float.Abs(det) < float.Epsilon)
                 {
-                    Vector2 vNaN = Vector2.Create(float.NaN);
+                    Vector2 vNaN = Vector2.NaN;
 
                     result.X = vNaN;
                     result.Y = vNaN;

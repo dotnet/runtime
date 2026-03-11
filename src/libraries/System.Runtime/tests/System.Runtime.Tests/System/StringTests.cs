@@ -67,7 +67,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSimpleActiveCodePage))]
+        [ConditionalFact(typeof(StringTests), nameof(IsSimpleActiveCodePage))]
         public static unsafe void Ctor_SBytePtr_DoesNotAccessInvalidPage()
         {
             // Allocates a buffer of all ' ' followed by a null terminator,
@@ -203,6 +203,28 @@ namespace System.Tests
             Assert.Equal(expected, span.Contains(value));
         }
 
+        public static IEnumerable<object[]> Contains_Rune_TestData()
+        {
+            yield return new object[] { "Hello", new Rune('H'), true };
+            yield return new object[] { "Hello", new Rune('Z'), false };
+            yield return new object[] { "Hello", new Rune('e'), true };
+            yield return new object[] { "Hello", new Rune('E'), false };
+            yield return new object[] { "", new Rune('H'), false };
+
+            // Non-BMP rune (GRINNING FACE)
+            yield return new object[] { "hello world", new Rune(0x1F600), false };
+            yield return new object[] { "hello \U0001F600 world", new Rune(0x1F600), true };
+            yield return new object[] { "hello world \U0001F600", new Rune(0x1F600), true };
+            yield return new object[] { "\U0001F600 hello world", new Rune(0x1F600), true };
+        }
+
+        [Theory]
+        [MemberData(nameof(Contains_Rune_TestData))]
+        public static void Contains_Rune(string s, Rune value, bool expected)
+        {
+            Assert.Equal(expected, s.Contains(value));
+        }
+
         [Theory]
         // CurrentCulture
         [InlineData("Hello", 'H', StringComparison.CurrentCulture, true)]
@@ -242,6 +264,65 @@ namespace System.Tests
         [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
         public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.Contains(value, comparisonType));
+        }
+
+        public static IEnumerable<object[]> Contains_Rune_StringComparison_TestData()
+        {
+            // CurrentCulture
+            yield return new object[] { "Hello", 'H', StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", 'e', StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", 'E', StringComparison.CurrentCulture, false };
+            yield return new object[] { "", 'H', StringComparison.CurrentCulture, false };
+            yield return new object[] { "", '\u0301', StringComparison.CurrentCulture, false }; // Using non-ASCII character to test ICU path
+
+            // CurrentCultureIgnoreCase
+            yield return new object[] { "Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "Hello", 'e', StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'E', StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "", 'H', StringComparison.CurrentCultureIgnoreCase, false };
+
+            // InvariantCulture
+            yield return new object[] { "Hello", 'H', StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", 'e', StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", 'E', StringComparison.InvariantCulture, false };
+            yield return new object[] { "", 'H', StringComparison.InvariantCulture, false };
+
+            // InvariantCultureIgnoreCase
+            yield return new object[] { "Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "Hello", 'e', StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", 'E', StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "", 'H', StringComparison.InvariantCultureIgnoreCase, false };
+
+            // Ordinal
+            yield return new object[] { "Hello", 'H', StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", 'e', StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", 'E', StringComparison.Ordinal, false };
+            yield return new object[] { "", 'H', StringComparison.Ordinal, false };
+
+            // OrdinalIgnoreCase
+            yield return new object[] { "Hello", 'H', StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", 'Z', StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", 'e', StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", 'E', StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "", 'H', StringComparison.OrdinalIgnoreCase, false };
+
+            // Non-BMP rune (GRINNING FACE) with OrdinalIgnoreCase
+            yield return new object[] { "hello world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "hello \U0001F600 world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "hello world \U0001F600", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "\U0001F600 hello world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(Contains_Rune_StringComparison_TestData))]
+        public static void Contains_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
         }
@@ -513,9 +594,69 @@ namespace System.Tests
         [InlineData("\0", '\0', true)]
         [InlineData("", 'a', false)]
         [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
-        public static void EndsWith(string s, char value, bool expected)
+        public static void EndsWith_Char(string s, char value, bool expected)
         {
             Assert.Equal(expected, s.EndsWith(value));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'o', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'O', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'o', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void EndsWith_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(value, comparisonType));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'o', true)]
+        [InlineData("Hello", 'O', false)]
+        [InlineData("o", 'o', true)]
+        [InlineData("o", 'O', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
+        public static void EndsWith_Rune(string s, int valueAsInt, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt)));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'o', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'o', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'o', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'O', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'o', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'O', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void EndsWith_Rune_StringComparison(string s, int valueAsInt, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(new Rune(valueAsInt), comparisonType));
         }
 
         [Theory]
@@ -546,7 +687,7 @@ namespace System.Tests
 
             // Then use LINQ to ensure IEnumerator<...> works as expected
 
-            int[] enumeratedValues = new string(chars).EnumerateRunes().Select(r => r.Value).ToArray();
+            int[] enumeratedValues = asString.EnumerateRunes().Select(r => r.Value).ToArray();
             Assert.Equal(expected, enumeratedValues);
         }
 
@@ -624,9 +765,69 @@ namespace System.Tests
         [InlineData("\0", '\0', true)]
         [InlineData("", 'a', false)]
         [InlineData("abcdefghijklmnopqrstuvwxyz", 'a', true)]
-        public static void StartsWith(string s, char value, bool expected)
+        public static void StartsWith_Char(string s, char value, bool expected)
         {
             Assert.Equal(expected, s.StartsWith(value));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'H', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'h', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'H', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'h', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'H', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'h', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'H', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void StartsWith_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.StartsWith(value, comparisonType));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'H', true)]
+        [InlineData("Hello", 'h', false)]
+        [InlineData("H", 'H', true)]
+        [InlineData("H", 'h', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'a', true)]
+        public static void StartsWith_Rune(string s, int valueAsInt, bool expected)
+        {
+            Assert.Equal(expected, s.StartsWith(new Rune(valueAsInt)));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'H', StringComparison.CurrentCulture, true)]
+        [InlineData("Hello", 'h', StringComparison.CurrentCulture, false)]
+        [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.CurrentCultureIgnoreCase, true)]
+        [InlineData("Hello", 'H', StringComparison.InvariantCulture, true)]
+        [InlineData("Hello", 'h', StringComparison.InvariantCulture, false)]
+        [InlineData("Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Hello", 'H', StringComparison.Ordinal, true)]
+        [InlineData("Hello", 'h', StringComparison.Ordinal, false)]
+        [InlineData("Hello", 'H', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Hello", 'h', StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("", '\0', StringComparison.Ordinal, false)]
+        [InlineData("\0", '\0', StringComparison.Ordinal, true)]
+        [InlineData("", '\0', StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("\0", '\0', StringComparison.OrdinalIgnoreCase, true)]
+        public static void StartsWith_Rune_StringComparison(string s, int valueAsInt, StringComparison comparisonType, bool expected)
+        {
+            Assert.Equal(expected, s.StartsWith(new Rune(valueAsInt), comparisonType));
         }
 
         public static IEnumerable<object[]> Join_Char_StringArray_TestData()
@@ -714,6 +915,23 @@ namespace System.Tests
         public static void Join_Char_InvalidStartIndexCount_ThrowsArgumentOutOfRangeException(int startIndex, int count)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join('|', new string[] { "Foo" }, startIndex, count));
+        }
+
+        public static IEnumerable<object[]> Replace_Rune_Rune_TestData()
+        {
+            yield return new object[] { "abc", new Rune('a'), new Rune('b'), "bbc" };
+            yield return new object[] { "abc", new Rune('a'), new Rune('a'), "abc" };
+            yield return new object[] { "abcabccbacba", new Rune('C'), new Rune('F'), "abcabccbacba" };
+            yield return new object[] { "私は私", new Rune('私'), new Rune('海'), "海は海" };
+            yield return new object[] { "Cat dog Bear.", new Rune(0x1F600), new Rune(0x1F601), "Cat dog Bear." };
+            yield return new object[] { "Cat dog\U0001F600 Bear.", new Rune(0x1F600), new Rune(0x1F601), "Cat dog\U0001F601 Bear." };
+        }
+
+        [Theory]
+        [MemberData(nameof(Replace_Rune_Rune_TestData))]
+        public void Replace_Rune_ReturnsExpected(string original, Rune oldValue, Rune newValue, string expected)
+        {
+            Assert.Equal(expected, original.Replace(oldValue, newValue));
         }
 
         public static IEnumerable<object[]> Replace_StringComparison_TestData()
@@ -1017,6 +1235,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_NoSuchStringComparison_ThrowsArgumentException_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void GetHashCode_NoSuchStringComparison_ThrowsArgumentException(StringComparison comparisonType)
         {
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "abc".GetHashCode(comparisonType));
@@ -1128,37 +1347,93 @@ namespace System.Tests
             Assert.True(span == default);
         }
 
-        [Theory]
-        [InlineData("Hello", 'l', StringComparison.Ordinal, 2)]
-        [InlineData("Hello", 'x', StringComparison.Ordinal, -1)]
-        [InlineData("Hello", 'h', StringComparison.Ordinal, -1)]
-        [InlineData("Hello", 'o', StringComparison.Ordinal, 4)]
-        [InlineData("Hello", 'h', StringComparison.OrdinalIgnoreCase, 0)]
-        [InlineData("HelLo", 'L', StringComparison.OrdinalIgnoreCase, 2)]
-        [InlineData("HelLo", 'L', StringComparison.Ordinal, 3)]
-        [InlineData("HelLo", '\0', StringComparison.Ordinal, -1)]
-        [InlineData("!@#$%", '%', StringComparison.Ordinal, 4)]
-        [InlineData("!@#$", '!', StringComparison.Ordinal, 0)]
-        [InlineData("!@#$", '@', StringComparison.Ordinal, 1)]
-        [InlineData("!@#$%", '%', StringComparison.OrdinalIgnoreCase, 4)]
-        [InlineData("!@#$", '!', StringComparison.OrdinalIgnoreCase, 0)]
-        [InlineData("!@#$", '@', StringComparison.OrdinalIgnoreCase, 1)]
-        [InlineData("_____________\u807f", '\u007f', StringComparison.Ordinal, -1)]
-        [InlineData("_____________\u807f__", '\u007f', StringComparison.Ordinal, -1)]
-        [InlineData("_____________\u807f\u007f_", '\u007f', StringComparison.Ordinal, 14)]
-        [InlineData("__\u807f_______________", '\u007f', StringComparison.Ordinal, -1)]
-        [InlineData("__\u807f___\u007f___________", '\u007f', StringComparison.Ordinal, 6)]
-        [InlineData("_____________\u807f", '\u007f', StringComparison.OrdinalIgnoreCase, -1)]
-        [InlineData("_____________\u807f__", '\u007f', StringComparison.OrdinalIgnoreCase, -1)]
-        [InlineData("_____________\u807f\u007f_", '\u007f', StringComparison.OrdinalIgnoreCase, 14)]
-        [InlineData("__\u807f_______________", '\u007f', StringComparison.OrdinalIgnoreCase, -1)]
-        [InlineData("__\u807f___\u007f___________", '\u007f', StringComparison.OrdinalIgnoreCase, 6)]
-        public static void IndexOf_SingleLetter_StringComparison(string s, char target, StringComparison stringComparison, int expected)
+        public static IEnumerable<object[]> IndexOf_SingleLetter_StringComparison_TestData()
         {
-            Assert.Equal(expected, s.IndexOf(target, stringComparison));
-            var charArray = new char[1];
-            charArray[0] = target;
-            Assert.Equal(expected, s.AsSpan().IndexOf(charArray, stringComparison));
+            yield return new object[] { "Hello", 'l', 0, int.MaxValue, StringComparison.Ordinal, null, 2 };
+            yield return new object[] { "Hello", 'x', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "Hello", 'h', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "Hello", 'o', 0, int.MaxValue, StringComparison.Ordinal, null, 4 };
+            yield return new object[] { "Hello", 'h', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
+            yield return new object[] { "HelLo", 'L', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 2 };
+            yield return new object[] { "HelLo", 'L', 0, int.MaxValue, StringComparison.Ordinal, null, 3 };
+            yield return new object[] { "HelLo", '\0', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "!@#$%", '%', 0, int.MaxValue, StringComparison.Ordinal, null, 4 };
+            yield return new object[] { "!@#$", '!', 0, int.MaxValue, StringComparison.Ordinal, null, 0 };
+            yield return new object[] { "!@#$", '@', 0, int.MaxValue, StringComparison.Ordinal, null, 1 };
+            yield return new object[] { "!@#$%", '%', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 4 };
+            yield return new object[] { "!@#$", '!', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
+            yield return new object[] { "!@#$", '@', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 1 };
+            yield return new object[] { "_____________\u807f", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "_____________\u807f__", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "_____________\u807f\u007f_", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, 14 };
+            yield return new object[] { "__\u807f_______________", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "__\u807f___\u007f___________", '\u007f', 0, int.MaxValue, StringComparison.Ordinal, null, 6 };
+            yield return new object[] { "_____________\u807f", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+            yield return new object[] { "_____________\u807f__", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+            yield return new object[] { "_____________\u807f\u007f_", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 14 };
+            yield return new object[] { "__\u807f_______________", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+            yield return new object[] { "__\u807f___\u007f___________", '\u007f', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 6 };
+            yield return new object[] { "hello", 'e', 3, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "hello", 'o', 3, int.MaxValue, StringComparison.Ordinal, null, 4 };
+            yield return new object[] { "hello", 'o', 3, 0, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "hello", 'o', 3, 2, StringComparison.Ordinal, null, 4 };
+            yield return new object[] { "HELLO", 'o', 3, 2, StringComparison.OrdinalIgnoreCase, null, 4 };
+            yield return new object[] { "abacus", 'a', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
+            yield return new object[] { "ü", 'Ü', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "ü", 'Ü', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
+            yield return new object[] { "ü", 'Ü', 0, int.MaxValue, StringComparison.CurrentCulture, null, -1 };
+            yield return new object[] { "ü", 'Ü', 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, 0 };
+            yield return new object[] { "ü", 'Ü', 0, int.MaxValue, StringComparison.InvariantCulture, null, -1 };
+            yield return new object[] { "ü", 'Ü', 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, 0 };
+            yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+            yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.CurrentCulture, null, -1 };
+            yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, -1 };
+            yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.InvariantCulture, null, -1 };
+            yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, -1 };
+
+            // Android has different results with "tr-TR" culture
+            // See https://github.com/dotnet/runtime/issues/106560
+            if (PlatformDetection.IsNotAndroid)
+            {
+                yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.Ordinal, "tr-TR", -1 };
+                yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, "tr-TR", -1 };
+                yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.CurrentCulture, "tr-TR", -1 };
+                yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, "tr-TR", 0 };
+                yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.InvariantCulture, "tr-TR", -1 };
+                yield return new object[] { "ı", 'I', 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, "tr-TR", -1 };
+            }
+
+            yield return new object[] { "", 'm', 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "", 'm', 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(IndexOf_SingleLetter_StringComparison_TestData))]
+        public static void IndexOf_SingleLetter_StringComparison(string s, char target, int startIndex, int count, StringComparison stringComparison, string? cultureName, int expected)
+        {
+            using (new ThreadCultureChange(cultureName))
+            {
+                if (count == int.MaxValue)
+                {
+                    count = s.Length - startIndex;
+                }
+
+                if (startIndex == 0 && count == s.Length)
+                {
+                    Assert.Equal(expected, s.IndexOf(target, stringComparison));
+                }
+                if (s.Length - startIndex == count)
+                {
+                    Assert.Equal(expected, s.IndexOf(target, startIndex, stringComparison));
+                }
+
+                Assert.Equal(expected, s.IndexOf(target, startIndex, count, stringComparison));
+
+                ReadOnlySpan<char> targetSpan = [target];
+                int subIndex = s.AsSpan(startIndex, count).IndexOf(targetSpan, stringComparison);
+                Assert.Equal(expected, subIndex < 0 ? subIndex : startIndex + subIndex);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -1298,18 +1573,88 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".IndexOf('o', StringComparison.OrdinalIgnoreCase + 1));
         }
 
+        public static IEnumerable<object[]> IndexOf_Rune_StringComparison_TestData()
+        {
+            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC4f'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 5 };
+
+            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 5 };
+            yield return new object[] { "Hello\u0200\u0202", new Rune('\u0201'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+
+            yield return new object[] { "hello", new Rune('o'), 3, 2, StringComparison.Ordinal, null, 4 };
+            yield return new object[] { "HELLO", new Rune('o'), 3, 2, StringComparison.OrdinalIgnoreCase, null, 4 };
+            yield return new object[] { "hello\uD801\uDC28", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.Ordinal, null, 5 };
+            yield return new object[] { "HELLO\uD801\uDC00", new Rune('\uD801', '\uDC28'), 3, 4, StringComparison.OrdinalIgnoreCase, null, 5 };
+
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, 0 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.CurrentCulture, null, -1 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, 0 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.InvariantCulture, null, -1 };
+            yield return new object[] { "ü", new Rune('Ü'), 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, 0 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCulture, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCulture, null, -1 };
+            yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, null, -1 };
+
+            // Android has different results with "tr-TR" culture
+            // See https://github.com/dotnet/runtime/issues/106560
+            if (PlatformDetection.IsNotAndroid)
+            {
+                yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.Ordinal, "tr-TR", -1 };
+                yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, "tr-TR", -1 };
+                yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCulture, "tr-TR", -1 };
+                yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.CurrentCultureIgnoreCase, "tr-TR", 0 };
+                yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCulture, "tr-TR", -1 };
+                yield return new object[] { "ı", new Rune('I'), 0, int.MaxValue, StringComparison.InvariantCultureIgnoreCase, "tr-TR", -1 };
+            }
+
+            yield return new object[] { "", new Rune('m'), 0, int.MaxValue, StringComparison.Ordinal, null, -1 };
+            yield return new object[] { "", new Rune('m'), 0, int.MaxValue, StringComparison.OrdinalIgnoreCase, null, -1 };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(IndexOf_Rune_StringComparison_TestData))]
+        public static void IndexOf_Rune_StringComparison(string source, Rune target, int startIndex, int count, StringComparison stringComparison, string? cultureName, int expected)
+        {
+            using (new ThreadCultureChange(cultureName))
+            {
+                if (count == int.MaxValue)
+                {
+                    count = source.Length - startIndex;
+                }
+
+                if (startIndex == 0 && count == source.Length)
+                {
+                    Assert.Equal(expected, source.IndexOf(target, stringComparison));
+                    Assert.Equal(expected, source.IndexOf(target.ToString(), stringComparison));
+                }
+                if (source.Length - startIndex == count)
+                {
+                    Assert.Equal(expected, source.IndexOf(target, startIndex, stringComparison));
+                    Assert.Equal(expected, source.IndexOf(target.ToString(), startIndex, stringComparison));
+                }
+
+                Assert.Equal(expected, source.IndexOf(target, startIndex, count, stringComparison));
+                Assert.Equal(expected, source.IndexOf(target.ToString(), startIndex, count, stringComparison));
+            }
+        }
+
         public static IEnumerable<object[]> IndexOf_String_StringComparison_TestData()
         {
             yield return new object[] { "Hello\uD801\uDC28", "\uD801\uDC4f", StringComparison.Ordinal, -1};
             yield return new object[] { "Hello\uD801\uDC28", "\uD801\uDC00", StringComparison.OrdinalIgnoreCase, 5};
+
             yield return new object[] { "Hello\u0200\u0202", "\u0201\u0203", StringComparison.OrdinalIgnoreCase, 5};
             yield return new object[] { "Hello\u0200\u0202", "\u0201\u0203", StringComparison.Ordinal, -1};
+
             yield return new object[] { "Hello\uD801\uDC00", "\uDC00", StringComparison.Ordinal, 6};
             yield return new object[] { "Hello\uD801\uDC00", "\uDC00", StringComparison.OrdinalIgnoreCase, 6};
             yield return new object[] { "Hello\uD801\uDC00", "\uD801", StringComparison.OrdinalIgnoreCase, 5};
             yield return new object[] { "Hello\uD801\uDC00", "\uD801\uDC00", StringComparison.Ordinal, 5};
         }
-
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(IndexOf_String_StringComparison_TestData))]
@@ -1318,14 +1663,112 @@ namespace System.Tests
             Assert.Equal(expected, source.IndexOf(target, stringComparison));
         }
 
+        [Theory]
+        [InlineData("Hello", 'l', int.MaxValue, int.MaxValue, StringComparison.Ordinal, 3)]
+        [InlineData("Hello", 'x', int.MaxValue, int.MaxValue, StringComparison.Ordinal, -1)]
+        [InlineData("Hello", 'h', int.MaxValue, int.MaxValue, StringComparison.Ordinal, -1)]
+        [InlineData("Hello", 'o', int.MaxValue, int.MaxValue, StringComparison.Ordinal, 4)]
+        [InlineData("Hello", 'h', int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0)]
+        [InlineData("HeLlo", 'L', int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 3)]
+        [InlineData("HeLlo", 'L', int.MaxValue, int.MaxValue, StringComparison.Ordinal, 2)]
+        [InlineData("HeLlo", '\0', int.MaxValue, int.MaxValue, StringComparison.Ordinal, -1)]
+        [InlineData("!@#$%", '%', int.MaxValue, int.MaxValue, StringComparison.Ordinal, 4)]
+        [InlineData("!@#$", '!', int.MaxValue, int.MaxValue, StringComparison.Ordinal, 0)]
+        [InlineData("!@#$", '@', int.MaxValue, int.MaxValue, StringComparison.Ordinal, 1)]
+        [InlineData("!@#$%", '%', int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 4)]
+        [InlineData("!@#$", '!', int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0)]
+        [InlineData("!@#$", '@', int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("hello", 'o', 3, int.MaxValue, StringComparison.Ordinal, -1)]
+        [InlineData("hello", 'e', 3, int.MaxValue, StringComparison.Ordinal, 1)]
+        [InlineData("hello", 'e', 3, 0, StringComparison.Ordinal, -1)]
+        [InlineData("hello", 'e', 3, 3, StringComparison.Ordinal, 1)]
+        [InlineData("HELLO", 'e', 3, 3, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("abacus", 'a', int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 2)]
+        public static void LastIndexOf_SingleLetter_StringComparison(string s, char target, int startIndex, int count, StringComparison stringComparison, int expected)
+        {
+            if (startIndex == int.MaxValue)
+            {
+                startIndex = s.Length - 1;
+            }
+            if (count == int.MaxValue)
+            {
+                count = startIndex + 1;
+            }
+
+            if (startIndex == 0 && count == s.Length)
+            {
+                Assert.Equal(expected, s.LastIndexOf(target, stringComparison));
+                Assert.Equal(expected, s.LastIndexOf(target.ToString(), stringComparison));
+            }
+            if (startIndex + 1 == count)
+            {
+                Assert.Equal(expected, s.LastIndexOf(target, startIndex, stringComparison));
+                Assert.Equal(expected, s.LastIndexOf(target.ToString(), startIndex, stringComparison));
+            }
+
+            Assert.Equal(expected, s.LastIndexOf(target, startIndex, count, stringComparison));
+            Assert.Equal(expected, s.LastIndexOf(target.ToString(), startIndex, count, stringComparison));
+
+            ReadOnlySpan<char> targetSpan = [target];
+            int startIndexFromZero = startIndex - count + 1;
+            int subIndex = s.AsSpan(startIndexFromZero, count).LastIndexOf(targetSpan, stringComparison);
+            Assert.Equal(expected, subIndex < 0 ? subIndex : startIndexFromZero + subIndex);
+        }
+
+        public static IEnumerable<object[]> LastIndexOf_Rune_StringComparison_TestData()
+        {
+            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC4f'), int.MaxValue, int.MaxValue, StringComparison.Ordinal, -1};
+            yield return new object[] { "\uD801\uDC28Hello", new Rune('\uD801', '\uDC00'), int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", new Rune('\uD801', '\uDC00'), int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 7};
+
+            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello\u0200\u0202", new Rune('\u0201'), int.MaxValue, int.MaxValue, StringComparison.OrdinalIgnoreCase, 7}; // \u0200 is uppercase of \u0201
+            yield return new object[] { "\u0200\u0202Hello", new Rune('\u0201'), int.MaxValue, int.MaxValue, StringComparison.Ordinal, -1};
+
+            yield return new object[] { "hello", new Rune('e'), 3, 3, StringComparison.Ordinal, 1 };
+            yield return new object[] { "HELLO", new Rune('e'), 3, 3, StringComparison.OrdinalIgnoreCase, 1 };
+            yield return new object[] { "hello\uD801\uDC28", new Rune('\uD801', '\uDC28'), 6, 4, StringComparison.Ordinal, 5 };
+            yield return new object[] { "HELLO\uD801\uDC00", new Rune('\uD801', '\uDC28'), 6, 4, StringComparison.OrdinalIgnoreCase, 5 };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(LastIndexOf_Rune_StringComparison_TestData))]
+        public static void LastIndexOf_Rune_StringComparison(string source, Rune target, int startIndex, int count, StringComparison stringComparison, int expected)
+        {
+            if (startIndex == int.MaxValue)
+            {
+                startIndex = source.Length - 1;
+            }
+            if (count == int.MaxValue)
+            {
+                count = startIndex + 1;
+            }
+
+            if (startIndex == 0 && count == source.Length)
+            {
+                Assert.Equal(expected, source.LastIndexOf(target, stringComparison));
+                Assert.Equal(expected, source.LastIndexOf(target.ToString(), stringComparison));
+            }
+            if (startIndex + 1 == count)
+            {
+                Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
+                Assert.Equal(expected, source.LastIndexOf(target.ToString(), startIndex, stringComparison));
+            }
+
+            Assert.Equal(expected, source.LastIndexOf(target, startIndex, count, stringComparison));
+            Assert.Equal(expected, source.LastIndexOf(target.ToString(), startIndex, count, stringComparison));
+        }
+
         public static IEnumerable<object[]> LastIndexOf_String_StringComparison_TestData()
         {
             yield return new object[] { "\uD801\uDC28Hello", "\uD801\uDC4f", 6, StringComparison.Ordinal, -1};
             yield return new object[] { "\uD801\uDC28Hello", "\uD801\uDC00", 6, StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", "\uD801\uDC00", 1, StringComparison.OrdinalIgnoreCase, 0};
+
             yield return new object[] { "\u0200\u0202Hello", "\u0201\u0203", 6, StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello\u0200\u0202", "\u0201\u0203", 1, StringComparison.OrdinalIgnoreCase, 0};
             yield return new object[] { "\u0200\u0202Hello", "\u0201\u0203", 6, StringComparison.Ordinal, -1};
+
             yield return new object[] { "\uD801\uDC00Hello", "\uDC00", 6, StringComparison.Ordinal, 1};
             yield return new object[] { "\uD801\uDC00Hello\uDC00", "\uDC00", 3, StringComparison.Ordinal, 1};
             yield return new object[] { "\uD801\uDC00Hello", "\uDC00", 6, StringComparison.OrdinalIgnoreCase, 1};
@@ -1919,6 +2362,39 @@ namespace System.Tests
                 Assert.True(rom.Span.SequenceEqual(rom.TrimStart().Span));
                 Assert.True(rom.Span.SequenceEqual(rom.TrimEnd().Span));
             }
+        }
+
+        [Theory]
+        [InlineData("hello", 'h', "ello")]
+        [InlineData("   ", ' ', "")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F600, "\U0001F601")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F601, "\U0001F600\U0001F600\U0001F601\U0001F600")]
+        [InlineData("", ' ', "")]
+        public static void Trim_Rune(string source, int trimRuneAsInt, string expected)
+        {
+            Assert.Equal(expected, source.Trim(new Rune(trimRuneAsInt)));
+        }
+
+        [Theory]
+        [InlineData("hello", 'h', "ello")]
+        [InlineData("   ", ' ', "")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F600, "\U0001F601\U0001F600")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F601, "\U0001F600\U0001F600\U0001F601\U0001F600")]
+        [InlineData("", ' ', "")]
+        public static void TrimStart_Rune(string source, int trimRuneAsInt, string expected)
+        {
+            Assert.Equal(expected, source.TrimStart(new Rune(trimRuneAsInt)));
+        }
+
+        [Theory]
+        [InlineData("hello", 'h', "hello")]
+        [InlineData("   ", ' ', "")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F600, "\U0001F600\U0001F600\U0001F601")]
+        [InlineData("\U0001F600\U0001F600\U0001F601\U0001F600", 0x1F601, "\U0001F600\U0001F600\U0001F601\U0001F600")]
+        [InlineData("", ' ', "")]
+        public static void TrimEnd_Rune(string source, int trimRuneAsInt, string expected)
+        {
+            Assert.Equal(expected, source.TrimEnd(new Rune(trimRuneAsInt)));
         }
 
         [OuterLoop]

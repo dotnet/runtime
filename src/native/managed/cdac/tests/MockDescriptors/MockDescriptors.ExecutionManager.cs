@@ -17,7 +17,7 @@ internal partial class MockDescriptors
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
-        const int RealCodeHeaderSize = 0x20; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
+        const int RealCodeHeaderSize = 0x28; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
         public struct AllocationRange
         {
@@ -166,9 +166,9 @@ internal partial class MockDescriptors
                 } while (cur.Value < end);
             }
 
-            public MockMemorySpace.ReadContext GetReadContext()
+            public MockMemorySpace.MemoryContext GetMemoryContext()
             {
-                return _builder.GetReadContext();
+                return _builder.GetMemoryContext();
             }
         }
 
@@ -232,6 +232,7 @@ internal partial class MockDescriptors
             Fields =
             [
                 new(nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
+                new(nameof(Data.RealCodeHeader.DebugInfo), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.GCInfo), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.NumUnwindInfos), DataType.uint32),
                 new(nameof(Data.RealCodeHeader.UnwindInfos), DataType.pointer),
@@ -250,7 +251,18 @@ internal partial class MockDescriptors
                 new(nameof(Data.ReadyToRunInfo.NumHotColdMap), DataType.uint32),
                 new(nameof(Data.ReadyToRunInfo.HotColdMap), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.DelayLoadMethodCallThunks), DataType.pointer),
+                new(nameof(Data.ReadyToRunInfo.DebugInfoSection), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap), DataType.Unknown, helpers.LayoutFields(MockDescriptors.HashMap.HashMapFields.Fields).Stride),
+            ]
+        };
+
+        private static readonly MockDescriptors.TypeFields EEJitManagerFields = new()
+        {
+            DataType = DataType.EEJitManager,
+            Fields =
+            [
+                new(nameof(Data.EEJitManager.StoreRichDebugInfo), DataType.uint8),
+                new(nameof(Data.EEJitManager.AllCodeHeaps), DataType.pointer),
             ]
         };
 
@@ -267,11 +279,13 @@ internal partial class MockDescriptors
         private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
         private readonly MockMemorySpace.BumpAllocator _allocator;
 
-        internal ExecutionManager(int version, MockTarget.Architecture arch, AllocationRange allocationRange)
-            : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
+        internal TargetPointer EEJitManagerAddress { get; }
+
+        internal ExecutionManager(int version, MockTarget.Architecture arch, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
+            : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
         { }
 
-        internal ExecutionManager(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange)
+        internal ExecutionManager(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
         {
             Version = version;
             Builder = builder;
@@ -290,14 +304,30 @@ internal partial class MockDescriptors
                     RealCodeHeaderFields,
                     ReadyToRunInfoFields(Builder.TargetTestHelpers),
                     MockDescriptors.ModuleFields,
+                    EEJitManagerFields,
                 ]).Concat(MockDescriptors.HashMap.GetTypes(Builder.TargetTestHelpers))
                 .Concat(_rfBuilder.Types)
                 .ToDictionary();
+
+            // Allocate and populate the EEJitManager instance
+            var jitManagerTypeInfo = Types[DataType.EEJitManager];
+            MockMemorySpace.HeapFragment eeJitManagerFragment = _allocator.Allocate(jitManagerTypeInfo.Size.Value, "EEJitManager");
+            Builder.AddHeapFragment(eeJitManagerFragment);
+            EEJitManagerAddress = eeJitManagerFragment.Address;
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> jmData = Builder.BorrowAddressRange(eeJitManagerFragment.Address, (int)jitManagerTypeInfo.Size.Value);
+            Builder.TargetTestHelpers.WritePointer(jmData.Slice(jitManagerTypeInfo.Fields[nameof(Data.EEJitManager.AllCodeHeaps)].Offset, pointerSize), allCodeHeaps);
+
+            // Allocate the global pointer that holds the EEJitManager address
+            MockMemorySpace.HeapFragment eeJitManagerGlobalPointer = _allocator.Allocate((ulong)pointerSize, "EEJitManagerGlobalPointer");
+            Builder.AddHeapFragment(eeJitManagerGlobalPointer);
+            Builder.TargetTestHelpers.WritePointer(eeJitManagerGlobalPointer.Data, EEJitManagerAddress);
 
             Globals =
             [
                 (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), ExecutionManagerCodeRangeMapAddress),
                 (nameof(Constants.Globals.StubCodeBlockLast), 0x0Fu),
+                (nameof(Constants.Globals.EEJitManagerAddress), eeJitManagerGlobalPointer.Address),
             ];
             Globals = Globals
                 .Concat(MockDescriptors.HashMap.GetGlobals(Builder.TargetTestHelpers))
@@ -369,11 +399,29 @@ internal partial class MockDescriptors
 
         public TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
         {
+            return AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: true);
+        }
+
+        /// <summary>
+        /// Creates a range section fragment in memory without inserting it into the range section map.
+        /// Use this for fragments that should only be reachable via another fragment's <c>Next</c> pointer
+        /// (e.g., the tail of a collectible fragment chain).
+        /// </summary>
+        public TargetPointer AddUnmappedRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
+        {
+            return AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: false);
+        }
+
+        private TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress, bool insertIntoMap)
+        {
             var tyInfo = Types[DataType.RangeSectionFragment];
             uint rangeSectionFragmentSize = tyInfo.Size.Value;
             MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment");
-            // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
-            _rsmBuilder.InsertAddressRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
+            if (insertIntoMap)
+            {
+                // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
+                _rsmBuilder.InsertAddressRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
+            }
             Builder.AddHeapFragment(rangeSectionFragment);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
             Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
@@ -381,7 +429,35 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
             /* Next = nullptr */
-            // nothing
+            return rangeSectionFragment.Address;
+        }
+
+        /// <summary>
+        /// Adds a range section fragment whose <c>Next</c> pointer has bit 0 set (the collectible tag).
+        /// In the native runtime, <c>RangeSectionFragmentPointer</c> (see codeman.h) uses bit 0 to mark
+        /// fragments belonging to collectible assembly load contexts. The cDAC must strip this bit before
+        /// dereferencing <c>Next</c>; failing to do so causes reads at a misaligned address, producing
+        /// garbage field values. This helper enables testing that the tag bit is correctly stripped.
+        /// </summary>
+        /// <param name="mapCodeRange">The code range whose map entries should point to this fragment.</param>
+        /// <param name="rangeSectionAddress">The <c>RangeSection</c> this fragment belongs to.</param>
+        /// <param name="nextFragmentAddress">The actual address of the next fragment in the linked list
+        /// (the collectible tag bit will be OR'd onto this value).</param>
+        /// <returns>The address of the newly created head fragment.</returns>
+        public TargetPointer AddRangeSectionFragmentWithCollectibleNext(JittedCodeRange mapCodeRange, TargetPointer rangeSectionAddress, TargetPointer nextFragmentAddress)
+        {
+            var tyInfo = Types[DataType.RangeSectionFragment];
+            uint rangeSectionFragmentSize = tyInfo.Size.Value;
+            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment (collectible head)");
+            // Insert this fragment into the map, overriding any existing entry for the range
+            _rsmBuilder.InsertAddressRange(mapCodeRange.RangeStart, (uint)mapCodeRange.RangeSize, rangeSectionFragment.Address);
+            Builder.AddHeapFragment(rangeSectionFragment);
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
+            // RangeBegin and RangeEndOpen are zero-initialized (empty range, Contains always returns false)
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
+            // Write Next with the collectible tag bit (bit 0) set
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.Next)].Offset, pointerSize), nextFragmentAddress.Value | 1);
             return rangeSectionFragment.Address;
         }
 
@@ -430,6 +506,7 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
 
             // fields are not used in the test, but we still need to write them
+            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.DebugInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.GCInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
             Builder.TargetTestHelpers.Write(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.NumUnwindInfos)].Offset, sizeof(uint)), 0u);
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.UnwindInfos)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);

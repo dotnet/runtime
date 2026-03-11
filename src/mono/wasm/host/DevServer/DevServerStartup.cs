@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Net.WebSockets;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -119,12 +120,22 @@ internal sealed class DevServerStartup
 
             // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
             string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
-            if (!string.IsNullOrEmpty(fileUploadPath))
+            string? fileUploadPattern = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATTERN");
+            if (!string.IsNullOrEmpty(fileUploadPath) && !string.IsNullOrEmpty(fileUploadPattern))
             {
                 // Ensure the upload directory exists
                 if (!Directory.Exists(fileUploadPath))
                 {
                     Directory.CreateDirectory(fileUploadPath!);
+                }
+                Regex fileFilter;
+                try
+                {
+                    fileFilter = new Regex(fileUploadPattern!, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"DEVSERVER_UPLOAD_PATTERN value '{fileUploadPattern}' is not a valid regular expression: {ex.Message}", ex);
                 }
 
                 // Route with filename parameter
@@ -136,10 +147,12 @@ internal sealed class DevServerStartup
                         var routeValues = context.Request.RouteValues;
                         string? rawFileName = routeValues["filename"]?.ToString();
 
-                        // Generate a unique name if none provided
-                        if (string.IsNullOrEmpty(rawFileName))
+                        // skip upload if no name provided or invalid
+                        if (string.IsNullOrEmpty(rawFileName) || !fileFilter.IsMatch(rawFileName!))
                         {
-                            rawFileName = $"upload_{Guid.NewGuid():N}";
+                            context.Response.StatusCode = 403; // Forbidden
+                            await context.Response.WriteAsync("Invalid or missing filename for upload.");
+                            return;
                         }
 
                         // Sanitize filename - IMPORTANT: Only use GetFileName to strip any path components

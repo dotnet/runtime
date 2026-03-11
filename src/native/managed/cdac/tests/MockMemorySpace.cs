@@ -47,7 +47,7 @@ internal unsafe static partial class MockMemorySpace
         {
             foreach (var fragment in _heapFragments)
             {
-                if (address >= fragment.Address && address+(ulong)length <= fragment.Address + (ulong)fragment.Data.Length)
+                if (address >= fragment.Address && address + (ulong)length <= fragment.Address + (ulong)fragment.Data.Length)
                     return fragment.Data.AsSpan((int)(address - fragment.Address), length);
             }
             throw new InvalidOperationException($"No fragment includes addresses from 0x{address:x} with length {length}");
@@ -83,9 +83,9 @@ internal unsafe static partial class MockMemorySpace
             return this;
         }
 
-        internal ReadContext GetReadContext()
+        internal MemoryContext GetMemoryContext()
         {
-            ReadContext context = new ReadContext
+            MemoryContext context = new MemoryContext
             {
                 HeapFragments = _heapFragments,
             };
@@ -124,9 +124,9 @@ internal unsafe static partial class MockMemorySpace
     }
 
     // Used by ReadFromTarget to return the appropriate bytes
-    internal class ReadContext
+    internal class MemoryContext
     {
-        public IReadOnlyList<HeapFragment> HeapFragments { get; init; }
+        public IList<HeapFragment> HeapFragments { get; init; }
 
         internal int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -171,6 +171,55 @@ internal unsafe static partial class MockMemorySpace
 
             if (partialReadOcurred)
                 throw new InvalidOperationException($"Not enough data in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
+            return -1;
+        }
+
+        internal int WriteToTarget(ulong address, Span<byte> buffer)
+        {
+            if (buffer.Length == 0)
+                return 0;
+
+            if (address == 0)
+                return -1;
+
+            bool partialWriteOccurred = false;
+            HeapFragment lastHeapFragment = default;
+            int availableLength = 0;
+            while (true)
+            {
+                bool tryAgain = false;
+                for (int i = 0; i < HeapFragments.Count; i++)
+                {
+                    var fragment = HeapFragments[i];
+                    if (address >= fragment.Address && address < fragment.Address + (ulong)fragment.Data.Length)
+                    {
+                        int offset = (int)(address - fragment.Address);
+                        availableLength = fragment.Data.Length - offset;
+                        if (availableLength >= buffer.Length)
+                        {
+                            buffer.CopyTo(fragment.Data.AsSpan(offset, buffer.Length));
+                            HeapFragments[i] = fragment; // Update the fragment in the list
+                            return 0;
+                        }
+                        else
+                        {
+                            lastHeapFragment = fragment;
+                            partialWriteOccurred = true;
+                            tryAgain = true;
+                            buffer.Slice(0, availableLength).CopyTo(fragment.Data.AsSpan(offset, availableLength));
+                            HeapFragments[i] = fragment; // Update the fragment in the list
+                            buffer = buffer.Slice(availableLength);
+                            address = fragment.Address + (ulong)fragment.Data.Length;
+                            break;
+                        }
+                    }
+                }
+                if (!tryAgain)
+                    break;
+            }
+
+            if (partialWriteOccurred)
+                throw new InvalidOperationException($"Not enough space in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to write {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
             return -1;
         }
     }

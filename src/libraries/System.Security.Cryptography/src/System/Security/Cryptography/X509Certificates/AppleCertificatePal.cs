@@ -333,7 +333,7 @@ namespace System.Security.Cryptography.X509Certificates
             privateKey.SetParentHandle(_certHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
-            return new RSAImplementation.RSASecurityTransforms(publicKey, privateKey);
+            return new RSAImplementation.RSAAppleCrypto(publicKey, privateKey);
         }
 
         public ECDsa? GetECDsaPrivateKey()
@@ -347,7 +347,7 @@ namespace System.Security.Cryptography.X509Certificates
             privateKey.SetParentHandle(_certHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
-            return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
+            return new ECDsaImplementation.ECDsaAppleCrypto(publicKey, privateKey);
         }
 
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
@@ -361,7 +361,7 @@ namespace System.Security.Cryptography.X509Certificates
             privateKey.SetParentHandle(_certHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
-            return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanAppleCrypto(publicKey, privateKey);
         }
 
         public MLDsa? GetMLDsaPrivateKey()

@@ -13,8 +13,8 @@ SHash<TRAITS>::SHash()
     m_tableOccupied(0),
     m_tableMax(0)
 {
-    C_ASSERT(TRAITS::s_growth_factor_numerator > TRAITS::s_growth_factor_denominator);
-    C_ASSERT(TRAITS::s_density_factor_numerator < TRAITS::s_density_factor_denominator);
+    static_assert(TRAITS::s_growth_factor_numerator > TRAITS::s_growth_factor_denominator);
+    static_assert(TRAITS::s_density_factor_numerator < TRAITS::s_density_factor_denominator);
 }
 
 template <typename TRAITS>

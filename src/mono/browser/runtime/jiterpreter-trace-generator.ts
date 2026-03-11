@@ -1115,7 +1115,7 @@ export function generateWasmBody (
                 // Stash obj->vtable->klass so we can do a fast has_parent check later
                 if (canDoFastCheck)
                     builder.local("src_ptr", WasmOpcode.tee_local);
-                builder.i32_const(klass);
+                builder.ptr_const(klass);
                 builder.appendU8(WasmOpcode.i32_eq);
                 builder.block(WasmValtype.void, WasmOpcode.if_); // if A
 
@@ -1206,7 +1206,7 @@ export function generateWasmBody (
                     elementClassOffset = getMemberOffset(JiterpMember.ClassElementClass),
                     destOffset = getArgU16(ip, 1),
                     // Get the class's element class, which is what we will actually type-check against
-                    elementClass = getU32_unaligned(klass + elementClassOffset);
+                    elementClass = getU32_unaligned(klass + elementClassOffset) >>> 0;
 
                 if (!klass || !elementClass) {
                     record_abort(builder.traceIndex, ip, traceName, "null-klass");
@@ -1234,7 +1234,7 @@ export function generateWasmBody (
                 builder.local("src_ptr", WasmOpcode.tee_local);
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(elementClassOffset, 0);
-                builder.i32_const(elementClass);
+                builder.ptr_const(elementClass);
                 builder.appendU8(WasmOpcode.i32_eq);
 
                 // Check klass->rank == 0
@@ -1285,7 +1285,7 @@ export function generateWasmBody (
                 builder.block();
                 append_ldloca(builder, getArgU16(ip, 1), 4);
                 const vtable = get_imethod_data(frame, getArgU16(ip, 3));
-                builder.i32_const(vtable);
+                builder.ptr_const(vtable);
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 builder.callImport("newarr");
                 // If the newarr operation succeeded, continue, otherwise bailout
@@ -1973,6 +1973,7 @@ function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix
         // This looks wrong but I assure you it's correct.
         builder.appendULeb(simdOpcode);
     }
+    offset = offset >>> 0;
     const alignment = computeMemoryAlignment(offset, opcodeOrPrefix, simdOpcode);
     builder.appendMemarg(offset, alignment);
     invalidate_local(offset);
@@ -2335,7 +2336,7 @@ function emit_fieldop (
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.traceIndex);
-                    builder.i32_const(ip);
+                    builder.ptr_const(ip);
                     builder.callImport("notnull");
                 }
             }

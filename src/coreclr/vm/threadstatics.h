@@ -43,11 +43,12 @@
 
 class Thread;
 
+// [cDAC] [Thread]: Contract depends on the values of NonCollectible, Collectible, and DirectOnThreadLocalData.
 enum class TLSIndexType
 {
-    NonCollectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address
-    Collectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pCollectibleTlsArrayData to get the final address
-    DirectOnThreadLocalData, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
+    NonCollectible = 0, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address
+    Collectible = 1, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pCollectibleTlsArrayData to get the final address
+    DirectOnThreadLocalData = 2, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
 };
 
 struct TLSIndex
@@ -67,6 +68,16 @@ struct TLSIndex
 // Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
 struct InFlightTLSData;
 typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
+struct InFlightTLSData
+{
+#ifndef DACCESS_COMPILE
+    InFlightTLSData(TLSIndex index);
+    ~InFlightTLSData();
+#endif // !DACCESS_COMPILE
+    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
+    TLSIndex tlsIndex; // The TLS index for the static
+    OBJECTHANDLE hTLSData; // The TLS data for the static
+};
 
 #define EXTENDED_DIRECT_THREAD_LOCAL_SIZE 48
 
@@ -78,8 +89,8 @@ struct ThreadLocalData
     PTR_Object pNonCollectibleTlsArrayData;
     DPTR(OBJECTHANDLE) pCollectibleTlsArrayData; // Points at the Thread local array data.
     PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
+    uint32_t managedThreadId;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.t_first
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 
