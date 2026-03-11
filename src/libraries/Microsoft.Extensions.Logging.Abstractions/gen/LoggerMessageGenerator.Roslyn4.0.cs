@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     ImmutableArray<(LoggerClassSpec, bool)>.Builder? specs = null;
                     ImmutableArray<Diagnostic>.Builder? diagnostics = null;
-                    HashSet<(string Id, TextSpan? Span, string? FilePath)>? seen = null;
+                    HashSet<(string Id, TextSpan? Span, string? FilePath, string Message)>? seen = null;
 
                     foreach (var item in items)
                     {
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
                         foreach (Diagnostic diagnostic in item.Diagnostics)
                         {
-                            if ((seen ??= new()).Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
+                            if ((seen ??= new()).Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath, diagnostic.GetMessage())))
                             {
                                 (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
                             }
