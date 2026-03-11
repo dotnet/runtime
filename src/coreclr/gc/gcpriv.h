@@ -144,9 +144,11 @@ inline void FATAL_GC_ERROR()
 // For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
 // to the mmap() calls in unix/gcenv.unix.cpp  More details here:
 //    https://github.com/dotnet/runtime/issues/104211
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun)
+// Apple mobile platforms (iOS, tvOS) disallow large virtual address space
+// reservations that GC regions require.
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX))
 #define USE_REGIONS
-#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun
+#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX)
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
