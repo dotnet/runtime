@@ -1441,7 +1441,7 @@ void emitter::emitPacInProlog()
         return;
     }
     emitIns(INS_paciasp);
-    emitComp->unwindPacSignLR();
+    m_compiler->unwindPacSignLR();
 }
 
 //------------------------------------------------------------------------
@@ -1454,7 +1454,7 @@ void emitter::emitPacInEpilog()
         return;
     }
     emitIns(INS_autiasp);
-    emitComp->unwindPacSignLR();
+    m_compiler->unwindPacSignLR();
 }
 
 //------------------------------------------------------------------------
