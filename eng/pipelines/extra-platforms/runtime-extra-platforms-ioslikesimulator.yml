@@ -90,49 +90,39 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# Build the whole product using Native AOT for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
+# iOS/tvOS simulators
+# Build the whole product using Native AOT and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
       - iossimulator_x64
       - iossimulator_arm64
       - tvossimulator_arm64
     variables:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: pr/dotnet/runtime/$(Build.SourceBranch)
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-        - name: _HelixSource
-          value: ci/dotnet/runtime/$(Build.SourceBranch)
-      - name: timeoutPerTestInMinutes
-        value: 60
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT_RuntimeTests
+      nameSuffix: AllSubsets_NativeAOT
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 180
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       # extra steps, run tests
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          parameters:
-            testGroup: innerloop
-            useNativeAOTRuntime: true
       postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+        - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            buildAllTestsAsStandalone: true
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # Build the whole product using CoreCLR R2R and run runtime tests
