@@ -2,5 +2,6 @@
   <PropertyGroup>
     <!-- This debuggee is intentionally Windows-only (COM interop). -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <DumpTypes>Full</DumpTypes>
   </PropertyGroup>
 </Project>
