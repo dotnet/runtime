@@ -58,7 +58,7 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
 export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
     try {
         const module = await loadJSModule(asset);
-        if (module.onRuntimeConfigLoaded) {
+        if (typeof module.onRuntimeConfigLoaded === "function") {
             await module.onRuntimeConfigLoaded(loaderConfig);
         }
         return module;
@@ -71,7 +71,7 @@ export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset
 export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise]: [JsAsset, Promise<any>]): Promise<void> {
     try {
         const module = await modulePromise;
-        if (module.onRuntimeReady) {
+        if (typeof module.onRuntimeReady === "function") {
             await module.onRuntimeReady(dotnetApi);
         }
     } catch (err) {
