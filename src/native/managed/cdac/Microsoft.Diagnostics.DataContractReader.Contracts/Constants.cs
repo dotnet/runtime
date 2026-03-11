@@ -94,6 +94,7 @@ public static class Constants
         public const string TearOffAddRefSimple = nameof(TearOffAddRefSimple);
         public const string TearOffAddRefSimpleInner = nameof(TearOffAddRefSimpleInner);
         public const string RCWCleanupList = nameof(RCWCleanupList);
+        public const string RCWInterfaceCacheSize = nameof(RCWInterfaceCacheSize);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
