@@ -2661,8 +2661,7 @@ AGAIN:
             case GT_CNS_INT:
                 if ((op1->AsIntCon()->gtIconVal == op2->AsIntCon()->gtIconVal) &&
                     (op1->GetIconHandleFlag() == op2->GetIconHandleFlag()) &&
-                    (op1->AsIntCon()->gtFieldSeq == op2->AsIntCon()->gtFieldSeq) &&
-                    (op1->AsIntCon()->gtCompileTimeHandle == op2->AsIntCon()->gtCompileTimeHandle))
+                    (op1->AsIntCon()->gtFieldSeq == op2->AsIntCon()->gtFieldSeq))
                 {
                     return true;
                 }
