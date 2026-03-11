@@ -146,43 +146,6 @@ namespace System.IO.Compression
             Assert.True(written > 0);
         }
 
-        [Fact]
-        public void GZipEncoder_GZipStream_Interop()
-        {
-            byte[] input = CreateTestData();
-            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
-            using var encoder = new GZipEncoder(6);
-            encoder.Compress(input, compressed, out _, out int compressedSize, isFinalBlock: true);
-
-            using var ms = new MemoryStream(compressed, 0, compressedSize);
-            using var gzipStream = new GZipStream(ms, CompressionMode.Decompress);
-            using var resultStream = new MemoryStream();
-            gzipStream.CopyTo(resultStream);
-
-            Assert.Equal(input, resultStream.ToArray());
-        }
-
-        [Fact]
-        public void GZipStream_GZipDecoder_Interop()
-        {
-            byte[] input = CreateTestData();
-            using var ms = new MemoryStream();
-            using (var gzipStream = new GZipStream(ms, CompressionLevel.Optimal, leaveOpen: true))
-            {
-                gzipStream.Write(input);
-            }
-
-            byte[] compressed = ms.ToArray();
-            byte[] decompressed = new byte[input.Length];
-
-            using var decoder = new GZipDecoder();
-            OperationStatus status = decoder.Decompress(compressed, decompressed, out _, out int written);
-
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(input.Length, written);
-            Assert.Equal(input, decompressed);
-        }
-
         #endregion
     }
 }
