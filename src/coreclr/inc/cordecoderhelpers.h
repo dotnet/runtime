@@ -10,6 +10,7 @@
 //
 // The template parameter TDecoder must provide:
 //   - IMAGE_COR20_HEADER *GetCorHeader() const
+//   - CHECK CheckCorHeader() const
 //   - CHECK CheckRva(RVA rva, ...) const
 //   - TADDR GetRvaData(RVA rva, ...) const
 //   - BOOL HasDirectoryEntry(int entry) const
@@ -89,7 +90,7 @@ inline BOOL IsStrongNameSigned(const TDecoder& decoder)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
     }
     CONTRACTL_END;
 
@@ -104,7 +105,7 @@ inline BOOL HasStrongNameSignature(const TDecoder& decoder)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
     }
     CONTRACTL_END;
 
@@ -123,7 +124,7 @@ inline PTR_CVOID GetMetadata(const TDecoder& decoder, COUNT_T *pSize)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
         PRECONDITION(CheckPointer(pSize, NULL_OK));
     }
     CONTRACT_END;
@@ -151,7 +152,7 @@ inline BOOL HasManagedEntryPoint(const TDecoder& decoder)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
     }
     CONTRACTL_END;
 
@@ -167,7 +168,7 @@ inline ULONG GetEntryPointToken(const TDecoder& decoder)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
     }
     CONTRACT_END;
 
@@ -185,7 +186,7 @@ inline const void *GetResources(const TDecoder& decoder, COUNT_T *pSize)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
         PRECONDITION(CheckPointer(pSize, NULL_OK));
     }
     CONTRACT_END;
@@ -209,7 +210,7 @@ inline CHECK CheckResource(const TDecoder& decoder, COUNT_T offset)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
     }
     CONTRACT_CHECK_END;
 
@@ -237,7 +238,7 @@ inline const void *GetResource(const TDecoder& decoder, COUNT_T offset, COUNT_T 
     {
         NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(decoder.HasCorHeader());
+        PRECONDITION(decoder.CheckCorHeader());
         PRECONDITION(CheckPointer(pSize, NULL_OK));
     }
     CONTRACT_END;
