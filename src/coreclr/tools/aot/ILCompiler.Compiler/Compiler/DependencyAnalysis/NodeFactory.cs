@@ -46,8 +46,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8));
-
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
@@ -103,11 +101,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
-        {
-            get;
-        }
-
-        public ISymbolNode InitialInterfaceDispatchStub
         {
             get;
         }
