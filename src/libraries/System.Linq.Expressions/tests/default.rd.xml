@@ -4,7 +4,7 @@
       <Type Name="System.Collections.Generic.List`1" Dynamic="Required All" />
     </Assembly>
 
-    <Assembly Name="xunit.v3.assert">
+    <Assembly Name="Xunit.Assert">
       <Type Name="Xunit.Assert" Dynamic="Required All" />
     </Assembly>
 
