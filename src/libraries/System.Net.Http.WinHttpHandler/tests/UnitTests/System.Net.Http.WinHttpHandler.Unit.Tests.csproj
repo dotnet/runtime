@@ -5,6 +5,9 @@
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <DefineConstants>$(DefineConstants);UNITTEST</DefineConstants>
+    <!-- Prevent xunit v3 auto-generated namespace from conflicting with the
+         System.Net.Http.WinHttpHandler type (CS0435). -->
+    <RootNamespace>System.Net.Http.WinHttpHandler.UnitTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />

@@ -5,7 +5,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <!-- This seems to be required for supporting assemblies to be copied into the output -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <TestRunnerAdditionalArguments>--filter-not-trait category=failing</TestRunnerAdditionalArguments>
     <!-- xunit.runner.visualstudio is restored for .NET Framework instead of Core-->
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be

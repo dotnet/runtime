@@ -31,6 +31,22 @@
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
   <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
+  <!--
+    The xunit.v3.core.mtp-v1 NuGet package unconditionally sets UseAppHost=true
+    in its buildTransitive props and validates it in its buildTransitive targets.
+    Test projects in dotnet/runtime don't need an apphost (tests are run via
+    dotnet exec or the Helix test runner).  Override UseAppHost here, in
+    Directory.Build.targets, which is imported after the NuGet package targets.
+    Library tests also have an override in eng/testing/xunit/xunit.targets.
+  -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(TestSingleFile)' != 'true'">
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <Target Name="_XunitValidateBuild" BeforeTargets="BeforeBuild" Condition=" '$(TargetFramework)' != '' AND '$(IsTestProject)' == 'true' ">
+    <Error Text="xUnit.net v3 test projects must be executable (set project property '&lt;OutputType&gt;Exe&lt;/OutputType&gt;')."
+           Condition=" '$(OutputType)' != 'Exe' AND '$(TargetsMobile)' != 'true' " />
+  </Target>
+
   <PropertyGroup>
     <NetCoreAppCurrentBuildSettings>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>

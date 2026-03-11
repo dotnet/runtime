@@ -7,11 +7,11 @@
          as a library. Setting Exe on these platforms triggers NETSDK1084 because no
          application host exists for their RIDs. -->
     <OutputType Condition="'$(TargetsMobile)' != 'true'">Exe</OutputType>
-    <!-- Library tests are executed via dotnet exec or archived for Helix,
-         never via a native application host. Disabling UseAppHost avoids
-         NETSDK1084 when the build RID has no apphost (e.g. android-arm64
-         cross-compilation from a linux-x64 host using the unix TFM). -->
-    <UseAppHost>false</UseAppHost>
+    <!-- UseAppHost is set in xunit.targets instead of here because the
+         xunit.v3.core.mtp-v1 package's buildTransitive props unconditionally
+         set UseAppHost=true and NuGet props are imported after Directory.Build.props.
+         Setting it in xunit.targets (imported after NuGet targets) ensures our
+         value wins. -->
   </PropertyGroup>
 
   <ItemGroup>

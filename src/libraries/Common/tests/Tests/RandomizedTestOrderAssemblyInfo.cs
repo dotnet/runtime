@@ -3,5 +3,5 @@
 
 using Xunit;
 
-[assembly: TestCaseOrderer("TestUtilities.RandomTestCaseOrderer", "TestUtilities")]
-[assembly: TestCollectionOrderer("TestUtilities.RandomTestCollectionOrderer", "TestUtilities")]
+[assembly: TestCaseOrderer(typeof(TestUtilities.RandomTestCaseOrderer))]
+[assembly: TestCollectionOrderer(typeof(TestUtilities.RandomTestCollectionOrderer))]

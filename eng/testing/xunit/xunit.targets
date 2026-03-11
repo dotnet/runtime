@@ -20,6 +20,18 @@
   </PropertyGroup>
 
   <!--
+    The xunit.v3.core.mtp-v1 package's buildTransitive props unconditionally
+    set UseAppHost=true.  Library tests are executed via dotnet exec or archived
+    for Helix, never via a native application host.  Override UseAppHost here
+    (in targets, which is imported after the NuGet package props) so our value
+    wins.  Single-file/NativeAOT test builds genuinely need UseAppHost=true, so
+    honour whatever tests.singlefile.targets already set in that case.
+  -->
+  <PropertyGroup Condition="'$(TestSingleFile)' != 'true'">
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <!--
     Override the xunit.v3.core.mtp-v1 validation target. The original target
     errors when OutputType != Exe or UseAppHost != true on .NETCoreApp. In
     dotnet/runtime, mobile and browser-wasm platforms legitimately use
