@@ -591,6 +591,12 @@ struct cdac_data<RCW>
     static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
     static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
     static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
+    static constexpr size_t IdentityPointer = offsetof(RCW, m_pIdentity);
+    static constexpr size_t SyncBlockIndex = offsetof(RCW, m_SyncBlockIndex);
+    static constexpr size_t VTablePtr = offsetof(RCW, m_vtablePtr);
+    static constexpr size_t CreatorThread = offsetof(RCW, m_pCreatorThread);
+    static constexpr size_t RefCount = offsetof(RCW, m_cbRefCount);
+    static constexpr size_t UnknownPointer = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pUnknown);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)

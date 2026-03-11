@@ -23,10 +23,16 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         Slot_Basic = 0,
     }
-    // Matches the bit position of m_MarshalingType within RCW::RCWFlags::m_dwFlags.
-    private const int MarshalingTypeShift = 7;
-    private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
-    private const uint MarshalingTypeFreeThreaded = 2u;
+    // Mirrors RCW::RCWFlags bits in src/coreclr/vm/runtimecallablewrapper.h.
+    // [cDAC] [BuiltInCOM]: Contract depends on these bit positions within m_dwFlags.
+    private const uint URTAggregatedMask = 0x10u;       // bit 4: m_fURTAggregated
+    private const uint URTContainedMask = 0x20u;        // bit 5: m_fURTContained
+    private const uint MarshalingTypeMask = 0x180u;     // bits 7-8: m_MarshalingType
+    private const uint MarshalingTypeFreeThreadedValue = 0x100u; // MarshalingType_FreeThreaded (2) in bits 7-8
+
+    // Sentinel value written to IUnkEntry::m_pUnknown when an RCW is disconnected from its COM object.
+    // Mirrors the value 0xBADF00D used in IUnkEntry::IsDisconnected in src/coreclr/vm/comcache.h.
+    private const ulong DisconnectedSentinel = 0xBADF00Du;
 
     internal BuiltInCOM_1(Target target)
     {
@@ -173,7 +179,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         while (bucketPtr != TargetPointer.Null)
         {
             Data.RCW bucket = _target.ProcessedData.GetOrAdd<Data.RCW>(bucketPtr);
-            bool isFreeThreaded = (bucket.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
+            bool isFreeThreaded = (bucket.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreadedValue;
             TargetPointer ctxCookie = bucket.CtxCookie;
             TargetPointer staThread = GetSTAThread(bucket);
 
@@ -216,5 +222,44 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
 
         return rcwData.CtxCookie;
+    }
+
+    public RCWData GetRCWData(TargetPointer rcw)
+    {
+        Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
+
+        TargetPointer managedObject = TargetPointer.Null;
+        if (rcwData.SyncBlockIndex != 0)
+        {
+            ISyncBlock syncBlock = _target.Contracts.SyncBlock;
+            managedObject = syncBlock.GetSyncBlockObject(rcwData.SyncBlockIndex);
+        }
+
+        return new RCWData(
+            IdentityPointer: rcwData.IdentityPointer,
+            UnknownPointer: rcwData.UnknownPointer,
+            ManagedObject: managedObject,
+            VTablePtr: rcwData.VTablePtr,
+            CreatorThread: rcwData.CreatorThread,
+            CtxCookie: rcwData.CtxCookie,
+            RefCount: rcwData.RefCount,
+            IsAggregated: (rcwData.Flags & URTAggregatedMask) != 0,
+            IsContained: (rcwData.Flags & URTContainedMask) != 0,
+            IsFreeThreaded: (rcwData.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreadedValue,
+            IsDisconnected: IsRCWDisconnected(rcwData));
+    }
+
+    // Mirrors IUnkEntry::IsDisconnected in src/coreclr/vm/comcache.h.
+    private bool IsRCWDisconnected(Data.RCW rcw)
+    {
+        if (rcw.UnknownPointer == DisconnectedSentinel)
+            return true;
+
+        TargetPointer ctxEntryPtr = rcw.CtxEntry & ~(ulong)1;
+        if (ctxEntryPtr == TargetPointer.Null)
+            return false;
+
+        Data.CtxEntry ctxEntry = _target.ProcessedData.GetOrAdd<Data.CtxEntry>(ctxEntryPtr);
+        return rcw.CtxCookie != ctxEntry.CtxCookie;
     }
 }
