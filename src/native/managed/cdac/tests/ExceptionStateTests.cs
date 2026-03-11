@@ -52,6 +52,70 @@ public unsafe class ExceptionStateTests
         return (target, thrownObjectHandle);
     }
 
+    private delegate void GetNestedExceptionInfoCallback(TargetPointer addr, out TargetPointer nextNestedException, out TargetPointer thrownObjectHandle);
+
+    private static void SetupGetNestedExceptionInfo(
+        Mock<IException> mock,
+        TargetPointer address,
+        TargetPointer nextNestedException,
+        TargetPointer thrownObjectHandle)
+    {
+        mock.Setup(e => e.GetNestedExceptionInfo(address, out It.Ref<TargetPointer>.IsAny, out It.Ref<TargetPointer>.IsAny))
+            .Callback(new GetNestedExceptionInfoCallback((TargetPointer addr, out TargetPointer next, out TargetPointer handle) =>
+            {
+                next = nextNestedException;
+                handle = thrownObjectHandle;
+            }));
+    }
+
+    private static (TestPlaceholderTarget Target, IXCLRDataTask Task) CreateTargetWithThread(
+        MockTarget.Architecture arch,
+        TargetPointer threadAddr,
+        TargetPointer thrownObjectHandle,
+        TargetPointer firstNestedException)
+    {
+        var mockThread = new Mock<IThread>();
+        mockThread.Setup(t => t.GetCurrentExceptionHandle(threadAddr)).Returns(thrownObjectHandle);
+        mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
+            Id: 1,
+            OSId: new TargetNUInt(1234),
+            State: default,
+            PreemptiveGCDisabled: false,
+            AllocContextPointer: TargetPointer.Null,
+            AllocContextLimit: TargetPointer.Null,
+            Frame: TargetPointer.Null,
+            FirstNestedException: firstNestedException,
+            TEB: TargetPointer.Null,
+            LastThrownObjectHandle: TargetPointer.Null,
+            NextThread: TargetPointer.Null));
+
+        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
+        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Thread == mockThread.Object));
+
+        IXCLRDataTask task = new ClrDataTask(threadAddr, target, null);
+        return (target, task);
+    }
+
+    private static void AssertFlags(IXCLRDataExceptionState exceptionState, uint expectedFlags)
+    {
+        uint flags;
+        int hr = exceptionState.GetFlags(&flags);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(expectedFlags, flags);
+    }
+
+    private static (int Hr, uint StrLen, char[] Buffer) CallGetString(IXCLRDataExceptionState exceptionState, uint bufLen)
+    {
+        char[] buffer = new char[bufLen];
+        uint strLen;
+        int hr;
+        fixed (char* str = buffer)
+        {
+            hr = exceptionState.GetString(bufLen, &strLen, str);
+        }
+        return (hr, strLen, buffer);
+    }
+
     [Theory]
     [InlineData((uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, false, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT)]
     [InlineData((uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, true, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED)]
@@ -67,10 +131,7 @@ public unsafe class ExceptionStateTests
             previousExInfoAddress: previousExInfo,
             legacyImpl: null);
 
-        uint flags;
-        int hr = exceptionState.GetFlags(&flags);
-        Assert.Equal(HResults.S_OK, hr);
-        Assert.Equal(expectedFlags, flags);
+        AssertFlags(exceptionState, expectedFlags);
     }
 
     [Theory]
@@ -84,14 +145,7 @@ public unsafe class ExceptionStateTests
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
             thrownObjectHandle, TargetPointer.Null, null);
 
-        uint bufferSize = 256;
-        char[] buffer = new char[bufferSize];
-        uint strLen;
-        int hr;
-        fixed (char* ptr = buffer)
-        {
-            hr = exceptionState.GetString(bufferSize, &strLen, ptr);
-        }
+        (int hr, uint strLen, char[] buffer) = CallGetString(exceptionState, bufLen: 256);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal((uint)expectedMessage.Length + 1, strLen);
         Assert.Equal(expectedMessage, new string(buffer, 0, expectedMessage.Length));
@@ -106,17 +160,27 @@ public unsafe class ExceptionStateTests
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
             thrownObjectHandle, TargetPointer.Null, null);
 
-        uint bufferSize = 256;
-        char[] buffer = new char[bufferSize];
-        uint strLen;
-        int hr;
-        fixed (char* ptr = buffer)
-        {
-            hr = exceptionState.GetString(bufferSize, &strLen, ptr);
-        }
+        (int hr, uint strLen, char[] buffer) = CallGetString(exceptionState, bufLen: 256);
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(0u, strLen);
         Assert.Equal('\0', buffer[0]);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetString_NullMessageNonEmptyBuffer(MockTarget.Architecture arch)
+    {
+        (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) = CreateTargetWithException(arch, TargetPointer.Null, null);
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            thrownObjectHandle, TargetPointer.Null, null);
+
+        uint bufferSize = 256;
+        char* str = null;
+        uint strLen;
+        int hr;
+        hr = exceptionState.GetString(bufferSize, &strLen, str);
+        Assert.Equal(HResults.E_INVALIDARG, hr);
     }
 
     [Theory]
@@ -130,14 +194,7 @@ public unsafe class ExceptionStateTests
             target, new TargetPointer(0x1000), (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
             thrownObjectHandle, TargetPointer.Null, null);
 
-        uint bufferSize = 5;
-        char[] buffer = new char[bufferSize];
-        uint strLen;
-        int hr;
-        fixed (char* ptr = buffer)
-        {
-            hr = exceptionState.GetString(bufferSize, &strLen, ptr);
-        }
+        (int hr, uint strLen, _) = CallGetString(exceptionState, bufLen: 5);
         Assert.Equal(HResults.S_FALSE, hr);
         Assert.Equal((uint)expectedMessage.Length + 1, strLen);
     }
@@ -228,93 +285,147 @@ public unsafe class ExceptionStateTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetCurrentExceptionState_NestedException(MockTarget.Architecture arch)
     {
-        TargetPointer threadAddr = new TargetPointer(0x1000);
-        TargetPointer thrownObjectHandle = new TargetPointer(0x2000);
-        TargetPointer firstNestedException = new TargetPointer(0x3000);
+        (_, IXCLRDataTask task) = CreateTargetWithThread(
+            arch,
+            threadAddr: new TargetPointer(0x1000),
+            thrownObjectHandle: new TargetPointer(0x2000),
+            firstNestedException: new TargetPointer(0x3000));
 
-        var mockThread = new Mock<IThread>();
-        mockThread.Setup(t => t.GetCurrentExceptionHandle(threadAddr)).Returns(thrownObjectHandle);
-        mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
-            Id: 1,
-            OSId: new TargetNUInt(1234),
-            State: default,
-            PreemptiveGCDisabled: false,
-            AllocContextPointer: TargetPointer.Null,
-            AllocContextLimit: TargetPointer.Null,
-            Frame: TargetPointer.Null,
-            FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
-            LastThrownObjectHandle: TargetPointer.Null,
-            NextThread: TargetPointer.Null));
-
-        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
-        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Thread == mockThread.Object));
-
-        IXCLRDataTask task = new ClrDataTask(threadAddr, target, null);
-        int hr = task.GetCurrentExceptionState(out IXCLRDataExceptionState? exception);
+        DacComNullableByRef<IXCLRDataExceptionState> exception = new(isNullRef: false);
+        int hr = task.GetCurrentExceptionState(exception);
 
         Assert.Equal(HResults.S_OK, hr);
-        Assert.NotNull(exception);
+        Assert.NotNull(exception.Interface);
 
-        uint flags;
-        int flagsHr = exception.GetFlags(&flags);
-        Assert.Equal(HResults.S_OK, flagsHr);
-        Assert.Equal((uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED, flags);
+        AssertFlags(exception.Interface, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetCurrentExceptionState_WithException(MockTarget.Architecture arch)
     {
-        TargetPointer threadAddr = new TargetPointer(0x1000);
-        TargetPointer thrownObjectHandle = new TargetPointer(0x2000);
+        (_, IXCLRDataTask task) = CreateTargetWithThread(
+            arch,
+            threadAddr: new TargetPointer(0x1000),
+            thrownObjectHandle: new TargetPointer(0x2000),
+            firstNestedException: TargetPointer.Null);
 
-        var mockThread = new Mock<IThread>();
-        mockThread.Setup(t => t.GetCurrentExceptionHandle(threadAddr)).Returns(thrownObjectHandle);
-        mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
-            Id: 1,
-            OSId: new TargetNUInt(1234),
-            State: default,
-            PreemptiveGCDisabled: false,
-            AllocContextPointer: TargetPointer.Null,
-            AllocContextLimit: TargetPointer.Null,
-            Frame: TargetPointer.Null,
-            FirstNestedException: TargetPointer.Null,
-            TEB: TargetPointer.Null,
-            LastThrownObjectHandle: TargetPointer.Null,
-            NextThread: TargetPointer.Null));
-
-        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
-        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Thread == mockThread.Object));
-
-        IXCLRDataTask task = new ClrDataTask(threadAddr, target, null);
-        int hr = task.GetCurrentExceptionState(out IXCLRDataExceptionState? exception);
+        DacComNullableByRef<IXCLRDataExceptionState> exception = new(isNullRef: false);
+        int hr = task.GetCurrentExceptionState(exception);
 
         Assert.Equal(HResults.S_OK, hr);
-        Assert.NotNull(exception);
+        Assert.NotNull(exception.Interface);
 
-        uint flags;
-        int flagsHr = exception.GetFlags(&flags);
-        Assert.Equal(HResults.S_OK, flagsHr);
-        Assert.Equal((uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, flags);
+        AssertFlags(exception.Interface, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetCurrentExceptionState_NoException(MockTarget.Architecture arch)
     {
-        TargetPointer threadAddr = new TargetPointer(0x1000);
+        (_, IXCLRDataTask task) = CreateTargetWithThread(
+            arch,
+            threadAddr: new TargetPointer(0x1000),
+            thrownObjectHandle: TargetPointer.Null,
+            firstNestedException: TargetPointer.Null);
 
-        var mockThread = new Mock<IThread>();
-        mockThread.Setup(t => t.GetCurrentExceptionHandle(threadAddr)).Returns(TargetPointer.Null);
-
-        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
-        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Thread == mockThread.Object));
-
-        IXCLRDataTask task = new ClrDataTask(threadAddr, target, null);
-        int hr = task.GetCurrentExceptionState(out IXCLRDataExceptionState? exception);
+        DacComNullableByRef<IXCLRDataExceptionState> exception = new(isNullRef: false);
+        int hr = task.GetCurrentExceptionState(exception);
 
         Assert.Equal(HResults.COR_E_INVALIDCAST, hr);
-        Assert.Null(exception);
+        Assert.Null(exception.Interface);
+    }
+
+    [Fact]
+    public void GetPrevious_NoPrevious()
+    {
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target: null!,
+            threadAddress: new TargetPointer(0x1000),
+            flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            thrownObjectHandle: new TargetPointer(0x2000),
+            previousExInfoAddress: TargetPointer.Null,
+            legacyImpl: null);
+
+        DacComNullableByRef<IXCLRDataExceptionState> previous = new(isNullRef: false);
+        int hr = exceptionState.GetPrevious(previous);
+        Assert.Equal(HResults.S_FALSE, hr);
+        Assert.Null(previous.Interface);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetPrevious_HasPrevious_ReturnsState(MockTarget.Architecture arch)
+    {
+        TargetPointer previousExInfoAddr = new TargetPointer(0x3000);
+        TargetPointer prevThrownObjectHandle = new TargetPointer(0x4000);
+        TargetPointer nextNestedException = new TargetPointer(0x5000);
+
+        var mockException = new Mock<IException>();
+        SetupGetNestedExceptionInfo(mockException, previousExInfoAddr, nextNestedException, prevThrownObjectHandle);
+
+        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
+        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Exception == mockException.Object));
+
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target,
+            threadAddress: new TargetPointer(0x1000),
+            flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            thrownObjectHandle: new TargetPointer(0x2000),
+            previousExInfoAddress: previousExInfoAddr,
+            legacyImpl: null);
+
+        DacComNullableByRef<IXCLRDataExceptionState> previous = new(isNullRef: false);
+        int hr = exceptionState.GetPrevious(previous);
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.NotNull(previous.Interface);
+
+        AssertFlags(previous.Interface,
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT | (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetPrevious_NestedExceptionsChain(MockTarget.Architecture arch)
+    {
+        TargetPointer firstNestedAddr = new TargetPointer(0x3000);
+        TargetPointer firstHandle = new TargetPointer(0x4000);
+        TargetPointer secondNestedAddr = new TargetPointer(0x5000);
+        TargetPointer secondHandle = new TargetPointer(0x6000);
+
+        var mockException = new Mock<IException>();
+        SetupGetNestedExceptionInfo(mockException, firstNestedAddr, secondNestedAddr, firstHandle);
+        SetupGetNestedExceptionInfo(mockException, secondNestedAddr, TargetPointer.Null, secondHandle);
+
+        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
+        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Exception == mockException.Object));
+
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target,
+            threadAddress: new TargetPointer(0x1000),
+            flags: (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            thrownObjectHandle: new TargetPointer(0x2000),
+            previousExInfoAddress: firstNestedAddr,
+            legacyImpl: null);
+
+        DacComNullableByRef<IXCLRDataExceptionState> first = new(isNullRef: false);
+        int hr1 = exceptionState.GetPrevious(first);
+        Assert.Equal(HResults.S_OK, hr1);
+        Assert.NotNull(first.Interface);
+
+        AssertFlags(first.Interface,
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT | (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED);
+
+        DacComNullableByRef<IXCLRDataExceptionState> second = new(isNullRef: false);
+        int hr2 = first.Interface.GetPrevious(second);
+        Assert.Equal(HResults.S_OK, hr2);
+        Assert.NotNull(second.Interface);
+
+        AssertFlags(second.Interface, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT);
+
+        DacComNullableByRef<IXCLRDataExceptionState> third = new(isNullRef: false);
+        int hr3 = second.Interface.GetPrevious(third);
+        Assert.Equal(HResults.S_FALSE, hr3);
+        Assert.Null(third.Interface);
     }
 }

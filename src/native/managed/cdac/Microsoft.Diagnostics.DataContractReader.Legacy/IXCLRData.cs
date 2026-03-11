@@ -480,7 +480,7 @@ public unsafe partial interface IXCLRDataTask
     int SetContext(uint contextSize, byte* context);
 
     [PreserveSig]
-    int GetCurrentExceptionState(out IXCLRDataExceptionState? exception);
+    int GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
@@ -936,7 +936,7 @@ public unsafe partial interface IXCLRDataExceptionState
     [PreserveSig]
     int GetFlags(uint* flags);
     [PreserveSig]
-    int GetPrevious(IXCLRDataExceptionState** exState);
+    int GetPrevious(DacComNullableByRef<IXCLRDataExceptionState> exState);
     [PreserveSig]
     int GetManagedObject(DacComNullableByRef<IXCLRDataValue> value);
     [PreserveSig]

@@ -93,17 +93,17 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     int IXCLRDataTask.SetContext(uint contextSize, byte* context)
         => _legacyImpl is not null ? _legacyImpl.SetContext(contextSize, context) : HResults.E_NOTIMPL;
 
-    int IXCLRDataTask.GetCurrentExceptionState(out IXCLRDataExceptionState? exception)
+    int IXCLRDataTask.GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
-        exception = null;
         IXCLRDataExceptionState? legacyExceptionState = null;
 
         if (_legacyImpl is not null)
         {
-            hrLocal = _legacyImpl.GetCurrentExceptionState(out legacyExceptionState);
+            DacComNullableByRef<IXCLRDataExceptionState> legacyExceptionStateOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetCurrentExceptionState(legacyExceptionStateOut);
+            legacyExceptionState = legacyExceptionStateOut.Interface;
         }
-
         try
         {
             TargetPointer thrownObjectHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(_address);
@@ -114,7 +114,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             else
             {
                 Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
-                exception = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
             }
         }
         catch (System.Exception ex)
