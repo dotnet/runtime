@@ -24,6 +24,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
+
 using System.Text;
 using System.Runtime.CompilerServices;
 using ILCompiler.ReadyToRun.TypeSystem;

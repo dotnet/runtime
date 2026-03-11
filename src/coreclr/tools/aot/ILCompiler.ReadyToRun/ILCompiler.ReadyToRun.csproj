@@ -83,6 +83,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmTypeNode.cs" Link="Compiler\DependencyAnalysis\WasmTypeNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
@@ -113,7 +115,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypeNode.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypeNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
