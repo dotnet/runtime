@@ -208,6 +208,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 void InvokeCalliStub(CalliStubParam* pParam);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
+void* GetCookieForCalliSig(MetaSig metaSig);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -3041,12 +3042,31 @@ SWITCH_OPCODE:
                         // If the PE has a MethodDesc, route through CALL_INTERP_METHOD which derives
                         // the cookie at runtime. This covers both interpreted methods and FCalls
                         // (which have native code set but still carry an MD).
-                        // JIT helper PEs (no MethodDesc) fall through to InvokeCalliStub using
-                        // the compile-time cookie.
+                        // JIT helper PEs (no MethodDesc) fall through to InvokeCalliStub — the
+                        // cookie is resolved at runtime from the calli's signature token.
                         targetMethod = PortableEntryPoint::TryGetMethodDesc(calliFunctionPointer);
                         if (targetMethod != nullptr)
                         {
                             goto CALL_INTERP_METHOD;
+                        }
+
+                        if (flags & (int32_t)CalliFlags::DeferredCookie)
+                        {
+                            // pDataItems[calliCookie] = sig token (immutable)
+                            // pDataItems[calliCookie + 1] = cached cookie (initially NULL)
+                            cookie = pMethod->pDataItems[calliCookie + 1];
+                            if (cookie == nullptr)
+                            {
+                                mdToken sigToken = (mdToken)(size_t)pMethod->pDataItems[calliCookie];
+                                MethodDesc* pCallerMD = (MethodDesc*)pMethod->methodHnd;
+                                Module* pModule = pCallerMD->GetModule();
+                                PCCOR_SIGNATURE pSig;
+                                ULONG cbSig;
+                                pModule->GetMDImport()->GetSigFromToken(sigToken, &cbSig, &pSig);
+                                MetaSig sig(pSig, cbSig, pModule, nullptr);
+                                cookie = GetCookieForCalliSig(sig);
+                                pMethod->pDataItems[calliCookie + 1] = cookie;
+                            }
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };

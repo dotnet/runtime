@@ -983,7 +983,7 @@ private:
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
     void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
     void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling);
-    void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
+    void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig, bool deferredCookie = false);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder, bool enableImplicitArgConversionRules);
