@@ -95,12 +95,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <SupportedPlatform Remove="@(SupportedPlatform)" />
     <SupportedPlatform Include="browser" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(EnableDefaultItems)' == 'true' And '$(EnableDefaultContentItems)' == 'true' And '$(WasmBundlerFriendlyBootConfig)' == 'true'">
-    <!-- In js bundler scenarios, also copy to output dir-->
-    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
-    <Content Update="wwwroot\.well-known\**" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 
   <!-- Wire-up static web assets -->
   <PropertyGroup>
@@ -669,6 +663,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
       <UserRuntimeConfig>$(MSBuildThisFileDirectory)browser.runtimeconfig.template.json</UserRuntimeConfig>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="EnsureBundlerFriendlyFilesInOutputDirectory"
+          BeforeTargets="CopyStaticWebAssetsToOutputDirectory"
+          Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">
+    <ItemGroup>
+      <StaticWebAsset Update="@(StaticWebAsset)">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </StaticWebAsset>
+    </ItemGroup>
   </Target>
 
   <!-- Publish starts here -->
