@@ -7830,7 +7830,6 @@ GenTreeBfm* Compiler::gtNewBfiNode(var_types type, GenTree* base, GenTree* src, 
 {
     GenTreeBfm* result = new (this, GT_BFI) GenTreeBfm(GT_BFI, type, base, src, offset, width);
     result->gtFlags |= (base->gtFlags | src->gtFlags) & (GTF_ALL_EFFECT);
-    result->gtFlags &= ~GTF_SET_FLAGS;
     return result;
 }
 
@@ -7838,7 +7837,6 @@ GenTreeBfm* Compiler::gtNewBfxNode(var_types type, GenTree* base, unsigned offse
 {
     GenTreeBfm* result = new (this, GT_BFX) GenTreeBfm(GT_BFX, type, base, nullptr, offset, width);
     result->gtFlags |= (base->gtFlags & GTF_ALL_EFFECT);
-    result->gtFlags &= ~GTF_SET_FLAGS;
     return result;
 }
 #endif
