@@ -522,6 +522,9 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(entry);
             Assert.NotNull(entry.DataStream);
             Assert.Equal(entry.Length, entry.DataStream.Length);
+        }
+
+        [Fact]
         public void Read_Archive_With_Unsupported_EntryType()
         {
             using MemoryStream archiveStream = new MemoryStream();

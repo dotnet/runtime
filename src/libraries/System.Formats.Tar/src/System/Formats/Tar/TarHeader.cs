@@ -201,8 +201,59 @@ namespace System.Formats.Tar
 
         internal Dictionary<string, string> GetPopulatedExtendedAttributes()
         {
-            CollectExtendedAttributesFromStandardFieldsIfNeeded(ExtendedAttributes);
+            PopulateExtendedAttributesFromStandardFields(ExtendedAttributes);
             return ExtendedAttributes;
+        }
+
+        // Ensures standard fields are present in the extended attributes dictionary
+        // without removing any existing entries. Used for populating the EA dictionary
+        // for read access (as opposed to CollectExtendedAttributesFromStandardFieldsIfNeeded
+        // which may remove entries during write).
+        private void PopulateExtendedAttributesFromStandardFields(Dictionary<string, string> ea)
+        {
+            ea[PaxEaName] = _name;
+            ea[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
+
+            if (!string.IsNullOrEmpty(_gName) && GetUtf8TextLength(_gName) > FieldLengths.GName)
+            {
+                ea[PaxEaGName] = _gName;
+            }
+
+            if (!string.IsNullOrEmpty(_uName) && GetUtf8TextLength(_uName) > FieldLengths.UName)
+            {
+                ea[PaxEaUName] = _uName;
+            }
+
+            if (!string.IsNullOrEmpty(_linkName))
+            {
+                Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
+                ea[PaxEaLinkName] = _linkName;
+            }
+
+            if (_size > Octal12ByteFieldMaxValue)
+            {
+                ea[PaxEaSize] = _size.ToString();
+            }
+
+            if (_uid > Octal8ByteFieldMaxValue)
+            {
+                ea[PaxEaUid] = _uid.ToString();
+            }
+
+            if (_gid > Octal8ByteFieldMaxValue)
+            {
+                ea[PaxEaGid] = _gid.ToString();
+            }
+
+            if (_devMajor > Octal8ByteFieldMaxValue)
+            {
+                ea[PaxEaDevMajor] = _devMajor.ToString();
+            }
+
+            if (_devMinor > Octal8ByteFieldMaxValue)
+            {
+                ea[PaxEaDevMinor] = _devMinor.ToString();
+            }
         }
     }
 }

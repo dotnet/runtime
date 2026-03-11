@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -26,7 +27,6 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(PropertyUpdateData))]
         public void Property_Setter_ShouldUpdateExtendedAttributes(string extAttrKey, object smallValue, object largeValue, TarEntryType entryType, (Func<PaxTarEntry, object> getter, Action<PaxTarEntry, object> setter) accessors)
         {
-            // Create an entry with a small value that fits in the regular header field
             Dictionary<string, string> extendedAttributes = new Dictionary<string, string>()
             {
                 [extAttrKey] = smallValue.ToString()
@@ -34,9 +34,10 @@ namespace System.Formats.Tar.Tests
 
             PaxTarEntry entry = new PaxTarEntry(entryType, "test.txt", extendedAttributes);
 
-            // Verify initial state, since the value fits in the regular header field, it should not be present in ExtendedAttributes
+            // Small value fits in the regular header field, but EA is still preserved from construction
             Assert.Equal(smallValue, accessors.getter(entry));
-            Assert.False(entry.ExtendedAttributes.ContainsKey(extAttrKey));
+            Assert.True(entry.ExtendedAttributes.ContainsKey(extAttrKey));
+            Assert.Equal(smallValue.ToString(), entry.ExtendedAttributes[extAttrKey]);
 
             // Set property value to the larger value that requires using ExtendedAttributes
             accessors.setter(entry, largeValue);
@@ -62,7 +63,6 @@ namespace System.Formats.Tar.Tests
         {
             PaxTarEntry entry = new PaxTarEntry(entryType, "./test.txt");
 
-            // Set property value
             accessors.setter(entry, value);
             Assert.Equal(value, accessors.getter(entry));
 
@@ -81,8 +81,6 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_WithConflictingPathExtendedAttribute_ShouldUseEntryName()
         {
-            // Extended attribute path differs from entryName parameter
-            // The constructor should give precedence to entryName
             Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
             {
                 { "path", "different.txt" }
@@ -90,7 +88,6 @@ namespace System.Formats.Tar.Tests
 
             PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
 
-            // entryName takes precedence over "path" extended attribute
             Assert.Equal("test.txt", entry.Name);
             Assert.True(entry.ExtendedAttributes.ContainsKey("path"));
             Assert.Equal("test.txt", entry.ExtendedAttributes["path"]);
@@ -99,7 +96,6 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_WithMatchingExtendedAttributes_ShouldSucceed()
         {
-            // Extended attributes that match entryName should work fine
             Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
             {
                 { "path", "test.txt" }
@@ -109,6 +105,225 @@ namespace System.Formats.Tar.Tests
 
             Assert.True(entry.ExtendedAttributes.ContainsKey("path"));
             Assert.Equal("test.txt", entry.ExtendedAttributes["path"]);
+        }
+
+        [Fact]
+        public void SyncAfterRead_ChangeProperty_ExtendedAttributeReflectsNewValue()
+        {
+            MemoryStream ms = new();
+            using (TarWriter writer = new(ms, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry writeEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt");
+                writeEntry.Uid = 1000;
+                writer.WriteEntry(writeEntry);
+            }
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+
+            Assert.Equal(1000, readEntry.Uid);
+
+            // Change property after reading
+            readEntry.Uid = 5000000;
+            Assert.Equal(5000000, readEntry.Uid);
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(PaxEaUid));
+            Assert.Equal("5000000", readEntry.ExtendedAttributes[PaxEaUid]);
+
+            // Change name after reading
+            readEntry.Name = "renamed.txt";
+            Assert.Equal("renamed.txt", readEntry.Name);
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(PaxEaName));
+            Assert.Equal("renamed.txt", readEntry.ExtendedAttributes[PaxEaName]);
+        }
+
+        [Fact]
+        public void EAPreservationOnRead_StandardFieldEAs_StillVisibleInExtendedAttributes()
+        {
+            // Build a raw archive with uid/gid EAs that fit in standard fields
+            using var ms = new MemoryStream();
+            var extraEAs = new Dictionary<string, string>
+            {
+                [PaxEaUid] = "1000",
+                [PaxEaGid] = "2000",
+                [PaxEaUName] = "testuser",
+                [PaxEaGName] = "testgroup",
+            };
+            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 1000, 2000, 0, 1700000000, '0', "");
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+
+            // Standard-field EAs should still be visible in ExtendedAttributes after reading
+            Assert.Equal(1000, readEntry.Uid);
+            Assert.Equal(2000, readEntry.Gid);
+            Assert.Equal("testuser", readEntry.UserName);
+            Assert.Equal("testgroup", readEntry.GroupName);
+
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(PaxEaUid));
+            Assert.Equal("1000", readEntry.ExtendedAttributes[PaxEaUid]);
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(PaxEaGid));
+            Assert.Equal("2000", readEntry.ExtendedAttributes[PaxEaGid]);
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(PaxEaUName));
+            Assert.Equal("testuser", readEntry.ExtendedAttributes[PaxEaUName]);
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(PaxEaGName));
+            Assert.Equal("testgroup", readEntry.ExtendedAttributes[PaxEaGName]);
+        }
+
+        [Fact]
+        public void CustomEA_Roundtrip_SurvivesWriteAndRead()
+        {
+            const string customKey = "MSWINDOWS.rawsd";
+            const string customValue = "AQAAgBQAAAAkAAA";
+
+            MemoryStream ms = new();
+            using (TarWriter writer = new(ms, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry writeEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt",
+                    new Dictionary<string, string>
+                    {
+                        { customKey, customValue }
+                    });
+                writer.WriteEntry(writeEntry);
+            }
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+
+            Assert.True(readEntry.ExtendedAttributes.ContainsKey(customKey));
+            Assert.Equal(customValue, readEntry.ExtendedAttributes[customKey]);
+        }
+
+        [Fact]
+        public void BadArchive_MtimeDisagreement_EAWins()
+        {
+            long headerMtime = 1700000000;
+            string eaMtime = "9876543210.123";
+
+            using var ms = new MemoryStream();
+            var extraEAs = new Dictionary<string, string> { ["mtime"] = eaMtime };
+            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 0, 0, 0, headerMtime, '0', "");
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+
+            // EA mtime should take precedence over header mtime
+            Assert.NotEqual(DateTimeOffset.FromUnixTimeSeconds(headerMtime), entry.ModificationTime);
+            Assert.True(entry.ExtendedAttributes.ContainsKey(PaxEaMTime));
+            Assert.Equal(eaMtime, entry.ExtendedAttributes[PaxEaMTime]);
+        }
+
+        [Fact]
+        public void BadArchive_UidGidDisagreement_EAWins()
+        {
+            using var ms = new MemoryStream();
+            var extraEAs = new Dictionary<string, string>
+            {
+                ["uid"] = "1000",
+                ["gid"] = "2000"
+            };
+            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            // Header has uid=500, gid=600 (different from EA values)
+            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 500, 600, 0, 1700000000, '0', "");
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+
+            // EA values should take precedence over header values
+            Assert.Equal(1000, entry.Uid);
+            Assert.Equal(2000, entry.Gid);
+            Assert.True(entry.ExtendedAttributes.ContainsKey(PaxEaUid));
+            Assert.Equal("1000", entry.ExtendedAttributes[PaxEaUid]);
+            Assert.True(entry.ExtendedAttributes.ContainsKey(PaxEaGid));
+            Assert.Equal("2000", entry.ExtendedAttributes[PaxEaGid]);
+        }
+
+        [Fact]
+        public void BadArchive_MissingEAPath_HeaderNameIsUsed()
+        {
+            using var ms = new MemoryStream();
+            // Build EA data without a "path" key, only mtime
+            var sb = new System.Text.StringBuilder();
+            AppendPaxExtendedAttributeRecord(sb, "mtime", "1700000000");
+            byte[] eaData = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, "fallback-name.txt", Convert.ToInt32("644", 8), 0, 0, 0, 1700000000, '0', "");
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+
+            // Header name should be used when EA has no "path"
+            Assert.Equal("fallback-name.txt", entry.Name);
+        }
+
+        [Fact]
+        public void BadArchive_MalformedNumericEA_Throws()
+        {
+            using var ms = new MemoryStream();
+            var extraEAs = new Dictionary<string, string> { ["uid"] = "notanumber" };
+            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 0, 0, 0, 1700000000, '0', "");
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+        }
+
+        private static void AppendPaxExtendedAttributeRecord(System.Text.StringBuilder sb, string key, string value)
+        {
+            string content = $" {key}={value}\n";
+            int totalLen = content.Length + 1;
+            while (totalLen.ToString().Length + content.Length != totalLen)
+            {
+                totalLen = totalLen.ToString().Length + content.Length;
+            }
+            sb.Append($"{totalLen}{content}");
         }
     }
 }
