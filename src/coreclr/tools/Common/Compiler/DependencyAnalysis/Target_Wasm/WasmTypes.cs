@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using ILCompiler.ObjectWriter;
-using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.Wasm
@@ -268,40 +267,6 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             Internal.Text.Utf8StringBuilder sb = new();
             AppendMangledName(mangler, sb);
             return sb.ToUtf8String();
-        }
-    }
-
-    // Represents a Wasm function body in the code section.
-    // Encodes as: ULEB128(0) (zero local declarations) + instructions + 0x0B end
-    public class WasmFunctionBody : IWasmEncodable
-    {
-        public readonly WasmFuncType Signature;
-        private readonly WasmInstructionGroup _body;
-
-        public WasmFunctionBody(WasmFuncType signature, WasmExpr[] instructions)
-        {
-            Signature = signature;
-            _body = new WasmInstructionGroup(instructions);
-        }
-
-        private int BodyContentSize()
-        {
-            // 1 byte for ULEB128(0) local declarations + instruction group (instructions + end opcode)
-            return 1 + _body.EncodeSize();
-        }
-
-        public int EncodeSize()
-        {
-            return BodyContentSize();
-        }
-
-        public int Encode(Span<byte> buffer)
-        {
-            int pos = 0;
-            buffer[pos++] = 0x00; // zero local declarations
-            pos += _body.Encode(buffer.Slice(pos));
-
-            return pos;
         }
     }
 }

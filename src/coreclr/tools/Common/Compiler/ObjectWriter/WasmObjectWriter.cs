@@ -22,6 +22,17 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
+    public static class PaddingHelper
+    {
+        public static void PadStream(Stream s, int n, byte padByte = 0)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                s.WriteByte(padByte);
+            }
+        }
+    }
+
     internal static class WasmObjectNodeSection
     {
         // TODO-WASM: Consider alignment needs for data sections
@@ -575,9 +586,11 @@ namespace ILCompiler.ObjectWriter
             }
             Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
 
-            // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit int)
-            MemoryStream webcilSizeSegmentStream = new MemoryStream(sizeof(uint));
-            BinaryPrimitives.WriteUInt32LittleEndian(webcilSizeSegmentStream.GetBuffer(), (uint)_webcilSegment.GetFlatMappedSize());
+
+            // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
+            byte[] lengthBuffer = new byte[sizeof(uint)];
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)_webcilSegment.GetFlatMappedSize());
+            MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
             WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
                 WasmDataSectionType.Passive, null);
 
@@ -586,7 +599,7 @@ namespace ILCompiler.ObjectWriter
                 WasmDataSectionType.Passive, null);
 
             // Create combined data section and emit 
-            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"));
+            WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.Emit(outputFileStream);
         }
 
@@ -916,10 +929,12 @@ namespace ILCompiler.ObjectWriter
     {
         private List<WasmDataSegment> _segments;
         public List<WasmDataSegment> Segments => _segments;
-        public WasmDataSection(List<WasmDataSegment> segments, Utf8String name)
+        private int _contentAlign = 1;
+        public WasmDataSection(List<WasmDataSegment> segments, Utf8String name, int contentAlign = 1)
             : base(WasmSectionType.Data, null, name)
         {
             _segments = segments;
+            _contentAlign = contentAlign;
         }
 
         public override int ContentSize
@@ -932,27 +947,68 @@ namespace ILCompiler.ObjectWriter
                 {
                     size += segment.EncodeSize();
                 }
+
                 return size;
             }
         }
 
+        public override int EncodeHeader(Span<byte> headerBuffer)
+        {
+            uint encodeLength = Relocation.WASM_PADDED_RELOC_SIZE_32;
+
+            headerBuffer[0] = (byte)Type;
+            DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(1), (ulong)ContentSize);
+            Debug.Assert(headerBuffer.Slice(1).Length == Relocation.WASM_PADDED_RELOC_SIZE_32);
+            ulong readCheck = DwarfHelper.ReadULEB128(headerBuffer.Slice(1));
+            Debug.Assert((int)readCheck == ContentSize);
+
+            return 1 + (int)encodeLength;
+        }
+
+        public override int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
+
         public override int Emit(Stream outputFileStream)
         {
-            Span<byte> headerBuffer = stackalloc byte[HeaderSize];
-            base.EncodeHeader(headerBuffer);
+            int size = 0;
+            int headerPosition = (int)outputFileStream.Position;
 
-            outputFileStream.Write(headerBuffer);
+            // seek forward past pre-allocated header portion
+            outputFileStream.Position += (int)HeaderSize;
 
-            // Write number of segments
             Span<byte> countBuffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count)];
             int countSize = DwarfHelper.WriteULEB128(countBuffer, (ulong)_segments.Count);
             outputFileStream.Write(countBuffer.Slice(0, countSize));
-            int totalSize = HeaderSize + countSize;
-            foreach (WasmDataSegment segment in _segments)
+            size += countSize;
+
+            for (int i = 0; i < _segments.Count; i++)
             {
-                totalSize += segment.Emit(outputFileStream);
+                WasmDataSegment segment = _segments[i];
+                // Do we have a next segment?
+                if ((i + 1) < _segments.Count)
+                {
+                    // Calculate end padding to insert after end of this segment's contents, before the wasm header for the next section
+                    // to ensure that the next section's content is aligned at the file level
+                    int position = (int)outputFileStream.Position + segment.HeaderSize + (int)segment.RawContentSize + _segments[i + 1].HeaderSize;
+                    int padding = AlignmentHelper.AlignUp(position, _contentAlign) - position;
+                    segment.Padding = padding;
+                    Console.WriteLine($"Segment Padding: {padding}");
+                }
+                else
+                {
+                    segment.Padding = 0;
+                }
+                segment.Emit(outputFileStream);
             }
-            return totalSize;
+
+            // Write the header (this must be done second because we first need to determine inter-segment padding)
+            outputFileStream.Position = headerPosition;
+            Span<byte> headerBuffer = stackalloc byte[HeaderSize];
+            size += EncodeHeader(headerBuffer);
+            outputFileStream.Write(headerBuffer);
+
+            outputFileStream.Seek(0, SeekOrigin.End);
+
+            return size;
         }
     }
 
@@ -977,7 +1033,6 @@ namespace ILCompiler.ObjectWriter
             _initExpr = initExpr;
         }
 
-        // The header encodeSize for a data segment consists of just a byte indicating the type of data segment.
         public int HeaderSize
         {
             get
@@ -987,10 +1042,10 @@ namespace ILCompiler.ObjectWriter
                     WasmDataSectionType.Active =>
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
                         _initExpr.EncodeSize() + // init expr encodeSize
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // encodeSize of data length
+                        Relocation.WASM_PADDED_RELOC_SIZE_32, // encode size of data length
                     WasmDataSectionType.Passive =>
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // encodeSize of data length
+                        (int)DwarfHelper.SizeOfULEB128((ulong)_type) +
+                        Relocation.WASM_PADDED_RELOC_SIZE_32, // encode size of data length
                     _ =>
                         throw new NotImplementedException()
                 };
@@ -999,10 +1054,27 @@ namespace ILCompiler.ObjectWriter
 
         public int EncodeSize()
         {
-            return HeaderSize + (int)_stream.Length;
+            return HeaderSize + ContentSize;
         }
 
-        public int ContentSize => (int)_stream.Length;
+        private bool _paddingSet = false;
+        int _padding = 0;
+        public int Padding
+        {
+            set
+            {
+                _paddingSet = true;
+                _padding = value;
+            }
+            get
+            {
+                Debug.Assert(_paddingSet);
+                return _padding;
+            }
+        }
+
+        public int ContentSize => (int)_stream.Length + Padding;
+        public int RawContentSize => (int)_stream.Length;
 
         public int EncodeHeader(Span<byte> headerBuffer)
         {
@@ -1013,14 +1085,19 @@ namespace ILCompiler.ObjectWriter
                     int len = 0;
                     len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
                     len += _initExpr.Encode(headerBuffer.Slice(len));
-                    len += DwarfHelper.WriteULEB128(headerBuffer.Slice(len), (ulong)_stream.Length);
+                    Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32);
+                    DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(len), (ulong)ContentSize);
+                    len += headerBuffer.Slice(len).Length;
                     return len;
                 }
                 case WasmDataSectionType.Passive:
                 {
+                    Console.WriteLine($"Header buffer length is: {headerBuffer.Length}");
                     int len = 0;
                     len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
-                    len += DwarfHelper.WriteULEB128(headerBuffer.Slice(len), (ulong)_stream.Length);
+                    Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32, $"{headerBuffer.Slice(len).Length} != {Relocation.WASM_PADDED_RELOC_SIZE_32}");
+                    DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(len), (ulong)ContentSize);
+                    len += headerBuffer.Slice(len).Length;
                     return len;
                 }
                 default:
@@ -1030,16 +1107,17 @@ namespace ILCompiler.ObjectWriter
 
         public int Emit(Stream outputFileStream)
         {
+            Console.WriteLine($"Emitting segment at: {outputFileStream.Position}");
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             int headerSize = EncodeHeader(headerBuffer);
             Debug.Assert(headerSize == HeaderSize);
-
             outputFileStream.Write(headerBuffer);
 
             _stream.Position = 0;
             _stream.CopyTo(outputFileStream);
+            PaddingHelper.PadStream(outputFileStream, Padding);
 
-            return headerSize + (int)_stream.Length;
+            return headerSize + (int)_stream.Length + Padding;
         }
     }
 

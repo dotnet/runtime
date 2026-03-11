@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
     public struct Relocation
     {
         // NOTE: Keep in sync with emitwasm.cpp
-        private const int WASM_PADDED_RELOC_SIZE_32 = 5;
+        public const int WASM_PADDED_RELOC_SIZE_32 = 5;
 
         public readonly RelocType RelocType;
         public readonly int Offset;

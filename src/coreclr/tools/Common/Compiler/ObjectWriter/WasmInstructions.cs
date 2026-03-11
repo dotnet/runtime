@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 // This namespace implements encodings for certain Wasm expressions (instructions)
 // which are used in the object writer.
@@ -10,6 +11,39 @@ using System.Diagnostics;
 // to calculate placements for data segments based on imported globals.
 namespace ILCompiler.ObjectWriter.WasmInstructions
 {
+    // Represents a Wasm function body in the code section.
+    // Encodes as: ULEB128(0) (zero local declarations) + instructions + 0x0B end
+    public class WasmFunctionBody : IWasmEncodable
+    {
+        public readonly WasmFuncType Signature;
+        private readonly WasmInstructionGroup _body;
+
+        public WasmFunctionBody(WasmFuncType signature, WasmExpr[] instructions)
+        {
+            Signature = signature;
+            _body = new WasmInstructionGroup(instructions);
+        }
+
+        private int BodyContentSize()
+        {
+            // 1 byte for ULEB128(0) local declarations + instruction group (instructions + end opcode)
+            return 1 + _body.EncodeSize();
+        }
+
+        public int EncodeSize()
+        {
+            return BodyContentSize();
+        }
+
+        public int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            buffer[pos++] = 0x00; // zero local declarations
+            pos += _body.Encode(buffer.Slice(pos));
+
+            return pos;
+        }
+    }
     public enum WasmExprKind
     {
         LocalGet = 0x20,
