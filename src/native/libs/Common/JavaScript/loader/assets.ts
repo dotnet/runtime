@@ -56,10 +56,12 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
 }
 
 export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
+    const module = await loadJSModule(asset);
     try {
-        const module = await loadJSModule(asset);
         if (typeof module.onRuntimeConfigLoaded === "function") {
             await module.onRuntimeConfigLoaded(loaderConfig);
+        } else {
+            dotnetLogger.warn(`Module '${asset.name}' does not export 'onRuntimeConfigLoaded' function. Make sure the module initializer is correctly defined and exported.`);
         }
         return module;
     } catch (err) {
@@ -73,6 +75,8 @@ export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise
         const module = await modulePromise;
         if (typeof module.onRuntimeReady === "function") {
             await module.onRuntimeReady(dotnetApi);
+        } else {
+            dotnetLogger.warn(`Module '${asset.name}' does not export 'onRuntimeReady' function. Make sure the module initializer is correctly defined and exported.`);
         }
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

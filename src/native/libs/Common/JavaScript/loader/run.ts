@@ -105,9 +105,10 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
 
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
 
-        runtimeState.creatingRuntime = false;
     } catch (err) {
         exit(1, err);
+    } finally {
+        runtimeState.creatingRuntime = false;
     }
 }
 export function abortStartup(reason: any): void {
