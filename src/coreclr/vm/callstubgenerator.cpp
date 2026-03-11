@@ -606,10 +606,12 @@ extern "C" void Store_R3();
 
 extern "C" void Load_R0_R1_4B();
 extern "C" void Load_R0_R1_R2_R3_4B();
+extern "C" void Load_R1_R2_4B();
 extern "C" void Load_R2_R3_4B();
 extern "C" void Load_Stack_4B();
 extern "C" void Store_R0_R1_4B();
 extern "C" void Store_R0_R1_R2_R3_4B();
+extern "C" void Store_R1_R2_4B();
 extern "C" void Store_R2_R3_4B();
 extern "C" void Store_Stack_4B();
 
@@ -1120,13 +1122,13 @@ PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
 #endif
     static const PCODE GPRegLoadRoutines_4B[] = {
         (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)0, (PCODE)Load_R0_R1_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)0, (PCODE)Load_R1_R2_4B, (PCODE)0,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R2_R3_4B,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
     };
     static const PCODE GPRegStoreRoutines_4B[] = {
         (PCODE)0, (PCODE)Store_R0_R1_4B, (PCODE)0, (PCODE)Store_R0_R1_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)0, (PCODE)Store_R1_R2_4B, (PCODE)0,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R2_R3_4B,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
     };
