@@ -28,8 +28,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private CancellationChangeToken? _changeToken;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="PollingFileChangeToken" /> that polls the specified file for changes as
-        /// determined by <see cref="System.IO.FileSystemInfo.LastWriteTimeUtc" />.
+        /// Initializes a new instance of the <see cref="PollingFileChangeToken"/> class that polls the specified file for changes as
+        /// determined by <see cref="System.IO.FileSystemInfo.LastWriteTimeUtc"/>.
         /// </summary>
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo"/> to poll.</param>
         public PollingFileChangeToken(FileInfo fileInfo)
@@ -110,8 +110,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Does not actually register callbacks.
         /// </summary>
-        /// <param name="callback">This parameter is ignored.</param>
-        /// <param name="state">This parameter is ignored.</param>
+        /// <param name="callback">The callback to invoke. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
+        /// <param name="state">The state to pass to <paramref name="callback"/>. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
         /// <returns>A disposable object that no-ops when disposed.</returns>
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
