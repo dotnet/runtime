@@ -80,12 +80,22 @@ namespace System.Formats.Tar
         {
             _packedStartOffsets = new long[segments.Length];
             long sum = 0;
+            long previousEnd = 0;
             for (int i = 0; i < segments.Length; i++)
             {
+                var (offset, length) = segments[i];
+
+                // Validate segment ordering and bounds.
+                if (offset < previousEnd || offset + length > _realSize)
+                {
+                    throw new InvalidDataException(SR.TarInvalidNumber);
+                }
+                previousEnd = offset + length;
+
                 _packedStartOffsets[i] = sum;
                 try
                 {
-                    sum = checked(sum + segments[i].Length);
+                    sum = checked(sum + length);
                 }
                 catch (OverflowException ex)
                 {

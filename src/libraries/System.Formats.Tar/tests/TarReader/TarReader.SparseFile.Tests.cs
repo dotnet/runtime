@@ -283,9 +283,12 @@ namespace System.Formats.Tar.Tests
         [InlineData("1\n0\n-1\n", false)]         // negative length
         [InlineData("1\n0\n", false)]             // truncated: missing length line
         [InlineData("1\n", false)]                // truncated: missing offset and length lines
+        [InlineData("1\n0\n2048\n", false)]       // segment extends past realSize
+        [InlineData("2\n256\n256\n0\n256\n", false)] // segments not in ascending order
         [InlineData("abc\n0\n256\n", true)]
         [InlineData("1\n0\nabc\n", true)]
         [InlineData("1\n", true)]
+        [InlineData("1\n0\n2048\n", true)]        // segment extends past realSize (async)
         [InlineData("2\n" + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + "\n256\n", false)] // line exceeding buffer capacity
         public async Task CorruptedSparseMap_InvalidDataException(string sparseMapContent, bool useAsync)
         {
