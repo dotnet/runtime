@@ -76,7 +76,7 @@ namespace System.Formats.Tar.Tests
         private static Stream GetSparseDataStream(MemoryStream archiveStream, bool copyData)
         {
             archiveStream.Position = 0;
-            var reader = new TarReader(archiveStream);
+            using var reader = new TarReader(archiveStream, leaveOpen: true);
             TarEntry? entry = reader.GetNextEntry(copyData);
             Assert.NotNull(entry);
             Assert.NotNull(entry.DataStream);
@@ -144,7 +144,7 @@ namespace System.Formats.Tar.Tests
             using var dataStream = GetSparseDataStream(archive, copyData);
 
             Assert.Equal(realSize, dataStream.Length);
-            byte[] buf = new byte[realSize];
+            byte[] buf = new byte[(int)realSize];
             if (useAsync)
             {
                 await dataStream.ReadExactlyAsync(buf, CancellationToken.None);

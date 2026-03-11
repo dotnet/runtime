@@ -34,7 +34,6 @@ namespace System.Formats.Tar
         // stream before TarWriter has a chance to copy the condensed data.
         private (long Offset, long Length)[]? _segments;
         private long[]? _packedStartOffsets;
-        private long _dataStart;
 
         private long _virtualPosition; // current position in the virtual (expanded) file
 
@@ -61,8 +60,8 @@ namespace System.Formats.Tar
                 return;
             }
 
-            (var segments, long dataStart) = ParseSparseMap(isAsync: false, _rawStream, CancellationToken.None).GetAwaiter().GetResult();
-            InitializeFromParsedMap(segments, dataStart);
+            var segments = ParseSparseMap(isAsync: false, _rawStream, CancellationToken.None).GetAwaiter().GetResult();
+            InitializeFromParsedMap(segments);
         }
 
         private async ValueTask EnsureInitializedAsync(CancellationToken cancellationToken)
@@ -72,19 +71,25 @@ namespace System.Formats.Tar
                 return;
             }
 
-            (var segments, long dataStart) = await ParseSparseMap(isAsync: true, _rawStream, cancellationToken).ConfigureAwait(false);
-            InitializeFromParsedMap(segments, dataStart);
+            var segments = await ParseSparseMap(isAsync: true, _rawStream, cancellationToken).ConfigureAwait(false);
+            InitializeFromParsedMap(segments);
         }
 
-        private void InitializeFromParsedMap((long Offset, long Length)[] segments, long dataStart)
+        private void InitializeFromParsedMap((long Offset, long Length)[] segments)
         {
-            _dataStart = dataStart;
             _packedStartOffsets = new long[segments.Length];
             long sum = 0;
             for (int i = 0; i < segments.Length; i++)
             {
                 _packedStartOffsets[i] = sum;
-                sum += segments[i].Length;
+                try
+                {
+                    sum = checked(sum + segments[i].Length);
+                }
+                catch (OverflowException ex)
+                {
+                    throw new InvalidDataException(SR.TarInvalidNumber, ex);
+                }
             }
             // Assign _segments last — it serves as the initialization flag.
             _segments = segments;
@@ -334,17 +339,17 @@ namespace System.Formats.Tar
         // and then the packed data begins.
         //
         // The buffer is 2 * RecordSize (1024 bytes) and each fill reads exactly RecordSize (512)
-        // bytes. This guarantees that totalBytesRead is always a multiple of RecordSize and
-        // equals dataStart (mapBytesConsumed + padding), so no corrective seeking is needed.
+        // bytes. This guarantees that the total bytes read is always a multiple of RecordSize
+        // (mapBytesConsumed + padding), so the stream is already positioned at the start of
+        // the packed data when this method returns.
         //
-        // Returns the parsed segments and the data-start offset in rawStream.
-        private static async Task<((long Offset, long Length)[] Segments, long DataStart)> ParseSparseMap(
+        // Returns the parsed segments.
+        private static async Task<(long Offset, long Length)[]> ParseSparseMap(
             bool isAsync, Stream rawStream, CancellationToken cancellationToken)
         {
             byte[] bytes = new byte[2 * TarHelpers.RecordSize];
             int activeStart = 0;
             int availableStart = 0;
-            long totalBytesRead = 0;
 
             // Compact the buffer and read exactly one RecordSize (512) block.
             // Returns true if bytes were read, false on EOF.
@@ -363,7 +368,6 @@ namespace System.Formats.Tar
                     : rawStream.ReadAtLeast(bytes.AsSpan(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false);
 
                 availableStart += newBytes;
-                totalBytesRead += newBytes;
                 return newBytes > 0;
             }
 
@@ -420,10 +424,10 @@ namespace System.Formats.Tar
                 segments[i] = (offset, length);
             }
 
-            // Since each FillBuffer call reads exactly RecordSize (512) bytes, totalBytesRead
-            // is always a multiple of RecordSize. It equals mapBytesConsumed + padding = dataStart,
-            // so the stream is already positioned at the start of the packed data.
-            return (segments, totalBytesRead);
+            // Since each FillBuffer call reads exactly RecordSize (512) bytes, the total bytes
+            // read is always a multiple of RecordSize (mapBytesConsumed + padding), so the stream
+            // is already positioned at the start of the packed data.
+            return segments;
         }
 
         protected override void Dispose(bool disposing)
