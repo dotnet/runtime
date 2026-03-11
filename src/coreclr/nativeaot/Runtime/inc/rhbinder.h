@@ -241,6 +241,8 @@ struct InterfaceDispatchCell
     }
 };
 
+#define IDC_CACHE_POINTER_MASK (InterfaceDispatchCell::Flags::IDC_CachePointerMask)
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef TARGET_ARM
@@ -516,18 +518,6 @@ struct PInvokeTransitionFrame
 };
 #endif // FEATURE_PORTABLE_HELPERS
 #pragma warning(pop)
-
-#ifdef TARGET_AMD64
-// RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
-#define PInvokeTransitionFrame_SaveRegs_count 9
-#elif defined(TARGET_X86)
-// RBX, RSI, RDI, RAX, RSP
-#define PInvokeTransitionFrame_SaveRegs_count 5
-#elif defined(TARGET_ARM)
-// R4-R10, R0, SP
-#define PInvokeTransitionFrame_SaveRegs_count 9
-#endif
-#define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
 #ifdef TARGET_AMD64
 #define OFFSETOF__Thread__m_pTransitionFrame 0x48

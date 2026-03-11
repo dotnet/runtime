@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComClassGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComClassGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -68,6 +68,27 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifySourceGeneratorAsync(source, "C", "D", "E");
         }
 
+        [Fact]
+        public async Task GenericComClass()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                partial interface INativeAPI
+                {
+                }
+
+                [GeneratedComClass]
+                partial class GenericClass<T> : INativeAPI where T : class, new()
+                {
+                }
+                """;
+
+            await VerifySourceGeneratorAsync(source, "GenericClass`1");
+        }
+
         private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
@@ -83,7 +104,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             private readonly string[] _typeNames;
 
             public GeneratedShapeTest(params string[] typeNames)
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
                 _typeNames = typeNames;
             }
@@ -108,11 +129,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     userDefinedClass.GetAttributes(),
                     attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, comExposedClassAttribute));
 
-                Assert.Collection(Assert.IsAssignableFrom<INamedTypeSymbol>(iUnknownDerivedAttribute.AttributeClass).TypeArguments,
-                    infoType =>
-                    {
-                        Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(infoType).IsFileLocal);
-                    });
+                Assert.NotNull(iUnknownDerivedAttribute.AttributeClass);
+                ITypeSymbol typeArgument = Assert.Single(iUnknownDerivedAttribute.AttributeClass.TypeArguments);
+                Assert.True(Assert.IsType<INamedTypeSymbol>(typeArgument, exactMatch: false).IsFileLocal);
             }
         }
     }

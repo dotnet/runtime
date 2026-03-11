@@ -7,7 +7,7 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
-import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc, free } from "./memory";
+import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc, free, fixupPointer } from "./memory";
 import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
@@ -65,10 +65,12 @@ export function utf8ToStringRelaxed (buffer: Uint8Array): string {
 
 export function utf8ToString (ptr: CharPtr): string {
     const heapU8 = localHeapViewU8();
-    return utf8BufferToString(heapU8, ptr as any, heapU8.length - (ptr as any));
+    const fixedPtr = fixupPointer(ptr, 0);
+    return utf8BufferToString(heapU8, fixedPtr, heapU8.length - fixedPtr);
 }
 
 export function utf8BufferToString (heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
+    idx = fixupPointer(idx, 0);
     const endIdx = idx + maxBytesToRead;
     let endPtr = idx;
     while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
@@ -83,6 +85,8 @@ export function utf8BufferToString (heapOrArray: Uint8Array, idx: number, maxByt
 }
 
 export function utf16ToString (startPtr: number, endPtr: number): string {
+    startPtr = fixupPointer(startPtr, 0);
+    endPtr = fixupPointer(endPtr, 0);
     if (_text_decoder_utf16) {
         const subArray = viewOrCopy(localHeapViewU8(), startPtr as any, endPtr as any);
         return _text_decoder_utf16.decode(subArray);
@@ -277,8 +281,8 @@ export function viewOrCopy (view: Uint8Array, start: CharPtr, end: CharPtr): Uin
     // this condition should be eliminated by rollup on non-threading builds
     const needsCopy = isSharedArrayBuffer(view.buffer);
     return needsCopy
-        ? view.slice(<any>start, <any>end)
-        : view.subarray(<any>start, <any>end);
+        ? view.slice(<any>start >>> 0, <any>end >>> 0)
+        : view.subarray(<any>start >>> 0, <any>end >>> 0);
 }
 
 // below is minimal legacy support for Blazor

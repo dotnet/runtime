@@ -7,12 +7,8 @@
 // When hosting components are all statically linked,
 // the versioning information is irrelevant and may only come up in tracing.
 // so we will use "static"
-#define HOST_POLICY_PKG_NAME "static"
-#define HOST_POLICY_PKG_REL_DIR "static"
 #define REPO_COMMIT_HASH "static"
 #else
-#define HOST_POLICY_PKG_NAME "runtime.@CLI_CMAKE_PKG_RID@.Microsoft.NETCore.DotNetHostPolicy"
-#define HOST_POLICY_PKG_REL_DIR "runtime.@CLI_CMAKE_PKG_RID@/native"
 #define REPO_COMMIT_HASH "@CLI_CMAKE_COMMIT_HASH@"
 #endif
 

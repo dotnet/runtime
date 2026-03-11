@@ -23,19 +23,19 @@
 #if 0
 #define EMITVERBOSE 1
 #else
-#define EMITVERBOSE (emitComp->verbose)
+#define EMITVERBOSE (m_compiler->verbose)
 #endif
 
 #if 0
 #define EMIT_GC_VERBOSE 0
 #else
-#define EMIT_GC_VERBOSE (emitComp->verbose)
+#define EMIT_GC_VERBOSE (m_compiler->verbose)
 #endif
 
 #if 1
 #define EMIT_INSTLIST_VERBOSE 0
 #else
-#define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
+#define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
 #ifdef TARGET_XARCH
@@ -484,6 +484,9 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
+#ifdef TARGET_WASM
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
+#endif
 };
 
 class emitter
@@ -524,7 +527,7 @@ protected:
     /*                        Miscellaneous stuff                           */
     /************************************************************************/
 
-    Compiler* emitComp;
+    Compiler* m_compiler;
     GCInfo*   gcInfo;
     CodeGen*  codeGen;
 
@@ -628,15 +631,22 @@ protected:
 
     struct instrDescDebugInfo
     {
-        unsigned          idNum;
-        size_t            idSize;        // size of the instruction descriptor
-        unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
-        size_t            idMemCookie;   // compile time handle (check idFlags)
-        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
-        bool              idFinallyCall; // Branch instruction is a call to finally
-        bool              idCatchRet;    // Instruction is for a catch 'return'
-        CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
+        unsigned          idNum         = 0;
+        size_t            idSize        = 0;         // size of the instruction descriptor
+        unsigned          idVarRefOffs  = 0;         // IL offset for LclVar reference
+        unsigned          idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie   = 0;         // compile time handle (check idFlags)
+        GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
+        bool              idFinallyCall = false;     // Branch instruction is a call to finally
+        bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+        CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
+
+#ifdef TARGET_WASM
+        int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
+        unsigned idLclNum     = BAD_VAR_NUM; // LclVar number for this instruction
+        unsigned idLclOffset  = 0;           // LclVar field offset for this instruction
+#endif
     };
 
 #ifdef TARGET_ARM
@@ -1264,12 +1274,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_WASM)
-        unsigned idCodeSize() const
-        {
-            // TODO-WASM: return an accurate number here based on instruction format/opcode like ARM64 above.
-            NYI_WASM("isCodeSize");
-            return 0;
-        }
+        unsigned idCodeSize() const;
 #endif
 
         emitAttr idOpSize() const
@@ -1299,6 +1304,13 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const
+        {
+            return _idInsFmt == IF_LOCAL_DECL;
+        }
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -2339,6 +2351,25 @@ protected:
     };
 #endif
 
+#if defined(TARGET_WASM)
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        unsigned int  lclCnt;
+        WasmValueType lclType;
+
+        void idLclType(WasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(unsigned int cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -2460,8 +2491,8 @@ protected:
     static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned       emitInsCount;
+    NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
+    unsigned emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */
@@ -2596,10 +2627,12 @@ public:
     bool emitIssuing;
 #endif
 
-    BYTE*  emitCodeBlock;     // Hot code block
-    BYTE*  emitColdCodeBlock; // Cold code block
-    BYTE*  emitConsBlock;     // Read-only (constant) data block
-    size_t writeableOffset;   // Offset applied to a code address to get memory location that can be written
+    BYTE*          emitCodeBlock;     // Hot code block
+    BYTE*          emitColdCodeBlock; // Cold code block
+    AllocMemChunk* emitDataChunks;
+    unsigned*      emitDataChunkOffsets;
+    unsigned       emitNumDataChunks;
+    size_t         writeableOffset; // Offset applied to a code address to get memory location that can be written
 
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
@@ -2637,11 +2670,7 @@ public:
         }
     }
 
-    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset)
-    {
-        assert(offset < emitDataSize());
-        return emitConsBlock + offset;
-    }
+    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset);
 
     bool emitJumpCrossHotColdBoundary(size_t srcOffset, size_t dstOffset)
     {
@@ -3302,6 +3331,7 @@ private:
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
@@ -3465,15 +3495,14 @@ public:
 
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
-    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
-
-    bool emitLastInsIsCallWithGC();
-
     // Helpers for the above
 
     void emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count = 1);
     void emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count = 1);
 #endif // EMIT_TRACK_STACK_DEPTH
+
+    bool emitLastInsIsCallWithGC();
+    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
 
     /* Liveness of stack variables, and registers */
 
@@ -3512,17 +3541,6 @@ public:
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
 
-    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
-    struct dataAsyncResumeInfo
-    {
-        // delegate*<Continuation, ref byte, Continuation>
-        target_size_t Resume;
-        // Pointer in main code for diagnostics. See comments on
-        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
-        // ResumeInfo.DiagnosticIP in SPC.
-        target_size_t DiagnosticIP;
-    };
-
     /* One of these is allocated for every blob of initialized data */
 
     struct dataSection
@@ -3542,14 +3560,37 @@ public:
         };
 
         dataSection*   dsNext;
+        UNATIVE_OFFSET dsAlignment;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data, BasicBlock*
-        // array in the block cases, or emitLocation for the asyncResumeInfo
-        // case.
-        BYTE dsCont[0];
+    private:
+        union
+        {
+            BYTE*         dsData;      // for data blobs
+            BasicBlock**  dsBlocks;    // for block-based sections
+            emitLocation* dsLocations; // for async resume info
+        };
+
+    public:
+        BYTE*& Data()
+        {
+            assert(dsType == sectionType::data);
+            return dsData;
+        }
+
+        BasicBlock**& Blocks()
+        {
+            assert((dsType == sectionType::blockAbsoluteAddr) || (dsType == sectionType::blockRelative32));
+            return dsBlocks;
+        }
+
+        emitLocation*& Locations()
+        {
+            assert(dsType == sectionType::asyncResumeInfo);
+            return dsLocations;
+        }
     };
 
     /* These describe the entire initialized/uninitialized data sections */
@@ -3559,13 +3600,11 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
-        UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
         dataSecDsc()
             : dsdList(nullptr)
             , dsdLast(nullptr)
             , dsdOffs(0)
-            , alignment(4)
         {
         }
     };
@@ -3574,8 +3613,8 @@ public:
 
     dataSection* emitDataSecCur;
 
-    void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
-    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* dataChunks);
+    void emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks);
     void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/
@@ -3596,26 +3635,26 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,      /* IN */
-                                  void*       target,        /* IN */
-                                  uint16_t    fRelocType,    /* IN */
-                                  const char* relocTypeName, /* IN */
-                                  int32_t     addlDelta = 0);    /* IN */
+    void emitRecordRelocationHelp(void*        location,      /* IN */
+                                  void*        target,        /* IN */
+                                  CorInfoReloc fRelocType,    /* IN */
+                                  const char*  relocTypeName, /* IN */
+                                  int32_t      addlDelta = 0);     /* IN */
 
 #else // !DEBUG
 
-    void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
-                                           void*    target,     /* IN */
-                                           uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)   /* IN */
+    void emitRecordRelocationWithAddlDelta(void*        location,   /* IN */
+                                           void*        target,     /* IN */
+                                           CorInfoReloc fRelocType, /* IN */
+                                           int32_t      addlDelta)       /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,      /* IN */
-                              void*    target,        /* IN */
-                              uint16_t fRelocType,    /* IN */
-                              int32_t  addlDelta = 0); /* IN */
+    void emitRecordRelocation(void*        location,   /* IN */
+                              void*        target,     /* IN */
+                              CorInfoReloc fRelocType, /* IN */
+                              int32_t      addlDelta = 0);  /* IN */
 
 #endif // !DEBUG
 
@@ -3627,12 +3666,6 @@ public:
     void emitRecordCallSite(ULONG                 instrOffset,   /* IN */
                             CORINFO_SIG_INFO*     callSig,       /* IN */
                             CORINFO_METHOD_HANDLE methodHandle); /* IN */
-
-#ifdef DEBUG
-    // This is a scratch buffer used to minimize the number of sig info structs
-    // we have to allocate for recordCallSite.
-    CORINFO_SIG_INFO* emitScratchSigInfo;
-#endif // DEBUG
 
     /************************************************************************/
     /*               Logic to collect and display statistics                */
@@ -3784,12 +3817,12 @@ public:
     // infrastructure of the entire JIT...
     void Init()
     {
-        VarSetOps::AssignNoCopy(emitComp, emitPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitInitGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, emitPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitInitGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
 #if defined(DEBUG)
-        VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, debugPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, debugThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
         debugPrevRegPtrDsc = nullptr;
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
@@ -3852,17 +3885,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************

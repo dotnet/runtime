@@ -327,7 +327,7 @@ jobs:
       targetRid: linux-x64
       platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: debian-12-gcc15-amd64
+      container: debian-13-gcc15-amd64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}

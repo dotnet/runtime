@@ -3,7 +3,7 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-const { setModuleImports, getAssemblyExports, getConfig, runMain } = await dotnet
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
     .withApplicationArguments("start")
     .create();
 
@@ -29,4 +29,4 @@ pauseButton.addEventListener('click', e => {
 });
 
 // run the C# Main() method and keep the runtime process running and executing further API calls
-await runMain();
+await dotnet.runMain();

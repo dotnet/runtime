@@ -20,6 +20,11 @@ namespace System.Text.Json.Serialization.Converters
 
         public override UInt128 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
             if (reader.TokenType != JsonTokenType.Number)
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
@@ -30,6 +35,12 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, UInt128 value, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
             WriteCore(writer, value);
         }
 
@@ -84,7 +95,12 @@ namespace System.Text.Json.Serialization.Converters
                 return ReadCore(ref reader);
             }
 
-            return Read(ref reader, Type, options);
+            if (reader.TokenType != JsonTokenType.Number)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
+            }
+
+            return ReadCore(ref reader);
         }
 
         internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, UInt128 value, JsonNumberHandling handling)

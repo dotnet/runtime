@@ -52,8 +52,8 @@ namespace Microsoft.NET.Build.Tasks
                     && !file.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase);
             }
 
-            bool CS() => file.IndexOf("/cs/", StringComparison.OrdinalIgnoreCase) >= 0;
-            bool VB() => file.IndexOf("/vb/", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool CS() => file.Contains("/cs/", StringComparison.OrdinalIgnoreCase);
+            bool VB() => file.Contains("/vb/", StringComparison.OrdinalIgnoreCase);
 
             bool FileMatchesProjectLanguage()
             {

@@ -93,12 +93,6 @@ struct EHblkDsc
 
     EHHandlerType ebdHandlerType;
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // How nested is the try/handler within other *handlers* - 0 for outermost clauses, 1 for nesting with a handler,
-    // etc.
-    unsigned short ebdHandlerNestingLevel;
-#endif // FEATURE_EH_WINDOWS_X86
-
     static const unsigned short NO_ENCLOSING_INDEX = USHRT_MAX;
 
     // The index of the enclosing outer try region, NO_ENCLOSING_INDEX if none.

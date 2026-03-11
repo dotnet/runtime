@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -27,6 +28,8 @@ public class Program
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -68,7 +71,7 @@ public class Program
 
         int otherThreadResult = 0;
         Thread t = new ((ThreadStart)delegate {
-            
+
             object obj1 = new object();
             object obj2 = new object();
             object obj3 = new object();

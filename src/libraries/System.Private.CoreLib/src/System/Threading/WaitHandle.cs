@@ -117,10 +117,6 @@ namespace System.Threading
             SafeWaitHandle? waitHandle = _waitHandle;
             ObjectDisposedException.ThrowIf(waitHandle is null, this);
 
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
-
             bool success = false;
             try
             {
@@ -146,9 +142,6 @@ namespace System.Threading
                     bool sendWaitEvents =
                         millisecondsTimeout != 0 &&
                         !useTrivialWaits &&
-#if !CORECLR // CoreCLR sends the wait events from the native side when there's no associated object
-                        associatedObject is not null &&
-#endif
                         NativeRuntimeEventSource.Log.IsEnabled(
                             EventLevel.Verbose,
                             NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
@@ -160,19 +153,11 @@ namespace System.Threading
                         waitSource != NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait;
                     if (tryNonblockingWaitFirst)
                     {
-                        // Split into separate calls instead of conditionally adding an argument.
-#if CORECLR
-                        waitResult = WaitOneCore(
-                            waitHandle.DangerousGetHandle(),
-                            millisecondsTimeout: 0,
-                            useTrivialWaits,
-                            associatedObject is not null);
-#else
                         waitResult = WaitOneCore(
                             waitHandle.DangerousGetHandle(),
                             millisecondsTimeout: 0,
                             useTrivialWaits);
-#endif
+
                         if (waitResult == WaitTimeout)
                         {
                             // Do a full wait and send the wait events
@@ -193,19 +178,10 @@ namespace System.Threading
                     // When tryNonblockingWaitFirst is true, we have a final wait result from the nonblocking wait above
                     if (!tryNonblockingWaitFirst)
                     {
-                        // Split into separate calls instead of conditionally adding an argument.
-#if CORECLR
-                        waitResult = WaitOneCore(
-                            waitHandle.DangerousGetHandle(),
-                            millisecondsTimeout,
-                            useTrivialWaits,
-                            associatedObject is not null);
-#else
                         waitResult = WaitOneCore(
                             waitHandle.DangerousGetHandle(),
                             millisecondsTimeout,
                             useTrivialWaits);
-#endif
                     }
 
                     if (sendWaitEvents)
@@ -423,7 +399,6 @@ namespace System.Threading
         {
             int waitResult = WaitFailed;
 
-#if !CORECLR // CoreCLR sends the wait events from the native side
             bool sendWaitEvents =
                 millisecondsTimeout != 0 &&
                 NativeRuntimeEventSource.Log.IsEnabled(
@@ -455,17 +430,14 @@ namespace System.Threading
 
             // When tryNonblockingWaitFirst is true, we have a final wait result from the nonblocking wait above
             if (!tryNonblockingWaitFirst)
-#endif
             {
                 waitResult = WaitMultipleIgnoringSyncContextCore(handles, waitAll, millisecondsTimeout);
             }
 
-#if !CORECLR // CoreCLR sends the wait events from the native side
             if (sendWaitEvents)
             {
                 NativeRuntimeEventSource.Log.WaitHandleWaitStop();
             }
-#endif
 
             return waitResult;
         }

@@ -14,19 +14,21 @@
 
 .assembly extern mscorlib
 {
-                           
-  
-           
-  
+
+
+
+
 }
 .assembly ASSEMBLY_NAME
 {
 
 
-  
-  
+
+
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_huge_struct_huge_il
 {
   .class value private auto ansi sealed TestStruct extends [mscorlib]System.ValueType
@@ -36,10 +38,11 @@
     .field public int32 magic
     .field public unsigned int64[] ul_ptr
   } // end of class 'TestStruct'
-  
+
   .class public auto ansi Test
          extends [mscorlib]System.Object
   {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsNonZeroLowerBoundArrayNotSupported') }
     .method public hidebysig static int32
             Main() il managed
     {
@@ -60,7 +63,7 @@
       			ldc.i4	32
       			dup
 				stloc count
-				
+
 				dup
 				add
 				newarr    int32
@@ -94,7 +97,7 @@
 				stelem.i4
 				ldloc count
 				brtrue again
-				
+
 				ldc.i4.0
 				stloc count
 			again2:
@@ -112,7 +115,7 @@
 				ldc.i4 64
 				ceq
 				brfalse again2
-				
+
 				stloc dim
 				ldloc dim ldc.i4.0 ldelem.i4
 				ldloc dim ldc.i4.1 ldelem.i4
@@ -196,7 +199,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32)
       			stloc matrix
-      			
+
       			ldloc matrix
 				ldloc dim ldc.i4.0 ldelem.i4
 				ldloc dim ldc.i4.2 ldelem.i4
@@ -230,7 +233,7 @@
 				ldloc dim ldc.i4 58 ldelem.i4
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
-				
+
       			ldloca	t
 				initobj		JitTest_huge_struct_huge_il.TestStruct
       			ldloca	t
@@ -301,7 +304,7 @@
       					int32, int32, int32, int32,
       					int32, int32, int32, int32,
       					int32, int32, int32, int32)
-      			
+
       			stloc r
       			ldloca r
       			dup
@@ -355,10 +358,10 @@
 				ldloc dim ldc.i4 60 ldelem.i4
 				ldloc dim ldc.i4 62 ldelem.i4
 				br  go1
-				
+
       		cont2:
       			br cont3
-      			
+
       		go1:
       			callvirt instance value class JitTest_huge_struct_huge_il.TestStruct value class JitTest_huge_struct_huge_il.TestStruct[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]::Get(
       					int32, int32, int32, int32,
@@ -386,15 +389,15 @@
       			ceq
       			brfalse throw0
       			br pass1_5
-      			
+
       		throw0:
       			newobj		instance void [mscorlib]System.Exception::.ctor()
       		throw1:
 				throw
-				
+
       		pass1:
       			br cont0
-      			
+
       		pass2:
       			ldloc matrix
 				ldloc dim ldc.i4.0 ldelem.i4
@@ -443,18 +446,18 @@
       			ldnull
       			stloc matrix
       			call void [mscorlib]System.GC::Collect()
-      			
+
       			ldc.i4 100
       			ldstr     "TEST PASSED"
       			call       void [System.Console]System.Console::Write(string)
       			ret
-      			
+
 			cont0:
       			br cont2
-      			
+
       		cont3:
       			br cont1
-      			
+
       		pass1_5:
 				ldloc matrix
 				ldloc dim ldc.i4.0 ldelem.i4
@@ -513,12 +516,12 @@
       			ceq
       			brfalse throw0
       			br pass2
-      			
+
       			newobj		instance void [mscorlib]System.Exception::.ctor()
 				br throw1
     } // end of method 'Test::Main'
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
     {
       .maxstack  8
@@ -526,7 +529,7 @@
       IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0006:  ret
     } // end of method 'Test::.ctor'
-    
+
   } // end of class 'Test'
-  
+
 } // end of namespace 'JitTest_huge_struct_huge_il'

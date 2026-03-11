@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>Provides an awaitable async enumerable that enables cancelable iteration and configured awaits.</summary>
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ConfiguredCancelableAsyncEnumerable<T>
-#if NET10_0_OR_GREATER
+#if NET
         where T : allows ref struct
 #endif
     {

@@ -343,7 +343,7 @@ namespace System.Collections.Frozen
         /// the lookup is created, we only pay for generic virtual method invocation once.
         /// </remarks>
         private protected virtual AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             // This method will only ever be used on .NET 9+. However, because of how everything is structured,
             // and to avoid a proliferation of conditional files for many of the derived types (in particular
@@ -359,7 +359,7 @@ namespace System.Collections.Frozen
         /// for the <typeparamref name="TAlternate"/>.
         /// </summary>
         internal delegate int AlternateLookupDelegate<TAlternate>(FrozenSet<T> set, TAlternate key)
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
@@ -370,7 +370,7 @@ namespace System.Collections.Frozen
         /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternate}"/> which always returns -1.
         /// </summary>
         private static class AlternateLookupDelegateHolder<TAlternate>
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001

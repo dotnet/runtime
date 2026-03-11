@@ -741,7 +741,7 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-	return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetHandleUNHOSTED ());
+	return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetOSEvent ());
 }
 
 static
@@ -1031,7 +1031,7 @@ void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
 	STATIC_CONTRACT_NOTHROW;
-    
+
 #ifdef HOST_WINDOWS
     SYSTEMTIME value;
     GetSystemTime (&value);

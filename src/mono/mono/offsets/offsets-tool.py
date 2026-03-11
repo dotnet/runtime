@@ -186,13 +186,13 @@ class OffsetsTool:
 		elif "x86_64-apple-maccatalyst" == args.abi:
 			require_sysroot (args)
 			self.target = Target ("TARGET_AMD64", "TARGET_MACCAT", IOS_DEFINES)
-			self.target_args += ["-target", "x86_64-apple-ios15.0-macabi"]
+			self.target_args += ["-target", "x86_64-apple-ios15.2-macabi"]
 			self.target_args += ["-isysroot", args.sysroot]
 
 		elif "aarch64-apple-maccatalyst" == args.abi:
 			require_sysroot (args)
 			self.target = Target ("TARGET_ARM64", "TARGET_MACCAT", IOS_DEFINES)
-			self.target_args += ["-target", "arm64-apple-ios15.0-macabi"]
+			self.target_args += ["-target", "arm64-apple-ios15.2-macabi"]
 			self.target_args += ["-isysroot", args.sysroot]
 
 		# watchOS

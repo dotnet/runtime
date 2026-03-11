@@ -18,6 +18,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedProxyTypeMap>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedExternalTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
 [assembly: TypeMap<UsedTypeMap>(nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
@@ -53,13 +54,17 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
+[assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(PreservedTargetType))]
+
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedTypeMap>))]
 [assembly: TypeMapAssemblyTarget<UsedTypeMap>("library")]
 // TypeMapAssemblyTarget is kept regardless of which type map the program needs (External or Proxy)
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedProxyTypeMap>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedExternalTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedTypeMapUniverse>))]
 [assembly: TypeMapAssemblyTarget<UsedProxyTypeMap>("library")]
 [assembly: TypeMapAssemblyTarget<UsedExternalTypeMap>("library")]
+[assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library")]
 [assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
 
 namespace Mono.Linker.Tests.Cases.Reflection
@@ -73,7 +78,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [KeptAssembly("library.dll")]
     [KeptAssembly("library2.dll")]
     [KeptTypeInAssembly("library.dll", typeof(TypeMapReferencedAssembly))]
-    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Main()")]
+    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Run()")]
     [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional1), Tool = Tool.Trimmer)]
     [KeptTypeInAssembly("library.dll", typeof(TrimTarget1))]
     [KeptMemberInAssembly("library.dll", typeof(TrimTarget1), ".ctor()")]
@@ -83,6 +88,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [KeptTypeInAssembly("library.dll", typeof(ProxySource1))]
     [KeptMemberInAssembly("library.dll", typeof(ProxySource1), ".ctor()")]
     [KeptTypeInAssembly("library.dll", typeof(ProxyTarget1))]
+
+    // For correctness, NativeAOT only preserves type map entries in a given assembly when the type map is referenced
+    // and the given assembly is referenced with TypeMapAssemblyTargetAttribute with the given type map group.
+    // This is required for the correct runtime behavior.
+    // For simplicity, we do not do the same for ILLinker as the runtime behavior will be correct in CoreCLR regardless
+    // and in the vast majority of user scenarios, assemblies will be correctly referenced with TypeMapAssemblyTargetAttribute.
+    // Nearly every case where this behavior would kick in is a bug in user code.
+    [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional3), Tool = Tool.Trimmer)]
+    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>))]
 
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedTypeMapUniverse>))]
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UsedTypeMapUniverse>))]
@@ -179,7 +193,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
 
-            TypeMapReferencedAssembly.Main();
+            TypeMapReferencedAssembly.Run();
 
             // TypeMapUniverses are independent between External and Proxy type maps.
             // That is, if the External type map is used for a given universe, that doesn't keep the Proxy type map, and vice versa.
@@ -522,4 +536,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class UsedProxyTarget;
     [Kept]
     class UsedProxyTarget2;
+
+    [Kept]
+    class PreservedTargetType;
 }

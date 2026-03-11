@@ -21,12 +21,12 @@ To build the CoreCLR runtime for WebAssembly, use the following command from the
 
 **Linux/macOS:**
 ```bash
-./build.sh -os browser -c Debug -subset clr.runtime
+./build.sh -os browser -c Debug -subset clr+libs
 ```
 
 **Windows:**
 ```cmd
-.\build.cmd -os browser -c Debug -subset clr.runtime
+.\build.cmd -os browser -c Debug -subset clr+libs
 ```
 
 This command will:
@@ -58,13 +58,15 @@ dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug"
 
 This will start a local HTTP server and you can open the provided URL in your browser.
 
+You will also need to ensure the `WASM_PRELOAD_DIR` (see `src/coreclr/hosts/corerun/CMakeLists.txt`) is populated during a build of `corerun` so the virtual file system is created. This will require the copying of the libraries (see Console Testing details below) and `HelloWorld.dll` into `./artifacts/bin/coreclr/browser.wasm.Debug/IL` and then the corerun project will then need to be rebuilt.
+
 ### Console Testing
 
 You can also run the runtime directly in Node.js:
 In script below please replace `/path/to/runtime/` by a **absolute unix path** to the actual runtime repo (even on Windows).
 
 ```bash
-cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
+cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net11.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
 cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/
 node ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
@@ -75,13 +77,11 @@ node ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/I
 You can also run the corehost directly in Node.js:
 
 ```bash
-cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
+cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net11.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 node ./main.mjs
 ```
-
-Note that paths to assemblies are in the `src/native/corehost/browserhost/sample/dotnet.boot.js`
 
 ## Debugging
 

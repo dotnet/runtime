@@ -2,6 +2,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories("./jitstd")
 include_directories("../inc")
+include_directories("../jitshared")
 
 # gcc 10 and lower versions are too sensitive to bit fields width and warn from core compiler.
 # Since there is no better / specific suppression available for these core warnings, we disable
@@ -75,7 +76,7 @@ function(create_standalone_jit)
   endif ()
 endfunction()
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX))
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_SIMD>)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_HW_INTRINSICS>)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_MASKED_HW_INTRINSICS>)
@@ -97,6 +98,7 @@ set( JIT_SOURCES
   block.cpp
   buildstring.cpp
   codegencommon.cpp
+  codegenlinear.cpp
   compiler.cpp
   copyprop.cpp
   debuginfo.cpp
@@ -115,7 +117,6 @@ set( JIT_SOURCES
   fgprofile.cpp
   fgprofilesynthesis.cpp
   fgstmt.cpp
-  fgwasm.cpp
   flowgraph.cpp
   forwardsub.cpp
   gcinfo.cpp
@@ -162,6 +163,7 @@ set( JIT_SOURCES
   rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
+  regalloc.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
@@ -182,9 +184,7 @@ set( JIT_SOURCES
 set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
-  regalloc.cpp
   regMaskTPOps.cpp
-  codegenlinear.cpp
   gcdecode.cpp
   gcencode.cpp
   unwind.cpp
@@ -293,10 +293,12 @@ set( JIT_RISCV64_SOURCES
 set( JIT_WASM_SOURCES
   codegenwasm.cpp
   emitwasm.cpp
+  fgwasm.cpp
   lowerwasm.cpp
   regallocwasm.cpp
   registeropswasm.cpp
   targetwasm.cpp
+  unwindwasm.cpp
 )
 
 # We include the headers here for better experience in IDEs.
@@ -384,6 +386,7 @@ set( JIT_HEADERS
   rangecheckcloning.h
   rationalize.h
   regalloc.h
+  regallocimpl.h
   register.h
   regset.h
   scev.h
@@ -399,6 +402,7 @@ set( JIT_HEADERS
   ssarenamestate.h
   stacklevelsetter.h
   target.h
+  targetcommon.h
   targetx86.h
   targetamd64.h
   targetarm.h
@@ -481,9 +485,14 @@ set( JIT_WASM_HEADERS
     fgwasm.h
 )
 
+set ( JITSHARED_SOURCES
+    ../jitshared/histogram.cpp
+)
+
 convert_to_absolute_path(JIT_SOURCES ${JIT_SOURCES})
 convert_to_absolute_path(JIT_HEADERS ${JIT_HEADERS})
 convert_to_absolute_path(JIT_RESOURCES ${JIT_RESOURCES})
+convert_to_absolute_path(JITSHARED_SOURCES ${JITSHARED_SOURCES})
 
 # Also convert the per-architecture sources to absolute paths, if the subdirs want to use them.
 
@@ -556,7 +565,7 @@ else()
 
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+    add_link_options(LINKER:-Bsymbolic)
   endif()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})
@@ -594,7 +603,6 @@ else()
        shlwapi.lib
        bcrypt.lib
        crypt32.lib
-       RuntimeObject.lib
        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
@@ -614,6 +622,7 @@ function(add_jit jitName)
       add_library_clr(${jitName}
           SHARED
           ${JIT_SOURCES}
+          ${JITSHARED_SOURCES}
           ${JIT_ARCH_SOURCES}
           ${JIT_HEADERS}
           ${JIT_ARCH_HEADERS}
@@ -625,6 +634,7 @@ function(add_jit jitName)
       add_library_clr(${jitName}
           SHARED
           ${JIT_SOURCES}
+          ${JITSHARED_SOURCES}
           ${JIT_ARCH_SOURCES}
           ${JIT_RESOURCES}
           ${JIT_DEF_FILE}

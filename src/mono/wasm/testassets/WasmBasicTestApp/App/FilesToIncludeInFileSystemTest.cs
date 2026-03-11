@@ -14,7 +14,7 @@ public partial class FilesToIncludeInFileSystemTest
         // Check file presence in VFS based on application environment
         PrintFileExistence("/myfiles/Vfs1.txt");
         PrintFileExistence("/myfiles/Vfs2.txt");
-        PrintFileExistence("/subdir/subsubdir/Vfs3.txt");
+        PrintFileExistence("subdir/subsubdir/Vfs3.txt");
     }
 
     // Synchronize with FilesToIncludeInFileSystemTests

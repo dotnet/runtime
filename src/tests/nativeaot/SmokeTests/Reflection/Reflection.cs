@@ -78,6 +78,7 @@ internal static class ReflectionTest
         TestFieldAndParamMetadata.Run();
         TestActivationWithoutConstructor.Run();
         TestNestedMakeGeneric.Run();
+        Test121093Regression.Run();
 
         //
         // Mostly functionality tests
@@ -99,6 +100,7 @@ internal static class ReflectionTest
         TestGenericAttributesOnEnum.Run();
         TestLdtokenWithSignaturesDifferingInModifiers.Run();
         TestActivatingThingsInSignature.Run();
+        TestArrayInitialize.Run();
         TestDelegateInvokeFromEvent.Run();
 
         return 100;
@@ -912,6 +914,35 @@ internal static class ReflectionTest
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static Type GetAtom() => typeof(Atom);
+        }
+    }
+
+    class Test121093Regression
+    {
+        public static void Run()
+        {
+            // Expose 'ReflectedMethod'
+            typeof(Test121093Regression).GetMethod("ReflectedMethod", BindingFlags.Static | BindingFlags.NonPublic);
+            ReflectedMethod<string>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ReflectedMethod<T>()
+        {
+            NonReflectedGenericMethod<T>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void NonReflectedGenericMethod<T>()
+        {
+            string s = Environment.StackTrace;
+
+            if (!s.Contains(nameof(ReflectedMethod)) || !s.Contains(nameof(NonReflectedGenericMethod)))
+            {
+                Console.WriteLine(s);
+                Console.WriteLine("------------");
+                throw new Exception();
+            }
         }
     }
 
@@ -3002,6 +3033,37 @@ internal static class ReflectionTest
         public struct MyStruct;
 
         public struct MyArrayElementStruct;
+    }
+
+    class TestArrayInitialize
+    {
+        static int s_constructorCallCount = 0;
+
+        public struct ValueTypeWithConstructor
+        {
+            public ValueTypeWithConstructor()
+            {
+                s_constructorCallCount++;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Array AllocateArray() => new ValueTypeWithConstructor[3];
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestArrayInitialize));
+
+            s_constructorCallCount = 0;
+
+            // Create an array and call Initialize
+            var array = AllocateArray();
+            array.Initialize();
+
+            // Verify that the constructor was called for each element
+            if (s_constructorCallCount != 3)
+                throw new Exception($"Expected constructor to be called 3 times, but was called {s_constructorCallCount} times");
+        }
     }
 
     class TestDelegateInvokeFromEvent

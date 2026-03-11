@@ -63,10 +63,12 @@ struct RelocContext
     size_t coldCodeAddress;
     size_t coldCodeSize;
     size_t roDataAddress;
-    size_t roDataSize;
+    size_t roDataSize1;
+    size_t roDataSize2;
     size_t originalHotCodeAddress;
     size_t originalColdCodeAddress;
-    size_t originalRoDataAddress;
+    size_t originalRoDataAddress1;
+    size_t originalRoDataAddress2;
 };
 
 class CompileResult
@@ -95,17 +97,15 @@ public:
                      ULONG              coldCodeSize,
                      ULONG              roDataSize,
                      ULONG              xcptnsCount,
-                     CorJitAllocMemFlag flag,
-                     void**             hotCodeBlock,
-                     void**             coldCodeBlock,
-                     void**             roDataBlock);
+                     void*              hotCodeBlock,
+                     void*              coldCodeBlock,
+                     void*              roDataBlock);
     void recAllocMemCapture();
     void dmpAllocMem(DWORD key, const Agnostic_AllocMemDetails& value);
     void repAllocMem(ULONG*              hotCodeSize,
                      ULONG*              coldCodeSize,
                      ULONG*              roDataSize,
                      ULONG*              xcptnsCount,
-                     CorJitAllocMemFlag* flag,
                      unsigned char**     hotCodeBlock,
                      unsigned char**     coldCodeBlock,
                      unsigned char**     roDataBlock,
@@ -180,9 +180,9 @@ public:
     void recReportFatalError(CorJitResult result);
     void dmpReportFatalError(DWORD key, DWORD value);
 
-    void recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta);
+    void recRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     void dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value);
-    void repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta);
+    void repRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     void applyRelocs(RelocContext* rc, unsigned char* block1, ULONG blocksize1, void* originalAddr);
 
     void recProcessName(const char* name);

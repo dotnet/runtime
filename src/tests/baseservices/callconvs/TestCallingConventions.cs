@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public unsafe class Program
 {
@@ -164,13 +165,14 @@ public unsafe class Program
         }
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
         try
         {
             BlittableFunctionPointers();
-            // This requires pinvoke marshalling which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
+            // This requires pinvoke marshalling with calli which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
             if (!TestLibrary.Utilities.IsCoreClrInterpreter)
             {
                 NonblittableFunctionPointers();

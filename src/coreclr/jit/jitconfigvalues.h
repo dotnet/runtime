@@ -127,6 +127,9 @@ CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pse
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
 RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 1)
 
+// Enable devirtualization for generic virtual methods
+RELEASE_CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
+
 //
 // MinOpts
 //
@@ -398,6 +401,7 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512BMM,             "EnableAVX512BMM",           1) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
 
 RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled
@@ -429,6 +433,7 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",          
 #elif defined(TARGET_RISCV64)
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zbs,            "EnableRiscV64Zbs",          1) // Allows RiscV64 Zbs hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
@@ -448,18 +453,18 @@ RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              
 RELEASE_CONFIG_INTEGER(JitDisableSimdVN, "JitDisableSimdVN", 0)
 #endif
 
-// Default 0, enable the CSE of Constants, including nearby offsets. (only for ARM/ARM64)
+// Default 0, enable the CSE of Constants, including nearby offsets. (only for ARM/ARM64/RISCV64)
 // If 1, disable all the CSE of Constants
-// If 2, enable the CSE of Constants but don't combine with nearby offsets. (only for ARM/ARM64)
+// If 2, enable the CSE of Constants but don't combine with nearby offsets. (only for ARM/ARM64/RISCV64)
 // If 3, enable the CSE of Constants including nearby offsets. (all platforms)
 // If 4, enable the CSE of Constants but don't combine with nearby offsets. (all platforms)
 //
-#define CONST_CSE_ENABLE_ARM            0
-#define CONST_CSE_DISABLE_ALL           1
-#define CONST_CSE_ENABLE_ARM_NO_SHARING 2
-#define CONST_CSE_ENABLE_ALL            3
-#define CONST_CSE_ENABLE_ALL_NO_SHARING 4
-RELEASE_CONFIG_INTEGER(JitConstCSE, "JitConstCSE", CONST_CSE_ENABLE_ARM)
+#define CONST_CSE_ENABLE_ARM_RISCV64            0
+#define CONST_CSE_DISABLE_ALL                   1
+#define CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING 2
+#define CONST_CSE_ENABLE_ALL                    3
+#define CONST_CSE_ENABLE_ALL_NO_SHARING         4
+RELEASE_CONFIG_INTEGER(JitConstCSE, "JitConstCSE", CONST_CSE_ENABLE_ARM_RISCV64)
 
 // If nonzero, use the greedy RL policy.
 //
@@ -586,6 +591,8 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
                                                                                     // conversions
 
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
+                  "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -604,6 +611,9 @@ RELEASE_CONFIG_STRING(AltJitExcludeAssemblies, "AltJitExcludeAssemblies")
 
 // If set, measure the IR size after some phases and report it in the time log.
 RELEASE_CONFIG_INTEGER(JitMeasureIR, "JitMeasureIR", 0)
+
+// If set, report JIT metrics back to the EE after each method compilation.
+RELEASE_CONFIG_INTEGER(JitReportMetrics, "JitReportMetrics", 0)
 
 // If set, gather JIT function info and write to this file.
 RELEASE_CONFIG_STRING(JitFuncInfoFile, "JitFuncInfoLogFile")
@@ -845,6 +855,9 @@ CONFIG_STRING(JitRawHexCodeFile, "JitRawHexCodeFile")
 //    3: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame) and also force using the large funclet frame variation (frame 5) if possible.
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, "JitSaveFpLrWithCalleeSavedRegisters", 0)
+
+// Experimental support for vector length agnostic implementation of Vector<T>
+CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 #endif // defined(TARGET_ARM64)
 
 #if defined(TARGET_LOONGARCH64)
@@ -854,9 +867,6 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)
-
-// Simulate generation of Wasm control flow, even if not targeting wasm
-CONFIG_INTEGER(JitWasmControlFlow, "JitWasmControlFlow", 0)
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

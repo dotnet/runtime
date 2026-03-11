@@ -557,14 +557,6 @@ typedef unsigned int ALG_ID;
 #define LCMAP_LOWERCASE           0x00000100
 #define LCMAP_UPPERCASE           0x00000200
 
-// 8 characters for language
-// 8 characters for region
-// 64 characters for suffix (script)
-// 2 characters for '-' separators
-// 2 characters for prefix like "i-" or "x-"
-// 1 null termination
-#define LOCALE_NAME_MAX_LENGTH   85
-
 
 #ifdef __cplusplus
 /*

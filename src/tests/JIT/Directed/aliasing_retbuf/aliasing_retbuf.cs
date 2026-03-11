@@ -5,9 +5,12 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public unsafe class AliasingRetBuf
 {
+    [ActiveIssue("Fails after removing patching step: https://github.com/dotnet/runtime/pull/62863", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -56,7 +59,7 @@ public unsafe class AliasingRetBuf
             failures |= 16;
         }
 
-        // This requires pinvoke marshalling which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
+        // This requires pinvoke marshalling with calli which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
         if (!TestLibrary.Utilities.IsCoreClrInterpreter)
         {
             f = new Foo { A = 3, B = 2, C = 1 };

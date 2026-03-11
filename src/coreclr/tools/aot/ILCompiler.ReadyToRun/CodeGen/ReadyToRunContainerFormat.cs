@@ -7,5 +7,6 @@ namespace ILCompiler
     {
         PE,
         MachO,
+        Wasm,
     }
 }

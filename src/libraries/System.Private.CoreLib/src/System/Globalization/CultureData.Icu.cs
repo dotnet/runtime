@@ -522,7 +522,7 @@ namespace System.Globalization
 
             if ((types & (CultureTypes.NeutralCultures | CultureTypes.SpecificCultures)) == 0)
             {
-                return Array.Empty<CultureInfo>();
+                return [];
             }
 
             int bufferLength;
@@ -539,7 +539,7 @@ namespace System.Globalization
 
             if (bufferLength <= 0)
             {
-                return Array.Empty<CultureInfo>();
+                return [];
             }
 
             char[] chars = new char[bufferLength];
@@ -557,7 +557,7 @@ namespace System.Globalization
 
             if (bufferLength <= 0)
             {
-                return Array.Empty<CultureInfo>();
+                return [];
             }
 
             bool enumNeutrals   = (types & CultureTypes.NeutralCultures) != 0;

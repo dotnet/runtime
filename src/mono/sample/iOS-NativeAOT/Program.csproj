@@ -66,8 +66,8 @@
   <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(DeployAndRun)' == 'true'">
-    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
-    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=&quot;$(AppBundlePath)&quot; --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=&quot;$(AppBundlePath)&quot; --targets=ios-device --output-directory=/tmp/out" />
   </Target>
 
 </Project>

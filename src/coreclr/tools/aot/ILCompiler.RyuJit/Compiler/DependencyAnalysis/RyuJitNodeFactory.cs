@@ -20,19 +20,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (method.IsInternalCall)
             {
-                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
-                }
-                else if (TypeSystemContext.IsDefaultInterfaceMethodImplementationThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(method));
-                }
-                else if (method.IsExplicitContinuationAsyncMethod())
-                {
-                    return MethodEntrypoint(method.GetExplicitContinuationAsyncMethodTarget());
-                }
-                else if (method.IsArrayAddressMethod())
+                if (method.IsArrayAddressMethod())
                 {
                     return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
                 }

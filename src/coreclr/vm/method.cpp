@@ -104,25 +104,32 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 #ifndef FEATURE_COMINTEROP
 #undef CLRToCOMCallMethodDesc
 #endif
-
-class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+BOOL ArgIteratorBaseForPInvoke::IsRegPassedStruct(TypeHandle th)
 {
-protected:
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    if (th.IsNativeValueType())
     {
-        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
+        return th.AsNativeValueType()->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
-};
-
-class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+    else
+    {
+        return th.GetMethodTable()->IsRegPassedStruct();
+    }
+}
+#if defined(UNIX_AMD64_ABI)
+SystemVEightByteRegistersInfo ArgIteratorBaseForPInvoke::GetEightByteRegistersInfo(TypeHandle th)
 {
-public:
-    PInvokeArgIterator(MetaSig* pSig)
+    if (!th.IsNativeValueType())
     {
-        m_pSig = pSig;
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
     }
-};
 
+    SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+    bool result = th.AsNativeValueType()->ClassifyEightBytes(&helper, true /* nativeLayout */);
+    // The answer must be true at this point.
+    _ASSERTE(result);
+    return SystemVEightByteRegistersInfo(helper);
+}
+#endif
 
 //*******************************************************************************
 SIZE_T MethodDesc::SizeOf()
@@ -232,6 +239,10 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     if (alloc == NULL)
         return E_OUTOFMEMORY;
 
+#ifdef FEATURE_CODE_VERSIONING
+    alloc->OptimizationTier = NativeCodeVersion::OptimizationTierUnknown;
+#endif
+
     // Try to set the field. Suppress clean-up if we win the race.
     if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
         amTracker.SuppressRelease();
@@ -252,6 +263,16 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
         return S_FALSE;
 
     return S_OK;
+}
+
+void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -289,6 +310,15 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
     if (codeData == NULL)
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
+}
+
+NativeCodeVersion::OptimizationTier MethodDesc::GetMethodDescOptimizationTier()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NativeCodeVersion::OptimizationTierUnknown;
+    return VolatileLoadWithoutBarrier(&codeData->OptimizationTier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -1357,6 +1387,7 @@ WORD MethodDesc::GetComSlot()
         THROWS;
         GC_NOTRIGGER;
         FORBID_FAULT;
+        PRECONDITION(!IsAsyncMethod());
     }
     CONTRACTL_END
 
@@ -1728,7 +1759,7 @@ UINT MethodDesc::SizeOfArgStack()
     return argit.SizeOfArgStack();
 }
 
-
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 UINT MethodDesc::SizeOfNativeArgStack()
 {
 #ifndef UNIX_AMD64_ABI
@@ -1740,6 +1771,7 @@ UINT MethodDesc::SizeOfNativeArgStack()
     return argit.SizeOfArgStack();
 #endif
 }
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
 #ifdef TARGET_X86
 //*******************************************************************************
@@ -1953,6 +1985,37 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         FALSE /* no allowInstParam */ ));
 }
 
+PCODE MethodDesc::GetSingleCallableAddrOfCode()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsGenericMethodDefinition());
+    return GetMethodEntryPoint();
+}
+
+PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(HasUnmanagedCallersOnlyAttribute());
+    }
+    CONTRACTL_END;
+
+    PCODE entryPoint;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetPortableEntryPoint();
+    (void)PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly();
+    entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetSingleCallableAddrOfCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return entryPoint;
+}
+
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
 {
@@ -2133,7 +2196,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     PCODE entryPoint = GetPortableEntryPoint();
     if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
-        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
     {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
     }
@@ -2315,10 +2378,12 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
         mdToken tkTypeDef;
         Module* pModuleOfTypeDef;
 
-        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
-        if (pModuleOfTypeDef->IsSystem())
+        if (ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef))
         {
-            return true;
+            if (pModuleOfTypeDef->IsSystem())
+            {
+                return true;
+            }
         }
     }
 
@@ -2448,26 +2513,12 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
-    if (HasPrecode())
-    {
-        GetPrecode()->Reset();
-    }
-    else
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-    {
-        // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
-
-        WORD flagsToSet = enum_flag3_HasStableEntryPoint;
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
-        flagsToSet |= enum_flag3_HasPrecode;
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-        InterlockedUpdateFlags3(flagsToSet, FALSE);
-
-        *GetAddrOfSlot() = GetTemporaryEntryPoint();
-    }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE(HasPrecode());
+    GetPrecode()->Reset();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {
@@ -2852,6 +2903,25 @@ PCODE MethodDesc::GetPortableEntryPoint()
     // The portable entry point is currently the same as the
     // temporary entry point.
     return GetTemporaryEntryPoint();
+}
+
+PCODE MethodDesc::GetPortableEntryPointIfExists()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    return GetTemporaryEntryPointIfExists();
+}
+
+void MethodDesc::ResetPortableEntryPoint()
+{
+    PCODE portableEntry = GetPortableEntryPointIfExists();
+    if (portableEntry != (PCODE)NULL)
+    {
+        PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
+        pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
+    }
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
@@ -3246,6 +3316,14 @@ void MethodDesc::ResetCodeEntryPoint()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsVersionable());
 
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchToResetEntryPointSlots();
@@ -3268,18 +3346,24 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
     // Updates are expressed via metadata diff and a methoddef of a runtime async method
-    // would be resolved to the thunk.
-    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
+    // would be resolved to the task-returning thunk.
+    // If we see a thunk here, fetch the async variant that owns the IL and reset that.
     if (IsAsyncThunkMethod())
     {
-        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
+        MethodDesc *otherVariant = GetAsyncVariantNoCreate();
         _ASSERTE(otherVariant != NULL);
         otherVariant->ResetCodeEntryPointForEnC();
         return;
     }
 
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
         (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())

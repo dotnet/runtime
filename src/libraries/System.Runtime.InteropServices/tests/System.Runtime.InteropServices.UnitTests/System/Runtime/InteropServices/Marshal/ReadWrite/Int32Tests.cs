@@ -128,11 +128,13 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt32_ZeroPoint_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt32(IntPtr.Zero));
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt32(IntPtr.Zero, 2));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadInt32(IntPtr.Zero));
+            if (PlatformDetection.SupportsDirtyAccessViolations)
+            {
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadInt32(IntPtr.Zero, 2));
+            }
         }
 
         [Fact]
@@ -154,15 +156,15 @@ namespace System.Runtime.InteropServices.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadInt32(collectibleObject, 0));
         }
-
         [Fact]
-        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt32_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt32(IntPtr.Zero, 0));
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt32(IntPtr.Zero, 2, 0));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteInt32(IntPtr.Zero, 0));
+            if (PlatformDetection.SupportsDirtyAccessViolations)
+            {
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteInt32(IntPtr.Zero, 2, 0));
+            }
         }
-
         [Fact]
         [SkipOnMono("Marshal.WriteInt32 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt32_NullObject_ThrowsAccessViolationException()

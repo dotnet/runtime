@@ -12,8 +12,7 @@ schedules:
   branches:
     include:
     - main
-    - release/*-staging  # .NET 8 and .NET 9
-    - release/*.0        # .NET 10+
+    - release/*.0
 
 variables:
   - template: ../variables.yml
@@ -45,6 +44,7 @@ extends:
         - checkout: self
           clean: true
           fetchDepth: 5
+          fetchTags: false
 
         - bash: |
             $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
@@ -105,12 +105,13 @@ extends:
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-windows-2022-open
+          demands: ImageOverride -equals windows.vs2026preview.scout.amd64.open
 
         steps:
         - checkout: self
           clean: true
           fetchDepth: 5
+          fetchTags: false
           lfs: false
 
         - powershell: |

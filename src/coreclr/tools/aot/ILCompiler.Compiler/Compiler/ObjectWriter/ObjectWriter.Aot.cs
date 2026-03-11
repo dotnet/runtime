@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
@@ -24,7 +25,7 @@ namespace ILCompiler.ObjectWriter
         private protected abstract void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
-            string currentSymbolName);
+            Utf8String currentSymbolName);
 
         private protected uint GetVarTypeIndex(bool isStateMachineMoveNextMethod, DebugVarInfoMetadata debugVar)
         {
@@ -55,19 +56,19 @@ namespace ILCompiler.ObjectWriter
 
         private protected abstract void EmitDebugFunctionInfo(
             uint methodTypeIndex,
-            string methodName,
+            Utf8String methodName,
             SymbolDefinition methodSymbol,
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
         private protected virtual void EmitDebugThunkInfo(
-            string methodName,
+            Utf8String methodName,
             SymbolDefinition methodSymbol,
             INodeWithDebugInfo debugNode)
         {
         }
 
-        private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
+        private protected abstract void EmitDebugSections(IDictionary<Utf8String, SymbolDefinition> definedSymbols);
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger)
         {
@@ -99,7 +100,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                 {
-                    string methodName = GetMangledName(symbolDefinitionNode);
+                    Utf8String methodName = GetMangledName(symbolDefinitionNode);
                     if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                     {
                         if (node is IMethodNode methodNode)
@@ -129,7 +130,7 @@ namespace ILCompiler.ObjectWriter
 
         partial void PrepareForUnwindInfo() => CreateEhSections();
 
-        partial void EmitUnwindInfoForNode(ObjectNode node, string currentSymbolName, SectionWriter sectionWriter)
+        partial void EmitUnwindInfoForNode(ObjectNode node, Utf8String currentSymbolName, SectionWriter sectionWriter)
         {
             if (node is INodeWithCodeInfo nodeWithCodeInfo)
             {
@@ -137,7 +138,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, string relocSymbolName)
+        partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, Utf8String relocSymbolName)
         {
             if (relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternFunctionSymbolNode)
             {

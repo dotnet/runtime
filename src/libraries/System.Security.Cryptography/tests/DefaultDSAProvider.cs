@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             get
             {
-                return PlatformSupport.IsDSASupported && !PlatformDetection.IsWindows7;
+                return PlatformSupport.IsDSASupported;
             }
         }
     }

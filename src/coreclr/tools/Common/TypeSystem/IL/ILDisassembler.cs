@@ -283,7 +283,7 @@ namespace Internal.IL
             // Quick and dirty way to get the opcode name is to convert the enum value to string.
             // We need some adjustments though.
             string opCodeString = opCode.ToString().Replace("_", ".");
-            if (opCodeString.EndsWith("."))
+            if (opCodeString.EndsWith('.'))
                 opCodeString = opCodeString.Substring(0, opCodeString.Length - 1);
 
             decodedInstruction.Append(opCodeString);

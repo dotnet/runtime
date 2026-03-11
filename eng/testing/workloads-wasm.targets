@@ -22,7 +22,8 @@
       <NuGetsToBuildForWorkloadTesting Include="$(_AOTCrossNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\MonoCrossAOT\Microsoft.NETCore.App.MonoCrossAOT.$(RIDForWorkload).sfxproj"
                       Properties="@(_PropsForAOTCrossBuild,';')"
-                      Descriptor="AOT Cross compiler"/>
+                      Descriptor="AOT Cross compiler"
+                      Condition="'$(RuntimeFlavor)' == 'Mono'" />
     </ItemGroup>
   </Target>
 </Project>

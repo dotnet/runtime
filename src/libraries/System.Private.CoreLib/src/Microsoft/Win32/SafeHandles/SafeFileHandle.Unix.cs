@@ -339,6 +339,9 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
+                // Cache the file type from the status
+                _cachedFileType = (int)MapUnixFileTypeToFileType(status);
+
                 fileLength = status.Size;
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
@@ -462,30 +465,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return false;
             }
-            else if (lockOperation == Interop.Sys.LockOperations.LOCK_EX)
-            {
-                return true; // LOCK_EX is always OK
-            }
-            else if ((access & FileAccess.Write) == 0)
-            {
-                return true; // LOCK_SH is always OK when reading
-            }
 
-            if (!Interop.Sys.TryGetFileSystemType(this, out Interop.Sys.UnixFileSystemTypes unixFileSystemType))
-            {
-                return false; // assume we should not acquire the lock if we don't know the File System
-            }
-
-            switch (unixFileSystemType)
-            {
-                case Interop.Sys.UnixFileSystemTypes.nfs: // #44546
-                case Interop.Sys.UnixFileSystemTypes.smb:
-                case Interop.Sys.UnixFileSystemTypes.smb2: // #53182
-                case Interop.Sys.UnixFileSystemTypes.cifs:
-                    return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
-                default:
-                    return true; // in all other situations it should be OK
-            }
+            return Interop.Sys.FileSystemSupportsLocking(this, lockOperation, accessWrite: (access & FileAccess.Write) != 0);
         }
 
         private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
@@ -516,18 +497,36 @@ namespace Microsoft.Win32.SafeHandles
             return canSeek == NullableBool.True;
         }
 
+        internal FileHandleType GetFileTypeCore()
+        {
+            int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
+            if (result != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw Interop.GetExceptionForIoErrno(error, Path);
+            }
+
+            return MapUnixFileTypeToFileType(status);
+        }
+
+        private static FileHandleType MapUnixFileTypeToFileType(Interop.Sys.FileStatus status)
+            => (status.Mode & Interop.Sys.FileTypes.S_IFMT) switch
+            {
+                Interop.Sys.FileTypes.S_IFREG => FileHandleType.RegularFile,
+                Interop.Sys.FileTypes.S_IFDIR => FileHandleType.Directory,
+                Interop.Sys.FileTypes.S_IFLNK => FileHandleType.SymbolicLink,
+                Interop.Sys.FileTypes.S_IFIFO => FileHandleType.Pipe,
+                Interop.Sys.FileTypes.S_IFSOCK => FileHandleType.Socket,
+                Interop.Sys.FileTypes.S_IFCHR => FileHandleType.CharacterDevice,
+                Interop.Sys.FileTypes.S_IFBLK => FileHandleType.BlockDevice,
+                _ => FileHandleType.Unknown
+            };
+
         internal long GetFileLength()
         {
             int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
-        }
-
-        private enum NullableBool
-        {
-            Undefined = 0,
-            False = -1,
-            True = 1
         }
     }
 }

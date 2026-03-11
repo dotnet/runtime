@@ -466,7 +466,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t
 
     BEGIN_QCALL;
 
-    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, EncApproxFieldDescIterator::FixUpEncFields);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
@@ -1091,6 +1091,22 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     return;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle fnPtrHandle;
+
+    BEGIN_QCALL;
+    BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
+    GCX_COOP();
+    retType.Set(fnPtrHandle.GetManagedClassObject());
+    END_QCALL;
+
+    return;
+}
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
@@ -1227,6 +1243,32 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
     LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
     allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
+
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    _ASSERTE(alignment != 0);
+    _ASSERTE(0 == (alignment & (alignment - 1))); // require power of 2
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocAlignedMem(size, alignment);
 
     END_QCALL;
 
@@ -1837,8 +1879,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //          async variants for task-returning methods
 //
 // For {task-returning, async} variants Reflection hands out only the task-returning variant.
-//  the async varinat is an implementation detail that conceptually does not exist.
-//  TODO: (async) the filtering may not cover all scenarios. Review and add tests.
+//  the async variant is an implementation detail that conceptually does not exist.
 //
 // For generic methods we always hand out an instantiating stub except for a generic method definition
 // For non-generic methods on generic types we need an instantiating stub if it's one of the following

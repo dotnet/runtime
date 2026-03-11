@@ -1230,11 +1230,6 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-      string('https://github.com/dotnet/runtime/issues/120904')
-      type([TestLibrary]TestLibrary.Utilities)
-      string[1] ('IsCoreClrInterpreter')
-    }
     .entrypoint
     .maxstack  1
     IL_0000:  call       void Program::Test1()

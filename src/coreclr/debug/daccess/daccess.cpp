@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: daccess.cpp
 //
-
-//
 // ClrDataAccess implementation.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -1123,6 +1121,12 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
 
     if (typeHandle.IsNull())
     {
+        if (mod == NULL)
+        {
+            status = E_INVALIDARG;
+            goto Fail;
+        }
+         
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
@@ -5090,7 +5094,7 @@ ClrDataAccess::FollowStubStep(
             methodDesc = PTR_MethodDesc(CORDB_ADDRESS_TO_TADDR(inBuffer->u.addr));
             if (methodDesc->HasNativeCode())
             {
-                *outAddr = methodDesc->GetNativeCode();
+                *outAddr = methodDesc->GetCodeForInterpreterOrJitted();
                 *outFlags = CLRDATA_FOLLOW_STUB_EXIT;
                 return S_OK;
             }
@@ -5739,7 +5743,7 @@ ClrDataAccess::RawGetMethodName(
     MethodDesc* methodDesc = NULL;
 
     {
-        EECodeInfo codeInfo(TO_TADDR(address));
+        EECodeInfo codeInfo(GetInterpreterCodeFromInterpreterPrecodeIfPresent(TO_TADDR(address)));
         if (codeInfo.IsValid())
         {
             if (displacement)
@@ -5806,7 +5810,7 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
@@ -5828,7 +5832,7 @@ ClrDataAccess::RawGetMethodName(
                 return hr;
             }
         }
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
@@ -5888,7 +5892,7 @@ ClrDataAccess::GetMethodExtents(MethodDesc* methodDesc,
         // for all types of managed code.
         //
 
-        PCODE methodStart = methodDesc->GetNativeCode();
+        PCODE methodStart = methodDesc->GetCodeForInterpreterOrJitted();
         if (!methodStart)
         {
             return E_NOINTERFACE;
@@ -5942,11 +5946,11 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -6001,11 +6005,11 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
         {
             return E_INVALIDARG;
         }
-        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode()));
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+        nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodDesc->GetNativeCode()));
     }
 
     DebugInfoRequest request;
@@ -7524,12 +7528,23 @@ void DacHandleWalker::WalkHandles()
 
     mEnumerated = true;
 
-    // The table slots are based on the number of GC heaps in the process.
-    int max_slots = 1;
+    // The GC sets the number of slots based on the number of processors. Prior to
+    // DATAS, num_processors == GCHeapCount() for ServerGC. Unfortunately the GC DAC
+    // contract didn't record the number of processors independently until minor
+    // version 8 and DATAS was enabled prior to that. When using a standalone GC version
+    // < 8 the DAC approximates the processor count as GCHeapCount() because we don't
+    // have more accurate data to work with. This may cause handle enumeration to be
+    // incomplete.
+    uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = GCHeapCount();
+    {
+        if (g_gcDacGlobals->minor_version_number >= 8)
+            max_slots = *g_gcDacGlobals->g_totalCpuCount;
+        else
+            max_slots = GCHeapCount();
+    }
 #endif // FEATURE_SVR_GC
 
     DacHandleWalkerParam param(&mList);
@@ -7541,9 +7556,9 @@ void DacHandleWalker::WalkHandles()
         {
             if (map->pBuckets[i] != NULL)
             {
-                for (int j = 0; j < max_slots && SUCCEEDED(param.Result); ++j)
+                for (uint32_t j = 0; j < max_slots && SUCCEEDED(param.Result); ++j)
                 {
-                    DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[(int)j];
                     if (hTable)
                     {
                         // handleType is the integer from 1 -> HANDLE_MAX_INTERNAL_TYPES based on the requested handle kinds to walk.
@@ -7816,10 +7831,7 @@ void DacStackReferenceWalker::WalkStack()
 
     // Walk the stack, set mEnumerated to true to ensure we don't do it again.
     unsigned int flagsStackWalk = ALLOW_INVALID_OBJECTS|ALLOW_ASYNC_STACK_WALK|SKIP_GSCOOKIE_CHECK;
-
-#if defined(FEATURE_EH_FUNCLETS)
     flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     // Pre-set mEnumerated in case we hit an unexpected exception.  We don't want to
     // keep walking stack frames if we hit a failure
@@ -7984,12 +7996,10 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
     gcctx->cf = pCF;
 
     bool fReportGCReferences = true;
-#if defined(FEATURE_EH_FUNCLETS)
     // On Win64 and ARM, we may have unwound this crawlFrame and thus, shouldn't report the invalid
     // references it may contain.
     // todo.
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
-#endif // defined(FEATURE_EH_FUNCLETS)
 
     Frame *pFrame = ((DacScanContext*)gcctx->sc)->pFrame = pCF->GetFrame();
 
@@ -8331,11 +8341,23 @@ HRESULT DacGCBookkeepingEnumerator::Init()
 
 HRESULT DacHandleTableMemoryEnumerator::Init()
 {
-    int max_slots = 1;
+    // The GC sets the number of slots based on the number of processors. Prior to
+    // DATAS, num_processors == GCHeapCount() for ServerGC. Unfortunately the GC DAC
+    // contract didn't record the number of processors independently until minor
+    // version 8 and DATAS was enabled prior to that. When using a standalone GC version
+    // < 8 the DAC approximates the processor count as GCHeapCount() because we don't
+    // have more accurate data to work with. This may cause handle enumeration to be
+    // incomplete.
+    uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = GCHeapCount();
+    {
+        if (g_gcDacGlobals->minor_version_number >= 8)
+            max_slots = *g_gcDacGlobals->g_totalCpuCount;
+        else
+            max_slots = GCHeapCount();
+    }
 #endif // FEATURE_SVR_GC
 
     // Cap the number of regions we will walk in case we hit an infinite loop due
@@ -8348,9 +8370,9 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
         {
             if (map->pBuckets[i] != NULL)
             {
-                for (int j = 0; j < max_slots ; ++j)
+                for (uint32_t j = 0; j < max_slots ; ++j)
                 {
-                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[(int)j];
                     DPTR(dac_handle_table_segment) pFirstSegment = pTable->pSegmentList;
                     DPTR(dac_handle_table_segment) curr = pFirstSegment;
 
@@ -8359,7 +8381,7 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
                         SOSMemoryRegion mem = {0};
                         mem.Start = curr.GetAddr();
                         mem.Size = HANDLE_SEGMENT_SIZE;
-                        mem.Heap = j; // heap number
+                        mem.Heap = (int)j; // heap number
 
                         mRegions.Add(mem);
 

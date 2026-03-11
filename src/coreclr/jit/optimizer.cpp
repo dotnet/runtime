@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 DataFlow::DataFlow(Compiler* pCompiler)
-    : m_pCompiler(pCompiler)
+    : m_compiler(pCompiler)
 {
 }
 
@@ -358,7 +358,7 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
 
     // Check if last two statements in the loop body are the increment of the iterator
     // and the loop termination test.
-    noway_assert(cond->bbStmtList != nullptr);
+    noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
 
@@ -1312,7 +1312,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     int        iterInc      = iterInfo.IterConst();
     genTreeOps iterOper     = iterInfo.IterOper();
     var_types  iterOperType = iterInfo.IterOperType();
-    bool       unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
+    bool       unsTest      = iterInfo.TestTree->IsUnsigned();
 
     assert(!lvaGetDesc(lvar)->IsAddressExposed());
     assert(!lvaGetDesc(lvar)->lvIsStructField);
@@ -1934,9 +1934,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     unsigned estDupCostSz = 0;
 
-    for (int i = 0; i < duplicatedBlocks.Height(); i++)
+    for (BasicBlock* const block : duplicatedBlocks.BottomUpOrder())
     {
-        BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
             GenTree* tree = stmt->GetRootNode();
@@ -2058,9 +2057,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     fgRedirectEdge(newPreheader->TargetEdgeRef(), stayInLoopSucc);
 
     // Duplicate all the code now
-    for (int i = 0; i < duplicatedBlocks.Height(); i++)
+    for (BasicBlock* const block : duplicatedBlocks.BottomUpOrder())
     {
-        BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
             GenTree*   clonedTree = gtCloneExpr(stmt->GetRootNode());
@@ -2223,12 +2221,6 @@ PhaseStatus Compiler::optOptimizePreLayout()
     // Run a late pass of unconditional-to-conditional branch optimization, skipping handler blocks.
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = block->Next())
     {
-        if (!UsesFunclets() && block->hasHndIndex())
-        {
-            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
-            continue;
-        }
-
         modified |= fgOptimizeBranch(block);
     }
 
@@ -2691,6 +2683,11 @@ bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
     }
     assert(outermostHBtab != nullptr);
 
+    // header is no longer a try entry, so update its flags
+    //
+    assert(!bbIsTryBeg(header));
+    header->RemoveFlags(BBF_DONT_REMOVE);
+
     // Recompute preheader placement
     //
     const unsigned enclosingTryIndex = outermostHBtab->ebdEnclosingTryIndex;
@@ -2786,7 +2783,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     JITDUMP("Canonicalize exit " FMT_BB " for " FMT_LP " to have only loop predecessors\n", exit->bbNum,
             loop->GetIndex());
 
-    if (UsesCallFinallyThunks() && exit->KindIs(BBJ_CALLFINALLY))
+    if (exit->KindIs(BBJ_CALLFINALLY))
     {
         // Branches to a BBJ_CALLFINALLY _must_ come from inside its associated
         // try region, and when we have callfinally thunks the BBJ_CALLFINALLY
@@ -4589,10 +4586,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 bool visitedCurr = false;
                 bool isCommaTree = tree->OperIs(GT_COMMA);
                 bool hasExcep    = false;
-                for (int i = 0; i < m_valueStack.Height(); i++)
+                for (Value& value : m_valueStack.BottomUpOrder())
                 {
-                    Value& value = m_valueStack.BottomRef(i);
-
                     if (value.m_hoistable)
                     {
                         assert(value.Node() != tree);
@@ -5804,8 +5799,8 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 {
                     ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
                     oldStoreValue =
-                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), store->TypeGet(),
-                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetSize());
+                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclValueSize(lclNum), store->TypeGet(),
+                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetValueSize());
                 }
 
                 GenTree* data = store->AsLclVarCommon()->Data();
