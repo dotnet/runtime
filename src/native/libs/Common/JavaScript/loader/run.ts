@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, EmscriptenModuleInternal } from "./types";
 
-import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, dotnetApi, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
@@ -13,6 +13,18 @@ import { initPolyfills } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
+
+async function callLibraryInitializers(modules: JsModuleExports[], resources: any[], methodName: string, args: any): Promise<void> {
+    await Promise.all(modules.map(async (module, i) => {
+        try {
+            await (module as any)[methodName]?.(args);
+        } catch (err) {
+            const name = (resources[i] as any).name || "unknown";
+            const message = err instanceof Error ? err.message : String(err);
+            throw new Error(`Failed to invoke '${methodName}' on library initializer '${name}': ${message}`, { cause: err });
+        }
+    }));
+}
 
 // WASM-TODO: downloadOnly - Blazor render mode auto pre-download. Really no start.
 // WASM-TODO: debugLevel
@@ -31,10 +43,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
         validateLoaderConfig();
 
-        const modulesAfterConfigLoaded = await Promise.all((loaderConfig.resources.modulesAfterConfigLoaded || []).map(loadJSModule));
-        for (const afterConfigLoadedModule of modulesAfterConfigLoaded) {
-            await afterConfigLoadedModule.onRuntimeConfigLoaded?.(loaderConfig);
-        }
+        const afterConfigLoadedResources = loaderConfig.resources.modulesAfterConfigLoaded || [];
+        const modulesAfterConfigLoaded = await Promise.all(afterConfigLoadedResources.map(loadJSModule));
+        await callLibraryInitializers(modulesAfterConfigLoaded, afterConfigLoadedResources, "onRuntimeConfigLoaded", loaderConfig);
 
         // after onConfigLoaded hooks, polyfills can be initialized
         await initPolyfills();
@@ -66,7 +77,8 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
         const corePDBsPromise = isDebuggingSupported ? Promise.all((loaderConfig.resources.corePdb || []).map(fetchPdb)) : Promise.resolve([]);
         const pdbsPromise = isDebuggingSupported ? Promise.all((loaderConfig.resources.pdb || []).map(fetchPdb)) : Promise.resolve([]);
-        const modulesAfterRuntimeReadyPromise = Promise.all((loaderConfig.resources.modulesAfterRuntimeReady || []).map(loadJSModule));
+        const afterRuntimeReadyResources = loaderConfig.resources.modulesAfterRuntimeReady || [];
+        const modulesAfterRuntimeReadyPromise = Promise.all(afterRuntimeReadyResources.map(loadJSModule));
 
         const nativeModule = await nativeModulePromise;
         const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
@@ -95,12 +107,14 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
 
         verifyAllAssetsDownloaded();
 
-        if (typeof Module.onDotnetReady === "function") {
-            await Module.onDotnetReady();
-        }
-        const modulesAfterRuntimeReady = await modulesAfterRuntimeReadyPromise;
-        for (const afterRuntimeReadyModule of modulesAfterRuntimeReady) {
-            await afterRuntimeReadyModule.onRuntimeReady?.(loaderConfig);
+        if (!downloadOnly) {
+            if (typeof Module.onDotnetReady === "function") {
+                await Module.onDotnetReady();
+            }
+            const modulesAfterRuntimeReady = await modulesAfterRuntimeReadyPromise;
+            const allRuntimeReadyModules = [...modulesAfterConfigLoaded, ...modulesAfterRuntimeReady];
+            const allRuntimeReadyResources = [...afterConfigLoadedResources, ...afterRuntimeReadyResources];
+            await callLibraryInitializers(allRuntimeReadyModules, allRuntimeReadyResources, "onRuntimeReady", dotnetApi);
         }
         runtimeState.creatingRuntime = false;
     } catch (err) {

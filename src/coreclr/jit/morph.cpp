@@ -948,11 +948,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if !FEATURE_FIXED_OUT_ARGS
                     // On x86 we previously recorded a stack depth of zero when
                     // morphing the register arguments of any GT_IND with a GTF_IND_RNGCHK flag
-                    // Thus we can not reorder the argument after any stack based argument
-                    // (Note that GT_LCLHEAP sets the GTF_EXCEPT flag so we don't need to
-                    // check for it explicitly.)
+                    // Thus we can not reorder the argument after any stack based argument.
+                    // GT_LCLHEAP has the same stack depth constraint, but it no longer sets
+                    // GTF_EXCEPT, so it must be checked explicitly here.
                     //
-                    if (argx->gtFlags & GTF_EXCEPT)
+                    if (((argx->gtFlags & GTF_EXCEPT) != 0) ||
+                        (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP)))
                     {
                         SetNeedsTemp(&arg);
                         continue;
@@ -960,15 +961,11 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #else
                     // For Arm/X64 we can't reorder a register argument that uses a GT_LCLHEAP
                     //
-                    if (argx->gtFlags & GTF_EXCEPT)
+                    if (comp->compLocallocUsed && comp->gtTreeContainsOper(argx, GT_LCLHEAP))
                     {
                         assert(comp->compLocallocUsed);
-
-                        if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
-                        {
-                            SetNeedsTemp(&arg);
-                            continue;
-                        }
+                        SetNeedsTemp(&arg);
+                        continue;
                     }
 #endif
                 }
@@ -1793,12 +1790,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
         PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
-
-        // TODO-WASM: pass proper portable entry point as the last argument for managed calls
-        GenTree* const pePointer = comp->gtNewZeroConNode(TYP_I_IMPL);
-        PushBack(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
     }
-
 #endif // defined(TARGET_WASM)
 
     ClassifierInfo info;

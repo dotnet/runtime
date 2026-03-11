@@ -39,6 +39,8 @@
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows' ">
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Windows.cs"
              Link="ProductionCode\System\Net\NameResolutionPal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"

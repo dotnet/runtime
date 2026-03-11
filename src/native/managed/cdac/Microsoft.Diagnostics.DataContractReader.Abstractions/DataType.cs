@@ -124,6 +124,7 @@ public enum DataType
     EEJitManager,
     PatchpointInfo,
     PortableEntryPoint,
+    VirtualCallStubManager,
 
     TransitionBlock,
     DebuggerEval,
@@ -147,6 +148,7 @@ public enum DataType
     RCWCleanupList,
     RCW,
     CtxEntry,
+    InterfaceEntry,
 
 
     /* GC Data Types */

@@ -5705,7 +5705,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             {
                 if (slotCount > 1)
                 {
-#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_WASM)
                     assert(call->HasMultiRegRetVal());
 #endif
                 }
@@ -6381,12 +6381,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
+#ifndef TARGET_WASM
             // If we are using an indirection cell for a direct call then apply
             // an optimization that loads the call target directly from the
             // indirection cell, instead of duplicating the tree.
             bool hasIndirectionCell = call->GetIndirectionCellArgKind() != WellKnownArg::None;
 
             if (!hasIndirectionCell)
+#endif // !TARGET_WASM
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
@@ -11701,7 +11703,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // LowerLclHeap: a common logic to lower LCLHEAP.
 //
 // Arguments:
-//    blkNode - the LCLHEAP node we are lowering.
+//    node - the LCLHEAP node we are lowering.
 //
 void Lowering::LowerLclHeap(GenTree* node)
 {
