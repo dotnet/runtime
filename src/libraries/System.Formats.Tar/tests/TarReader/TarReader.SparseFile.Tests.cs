@@ -274,22 +274,32 @@ namespace System.Formats.Tar.Tests
 
         // --- Corrupted format tests ---
 
+        public static IEnumerable<object[]> CorruptedSparseMapTestCases()
+        {
+            string[] corruptedMaps =
+            [
+                "abc\n0\n256\n",       // non-numeric segment count
+                "\n0\n256\n",          // empty segment count line
+                "1\nabc\n256\n",       // non-numeric offset
+                "1\n0\nabc\n",         // non-numeric length
+                "1\n-1\n256\n",        // negative offset
+                "1\n0\n-1\n",          // negative length
+                "1\n0\n",              // truncated: missing length line
+                "1\n",                 // truncated: missing offset and length lines
+                "1\n0\n2048\n",        // segment extends past realSize
+                "2\n256\n256\n0\n256\n", // segments not in ascending order
+                "2\n" + new string('A', 512) + "\n256\n", // line exceeding buffer capacity
+            ];
+
+            foreach (string map in corruptedMaps)
+            {
+                yield return new object[] { map, false };
+                yield return new object[] { map, true };
+            }
+        }
+
         [Theory]
-        [InlineData("abc\n0\n256\n", false)]     // non-numeric segment count
-        [InlineData("\n0\n256\n", false)]         // empty segment count line
-        [InlineData("1\nabc\n256\n", false)]      // non-numeric offset
-        [InlineData("1\n0\nabc\n", false)]        // non-numeric length
-        [InlineData("1\n-1\n256\n", false)]       // negative offset
-        [InlineData("1\n0\n-1\n", false)]         // negative length
-        [InlineData("1\n0\n", false)]             // truncated: missing length line
-        [InlineData("1\n", false)]                // truncated: missing offset and length lines
-        [InlineData("1\n0\n2048\n", false)]       // segment extends past realSize
-        [InlineData("2\n256\n256\n0\n256\n", false)] // segments not in ascending order
-        [InlineData("abc\n0\n256\n", true)]
-        [InlineData("1\n0\nabc\n", true)]
-        [InlineData("1\n", true)]
-        [InlineData("1\n0\n2048\n", true)]        // segment extends past realSize (async)
-        [InlineData("2\n" + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + "\n256\n", false)] // line exceeding buffer capacity
+        [MemberData(nameof(CorruptedSparseMapTestCases))]
         public async Task CorruptedSparseMap_InvalidDataException(string sparseMapContent, bool useAsync)
         {
             var archive = BuildRawSparseArchive(sparseMapContent, "file.bin", 1024);
