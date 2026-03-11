@@ -507,11 +507,6 @@
         <target state="translated">Die [In]- und [Out]-Attribute werden nur für Arrayparameter unterstützt. Erwägen Sie die Verwendung des Schlüsselworts "ref", damit der Parameter geändert werden kann.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In]- und [Out]-Attribute</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Objekte, die aus VARIANTEN als in-Parameter in nicht verwalteten Aufrufen gemarshallt werden, werden nicht an das aktualisierte Ergebnis verteilt, auch wenn VARIANTE eine VT_BYREF-Variante ist. Verwenden Sie einen ref-Parameter anstelle eines in-Parameters, um den aktualisierten Wert wieder an den Aufrufer zu übergeben.</target>

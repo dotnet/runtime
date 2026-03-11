@@ -507,11 +507,6 @@
         <target state="translated">'[In]' 및 '[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경 가능하게 만들려면 'ref' 키워드를 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In] 및 [Out] 속성</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">관리되지 않는 호출에서 관리되는 호출로의 VARIANT에서 'in' 매개 변수로 마샬링된 개체는 VARIANT가 VT_BYREF 변형인 경우에도 업데이트된 결과를 다시 전파하지 않습니다. 'in' 매개 변수 대신 'ref' 매개 변수를 사용하여 업데이트된 값을 호출자에게 다시 전파합니다.</target>
