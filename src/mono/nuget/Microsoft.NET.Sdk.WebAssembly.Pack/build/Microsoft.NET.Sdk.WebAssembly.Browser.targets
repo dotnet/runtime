@@ -86,7 +86,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
 
-    <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(CompressionEnabled)' == ''">false</CompressionEnabled>
+    <CompressionEnabled Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</CompressionEnabled>
+    <WasmEnableHotReload Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</WasmEnableHotReload>
   </PropertyGroup>
 
   <ItemGroup>
@@ -192,7 +193,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(_BlazorIcuDataFileName)')" Text="Could not find %24(BlazorIcuDataFileName)=$(BlazorIcuDataFileName), or when used as a path relative to the runtime pack (='$(_RuntimePackNativeDir)')."/>
   </Target>
 
-  <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration" BeforeTargets="ResolveStaticWebAssetsConfiguration">
+  <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
     <PropertyGroup>
       <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
       <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET100OrLater)' != 'true'">true</_BlazorCacheBootResources>
@@ -218,6 +219,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
+      <_WasmFingerprintAssets Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == '' and '$(_TargetingNET90OrLater)' == 'true'">true</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
       <!-- true = dotnet.js will have hard fingerprint; false = dotnet.js will have soft fingerprint -->
@@ -239,8 +241,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       
       <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
       <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
-      <_WasmFingerprintAssets Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintAssets>
-      <_WasmEnableHotReload Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmEnableHotReload>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114 -->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
