@@ -105,14 +105,26 @@ internal partial class StackWalk_1 : IStackWalk
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
 
-        // Skip Frames whose address is below the initial context's SP.
-        // This matches the native DAC behavior: when StackWalkFrames starts from a
-        // profiler filter context, Frames at a lower SP (pushed more recently) are
-        // not encountered during the walk. Without this, Frames like
-        // RedirectedThreadFrame (pushed during GC stress redirect) would incorrectly
-        // set IsFirst=true for the wrong managed frame.
-        TargetPointer initialSP = context.StackPointer;
-        while (frameIterator.IsValid() && frameIterator.CurrentFrameAddress.Value < initialSP.Value)
+        // Skip Frames below the initial managed frame's caller SP, matching the
+        // native DAC behavior. The native's CheckForSkippedFrames uses
+        // EnsureCallerContextIsValid + GetSP(pCallerContext) to determine which
+        // Frames are "skipped" (between the managed frame and its caller).
+        // All Frames below this SP belong to the current managed frame or
+        // frames pushed more recently (e.g., RedirectedThreadFrame from GC stress,
+        // active InlinedCallFrames from P/Invoke calls within the method).
+        TargetPointer skipBelowSP;
+        if (state == StackWalkState.SW_FRAMELESS)
+        {
+            // Compute the caller SP by unwinding the initial managed frame.
+            IPlatformAgnosticContext callerCtx = context.Clone();
+            callerCtx.Unwind(_target);
+            skipBelowSP = callerCtx.StackPointer;
+        }
+        else
+        {
+            skipBelowSP = context.StackPointer;
+        }
+        while (frameIterator.IsValid() && frameIterator.CurrentFrameAddress.Value < skipBelowSP.Value)
         {
             frameIterator.Next();
         }
