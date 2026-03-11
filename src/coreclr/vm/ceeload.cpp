@@ -40,7 +40,10 @@
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
+
+#ifdef TARGET_UNIX
 #include <minipal/getexepath.h>
+#endif // TARGET_UNIX
 
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
