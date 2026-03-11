@@ -924,7 +924,9 @@ namespace System.Threading
                         waiterTask.TrySetResult(result: true);
                     }
                 }
-                m_currentCount = currentCount;
+                // Use Interlocked.Add (relative delta) rather than an absolute write so that
+                // the lock-free CAS fast path in WaitAsync cannot be overwritten.
+                Interlocked.Add(ref m_currentCount, currentCount - returnCount);
 
                 // Exposing wait handle if it is not null
                 if (m_waitHandle is not null && returnCount == 0 && currentCount > 0)
