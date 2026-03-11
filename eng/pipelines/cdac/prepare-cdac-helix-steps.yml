@@ -4,12 +4,8 @@
 # Handles: building debuggees, preparing Helix payload, finding testhost and Helix queue.
 
 parameters:
-  buildDebugees:
-    type: boolean
-    default: true
-  skipDebuggeeCopy:
-    type: boolean
-    default: false
+  buildDebugees: true
+  skipDebuggeeCopy: false
 
 steps:
 - ${{ if parameters.buildDebugees }}:
