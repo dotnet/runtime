@@ -797,6 +797,48 @@ class DacStreamManager;
 
 //----------------------------------------------------------------------------
 //
+// DacPatchCache - Caches debugger breakpoint patches from the target process.
+//
+// DacReplacePatchesInHostMemory needs to iterate the target's patch hash table
+// to replace breakpoint instructions with original opcodes. This iteration is
+// expensive because it walks all hash buckets and entries via cross-process
+// reads. Since the target is not running during DAC operations, the patches
+// cannot change, so we cache them on first access and reuse across frames
+// within a single DAC session. The cache is invalidated on Flush().
+//
+//----------------------------------------------------------------------------
+
+struct DacPatchCacheEntry
+{
+    CORDB_ADDRESS address;
+    PRD_TYPE opcode;
+};
+
+class DacPatchCache
+{
+public:
+    DacPatchCache()
+        : m_isPopulated(false)
+    {
+    }
+
+    const SArray<DacPatchCacheEntry>& GetEntries();
+
+    void Flush()
+    {
+        m_entries.Clear();
+        m_isPopulated = false;
+    }
+
+private:
+    void Populate();
+
+    SArray<DacPatchCacheEntry> m_entries;
+    bool m_isPopulated;
+};
+
+//----------------------------------------------------------------------------
+//
 // ClrDataAccess.
 //
 //----------------------------------------------------------------------------
@@ -1207,7 +1249,7 @@ public:
         CLRDATA_ADDRESS *allocLimit);
 
     // ISOSDacInterface13
-    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);        
+    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
     virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
@@ -1407,6 +1449,7 @@ public:
     DacInstanceManager m_instances;
     ULONG32 m_instanceAge;
     bool m_debugMode;
+    DacPatchCache m_patchCache;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
@@ -1958,7 +2001,7 @@ public:
 
     virtual ~DacMemoryEnumerator() {}
     virtual HRESULT Init() = 0;
-    
+
     HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
     HRESULT STDMETHODCALLTYPE Reset();
     HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
