@@ -783,13 +783,11 @@ namespace System.IO.Pipes.Tests
         }
     }
 
-    public abstract class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeStreamConformanceTests
+    public class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeStreamConformanceTests
     {
-        protected abstract bool AsyncIO { get; }
-
         protected override (AnonymousPipeServerStream Server, AnonymousPipeClientStream Client) CreateServerAndClientStreams()
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: AsyncIO, asyncWrite: AsyncIO);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
 
             SafePipeHandle readPipeHandle = TransferOwnershipToPipeHandle(readHandle);
             SafePipeHandle writePipeHandle = TransferOwnershipToPipeHandle(writeHandle);
@@ -806,17 +804,6 @@ namespace System.IO.Pipes.Tests
             handle.Dispose();
             return pipeHandle;
         }
-    }
-
-    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_Synchronous : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
-    {
-        protected override bool AsyncIO => false;
-    }
-
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/125451", TestPlatforms.Windows)]
-    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_Asynchronous : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
-    {
-        protected override bool AsyncIO => true;
     }
 
     public abstract class NamedPipeTest_ServerOut_ClientIn : NamedPipeStreamConformanceTests
