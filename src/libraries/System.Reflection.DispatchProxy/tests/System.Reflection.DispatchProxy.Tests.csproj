@@ -2,6 +2,7 @@
   
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>DispatchProxyTests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

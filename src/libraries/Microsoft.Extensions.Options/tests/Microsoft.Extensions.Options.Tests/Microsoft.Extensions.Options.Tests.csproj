@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <RootNamespace>Microsoft.Extensions.Options.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
