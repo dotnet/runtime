@@ -1,30 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset } from "./types";
 
-import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, dotnetApi, Module } from "./cross-module";
+import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
+import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded } from "./assets";
 import { initPolyfills } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
-
-async function callLibraryInitializers(modules: JsModuleExports[], resources: any[], methodName: string, args: any): Promise<void> {
-    await Promise.all(modules.map(async (module, i) => {
-        try {
-            await (module as any)[methodName]?.(args);
-        } catch (err) {
-            const name = (resources[i] as any).name || "unknown";
-            const message = err instanceof Error ? err.message : String(err);
-            throw new Error(`Failed to invoke '${methodName}' on library initializer '${name}': ${message}`, { cause: err });
-        }
-    }));
-}
 
 // WASM-TODO: downloadOnly - Blazor render mode auto pre-download. Really no start.
 // WASM-TODO: debugLevel
@@ -43,11 +31,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
         validateLoaderConfig();
 
-        const afterConfigLoadedResources = loaderConfig.resources.modulesAfterConfigLoaded || [];
-        const modulesAfterConfigLoaded = await Promise.all(afterConfigLoadedResources.map(loadJSModule));
-        await callLibraryInitializers(modulesAfterConfigLoaded, afterConfigLoadedResources, "onRuntimeConfigLoaded", loaderConfig);
+        const modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = normalizeCollection(loaderConfig.resources.modulesAfterRuntimeReady).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
 
-        // after onConfigLoaded hooks, polyfills can be initialized
+        // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
         await initPolyfills();
 
         if (loaderConfig.resources.jsModuleDiagnostics && loaderConfig.resources.jsModuleDiagnostics.length > 0) {
@@ -61,24 +47,23 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleRuntime[0]);
         const wasmNativePromise: Promise<Response> = fetchMainWasm(loaderConfig.resources.wasmNative[0]);
 
-        const coreAssembliesPromise = Promise.all(loaderConfig.resources.coreAssembly.map(fetchAssembly));
-        const coreVfsPromise = Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
+        const coreAssembliesPromise = forEachResource(loaderConfig.resources.coreAssembly, fetchAssembly);
+        const coreVfsPromise = forEachResource(loaderConfig.resources.coreVfs, fetchVfs);
 
         const icuResourceName = getIcuResourceName();
-        const icuDataPromise = icuResourceName ? Promise.all((loaderConfig.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
+        const icuDataPromise = forEachResource(loaderConfig.resources.icu, fetchIcu, asset => asset.name === icuResourceName);
 
-        const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchAssembly));
+        const assembliesPromise = forEachResource(loaderConfig.resources.assembly, fetchAssembly);
         const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && loaderConfig.resources.satelliteResources
             ? fetchSatelliteAssemblies(Object.keys(loaderConfig.resources.satelliteResources))
             : Promise.resolve();
-        const vfsPromise = Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
+        const vfsPromise = forEachResource(loaderConfig.resources.vfs, fetchVfs);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
-        const corePDBsPromise = isDebuggingSupported ? Promise.all((loaderConfig.resources.corePdb || []).map(fetchPdb)) : Promise.resolve([]);
-        const pdbsPromise = isDebuggingSupported ? Promise.all((loaderConfig.resources.pdb || []).map(fetchPdb)) : Promise.resolve([]);
-        const afterRuntimeReadyResources = loaderConfig.resources.modulesAfterRuntimeReady || [];
-        const modulesAfterRuntimeReadyPromise = Promise.all(afterRuntimeReadyResources.map(loadJSModule));
+        const corePDBsPromise = forEachResource(loaderConfig.resources.corePdb, fetchPdb, () => isDebuggingSupported);
+        const pdbsPromise = forEachResource(loaderConfig.resources.pdb, fetchPdb, () => isDebuggingSupported);
+        const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(loaderConfig.resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
 
         const nativeModule = await nativeModulePromise;
         const modulePromise = nativeModule.dotnetInitializeModule<EmscriptenModuleInternal>(dotnetInternals);
@@ -107,15 +92,16 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
 
         verifyAllAssetsDownloaded();
 
-        if (!downloadOnly) {
-            if (typeof Module.onDotnetReady === "function") {
-                await Module.onDotnetReady();
-            }
-            const modulesAfterRuntimeReady = await modulesAfterRuntimeReadyPromise;
-            const allRuntimeReadyModules = [...modulesAfterConfigLoaded, ...modulesAfterRuntimeReady];
-            const allRuntimeReadyResources = [...afterConfigLoadedResources, ...afterRuntimeReadyResources];
-            await callLibraryInitializers(allRuntimeReadyModules, allRuntimeReadyResources, "onRuntimeReady", dotnetApi);
+        if (downloadOnly) {
+            return;
         }
+
+        if (typeof Module.onDotnetReady === "function") {
+            await Module.onDotnetReady();
+        }
+
+        await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
+
         runtimeState.creatingRuntime = false;
     } catch (err) {
         exit(1, err);
@@ -150,4 +136,17 @@ export function getRunMainPromise(): Promise<number> {
     return runMainPromiseController.promise;
 }
 
+function forEachResource<T, R>(collection: T[] | undefined, callback: (item: T) => Promise<R>, filter?: (item: T) => boolean): Promise<R[]> {
+    if (!collection) {
+        return Promise.resolve([]);
+    }
+    const filteredCollection = filter ? collection.filter(filter) : collection;
+    return Promise.all(filteredCollection.map(callback));
+}
 
+function normalizeCollection<T>(collection: T[] | undefined): T[] {
+    if (!collection) {
+        return [];
+    }
+    return collection;
+}

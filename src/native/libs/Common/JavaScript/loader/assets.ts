@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -53,6 +53,31 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
     }
     onDownloadedAsset(assetInternal);
     return mod;
+}
+
+export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
+    try {
+        const module = await loadJSModule(asset);
+        if (module.onRuntimeConfigLoaded) {
+            await module.onRuntimeConfigLoaded(loaderConfig);
+        }
+        return module;
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to invoke 'onRuntimeConfigLoaded' on library initializer '${asset.name}': ${message}`, { cause: err });
+    }
+}
+
+export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise]: [JsAsset, Promise<any>]): Promise<void> {
+    try {
+        const module = await modulePromise;
+        if (module.onRuntimeReady) {
+            await module.onRuntimeReady(dotnetApi);
+        }
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to invoke 'onRuntimeReady' on library initializer '${asset.name}': ${message}`, { cause: err });
+    }
 }
 
 export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
