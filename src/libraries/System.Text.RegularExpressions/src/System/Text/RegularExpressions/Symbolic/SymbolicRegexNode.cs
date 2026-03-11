@@ -424,8 +424,9 @@ namespace System.Text.RegularExpressions.Symbolic
             // Counterexample: (R{2,∞})* cannot match a single R, so it's NOT equivalent to R*.
             // This is critical for performance: without it, deeply nested patterns like ((a)*)*
             // cause exponential blowup in derivative computation (https://github.com/dotnet/runtime/issues/84188).
-            // The blowup occurs during lazy DFA construction within matching, not just pattern compilation,
-            // so it violates the engine's linear-time-in-input-length guarantee.
+            // The blowup is in the per-character cost (pattern-dependent constant), not in input-length
+            // scaling — the engine remains O(input_length) for any given pattern — but the constant
+            // grows exponentially with nesting depth, making matching impractically slow.
             // Additional requirements:
             //  - No effects (captures), since collapsing loops would change capture group bindings.
             //  - Same laziness for both loops, since mixing greedy/lazy changes match priorities
