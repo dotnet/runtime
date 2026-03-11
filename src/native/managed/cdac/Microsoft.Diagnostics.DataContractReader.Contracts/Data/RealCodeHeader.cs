@@ -13,7 +13,8 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
         Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
         DebugInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfo)].Offset);
-        EHInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(EHInfo)].Offset);
+        if (type.Fields.ContainsKey(nameof(EHInfo)))
+            EHInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(EHInfo)].Offset);
         GCInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCInfo)].Offset);
         NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
         UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;

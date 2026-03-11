@@ -14,17 +14,25 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
 
         PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
         ThrownObjectHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObjectHandle)].Offset);
-        ExceptionFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(ExceptionFlags)].Offset);
-        StackLowBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackLowBound)].Offset);
-        StackHighBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackHighBound)].Offset);
+        if (type.Fields.ContainsKey(nameof(ExceptionFlags)))
+            ExceptionFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(ExceptionFlags)].Offset);
+        if (type.Fields.ContainsKey(nameof(StackLowBound)))
+            StackLowBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackLowBound)].Offset);
+        if (type.Fields.ContainsKey(nameof(StackHighBound)))
+            StackHighBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackHighBound)].Offset);
         if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
             ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
 
-        PassNumber = target.Read<byte>(address + (ulong)type.Fields[nameof(PassNumber)].Offset);
-        CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
-        CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
-        CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
-        LastReportedFuncletInfo = target.ProcessedData.GetOrAdd<Data.LastReportedFuncletInfo>(address + (ulong)type.Fields[nameof(LastReportedFuncletInfo)].Offset);
+        if (type.Fields.ContainsKey(nameof(PassNumber)))
+            PassNumber = target.Read<byte>(address + (ulong)type.Fields[nameof(PassNumber)].Offset);
+        if (type.Fields.ContainsKey(nameof(CSFEHClause)))
+            CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
+        if (type.Fields.ContainsKey(nameof(CSFEnclosingClause)))
+            CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
+        if (type.Fields.ContainsKey(nameof(CallerOfActualHandlerFrame)))
+            CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
+        if (type.Fields.ContainsKey(nameof(LastReportedFuncletInfo)))
+            LastReportedFuncletInfo = target.ProcessedData.GetOrAdd<Data.LastReportedFuncletInfo>(address + (ulong)type.Fields[nameof(LastReportedFuncletInfo)].Offset);
     }
 
     public TargetPointer PreviousNestedInfo { get; }
@@ -37,5 +45,5 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     public TargetPointer CSFEHClause { get; }
     public TargetPointer CSFEnclosingClause { get; }
     public TargetPointer CallerOfActualHandlerFrame { get; }
-    public LastReportedFuncletInfo LastReportedFuncletInfo { get; }
+    public LastReportedFuncletInfo? LastReportedFuncletInfo { get; }
 }

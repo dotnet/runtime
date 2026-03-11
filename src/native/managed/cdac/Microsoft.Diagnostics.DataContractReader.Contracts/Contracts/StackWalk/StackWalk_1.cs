@@ -290,6 +290,7 @@ internal partial class StackWalk_1 : IStackWalk
                     if (exInfo.PassNumber == 2 &&
                         exInfo.CSFEnclosingClause != TargetPointer.Null &&
                         funcletParentStackFrame == TargetPointer.Null &&
+                        exInfo.LastReportedFuncletInfo is not null &&
                         exInfo.LastReportedFuncletInfo.IP != TargetCodePointer.Null)
                     {
                         // We are in the 2nd pass and we have already called an exceptionally called
