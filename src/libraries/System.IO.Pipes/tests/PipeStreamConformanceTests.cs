@@ -785,12 +785,11 @@ namespace System.IO.Pipes.Tests
 
     public abstract class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeStreamConformanceTests
     {
-        protected abstract bool AsyncReads { get; }
-        protected abstract bool AsyncWrites { get; }
+        protected abstract bool AsyncIO { get; }
 
         protected override (AnonymousPipeServerStream Server, AnonymousPipeClientStream Client) CreateServerAndClientStreams()
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: AsyncReads, asyncWrite: AsyncWrites);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: AsyncIO, asyncWrite: AsyncIO);
 
             SafePipeHandle readPipeHandle = TransferOwnershipToPipeHandle(readHandle);
             SafePipeHandle writePipeHandle = TransferOwnershipToPipeHandle(writeHandle);
@@ -809,31 +808,15 @@ namespace System.IO.Pipes.Tests
         }
     }
 
-    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_SyncRead_SyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
+    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_Synchronous : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
     {
-        protected override bool AsyncReads => false;
-        protected override bool AsyncWrites => false;
+        protected override bool AsyncIO => false;
     }
 
-    [PlatformSpecific(TestPlatforms.AnyUnix)] // AnonymousPipeStreams don't support async I/O on Windows
-    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_AsyncRead_SyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125451", TestPlatforms.Windows)]
+    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_Asynchronous : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
     {
-        protected override bool AsyncReads => true;
-        protected override bool AsyncWrites => false;
-    }
-
-    [PlatformSpecific(TestPlatforms.AnyUnix)] // AnonymousPipeStreams don't support async I/O on Windows
-    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_SyncRead_AsyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
-    {
-        protected override bool AsyncReads => false;
-        protected override bool AsyncWrites => true;
-    }
-
-    [PlatformSpecific(TestPlatforms.AnyUnix)] // AnonymousPipeStreams don't support async I/O on Windows
-    public sealed class AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe_AsyncRead_AsyncWrite : AnonymousPipeTest_SafeFileHandle_CreateAnonymousPipe
-    {
-        protected override bool AsyncReads => true;
-        protected override bool AsyncWrites => true;
+        protected override bool AsyncIO => true;
     }
 
     public abstract class NamedPipeTest_ServerOut_ClientIn : NamedPipeStreamConformanceTests
