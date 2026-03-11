@@ -44,8 +44,6 @@ extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 #endif
                                            );
 
-extern "C" PCODE STDCALL VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock, TADDR siteAddrForRegisterIndirect);
-
 /////////////////////////////////////////////////////////////////////////////////////
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 typedef INT32 DISPL;

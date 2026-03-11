@@ -7436,7 +7436,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
     assert(call->IsVirtualStub());
 
-    if (m_compiler->opts.ShouldUseDispatchHelpers())
+    if (m_compiler->opts.ShouldUseDispatchHelpers() || m_compiler->opts.IsCFGEnabled())
     {
         // Convert from VSD indirect call (call [r11]) to a direct call to a
         // dispatch resolver helper (call RhpResolveInterfaceMethodFast).
