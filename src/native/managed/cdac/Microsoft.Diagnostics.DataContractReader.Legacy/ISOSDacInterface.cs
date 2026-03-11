@@ -394,6 +394,27 @@ public struct DacpCOMInterfacePointerData
     public ClrDataAddress comContext;
 }
 
+// Mirrors struct DacpRCWData in src/coreclr/inc/dacprivate.h.
+// Size must remain 0x58 bytes (enforced by static_assert in the native code).
+public struct DacpRCWData
+{
+    public ClrDataAddress identityPointer;
+    public ClrDataAddress unknownPointer;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress jupiterObject;
+    public ClrDataAddress vtablePtr;
+    public ClrDataAddress creatorThread;
+    public ClrDataAddress ctxCookie;
+    public int refCount;
+    public int interfaceCount;
+    public int isJupiterObject;   // BOOL
+    public int supportsIInspectable; // BOOL
+    public int isAggregated;     // BOOL
+    public int isContained;      // BOOL
+    public int isFreeThreaded;   // BOOL
+    public int isDisconnected;   // BOOL
+}
+
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 public unsafe partial interface ISOSEnum
@@ -758,7 +779,7 @@ public unsafe partial interface ISOSDacInterface
 
     // COM
     [PreserveSig]
-    int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
+    int GetRCWData(ClrDataAddress addr, DacpRCWData* data);
     [PreserveSig]
     int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
