@@ -2911,39 +2911,35 @@ AGAIN:
 
     if (kind & GTK_BINOP)
     {
-        if (op1->OperIs(GT_JCMP, GT_JTEST, GT_SELECTCC))
-        {
-            if (op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode())
-            {
-                return false;
-            }
-        }
-#ifdef TARGET_ARM64
-        else if (op1->OperIs(GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
-        {
-            if (op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode())
-            {
-                return false;
-            }
-        }
-#endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-        else if (op1->OperIs(GT_CCMP))
-        {
-            if ((op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode()) ||
-                (op1->AsCCMP()->gtFlagsVal != op2->AsCCMP()->gtFlagsVal))
-            {
-                return false;
-            }
-        }
-#endif
-
         if (IsExOp(kind))
         {
             // ExOp operators extend unary operator with extra, non-GenTree* members.  In many cases,
             // these should be included in the hash code.
             switch (oper)
             {
+                case GT_JCMP:
+                case GT_JTEST:
+                case GT_SELECTCC:
+#ifdef TARGET_ARM64
+                case GT_SELECT_INCCC:
+                case GT_SELECT_INVCC:
+                case GT_SELECT_NEGCC:
+#endif
+                    if (op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode())
+                    {
+                        return false;
+                    }
+                    break;
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+                case GT_CCMP:
+                    if ((op1->AsOpCC()->gtCondition.GetCode() != op2->AsOpCC()->gtCondition.GetCode()) ||
+                        (op1->AsCCMP()->gtFlagsVal != op2->AsCCMP()->gtFlagsVal))
+                    {
+                        return false;
+                    }
+                    break;
+#endif
                 case GT_STORE_BLK:
                     if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
                     {

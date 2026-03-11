@@ -237,21 +237,21 @@ GTNODE(TEST             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 GTNODE(BT               , GenTreeOp          ,0,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
 #endif
 // Makes a comparison and jumps if the condition specified by gtCondition is true. Does not set flags.
-GTNODE(JCMP             , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(JCMP             , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|DBK_NOTHIR)
 // Do a bit test and jump if set/not set.
-GTNODE(JTEST            , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(JTEST            , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and branch if the condition specified by GenTreeCC::gtCondition is true.
 GTNODE(JCC              , GenTreeCC          ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
 GTNODE(SETCC            , GenTreeCC          ,0,0,GTK_LEAF|DBK_NOTHIR)
 // Variant of SELECT that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECTCC         , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECTCC         , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 // The arm64 and x86 ccmp instruction. If the specified condition is true, compares two
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
-GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|DBK_NOTHIR)
 #endif
 
 
@@ -260,17 +260,17 @@ GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 // If op2 is null, computes result = condition ? op1 + 1 : op1.
 GTNODE(SELECT_INC       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_INC that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECT_INCCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_INCCC     , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 // Maps to arm64 csinv/cinv instruction. Computes result = condition ? op1 : ~op2.
 // If op2 is null, computes result = condition ? ~op1 : op1.
 GTNODE(SELECT_INV       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_INV that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 // Maps to arm64 csneg/cneg instruction.. Computes result = condition ? op1 : -op2.
 // If op2 is null, computes result = condition ? -op1 : op1.
 GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
