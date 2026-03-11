@@ -260,9 +260,29 @@ CDAC_TYPE_INDETERMINATE(LoaderAllocator)
 CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAllocator>::ReferenceCount)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StaticsHeap, cdac_data<LoaderAllocator>::StaticsHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ExecutableHeap, cdac_data<LoaderAllocator>::ExecutableHeap)
+#ifdef HAS_FIXUP_PRECODE
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, FixupPrecodeHeap, cdac_data<LoaderAllocator>::FixupPrecodeHeap)
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, NewStubPrecodeHeap, cdac_data<LoaderAllocator>::NewStubPrecodeHeap)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, DynamicHelpersStubHeap, cdac_data<LoaderAllocator>::DynamicHelpersStubHeap)
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(VirtualCallStubManager)
+CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
+CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, IndcellHeap, cdac_data<VirtualCallStubManager>::IndcellHeap)
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, CacheEntryHeap, cdac_data<VirtualCallStubManager>::CacheEntryHeap)
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+CDAC_TYPE_END(VirtualCallStubManager)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
@@ -1066,14 +1086,23 @@ CDAC_TYPE_END(DynamicILBlobTable)
 CDAC_TYPE_BEGIN(ComCallWrapper)
 CDAC_TYPE_INDETERMINATE(ComCallWrapper)
 CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, SimpleWrapper, cdac_data<ComCallWrapper>::SimpleWrapper)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, IPtr, cdac_data<ComCallWrapper>::IPtr)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, Next, cdac_data<ComCallWrapper>::Next)
 CDAC_TYPE_END(ComCallWrapper)
 
 CDAC_TYPE_BEGIN(SimpleComCallWrapper)
 CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, MainWrapper, cdac_data<SimpleComCallWrapper>::MainWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, VTablePtr, cdac_data<SimpleComCallWrapper>::VTablePtr)
 CDAC_TYPE_END(SimpleComCallWrapper)
 
+CDAC_TYPE_BEGIN(ComMethodTable)
+CDAC_TYPE_SIZE(sizeof(ComMethodTable))
+CDAC_TYPE_FIELD(ComMethodTable, /*nuint*/, Flags, cdac_data<ComMethodTable>::Flags)
+CDAC_TYPE_FIELD(ComMethodTable, /*pointer*/, MethodTable, cdac_data<ComMethodTable>::MethodTable)
+CDAC_TYPE_END(ComMethodTable)
 CDAC_TYPE_BEGIN(RCWCleanupList)
 CDAC_TYPE_INDETERMINATE(RCWCleanupList)
 CDAC_TYPE_FIELD(RCWCleanupList, /*pointer*/, FirstBucket, cdac_data<RCWCleanupList>::FirstBucket)
@@ -1086,12 +1115,19 @@ CDAC_TYPE_FIELD(RCW, /*pointer*/, NextRCW, cdac_data<RCW>::NextRCW)
 CDAC_TYPE_FIELD(RCW, /*uint32*/, Flags, cdac_data<RCW>::Flags)
 CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxCookie, cdac_data<RCW>::CtxCookie)
 CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxEntry, cdac_data<RCW>::CtxEntry)
+CDAC_TYPE_FIELD(RCW, /*inline array*/, InterfaceEntries, cdac_data<RCW>::InterfaceEntries)
 CDAC_TYPE_END(RCW)
 
 CDAC_TYPE_BEGIN(CtxEntry)
 CDAC_TYPE_INDETERMINATE(CtxEntry)
 CDAC_TYPE_FIELD(CtxEntry, /*pointer*/, STAThread, cdac_data<CtxEntry>::STAThread)
 CDAC_TYPE_END(CtxEntry)
+
+CDAC_TYPE_BEGIN(InterfaceEntry)
+CDAC_TYPE_SIZE(sizeof(InterfaceEntry))
+CDAC_TYPE_FIELD(InterfaceEntry, /*pointer*/, MethodTable, cdac_data<InterfaceEntry>::MethodTable)
+CDAC_TYPE_FIELD(InterfaceEntry, /*pointer*/, Unknown, cdac_data<InterfaceEntry>::Unknown)
+CDAC_TYPE_END(InterfaceEntry)
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
@@ -1271,7 +1307,13 @@ CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+CDAC_GLOBAL(CCWNumInterfaces, uint32, cdac_data<ComCallWrapper>::NumInterfaces)
+CDAC_GLOBAL(CCWThisMask, nuint, cdac_data<ComCallWrapper>::ThisMask)
+CDAC_GLOBAL_POINTER(TearOffAddRef, &g_cdacTearOffAddRef)
+CDAC_GLOBAL_POINTER(TearOffAddRefSimple, &g_cdacTearOffAddRefSimple)
+CDAC_GLOBAL_POINTER(TearOffAddRefSimpleInner, &g_cdacTearOffAddRefSimpleInner)
 CDAC_GLOBAL_POINTER(RCWCleanupList, &g_pRCWCleanupList)
+CDAC_GLOBAL(RCWInterfaceCacheSize, uint32, INTERFACE_ENTRY_CACHE_SIZE)
 #endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.

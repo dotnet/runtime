@@ -593,8 +593,89 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        int numWritten = 0;
+#endif
+        try
+        {
+            if (ccw == 0 || (interfaces == null && pNeeded == null))
+                throw new ArgumentException();
+
+            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
+            // GetCCWInterfaces navigates to the start of the chain in both cases.
+            TargetPointer startCCW = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
+            if (startCCW == TargetPointer.Null)
+                startCCW = ccw.ToTargetPointer(_target);
+            IEnumerable<Contracts.COMInterfacePointerData> result =
+                builtInCOMContract.GetCCWInterfaces(startCCW);
+
+            if (interfaces == null)
+            {
+                uint c = (uint)result.Count();
+#if DEBUG
+                numWritten = (int)c;
+#endif
+                if (pNeeded is not null)
+                    *pNeeded = c;
+            }
+            else
+            {
+                uint itemIndex = 0;
+                foreach (Contracts.COMInterfacePointerData item in result)
+                {
+                    if (itemIndex >= count)
+                    {
+#if DEBUG
+                        numWritten = (int)itemIndex;
+#endif
+                        throw new ArgumentException();
+                    }
+                    interfaces[itemIndex].methodTable = item.MethodTable.ToClrDataAddress(_target);
+                    interfaces[itemIndex].interfacePtr = item.InterfacePointerAddress.ToClrDataAddress(_target);
+                    interfaces[itemIndex].comContext = 0;
+                    itemIndex++;
+                }
+#if DEBUG
+                numWritten = (int)itemIndex;
+#endif
+                if (pNeeded is not null)
+                {
+                    *pNeeded = itemIndex;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
+            uint pNeededLocal = 0;
+            int hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocal, pNeeded == null && interfacesLocal == null ? null : &pNeededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC count: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC count: {pNeededLocal}");
+                if (interfaces != null && interfacesLocal != null)
+                {
+                    for (uint i = 0; i < (int)pNeededLocal; i++)
+                    {
+                        Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC comContext[{i}]: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
     {
         int hr = HResults.S_OK;
@@ -3310,8 +3391,93 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        int numWritten = 0;
+#endif
+        try
+        {
+            if (rcw == 0)
+                throw new ArgumentException();
+
+            TargetPointer rcwPtr = rcw.ToTargetPointer(_target);
+            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
+            IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> entries = builtInCom.GetRCWInterfaces(rcwPtr);
+
+            if (interfaces == null)
+            {
+                if (pNeeded == null)
+                {
+                    throw new ArgumentException();
+                }
+                else
+                {
+                    *pNeeded = (uint)entries.Count();
+#if DEBUG
+                    numWritten = (int)*pNeeded;
+#endif
+                }
+            }
+            else
+            {
+                TargetPointer ctxCookie = builtInCom.GetRCWContext(rcwPtr);
+                uint itemIndex = 0;
+                foreach (var (methodTable, unknown) in entries)
+                {
+                    if (itemIndex >= count)
+                    {
+#if DEBUG
+                        numWritten = (int)itemIndex;
+#endif
+                        throw new ArgumentException();
+                    }
+
+                    interfaces[itemIndex].methodTable = methodTable.ToClrDataAddress(_target);
+                    interfaces[itemIndex].interfacePtr = unknown.ToClrDataAddress(_target);
+                    interfaces[itemIndex].comContext = ctxCookie.ToClrDataAddress(_target);
+                    itemIndex++;
+                }
+
+                if (pNeeded != null)
+                    *pNeeded = itemIndex;
+#if DEBUG
+                numWritten = (int)itemIndex;
+#endif
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint pNeededLocal = 0;
+            int hrLocal;
+            DacpCOMInterfacePointerData[]? interfacesLocal = interfaces != null ? new DacpCOMInterfacePointerData[count] : null;
+            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, pNeeded == null && interfacesLocal == null ? null : &pNeededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(numWritten == pNeededLocal, $"cDAC: {numWritten}, DAC: {pNeededLocal}");
+                if (interfacesLocal is not null && interfaces is not null)
+                {
+                    for (int i = 0; i < (int)pNeededLocal; i++)
+                    {
+                        Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -4039,7 +4205,7 @@ public sealed unsafe partial class SOSDacImpl
             if (pCallback is null)
                 throw new ArgumentException();
 
-            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
             TargetPointer listPtr = cleanupListPtr.ToTargetPointer(_target);
 
             cleanupInfos = contract.GetRCWCleanupList(listPtr);
@@ -4076,7 +4242,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
-    #endregion ISOSDacInterface
+#endregion ISOSDacInterface
 
     #region ISOSDacInterface2
     int ISOSDacInterface2.GetObjectExceptionData(ClrDataAddress objectAddress, DacpExceptionObjectData* data)
@@ -5255,10 +5421,174 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+
+    // Static ANSI string pointers for all known heap names, in the canonical order matching
+    // LoaderAllocatorLoaderHeapNames in request.cpp. These are process-lifetime allocations,
+    // equivalent to static const char* literals in C++.
+    private static readonly (string Name, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
+    private (string Name, nint AnsiPtr)[]? _filteredHeapNameEntries;
+
+    private static (string Name, nint AnsiPtr)[] InitializeHeapNameEntries()
+    {
+        // Order must match LoaderAllocatorLoaderHeapNames in src/coreclr/debug/daccess/request.cpp
+        string[] names =
+        [
+            "LowFrequencyHeap",
+            "HighFrequencyHeap",
+            "StaticsHeap",
+            "StubHeap",
+            "ExecutableHeap",
+            "FixupPrecodeHeap",
+            "NewStubPrecodeHeap",
+            "DynamicHelpersStubHeap",
+            "IndcellHeap",
+            "CacheEntryHeap",
+        ];
+        var entries = new (string, nint)[names.Length];
+        for (int i = 0; i < names.Length; i++)
+            entries[i] = (names[i], Marshal.StringToHGlobalAnsi(names[i]));
+        return entries;
+    }
+
+    // Returns the set of heap name entries for this target, filtered by which
+    // data descriptor fields exist. This mirrors the DAC's compile-time
+    // LoaderAllocatorLoaderHeapNames array and ensures a fixed count/ordering
+    // regardless of per-loader-allocator runtime state (e.g. VCS manager being null).
+    private (string Name, nint AnsiPtr)[] GetFilteredHeapNameEntries()
+    {
+        if (_filteredHeapNameEntries is not null)
+            return _filteredHeapNameEntries;
+
+        Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
+        Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
+
+        var entries = new List<(string Name, nint AnsiPtr)>();
+        foreach (var entry in s_heapNameEntries)
+        {
+            bool include = entry.Name is "IndcellHeap" or "CacheEntryHeap"
+                ? vcsType.Fields.ContainsKey(entry.Name)
+                : laType.Fields.ContainsKey(entry.Name);
+            if (include)
+                entries.Add(entry);
+        }
+
+        _filteredHeapNameEntries = entries.ToArray();
+        return _filteredHeapNameEntries;
+    }
+
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
+
+            if (pNeeded != null)
+                *pNeeded = loaderHeapCount;
+
+            if (ppNames != null)
+            {
+                int fillCount = Math.Min(count, loaderHeapCount);
+                for (int i = 0; i < fillCount; i++)
+                    ppNames[i] = (char*)filteredEntries[i].AnsiPtr;
+            }
+
+            if (count < loaderHeapCount)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int pNeededLocal;
+            _legacyImpl13.GetLoaderAllocatorHeapNames(0, null, &pNeededLocal);
+            Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+            if (hr >= 0 && ppNames != null && pNeededLocal > 0)
+            {
+                char** ppNamesLocal = stackalloc char*[pNeededLocal];
+                _legacyImpl13.GetLoaderAllocatorHeapNames(pNeededLocal, ppNamesLocal, null);
+                int compareCount = Math.Min(count, pNeededLocal);
+                for (int i = 0; i < compareCount; i++)
+                {
+                    string cdacName = Marshal.PtrToStringAnsi((nint)ppNames[i])!;
+                    string dacName = Marshal.PtrToStringAnsi((nint)ppNamesLocal[i])!;
+                    Debug.Assert(cdacName == dacName, $"HeapName[{i}] - cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (loaderAllocator == 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
+
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
+
+            if (pNeeded != null)
+                *pNeeded = loaderHeapCount;
+
+            if (pLoaderHeaps != null)
+            {
+                if (count < loaderHeapCount)
+                {
+                    hr = HResults.E_INVALIDARG;
+                }
+                else
+                {
+                    for (int i = 0; i < loaderHeapCount; i++)
+                    {
+                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].Name, out TargetPointer heapAddr)
+                            ? heapAddr.ToClrDataAddress(_target)
+                            : 0;
+                        pKinds[i] = 0; // LoaderHeapKindNormal
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int pNeededLocal;
+            int hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, 0, null, null, &pNeededLocal);
+            Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+            if (hr >= 0 && pLoaderHeaps != null && pNeededLocal > 0)
+            {
+                ClrDataAddress* pLoaderHeapsLocal = stackalloc ClrDataAddress[pNeededLocal];
+                int* pKindsLocal = stackalloc int[pNeededLocal];
+                hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, pNeededLocal, pLoaderHeapsLocal, pKindsLocal, null);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hrLocal >= 0)
+                {
+                    for (int i = 0; i < pNeededLocal; i++)
+                    {
+                        Debug.Assert(pLoaderHeaps[i] == pLoaderHeapsLocal[i], $"Heap[{i}] - cDAC: {pLoaderHeaps[i]:x}, DAC: {pLoaderHeapsLocal[i]:x}");
+                        Debug.Assert(pKinds[i] == pKindsLocal[i], $"Kind[{i}] - cDAC: {pKinds[i]}, DAC: {pKindsLocal[i]}");
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)

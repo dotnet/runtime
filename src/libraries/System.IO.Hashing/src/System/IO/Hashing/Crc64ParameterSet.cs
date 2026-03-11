@@ -96,7 +96,7 @@ namespace System.IO.Hashing
             return crc ^ FinalXorValue;
         }
 
-        private static ulong ReverseBits(ulong value)
+        internal static ulong ReverseBits(ulong value)
         {
 #if NET
             if (System.Runtime.Intrinsics.Arm.ArmBase.Arm64.IsSupported)
@@ -110,6 +110,74 @@ namespace System.IO.Hashing
             value = ((value & 0xF0F0F0F0F0F0F0F0) >> 4) | ((value & 0x0F0F0F0F0F0F0F0F) << 4);
 
             return BinaryPrimitives.ReverseEndianness(value);
+        }
+
+        private abstract partial class ReflectedCrc64 : Crc64ParameterSet
+        {
+#if NET
+            // Declare the capability field here so it can be declared readonly.
+            private readonly bool _canVectorize;
+#endif
+
+            partial void InitializeVectorized(ref bool canVectorize);
+            partial void UpdateVectorized(ref ulong crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
+            protected ReflectedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: true)
+            {
+#if NET
+                InitializeVectorized(ref _canVectorize);
+#endif
+            }
+
+            protected abstract ulong UpdateScalar(ulong value, ReadOnlySpan<byte> source);
+
+            internal sealed override ulong Update(ulong value, ReadOnlySpan<byte> source)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, source, ref consumed);
+
+                if (consumed < source.Length)
+                {
+                    value = UpdateScalar(value, source.Slice(consumed));
+                }
+
+                return value;
+            }
+        }
+
+        private abstract partial class ForwardCrc64 : Crc64ParameterSet
+        {
+#if NET
+            // Declare the capability field here so it can be declared readonly.
+            private readonly bool _canVectorize;
+#endif
+
+            partial void InitializeVectorized(ref bool canVectorize);
+            partial void UpdateVectorized(ref ulong crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
+            protected ForwardCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
+            {
+#if NET
+                InitializeVectorized(ref _canVectorize);
+#endif
+            }
+
+            protected abstract ulong UpdateScalar(ulong value, ReadOnlySpan<byte> source);
+
+            internal sealed override ulong Update(ulong value, ReadOnlySpan<byte> source)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, source, ref consumed);
+
+                if (consumed < source.Length)
+                {
+                    value = UpdateScalar(value, source.Slice(consumed));
+                }
+
+                return value;
+            }
         }
     }
 }

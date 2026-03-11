@@ -382,7 +382,7 @@ public unsafe partial interface IXCLRDataFrame
         [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf);
 
     [PreserveSig]
-    int GetAppDomain(/*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain);
 
     [PreserveSig]
     int GetNumArguments(uint* numArgs);
@@ -587,7 +587,7 @@ public unsafe partial interface IXCLRDataMethodInstance
 public unsafe partial interface IXCLRDataAppDomain
 {
     [PreserveSig]
-    int GetProcess(/*IXCLRDataProcess*/ void** process);
+    int GetProcess(DacComNullableByRef<IXCLRDataProcess> process);
     [PreserveSig]
     int GetName(uint bufLen, uint* nameLen, char* name);
     [PreserveSig]

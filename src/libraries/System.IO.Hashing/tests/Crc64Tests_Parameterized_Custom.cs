@@ -33,5 +33,63 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+    public class Crc64GoIsoDriver : Crc64DriverBase
+    {
+        internal override Crc64ParameterSet ParameterSet => Crc64ParameterSet.Create(
+            polynomial: 0x000000000000001B,
+            initialValue: 0xFFFFFFFFFFFFFFFF,
+            finalXorValue: 0xFFFFFFFFFFFFFFFF,
+            reflectValues: true);
+
+        internal override string EmptyOutput => "0000000000000000";
+        internal override string Residue => "FFFFFFFFFFFFFFAC";
+
+        internal override string? GetExpectedOutput(string testCaseName) =>
+            testCaseName switch
+            {
+                "One" => "000000000000206E",
+                "Zero" => "00000090FFFFFF6F",
+                "{ 0x00 }" => "000000000000906F",
+                "{ 0x01, 0x00 }" => "000000000020FE6F",
+                "Self-test 123456789" => "0110A475C75609B9",
+                "The quick brown fox jumps over the lazy dog" => "8EE2C6F4194EF14E",
+                "Lorem ipsum 256" => "E20CF7B513137D74",
+                "Lorem ipsum 272" => "86FB06344BEE503E",
+                "Lorem ipsum 384" => "462B90C6A99B89B3",
+                "Lorem ipsum 1001" => "4B26A7A1D402A294",
+                _ => throw new ArgumentOutOfRangeException(nameof(testCaseName), testCaseName, "Unmapped Value"),
+            };
+    }
+
+    public class Crc64RedisDriver : Crc64DriverBase
+    {
+        internal override Crc64ParameterSet ParameterSet => Crc64ParameterSet.Create(
+            polynomial: 0xAD93D23594C935A9,
+            initialValue: 0x0000000000000000,
+            finalXorValue: 0x0000000000000000,
+            reflectValues: true);
+
+        internal override string EmptyOutput => "0000000000000000";
+        internal override string Residue => "0000000000000000";
+
+        internal override string? GetExpectedOutput(string testCaseName) =>
+            testCaseName switch
+            {
+                "One" => "79893530C870D87A",
+                "Zero" => "0000000000000000",
+                "{ 0x00 }" => "0000000000000000",
+                "{ 0x01, 0x00 }" => "69DFBD73FD9FE989",
+                "Self-test 123456789" => "CAD9B8C414D9C6E9",
+                "The quick brown fox jumps over the lazy dog" => "2B37AAC396E57EBF",
+                "Lorem ipsum 256" => "8EE7FD261BFD76F6",
+                "Lorem ipsum 272" => "3226A17CFAC99D01",
+                "Lorem ipsum 384" => "60278B19CC527A08",
+                "Lorem ipsum 1001" => "6B8431140B338242",
+                _ => throw new ArgumentOutOfRangeException(nameof(testCaseName), testCaseName, "Unmapped Value"),
+            };
+    }
+
     public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized<Crc64WEDriver>;
+    public class Crc64Tests_ParameterSet_Custom_GoIso : Crc64Tests_Parameterized<Crc64GoIsoDriver>;
+    public class Crc64Tests_ParameterSet_Custom_Redis : Crc64Tests_Parameterized<Crc64RedisDriver>;
 }
