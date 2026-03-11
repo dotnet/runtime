@@ -1582,6 +1582,8 @@ namespace System.Runtime.InteropServices
     public enum PosixSignal
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTTOU = -9,

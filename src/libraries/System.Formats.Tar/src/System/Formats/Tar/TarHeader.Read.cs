@@ -77,15 +77,20 @@ namespace System.Formats.Tar
                     header.ReadPosixAndGnuSharedAttributes(buffer);
 
                     Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                    if (header._format == TarEntryFormat.Ustar)
+                    if (header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax)
                     {
+                        // PAX extends USTAR and uses the same header layout including the
+                        // prefix field.  When an actual entry follows a PAX extended
+                        // attributes header, the entry's prefix may still carry part of
+                        // the path.  The PAX "path" extended attribute, if present, will
+                        // override the combined prefix/name afterward in
+                        // ReplaceNormalAttributesWithExtended.
                         header.ReadUstarAttributes(buffer);
                     }
                     else if (header._format == TarEntryFormat.Gnu)
                     {
                         header.ReadGnuAttributes(buffer);
                     }
-                    // In PAX, there is nothing to read in this section (empty space)
                 }
                 // Finished reading the header metadata, next byte belongs to the data section, save the position
                 SetDataOffset(header, archiveStream);

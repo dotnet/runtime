@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
                 read = reader.PeekEncodedValue().Length;
                 EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out epki);
             }
@@ -288,7 +288,7 @@ namespace System.Security.Cryptography
 
                     try
                     {
-                        AsnValueReader reader = new(decrypted, AsnEncodingRules.BER);
+                        ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
                         reader.ReadEncodedValue();
                         reader.ThrowIfNotEmpty();
                         return keyReader(decrypted);
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography
                 using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
                 {
                     ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(passwordBytes, manager.Memory, out bytesRead);
-                    AsnValueReader reader = new(decrypted, AsnEncodingRules.BER);
+                    ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
                     reader.ReadEncodedValue();
 
                     try
@@ -347,7 +347,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
                 localRead = reader.PeekEncodedValue().Length;
                 EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out epki);
             }

@@ -425,7 +425,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ExtensionDataUsesReaderOptions()
         {
             // We just verify trailing commas.
-            const string json = @"{""MyIntMissing"":2,}";
+            const string json = """{"MyIntMissing":2,}""";
 
             // Verify baseline without options.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionProperty>(json));
@@ -445,7 +445,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // We just verify whitespace.
 
-            ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(@"{""MyIntMissing"":2}");
+            ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>("""{"MyIntMissing":2}""");
 
             // Verify baseline without options.
             string json = JsonSerializer.Serialize(obj);
@@ -1074,7 +1074,7 @@ namespace System.Text.Json.Serialization.Tests
             GenericConverterTestHelper<KeyValuePair<string, string>>(
                 converterName: "KeyValuePairConverter`2",
                 objectValue: new KeyValuePair<string, string>("key", "value"),
-                stringValue: @"{""Key"":""key"",""Value"":""value""}",
+                stringValue: """{"Key":"key","Value":"value"}""",
                 options: new JsonSerializerOptions(),
                 nullOptionOkay: false);
         }
@@ -1721,7 +1721,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             Type typeToConvert = typeof(KeyValuePair<int, int>);
-            byte[] bytes = Encoding.UTF8.GetBytes(@"{""Key"":1,""Value"":2}");
+            byte[] bytes = Encoding.UTF8.GetBytes("""{"Key":1,"Value":2}""");
 
             JsonConverter<KeyValuePair<int, int>> converter =
                 (JsonConverter<KeyValuePair<int, int>>)options.GetConverter(typeToConvert);
@@ -1934,7 +1934,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(42, "42");
             yield return WrapArgs("string", "\"string\"");
             yield return WrapArgs(new { Value = 42, String = "str" }, """{"Value":42,"String":"str"}""");
-            yield return WrapArgs(new List<int> { 1, 2, 3, 4, 5 }, """[1,2,3,4,5]""");
+            yield return WrapArgs(new List<int> { 1, 2, 3, 4, 5 }, "[1,2,3,4,5]");
             yield return WrapArgs(new Dictionary<string, int> { ["key"] = 42 }, """{"key":42}""");
 
             static object[] WrapArgs<T>(T value, string json) => new object[] { value, json };
