@@ -78,11 +78,11 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative or exceeds <see cref="uint.MaxValue"/>.</exception>
         public static long GetMaxCompressedLength(long inputLength)
         {
-            // compressBound() returns the upper bound for zlib-wrapped deflate.
-            // GZip wrapping adds a 10-byte header and an 8-byte trailer (CRC32 + original size),
-            // which is 12 bytes more than zlib's 6-byte overhead (2-byte header + 4-byte checksum).
-            // Adding the 18-byte GZip overhead on top of compressBound is therefore a conservative upper bound.
-            return DeflateEncoder.GetMaxCompressedLength(inputLength) + 18;
+            // compressBound() returns the upper bound for zlib-wrapped deflate, which includes
+            // 6 bytes of zlib overhead (2-byte header + 4-byte Adler32 trailer).
+            // GZip format uses 18 bytes of overhead (10-byte header + 8-byte CRC32/size trailer),
+            // which is 12 bytes more than the zlib overhead already included in compressBound().
+            return DeflateEncoder.GetMaxCompressedLength(inputLength) + 12;
         }
 
         /// <summary>

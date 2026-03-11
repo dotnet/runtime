@@ -352,6 +352,20 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        public void GetMaxCompressedLength_FitsActualOutput()
+        {
+            byte[] input = CreateTestData(10_000);
+            long maxLength = GetMaxCompressedLength(input.Length);
+            byte[] destination = new byte[maxLength];
+
+            using EncoderAdapter encoder = CreateEncoder();
+            OperationStatus status = encoder.Compress(input, destination, out _, out int written, isFinalBlock: true);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.True(written <= maxLength);
+        }
+
+        [Fact]
         public void Decoder_Finalize()
         {
             {
