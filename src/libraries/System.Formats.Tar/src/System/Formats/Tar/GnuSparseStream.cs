@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
@@ -338,96 +339,103 @@ namespace System.Formats.Tar
         // After the map text, there is zero-padding to the next 512-byte block boundary,
         // and then the packed data begins.
         //
-        // The buffer is 2 * RecordSize (1024 bytes) and each fill reads exactly RecordSize (512)
-        // bytes. This guarantees that the total bytes read is always a multiple of RecordSize
-        // (mapBytesConsumed + padding), so the stream is already positioned at the start of
-        // the packed data when this method returns.
-        //
         // Returns the parsed segments.
         private static async Task<(long Offset, long Length)[]> ParseSparseMap(
             bool isAsync, Stream rawStream, CancellationToken cancellationToken)
         {
-            byte[] bytes = new byte[2 * TarHelpers.RecordSize];
-            int activeStart = 0;
-            int availableStart = 0;
+            // The buffer is 2 * RecordSize (1024 bytes) and each fill reads exactly RecordSize (512)
+            // bytes. This guarantees that the total bytes read is always a multiple of RecordSize,
+            // so the stream is already positioned at the start of the packed data when this method returns.
+            int bufferSize = 2 * TarHelpers.RecordSize;
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(bufferSize);
 
-            // Compact the buffer and read exactly one RecordSize (512) block.
-            // Returns true if bytes were read, false on EOF.
-            async ValueTask<bool> FillBufferAsync()
+            try
             {
-                int active = availableStart - activeStart;
-                if (active > 0 && activeStart > 0)
+                int activeStart = 0;
+                int availableStart = 0;
+
+                // Compact the buffer and read exactly one RecordSize (512) block.
+                // Returns true if bytes were read, false on EOF.
+                async ValueTask<bool> FillBufferAsync()
                 {
-                    bytes.AsSpan(activeStart, active).CopyTo(bytes);
-                }
-                activeStart = 0;
-                availableStart = active;
-
-                int newBytes = isAsync
-                    ? await rawStream.ReadAtLeastAsync(bytes.AsMemory(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false)
-                    : rawStream.ReadAtLeast(bytes.AsSpan(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false);
-
-                availableStart += newBytes;
-                return newBytes > 0;
-            }
-
-            // Reads a newline-terminated decimal line from the buffer, refilling as needed.
-            // Returns the parsed value. Throws InvalidDataException if the line is malformed.
-            async ValueTask<long> ReadLineAsync()
-            {
-                while (true)
-                {
-                    int nlIdx = bytes.AsSpan(activeStart, availableStart - activeStart).IndexOf((byte)'\n');
-                    if (nlIdx >= 0)
+                    int active = availableStart - activeStart;
+                    if (active > 0 && activeStart > 0)
                     {
-                        ReadOnlySpan<byte> span = bytes.AsSpan(activeStart, nlIdx);
-                        if (!Utf8Parser.TryParse(span, out long value, out int consumed) || consumed != span.Length)
+                        bytes.AsSpan(activeStart, active).CopyTo(bytes);
+                    }
+                    activeStart = 0;
+                    availableStart = active;
+
+                    int newBytes = isAsync
+                        ? await rawStream.ReadAtLeastAsync(bytes.AsMemory(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false)
+                        : rawStream.ReadAtLeast(bytes.AsSpan(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false);
+
+                    availableStart += newBytes;
+                    return newBytes > 0;
+                }
+
+                // Reads a newline-terminated decimal line from the buffer, refilling as needed.
+                // Returns the parsed value. Throws InvalidDataException if the line is malformed.
+                async ValueTask<long> ReadLineAsync()
+                {
+                    while (true)
+                    {
+                        int nlIdx = bytes.AsSpan(activeStart, availableStart - activeStart).IndexOf((byte)'\n');
+                        if (nlIdx >= 0)
                         {
+                            ReadOnlySpan<byte> span = bytes.AsSpan(activeStart, nlIdx);
+                            if (!Utf8Parser.TryParse(span, out long value, out int consumed) || consumed != span.Length)
+                            {
+                                throw new InvalidDataException(SR.TarInvalidNumber);
+                            }
+                            activeStart += nlIdx + 1;
+                            return value;
+                        }
+
+                        if (availableStart + TarHelpers.RecordSize > bufferSize)
+                        {
+                            // Not enough room in the buffer for another block-sized fill
+                            // and no newline found: line is too long (malformed).
                             throw new InvalidDataException(SR.TarInvalidNumber);
                         }
-                        activeStart += nlIdx + 1;
-                        return value;
-                    }
 
-                    if (availableStart + TarHelpers.RecordSize > bytes.Length)
-                    {
-                        // Not enough room in the buffer for another block-sized fill
-                        // and no newline found: line is too long (malformed).
-                        throw new InvalidDataException(SR.TarInvalidNumber);
-                    }
-
-                    if (!await FillBufferAsync().ConfigureAwait(false))
-                    {
-                        // EOF before newline.
-                        throw new InvalidDataException(SR.TarInvalidNumber);
+                        if (!await FillBufferAsync().ConfigureAwait(false))
+                        {
+                            // EOF before newline.
+                            throw new InvalidDataException(SR.TarInvalidNumber);
+                        }
                     }
                 }
-            }
 
-            await FillBufferAsync().ConfigureAwait(false);
+                await FillBufferAsync().ConfigureAwait(false);
 
-            long numSegments = await ReadLineAsync().ConfigureAwait(false);
-            if ((ulong)numSegments > MaxSparseSegments)
-            {
-                throw new InvalidDataException(SR.TarInvalidNumber);
-            }
-
-            var segments = new (long Offset, long Length)[(int)numSegments];
-            for (int i = 0; i < (int)numSegments; i++)
-            {
-                long offset = await ReadLineAsync().ConfigureAwait(false);
-                long length = await ReadLineAsync().ConfigureAwait(false);
-                if (offset < 0 || length < 0)
+                long numSegments = await ReadLineAsync().ConfigureAwait(false);
+                if ((ulong)numSegments > MaxSparseSegments)
                 {
                     throw new InvalidDataException(SR.TarInvalidNumber);
                 }
-                segments[i] = (offset, length);
-            }
 
-            // Since each FillBuffer call reads exactly RecordSize (512) bytes, the total bytes
-            // read is always a multiple of RecordSize (mapBytesConsumed + padding), so the stream
-            // is already positioned at the start of the packed data.
-            return segments;
+                var segments = new (long Offset, long Length)[(int)numSegments];
+                for (int i = 0; i < (int)numSegments; i++)
+                {
+                    long offset = await ReadLineAsync().ConfigureAwait(false);
+                    long length = await ReadLineAsync().ConfigureAwait(false);
+                    if (offset < 0 || length < 0)
+                    {
+                        throw new InvalidDataException(SR.TarInvalidNumber);
+                    }
+                    segments[i] = (offset, length);
+                }
+
+                // Since each FillBuffer call reads exactly RecordSize (512) bytes, the total bytes
+                // read is always a multiple of RecordSize (mapBytesConsumed + padding), so the stream
+                // is already positioned at the start of the packed data.
+                return segments;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(bytes);
+            }
         }
 
         protected override void Dispose(bool disposing)
