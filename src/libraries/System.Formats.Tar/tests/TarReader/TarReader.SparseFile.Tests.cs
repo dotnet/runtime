@@ -111,73 +111,51 @@ namespace System.Formats.Tar.Tests
             return archive;
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void SingleSegmentAtStart_NoHoles(bool copyData)
+        public static IEnumerable<object[]> SparseLayoutTestCases()
         {
-            // Virtual file: [0..511] = data (0x01), no trailing hole.
-            var segments = new[] { (0L, 512L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 512, segments);
+            // (realSize, segments as flat array [off0, len0, off1, len1, ...], copyData, useAsync)
+            long[][] layouts =
+            [
+                [512, 0, 512],                        // single segment, no holes
+                [1024, 256, 256],                     // leading + trailing hole
+                [2048, 0, 256, 512, 256, 1024, 256],  // 3 segments with holes
+                [1000, 1000, 0],                      // all holes (zero-length segment)
+            ];
 
-            using var dataStream = GetSparseDataStream(archive, copyData);
-
-            Assert.Equal(512L, dataStream.Length);
-            byte[] buf = new byte[512];
-            dataStream.ReadExactly(buf);
-            Assert.All(buf, b => Assert.Equal(1, b));
+            foreach (long[] layout in layouts)
+            {
+                long realSize = layout[0];
+                long[] segmentPairs = layout[1..];
+                foreach (bool copyData in new[] { false, true })
+                {
+                    foreach (bool useAsync in new[] { false, true })
+                    {
+                        yield return new object[] { realSize, segmentPairs, copyData, useAsync };
+                    }
+                }
+            }
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void SingleSegmentInMiddle_LeadingAndTrailingHoles(bool copyData)
+        [MemberData(nameof(SparseLayoutTestCases))]
+        public async Task SparseLayout_ExpandsCorrectly(long realSize, long[] segmentPairs, bool copyData, bool useAsync)
         {
-            // Virtual file (1024 bytes):
-            //   [0..255]   = zeros (leading hole)
-            //   [256..511] = data (0x01)
-            //   [512..1023] = zeros (trailing hole)
-            var segments = new[] { (256L, 256L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 1024, segments);
+            var segments = PairsToSegments(segmentPairs);
+            var (archive, _) = BuildSparseArchive("file.bin", realSize, segments);
 
             using var dataStream = GetSparseDataStream(archive, copyData);
 
-            Assert.Equal(1024L, dataStream.Length);
-            byte[] buf = new byte[1024];
-            dataStream.ReadExactly(buf);
-
-            for (int i = 0; i < 256; i++) Assert.Equal(0, buf[i]);
-            for (int i = 256; i < 512; i++) Assert.Equal(1, buf[i]);
-            for (int i = 512; i < 1024; i++) Assert.Equal(0, buf[i]);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void MultipleSegmentsWithHolesInBetween(bool copyData)
-        {
-            // Virtual file (2048 bytes):
-            //   [0..255]    = data seg 0 (0x01)
-            //   [256..511]  = hole
-            //   [512..767]  = data seg 1 (0x02)
-            //   [768..1023] = hole
-            //   [1024..1279] = data seg 2 (0x03)
-            //   [1280..2047] = hole
-            var segments = new[] { (0L, 256L), (512L, 256L), (1024L, 256L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 2048, segments);
-
-            using var dataStream = GetSparseDataStream(archive, copyData);
-
-            Assert.Equal(2048L, dataStream.Length);
-            byte[] buf = new byte[2048];
-            dataStream.ReadExactly(buf);
-
-            for (int i = 0; i < 256; i++) Assert.Equal(1, buf[i]);
-            for (int i = 256; i < 512; i++) Assert.Equal(0, buf[i]);
-            for (int i = 512; i < 768; i++) Assert.Equal(2, buf[i]);
-            for (int i = 768; i < 1024; i++) Assert.Equal(0, buf[i]);
-            for (int i = 1024; i < 1280; i++) Assert.Equal(3, buf[i]);
-            for (int i = 1280; i < 2048; i++) Assert.Equal(0, buf[i]);
+            Assert.Equal(realSize, dataStream.Length);
+            byte[] buf = new byte[realSize];
+            if (useAsync)
+            {
+                await dataStream.ReadExactlyAsync(buf, CancellationToken.None);
+            }
+            else
+            {
+                dataStream.ReadExactly(buf);
+            }
+            VerifyExpandedContent(buf, realSize, segments);
         }
 
         [Theory]
@@ -206,82 +184,6 @@ namespace System.Formats.Tar.Tests
             }
 
             Assert.Equal(fullRead, partialRead);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void AllHoles_ReadsAsAllZeros(bool copyData)
-        {
-            // Virtual file: 1000 bytes, one segment at offset=1000 length=0 (nothing packed).
-            var segments = new[] { (1000L, 0L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 1000, segments);
-
-            using var dataStream = GetSparseDataStream(archive, copyData);
-
-            Assert.Equal(1000L, dataStream.Length);
-            byte[] buf = new byte[1000];
-            dataStream.ReadExactly(buf);
-            Assert.All(buf, b => Assert.Equal(0, b));
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ReadAtEndReturnsZero(bool copyData)
-        {
-            var segments = new[] { (0L, 512L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 512, segments);
-
-            using var dataStream = GetSparseDataStream(archive, copyData);
-
-            // Read the whole stream.
-            byte[] buf = new byte[512];
-            dataStream.ReadExactly(buf);
-
-            // Any further read should return 0.
-            int read = dataStream.Read(buf, 0, buf.Length);
-            Assert.Equal(0, read);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SingleSegmentInMiddle_Async(bool copyData)
-        {
-            var segments = new[] { (256L, 256L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 1024, segments);
-
-            using var dataStream = GetSparseDataStream(archive, copyData);
-
-            Assert.Equal(1024L, dataStream.Length);
-            byte[] buf = new byte[1024];
-            await dataStream.ReadExactlyAsync(buf, CancellationToken.None);
-
-            for (int i = 0; i < 256; i++) Assert.Equal(0, buf[i]);
-            for (int i = 256; i < 512; i++) Assert.Equal(1, buf[i]);
-            for (int i = 512; i < 1024; i++) Assert.Equal(0, buf[i]);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task MultipleSegments_Async(bool copyData)
-        {
-            var segments = new[] { (0L, 256L), (512L, 256L), (1024L, 256L) };
-            var (archive, _) = BuildSparseArchive("file.bin", 2048, segments);
-
-            using var dataStream = GetSparseDataStream(archive, copyData);
-
-            byte[] buf = new byte[2048];
-            await dataStream.ReadExactlyAsync(buf, CancellationToken.None);
-
-            for (int i = 0; i < 256; i++) Assert.Equal(1, buf[i]);
-            for (int i = 256; i < 512; i++) Assert.Equal(0, buf[i]);
-            for (int i = 512; i < 768; i++) Assert.Equal(2, buf[i]);
-            for (int i = 768; i < 1024; i++) Assert.Equal(0, buf[i]);
-            for (int i = 1024; i < 1280; i++) Assert.Equal(3, buf[i]);
-            for (int i = 1280; i < 2048; i++) Assert.Equal(0, buf[i]);
         }
 
         [Fact]
@@ -841,6 +743,45 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(60000000000L, entry.Length);
             Assert.NotNull(entry.DataStream);
             Assert.Equal(60000000000L, entry.DataStream.Length);
+        }
+
+        private static (long Offset, long Length)[] PairsToSegments(long[] pairs)
+        {
+            var segments = new (long Offset, long Length)[pairs.Length / 2];
+            for (int i = 0; i < segments.Length; i++)
+            {
+                segments[i] = (pairs[i * 2], pairs[i * 2 + 1]);
+            }
+
+            return segments;
+        }
+
+        // Verifies that expanded content has zeros in holes and the correct fill byte
+        // (1-based segment index) in data segments, matching BuildSparseArchive's convention.
+        private static void VerifyExpandedContent(byte[] buf, long realSize, (long Offset, long Length)[] segments)
+        {
+            int pos = 0;
+            for (int s = 0; s < segments.Length; s++)
+            {
+                var (offset, length) = segments[s];
+                // Hole before this segment
+                for (int i = pos; i < (int)offset; i++)
+                {
+                    Assert.Equal(0, buf[i]);
+                }
+                // Segment data (BuildSparseArchive fills with 1-based index)
+                byte expected = (byte)(s + 1);
+                for (int i = (int)offset; i < (int)(offset + length); i++)
+                {
+                    Assert.Equal(expected, buf[i]);
+                }
+                pos = (int)(offset + length);
+            }
+            // Trailing hole
+            for (int i = pos; i < (int)realSize; i++)
+            {
+                Assert.Equal(0, buf[i]);
+            }
         }
     }
 
