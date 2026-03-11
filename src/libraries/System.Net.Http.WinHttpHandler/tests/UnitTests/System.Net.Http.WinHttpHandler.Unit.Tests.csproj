@@ -7,7 +7,7 @@
     <DefineConstants>$(DefineConstants);UNITTEST</DefineConstants>
     <!-- Prevent xunit v3 auto-generated namespace from conflicting with the
          System.Net.Http.WinHttpHandler type (CS0435). -->
-    <RootNamespace>System.Net.Http.WinHttpHandler.UnitTests</RootNamespace>
+    <RootNamespace>WinHttpHandlerUnitTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />

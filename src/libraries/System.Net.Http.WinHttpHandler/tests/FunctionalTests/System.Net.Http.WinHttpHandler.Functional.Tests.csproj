@@ -6,7 +6,7 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- Prevent xunit v3 auto-generated namespace from conflicting with the
          System.Net.Http.WinHttpHandler type (CS0435). -->
-    <RootNamespace>System.Net.Http.WinHttpHandler.FunctionalTests</RootNamespace>
+    <RootNamespace>WinHttpHandlerFunctionalTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"

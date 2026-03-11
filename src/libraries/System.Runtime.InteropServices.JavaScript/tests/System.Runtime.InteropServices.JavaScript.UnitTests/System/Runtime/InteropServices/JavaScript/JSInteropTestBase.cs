@@ -323,12 +323,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { null };
         }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await JavaScriptTestHelper.InitializeAsync();
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             await JavaScriptTestHelper.DisposeAsync();
         }

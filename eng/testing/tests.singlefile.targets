@@ -16,14 +16,6 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
-    <!-- NativeAOT compiles directly to a native executable during Publish.
-         UseAppHost must be true because the SDK requires it when SelfContained=true
-         (NETSDK1067). The apphost is generated during Build and then replaced by
-         the ILC native binary during Publish. -->
-    <UseAppHost>true</UseAppHost>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>false</PublishSingleFile>

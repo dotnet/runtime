@@ -24,11 +24,24 @@
     set UseAppHost=true.  Library tests are executed via dotnet exec or archived
     for Helix, never via a native application host.  Override UseAppHost here
     (in targets, which is imported after the NuGet package props) so our value
-    wins.  Single-file/NativeAOT test builds genuinely need UseAppHost=true, so
-    honour whatever tests.singlefile.targets already set in that case.
+    wins.  Single-file/NativeAOT test builds keep UseAppHost=true (from the
+    xunit v3 package) since they need it for SelfContained builds.  Mobile/WASM
+    tests also keep UseAppHost=true (they use OutputType=Library so it is
+    irrelevant and avoids NETSDK1067 with SelfContained=true).
   -->
-  <PropertyGroup Condition="'$(TestSingleFile)' != 'true'">
+  <PropertyGroup Condition="'$(TestSingleFile)' != 'true' and '$(TargetsMobile)' != 'true'">
     <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <!--
+    The xunit.v3.core.mtp-v1 package injects DefaultRunnerReporters.cs into
+    compilation. On mobile/WASM, the compilation environment may lack the
+    netstandard reference that xunit.v3.runner.common.dll depends on, causing
+    CS0012. Since mobile/WASM tests use custom test runners and don't need the
+    built-in runner reporters, disable them.
+  -->
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <XunitRegisterBuiltInRunnerReporters>false</XunitRegisterBuiltInRunnerReporters>
   </PropertyGroup>
 
   <!--
