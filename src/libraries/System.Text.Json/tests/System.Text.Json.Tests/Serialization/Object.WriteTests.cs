@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var obj = new ObjectObject { Object = new object() };
             string json = JsonSerializer.Serialize(obj);
-            Assert.Equal(@"{""Object"":{}}", json);
+            Assert.Equal("""{"Object":{}}""", json);
         }
 
         public class ObjectObject
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
             var indexer = new Indexer();
             indexer[42] = 42;
             indexer.NonIndexerProp = "Value";
-            Assert.Equal(@"{""NonIndexerProp"":""Value""}", JsonSerializer.Serialize(indexer));
+            Assert.Equal("""{"NonIndexerProp":"Value"}""", JsonSerializer.Serialize(indexer));
         }
 
         private class Indexer
@@ -109,14 +109,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void WritePolymorphicSimple()
         {
             string json = JsonSerializer.Serialize(new { Prop = (object)new[] { 0 } });
-            Assert.Equal(@"{""Prop"":[0]}", json);
+            Assert.Equal("""{"Prop":[0]}""", json);
         }
 
         [Fact]
         public static void WritePolymorphicDifferentAttributes()
         {
             string json = JsonSerializer.Serialize(new Polymorphic());
-            Assert.Equal(@"{""P1"":"""",""p_3"":""""}", json);
+            Assert.Equal("""{"P1":"","p_3":""}""", json);
         }
 
         private class Polymorphic

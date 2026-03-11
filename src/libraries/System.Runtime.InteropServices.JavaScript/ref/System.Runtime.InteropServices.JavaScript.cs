@@ -243,6 +243,8 @@ public struct JSMarshalerArgument
     public void ToJS(float value) { throw null; }
     public void ToManaged(out float? value) { throw null; }
     public void ToJS(float? value) { throw null; }
+    public void ToManaged(out float[]? value) { throw null; }
+    public void ToJS(float[]? value) { throw null; }
     public void ToManaged(out double value) { throw null; }
     public void ToJS(double value) { throw null; }
     public void ToManaged(out double? value) { throw null; }
@@ -305,8 +307,12 @@ public struct JSMarshalerArgument
     public void ToJS(Span<int> value) { throw null; }
     public void ToManaged(out Span<double> value) { throw null; }
     public void ToJS(Span<double> value) { throw null; }
+    public void ToManaged(out Span<float> value) { throw null; }
+    public void ToJS(Span<float> value) { throw null; }
     public void ToManaged(out ArraySegment<int> value) { throw null; }
     public void ToJS(ArraySegment<int> value) { throw null; }
     public void ToManaged(out ArraySegment<double> value) { throw null; }
     public void ToJS(ArraySegment<double> value) { throw null; }
+    public void ToManaged(out ArraySegment<float> value) { throw null; }
+    public void ToJS(ArraySegment<float> value) { throw null; }
 }
