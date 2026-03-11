@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Generator
                 return (null, diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
             }
 
-            var generationSpec = new RegexGenerationSpec
+            RegexGenerationSpec generationSpec = new()
             {
                 RegexMethods = ImmutableEquatableSet<RegexMethodSpec>.UnsafeCreateFromHashSet(methods),
             };
@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions.Generator
                 return null;
             }
 
-            var memberSyntax = (MemberDeclarationSyntax)context.TargetNode;
+            MemberDeclarationSyntax memberSyntax = (MemberDeclarationSyntax)context.TargetNode;
             SemanticModel sm = context.SemanticModel;
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -271,7 +271,7 @@ namespace System.Text.RegularExpressions.Generator
             if (parentDec is not null)
             {
                 // Collect parent types from inner to outer.
-                var parents = new System.Collections.Generic.List<TypeDeclarationSyntax>();
+                List<TypeDeclarationSyntax> parents = new();
                 while (parentDec is not null && IsAllowedKind(parentDec.Kind()))
                 {
                     parents.Add(parentDec);
@@ -290,13 +290,13 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            var regexTypeSpec = new RegexTypeSpec(
+            RegexTypeSpec regexTypeSpec = new(
                 typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
                 ns ?? string.Empty,
                 $"{typeDec.Identifier}{typeDec.TypeParameterList}",
                 Parent: parentSpec);
 
-            var compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
+            CompilationData compilationData = compilation is CSharpCompilation { LanguageVersion: LanguageVersion langVersion, Options: CSharpCompilationOptions compilationOptions }
                 ? new CompilationData(compilationOptions.AllowUnsafe, compilationOptions.CheckOverflow, langVersion)
                 : default;
 
@@ -413,15 +413,29 @@ namespace System.Text.RegularExpressions.Generator
             => (diagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).Add(diagnostic);
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData)
+        private sealed class RegexMethod(RegexType declaringType, bool isProperty, string memberName, string modifiers, bool nullableRegex, string pattern, RegexOptions options, int? matchTimeout, RegexTree tree, AnalysisResults analysis, CompilationData compilationData)
         {
+            public RegexType DeclaringType { get; } = declaringType;
+            public bool IsProperty { get; } = isProperty;
+            public string MemberName { get; } = memberName;
+            public string Modifiers { get; } = modifiers;
+            public bool NullableRegex { get; } = nullableRegex;
+            public string Pattern { get; } = pattern;
+            public RegexOptions Options { get; } = options;
+            public int? MatchTimeout { get; } = matchTimeout;
+            public RegexTree Tree { get; } = tree;
+            public AnalysisResults Analysis { get; } = analysis;
+            public CompilationData CompilationData { get; } = compilationData;
             public string? GeneratedName { get; set; }
             public bool IsDuplicate { get; set; }
         }
 
         /// <summary>A type holding a regex method.</summary>
-        internal sealed record RegexType(string Keyword, string Namespace, string Name)
+        private sealed class RegexType(string keyword, string @namespace, string name)
         {
+            public string Keyword { get; } = keyword;
+            public string Namespace { get; } = @namespace;
+            public string Name { get; } = name;
             public RegexType? Parent { get; set; }
         }
     }

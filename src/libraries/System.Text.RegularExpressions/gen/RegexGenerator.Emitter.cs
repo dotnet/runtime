@@ -16,7 +16,6 @@ using System.Threading;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using SourceGenerators;
 
 // NOTE: The logic in this file is largely a duplicate of logic in RegexCompiler, emitting C# instead of MSIL.
 // Most changes made to this file should be kept in sync, so far as bug fixes and relevant optimizations
@@ -48,14 +47,14 @@ namespace System.Text.RegularExpressions.Generator
             int id = 0;
 
             // To minimize generated code in the event of duplicated regexes, we only emit one derived
-            // Regex type per unique expression/options/timeout. The value is the implementation used for the key.
-            var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
+            // Regex type per unique expression/options/timeout/culture. The value is the implementation used for the key.
+            Dictionary<(string Pattern, RegexOptions Options, int? Timeout, string? CultureName), RegexMethod> emittedExpressions = new();
 
             // Convert each spec to a RegexMethod (re-parsing the regex to obtain the full
             // RegexTree/AnalysisResults needed by the emitter). This re-parse is fast and only
             // happens on incremental cache misses.
             Dictionary<string, string[]> requiredHelpers = new();
-            var methods = new List<(RegexMethodSpec Spec, RegexMethod Method)>();
+            List<(RegexMethodSpec Spec, RegexMethod Method)> methods = new();
             foreach (RegexMethodSpec methodSpec in spec.RegexMethods)
             {
                 RegexType regexType = ConvertRegexTypeSpecToRegexType(methodSpec.DeclaringType);
@@ -70,7 +69,8 @@ namespace System.Text.RegularExpressions.Generator
                     methodSpec.NullableRegex, methodSpec.Pattern, methodSpec.Options, methodSpec.MatchTimeout,
                     regexTree, analysis, methodSpec.CompilationData);
 
-                var key = (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout);
+                (string Pattern, RegexOptions Options, int? Timeout, string? CultureName) key =
+                    (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout, methodSpec.Tree?.CultureName);
                 if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
                 {
                     regexMethod.IsDuplicate = true;
@@ -119,8 +119,8 @@ namespace System.Text.RegularExpressions.Generator
                 if (methodSpec.Tree is not null)
                 {
                     // Generate the RunnerFactory implementation.
-                    var runnerSw = new StringWriter();
-                    var runnerWriter = new IndentedTextWriter(runnerSw);
+                    using StringWriter runnerSw = new();
+                    using IndentedTextWriter runnerWriter = new(runnerSw);
                     runnerWriter.Indent += 2;
                     runnerWriter.WriteLine();
                     EmitRegexDerivedTypeRunnerFactory(runnerWriter, rm, requiredHelpers, rm.CompilationData.CheckOverflow);
@@ -175,7 +175,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Converts a <see cref="RegexTypeSpec"/> back to a <see cref="RegexType"/> for the emitter.</summary>
         private static RegexType ConvertRegexTypeSpecToRegexType(RegexTypeSpec typeSpec)
         {
-            var regexType = new RegexType(typeSpec.Keyword, typeSpec.Namespace, typeSpec.Name);
+            RegexType regexType = new(typeSpec.Keyword, typeSpec.Namespace, typeSpec.Name);
             if (typeSpec.Parent is not null)
             {
                 regexType.Parent = ConvertRegexTypeSpecToRegexType(typeSpec.Parent);

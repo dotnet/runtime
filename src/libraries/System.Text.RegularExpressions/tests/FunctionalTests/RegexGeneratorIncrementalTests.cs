@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -58,8 +59,12 @@ namespace System.Text.RegularExpressions.Tests
 
             // Second run: same compilation, should be fully cached
             driver = driver.RunGenerators(compilation);
-            runResult = driver.GetRunResult().Results[0];
-            Assert.False(runResult.GeneratedSources.IsEmpty);
+            GeneratorRunResult secondRunResult = driver.GetRunResult().Results[0];
+            Assert.False(secondRunResult.GeneratedSources.IsEmpty);
+            Assert.True(
+                secondRunResult.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(step => step.Outputs)
+                    .Any(output => output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
+                "Expected at least one cached/unchanged output step on the second run with the same compilation.");
         }
 
         [Fact]

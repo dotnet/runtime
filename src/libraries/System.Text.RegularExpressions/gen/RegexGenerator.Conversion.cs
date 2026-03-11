@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions.Generator
             }
             else
             {
-                var childSpecs = new RegexNodeSpec[childCount];
+                RegexNodeSpec[] childSpecs = new RegexNodeSpec[childCount];
                 for (int i = 0; i < childCount; i++)
                 {
                     childSpecs[i] = ConvertNode(node.Child(i), analysis);

@@ -100,7 +100,7 @@ namespace SourceGenerators
                 return ImmutableEquatableDictionary<TKey, TValue>.Empty;
             }
 
-            var dict = new Dictionary<TKey, TValue>(source.Count);
+            Dictionary<TKey, TValue> dict = new(source.Count);
             foreach (DictionaryEntry entry in source)
             {
                 dict.Add((TKey)entry.Key, (TValue)entry.Value!);
