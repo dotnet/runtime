@@ -206,24 +206,30 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 //    The number of sources consumed by this node.
 //
 int LinearScan::BuildIndir(GenTreeIndir* indirTree)
-{       
-	    _ASSERTE(!"NYI");
+{
+    if (indirTree->OperGet() != GT_IND)
+    {
+        _ASSERTE(!"NYI");
+    }
+
+    // struct typed indirs are expected only on rhs of a block copy,
+    // but in this case they must be contained.
+    assert(indirTree->TypeGet() != TYP_STRUCT);
+
+    GenTree* addr  = indirTree->Addr();
+    GenTree* index = nullptr;
+    int      cns   = 0;
+
+    int srcCount = BuildIndirUses(indirTree);
+    buildInternalRegisterUses();
+
+    if (!indirTree->OperIs(GT_STOREIND, GT_NULLCHECK))
+    {
+        BuildDef(indirTree);
+    }
+    return srcCount;
 }
 
-//------------------------------------------------------------------------
-// BuildCall: Set the NodeInfo for a call.
-//
-// Arguments:
-//    call - The call node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildCall(GenTreeCall* call)
-{
-	    _ASSERTE(!"NYI");
-}
-                                            
 //------------------------------------------------------------------------
 // BuildSelect: Build RefPositions for a GT_SELECT node.
 //
@@ -253,6 +259,46 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
+// BuildCall: Set the NodeInfo for a call.
+//
+// Arguments:
+//    call - The call node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildCall(GenTreeCall* call)
+{
+    bool                  hasMultiRegRetVal   = false;
+    const ReturnTypeDesc* retTypeDesc         = nullptr;
+    SingleTypeRegSet      singleDstCandidates = RBM_NONE;
+
+    int srcCount = 0;
+    int dstCount = 0;
+
+    if (call->gtCallType == CT_HELPER)
+    {
+	buildInternalIntRegisterDefForNode(call);
+
+	RegisterType registerType = call->TypeGet();
+
+	srcCount += BuildCallArgUses(call);
+
+	buildInternalRegisterUses();
+
+	regMaskTP killMask = getKillSetForCall(call);
+	BuildKills(call, killMask);
+
+	// No args are placed in registers anymore.
+    	placedArgRegs      = RBM_NONE;
+    	numPlacedArgLocals = 0;
+    	return srcCount;
+    }
+
+    _ASSERTE(!"NYI"); 
+}
+
+//------------------------------------------------------------------------
 // BuildNode: Build the RefPositions for a node
 //
 // Arguments:
@@ -271,7 +317,107 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 //
 int LinearScan::BuildNode(GenTree* tree)
 {
+    assert(!tree->isContained());
+    int       srcCount;
+    int       dstCount;
+    regMaskTP killMask      = RBM_NONE;
+    bool      isLocalDefUse = false;
+
+    // Reset the build-related members of LinearScan.
+    clearBuildState();
+
+    // Set the default dstCount. This may be modified below.
+    if (tree->IsValue())
+    {
+        dstCount = 1;
+        if (tree->IsUnusedValue())
+        {
+            isLocalDefUse = true;
+        }
+    }
+    else
+    {
+        dstCount = 0;
+    }
+
+    switch (tree->OperGet())
+    {
+        case GT_CNS_INT:
+        {
+            srcCount = 0;
+            assert(dstCount == 1);
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+        }
+        break;
+
+	case GT_IND:
+	{
+            assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
+            srcCount = BuildIndir(tree->AsIndir());
+	}
+        break;
+
+	case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+        case GT_GT:
+        case GT_TEST_EQ:
+        case GT_TEST_NE:
+        case GT_CMP:
+        case GT_TEST:
+        //case GT_CCMP:
+        case GT_JCMP:
+        case GT_JTEST:
+            srcCount = BuildCmp(tree);
+            break;
+
+	case GT_LCL_ADDR:
+        case GT_PHYSREG:
+        case GT_IL_OFFSET:
+        case GT_LABEL:
+        case GT_PINVOKE_PROLOG:
+        case GT_JCC:
+        case GT_SETCC:
+        case GT_MEMORYBARRIER:
+            srcCount = BuildSimple(tree);
+            break;
+
+	case GT_CALL:
+            srcCount = BuildCall(tree->AsCall());
+            if (tree->AsCall()->HasMultiRegRetVal())
+            {
+                dstCount = tree->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+            }
+            break;
+
+	case GT_NO_OP:
+        case GT_START_NONGC:
+        case GT_PROF_HOOK:
+            srcCount = 0;
+            assert(dstCount == 0);
+            break;
+
+	case GT_RETURN:
+            srcCount = BuildReturn(tree);
+            killMask = getKillSetForReturn();
+            BuildKills(tree, killMask);
+            break;
+
+	default:
+	{
 	    _ASSERTE(!"NYI");
+	}
+    }
+
+    // We need to be sure that we've set srcCount and dstCount appropriately
+    assert((dstCount < 2) || tree->IsMultiRegNode());
+    assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
+    assert(!tree->IsValue() || (dstCount != 0));
+    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    return srcCount;
 }
 
 #ifdef FEATURE_HW_INTRINSICS

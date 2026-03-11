@@ -60,12 +60,12 @@ emitAttr emitInsLoadStoreSize(instrDesc* id);
 public:
 inline static bool isFloatReg(regNumber reg)
 {
-    abort();
+    return (reg >= REG_F0 && reg <= REG_F31);
 }
 
 inline static bool isGeneralRegister(regNumber reg)
 {
-    abort();
+    return (reg >= REG_R0 && reg <= REG_R31);
 } // Excludes REG_ZR
 
 

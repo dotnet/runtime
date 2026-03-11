@@ -39,7 +39,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    _ASSERTE(!"NYI");
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -350,8 +350,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 {
-    // There are no contained operands for arm.
-    _ASSERTE(!"NYI");
+    return;
 }
 
 //------------------------------------------------------------------------
@@ -379,7 +378,6 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 //
 void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 {
-    //_ASSERTE(!"NYI");
     return;
 }
 
@@ -458,7 +456,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    _ASSERTE(!"NYI");
+    return;
 }
 
 //------------------------------------------------------------------------

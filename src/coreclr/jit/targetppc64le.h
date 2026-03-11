@@ -272,14 +272,14 @@
   #define REG_ARG_FP_LAST          REG_F13
   #define INIT_ARG_STACK_SLOT      0                  // No outgoing reserved stack slots
 
-  #define REG_ARG_0                REG_R0
-  #define REG_ARG_1                REG_R1
-  #define REG_ARG_2                REG_R2
-  #define REG_ARG_3                REG_R3
-  #define REG_ARG_4                REG_R4
-  #define REG_ARG_5                REG_R5
-  #define REG_ARG_6                REG_R6
-  #define REG_ARG_7                REG_R7
+  #define REG_ARG_0                REG_R3
+  #define REG_ARG_1                REG_R4
+  #define REG_ARG_2                REG_R5
+  #define REG_ARG_3                REG_R6
+  #define REG_ARG_4                REG_R7
+  #define REG_ARG_5                REG_R8
+  #define REG_ARG_6                REG_R9
+  #define REG_ARG_7                REG_R10
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
   extern const regMaskTP intArgMasks[MAX_REG_ARG];
