@@ -36,8 +36,8 @@ namespace System.IO.Compression
             {
                 if (value != -1)
                 {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinQuality);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxQuality);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinQuality, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxQuality, nameof(value));
                 }
 
                 _compressionLevel = value;
@@ -75,8 +75,8 @@ namespace System.IO.Compression
             {
                 if (value != -1)
                 {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinWindowLog);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxWindowLog);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinWindowLog, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxWindowLog, nameof(value));
                 }
 
                 _windowLog = value;
