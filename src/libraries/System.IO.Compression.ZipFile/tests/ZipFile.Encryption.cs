@@ -1418,15 +1418,15 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await Assert.ThrowsAnyAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Read, null!));
-                    await Assert.ThrowsAnyAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Read, ""));
+                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, null!));
+                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, ""));
                     await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, null!));
                     await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, ""));
                 }
                 else
                 {
-                    Assert.ThrowsAny<ArgumentNullException>(() => entry.Open(FileAccess.Read, null!));
-                    Assert.ThrowsAny<ArgumentNullException>(() => entry.Open(FileAccess.Read, ""));
+                    Assert.ThrowsAny<ArgumentException>(() => entry.Open(FileAccess.Read, null!));
+                    Assert.ThrowsAny<ArgumentException>(() => entry.Open(FileAccess.Read, ""));
                     Assert.ThrowsAny<ArgumentException>(() => entry.Open(FileAccess.ReadWrite, null!));
                     Assert.ThrowsAny<ArgumentException>(() => entry.Open(FileAccess.ReadWrite, ""));
                 }

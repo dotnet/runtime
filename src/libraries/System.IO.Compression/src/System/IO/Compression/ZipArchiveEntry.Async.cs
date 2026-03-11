@@ -118,7 +118,7 @@ public partial class ZipArchiveEntry
         ThrowIfInvalidArchive();
         if (string.IsNullOrEmpty(password))
         {
-            throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+            throw new ArgumentException(SR.EmptyPassword, nameof(password));
         }
 
         if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
@@ -252,11 +252,7 @@ public partial class ZipArchiveEntry
         switch (_archive.Mode)
         {
             case ZipArchiveMode.Read:
-                if (!IsEncrypted)
-                {
-                    throw new InvalidDataException(SR.EntryNotEncrypted);
-                }
-                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password.AsMemory()).ConfigureAwait(false);
+                throw new InvalidOperationException(SR.EncryptionReadMode);
             case ZipArchiveMode.Create:
                 return OpenInWriteMode(password, encryptionMethod);
             case ZipArchiveMode.Update:
@@ -483,7 +479,7 @@ public partial class ZipArchiveEntry
         if (!isAesEncrypted && IsZipCryptoEncrypted())
         {
             byte expectedCheckByte = CalculateZipCryptoCheckByte();
-            byte[] keyMaterial = ZipCryptoStream.CreateKey(password);
+            ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
             return await ZipCryptoStream.CreateAsync(compressedStream, keyMaterial, expectedCheckByte, encrypting: false, cancellationToken).ConfigureAwait(false);
         }
         else if (isAesEncrypted)
@@ -504,7 +500,7 @@ public partial class ZipArchiveEntry
             compressedStream.Seek(-saltSize, SeekOrigin.Current);
 
             // Derive key material from the provided password
-            WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+            WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.Span, salt, keySizeBits);
 
             return await WinZipAesStream.CreateAsync(
                 baseStream: compressedStream,
@@ -679,7 +675,7 @@ public partial class ZipArchiveEntry
 
                     var encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
-                        keyBytes: _derivedZipCryptoKeyMaterial,
+                        keys: _derivedZipCryptoKeyMaterial.Value,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
                         encrypting: true,
                         crc32: null,

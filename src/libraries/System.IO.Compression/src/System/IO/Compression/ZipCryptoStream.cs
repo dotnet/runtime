@@ -14,6 +14,8 @@ namespace System.IO.Compression
     {
         internal const int KeySize = 12; // 3 * sizeof(uint)
 
+        private const int EncryptionBufferSize = 4096;
+
         private readonly bool _encrypting;
         private readonly Stream _base;
         private readonly bool _leaveOpen;
@@ -26,6 +28,9 @@ namespace System.IO.Compression
         private uint _key1;
         private uint _key2;
         private static readonly uint[] s_crc2Table = CreateCrc32Table();
+
+        // Reusable work buffer for write operations, lazily allocated on first write
+        private byte[]? _writeWorkBuffer;
 
         private static uint[] CreateCrc32Table()
         {
@@ -57,28 +62,24 @@ namespace System.IO.Compression
         /// <summary>
         /// Creates a ZipCryptoStream for decryption. Reads and validates the 12-byte header synchronously.
         /// </summary>
-        internal static ZipCryptoStream Create(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool encrypting, bool leaveOpen = false)
+        internal static ZipCryptoStream Create(Stream baseStream, ZipCryptoKeys keys, byte expectedCheckByte, bool encrypting, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
-            ArgumentNullException.ThrowIfNull(keyBytes);
-            Debug.Assert(keyBytes.Length == KeySize, $"Key bytes must be exactly {KeySize} bytes.");
             Debug.Assert(!encrypting, "Use the overload with passwordVerifierLow2Bytes for encryption.");
 
-            (uint key0, uint key1, uint key2) = ReadAndValidateHeaderCore(isAsync: false, baseStream, keyBytes, expectedCheckByte, CancellationToken.None).GetAwaiter().GetResult();
+            (uint key0, uint key1, uint key2) = ReadAndValidateHeaderCore(isAsync: false, baseStream, keys, expectedCheckByte, CancellationToken.None).GetAwaiter().GetResult();
             return new ZipCryptoStream(baseStream, key0, key1, key2, leaveOpen);
         }
 
         /// <summary>
         /// Creates a ZipCryptoStream for decryption. Reads and validates the 12-byte header asynchronously.
         /// </summary>
-        internal static async Task<ZipCryptoStream> CreateAsync(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool encrypting, CancellationToken cancellationToken = default, bool leaveOpen = false)
+        internal static async Task<ZipCryptoStream> CreateAsync(Stream baseStream, ZipCryptoKeys keys, byte expectedCheckByte, bool encrypting, CancellationToken cancellationToken = default, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
-            ArgumentNullException.ThrowIfNull(keyBytes);
-            Debug.Assert(keyBytes.Length == KeySize, $"Key bytes must be exactly {KeySize} bytes.");
             Debug.Assert(!encrypting, "Use the overload with passwordVerifierLow2Bytes for encryption.");
 
-            (uint key0, uint key1, uint key2) = await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyBytes, expectedCheckByte, cancellationToken).ConfigureAwait(false);
+            (uint key0, uint key1, uint key2) = await ReadAndValidateHeaderCore(isAsync: true, baseStream, keys, expectedCheckByte, cancellationToken).ConfigureAwait(false);
             return new ZipCryptoStream(baseStream, key0, key1, key2, leaveOpen);
         }
 
@@ -86,23 +87,21 @@ namespace System.IO.Compression
         /// Creates a ZipCryptoStream for encryption. Only synchronous creation is needed since no I/O is performed here.
         /// </summary>
         internal static ZipCryptoStream Create(Stream baseStream,
-                                             byte[] keyBytes,
+                                             ZipCryptoKeys keys,
                                              ushort passwordVerifierLow2Bytes,
                                              bool encrypting,
                                              uint? crc32 = null,
                                              bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
-            ArgumentNullException.ThrowIfNull(keyBytes);
-            Debug.Assert(keyBytes.Length == KeySize, $"Key bytes must be exactly {KeySize} bytes.");
             Debug.Assert(encrypting, "Use the overload with expectedCheckByte for decryption.");
 
-            return new ZipCryptoStream(baseStream, keyBytes, passwordVerifierLow2Bytes, crc32, leaveOpen);
+            return new ZipCryptoStream(baseStream, keys, passwordVerifierLow2Bytes, crc32, leaveOpen);
         }
 
         // Encryption constructor
         private ZipCryptoStream(Stream baseStream,
-                               byte[] keyBytes,
+                               ZipCryptoKeys keys,
                                ushort passwordVerifierLow2Bytes,
                                uint? crc32,
                                bool leaveOpen)
@@ -112,111 +111,118 @@ namespace System.IO.Compression
             _leaveOpen = leaveOpen;
             _verifierLow2Bytes = passwordVerifierLow2Bytes;
             _crc32ForHeader = crc32;
-            InitKeysFromKeyBytes(keyBytes);
+            _key0 = keys.Key0;
+            _key1 = keys.Key1;
+            _key2 = keys.Key2;
         }
 
-        // Creates the persisted key bytes from a password.
-        // The returned byte array contains the 3 ZipCrypto keys (key0, key1, key2)
-        // serialized as 12 bytes in little-endian format.
-        public static byte[] CreateKey(ReadOnlyMemory<char> password)
+        // Creates the persisted key material from a password.
+        // Returns a struct of 3 integers to keep the key off the heap.
+        internal static ZipCryptoKeys CreateKey(ReadOnlyMemory<char> password)
         {
             // Initialize keys with standard ZipCrypto initial values
             uint key0 = 305419896;
             uint key1 = 591751049;
             uint key2 = 878082192;
 
-            // ZipCrypto uses raw bytes; ASCII is the most interoperable
-            var bytes = Encoding.ASCII.GetBytes(password.ToArray());
-            foreach (byte b in bytes)
+            // ASCII produces exactly 1 byte per char, so SegmentSize bytes is sufficient
+            // for SegmentSize chars.
+            const int SegmentSize = 32;
+            Span<byte> buf = stackalloc byte[SegmentSize];
+
+            ReadOnlySpan<char> pwSpan = password.Span;
+
+            while (!pwSpan.IsEmpty)
             {
-                UpdateKeys(ref key0, ref key1, ref key2, b);
+                ReadOnlySpan<char> segment = pwSpan;
+
+                if (segment.Length > SegmentSize)
+                {
+                    segment = segment.Slice(0, SegmentSize);
+                }
+
+                int byteCount = Encoding.ASCII.GetBytes(segment, buf);
+
+                foreach (byte b in buf.Slice(0, byteCount))
+                {
+                    UpdateKeys(ref key0, ref key1, ref key2, b);
+                }
+
+                pwSpan = pwSpan.Slice(segment.Length);
             }
 
-            // Serialize the 3 keys to bytes in little-endian format
-            byte[] keyBytes = new byte[KeySize];
-            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(0, 4), key0);
-            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(4, 4), key1);
-            BinaryPrimitives.WriteUInt32LittleEndian(keyBytes.AsSpan(8, 4), key2);
-
-            return keyBytes;
+            return new ZipCryptoKeys(key0, key1, key2);
         }
 
-        // Initializes keys from persisted key bytes.
-        private void InitKeysFromKeyBytes(byte[] keyBytes)
+        private void CalculateHeader(Span<byte> header)
         {
-            _key0 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(0, 4));
-            _key1 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(4, 4));
-            _key2 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(8, 4));
-        }
+            if (header.Length < 12)
+                throw new ArgumentException("Header must be at least 12 bytes.", nameof(header));
 
-        private byte[] CalculateHeader()
-        {
-            byte[] hdrPlain = new byte[12];
+            // bytes 0..9 random
+            RandomNumberGenerator.Fill(header.Slice(0, 10));
 
-            // bytes 0..9 are random
-            RandomNumberGenerator.Fill(hdrPlain.AsSpan(0, 10));
-
-            // bytes 10..11: check bytes (CRC-based if crc32 provided; else DOS time low word)
+            // bytes 10..11 verifier
             if (_crc32ForHeader.HasValue)
             {
                 uint crc = _crc32ForHeader.Value;
-                BinaryPrimitives.WriteUInt16LittleEndian(hdrPlain.AsSpan(10), (ushort)(crc >> 16));
+                BinaryPrimitives.WriteUInt16LittleEndian(header.Slice(10), (ushort)(crc >> 16));
             }
             else
             {
-                BinaryPrimitives.WriteUInt16LittleEndian(hdrPlain.AsSpan(10), _verifierLow2Bytes);
+                BinaryPrimitives.WriteUInt16LittleEndian(header.Slice(10), _verifierLow2Bytes);
             }
 
-            // Update keys with PLAINTEXT per spec
-            byte[] hdrCiph = new byte[12];
+            // encrypt in place
             for (int i = 0; i < 12; i++)
             {
+                byte p = header[i];
                 byte ks = DecryptByte(_key2);
-                byte p = hdrPlain[i];
-                hdrCiph[i] = (byte)(p ^ ks);
+                header[i] = (byte)(p ^ ks);
+
+                // keys updated with PLAINTEXT per ZIP spec
                 UpdateKeys(ref _key0, ref _key1, ref _key2, p);
             }
-
-            return hdrCiph;
         }
 
-        private async ValueTask WriteHeaderCore(bool isAsync, CancellationToken cancellationToken = default)
+        private void WriteHeader()
         {
             if (!_encrypting || _headerWritten)
-            {
                 return;
-            }
 
-            byte[] hdrCiph = CalculateHeader();
+            Span<byte> header = stackalloc byte[12];
+            CalculateHeader(header);
+            _base.Write(header);
+            _headerWritten = true;
+        }
 
-            if (isAsync)
-            {
-                await _base.WriteAsync(hdrCiph.AsMemory(0, 12), cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                _base.Write(hdrCiph, 0, 12);
-            }
+        private async ValueTask WriteHeaderAsync(CancellationToken cancellationToken)
+        {
+            if (!_encrypting || _headerWritten)
+                return;
 
+            byte[] header = new byte[12];
+            CalculateHeader(header);
+            await _base.WriteAsync(header, cancellationToken).ConfigureAwait(false);
             _headerWritten = true;
         }
 
         private void EnsureHeader()
         {
-            WriteHeaderCore(isAsync: false).AsTask().GetAwaiter().GetResult();
+            WriteHeader();
         }
 
         private ValueTask EnsureHeaderAsync(CancellationToken cancellationToken)
         {
-            return WriteHeaderCore(isAsync: true, cancellationToken);
+            return WriteHeaderAsync(cancellationToken);
         }
 
-        private static async Task<(uint key0, uint key1, uint key2)> ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, byte[] keyBytes, byte expectedCheckByte, CancellationToken cancellationToken)
+        private static async Task<(uint key0, uint key1, uint key2)> ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, ZipCryptoKeys keys, byte expectedCheckByte, CancellationToken cancellationToken)
         {
             // Initialize keys from input
-            uint key0 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(0, 4));
-            uint key1 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(4, 4));
-            uint key2 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(8, 4));
+            uint key0 = keys.Key0;
+            uint key1 = keys.Key1;
+            uint key2 = keys.Key2;
 
             byte[] hdr = new byte[12];
             int bytesRead;
@@ -322,15 +328,24 @@ namespace System.IO.Compression
 
             EnsureHeader();
 
-            byte[] tmp = new byte[buffer.Length];
-            for (int i = 0; i < buffer.Length; i++)
+            byte[] workBuffer = GetWriteWorkBuffer();
+            ReadOnlySpan<byte> remaining = buffer;
+
+            while (!remaining.IsEmpty)
             {
-                byte ks = DecryptByte(_key2);
-                byte p = buffer[i];
-                tmp[i] = (byte)(p ^ ks);
-                UpdateKeys(ref _key0, ref _key1, ref _key2, p);
+                int chunkSize = Math.Min(remaining.Length, workBuffer.Length);
+
+                for (int i = 0; i < chunkSize; i++)
+                {
+                    byte ks = DecryptByte(_key2);
+                    byte p = remaining[i];
+                    workBuffer[i] = (byte)(p ^ ks);
+                    UpdateKeys(ref _key0, ref _key1, ref _key2, p);
+                }
+
+                _base.Write(workBuffer, 0, chunkSize);
+                remaining = remaining.Slice(chunkSize);
             }
-            _base.Write(tmp, 0, tmp.Length);
         }
 
         protected override void Dispose(bool disposing)
@@ -421,22 +436,32 @@ namespace System.IO.Compression
 
             await EnsureHeaderAsync(cancellationToken).ConfigureAwait(false);
 
-            byte[] tmp = new byte[buffer.Length];
-            ReadOnlySpan<byte> span = buffer.Span;
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                byte ks = DecryptByte(_key2);
-                byte p = span[i];
-                tmp[i] = (byte)(p ^ ks);
-                UpdateKeys(ref _key0, ref _key1, ref _key2, p);
-            }
+            byte[] workBuffer = GetWriteWorkBuffer();
+            int offset = 0;
 
-            await _base.WriteAsync(tmp, cancellationToken).ConfigureAwait(false);
+            while (offset < buffer.Length)
+            {
+                int chunkSize = Math.Min(buffer.Length - offset, workBuffer.Length);
+                ReadOnlySpan<byte> span = buffer.Span;
+
+                for (int i = 0; i < chunkSize; i++)
+                {
+                    byte ks = DecryptByte(_key2);
+                    byte p = span[offset + i];
+                    workBuffer[i] = (byte)(p ^ ks);
+                    UpdateKeys(ref _key0, ref _key1, ref _key2, p);
+                }
+
+                await _base.WriteAsync(workBuffer.AsMemory(0, chunkSize), cancellationToken).ConfigureAwait(false);
+                offset += chunkSize;
+            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             return _base.FlushAsync(cancellationToken);
         }
+
+        private byte[] GetWriteWorkBuffer() => _writeWorkBuffer ??= new byte[EncryptionBufferSize];
     }
 }

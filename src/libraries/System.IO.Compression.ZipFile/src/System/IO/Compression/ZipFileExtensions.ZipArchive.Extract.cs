@@ -138,6 +138,7 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+            ArgumentException.ThrowIfNullOrEmpty(password);
 
             foreach (ZipArchiveEntry entry in source.Entries)
             {

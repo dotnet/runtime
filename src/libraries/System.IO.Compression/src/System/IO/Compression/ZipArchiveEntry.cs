@@ -52,7 +52,7 @@ namespace System.IO.Compression
         private ushort? _aeVersion;
         // Cached derived key material for encrypted entries to allow updating in place.
         // Only one of these is set at a time, depending on the encryption method.
-        private byte[]? _derivedZipCryptoKeyMaterial;
+        private ZipCryptoKeys? _derivedZipCryptoKeyMaterial;
         private WinZipAesKeyMaterial? _derivedAesKeyMaterial;
         internal const ushort WinZipAesMethod = 99;
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
@@ -419,13 +419,13 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
-        /// <exception cref="ArgumentNullException">The password provided is null.</exception>
+        /// <exception cref="ArgumentException">The password provided is null.</exception>
         public Stream Open(string password)
         {
             ThrowIfInvalidArchive();
             if (string.IsNullOrEmpty(password))
             {
-                throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+                throw new ArgumentException(SR.EmptyPassword);
             }
             switch (_archive.Mode)
             {
@@ -460,7 +460,7 @@ namespace System.IO.Compression
             ThrowIfInvalidArchive();
             if (string.IsNullOrEmpty(password))
             {
-                throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+                throw new ArgumentException(SR.EmptyPassword);
             }
             switch (_archive.Mode)
             {
@@ -533,7 +533,7 @@ namespace System.IO.Compression
             ThrowIfInvalidArchive();
             if (string.IsNullOrEmpty(password))
             {
-                throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+                throw new ArgumentException(SR.EmptyPassword);
             }
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
@@ -1057,7 +1057,7 @@ namespace System.IO.Compression
             if (!isAesEncrypted && IsZipCryptoEncrypted())
             {
                 byte expectedCheckByte = CalculateZipCryptoCheckByte();
-                byte[] keyMaterial = ZipCryptoStream.CreateKey(password);
+                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
                 return ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false);
             }
             else if (isAesEncrypted)
@@ -1078,7 +1078,7 @@ namespace System.IO.Compression
                 compressedStream.Seek(-saltSize, SeekOrigin.Current);
 
                 // Derive key material from the provided password
-                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.Span, salt, keySizeBits);
 
                 return WinZipAesStream.Create(
                     baseStream: compressedStream,
@@ -1170,17 +1170,17 @@ namespace System.IO.Compression
             {
                 if (string.IsNullOrEmpty(password))
                 {
-                    throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+                    throw new ArgumentException(SR.EmptyPassword);
                 }
 
                 Encryption = encryptionMethod;
 
-                byte[] keyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
+                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
                 ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
                 targetStream = ZipCryptoStream.Create(
                     baseStream: _archive.ArchiveStream,
-                    keyBytes: keyMaterial,
+                    keys: keyMaterial,
                     passwordVerifierLow2Bytes: verifierLow2Bytes,
                     encrypting: true,
                     crc32: null,
@@ -1202,7 +1202,7 @@ namespace System.IO.Compression
                 int keySizeBits = GetAesKeySizeBits(encryptionMethod);
 
                 // Derive key material from password with new random salt
-                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.AsSpan(), salt: null, keySizeBits);
 
                 targetStream = WinZipAesStream.Create(
                     baseStream: _archive.ArchiveStream,
@@ -1309,7 +1309,7 @@ namespace System.IO.Compression
                 // Generate new salt and derive key material for AES
                 // This ensures each write uses a fresh random salt for security
                 int keySizeBits = GetAesKeySizeBits(Encryption);
-                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
+                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password.AsSpan(), salt: null, keySizeBits);
                 // Encryption is already set from constructor (parsed from central directory AES extra field)
             }
 
@@ -1699,7 +1699,7 @@ namespace System.IO.Compression
 
                         using (var encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
-                            keyBytes: _derivedZipCryptoKeyMaterial,
+                            keys: _derivedZipCryptoKeyMaterial.Value,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
                             encrypting: true,
                             crc32: null,

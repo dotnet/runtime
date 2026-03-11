@@ -127,6 +127,8 @@ namespace System.IO.Compression
         /// <param name="password">The password used to decrypt the encrypted entry.</param>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password)
         {
+            ArgumentException.ThrowIfNullOrEmpty(password);
+
             ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
 
             // When overwriting, extract to a temporary file first to avoid corrupting the destination file
@@ -144,7 +146,7 @@ namespace System.IO.Compression
             {
                 using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
                 {
-                    using (Stream es = !string.IsNullOrEmpty(password) ? source.Open(password) : source.Open())
+                    using (Stream es = source.Open(password))
                         es.CopyTo(fs);
                 }
 
@@ -239,7 +241,7 @@ namespace System.IO.Compression
                 // If it is a file:
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                if (!string.IsNullOrEmpty(password))
+                if (password is not null)
                     source.ExtractToFile(fileDestinationPath, overwrite: overwrite, password: password);
                 else
                     source.ExtractToFile(fileDestinationPath, overwrite: overwrite);

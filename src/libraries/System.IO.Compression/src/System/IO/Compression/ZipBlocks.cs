@@ -797,7 +797,7 @@ namespace System.IO.Compression
 
         public void WriteBlock(Stream stream)
         {
-            Span<byte> buffer = new byte[TotalSize];
+            Span<byte> buffer = stackalloc byte[TotalSize];
             WriteBlockCore(buffer);
             stream.Write(buffer);
         }
@@ -812,12 +812,11 @@ namespace System.IO.Compression
         private void WriteBlockCore(Span<byte> buffer)
         {
             BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(0), HeaderId);
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), 7); // DataSize
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), DataSize);
             BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), VendorVersion);
             buffer[6] = (byte)'A';
             buffer[7] = (byte)'E';
             buffer[8] = AesStrength;
-
             BinaryPrimitives.WriteUInt16LittleEndian(buffer[9..], CompressionMethod);
         }
     }

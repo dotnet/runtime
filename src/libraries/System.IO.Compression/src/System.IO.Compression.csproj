@@ -56,6 +56,8 @@
     <Compile Include="System\IO\Compression\EncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" />
+    <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" />
+    <Compile Include="System\IO\Compression\ZipCryptoKeys.cs" />
   </ItemGroup>
 
   <!-- Windows specific files -->
