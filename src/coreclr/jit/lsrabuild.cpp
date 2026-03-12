@@ -1066,10 +1066,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             break;
 
-        case GT_ALLOCOBJ:
-            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_NEWSFAST);
-            break;
-
         case GT_CALL:
             killMask = getKillSetForCall(tree->AsCall());
 

@@ -1728,99 +1728,112 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
 //------------------------------------------------------------------------
 // genCodeForAllocObj: Generate code for GT_ALLOCOBJ - inline object allocation.
-//
-// Emits an inline bump-pointer allocation fast path with a slow-path
-// fallback to CORINFO_HELP_NEWSFAST. The fast path accesses the thread-local
-// ee_alloc_context, checks if there's enough space, bumps the allocation
-// pointer, and sets the MethodTable on the new object. If there isn't enough
-// space, it falls through to the slow path which calls the runtime helper.
-//
-// The entire fast path (from reading alloc_ptr to updating it) is marked
-// as non-GC-interruptible via emitDisableGC/emitEnableGC.
+// GT_ALLOCOBJ should have been morphed to a helper call. This codepath should never be reached.
 //
 void CodeGen::genCodeForAllocObj(GenTreeAllocObj* tree)
 {
-    assert(tree->OperIs(GT_ALLOCOBJ));
+    unreached();
+}
 
+//------------------------------------------------------------------------
+// genInlineAllocCall: Expand a CORINFO_HELP_NEWSFAST call inline with a
+// bump-pointer fast path and a slow-path fallback to the helper.
+//
+// The call node has been processed by genCallPlaceRegArgs already, so the
+// MethodTable argument is in REG_ARG_0 (rcx on Windows). This function
+// replaces the call emission with:
+//   1. TLS access to get the ee_alloc_context
+//   2. Bump-pointer allocation (non-GC-interruptible)
+//   3. If allocation doesn't fit: fall through to the normal helper call
+//
+void CodeGen::genInlineAllocCall(GenTreeCall* call)
+{
     const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
     assert(allocInfo->supported);
 
-    regNumber dstReg = tree->GetRegNum();
-    regNumber mtReg  = genConsumeReg(tree->gtGetOp1());
+    // The call infrastructure has already placed the MethodTable* in the arg register.
+    genCallPlaceRegArgs(call);
 
-    // Get internal temp registers
-    regNumber allocCtxReg = internalRegisters.Extract(tree, RBM_ALLINT);
-    regNumber tmpReg      = internalRegisters.Extract(tree, RBM_ALLINT);
+    regNumber dstReg = call->GetRegNum();
+    regNumber mtReg  = REG_ARG_0;  // MethodTable* argument
+
+    // We need two scratch registers. Use caller-saved registers that
+    // won't conflict with mtReg or dstReg.
+    // After the helper call, only rax (return value) matters.
+    // Use r10 and r11 as scratch — they are caller-saved volatile registers
+    // not used for argument passing on Windows.
+    regNumber allocCtxReg = REG_R10;
+    regNumber tmpReg      = REG_R11;
 
     emitter* emit = GetEmitter();
 
     // ---- TLS access: get pointer to ee_alloc_context ----
-    // Currently only Windows x64 is supported for inline TLS access.
-    assert(TargetOS::IsWindows);
-
-    // Windows x64: gs:[0x58] -> TLS array -> [tls_index * 8] -> + offset
     emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
                       (int)allocInfo->offsetOfThreadLocalStoragePointer);
 
-    // Load _tls_index value (accessType == IAT_PVALUE means addr points to the value)
     assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
     instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
     emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
 
-    // Index into TLS array to get module's TLS block base
     emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
 
-    // Add byte offset from TLS base to t_runtime_thread_locals
     assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
     ssize_t tlsRootOffset = (ssize_t)allocInfo->tlsRoot.addr;
     emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)tlsRootOffset);
 
-    // ---- Disable GC for the fast-path critical section ----
+    // ---- Non-GC-interruptible bump allocation ----
     GetEmitter()->emitDisableGC();
 
-    // ---- Bump pointer allocation ----
-    // Read baseSize from MethodTable first, before loading alloc_ptr into dstReg.
+    // tmpReg = baseSize from MethodTable
     emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
 
-    // dstReg = alloc_ptr (this will be the returned object pointer)
+    // dstReg = alloc_ptr
     emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
-    // tmpReg = alloc_ptr + baseSize (potential new alloc_ptr)
+    // tmpReg = alloc_ptr + baseSize (new alloc_ptr)
     emit->emitIns_R_ARX(INS_lea, EA_PTRSIZE, tmpReg, dstReg, tmpReg, 1, 0);
 
-    // Compare new alloc_ptr against combined_limit
+    // Compare new alloc_ptr vs combined_limit
     emit->emitIns_R_AR(INS_cmp, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
 
     BasicBlock* slowPath = genCreateTempLabel();
     inst_JMP(EJ_ja, slowPath);
 
-    // ---- Fast path: allocation succeeded ----
+    // ---- Fast path ----
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
-    // End the non-GC-interruptible region before leaving the fast path.
     GetEmitter()->emitEnableGC();
 
     BasicBlock* done = genCreateTempLabel();
     inst_JMP(EJ_jmp, done);
 
-    // ---- Slow path: call the allocation helper ----
-    // This is in a GC-interruptible region so the helper call is a proper GC safe point.
+    // ---- Slow path: emit the normal helper call ----
     genDefineTempLabel(slowPath);
 
-    regNumber mtArgReg = REG_ARG_0;
-    inst_Mov(TYP_I_IMPL, mtArgReg, mtReg, /* canSkip */ true);
-    gcInfo.gcMarkRegSetNpt(genRegMask(mtArgReg));
-
+    // mtReg (REG_ARG_0/rcx) still holds the MethodTable* — call the helper directly.
     genEmitHelperCall(CORINFO_HELP_NEWSFAST, 0, EA_PTRSIZE);
 
-    inst_Mov(TYP_REF, dstReg, REG_INTRET, /* canSkip */ true);
+    // Helper returns the new object in rax.
+    if (dstReg != REG_INTRET)
+    {
+        inst_Mov(TYP_REF, dstReg, REG_INTRET, /* canSkip */ false);
+    }
 
     // ---- Done ----
     genDefineTempLabel(done);
 
     gcInfo.gcMarkRegPtrVal(dstReg, TYP_REF);
-    genProduceReg(tree);
+
+    // Move result to the call's destination register if different
+    if (call->GetRegNum() != dstReg)
+    {
+        inst_Mov(TYP_REF, call->GetRegNum(), dstReg, /* canSkip */ false);
+        gcInfo.gcMarkRegPtrVal(call->GetRegNum(), TYP_REF);
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+
+    genProduceReg(call);
 }
 
 /*****************************************************************************
@@ -5975,6 +5988,15 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
 // Produce code for a GT_CALL node
 void CodeGen::genCall(GenTreeCall* call)
 {
+#ifdef TARGET_AMD64
+    // Check if this is an allocation helper call marked for inline expansion
+    if ((call->gtCallMoreFlags & GTF_CALL_M_EXPAND_INLINE_ALLOC) != 0)
+    {
+        genInlineAllocCall(call);
+        return;
+    }
+#endif
+
     genAlignStackBeforeCall(call);
 
     // all virtuals should have been expanded into a control expression

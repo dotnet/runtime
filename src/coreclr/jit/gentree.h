@@ -4391,6 +4391,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x04000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
     GTF_CALL_M_STACK_ARRAY             = 0x08000000, // this call is a new array helper for a stack allocated array.
+    GTF_CALL_M_EXPAND_INLINE_ALLOC     = 0x10000000, // this allocation helper call should be expanded inline in codegen
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)

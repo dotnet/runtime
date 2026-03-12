@@ -1341,15 +1341,20 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
             GenTreeAllocObj* allocObj = stmtExpr->AsLclVar()->Data()->AsAllocObj();
 
 #ifdef TARGET_AMD64
-            // Check if we can keep GT_ALLOCOBJ for inline allocation expansion in codegen.
+            // Check if we can expand the allocation inline in codegen.
             // Currently only Windows x64 is supported.
             const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
             if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
                 allocCtxInfo->supported && TargetOS::IsWindows && m_compiler->opts.OptimizationEnabled() &&
                 JitConfig.JitInlineAllocFast() != 0)
             {
-                JITDUMP("Keeping GT_ALLOCOBJ [%06u] for inline allocation expansion\n",
+                JITDUMP("Marking allocation [%06u] for inline expansion\n",
                         m_compiler->dspTreeID(allocObj));
+                // Morph to helper call, but mark it for inline expansion in codegen
+                GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(allocObj);
+                newData->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPAND_INLINE_ALLOC;
+                stmtExpr->AsLclVar()->Data() = newData;
+                stmtExpr->AddAllEffectsFlags(newData);
             }
             else
 #endif // TARGET_AMD64

@@ -91,7 +91,7 @@ GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,0,GTK_UNOP|GTK_EXOP)            
 GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,1,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
 GTNODE(MDARR_LOWER_BOUND, GenTreeMDArr       ,0,1,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array lower bound of a specific dimension
 GTNODE(FIELD_ADDR       , GenTreeFieldAddr   ,0,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field address
-GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,0,GTK_UNOP|GTK_EXOP)                // object allocator
+GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,1,GTK_UNOP) // Initialization value for an initBlk
 

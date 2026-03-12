@@ -2846,6 +2846,14 @@ AGAIN:
                 case GT_ARR_ADDR:
                     break;
 
+                case GT_ALLOCOBJ:
+                    if (op1->AsAllocObj()->gtNewHelper != op2->AsAllocObj()->gtNewHelper ||
+                        op1->AsAllocObj()->gtAllocObjClsHnd != op2->AsAllocObj()->gtAllocObjClsHnd)
+                    {
+                        return false;
+                    }
+                    break;
+
                 default:
                     assert(!"unexpected unary ExOp operator");
             }
