@@ -384,6 +384,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
+
+    <!-- The ConvertDllsToWebcil task uses content comparison and preserves old timestamps when
+         the output content is unchanged. Touch the outputs so MSBuild's Inputs/Outputs check
+         sees current timestamps and can correctly skip this target on subsequent builds. -->
+    <Touch Files="@(_WasmExpectedWebcilOutputs)" />
   </Target>
 
   <!-- Resolve webcil candidate items and define static web assets for the build.
@@ -595,6 +600,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
+
+    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps when
+         the output content is unchanged. Touch the output so MSBuild's Inputs/Outputs check
+         sees a current timestamp and can correctly skip this target on subsequent builds. -->
+    <Touch Files="$(_WasmBuildBootJsonPath)" />
   </Target>
 
   <!-- Define the boot config file as a static web asset and create endpoints.
@@ -1032,6 +1042,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
     </ItemGroup>
+
+    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps when
+         the output content is unchanged. Touch the output so MSBuild's Inputs/Outputs check
+         sees a current timestamp and can correctly skip this target on subsequent builds. -->
+    <Touch Files="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
 
   </Target>
 
