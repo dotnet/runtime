@@ -68,6 +68,13 @@ bool md_dump_tables(mdhandle_t handle, int32_t table_id);
 
 char const* md_get_version_string(mdhandle_t handle);
 
+#ifdef DNMD_PORTABLE_PDB
+// Get the PDB ID from the #Pdb stream of a Portable PDB.
+// The pdb_id_len parameter is an in/out parameter. The caller should set the initial value to the size of the supplied buffer.
+// Returns false if the handle does not contain a #Pdb stream.
+bool md_get_pdb_id(mdhandle_t handle, size_t* pdb_id_len, uint8_t* pdb_id);
+#endif
+
 //
 // All tables possible in ECMA-335
 //

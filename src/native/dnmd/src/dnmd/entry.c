@@ -732,6 +732,26 @@ char const* md_get_version_string(mdhandle_t handle)
     return cxt->version;
 }
 
+#ifdef DNMD_PORTABLE_PDB
+bool md_get_pdb_id(mdhandle_t handle, size_t* pdb_id_len, uint8_t* pdb_id)
+{
+    mdcxt_t* cxt = extract_mdcxt(handle);
+    if (cxt == NULL)
+        return false;
+
+    md_pdb_t pdb;
+    if (!try_get_pdb(cxt, &pdb))
+        return false;
+
+    if (!pdb_id_len || *pdb_id_len < ARRAY_SIZE(pdb.pdb_id))
+        return false;
+
+    *pdb_id_len = ARRAY_SIZE(pdb.pdb_id);
+    memcpy(pdb_id, pdb.pdb_id, *pdb_id_len);
+    return true;
+}
+#endif
+
 mdcxt_t* extract_mdcxt(mdhandle_t md)
 {
     mdcxt_t* cxt = (mdcxt_t*)md;
