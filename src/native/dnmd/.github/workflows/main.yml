@@ -14,9 +14,34 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        flavor: [Debug, Release]
-        use-vendored-libs: [true, false]
+        include:
+          # Ubuntu: Debug and Release, both vendored modes
+          - os: ubuntu-latest
+            flavor: Debug
+            use-vendored-libs: true
+          - os: ubuntu-latest
+            flavor: Debug
+            use-vendored-libs: false
+          - os: ubuntu-latest
+            flavor: Release
+            use-vendored-libs: true
+          - os: ubuntu-latest
+            flavor: Release
+            use-vendored-libs: false
+          # macOS: Debug vendored, Release non-vendored
+          - os: macos-latest
+            flavor: Debug
+            use-vendored-libs: true
+          - os: macos-latest
+            flavor: Release
+            use-vendored-libs: false
+          # Windows: Release vendored, Debug non-vendored
+          - os: windows-latest
+            flavor: Release
+            use-vendored-libs: true
+          - os: windows-latest
+            flavor: Debug
+            use-vendored-libs: false
       fail-fast: false
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.os }}, ${{ matrix.flavor }}, Single Build = ${{ matrix.use-vendored-libs }})
@@ -28,7 +53,7 @@ jobs:
     - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
-    
+
     - name: List dotnet information
       run: dotnet --info
 

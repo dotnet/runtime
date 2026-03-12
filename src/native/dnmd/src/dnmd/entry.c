@@ -743,11 +743,16 @@ bool md_get_pdb_id(mdhandle_t handle, size_t* pdb_id_len, uint8_t* pdb_id)
     if (!try_get_pdb(cxt, &pdb))
         return false;
 
-    if (!pdb_id_len || *pdb_id_len < ARRAY_SIZE(pdb.pdb_id))
+    if (!pdb_id_len)
         return false;
 
+    size_t input_len = *pdb_id_len;
     *pdb_id_len = ARRAY_SIZE(pdb.pdb_id);
-    memcpy(pdb_id, pdb.pdb_id, *pdb_id_len);
+
+    if (input_len < ARRAY_SIZE(pdb.pdb_id))
+        return false;
+
+    memcpy(pdb_id, pdb.pdb_id, ARRAY_SIZE(pdb.pdb_id));
     return true;
 }
 #endif
