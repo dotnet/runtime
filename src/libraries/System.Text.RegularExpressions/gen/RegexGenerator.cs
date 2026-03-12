@@ -18,6 +18,8 @@ namespace System.Text.RegularExpressions.Generator
         private const string HelpersTypeName = "Utilities";
         /// <summary>Namespace containing all the generated code.</summary>
         private const string GeneratedNamespace = "System.Text.RegularExpressions.Generated";
+        /// <summary>Tracking name for the parsed pipeline step, used by incremental tests.</summary>
+        public const string SourceGenerationSpecTrackingName = "SourceGenerationSpec";
         /// <summary>Code for a [GeneratedCode] attribute to put on the top-level generated members.</summary>
         private static readonly string s_generatedCodeAttribute = $"GeneratedCodeAttribute(\"{typeof(RegexGenerator).Assembly.GetName().Name}\", \"{typeof(RegexGenerator).Assembly.GetName().Version}\")";
         /// <summary>Header comments and usings to include at the top of every generated file.</summary>
@@ -54,7 +56,8 @@ namespace System.Text.RegularExpressions.Generator
             // RegexGenerationSpec has deep value equality, so Roslyn skips the
             // RegisterSourceOutput callback when the model hasn't changed.
             IncrementalValueProvider<RegexGenerationSpec?> sourceModel =
-                parsed.Select(static (t, _) => t.Spec);
+                parsed.Select(static (t, _) => t.Spec)
+                .WithTrackingName(SourceGenerationSpecTrackingName);
 
             context.RegisterSourceOutput(sourceModel, static (context, spec) =>
             {

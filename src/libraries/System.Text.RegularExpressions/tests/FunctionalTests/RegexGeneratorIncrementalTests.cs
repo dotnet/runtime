@@ -37,6 +37,24 @@ namespace System.Text.RegularExpressions.Tests
                     .WithNullableContextOptions(NullableContextOptions.Enable));
         }
 
+        private static void AssertSourceModelCached(GeneratorRunResult result, string message)
+        {
+            ImmutableArray<IncrementalGeneratorRunStep> steps = result.TrackedSteps[RegexGenerator.SourceGenerationSpecTrackingName];
+            Assert.True(
+                steps.SelectMany(step => step.Outputs)
+                    .All(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
+                message);
+        }
+
+        private static void AssertSourceModelModified(GeneratorRunResult result, string message)
+        {
+            ImmutableArray<IncrementalGeneratorRunStep> steps = result.TrackedSteps[RegexGenerator.SourceGenerationSpecTrackingName];
+            Assert.True(
+                steps.SelectMany(step => step.Outputs)
+                    .Any(o => o.Reason is IncrementalStepRunReason.New or IncrementalStepRunReason.Modified),
+                message);
+        }
+
         [Fact]
         public static void SameCompilation_SameInput_DoesNotRegenerate()
         {
@@ -61,10 +79,8 @@ namespace System.Text.RegularExpressions.Tests
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult secondRunResult = driver.GetRunResult().Results[0];
             Assert.False(secondRunResult.GeneratedSources.IsEmpty);
-            Assert.True(
-                secondRunResult.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(step => step.Outputs)
-                    .Any(output => output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
-                "Expected at least one cached/unchanged output step on the second run with the same compilation.");
+            AssertSourceModelCached(secondRunResult,
+                "Expected source model to be cached on the second run with the same compilation.");
         }
 
         [Fact]
@@ -117,15 +133,9 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(firstRunOutputs[i], secondRunOutputs[i]);
             }
 
-            // Verify the source output step was actually skipped (not re-run with same output).
-            // This confirms the equatable model enabled a true cache hit.
-            // Note: TrackedOutputSteps includes both source model and diagnostic output steps.
-            // The diagnostic output always runs (ImmutableArray<Diagnostic> uses reference equality).
-            // We check that at least one output step was Cached/Unchanged (the source model one).
-            Assert.True(
-                runResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
-                    .Any(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
-                "Expected at least one source output step to be Cached or Unchanged for an unrelated code change.");
+            // Verify the source model was cached (not re-computed).
+            AssertSourceModelCached(runResult,
+                "Expected source model to be cached for an unrelated code change.");
         }
 
         [Fact]
@@ -440,11 +450,9 @@ namespace System.Text.RegularExpressions.Tests
             string secondOutput = string.Concat(complexResult.GeneratedSources.Select(s => s.SyntaxTree.ToString()));
             Assert.Equal(firstOutput, secondOutput);
 
-            // Verify the source output step was actually skipped.
-            Assert.True(
-                complexResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
-                    .Any(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
-                $"Expected at least one source output step to be Cached or Unchanged for pattern '{pattern}' with unrelated code change.");
+            // Verify the source model was cached.
+            AssertSourceModelCached(complexResult,
+                $"Expected source model to be cached for pattern '{pattern}' with unrelated code change.");
         }
 
         [Fact]
@@ -573,14 +581,9 @@ namespace System.Text.RegularExpressions.Tests
             string secondOutput = string.Concat(limitedResult.GeneratedSources.Select(s => s.SyntaxTree.ToString()));
             Assert.Equal(firstOutput, secondOutput);
 
-            // Verify the source output step was actually skipped.
-            // Note: TrackedOutputSteps includes both source model and diagnostic output steps.
-            // The diagnostic output always runs (ImmutableArray<Diagnostic> uses reference equality).
-            // We check that at least one output step was Cached/Unchanged (the source model one).
-            Assert.True(
-                limitedResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
-                    .Any(o => o.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged),
-                "Expected at least one source output step to be Cached or Unchanged for limited-support regex with unrelated code change.");
+            // Verify the source model was cached.
+            AssertSourceModelCached(limitedResult,
+                "Expected source model to be cached for limited-support regex with unrelated code change.");
         }
 
         [Fact]
@@ -625,10 +628,8 @@ namespace System.Text.RegularExpressions.Tests
             // When culture changes, the source output should run (not be cached) since
             // the culture name is part of the equatable model. Even if the generated output
             // happens to be identical, the model is different and the emitter should re-run.
-            Assert.True(
-                secondResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
-                    .Any(o => o.Reason is IncrementalStepRunReason.New or IncrementalStepRunReason.Modified),
-                "Expected the source output step to run (not be cached) when culture changes.");
+            AssertSourceModelModified(secondResult,
+                "Expected source model to be modified when culture changes.");
         }
 
         [Fact]
@@ -691,10 +692,8 @@ namespace System.Text.RegularExpressions.Tests
             GeneratorRunResult secondResult = driver.GetRunResult().Results[0];
             Assert.NotEmpty(secondResult.GeneratedSources);
 
-            Assert.True(
-                secondResult.TrackedOutputSteps.SelectMany(kvp => kvp.Value).SelectMany(step => step.Outputs)
-                    .Any(o => o.Reason is IncrementalStepRunReason.New or IncrementalStepRunReason.Modified),
-                "Expected the source output step to run when AllowUnsafe compilation option changes.");
+            AssertSourceModelModified(secondResult,
+                "Expected source model to be modified when AllowUnsafe compilation option changes.");
         }
     }
 }
