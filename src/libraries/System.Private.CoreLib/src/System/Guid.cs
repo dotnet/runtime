@@ -1104,8 +1104,6 @@ namespace System
                 && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
         }
 
-        private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
-
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -1123,61 +1121,23 @@ namespace System
         {
             if (value._a != _a)
             {
-                return GetResult((uint)_a, (uint)value._a);
+                return ((uint)_a).CompareTo((uint)value._a);
             }
 
-            if (value._b != _b)
+            if ((ushort)value._b != (ushort)_b)
             {
-                return GetResult((uint)_b, (uint)value._b);
+                return ((ushort)_b).CompareTo((ushort)value._b);
             }
 
-            if (value._c != _c)
+            if ((ushort)value._c != (ushort)_c)
             {
-                return GetResult((uint)_c, (uint)value._c);
+                return ((ushort)_c).CompareTo((ushort)value._c);
             }
 
-            if (value._d != _d)
-            {
-                return GetResult(_d, value._d);
-            }
-
-            if (value._e != _e)
-            {
-                return GetResult(_e, value._e);
-            }
-
-            if (value._f != _f)
-            {
-                return GetResult(_f, value._f);
-            }
-
-            if (value._g != _g)
-            {
-                return GetResult(_g, value._g);
-            }
-
-            if (value._h != _h)
-            {
-                return GetResult(_h, value._h);
-            }
-
-            if (value._i != _i)
-            {
-                return GetResult(_i, value._i);
-            }
-
-            if (value._j != _j)
-            {
-                return GetResult(_j, value._j);
-            }
-
-            if (value._k != _k)
-            {
-                return GetResult(_k, value._k);
-            }
-
-            return 0;
+            return GetLow64().CompareTo(value.GetLow64());
         }
+
+        private ulong GetLow64() => BinaryPrimitives.ReadUInt64BigEndian(MemoryMarshal.CreateReadOnlySpan(in _d, 8));
 
         public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
 
@@ -1196,21 +1156,26 @@ namespace System
         }
 
         // Returns the guid in "registry" format.
-        public override string ToString() => ToString("d", null);
-
-        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
+        public override string ToString()
         {
-            return ToString(format, null);
+            const int flags = 36 + TryFormatFlags_UseDashes;
+            string guidString = string.FastAllocateString(36);
+            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), 36), out int charsWritten, flags);
+            Debug.Assert(result && charsWritten == guidString.Length);
+            return guidString;
+
         }
 
         // IFormattable interface
         // We currently ignore provider
-        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider) => ToString(format);
+
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
         {
-            int guidSize;
+            int flags;
             if (string.IsNullOrEmpty(format))
             {
-                guidSize = 36;
+                flags = 36 + TryFormatFlags_UseDashes;
             }
             else
             {
@@ -1223,32 +1188,34 @@ namespace System
                 switch (format[0] | 0x20)
                 {
                     case 'd':
-                        guidSize = 36;
+                        flags = 36 + TryFormatFlags_UseDashes;
                         break;
 
                     case 'n':
-                        guidSize = 32;
+                        flags = 32;
                         break;
 
-                    case 'b' or 'p':
-                        guidSize = 38;
+                    case 'b':
+                        flags = 38 + TryFormatFlags_UseDashes + TryFormatFlags_CurlyBraces;
                         break;
 
-                    case 'x':
-                        guidSize = 68;
+                    case 'p':
+                        flags = 38 + TryFormatFlags_UseDashes + TryFormatFlags_Parens;
                         break;
+
+                    case 'x': return ToStringX();
 
                     default:
-                        guidSize = 0;
+                        flags = 0;
                         ThrowBadGuidFormatSpecification();
                         break;
-                };
+                }
             }
 
-            string guidString = string.FastAllocateString(guidSize);
+            string guidString = string.FastAllocateString((byte)flags);
 
-            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int bytesWritten, format);
-            Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
+            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), (byte)flags), out int charsWritten, flags);
+            Debug.Assert(result && charsWritten == guidString.Length, "Formatting guid should have succeeded.");
 
             return guidString;
         }
@@ -1322,6 +1289,8 @@ namespace System
             return TryFormatCore(destination, out charsWritten, flags);
         }
 
+        // (Vectorized) implementation for D, N, P and B formats:
+        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used from two callers
         internal unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, int flags) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -1335,81 +1304,155 @@ namespace System
             charsWritten = (byte)flags;
             flags >>= 8;
 
-            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
+            ref TChar d = ref MemoryMarshal.GetReference(destination);
+
+            // The low byte of flags now contains the opening brace char (if any)
+            if ((byte)flags != 0)
             {
-                TChar* p = guidChars;
+                d = TChar.CastFrom((byte)flags);
+                d = ref Unsafe.Add(ref d, 1);
+            }
+            flags >>= 8;
 
-                // The low byte of flags now contains the opening brace char (if any)
-                if ((byte)flags != 0)
-                {
-                    *p++ = TChar.CastFrom((byte)flags);
-                }
-                flags >>= 8;
+            if (Avx512Vbmi.VL.IsSupported)
+            {
+                Vector128<byte> hexMap = Vector128.Create(
+                    (byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                    (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                    (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                    (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                Vector256<long> srcVec = Avx2.ConvertToVector256Int64(Unsafe.BitCast<Guid, Vector128<uint>>(this));
+                // because of Guid's layout (int _a, short _b, _c, <8 byte fields>)
+                // we have to shuffle some bytes for _a, _b and _c
+                Vector256<sbyte> control = Vector256.Create(
+                    28, 24, 20, 16, 12, 8, 4, 0,
+                    12, 8, 4, 0, 28, 24, 20, 16,
+                    4, 0, 12, 8, 20, 16, 28, 24,
+                    4, 0, 12, 8, 20, 16, 28, 24);
+                Vector256<byte> nibbles = Avx512Vbmi.VL.MultiShift(control, srcVec).AsByte();
+                Vector256<byte> hex = Avx512Vbmi.VL.PermuteVar32x8(Vector256.Create(hexMap), nibbles).AsByte();
+
+                if (flags < 0 /* dash */)
                 {
-                    // Vectorized implementation for D, N, P and B formats:
-                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                    (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, flags < 0 /* dash */);
+                    // Create the middle part that must be merged in this order later:
+                    //
+                    // ________-____-____-____-____________
+                    //                     yyyyyyyyyyyyyyyy
+                    // xxxxxxxxxxxxxxxx
+                    //         zzzzzzzzzzzzzzzz
+                    //
+                    // "x" is the low part of "hex" and "y" is the high part of "hex".
+                    // "z" - middle part of hex blended with 4 dashes.
+                    Vector256<byte> mid = Avx2.Blend(hex.AsInt32(), Vector256.Create((int)'-'), 1).AsByte();
+                    Vector128<byte> midMask = Vector128.Create((byte)0, 8, 9, 10, 11, 0, 12, 13, 14, 15, 0, 16, 17, 18, 19, 0);
+                    Vector128<byte> vecZ = Avx512Vbmi.VL.PermuteVar32x8(mid, midMask.ToVector256Unsafe()).GetLower();
 
                     if (typeof(TChar) == typeof(byte))
                     {
-                        byte* pChar = (byte*)p;
-                        if (flags < 0 /* dash */)
-                        {
-                            // We need to merge these vectors in this order:
-                            // xxxxxxxxxxxxxxxx
-                            //                     yyyyyyyyyyyyyyyy
-                            //         zzzzzzzzzzzzzzzz
-                            vecX.Store(pChar);
-                            vecY.Store(pChar + 20);
-                            vecZ.Store(pChar + 8);
-                            p += 36;
-                        }
-                        else
-                        {
-                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            vecX.Store(pChar);
-                            vecY.Store(pChar + 16);
-                            p += 32;
-                        }
+                        ref byte pChar = ref Unsafe.As<TChar, byte>(ref d);
+                        hex.StoreUnsafe(ref pChar, 4);
+                        hex.GetLower().StoreUnsafe(ref pChar);
+                        vecZ.StoreUnsafe(ref pChar, 8);
                     }
                     else
                     {
-                        // Expand to UTF-16
-                        (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
-                        (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
-                        ushort* pChar = (ushort*)p;
-                        if (flags < 0 /* dash */)
-                        {
-                            (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
+                        ref ushort pChar = ref Unsafe.As<TChar, ushort>(ref d);
+                        Vector256.WidenUpper(hex).StoreUnsafe(ref pChar, 20);
+                        Vector128.WidenLower(hex.GetLower()).StoreUnsafe(ref pChar);
+                        Vector256.WidenLower(Vector128.ToVector256Unsafe(vecZ)).StoreUnsafe(ref pChar, 8);
+                    }
+                    d = ref Unsafe.Add(ref d, 36);
+                }
+                else
+                {
+                    if (typeof(TChar) == typeof(byte))
+                    {
+                        hex.StoreUnsafe(ref Unsafe.As<TChar, byte>(ref d));
+                    }
+                    else
+                    {
+                        Vector512.WidenLower(Vector256.ToVector512Unsafe(hex)).StoreUnsafe(ref Unsafe.As<TChar, ushort>(ref d));
+                    }
+                    d = ref Unsafe.Add(ref d, 32);
+                }
+            }
+            else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+            {
+                (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, flags < 0 /* dash */);
 
-                            // We need to merge these vectors in this order:
-                            // xxxxxxxxxxxxxxxx
-                            //                     yyyyyyyyyyyyyyyy
-                            //         zzzzzzzzzzzzzzzz
-                            x0.Store(pChar);
-                            y0.Store(pChar + 20);
-                            y1.Store(pChar + 28);
-                            z0.Store(pChar + 8); // overlaps x1
-                            z1.Store(pChar + 16);
-                            p += 36;
-                        }
-                        else
-                        {
-                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            x0.Store(pChar);
-                            x1.Store(pChar + 8);
-                            y0.Store(pChar + 16);
-                            y1.Store(pChar + 24);
-                            p += 32;
-                        }
+                if (typeof(TChar) == typeof(byte))
+                {
+                    ref byte pChar = ref Unsafe.As<TChar, byte>(ref d);
+                    if (flags < 0 /* dash */)
+                    {
+                        // We need to merge these vectors in this order:
+                        // xxxxxxxxxxxxxxxx
+                        //                     yyyyyyyyyyyyyyyy
+                        //         zzzzzzzzzzzzzzzz
+                        vecX.StoreUnsafe(ref pChar);
+                        vecY.StoreUnsafe(ref pChar, 20);
+                        vecZ.StoreUnsafe(ref pChar, 8);
+                        d = ref Unsafe.Add(ref d, 36);
+                    }
+                    else
+                    {
+                        // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                        vecX.StoreUnsafe(ref pChar);
+                        vecY.StoreUnsafe(ref pChar, 16);
+                        d = ref Unsafe.Add(ref d, 32);
                     }
                 }
                 else
                 {
-                    // Non-vectorized fallback for D, N, P and B formats:
-                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                    ref ushort pChar = ref Unsafe.As<TChar, ushort>(ref d);
+                    if (flags < 0 /* dash */)
+                    {
+                        // We need to merge these vectors in this order:
+                        // xxxxxxxxxxxxxxxx
+                        //                     yyyyyyyyyyyyyyyy
+                        //         zzzzzzzzzzzzzzzz
+                        Vector128.WidenLower(vecX).StoreUnsafe(ref pChar);
+                        if (Vector256.IsHardwareAccelerated)
+                        {
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecY)).StoreUnsafe(ref pChar, 20);
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecZ)).StoreUnsafe(ref pChar, 8);
+                        }
+                        else
+                        {
+                            Vector128.WidenLower(vecY).StoreUnsafe(ref pChar, 20);
+                            Vector128.WidenUpper(vecY).StoreUnsafe(ref pChar, 28);
+                            Vector128.WidenLower(vecZ).StoreUnsafe(ref pChar, 8);
+                            Vector128.WidenUpper(vecZ).StoreUnsafe(ref pChar, 16);
+                        }
+                        d = ref Unsafe.Add(ref d, 36);
+                    }
+                    else
+                    {
+                        // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                        if (Vector256.IsHardwareAccelerated)
+                        {
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecX)).StoreUnsafe(ref pChar);
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecY)).StoreUnsafe(ref pChar, 16);
+                        }
+                        else
+                        {
+                            Vector128.WidenLower(vecX).StoreUnsafe(ref pChar);
+                            Vector128.WidenUpper(vecX).StoreUnsafe(ref pChar, 8);
+                            Vector128.WidenLower(vecY).StoreUnsafe(ref pChar, 16);
+                            Vector128.WidenUpper(vecY).StoreUnsafe(ref pChar, 24);
+                        }
+                        d = ref Unsafe.Add(ref d, 32);
+                    }
+                }
+            }
+            else
+            {
+                fixed (TChar* guidChars = &d)
+                {
+                    TChar* p = guidChars;
+                    // Non-vectorized fallback for:
+                    // dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd
                     p += HexsToChars(p, _a >> 24, _a >> 16);
                     p += HexsToChars(p, _a >> 8, _a);
                     if (flags < 0 /* dash */)
@@ -1434,18 +1477,26 @@ namespace System
                     p += HexsToChars(p, _f, _g);
                     p += HexsToChars(p, _h, _i);
                     p += HexsToChars(p, _j, _k);
+                    d = ref *p;
                 }
-
-                // The low byte of flags now contains the closing brace char (if any)
-                if ((byte)flags != 0)
-                {
-                    *p = TChar.CastFrom((byte)flags);
-                }
-
-                Debug.Assert(p == guidChars + charsWritten - ((byte)flags != 0 ? 1 : 0));
             }
 
+            // The low byte of flags now contains the closing brace char (if any)
+            if ((byte)flags != 0)
+            {
+                d = TChar.CastFrom((byte)flags);
+            }
+
+            Debug.Assert(Unsafe.AreSame(in d, in Unsafe.Add(ref destination[0], charsWritten - ((byte)flags != 0 ? 1 : 0))));
             return true;
+        }
+
+        private string ToStringX()
+        {
+            string guidString = string.FastAllocateString(68);
+            bool result = TryFormatX(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int charsWritten);
+            Debug.Assert(result && charsWritten == guidString.Length, "Formatting guid should have succeeded.");
+            return guidString;
         }
 
         private bool TryFormatX<TChar>(Span<TChar> dest, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
@@ -1543,13 +1594,11 @@ namespace System
                 //                     yyyyyyyyyyyyyyyy
                 //         zzzzzzzzzzzzzzzz
                 //
-                // Vector "x" - just one dash, shift all elements after it.
-                Vector128<byte> vecX = Vector128.Shuffle(hexLow,
-                    Vector128.Create(0x706050403020100, 0xD0CFF0B0A0908FF).AsByte());
+                // Vector "x" - the dash and everything after it is going to be overwritten by "z"
+                Vector128<byte> vecX = hexLow;
 
-                // Vector "y" - same here.
-                Vector128<byte> vecY = Vector128.Shuffle(hexHigh,
-                    Vector128.Create(0x7060504FF030201, 0xF0E0D0C0B0A0908).AsByte());
+                // Vector "y" - the dash and everything before it is going to be overwritten by "z"
+                Vector128<byte> vecY = hexHigh;
 
                 // Vector "z" - we need to merge some elements of hexLow with hexHigh and add 4 dashes.
                 Vector128<byte> vecZ;
@@ -1593,57 +1642,17 @@ namespace System
                 return (uint)left._a < (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if ((ushort)left._b != (ushort)right._b)
             {
-                return (uint)left._b < (uint)right._b;
+                return (ushort)left._b < (ushort)right._b;
             }
 
-            if (left._c != right._c)
+            if ((ushort)left._c != (ushort)right._c)
             {
-                return (uint)left._c < (uint)right._c;
+                return (ushort)left._c < (ushort)right._c;
             }
 
-            if (left._d != right._d)
-            {
-                return left._d < right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e < right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f < right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g < right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h < right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i < right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j < right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k < right._k;
-            }
-
-            return false;
+            return left.GetLow64() < right.GetLow64();
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
@@ -1654,180 +1663,24 @@ namespace System
                 return (uint)left._a < (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if ((ushort)left._b != (ushort)right._b)
             {
-                return (uint)left._b < (uint)right._b;
+                return (ushort)left._b < (ushort)right._b;
             }
 
-            if (left._c != right._c)
+            if ((ushort)left._c != (ushort)right._c)
             {
-                return (uint)left._c < (uint)right._c;
+                return (ushort)left._c < (ushort)right._c;
             }
 
-            if (left._d != right._d)
-            {
-                return left._d < right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e < right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f < right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g < right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h < right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i < right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j < right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k < right._k;
-            }
-
-            return true;
+            return left.GetLow64() <= right.GetLow64();
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
-        public static bool operator >(Guid left, Guid right)
-        {
-            if (left._a != right._a)
-            {
-                return (uint)left._a > (uint)right._a;
-            }
-
-            if (left._b != right._b)
-            {
-                return (uint)left._b > (uint)right._b;
-            }
-
-            if (left._c != right._c)
-            {
-                return (uint)left._c > (uint)right._c;
-            }
-
-            if (left._d != right._d)
-            {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
-            }
-
-            return false;
-        }
+        public static bool operator >(Guid left, Guid right) => right < left;
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        public static bool operator >=(Guid left, Guid right)
-        {
-            if (left._a != right._a)
-            {
-                return (uint)left._a > (uint)right._a;
-            }
-
-            if (left._b != right._b)
-            {
-                return (uint)left._b > (uint)right._b;
-            }
-
-            if (left._c != right._c)
-            {
-                return (uint)left._c > (uint)right._c;
-            }
-
-            if (left._d != right._d)
-            {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
-            }
-
-            return true;
-        }
+        public static bool operator >=(Guid left, Guid right) => right <= left;
 
         //
         // IParsable

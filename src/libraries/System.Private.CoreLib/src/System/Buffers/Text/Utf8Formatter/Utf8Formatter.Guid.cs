@@ -28,29 +28,32 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryFormat(Guid value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
-            int flags;
-
-            switch (FormattingHelpers.GetSymbolOrDefault(format, 'D'))
+            int flags = format.Symbol;
+            if (flags is '\0' or 'D')
             {
-                case 'D': // nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn
-                    flags = 36 + Guid.TryFormatFlags_UseDashes;
-                    break;
+                // nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn
+                flags = 36 + Guid.TryFormatFlags_UseDashes;
+            }
+            else
+            {
+                switch (flags)
+                {
+                    case 'N': // nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+                        flags = 32;
+                        break;
 
-                case 'B': // {nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn}
-                    flags = 38 + Guid.TryFormatFlags_UseDashes + Guid.TryFormatFlags_CurlyBraces;
-                    break;
+                    case 'B': // {nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn}
+                        flags = 38 + Guid.TryFormatFlags_UseDashes + Guid.TryFormatFlags_CurlyBraces;
+                        break;
 
-                case 'P': // (nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn)
-                    flags = 38 + Guid.TryFormatFlags_UseDashes + Guid.TryFormatFlags_Parens;
-                    break;
+                    case 'P': // (nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn)
+                        flags = 38 + Guid.TryFormatFlags_UseDashes + Guid.TryFormatFlags_Parens;
+                        break;
 
-                case 'N': // nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
-                    flags = 32;
-                    break;
-
-                default:
-                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
-                    goto case 'D'; // unreachable
+                    default:
+                        ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                        break; // unreachable
+                }
             }
 
             return value.TryFormatCore(destination, out bytesWritten, flags);
