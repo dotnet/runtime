@@ -1881,7 +1881,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
     // Now allocate all  returns
     for (ReturnInfo& ret : layout->Returns)
     {
-        ret.Offset = allocLayout(ret.Alignment, ret.Size);
+        ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
     }
 
     if (m_needsKeepAlive)
