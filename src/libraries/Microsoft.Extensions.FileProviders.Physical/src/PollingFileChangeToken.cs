@@ -15,8 +15,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     /// <remarks>
     /// <para>Polling occurs every 4 seconds.</para>
-    /// <para>This change token does not raise any change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
-    /// from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.</para>
+    /// <para>By default, this change token does not raise change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
+    /// from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.
+    /// When <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>, callbacks registered via
+    /// <see cref="RegisterChangeCallback"/> will be invoked when the file changes.</para>
     /// </remarks>
     public class PollingFileChangeToken : IPollingChangeToken
     {
@@ -54,7 +56,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Gets a value that's always <see langword="false"/>.
+        /// Gets a value that indicates whether this token will proactively raise callbacks. If <see langword="false"/>, the token
+        /// consumer must poll <see cref="HasChanged"/> to detect changes.
         /// </summary>
         public bool ActiveChangeCallbacks { get; internal set; }
 
