@@ -3,7 +3,7 @@
 
 struct ReturnTypeInfo
 {
-    var_types ReturnType = TYP_UNDEF;
+    var_types    ReturnType   = TYP_UNDEF;
     ClassLayout* ReturnLayout = nullptr;
 
     ReturnTypeInfo(var_types returnType, ClassLayout* returnLayout)
@@ -16,9 +16,9 @@ struct ReturnTypeInfo
 struct ReturnInfo
 {
     ReturnTypeInfo Type;
-    unsigned Alignment;
-    unsigned Offset;
-    unsigned Size;
+    unsigned       Alignment;
+    unsigned       Offset;
+    unsigned       Size;
 
     ReturnInfo(ReturnTypeInfo type)
         : Type(type)
@@ -53,14 +53,14 @@ struct ContinuationLayoutBuilder
 {
 private:
     Compiler* m_compiler;
-    bool m_needsOSRILOffset = false;
-    bool m_needsException = false;
-    bool m_needsContinuationContext = false;
-    bool m_needsKeepAlive = false;
-    bool m_needsExecutionContext = false;
+    bool      m_needsOSRILOffset         = false;
+    bool      m_needsException           = false;
+    bool      m_needsContinuationContext = false;
+    bool      m_needsKeepAlive           = false;
+    bool      m_needsExecutionContext    = false;
 
     jitstd::vector<ReturnTypeInfo> m_returns;
-    jitstd::vector<unsigned> m_locals;
+    jitstd::vector<unsigned>       m_locals;
 
 public:
     ContinuationLayoutBuilder(Compiler* compiler)
@@ -121,20 +121,21 @@ public:
 
     struct ContinuationLayout* Create();
 
-    static ContinuationLayoutBuilder* CreateSharedLayout(Compiler* comp, const jitstd::vector<struct AsyncState>& states);
+    static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
+                                                         const jitstd::vector<struct AsyncState>& states);
 };
 
 struct ContinuationLayout
 {
-    unsigned                            Size                      = 0;
-    unsigned                            OSRILOffset               = UINT_MAX;
-    unsigned                            ExceptionOffset           = UINT_MAX;
-    unsigned                            ContinuationContextOffset = UINT_MAX;
-    unsigned                            KeepAliveOffset           = UINT_MAX;
-    unsigned                            ExecutionContextOffset    = UINT_MAX;
+    unsigned                      Size                      = 0;
+    unsigned                      OSRILOffset               = UINT_MAX;
+    unsigned                      ExceptionOffset           = UINT_MAX;
+    unsigned                      ContinuationContextOffset = UINT_MAX;
+    unsigned                      KeepAliveOffset           = UINT_MAX;
+    unsigned                      ExecutionContextOffset    = UINT_MAX;
     jitstd::vector<LiveLocalInfo> Locals;
-    jitstd::vector<ReturnInfo> Returns;
-    CORINFO_CLASS_HANDLE                ClassHnd = NO_CLASS_HANDLE;
+    jitstd::vector<ReturnInfo>    Returns;
+    CORINFO_CLASS_HANDLE          ClassHnd = NO_CLASS_HANDLE;
 
     ContinuationLayout(Compiler* comp)
         : Locals(comp->getAllocator(CMK_Async))
@@ -159,11 +160,13 @@ struct CallDefinitionInfo
 
 struct AsyncState
 {
-    AsyncState(
-        unsigned number,
-        ContinuationLayoutBuilder* layout,
-        BasicBlock* callBlock, GenTreeCall* call, CallDefinitionInfo callDefInfo,
-        BasicBlock* suspensionBB, BasicBlock* resumptionBB)
+    AsyncState(unsigned                   number,
+               ContinuationLayoutBuilder* layout,
+               BasicBlock*                callBlock,
+               GenTreeCall*               call,
+               CallDefinitionInfo         callDefInfo,
+               BasicBlock*                suspensionBB,
+               BasicBlock*                resumptionBB)
         : Number(number)
         , Layout(layout)
         , CallBlock(callBlock)
@@ -174,31 +177,31 @@ struct AsyncState
     {
     }
 
-    unsigned Number;
+    unsigned                   Number;
     ContinuationLayoutBuilder* Layout;
-    BasicBlock* CallBlock;
-    GenTreeCall* Call;
-    CallDefinitionInfo CallDefInfo;
-    BasicBlock* SuspensionBB;
-    BasicBlock* ResumptionBB;
+    BasicBlock*                CallBlock;
+    GenTreeCall*               Call;
+    CallDefinitionInfo         CallDefInfo;
+    BasicBlock*                SuspensionBB;
+    BasicBlock*                ResumptionBB;
 };
 
 class AsyncTransformation
 {
     friend class AsyncLiveness;
 
-    Compiler*                     m_compiler;
-    CORINFO_ASYNC_INFO*           m_asyncInfo;
-    jitstd::vector<AsyncState>    m_states;
-    unsigned                      m_returnedContinuationVar = BAD_VAR_NUM;
-    unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
-    unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
-    unsigned                      m_gcDataArrayVar          = BAD_VAR_NUM;
-    unsigned                      m_resultBaseVar           = BAD_VAR_NUM;
-    unsigned                      m_exceptionVar            = BAD_VAR_NUM;
-    BasicBlock*                   m_lastSuspensionBB        = nullptr;
-    BasicBlock*                   m_lastResumptionBB        = nullptr;
-    BasicBlock*                   m_sharedReturnBB          = nullptr;
+    Compiler*                  m_compiler;
+    CORINFO_ASYNC_INFO*        m_asyncInfo;
+    jitstd::vector<AsyncState> m_states;
+    unsigned                   m_returnedContinuationVar = BAD_VAR_NUM;
+    unsigned                   m_newContinuationVar      = BAD_VAR_NUM;
+    unsigned                   m_dataArrayVar            = BAD_VAR_NUM;
+    unsigned                   m_gcDataArrayVar          = BAD_VAR_NUM;
+    unsigned                   m_resultBaseVar           = BAD_VAR_NUM;
+    unsigned                   m_exceptionVar            = BAD_VAR_NUM;
+    BasicBlock*                m_lastSuspensionBB        = nullptr;
+    BasicBlock*                m_lastResumptionBB        = nullptr;
+    BasicBlock*                m_sharedReturnBB          = nullptr;
 
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
     BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
@@ -224,9 +227,9 @@ class AsyncTransformation
 
     bool ContinuationNeedsKeepAlive(class AsyncLiveness& life);
 
-    void BuildContinuation(BasicBlock* block,
-                           GenTreeCall* call,
-                           bool needsKeepAlive,
+    void BuildContinuation(BasicBlock*                block,
+                           GenTreeCall*               call,
+                           bool                       needsKeepAlive,
                            ContinuationLayoutBuilder* layoutBuilder);
 
     ContinuationLayout LayOutContinuation(const ContinuationLayoutBuilder* layoutBuilder);
@@ -234,28 +237,40 @@ class AsyncTransformation
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
 
     BasicBlock* CreateSuspensionBlock(BasicBlock* block, GenTreeCall* call, unsigned stateNum);
-    void CreateSuspension(
-        BasicBlock* callBlock, GenTreeCall* call, BasicBlock* suspendBB, unsigned stateNum, const ContinuationLayout& layout, const ContinuationLayoutBuilder& subLayout);
+    void        CreateSuspension(BasicBlock*                      callBlock,
+                                 GenTreeCall*                     call,
+                                 BasicBlock*                      suspendBB,
+                                 unsigned                         stateNum,
+                                 const ContinuationLayout&        layout,
+                                 const ContinuationLayoutBuilder& subLayout);
 
-    GenTreeCall* CreateAllocContinuationCall(bool hasKeepAlive,
+    GenTreeCall* CreateAllocContinuationCall(bool                      hasKeepAlive,
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
-    void         FillInDataOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, const ContinuationLayoutBuilder& subLayout, BasicBlock* suspendBB);
+    void         FillInDataOnSuspension(GenTreeCall*                     call,
+                                        const ContinuationLayout&        layout,
+                                        const ContinuationLayoutBuilder& subLayout,
+                                        BasicBlock*                      suspendBB);
     void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
                                                 BasicBlock*               suspendBB,
                                                 BasicBlock**              remainder);
-    BasicBlock*  CreateResumptionBlock(BasicBlock* remainder, GenTreeCall* call, unsigned stateNum, ContinuationLayoutBuilder* layoutBuilder);
-    void  CreateResumption(BasicBlock*               callBlock,
-                                  GenTreeCall*              call,
-                                  BasicBlock*               resumeBB,
-                                  const CallDefinitionInfo& callDefInfo,
-                                  const ContinuationLayout& layout,
+    BasicBlock*  CreateResumptionBlock(BasicBlock*                remainder,
+                                       GenTreeCall*               call,
+                                       unsigned                   stateNum,
+                                       ContinuationLayoutBuilder* layoutBuilder);
+    void         CreateResumption(BasicBlock*                      callBlock,
+                                  GenTreeCall*                     call,
+                                  BasicBlock*                      resumeBB,
+                                  const CallDefinitionInfo&        callDefInfo,
+                                  const ContinuationLayout&        layout,
                                   const ContinuationLayoutBuilder& subLayout);
 
-    void         RestoreFromDataOnResumption(const ContinuationLayout& layout, const ContinuationLayoutBuilder& subLayout, BasicBlock* resumeBB);
+    void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
+                                            const ContinuationLayoutBuilder& subLayout,
+                                            BasicBlock*                      resumeBB);
     BasicBlock* RethrowExceptionOnResumption(BasicBlock* block, const ContinuationLayout& layout, BasicBlock* resumeBB);
     void        CopyReturnValueOnResumption(GenTreeCall*              call,
                                             const CallDefinitionInfo& callDefInfo,
@@ -272,7 +287,8 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout, const ContinuationLayoutBuilder& subLayout);
+    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
+                                                  const ContinuationLayoutBuilder& subLayout);
     unsigned    GetReturnedContinuationVar();
     unsigned    GetNewContinuationVar();
     unsigned    GetResultBaseVar();
