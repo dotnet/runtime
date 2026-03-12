@@ -1755,31 +1755,56 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     genCallPlaceRegArgs(call);
 
     regNumber dstReg = call->GetRegNum();
-    regNumber mtReg  = REG_ARG_0;  // MethodTable* argument
+    regNumber mtReg  = REG_ARG_0;  // MethodTable* argument (rcx on Windows, rdi on Linux)
 
-    // We need two scratch registers. Use caller-saved registers that
-    // won't conflict with mtReg or dstReg.
-    // After the helper call, only rax (return value) matters.
-    // Use r10 and r11 as scratch — they are caller-saved volatile registers
-    // not used for argument passing on Windows.
+    // We use r10 and r11 as scratch — they are caller-saved volatile registers
+    // not used for argument passing on either Windows or SysV.
     regNumber allocCtxReg = REG_R10;
     regNumber tmpReg      = REG_R11;
 
     emitter* emit = GetEmitter();
 
     // ---- TLS access: get pointer to ee_alloc_context ----
-    emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
-                      (int)allocInfo->offsetOfThreadLocalStoragePointer);
+    if (TargetOS::IsWindows)
+    {
+        // Windows x64: gs:[0x58] -> TLS array -> [tls_index * 8] -> + offset
+        emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
+                          (int)allocInfo->offsetOfThreadLocalStoragePointer);
 
-    assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
-    instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
-    emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
+        assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
+        emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
 
-    emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
+        emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
 
-    assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
-    ssize_t tlsRootOffset = (ssize_t)allocInfo->tlsRoot.addr;
-    emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)tlsRootOffset);
+        assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
+        ssize_t tlsRootOffset = (ssize_t)allocInfo->tlsRoot.addr;
+        emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)tlsRootOffset);
+    }
+    else
+    {
+        // Linux x64: call __tls_get_addr with the pre-resolved TLSGD descriptor.
+        // __tls_get_addr(descriptor) returns the address of t_runtime_thread_locals.
+        // The call clobbers all caller-saved registers, so save the MT pointer on the stack.
+
+        emit->emitIns_R(INS_push, EA_PTRSIZE, mtReg);
+
+        // Load the TLSGD descriptor address into rdi (first arg for __tls_get_addr on SysV)
+        assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)allocInfo->tlsRoot.addr);
+
+        // Call __tls_get_addr — result in rax
+        assert(allocInfo->tlsGetAddrFtnPtr != nullptr);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R11, (ssize_t)allocInfo->tlsGetAddrFtnPtr);
+        emit->emitIns_R(INS_call, EA_PTRSIZE, REG_R11);
+
+        // rax = address of t_runtime_thread_locals; move to r10 for allocCtxReg
+        emit->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R10, REG_RAX, /* canSkip */ false);
+        allocCtxReg = REG_R10;
+
+        // Restore the MethodTable pointer
+        emit->emitIns_R(INS_pop, EA_PTRSIZE, mtReg);
+    }
 
     // ---- Non-GC-interruptible bump allocation ----
     GetEmitter()->emitDisableGC();

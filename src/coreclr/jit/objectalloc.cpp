@@ -1345,7 +1345,8 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
             // Currently only Windows x64 is supported.
             const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
             if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
-                allocCtxInfo->supported && TargetOS::IsWindows && m_compiler->opts.OptimizationEnabled() &&
+                allocCtxInfo->supported && (TargetOS::IsWindows || TargetOS::IsUnix) &&
+                m_compiler->opts.OptimizationEnabled() &&
                 JitConfig.JitInlineAllocFast() != 0)
             {
                 JITDUMP("Marking allocation [%06u] for inline expansion\n",
