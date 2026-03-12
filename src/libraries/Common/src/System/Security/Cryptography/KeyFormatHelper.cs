@@ -164,6 +164,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        // TODO vcsjones nuke
         internal static ReadOnlyMemory<byte> ReadPkcs8(
             string[] validOids,
             ReadOnlyMemory<byte> source,
@@ -174,6 +175,31 @@ namespace System.Security.Cryptography
                 ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
                 int read = reader.PeekEncodedValue().Length;
                 PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
+
+                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                bytesRead = read;
+                return privateKeyInfo.PrivateKey;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static ReadOnlySpan<byte> ReadPkcs8(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
+                int read = reader.PeekEncodedValue().Length;
+                ValuePrivateKeyInfoAsn.Decode(ref reader, out ValuePrivateKeyInfoAsn privateKeyInfo);
 
                 if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
                 {
