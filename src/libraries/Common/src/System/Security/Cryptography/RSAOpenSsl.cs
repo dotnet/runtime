@@ -316,7 +316,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private T ExportPublicKey<T>(Func<ReadOnlyMemory<byte>, T> exporter)
+        private T ExportPublicKey<T>(Func<ReadOnlySpan<byte>, T> exporter)
         {
             // It's entirely possible that this line will cause the key to be generated in the first place.
             SafeEvpPKeyHandle key = GetKey();
@@ -334,7 +334,7 @@ namespace System.Security.Cryptography
         }
 
         private bool TryExportPublicKey(
-            Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>>? transform,
+            Func<ReadOnlySpan<byte>, ReadOnlySpan<byte>>? transform,
             Span<byte> destination,
             out int bytesWritten)
         {
@@ -345,14 +345,14 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> data = spki;
+                ReadOnlySpan<byte> data = spki;
 
                 if (transform != null)
                 {
                     data = transform(data);
                 }
 
-                return data.Span.TryCopyToDestination(destination, out bytesWritten);
+                return data.TryCopyToDestination(destination, out bytesWritten);
             }
             finally
             {
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography
             return ExportPublicKey(
                 static spki =>
                 {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
+                    ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
                     Debug.Assert(read == spki.Length);
                     return pkcs1.ToArray();
                 });
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
             return TryExportPublicKey(
                 spki =>
                 {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
+                    ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
                     Debug.Assert(read == spki.Length);
                     return pkcs1;
                 },
@@ -436,7 +436,7 @@ namespace System.Security.Cryptography
                 {
                     RSAParameters ret;
                     RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        spki.Span,
+                        spki,
                         out int read,
                         out ret);
 
@@ -515,7 +515,7 @@ namespace System.Security.Cryptography
 
             if (checkAlgorithm)
             {
-                read = RSAKeyFormatHelper.CheckSubjectPublicKeyInfo(source);
+                RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(source, out read);
             }
             else
             {

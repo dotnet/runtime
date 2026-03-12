@@ -874,18 +874,12 @@ namespace System.Security.Cryptography
 
         public override unsafe void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        manager.Memory,
-                        out int localRead);
+            ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
+                source,
+                out int localRead);
 
-                    ImportRSAPublicKey(pkcs1.Span, out _);
-                    bytesRead = localRead;
-                }
-            }
+            ImportRSAPublicKey(pkcs1, out _);
+            bytesRead = localRead;
         }
 
         public virtual void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)

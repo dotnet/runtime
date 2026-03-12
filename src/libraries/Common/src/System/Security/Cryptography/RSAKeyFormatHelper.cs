@@ -69,33 +69,20 @@ namespace System.Security.Cryptography
                 out key);
         }
 
-        internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
-             ReadOnlyMemory<byte> source,
-             out int bytesRead)
+        // internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(ReadOnlyMemory<byte> source, out int bytesRead)
+        // {
+        //     return KeyFormatHelper.ReadSubjectPublicKeyInfo(
+        //         s_validOids,
+        //         source,
+        //         out bytesRead);
+        // }
+
+        internal static ReadOnlySpan<byte> ReadSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
         {
             return KeyFormatHelper.ReadSubjectPublicKeyInfo(
                 s_validOids,
                 source,
                 out bytesRead);
-        }
-
-        /// <summary>
-        ///   Checks that a SubjectPublicKeyInfo represents an RSA key.
-        /// </summary>
-        /// <returns>The number of bytes read from <paramref name="source"/>.</returns>
-        internal static unsafe int CheckSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
-        {
-            int bytesRead;
-
-            fixed (byte* ptr = source)
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    _ = ReadSubjectPublicKeyInfo(manager.Memory, out bytesRead);
-                }
-            }
-
-            return bytesRead;
         }
 
         internal static ReadOnlyMemory<byte> ReadPkcs8(
