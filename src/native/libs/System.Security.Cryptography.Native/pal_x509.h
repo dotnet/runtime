@@ -161,7 +161,7 @@ PALEXPORT ASN1_INTEGER* CryptoNative_X509GetSerialNumber(X509* x509);
 /*
 Shims the X509_get_issuer_name method.
 
-Returns the ASN1_INTEGER for the issuer name.
+Returns the X509_NAME for the issuer name.
 */
 PALEXPORT const X509_NAME* CryptoNative_X509GetIssuerName(X509* x509);
 

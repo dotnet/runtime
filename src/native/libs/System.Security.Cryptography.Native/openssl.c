@@ -835,7 +835,7 @@ int32_t CryptoNative_CheckX509IpAddress(
     if (!success)
     {
         // This is a shared/interor pointer, do not free!
-        const X509_NAME* subject = X509_get_subject_name(x509);
+        OSSL4CONST X509_NAME* subject = X509_get_subject_name(x509);
 
         if (subject)
         {
