@@ -37,7 +37,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         try
         {
             TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
-            appDomain.Interface = new ClrDataAppDomain(currentAppDomain, legacyAppDomain);
+            appDomain.Interface = new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain);
         }
         catch (System.Exception ex)
         {

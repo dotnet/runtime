@@ -55,7 +55,6 @@ private:
     bool IfConvertCheckThenFlow();
     void IfConvertFindFlow();
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
-    void IfConvertJoinStmts(BasicBlock* fromBlock);
 
     GenTree* TryTransformSelectOperOrLocal(GenTree* oper, GenTree* lcl);
     GenTree* TryTransformSelectOperOrZero(GenTree* oper, GenTree* lcl);
@@ -357,26 +356,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 }
 
 //-----------------------------------------------------------------------------
-// IfConvertJoinStmts
-//
-// Move all the statements from a block onto the end of the start block.
-//
-// Arguments:
-//   fromBlock  -- Source block
-//
-void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
-{
-    Statement* stmtList1 = m_startBlock->firstStmt();
-    Statement* stmtList2 = fromBlock->firstStmt();
-    Statement* stmtLast1 = m_startBlock->lastStmt();
-    Statement* stmtLast2 = fromBlock->lastStmt();
-    stmtLast1->SetNextStmt(stmtList2);
-    stmtList2->SetPrevStmt(stmtLast1);
-    stmtList1->SetPrevStmt(stmtLast2);
-    fromBlock->SetFirstStmt(nullptr);
-}
-
-//-----------------------------------------------------------------------------
 // IfConvertDump
 //
 // Dump all the blocks in the If Conversion.
@@ -384,19 +363,24 @@ void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 #ifdef DEBUG
 void OptIfConversionDsc::IfConvertDump()
 {
-    assert(m_startBlock != nullptr);
     m_compiler->fgDumpBlock(m_startBlock);
-    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->GetTarget();
-    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+
+    bool beforeTransformation = m_startBlock->KindIs(BBJ_COND);
+    if (beforeTransformation)
     {
-        m_compiler->fgDumpBlock(dumpBlock);
-    }
-    if (m_doElseConversion)
-    {
-        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
-        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+        // Dump all Then blocks
+        for (BasicBlock* bb = m_startBlock->GetFalseTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
         {
-            m_compiler->fgDumpBlock(dumpBlock);
+            m_compiler->fgDumpBlock(bb);
+        }
+
+        if (m_doElseConversion)
+        {
+            // Dump all Else blocks
+            for (BasicBlock* bb = m_startBlock->GetTrueTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
+            {
+                m_compiler->fgDumpBlock(bb);
+            }
         }
     }
 }
@@ -731,9 +715,8 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
 
+    // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
-
-    // Use the select as the source of the Then operation.
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
         m_thenOperation.node->AsLclVar()->Data() = select;
@@ -745,29 +728,46 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     m_compiler->gtSetEvalOrder(m_thenOperation.node);
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
-    // Remove statements.
-    last->gtBashToNOP();
-    m_compiler->gtSetEvalOrder(last);
-    m_compiler->fgSetStmtSeq(m_startBlock->lastStmt());
+    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
+    m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
+    m_thenOperation.block->SetFirstStmt(nullptr);
+
+    BasicBlock* falseBb = m_startBlock->GetFalseTarget();
+    BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
+
+    // JTRUE block now contains SELECT. Change it's kind and make it flow
+    // directly into block where flows merge, which is null in case of GT_RETURN.
+    if (m_mainOper == GT_RETURN)
+    {
+        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
+    }
+    else
+    {
+        FlowEdge* newEdge =
+            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    }
+    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
+
+    // Remove all Then/Else blocks
+    auto removeBlocks = [&](BasicBlock* start) {
+        m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
+        start->bbWeight = BB_ZERO_WEIGHT;
+        assert(start->bbPreds == nullptr);
+
+        for (BasicBlock* bb = start; bb != m_finalBlock;)
+        {
+            BasicBlock* next = bb->GetUniqueSucc();
+            m_compiler->fgRemoveBlock(bb, true);
+            bb = next;
+        }
+    };
+    removeBlocks(falseBb);
     if (m_doElseConversion)
     {
-        m_elseOperation.node->gtBashToNOP();
-        m_compiler->gtSetEvalOrder(m_elseOperation.node);
-        m_compiler->fgSetStmtSeq(m_elseOperation.stmt);
+        removeBlocks(trueBb);
     }
-
-    // Merge all the blocks.
-    IfConvertJoinStmts(m_thenOperation.block);
-    if (m_doElseConversion)
-    {
-        IfConvertJoinStmts(m_elseOperation.block);
-    }
-
-    // Update the flow from the original block.
-    FlowEdge* const removedEdge  = m_compiler->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    FlowEdge* const retainedEdge = m_startBlock->GetTrueEdge();
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
-    m_compiler->fgRepairProfileCondToUncond(m_startBlock, retainedEdge, removedEdge);
 
 #ifdef DEBUG
     if (m_compiler->verbose)
