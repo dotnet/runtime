@@ -182,6 +182,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
+| `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
 
 Contracts used:
 | Contract Name |
@@ -327,8 +328,11 @@ string ILoader.GetAppDomainFriendlyName()
 {
     TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
     TargetPointer appDomain = target.ReadPointer(appDomainPointer)
-    TargetPointer pathStart = appDomain + /* AppDomain::FriendlyName offset */;
-    char[] name = // Read<char> from target starting at pathStart until null terminator
+    TargetPointer namePtr = appDomain + /* AppDomain::FriendlyName offset */;
+    // Match native AppDomain::GetFriendlyName(): return "DefaultDomain" when pointer is null.
+    if (namePtr == TargetPointer.Null)
+        return "DefaultDomain";
+    char[] name = // Read<char> from target starting at namePtr until null terminator
     return new string(name);
 }
 
