@@ -1148,7 +1148,6 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 // is the header position plus the number of blocks in the loop.
                 //
                 unsigned endCursor = cursor + loop->NumLoopBlocks();
-                assert(endCursor <= numBlocks);
 
 #ifdef DEBUG
                 unsigned endCursorCheck = cursor;
@@ -1162,8 +1161,27 @@ PhaseStatus Compiler::fgWasmControlFlow()
             else
             {
                 // We may have increased the loop extent (moved the end) to accomodate try regions
-                // that begin in the loop but can end outside. Find the last such block... (how?)
+                // that begin in the loop but can end outside. Find the last such block...
+
+                BasicBlock* lastBlock = nullptr;
+                loop->VisitLoopBlocksPostOrder([&](BasicBlock* block) {
+                    lastBlock = block;
+                    return BasicBlockVisit::Abort;
+                });
+
+                endCursor = lastBlock->bbPreorderNum + 1;
+
+                assert(endCursor >= (cursor + loop->NumLoopBlocks()));
+
+                if (endCursor > (cursor + loop->NumLoopBlocks()))
+                {
+                    JITDUMP("Loop " FMT_LP " end extent extended by %u blocks to accomodate partially enclosed trys\n",
+                            loop->GetIndex(), endCursor - (cursor + loop->NumLoopBlocks()));
+                }
             }
+
+            assert(endCursor > 0);
+            assert(endCursor <= numBlocks);
 
             WasmInterval* const loopInterval = WasmInterval::NewLoop(this, block, initialLayout[endCursor]);
 

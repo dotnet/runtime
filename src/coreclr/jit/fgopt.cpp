@@ -1630,11 +1630,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
-#ifdef TARGET_WASM
+#if defined(TARGET_WASM)
         assert(switchTree->OperIs(GT_SWITCH));
 #else
         assert(switchTree->OperIs(GT_SWITCH_TABLE));
-#endif
+#endif // defined(TARGET_WASM)
     }
     else
     {
@@ -1643,6 +1643,15 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         assert(switchTree->OperIs(GT_SWITCH));
     }
+
+#if defined(TARGET_WASM)
+    if ((switchTree->gtFlags & GTF_SWITCH_WASM_EH) != 0)
+    {
+        // Don't optimize a switch with EH info, as the switch lowering for WASM relies on the EH info to be present
+        // on the GT_SWITCH node.
+        return false;
+    }
+#endif // defined(TARGET_WASM)
 
     noway_assert(switchTree->TypeIs(TYP_VOID));
 
