@@ -162,6 +162,98 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SignalTestData))]
+        public void SignalHandler_CanDisposeInHandler(PosixSignal signal)
+        {
+            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created...";
+            const string PosixSignalHandlerStartedMessage = "PosixSignalHandlerFinishedMessage created...";
+            const string PosixSignalHandlerDisposedMessage = "PosixSignalHandlerDisposedMessage created...";
+
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                remoteInvokeOptions.StartInfo.CreateNewProcessGroup = true;
+            }
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (signalStr) =>
+                {
+                    PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
+                    using ManualResetEvent receivedSignalEvent = new ManualResetEvent(false);
+                    ReEnableCtrlCHandlerIfNeeded(expectedSignal);
+
+                    PosixSignalRegistration? p = null;
+                    p = PosixSignalRegistration.Create(expectedSignal, (ctx) =>
+                    {
+                        Console.WriteLine(PosixSignalHandlerStartedMessage);
+                        Assert.Equal(expectedSignal, ctx.Signal);
+
+                        Assert.NotNull(p);
+                        p?.Dispose();
+
+                        // Used for checking that Dispose returned and did not stuck
+                        Console.WriteLine(PosixSignalHandlerDisposedMessage);
+
+                        receivedSignalEvent.Set();
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(PosixSignalRegistrationCreatedMessage);
+
+                    // Wait for singal which unregisters itself
+                    Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
+
+                    // Wait for second signal which should temrinate process by default system handler
+                    Thread.Sleep(1000);
+
+                    // If we did not terminated yet, return failure exit code
+                    return -1;
+                },
+                arg: $"{signal}",
+                remoteInvokeOptions);
+
+            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
+            {
+                Thread.Sleep(20);
+            }
+
+            try
+            {
+                SendSignal(signal, remoteHandle.Process.Id);
+
+                while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalHandlerStartedMessage))
+                {
+                    Thread.Sleep(20);
+                }
+
+                while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalHandlerDisposedMessage))
+                {
+                    Thread.Sleep(20);
+                }
+
+                SendSignal(signal, remoteHandle.Process.Id);
+
+                Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
+                Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal(unchecked((int)0xC000013A), remoteHandle.Process.ExitCode); // STATUS_CONTROL_C_EXIT
+                }
+                else
+                {
+                    Assert.Equal(0, remoteHandle.Process.ExitCode);
+                }
+            }
+            finally
+            {
+                // If sending the signal fails, we want to kill the process ASAP
+                // to prevent RemoteExecutor's timeout from hiding it.
+                remoteHandle.Process.Kill();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]
         public void TestWaitForExitValidation(long milliseconds)
