@@ -91,22 +91,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static unsafe TRet FromPkcs1PublicKey<TRet>(
+        internal static TRet FromPkcs1PublicKey<TRet>(
             ReadOnlySpan<byte> keyData,
             RSAParametersCallback<TRet> parametersReader)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(keyData))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, keyData.Length))
-                {
-                    return FromPkcs1PublicKey(manager.Memory, parametersReader);
-                }
-            }
-        }
-
-        internal static TRet FromPkcs1PublicKey<TRet>(ReadOnlyMemory<byte> keyData, RSAParametersCallback<TRet> parametersReader)
-        {
-            RSAPublicKeyAsn key = RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
+            ValueRSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER, out ValueRSAPublicKeyAsn key);
 
             RSAParameters parameters = new RSAParameters
             {
@@ -115,6 +104,12 @@ namespace System.Security.Cryptography
             };
 
             return parametersReader(parameters);
+        }
+
+        // TODO: remove?
+        internal static TRet FromPkcs1PublicKey<TRet>(ReadOnlyMemory<byte> keyData, RSAParametersCallback<TRet> parametersReader)
+        {
+            return FromPkcs1PublicKey(keyData.Span, parametersReader);
         }
 
         internal static AsnWriter WritePkcs1PublicKey(in RSAParameters rsaParameters)

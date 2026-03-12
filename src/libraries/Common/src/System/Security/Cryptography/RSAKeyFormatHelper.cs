@@ -29,8 +29,8 @@ namespace System.Security.Cryptography
         }
 
         internal static void ReadRsaPublicKey(
-            ReadOnlyMemory<byte> keyData,
-            in AlgorithmIdentifierAsn algId,
+            ReadOnlySpan<byte> keyData,
+            in ValueAlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
             ret = FromPkcs1PublicKey(keyData, rsaParameters => rsaParameters);

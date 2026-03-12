@@ -8,14 +8,19 @@ namespace System.Security.Cryptography
 {
     internal static partial class KeyBlobHelpers
     {
-        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span)
         {
-            if (memory.Length > 1 && memory.Span[0] == 0)
+            if (span.Length > 1 && span[0] == 0)
             {
-                return memory.Slice(1).ToArray();
+                return span.Slice(1).ToArray();
             }
 
-            return memory.ToArray();
+            return span.ToArray();
+        }
+
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
+        {
+            return ToUnsignedIntegerBytes(memory.Span);
         }
 
         internal static void ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, Span<byte> destination)

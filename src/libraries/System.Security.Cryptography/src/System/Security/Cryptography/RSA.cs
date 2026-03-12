@@ -888,7 +888,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+        public virtual void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             try
             {
@@ -899,18 +899,12 @@ namespace System.Security.Cryptography
                     out _,
                     out int localRead);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, localRead))
-                    {
-                        AlgorithmIdentifierAsn ignored = default;
-                        RSAKeyFormatHelper.ReadRsaPublicKey(manager.Memory, ignored, out RSAParameters rsaParameters);
+                ValueAlgorithmIdentifierAsn ignored = default;
+                RSAKeyFormatHelper.ReadRsaPublicKey(source, ignored, out RSAParameters rsaParameters);
 
-                        ImportParameters(rsaParameters);
+                ImportParameters(rsaParameters);
 
-                        bytesRead = localRead;
-                    }
-                }
+                bytesRead = localRead;
             }
             catch (AsnContentException e)
             {
