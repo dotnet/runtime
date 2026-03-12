@@ -7,7 +7,7 @@ class JitConfigProvider
 {
 public:
     virtual int STDMETHODCALLTYPE getIntConfigValue(
-        const char* name, 
+        const char* name,
         int defaultValue
         ) = 0;
 
@@ -44,7 +44,7 @@ public:
     }
 
     virtual int getIntConfigValue(
-        const char* name, 
+        const char* name,
         int defaultValue
         )
     {
