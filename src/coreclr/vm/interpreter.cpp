@@ -10040,22 +10040,22 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
         // AV -> NullRef translation is NYI for the interpreter,
         // so we should manually check and throw the correct exception.
-        //if (args[curArgSlot] == NULL)
-        //{
+        if (virtualCall && args[curArgSlot] == NULL)
+        {
             // If we're calling a constructor, we bypass this check since the runtime
             // should have thrown OOM if it was unable to allocate an instance.
-          //  if (m_callThisArg == NULL)
-           // {
-           //     _ASSERTE(!methToCall->IsStatic());
-           //     ThrowNullPointerException();
-           // }
+            if (m_callThisArg == NULL)
+            {
+                _ASSERTE(!methToCall->IsStatic());
+                ThrowNullPointerException();
+            }
             // ...except in the case of strings, which are both
             // allocated and initialized by their special constructor.
-            //else
-            //{
-            //    _ASSERTE(methToCall->IsCtor() && methToCall->GetMethodTable()->IsString());
-            //}
-        //}
+            else
+            {
+                _ASSERTE(methToCall->IsCtor() && methToCall->GetMethodTable()->IsString());
+            }
+        }
         curArgSlot++;
     }
 
@@ -10279,7 +10279,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 thisArgHnd = OpStackGetAddr<Object*>(argsBase);
             }
             _ASSERTE(thisArgHnd != NULL);
-            ThrowOnInvalidPointer(*thisArgHnd);
+            if (virtualCall)
+	    	ThrowOnInvalidPointer(*thisArgHnd);
         }
 
         Frame* topFrameBefore = thr->GetFrame();
