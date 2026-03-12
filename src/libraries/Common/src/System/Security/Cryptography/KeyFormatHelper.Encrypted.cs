@@ -31,6 +31,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        // TODO vcsjones nuke
         internal static unsafe void ReadEncryptedPkcs8<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
@@ -54,6 +55,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        // TODO vcsjones nuke
         private static void ReadEncryptedPkcs8<TRet>(
             string[] validOids,
             ReadOnlyMemory<byte> source,
@@ -72,6 +74,25 @@ namespace System.Security.Cryptography
                 out ret);
         }
 
+        internal static void ReadEncryptedPkcs8<TRet>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<char> password,
+            ValueKeyReader<TRet> keyReader,
+            out int bytesRead,
+            out TRet ret)
+        {
+            ReadEncryptedPkcs8(
+                validOids,
+                source,
+                password,
+                ReadOnlySpan<byte>.Empty,
+                keyReader,
+                out bytesRead,
+                out ret);
+        }
+
+        // TODO vcsjones nuke
         private static void ReadEncryptedPkcs8<TRet>(
             string[] validOids,
             ReadOnlyMemory<byte> source,
@@ -90,6 +111,25 @@ namespace System.Security.Cryptography
                 out ret);
         }
 
+        internal static void ReadEncryptedPkcs8<TRet>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> passwordBytes,
+            ValueKeyReader<TRet> keyReader,
+            out int bytesRead,
+            out TRet ret)
+        {
+            ReadEncryptedPkcs8(
+                validOids,
+                source,
+                ReadOnlySpan<char>.Empty,
+                passwordBytes,
+                keyReader,
+                out bytesRead,
+                out ret);
+        }
+
+        // TODO vcsjones - nuke?
         private static void ReadEncryptedPkcs8<TRet>(
             string[] validOids,
             ReadOnlyMemory<byte> source,
@@ -132,6 +172,71 @@ namespace System.Security.Cryptography
                 ReadPkcs8(
                     validOids,
                     decryptedMemory,
+                    keyReader,
+                    out int innerRead,
+                    out ret);
+
+                if (innerRead != decryptedMemory.Length)
+                {
+                    ret = default!;
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                bytesRead = read;
+            }
+            catch (CryptographicException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(decryptedMemory.Span);
+                CryptoPool.Return(decrypted, clearSize: 0);
+            }
+        }
+
+        private static void ReadEncryptedPkcs8<TRet>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> passwordBytes,
+            ValueKeyReader<TRet> keyReader,
+            out int bytesRead,
+            out TRet ret)
+        {
+            int read;
+            ValueEncryptedPrivateKeyInfoAsn epki;
+
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
+                read = reader.PeekEncodedValue().Length;
+                ValueEncryptedPrivateKeyInfoAsn.Decode(ref reader, out epki);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            // No supported encryption algorithms produce more bytes of decryption output than there
+            // were of decryption input.
+            byte[] decrypted = CryptoPool.Rent(epki.EncryptedData.Length);
+            Memory<byte> decryptedMemory = decrypted;
+
+            try
+            {
+                int decryptedBytes = PasswordBasedEncryption.Decrypt(
+                    epki.EncryptionAlgorithm,
+                    password,
+                    passwordBytes,
+                    epki.EncryptedData,
+                    decrypted);
+
+                decryptedMemory = decryptedMemory.Slice(0, decryptedBytes);
+
+                ReadPkcs8(
+                    validOids,
+                    decryptedMemory.Span,
                     keyReader,
                     out int innerRead,
                     out ret);
