@@ -567,10 +567,8 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert((long)lo12 + (long)hi20 == offset);
 
             Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-            pCode[0] &= 0x00000FFF; // keep bits 11-0 (opcode + rd)
             pCode[0] |= (uint)hi20;
             int bottomBitsPos = isStype ? 7 : 20;
-            pCode[1] &= isStype ? 0x01FFF07Fu : 0x000FFFFFu; // keep non-immediate bits
             pCode[1] |= (uint)((lo12 >> 5) << 25); // top 7 bits are in the same spot
             pCode[1] |= (uint)((lo12 & 0x1F) << bottomBitsPos);
             Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);

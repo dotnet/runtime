@@ -2292,10 +2292,8 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-    pCode[0] &= 0x00000FFF; // keep bits 11-0 (opcode + rd)
     pCode[0] |= hi20;
     int bottomBitsPos = isStype ? 7 : 20;
-    pCode[1] &= isStype ? (UINT32)0x01FFF07F : (UINT32)0x000FFFFF; // keep non-immediate bits
     pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
     pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
