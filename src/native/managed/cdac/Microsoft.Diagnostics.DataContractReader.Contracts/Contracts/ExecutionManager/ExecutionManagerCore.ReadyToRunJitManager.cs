@@ -269,7 +269,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         }
         #endregion
 
-        private void GetExceptionClauses(TargetPointer exceptionLookupTableAddr, uint count, TargetPointer rangeStart, int methodRVA, out TargetPointer startExInfoRVA, out TargetPointer endExInfoRVA)
+        private void GetExceptionClauses(TargetPointer exceptionLookupTableAddr, uint count, TargetPointer rangeStart, uint methodRVA, out TargetPointer startExInfoRVA, out TargetPointer endExInfoRVA)
         {
             startExInfoRVA = TargetPointer.Null;
             endExInfoRVA = TargetPointer.Null;
@@ -323,7 +323,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             ulong exceptionLookupTableAddr = section.VirtualAddress + r2rInfo.LoadedImageBase;
 
             GetMethodRVAAndRangeStart(cbh, out TargetPointer methodStart, out TargetPointer rangeStart);
-            int methodRVA = (int)(methodStart - rangeStart);
+            uint methodRVA = (uint)(methodStart - rangeStart);
 
             GetExceptionClauses(exceptionLookupTableAddr, count, rangeStart, methodRVA, out startAddr, out endAddr);
         }
