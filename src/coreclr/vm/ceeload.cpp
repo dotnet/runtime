@@ -3675,6 +3675,10 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
 static LPCWSTR s_pCommandLine = NULL;
 
+#ifdef TARGET_UNIX
+
+#endif // TARGET_UNIX
+
 // Retrieve the full command line for the current process.
 LPCWSTR GetManagedCommandLine()
 {
@@ -3693,6 +3697,8 @@ LPCWSTR GetCommandLineForDiagnostics()
 #ifdef TARGET_WINDOWS
         // Use the result from GetCommandLineW() instead
         pCmdLine = GetCommandLineW();
+#else
+        pCmdLine = W("");
 #endif // HOST_WINDOWS
     }
 
@@ -3743,8 +3749,10 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
     // exePath contains the full path to the executable.
-    MAKE_WIDEPTR_FROMUTF8(exePath, minipal_getexepath());
-    SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
+    char* exePath = minipal_getexepath();
+    MAKE_WIDEPTR_FROMUTF8(pwExePath, minipal_getexepath());
+    free(exePath);
+    SIZE_T  commandLineLen = (u16_strlen(pwExePath) + 1);
 
     // We will append pwzAssemblyPath to the 'corerun' exePath
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
@@ -3760,7 +3768,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     SIZE_T remainingLen    = commandLineLen;
     LPWSTR pCursor         = pNewCommandLine;
 
-    Append_Next_Item(&pCursor, &remainingLen, exePath,   true);
+    Append_Next_Item(&pCursor, &remainingLen, pwExePath,   true);
     Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, (argc > 0));
 
     for (int i = 0; i < argc; i++)
