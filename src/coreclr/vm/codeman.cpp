@@ -29,9 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
-#if !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
 #include "../debug/ee/executioncontrol.h"
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -1295,6 +1295,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512v3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512v3))
     {
         CPUCompileFlags.Set(InstructionSet_AVX512v3);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_AVX512Bmm) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BMM))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512BMM);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
@@ -4595,13 +4600,13 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldSize         = 0;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
 IExecutionControl* InterpreterJitManager::GetExecutionControl()
 {
     LIMITED_METHOD_CONTRACT;
     return InterpreterExecutionControl::GetInstance();
 }
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #endif // FEATURE_INTERPRETER
 

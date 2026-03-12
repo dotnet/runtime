@@ -17,25 +17,43 @@ public class RuntimeInfoDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void RuntimeInfo_ArchitectureIsValid(TestConfiguration config)
+    public void RuntimeInfo_ArchitectureMatchesDumpMetadata(TestConfiguration config)
     {
         InitializeDumpTest(config);
+        Assert.NotNull(DumpMetadata);
+
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
 
-        Assert.True(Enum.IsDefined(arch),
-            $"Expected a valid RuntimeInfoArchitecture enum value, got {arch}");
+        RuntimeInfoArchitecture expected = DumpMetadata.Arch switch
+        {
+            "x64" => RuntimeInfoArchitecture.X64,
+            "x86" => RuntimeInfoArchitecture.X86,
+            "arm64" => RuntimeInfoArchitecture.Arm64,
+            "arm" => RuntimeInfoArchitecture.Arm,
+            _ => RuntimeInfoArchitecture.Unknown,
+        };
+
+        Assert.Equal(expected, arch);
     }
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void RuntimeInfo_OperatingSystemIsValid(TestConfiguration config)
+    public void RuntimeInfo_OperatingSystemMatchesDumpMetadata(TestConfiguration config)
     {
         InitializeDumpTest(config);
+        Assert.NotNull(DumpMetadata);
+
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
         RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
 
-        Assert.True(Enum.IsDefined(os),
-            $"Expected a valid RuntimeInfoOperatingSystem enum value, got {os}");
+        RuntimeInfoOperatingSystem expected = DumpMetadata.Os switch
+        {
+            "windows" => RuntimeInfoOperatingSystem.Windows,
+            "linux" or "osx" or "freebsd" => RuntimeInfoOperatingSystem.Unix,
+            _ => RuntimeInfoOperatingSystem.Unknown,
+        };
+
+        Assert.Equal(expected, os);
     }
 }

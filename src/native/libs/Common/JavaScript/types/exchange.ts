@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import type { EmsAmbientSymbolsType } from "../types";
+
 import type { check, error, info, warn, debug, fastCheck, normalizeException } from "../loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
 import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
@@ -8,10 +10,13 @@ import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../
 import type { initializeCoreCLR } from "../host/host";
 import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebcilModule } from "../host/assets";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../loader/promise-completion-source";
+import type { fetchSatelliteAssemblies, fetchLazyAssembly } from "../loader/assets";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
-import type { abortPosix, abortBackgroundTimers, getExitStatus, runBackgroundTimers } from "../../../System.Native.Browser/utils/host";
+import type { abortPosix, getExitStatus } from "../../../System.Native.Browser/utils/host";
+import type { abortBackgroundTimers, runBackgroundTimers } from "../../../System.Native.Browser/utils/scheduling";
+
 import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
 import type { forceDisposeProxies, releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
 import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
@@ -19,7 +24,6 @@ import type { cancelPromise } from "../../../System.Runtime.InteropServices.Java
 import type { abortInteropTimers } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/scheduling";
 
 import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
-import type { EmsAmbientSymbolsType } from "../types";
 
 
 type getWasmMemoryType = () => WebAssembly.Memory;
@@ -71,7 +75,9 @@ export type LoaderExports = {
     addOnExitListener: typeof addOnExitListener,
     abortStartup: typeof abortStartup,
     quitNow: typeof quitNow,
-    normalizeException: typeof normalizeException
+    normalizeException: typeof normalizeException,
+    fetchSatelliteAssemblies: typeof fetchSatelliteAssemblies,
+    fetchLazyAssembly: typeof fetchLazyAssembly,
 }
 
 export type LoaderExportsTable = [
@@ -93,6 +99,8 @@ export type LoaderExportsTable = [
     typeof abortStartup,
     typeof quitNow,
     typeof normalizeException,
+    typeof fetchSatelliteAssemblies,
+    typeof fetchLazyAssembly,
 ]
 
 export type BrowserHostExports = {

@@ -20,7 +20,7 @@ namespace System.Net.Sockets.Tests
         private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsWindowsNanoServer || PlatformDetection.IsWindowsServerCore ||
                                                               PlatformDetection.IsAzureLinux || PlatformDetection.IsQemuLinux);
 
-        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -36,7 +36,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOption()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -69,7 +69,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanRunMulticastTests))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(CanRunMulticastTests))]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -133,7 +133,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanRunMulticastTests))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(CanRunMulticastTests))]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()

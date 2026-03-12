@@ -17,7 +17,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public static string TargetFrameworkMonikerDisplayName => (string)AppContext.GetData("Mono.Linker.Tests.TargetFrameworkMonikerDisplayName")!;
 
-        public static string GetTestsSourceRootDirectory([CallerFilePath] string? thisFile = null) =>
+        public static string GetMonoLinkerTestsExpectationsDirectory() =>
+            Path.GetFullPath((string)AppContext.GetData("Mono.Linker.Tests.ExpectationsDir")!);
+
+        public static string GetILLinkSharedDirectory() =>
+            Path.GetFullPath((string)AppContext.GetData("Mono.Linker.Tests.ILLinkSharedDir")!);
+
+        public static string GetTestsSourceRootDirectory() =>
             Path.GetFullPath((string)AppContext.GetData("Mono.Linker.Tests.LinkerTestDir")!);
 
         public static string GetTestAssemblyRoot(string assemblyName)
