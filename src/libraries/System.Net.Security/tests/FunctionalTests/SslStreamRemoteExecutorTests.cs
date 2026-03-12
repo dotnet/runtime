@@ -159,5 +159,64 @@ activate = 1
                 }
             }
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, true)]
+        [InlineData(null, true, false)]
+        [InlineData(null, false, true)]
+        public async Task SslStream_ServerDisablesCertificateDownloads_DefaultAndCompatSwitch(bool? appCtxSwitchValue, bool envVarSet, bool shouldDisableDownloads)
+        {
+            var psi = new ProcessStartInfo
+            {
+                Environment = { { "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS", envVarSet ? "1" : "0" } }
+            };
+
+            await RemoteExecutor.Invoke(async (appCtxSwitchValueString, shouldDisableDownloadsString) =>
+            {
+                if (bool.TryParse(appCtxSwitchValueString, out bool value))
+                {
+                    AppContext.SetSwitch("System.Net.Security.EnableServerAiaDownloads", value);
+                }
+
+                bool? disableCertificateDownloadsObserved = false;
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream))
+                using (var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    Assert.NotNull(chain);
+                    disableCertificateDownloadsObserved = chain.ChainPolicy.DisableCertificateDownloads;
+                    return true;
+                }))
+
+                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+                {
+                    SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                    {
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                        ClientCertificates = new X509Certificate2Collection(clientCertificate),
+                        TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                    };
+
+                    SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                        ClientCertificateRequired = true,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    bool expectDisabled = bool.Parse(shouldDisableDownloadsString);
+                    Assert.Equal(expectDisabled, disableCertificateDownloadsObserved);
+                }
+            }, appCtxSwitchValue.ToString(), shouldDisableDownloads.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
     }
 }
