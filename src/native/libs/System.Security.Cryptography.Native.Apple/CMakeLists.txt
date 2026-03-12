@@ -2,6 +2,8 @@ project(System.Security.Cryptography.Native.Apple C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
+add_compile_options(-gline-tables-only)
+
 set(NATIVE_LIBS_EXTRA)
 append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
 

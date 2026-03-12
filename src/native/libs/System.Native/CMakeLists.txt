@@ -112,6 +112,10 @@ endif ()
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
+if (CLR_CMAKE_TARGET_APPLE)
+    add_compile_options(-gline-tables-only)
+endif()
+
 set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
