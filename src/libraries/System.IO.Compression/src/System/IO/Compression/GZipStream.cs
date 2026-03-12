@@ -45,7 +45,8 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
             // Compute windowBits for gzip format: windowLog + 16
-            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.GZip_DefaultWindowBits : compressionOptions.WindowLog + 16;
+            // zlib silently upgrades windowBits 8 to 9; zlib-ng rejects 8 outright. Clamp to match classic zlib behavior.
+            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.GZip_DefaultWindowBits : Math.Max(compressionOptions.WindowLog, 9) + 16;
 
             _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, windowBits);
         }
