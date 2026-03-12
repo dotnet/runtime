@@ -774,6 +774,8 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
+                    if ((_compilation._compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
+                        return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatchGuarded"u8));
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:

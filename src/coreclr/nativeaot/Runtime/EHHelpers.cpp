@@ -277,6 +277,9 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
 }
 
 EXTERN_C CODE_LOCATION RhpInterfaceDispatch;
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchGuarded;
+#endif
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
@@ -284,6 +287,9 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
     static uintptr_t interfaceDispatchAVLocations[] =
     {
         (uintptr_t)&RhpInterfaceDispatch,
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+        (uintptr_t)&RhpInterfaceDispatchGuarded,
+#endif
     };
 
     // compare the IP against the list of known possible AV locations in the interface dispatch helpers
