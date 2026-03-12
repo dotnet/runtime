@@ -1766,6 +1766,62 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
 
     emitter* emit = GetEmitter();
 
+    // Try to extract compile-time constants from the call arguments.
+    // The first arg is the MethodTable handle; for arrays, the second is the element count.
+    CORINFO_CLASS_HANDLE clsHnd      = nullptr;
+    unsigned             constLen    = 0;
+    bool                 hasConstLen = false;
+
+    CallArg* firstArg = call->gtArgs.GetArgByIndex(0);
+    if (firstArg != nullptr)
+    {
+        GenTree* argNode = firstArg->GetNode();
+        if (argNode->OperIs(GT_PUTARG_REG))
+            argNode = argNode->gtGetOp1();
+        if (argNode->IsIconHandle(GTF_ICON_CLASS_HDL))
+            clsHnd = (CORINFO_CLASS_HANDLE)argNode->AsIntCon()->gtIconVal;
+    }
+
+    if (isArray)
+    {
+        CallArg* secondArg = call->gtArgs.GetArgByIndex(1);
+        if (secondArg != nullptr)
+        {
+            GenTree* argNode = secondArg->GetNode();
+            if (argNode->OperIs(GT_PUTARG_REG))
+                argNode = argNode->gtGetOp1();
+            if (argNode->IsCnsIntOrI() && argNode->AsIntCon()->gtIconVal >= 0 &&
+                argNode->AsIntCon()->gtIconVal <= 0x7FFFFFFF)
+            {
+                constLen    = (unsigned)argNode->AsIntCon()->gtIconVal;
+                hasConstLen = true;
+            }
+        }
+    }
+
+    // Constant-fold the allocation size when possible.
+    // For objects: read m_BaseSize from the MethodTable at JIT time.
+    // For arrays: compute ALIGN8(arrayBaseSize + constLen * componentSize).
+    unsigned constSize = 0;
+    if (clsHnd != nullptr)
+    {
+        if (!isArray)
+        {
+            // Read m_BaseSize directly from the MethodTable at JIT time.
+            constSize = *(unsigned*)((uint8_t*)(void*)clsHnd + allocInfo->methodTableBaseSizeOffset);
+        }
+        else if (hasConstLen)
+        {
+            unsigned componentSize = *(uint16_t*)((uint8_t*)(void*)clsHnd + allocInfo->methodTableComponentSizeOffset);
+            uint64_t totalSize     = (uint64_t)allocInfo->arrayBaseSize + (uint64_t)constLen * componentSize;
+            totalSize              = (totalSize + 7) & ~(uint64_t)7;
+            if (totalSize <= 0x7FFFFFFF)
+            {
+                constSize = (unsigned)totalSize;
+            }
+        }
+    }
+
     // ---- TLS access: get pointer to ee_alloc_context ----
     if (TargetOS::IsWindows)
     {
@@ -1799,7 +1855,13 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
 
         assert(allocInfo->tlsGetAddrFtnPtr != nullptr);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R11, (ssize_t)allocInfo->tlsGetAddrFtnPtr);
-        emit->emitIns_R(INS_call, EA_PTRSIZE, REG_R11);
+        {
+            EmitCallParams callParams;
+            callParams.callType    = EC_INDIR_R;
+            callParams.ireg        = REG_R11;
+            callParams.noSafePoint = true;
+            genEmitCallWithCurrentGC(callParams);
+        }
 
         emit->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R10, REG_RAX, /* canSkip */ false);
         allocCtxReg = REG_R10;
@@ -1820,7 +1882,12 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     // ---- Bump allocation (non-GC-interruptible) ----
     GetEmitter()->emitDisableGC();
 
-    if (isArray)
+    if (constSize > 0)
+    {
+        // Size is known at JIT time — use immediate constant.
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)constSize);
+    }
+    else if (isArray)
     {
         // Validate element count: must be in [0, 0x7FFFFFFF].
         emit->emitIns_R_I(INS_cmp, EA_PTRSIZE, lenReg, 0x7FFFFFFF);
