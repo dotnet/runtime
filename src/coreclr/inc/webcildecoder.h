@@ -41,6 +41,7 @@
 
 #pragma pack(push, 1)
 
+// [cDAC] [Loader]: Contract depends on WebcilHeader layout (size and CoffSections field).
 struct WebcilHeader
 {
     uint8_t Id[4];           // 'W' 'b' 'I' 'L'
@@ -54,6 +55,7 @@ struct WebcilHeader
     uint32_t PeDebugSize;
 };
 
+// [cDAC] [Loader]: Contract depends on WebcilSectionHeader layout (size and all fields).
 struct WebcilSectionHeader
 {
     uint32_t VirtualSize;
@@ -67,6 +69,7 @@ struct WebcilSectionHeader
 static_assert(sizeof(WebcilHeader) == 28, "WebcilHeader must be 28 bytes");
 static_assert(sizeof(WebcilSectionHeader) == 16, "WebcilSectionHeader must be 16 bytes");
 
+// [cDAC] [Loader]: Contract depends on WEBCIL_MAX_SECTIONS value.
 // Maximum number of sections we support in a Webcil image
 #define WEBCIL_MAX_SECTIONS 16
 

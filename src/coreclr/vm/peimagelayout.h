@@ -37,6 +37,7 @@ class PEImageLayout
 public:
     // ------------------------------------------------------------
     // Image format discriminator
+    // [cDAC] [Loader]: Contract depends on FORMAT_PE and FORMAT_WEBCIL values.
     // ------------------------------------------------------------
     enum ImageFormat
     {
