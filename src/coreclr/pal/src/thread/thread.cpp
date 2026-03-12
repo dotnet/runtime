@@ -1410,10 +1410,21 @@ CPalThread::ThreadEntry(
     st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
     if (st != 0)
     {
-        ASSERT("sched_setaffinity failed!\n");
-        // The sched_setaffinity should never fail when passed the mask extracted using sched_getaffinity
-        palError = ERROR_INTERNAL_ERROR;
-        goto fail;
+        if (errno == EPERM || errno == EACCES)
+        {
+            // Some sandboxed or restricted environments (snap strict confinement,
+            // vendor-modified Android kernels with strict SELinux policy) block
+            // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
+            // Treat this as non-fatal — the thread will continue running on any
+            // available CPU rather than the originally affinitized one. 
+            WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
+        }
+        else
+        {
+            ASSERT("sched_setaffinity failed!\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto fail;
+        }
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 

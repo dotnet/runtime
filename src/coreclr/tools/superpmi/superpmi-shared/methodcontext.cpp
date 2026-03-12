@@ -1196,6 +1196,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ALT_JIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
         return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PORTABLE_ENTRY_POINTS:
+        return "CORJIT_FLAG_PORTABLE_ENTRY_POINTS";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_AOT:
         return "CORJIT_FLAG_AOT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
@@ -1237,6 +1239,9 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
         return "CORJIT_FLAG_SOFTFP_ABI";
 #endif // defined(TARGET_ARM)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
+        return "CORJIT_FLAG_ASYNC";
 
     default:
         return "<unknown>";
@@ -3398,8 +3403,8 @@ CORINFO_METHOD_HANDLE MethodContext::repGetInstantiatedEntry(CORINFO_METHOD_HAND
 }
 
 void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
-                                       bool*                 variantIsThunk,
-                                       CORINFO_METHOD_HANDLE result)
+                                            bool                  variantIsThunk,
+                                            CORINFO_METHOD_HANDLE result)
 {
     if (GetAsyncOtherVariant == nullptr)
     {
@@ -3409,7 +3414,7 @@ void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
     DWORDLONG key = CastHandle(ftn);
     DLD       value;
     value.A = CastHandle(result);
-    value.B = (DWORD)*variantIsThunk ? 1 : 0;
+    value.B = (DWORD)variantIsThunk ? 1 : 0;
     GetAsyncOtherVariant->Add(key, value);
     DEBUG_REC(dmpGetAsyncOtherVariant(key, value));
 }

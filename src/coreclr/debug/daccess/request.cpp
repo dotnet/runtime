@@ -1581,7 +1581,6 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
         PTR_StringObject str(TO_TADDR(obj));
         ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
 
-        HRESULT hr;
         if (stringData && count > 0)
         {
             if (count > needed)
@@ -3373,7 +3372,7 @@ HRESULT ClrDataAccess::GetHandleEnumForTypes(unsigned int types[], unsigned int 
 
     DacHandleWalker *walker = new DacHandleWalker();
 
-    HRESULT hr = walker->Init(this, types, count);
+    hr = walker->Init(this, types, count);
 
     if (SUCCEEDED(hr))
         hr = walker->QueryInterface(__uuidof(ISOSHandleEnum), (void**)ppHandleEnum);
@@ -3400,7 +3399,7 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     DacHandleWalker *walker = new DacHandleWalker();
 
-    HRESULT hr = walker->Init(this, types, ARRAY_SIZE(types), gen);
+    hr = walker->Init(this, types, ARRAY_SIZE(types), gen);
     if (SUCCEEDED(hr))
         hr = walker->QueryInterface(__uuidof(ISOSHandleEnum), (void**)ppHandleEnum);
 
@@ -3455,22 +3454,23 @@ ClrDataAccess::TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pFunc, LPVOID token
             else if (IsTypedHandler(&EHClause))
             {
                 deh.clauseType = EHTyped;
-                deh.isCatchAllHandler = (&EHClause.TypeHandle == (void*)(size_t)mdTypeRefNil);
+                if (HasCachedTypeHandle(&EHClause))
+                {
+                    deh.mtCatch = TO_CDADDR(EHClause.TypeHandle);
+                    deh.isCatchAllHandler = TypeHandle::FromPtr(PTR_VOID((TADDR)EHClause.TypeHandle)).IsObjectType();
+                }
+                else
+                {
+                    // the module of the token (whether a ref or def token) is the same as the module of the method containing the EH clause
+                    deh.moduleAddr = HOST_CDADDR(codeInfo.GetMethodDesc()->GetModule());
+                    deh.tokCatch = EHClause.ClassToken;
+                    TypeHandle th = ClassLoader::LookupTypeDefOrRefInModule(codeInfo.GetMethodDesc()->GetModule(), (mdToken)EHClause.ClassToken);
+                    deh.isCatchAllHandler = th.IsObjectType();
+                }
             }
             else
             {
                 deh.clauseType = EHUnknown;
-            }
-
-            if (HasCachedTypeHandle(&EHClause))
-            {
-                deh.mtCatch = TO_CDADDR(&EHClause.TypeHandle);
-            }
-            else if(!IsFaultOrFinally(&EHClause))
-            {
-                // the module of the token (whether a ref or def token) is the same as the module of the method containing the EH clause
-                deh.moduleAddr = HOST_CDADDR(codeInfo.GetMethodDesc()->GetModule());
-                deh.tokCatch = EHClause.ClassToken;
             }
 
             deh.tryStartOffset = EHClause.TryStartPC;
@@ -3846,7 +3846,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 HRESULT
 ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyncBlockCleanupData *syncBlockCData)
 {
-    if (syncBlock == 0 || syncBlockCData == NULL)
+    if (syncBlockCData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -3884,6 +3884,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
             syncBlockCData->blockCCW = (CLRDATA_ADDRESS) dac_cast<TADDR>(pBlock->m_pInteropInfo->GetCCW());
 #endif // FEATURE_COMINTEROP
     }
+
+    // Maintain backwards compatibility with old versions of CLRMD. They will not properly iterate, but at least it will not infinite loop.
+    if (syncBlock == 0)
+        return E_INVALIDARG;
 
     SOSDacLeave();
     return hr;
@@ -4871,7 +4875,6 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
     {
@@ -4917,7 +4920,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, C
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
     {
@@ -4958,7 +4960,6 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
@@ -5008,7 +5009,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
@@ -5158,7 +5158,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     SOSDacEnter();
 
     // Default to having found no information.
-    HRESULT hr = S_FALSE;
+    hr = S_FALSE;
 
     if (pNeeded != NULL)
     {
@@ -5224,8 +5224,6 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
             }
         }
     }
-
-    hr = S_FALSE;
 
     SOSDacLeave();
     return hr;

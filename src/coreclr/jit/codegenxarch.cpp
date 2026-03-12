@@ -6325,42 +6325,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             params.ireg     = indirCellReg;
             genEmitCallWithCurrentGC(params);
         }
-#ifdef FEATURE_READYTORUN
-        else if (call->gtEntryPoint.addr != nullptr)
-        {
-            params.callType = (call->gtEntryPoint.accessType == IAT_VALUE) ? EC_FUNC_TOKEN : EC_FUNC_TOKEN_INDIR;
-            params.addr     = (void*)call->gtEntryPoint.addr;
-            genEmitCallWithCurrentGC(params);
-        }
-#endif
         else
         {
-            // Generate a direct call to a non-virtual user defined or helper method
+            // Generate a direct call to a non-virtual user defined or helper method.
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-            void* addr = nullptr;
-            if (call->IsHelperCall())
-            {
-                // Direct call to a helper method.
-                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                addr                              = helperLookup.addr;
-                assert(helperLookup.accessType == IAT_VALUE);
-            }
-            else
-            {
-                // Direct call to a non-virtual user function.
-                addr = call->gtDirectCallAddress;
-            }
-
-            assert(addr != nullptr);
-
-            // Non-virtual direct calls to known addresses
+            assert(call->gtDirectCallAddress != nullptr);
 
             params.callType = EC_FUNC_TOKEN;
-            params.addr     = addr;
+            params.addr     = call->gtDirectCallAddress;
             genEmitCallWithCurrentGC(params);
         }
     }

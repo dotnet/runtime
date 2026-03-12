@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
+        <target state="translated">L'argument « {0} » utilise le modificateur de paramètre « out » non pris en charge</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported 'out' parameter modifier</source>
-        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
+        <target state="translated">L'argument utilise le modificateur de paramètre « out » non pris en charge</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -54,17 +54,17 @@
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be 'partial'</source>
-        <target state="new">Logging methods must be 'partial'</target>
+        <target state="translated">Les méthodes de journalisation doivent être « partielles »</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return 'void'</source>
-        <target state="new">Logging methods must return 'void'</target>
+        <target state="translated">Les méthodes de journalisation doivent retourner « nulles »</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be 'static'</source>
-        <target state="new">Logging methods must be 'static'</target>
+        <target state="translated">Les méthodes de journalisation doivent être « statiques »</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -144,7 +144,7 @@
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
+        <target state="translated">Supprimez le qualificateur redondant (« Info » :, « Avertissement » :, « Erreur » :, etc.) du message de journalisation, car il est implicite dans le niveau de journalisation spécifié.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -204,22 +204,22 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
         <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <target state="translated">L’argument « {0} » utilise des paramètres non pris en charge ou un modificateur de paramètre à portée limitée</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
         <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="new">Argument is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <target state="translated">L’argument utilise des paramètres non pris en charge ou un modificateur de paramètre à portée limitée</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
         <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</target>
+        <target state="translated">Le paramètre « {0} » est une « structure ref », ce que le générateur source de journalisation ne prend pas en charge</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
         <source>Logging method parameter is a 'ref struct'</source>
-        <target state="new">Logging method parameter is a 'ref struct'</target>
+        <target state="translated">Le paramètre de la méthode de journalisation est une « structure ref »</target>
         <note />
       </trans-unit>
     </body>
