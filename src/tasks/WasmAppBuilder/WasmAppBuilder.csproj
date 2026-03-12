@@ -50,7 +50,6 @@
       <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
 
-
       <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
       <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
                       TargetPath="tasks\$(NetFrameworkToolCurrent)" />
