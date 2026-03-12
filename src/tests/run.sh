@@ -20,6 +20,7 @@ function print_usage {
     echo '  --coreRootDir=<path>             : Directory to the CORE_ROOT location.'
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
+    echo '  --parallel=<type>                : Run tests in parallel (none, collections, assemblies, all) (default: collections).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
     echo '  --synthesizepgo                  : Runs the tests allowing crossgen2 to synthesize PGO data'
     echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
@@ -70,6 +71,7 @@ verbose=0
 ilasmroundtrip=
 printLastResultsOnly=
 runSequential=0
+parallelType=
 runincontext=0
 tieringtest=0
 nativeaottest=0
@@ -158,6 +160,9 @@ do
             ;;
         --sequential)
             runSequential=1
+            ;;
+        --parallel=*)
+            parallelType=${i#*=}
             ;;
         --useServerGC)
             export DOTNET_gcServer=1
@@ -275,6 +280,10 @@ if [ "$runSequential" -ne 0 ]; then
     runtestPyArguments+=("--sequential")
 fi
 
+if [[ -n "$parallelType" ]]; then
+    runtestPyArguments+=("-parallel" "$parallelType")
+fi
+
 if [[ -n "$printLastResultsOnly" ]]; then
     runtestPyArguments+=("--analyze_results_only")
 fi
@@ -298,7 +307,7 @@ fi
 
 if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
-    runtestPyArguments+=("--tieringtest")
+    runtestPyArguments+=("--tiering_test")
 fi
 
 if [[ "$nativeaottest" -ne 0 ]]; then
