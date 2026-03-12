@@ -15,6 +15,7 @@ internal readonly struct Loader_1 : ILoader
 {
     private const string DefaultDomainFriendlyName = "DefaultDomain";
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
+    private const ushort MaxWebcilSections = 16; // // Must stay in sync with native WEBCIL_MAX_SECTIONS.
 
     private enum ModuleFlags_1 : uint
     {
@@ -27,6 +28,14 @@ internal readonly struct Loader_1 : ILoader
     {
         FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
+
+    // Must stay in sync with native PEImageLayout::ImageFormat values.
+    private enum ImageFormat : uint
+    {
+        PE = 0,
+        Webcil = 1,
+    }
+
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -218,7 +227,7 @@ internal readonly struct Loader_1 : ILoader
 
     private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
-        if (imageLayout.IsWebcilFormat)
+        if (imageLayout.Format == (uint)ImageFormat.Webcil)
             return WebcilRvaToOffset(rva, imageLayout);
 
         TargetPointer section = RvaToSection(rva, imageLayout);
@@ -232,13 +241,16 @@ internal readonly struct Loader_1 : ILoader
 
     private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
+        if (rva < 0)
+            throw new InvalidOperationException("Negative RVA in Webcil image.");
+
         TargetPointer headerBase = imageLayout.Base;
         Data.WebcilHeader webcilHeader = _target.ProcessedData.GetOrAdd<Data.WebcilHeader>(headerBase);
         Target.TypeInfo webcilHeaderType = _target.GetTypeInfo(DataType.WebcilHeader);
         Target.TypeInfo webcilSectionType = _target.GetTypeInfo(DataType.WebcilSectionHeader);
 
         ushort numSections = webcilHeader.CoffSections;
-        if (numSections == 0 || numSections > 16)
+        if (numSections == 0 || numSections > MaxWebcilSections)
             throw new InvalidOperationException("Invalid Webcil section count.");
 
         TargetPointer sectionTableBase = headerBase + webcilHeaderType.Size!.Value;

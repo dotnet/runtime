@@ -215,6 +215,7 @@ void PEImageLayout::InitDecoders(void* data, COUNT_T size)
     else
 #endif
     {
+        m_format = FORMAT_PE;
         m_peDecoder.Init(data, size);
     }
 }

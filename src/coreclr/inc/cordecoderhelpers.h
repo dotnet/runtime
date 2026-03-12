@@ -90,7 +90,7 @@ inline BOOL IsStrongNameSigned(const TDecoder& decoder)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        PRECONDITION(decoder.CheckCorHeader());
+        PRECONDITION(decoder.HasCorHeader());
     }
     CONTRACTL_END;
 
@@ -105,7 +105,7 @@ inline BOOL HasStrongNameSignature(const TDecoder& decoder)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        PRECONDITION(decoder.CheckCorHeader());
+        PRECONDITION(decoder.HasCorHeader());
     }
     CONTRACTL_END;
 

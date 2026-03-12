@@ -20,9 +20,4 @@ internal sealed class PEImageLayout : IData<PEImageLayout>
     public uint Size { get; init; }
     public uint Flags { get; init; }
     public uint Format { get; init; }
-
-    // Must stay in sync with native PEImageLayout::ImageFormat values.
-    private const uint FormatWebcil = 1;
-
-    public bool IsWebcilFormat => Format == FormatWebcil;
 }
