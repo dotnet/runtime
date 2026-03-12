@@ -2513,7 +2513,9 @@ private:
     void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet) ARM64_ARG(bool isPacEnabledFrame));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
+#ifdef TARGET_ARM64
     VOID        *m_pSp;                   // stack pointer of the frame being hijacked
+#endif
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
