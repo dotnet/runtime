@@ -172,22 +172,14 @@ namespace System.IO.Tests
 
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInWatchedDir, dir.DirectoryInUnwatchedDir));
 
-            // On macOS, for each file we receive two events as describe in comment below.
-            int expectEvents = filesCount;
-            if (skipOldEvents)
-                expectEvents = expectEvents * 2;
+            // Filter out Created events as there is a race-condition when moving a directory and then observing a parent folder. It receives Create event although Watcher is not registered yet.
+            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents ? x => x.EventType == WatcherChangeTypes.Created : null;
 
-            IEnumerable<FiredEvent> events = ExpectEvents(watcher, expectEvents, action);
-
-            if (skipOldEvents)
-                events = events.Where(x => x.EventType != WatcherChangeTypes.Created);
+            IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 
             var expectedEvents = dirs.Select(dir => new FiredEvent(WatcherChangeTypes.Deleted, dir.DirectoryInWatchedDir));
 
-            // Remove Created events as there is racecondition when create dir and then observe parent folder. It receives Create event altought Watcher is not registered yet.
-            Assert.Equal(expectedEvents, events.Where(x => x.EventType != WatcherChangeTypes.Created));
-
-
+            Assert.Equal(expectedEvents, events);
         }
 
         private void DirectoryMove_Multiple_FromUnwatchedToWatched(int filesCount)

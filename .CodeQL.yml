@@ -1,5 +1,5 @@
 # This file configures CodeQL runs and TSA bug autofiling. For more information, see:
-# https://eng.ms/docs/cloud-ai-platform/devdiv/one-engineering-system-1es/1es-docs/codeql/troubleshooting/bugs/generated-library-code
+# https://eng.ms/docs/coreai/devdiv/one-engineering-system-1es/1es-docs/codeql/troubleshooting/bugs/generated-library-code
 # (Access restricted to Microsoft employees only.)
 
 path_classifiers:
@@ -15,3 +15,19 @@ path_classifiers:
     # files are generated as part of build-time checks in CMake and are not compiled
     # or linked into any product binaries.
     - artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c
+
+queries:
+  #
+  # REPO-WIDE RULE EXCLUSIONS
+  #
+  - exclude:
+      queryid:
+        # [Serializable] doesn't imply that a type is *safe* to [de]serialize; only that it is
+        # *possible* to do so. The rules below incorrectly assume we're trying to make a safety
+        # guarantee.
+        - "cs/dangerous-deserialization-routine"
+        - "cs/deserialization-of-pointer-type"
+        # We already have CodeQL + Roslyn rules running to detect usage of dangerous deserialization
+        # APIs. Those call sites are well-reviewed and don't benefit from extra alerts regarding
+        # the possibility of loading malicious code.
+        - "cs/deserialization-unexpected-subtypes"

@@ -65,5 +65,26 @@ namespace TypeSystemTests
             MethodDesc result = theClass.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(intfMethod);
             Assert.Equal(expected, result);
         }
+
+        [Fact]
+        public void TestVariantDimIterationOrder()
+        {
+            var context = new TestTypeSystemContext(TargetArchitecture.Unknown);
+            ModuleDesc testModule = context.CreateModuleForSimpleName("CoreTestAssembly");
+            context.SetSystemModule(testModule);
+
+            MetadataType derived = testModule.GetType("VirtualStaticInterfaceMethods"u8, "Derived"u8);
+            MetadataType iCovariantInstanceDim = testModule.GetType("VirtualStaticInterfaceMethods"u8, "ICovariantInstanceDim`1"u8);
+            MetadataType covariantInstanceDimDerived = testModule.GetType("VirtualStaticInterfaceMethods"u8, "CovariantInstanceDimDerived"u8);
+
+            MetadataType iCovariantInstance = testModule.GetType("VirtualStaticInterfaceMethods"u8, "ICovariantInstance`1"u8);
+            TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+            MethodDesc funcMethod = iCovariantInstance.MakeInstantiatedType(objectType).GetMethod("Func"u8, null);
+
+            DefaultInterfaceMethodResolution resolution = covariantInstanceDimDerived.ResolveVariantInterfaceMethodToDefaultImplementationOnType(funcMethod, out MethodDesc implMethod);
+
+            Assert.Equal(DefaultInterfaceMethodResolution.DefaultImplementation, resolution);
+            Assert.Equal(iCovariantInstanceDim.MakeInstantiatedType(derived), implMethod.OwningType);
+        }
     }
 }

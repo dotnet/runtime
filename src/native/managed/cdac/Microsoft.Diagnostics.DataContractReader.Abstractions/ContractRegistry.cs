@@ -83,6 +83,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IGC GC => GetContract<IGC>();
     /// <summary>
+    /// Gets an instance of the GCInfo contract for the target.
+    /// </summary>
+    public virtual IGCInfo GCInfo => GetContract<IGCInfo>();
+    /// <summary>
     /// Gets an instance of the Notifications contract for the target.
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
@@ -90,6 +94,14 @@ public abstract class ContractRegistry
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    /// <summary>
+    /// Gets an instance of the SyncBlock contract for the target.
+    /// </summary>
+    public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
+    /// <summary>
+    /// Gets an instance of the BuiltInCOM contract for the target.
+    /// </summary>
+    public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 }

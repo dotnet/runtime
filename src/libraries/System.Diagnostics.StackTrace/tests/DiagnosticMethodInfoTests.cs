@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tests
         public static IEnumerable<object[]> Create_OpenDelegate_TestData()
         {
             // Tracked at https://github.com/dotnet/runtime/issues/100748
-            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot;
+            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot && !PlatformDetection.IsAppleMobile;
 
             const string TestNamespace = nameof(System) + "." + nameof(System.Diagnostics) + "." + nameof(System.Diagnostics.Tests) + ".";
 

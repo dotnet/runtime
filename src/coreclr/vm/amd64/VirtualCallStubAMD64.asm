@@ -24,7 +24,7 @@ INITIAL_SUCCESS_COUNT           equ  100h
 
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 8, r8
+        PROLOG_WITH_TRANSITION_BLOCK 0, <DoNotPushCalleeSavedFloatRegs>, 8, r8
 
         ; token stored in r8 by prolog
 
