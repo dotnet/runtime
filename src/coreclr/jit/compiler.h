@@ -4120,6 +4120,8 @@ public:
     // located on the original method stack frame.
     bool lvaIsOSRLocal(unsigned varNum);
 
+    int lvaOSRLocalTier0FrameOffset(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -4207,6 +4209,17 @@ public:
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
     ValueSize lvaLclValueSize(unsigned varNum);
+
+    //-----------------------------------------------------------------------------
+    // lvaIsUnknownSizeLocal: Does the local have an unknown size at compile-time?
+    //
+    // Returns:
+    //     True if the local does not have an exact size, else false.
+    //
+    bool lvaIsUnknownSizeLocal(unsigned varNum)
+    {
+        return !lvaLclValueSize(varNum).IsExact();
+    }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -4603,6 +4616,8 @@ protected:
     bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+
+    bool impCanReorderWithNullCheck(GenTree* tree);
 
     bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
@@ -6874,6 +6889,8 @@ private:
 public:
     bool fgIsBigOffset(size_t offset);
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+    bool IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
+    bool IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
     bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:

@@ -9,8 +9,8 @@
     </Compile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)AsnValueReader.cs">
-      <Link>Common\System\Security\Cryptography\Asn1Reader\AsnValueReader.cs</Link>
+    <Compile Include="$(MSBuildThisFileDirectory)AsnWriterExtensions.cs">
+      <Link>Common\System\Security\Cryptography\AsnWriter\AsnWriterExtensions.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

@@ -53,26 +53,23 @@ namespace ILCompiler.ObjectWriter
 
         private Dictionary<Utf8String, int> _uniqueSignatures = new();
         private Dictionary<string, int> _uniqueSymbols = new();
-        private int _signatureCount = 0;
         private int _methodCount = 0;
 
         private protected override void RecordMethodSignature(WasmTypeNode signature)
         {
-            int signatureIndex = _signatureCount;
             var mangledNameBuilder = new Utf8StringBuilder();
             signature.AppendMangledName(_nodeFactory.NameMangler, mangledNameBuilder);
             Utf8String mangledName = mangledNameBuilder.ToUtf8String();
-            // Note that we do not expect duplicates here, since crossgen's node cache should handle this and all nodes representing
-            // identical signatures in a module should point to the same node instance
-            _uniqueSignatures.Add(mangledName, signatureIndex);
-            _signatureCount++;
+            // Note that we do not expect duplicates here, crossgen should deduplicate signatures already
+            // using the node cache, so we can simply add the new signature with the next available index.
+            _uniqueSignatures.Add(mangledName, _uniqueSignatures.Count);
         }
 
-        private protected override void RecordMethodDeclaration(ISymbolDefinitionNode symbol, MethodDesc desc)
+        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
         {
             WriteSignatureIndexForFunction(desc);
 
-            _uniqueSymbols.Add(symbol.GetMangledName(_nodeFactory.NameMangler), _methodCount);
+            _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
         }
 

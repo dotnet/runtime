@@ -96,6 +96,11 @@ public:
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif // FEATURE_TIERED_COMPILATION
+    DWORD TieredCompilation_DefaultTier() const 
+    {
+        LIMITED_METHOD_CONTRACT;
+        return tieredCompilation_DefaultTier;
+    }
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
@@ -607,6 +612,7 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
+    DWORD tieredCompilation_DefaultTier;
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;

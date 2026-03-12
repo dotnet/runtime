@@ -929,7 +929,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     if (opcode == INTOP_HANDLE_CONTINUATION_SUSPEND)
     {
         // Capture meaningful start IP for async suspend diagnostics
-        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->resumeInfo.DiagnosticIP = (size_t)startIp;
+        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->resumeInfo.DiagnosticIP = (size_t)startIp - (size_t)m_pMethodCode;
     }
 
     if (opcode == INTOP_SWITCH)
@@ -1972,6 +1972,7 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         
         // Fix up the methodStartIP to point to the final bytecode start
         dstDataRW->methodStartIP = pByteCodeStart;
+        dstDataRW->resumeInfo.DiagnosticIP += (TARGET_SIZE_T)pByteCodeStart;
         
         // Fix up interval map pointers if they exist
         // Note: The interval maps were allocated via AllocMethodData in the old model,
@@ -3095,7 +3096,6 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
@@ -3106,7 +3106,6 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type1 = StackTypeI8;
         }
-#endif
         if (type1 == StackTypeR8 && type2 == StackTypeR4)
         {
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
