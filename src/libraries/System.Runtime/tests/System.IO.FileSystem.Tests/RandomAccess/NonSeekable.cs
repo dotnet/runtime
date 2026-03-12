@@ -197,7 +197,7 @@ namespace System.IO.Tests
 
                 int bytesRead = await readFromOffset456;
                 Assert.InRange(bytesRead, 1, content.Length);
-                Assert.Equal(content.Take(bytesRead), buffer.AsSpan(0, readFromOffset456.Result).ToArray());
+                Assert.Equal(content.Take(bytesRead), buffer.AsSpan(0, bytesRead).ToArray());
             }
         }
 
