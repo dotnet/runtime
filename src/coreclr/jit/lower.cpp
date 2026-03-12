@@ -4614,6 +4614,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
           op1->SupportsSettingFlagsAsCompareToZero())) &&
         BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
+        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
+        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
+        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
+        // If we'd need to bail, do it before touching the LIR.
+        const bool isUnsignedZeroCompare = cmp->IsUnsigned() && op2->IsIntegralConst(0);
+        if (isUnsignedZeroCompare && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        {
+            if (cmp->OperIs(GT_GE, GT_LT))
+            {
+                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
+                return cmp;
+            }
+        }
+
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();
 
@@ -4623,11 +4637,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         GenCondition cmpCondition = GenCondition::FromRelop(cmp);
 
-        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
-        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
-        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
-        // Rewrite the condition to use Z/N where possible, or bail out.
-        if (cmp->IsUnsigned() && op2->IsIntegralConst(0) && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        // Use Z/N where possible.
+        if (isUnsignedZeroCompare)
         {
             if (cmp->OperIs(GT_GT))
             {
@@ -4638,11 +4649,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 // x <= 0U <=> x == 0
                 cmpCondition = GenCondition::EQ;
-            }
-            else
-            {
-                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
-                return cmp;
             }
         }
         GenTreeCC* setcc = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
