@@ -1640,7 +1640,7 @@ void CodeGen::genFuncletEpilog()
             }
 
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, imm);
-            m_compiler->unwindSaveRegPair(REG_FP, REG_LR, imm);
+            m_compiler->unwindSaveRegPair(REG_FP, REG_LR, static_cast<int>(imm));
             GetEmitter()->emitPacInEpilog();
             genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, tempReg, nullptr, /* reportUnwindData */ true);
         }
