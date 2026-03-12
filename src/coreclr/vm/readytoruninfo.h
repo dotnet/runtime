@@ -30,6 +30,7 @@ private:
     PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
+    friend struct ::cdac_data<ReadyToRunCoreInfo>;
 
 public:
     ReadyToRunCoreInfo();
@@ -45,6 +46,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pLayout;
     }
+};
+
+template<>
+struct cdac_data<ReadyToRunCoreInfo>
+{
+    static constexpr size_t Header = offsetof(ReadyToRunCoreInfo, m_pCoreHeader);
 };
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
@@ -144,6 +151,7 @@ class ReadyToRunInfo
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
+    TADDR                           m_pLoadedImageBase;
 
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
@@ -358,6 +366,8 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
+    static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
+    static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
 };
 
 class DynamicHelpers

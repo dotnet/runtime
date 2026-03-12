@@ -5,6 +5,20 @@ This contract is for getting information related to built-in COM.
 ## APIs of contract
 
 ``` csharp
+public struct COMInterfacePointerData
+{
+    // Address of the slot in ComCallWrapper that holds the COM interface pointer.
+    public TargetPointer InterfacePointerAddress;
+    // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
+    public TargetPointer MethodTable;
+}
+
+public record struct RCWCleanupInfo(
+    TargetPointer RCW,
+    TargetPointer Context,
+    TargetPointer STAThread,
+    bool IsFreeThreaded);
+
 public ulong GetRefCount(TargetPointer ccw);
 // Check whether the COM wrappers handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
@@ -14,20 +28,13 @@ public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
 // Enumerate the COM interfaces exposed by the ComCallWrapper chain.
 // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
-```
-
-where `COMInterfacePointerData` is:
-``` csharp
-public struct COMInterfacePointerData
-{
-    // Address of the slot in ComCallWrapper that holds the COM interface pointer.
-    public TargetPointer InterfacePointerAddress;
-    // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
-    public TargetPointer MethodTable;
-}
 // Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
+// Enumerate the interface entries cached in an RCW.
+public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw);
+// Get the COM context cookie for an RCW.
+public TargetPointer GetRCWContext(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -51,6 +58,9 @@ Data descriptors used:
 | `RCW` | `CtxCookie` | COM context cookie for the RCW |
 | `RCW` | `CtxEntry` | Pointer to `CtxEntry` (bit 0 is a synchronization flag; must be masked off before use) |
 | `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
+| `RCW` | `InterfaceEntries` | Offset of the inline interface entry cache array within the RCW struct |
+| `InterfaceEntry` | `MethodTable` | MethodTable pointer for the cached COM interface |
+| `InterfaceEntry` | `Unknown` | `IUnknown*` pointer for the cached COM interface |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -62,6 +72,7 @@ Global variables used:
 | `TearOffAddRefSimple` | pointer | Address of `Unknown_AddRefSpecial`; identifies `SimpleComCallWrapper` interface pointers |
 | `TearOffAddRefSimpleInner` | pointer | Address of `Unknown_AddRefInner`; identifies inner `SimpleComCallWrapper` interface pointers |
 | `RCWCleanupList` | `pointer` | Pointer to the global `g_pRCWCleanupList` instance |
+| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (`INTERFACE_ENTRY_CACHE_SIZE`) |
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
@@ -155,6 +166,29 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
 
         bucketPtr = _target.ReadPointer(bucketPtr + /* RCW::NextCleanupBucket offset */);
     }
+}
+
+public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw)
+{
+    // InterfaceEntries is an inline array — the offset gives the address of the first element.
+    TargetPointer interfaceEntriesAddr = rcw + /* RCW::InterfaceEntries offset */;
+    uint cacheSize = _target.ReadGlobal<uint>("RCWInterfaceCacheSize");
+    uint entrySize = /* size of InterfaceEntry */;
+
+    for (uint i = 0; i < cacheSize; i++)
+    {
+        TargetPointer entryAddress = interfaceEntriesAddr + i * entrySize;
+        TargetPointer methodTable = _target.ReadPointer(entryAddress + /* InterfaceEntry::MethodTable offset */);
+        TargetPointer unknown = _target.ReadPointer(entryAddress + /* InterfaceEntry::Unknown offset */);
+        // An entry is free if Unknown == null (matches InterfaceEntry::IsFree())
+        if (unknown != TargetPointer.Null)
+            yield return (methodTable, unknown);
+    }
+}
+
+public TargetPointer GetRCWContext(TargetPointer rcw)
+{
+    return _target.ReadPointer(rcw + /* RCW::CtxCookie offset */);
 }
 ```
 
