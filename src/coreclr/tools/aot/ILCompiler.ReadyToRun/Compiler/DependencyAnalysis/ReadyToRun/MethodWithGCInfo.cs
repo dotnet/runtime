@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, ISymbolDefinitionNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IMethodCodeNodeWithTypeSignature
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -283,7 +283,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (factory.Target.Architecture is TargetArchitecture.Wasm32)
             {
-                DependencyNode node = factory.WasmTypeNode(WasmLowering.GetSignature(_method));
+                DependencyNode node = factory.WasmTypeNode(_method);
                 dependencyList.Add(node, "wasmMethodsNeedExplicitSignatures");
             }
 

@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out CertificateChoiceAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
         {
             try
             {
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

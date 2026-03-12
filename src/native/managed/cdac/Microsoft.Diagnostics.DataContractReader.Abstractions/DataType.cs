@@ -51,7 +51,6 @@ public enum DataType
     DynamicStaticsInfo,
     EEClass,
     CoreLibBinder,
-    ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
     TypeDesc,
@@ -85,6 +84,7 @@ public enum DataType
     SyncBlock,
     SyncTableEntry,
     InteropSyncBlockInfo,
+    SyncBlockCache,
     InstantiatedMethodDesc,
     DynamicMethodDesc,
     StoredSigMethodDesc,
@@ -124,6 +124,7 @@ public enum DataType
     EEJitManager,
     PatchpointInfo,
     PortableEntryPoint,
+    VirtualCallStubManager,
 
     TransitionBlock,
     DebuggerEval,
@@ -143,6 +144,11 @@ public enum DataType
     StubDispatchFrame,
     ComCallWrapper,
     SimpleComCallWrapper,
+    ComMethodTable,
+    RCWCleanupList,
+    RCW,
+    CtxEntry,
+    InterfaceEntry,
 
 
     /* GC Data Types */

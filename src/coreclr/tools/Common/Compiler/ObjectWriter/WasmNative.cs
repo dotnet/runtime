@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
+
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
 

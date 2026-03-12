@@ -309,6 +309,8 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowNonConcreteMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowNonConcreteMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmTypeNode.cs" Link="Compiler\DependencyAnalysis\WasmTypeNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
@@ -325,7 +327,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypeNode.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypeNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
