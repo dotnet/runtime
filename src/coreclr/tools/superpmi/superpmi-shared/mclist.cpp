@@ -93,7 +93,7 @@ bool MCList::processArgAsMCL(char* input, std::vector<int>& list)
     }
 
 checkMCL: // check that mcl list is increasing only
-    if (l[0] != 1)
+    if (l[0] == 0)
     {
         LogError("MCL list needs to start from 1!");
         return false;
