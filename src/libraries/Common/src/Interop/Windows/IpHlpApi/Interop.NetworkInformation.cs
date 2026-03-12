@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -406,12 +407,12 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct MibTcp6RowOwnerPid
+        internal struct MibTcp6RowOwnerPid
         {
-            internal fixed byte LocalAddr[16];
+            internal InlineArray16<byte> LocalAddr;
             internal uint LocalScopeId;
             internal uint LocalPort;
-            internal fixed byte RemoteAddr[16];
+            internal InlineArray16<byte> RemoteAddr;
             internal uint RemoteScopeId;
             internal uint RemotePort;
             internal TcpState State;
@@ -419,8 +420,8 @@ internal static partial class Interop
 
             // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
             // There are reports where the high order bytes have garbage in them.
-            internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(MemoryMarshal.CreateReadOnlySpan(in LocalAddr[0], 16), LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
-            internal readonly IPEndPoint RemoteEndPoint => new(new IPAddress(MemoryMarshal.CreateReadOnlySpan(in RemoteAddr[0], 16), RemoteScopeId), BinaryPrimitives.ReverseEndianness((ushort)RemotePort));
+            internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(LocalAddr, LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
+            internal readonly IPEndPoint RemoteEndPoint => new(new IPAddress(RemoteAddr, RemoteScopeId), BinaryPrimitives.ReverseEndianness((ushort)RemotePort));
         }
 
         internal enum TcpTableClass
@@ -469,16 +470,16 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct MibUdp6RowOwnerPid
+        internal struct MibUdp6RowOwnerPid
         {
-            internal fixed byte LocalAddr[16];
+            internal InlineArray16<byte> LocalAddr;
             internal uint LocalScopeId;
             internal uint LocalPort;
             internal uint OwningPid;
 
             // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
             // There are reports where the high order bytes have garbage in them.
-            internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(MemoryMarshal.CreateReadOnlySpan(in LocalAddr[0], 16), LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
+            internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(LocalAddr, LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
         }
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
