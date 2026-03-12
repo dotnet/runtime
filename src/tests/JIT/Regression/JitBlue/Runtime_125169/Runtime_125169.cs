@@ -26,14 +26,18 @@ public class Runtime_125169
     [Fact]
     public static void TestEntryPoint()
     {
+        byte[][] arr = new byte[100][];
         // Generate enough garbage
         for (int i = 0; i < 100; i++)
         {
-            var arr = new byte[100000];
+            arr[i] = new byte[100000];
         }
 
         ReadOnlySpan<byte> testSpan = new(RefWrapper._data._innerArray);
         // Without the fix, the following GC.Collect call causes fatal error during heap verification with DOTNET_HeapVerify=1
         GC.Collect(0);
+
+        // Prevent the compiler from optimizing out the loop above.
+        GC.KeepAlive(arr);
     }
 }
