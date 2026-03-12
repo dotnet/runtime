@@ -3140,6 +3140,65 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
 }
 
 //------------------------------------------------------------------------
+// ContinuationLayoutBuilder::CreateSharedLayout:
+//   Create a shared continuation layout that is the union of all per-call
+//   layouts. The shared layout contains every local, return type, and
+//   optional field needed by any individual suspension point.
+//
+// Parameters:
+//   comp   - The compiler instance.
+//   states - The vector of async states to merge.
+//
+// Returns:
+//   A new ContinuationLayoutBuilder representing the merged layout.
+//
+ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compiler*                         comp,
+                                                                         const jitstd::vector<AsyncState>& states)
+{
+    unsigned maxLocalStored = 0;
+    for (const AsyncState& state : states)
+    {
+        jitstd::vector<unsigned>& locals = state.Layout->m_locals;
+        if (locals.size() > 0)
+        {
+            maxLocalStored = std::max(maxLocalStored, locals[locals.size() - 1]);
+        }
+    }
+
+    ContinuationLayoutBuilder* sharedLayout = new (comp, CMK_Async) ContinuationLayoutBuilder(comp);
+    BitVecTraits               traits(maxLocalStored + 1, comp);
+    BitVec                     locals(BitVecOps::MakeEmpty(&traits));
+
+    for (const AsyncState& state : states)
+    {
+        ContinuationLayoutBuilder* layout = state.Layout;
+        sharedLayout->m_needsOSRILOffset |= layout->m_needsOSRILOffset;
+        sharedLayout->m_needsException |= layout->m_needsException;
+        sharedLayout->m_needsContinuationContext |= layout->m_needsContinuationContext;
+        sharedLayout->m_needsKeepAlive |= layout->m_needsKeepAlive;
+        sharedLayout->m_needsExecutionContext |= layout->m_needsExecutionContext;
+
+        for (unsigned local : layout->m_locals)
+        {
+            assert(local <= maxLocalStored);
+            BitVecOps::AddElemD(&traits, locals, local);
+        }
+
+        for (const ReturnTypeInfo& ret : layout->m_returns)
+        {
+            sharedLayout->AddReturn(ret);
+        }
+    }
+
+    BitVecOps::VisitBits(&traits, locals, [=](unsigned localNum) {
+        sharedLayout->AddLocal(localNum);
+        return true;
+    });
+
+    return sharedLayout;
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::CreateResumptionSwitch:
 //   Create the IR for the entry of the function that checks the continuation
 //   and dispatches on its state number.

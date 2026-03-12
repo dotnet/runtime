@@ -120,6 +120,9 @@ public:
     }
 
     struct ContinuationLayout* Create();
+
+    static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
+                                                         const jitstd::vector<struct AsyncState>& states);
 };
 
 struct ContinuationLayout
