@@ -280,7 +280,10 @@ struct insGroup
     size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
-    UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
+private:
+    unsigned igNum; // for ordering (and display) purposes
+
+public:
     UNATIVE_OFFSET igOffs;    // offset of this group within method
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
     unsigned short igFlags;   // see IGF_xxx below
@@ -390,6 +393,11 @@ struct insGroup
         return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
+    void     InitializeNum(unsigned num);
+    unsigned GetDisplayId() const;
+    bool     IsBefore(const insGroup* ig) const;
+    bool     IsBeforeOrEqual(const insGroup* ig) const;
+    bool     IsAfter(const insGroup* ig) const;
 }; // end of struct insGroup
 
 //  For AMD64 the maximum prolog/epilog size supported on the OS is 256 bytes
@@ -2866,28 +2874,28 @@ private:
     void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
-    unsigned        emitLastLoopStart;    // Start IG of last inner loop
-    unsigned        emitLastLoopEnd;      // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
-    instrDescAlign* emitAlignList;        // list of all align instructions in method
-    instrDescAlign* emitAlignLast;        // last align instruction in method
+    instrDescAlign* emitCurIGAlignList; // list of align instructions in current IG
+    insGroup*       emitLastLoopStart;  // Start IG of last inner loop
+    insGroup*       emitLastLoopEnd;    // End IG of last inner loop
+    insGroup*       emitLastAlignedIG;  // last IG that has align instruction
+    instrDescAlign* emitAlignList;      // list of all align instructions in method
+    instrDescAlign* emitAlignLast;      // last align instruction in method
 
     // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup*            igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
-                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUGARG(bool isAlignAdjusted) DEBUGARG(insGroup* containingIG)
+                             DEBUGARG(insGroup* loopHeadPredIG)); // Get the smallest loop size
     void     emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool     emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     bool     emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup*     ig,
-                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
-                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
-                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
+                                                  size_t offset DEBUGARG(bool isAlignAdjusted)
+                                                      DEBUGARG(insGroup* containingIG)
+                                                          DEBUGARG(insGroup* loopHeadPredIG));
 
     void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
