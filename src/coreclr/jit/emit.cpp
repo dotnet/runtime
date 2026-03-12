@@ -9765,7 +9765,8 @@ insGroup* emitter::emitAllocIG()
     ig        = (insGroup*)emitGetMem(sz);
 
 #ifdef DEBUG
-    ig->igSelf = ig;
+    ig->igSelf     = ig;
+    ig->igDataSize = 0;
 #endif
 
 #if EMITTER_STATS
@@ -9832,6 +9833,8 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
+
+    ig->igData = nullptr;
 }
 
 /*****************************************************************************
