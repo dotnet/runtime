@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="SpecifiedECDomain"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="both">
 
   <!--
     https://www.secg.org/sec1-v2.pdf, C.2
@@ -24,7 +25,7 @@
   <asn:Integer name="Version" backingType="int" />
   <asn:AsnType name="FieldID" typeName="System.Security.Cryptography.Asn1.FieldID" />
   <asn:AsnType name="Curve" typeName="System.Security.Cryptography.Asn1.CurveAsn" />
-  <asn:OctetString name="Base" />    
+  <asn:OctetString name="Base" />
   <asn:Integer name="Order" backingType="ReadOnlyMemory" />
   <asn:Integer name="Cofactor" backingType="ReadOnlyMemory" optional="true" />
   <asn:ObjectIdentifier name="Hash" optional="true" />

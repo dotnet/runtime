@@ -138,4 +138,96 @@ namespace System.Security.Cryptography.Asn1
             sequenceReader.ThrowIfNotEmpty();
         }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal ref partial struct ValueSpecifiedECDomain
+    {
+        internal int Version;
+        internal ReadOnlySpan<byte> FieldID;
+        internal ReadOnlySpan<byte> Curve;
+        internal ReadOnlySpan<byte> Base;
+        internal ReadOnlySpan<byte> Order;
+        internal ReadOnlySpan<byte> Cofactor;
+        internal bool HasCofactor;
+        internal string? Hash;
+
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueSpecifiedECDomain decoded)
+        {
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+        }
+
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueSpecifiedECDomain decoded)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, out decoded);
+                reader.ThrowIfNotEmpty();
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueSpecifiedECDomain decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+        }
+
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueSpecifiedECDomain decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueSpecifiedECDomain decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> tmpSpan;
+
+
+            if (!sequenceReader.TryReadInt32(out decoded.Version))
+            {
+                sequenceReader.ThrowIfNotEmpty();
+            }
+
+            decoded.FieldID = sequenceReader.ReadEncodedValue();
+            decoded.Curve = sequenceReader.ReadEncodedValue();
+
+            if (sequenceReader.TryReadPrimitiveOctetString(out tmpSpan))
+            {
+                decoded.Base = tmpSpan;
+            }
+            else
+            {
+                decoded.Base = sequenceReader.ReadOctetString();
+            }
+
+            decoded.Order = sequenceReader.ReadIntegerBytes();
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
+            {
+                decoded.Cofactor = sequenceReader.ReadIntegerBytes();
+                decoded.HasCofactor = true;
+            }
+
+
+            if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.ObjectIdentifier))
+            {
+                decoded.Hash = sequenceReader.ReadObjectIdentifier();
+            }
+
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }

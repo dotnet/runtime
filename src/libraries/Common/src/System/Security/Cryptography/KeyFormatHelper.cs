@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
     internal static partial class KeyFormatHelper
     {
         internal delegate void KeyReader<TRet>(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out TRet ret);
+        internal delegate void ValueKeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
 
         internal static unsafe void ReadSubjectPublicKeyInfo<TRet>(
             string[] validOids,
@@ -27,6 +28,36 @@ namespace System.Security.Cryptography
                     ReadSubjectPublicKeyInfo(validOids, manager.Memory, keyReader, out bytesRead, out ret);
                 }
             }
+        }
+
+        internal static void ReadSubjectPublicKeyInfo<TRet>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ValueKeyReader<TRet> keyReader,
+            out int bytesRead,
+            out TRet ret)
+        {
+            ValueSubjectPublicKeyInfoAsn spki;
+            int read;
+
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
+                read = reader.PeekEncodedValue().Length;
+                ValueSubjectPublicKeyInfoAsn.Decode(ref reader, out spki);
+            }
+            catch (AsnContentException e)
+                {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
+            {
+                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+            }
+
+            keyReader(spki.SubjectPublicKey, spki.Algorithm, out ret);
+            bytesRead = read;
         }
 
         internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
@@ -102,6 +133,34 @@ namespace System.Security.Cryptography
                 {
                     ReadPkcs8(validOids, manager.Memory, keyReader, out bytesRead, out ret);
                 }
+            }
+        }
+
+        internal static void ReadPkcs8<TRet>(
+            string[] validOids,
+            ReadOnlySpan<byte> source,
+            ValueKeyReader<TRet> keyReader,
+            out int bytesRead,
+            out TRet ret)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
+                int read = reader.PeekEncodedValue().Length;
+                ValuePrivateKeyInfoAsn.Decode(ref reader, out ValuePrivateKeyInfoAsn privateKeyInfo);
+
+                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                // Fails if there are unconsumed bytes.
+                keyReader(privateKeyInfo.PrivateKey, privateKeyInfo.PrivateKeyAlgorithm, out ret);
+                bytesRead = read;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
