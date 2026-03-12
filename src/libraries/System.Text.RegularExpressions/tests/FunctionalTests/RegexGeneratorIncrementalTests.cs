@@ -632,6 +632,37 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
+        public static void SamePatternDifferentCultures_NotDeduped()
+        {
+            // Two methods with the same pattern+options but different cultures must produce
+            // distinct generated implementations (not be deduped to a single type).
+            string source = """
+                using System.Text.RegularExpressions;
+                public partial class C
+                {
+                    [GeneratedRegex(@"INFO", RegexOptions.IgnoreCase, -1, "en-US")]
+                    public static partial Regex GetEnUs();
+
+                    [GeneratedRegex(@"INFO", RegexOptions.IgnoreCase, -1, "tr-TR")]
+                    public static partial Regex GetTrTr();
+                }
+                """;
+
+            Compilation compilation = CreateCompilation(source);
+            GeneratorDriver driver = CreateRegexGeneratorDriver(compilation);
+
+            driver = driver.RunGenerators(compilation);
+            GeneratorRunResult result = driver.GetRunResult().Results[0];
+            Assert.Empty(result.Diagnostics);
+            Assert.NotEmpty(result.GeneratedSources);
+
+            // Both methods should have their own generated implementation class.
+            string generatedCode = result.GeneratedSources[0].SourceText.ToString();
+            Assert.Contains("GetEnUs_0", generatedCode);
+            Assert.Contains("GetTrTr_1", generatedCode);
+        }
+
+        [Fact]
         public static void CompilationOptionsChange_Regenerates()
         {
             string source = """
