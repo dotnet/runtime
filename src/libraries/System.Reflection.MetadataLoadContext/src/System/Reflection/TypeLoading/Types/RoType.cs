@@ -100,7 +100,7 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
 
         //  Don't seal since we may need to convert any modified types to unmodified.
-        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray();
+        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray<Type>();
 
         protected internal abstract RoType[] GetGenericArgumentsNoCopy();
 

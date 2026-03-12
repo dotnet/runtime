@@ -12,9 +12,11 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
@@ -178,12 +180,6 @@ namespace ILCompiler.ObjectWriter
             Utf8String symbolName,
             long addend)
         {
-            if (_nodeFactory.Target.IsWasm)
-            {
-                // TODO-WASM: Implement or resolve relocations
-                return;
-            }
-
             if (!UsesSubsectionsViaSymbols &&
                 relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
                 or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
@@ -435,25 +431,38 @@ namespace ILCompiler.ObjectWriter
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
 #if !READYTORUN
-                bool recordSize = isMethod;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 #else
-                bool recordSize = true;
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
 
-                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
+                if (node is WasmTypeNode signature)
                 {
-                    // Record only information we can get from the MethodDesc here. The actual
-                    // body will be emitted by the call to EmitData() at the end
-                    // of this loop iteration.
-                    RecordMethodSignature((ISymbolDefinitionNode)node, methodNode.Method);
+                    RecordMethodSignature(signature);
                 }
-                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
+
+
+                if (node is AssemblyStubNode && _nodeFactory.Target.IsWasm)
                 {
-                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
+                    // TODO-Wasm: Handle AssemblyStubNode.
+                    // It is the other primary IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
                     continue;
+                }
+
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
+                {
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
+                    // TODO: eventually this should check IMethodCodeNodeWithTypeSignature
+                    // Once we have signatures implemented for all code-carrying nodes
+                    if (node is IMethodBodyNode methodNode)
+                    {
+                        // Record only information we can get from the MethodDesc here. The actual
+                        // body will be emitted by the call to EmitData() at the end
+                        // of this loop iteration.
+                        RecordMethodDeclaration(codeNode, methodNode.Method);
+                    }
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -462,7 +471,7 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
-                        n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
+                        n.Offset == 0 ? nodeContents.Data.Length : 0);
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 
@@ -473,7 +482,7 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
-                            n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0,
+                            n.Offset == 0 ? nodeContents.Data.Length : 0,
                             global: !isHidden);
 
                         if (n is IMethodNode)
@@ -493,17 +502,21 @@ namespace ILCompiler.ObjectWriter
 
                 if (nodeContents.Relocs is not null)
                 {
+                    // For platforms such as Wasm where we must prepend the length before writing blocks,
+                    // we need to adjust the offset of the relocation by the length prefix
+                    uint additionalOffset = sectionWriter.HasLengthPrefix ? sectionWriter.LengthPrefixSize(nodeContents.Data.Length) : 0;
+
                     blocksToRelocate.Add(new BlockToRelocate(
                         sectionWriter.SectionIndex,
-                        sectionWriter.Position,
+                        sectionWriter.Position + additionalOffset,
                         nodeContents.Data,
                         nodeContents.Relocs));
 
 #if DEBUG
                     // Pointer relocs should be aligned at pointer boundaries within the image.
                     // Processing misaligned relocs (especially relocs that straddle page boundaries) can be
-                    // expensive on Windows. But: we can't guarantee this on x86.
-                    if (_nodeFactory.Target.Architecture != TargetArchitecture.X86)
+                    // expensive on Windows. But: we can't guarantee this on x86, and Wasm doesn't have reloc pointer alignment requirements.
+                    if (_nodeFactory.Target.Architecture is not TargetArchitecture.X86 and not TargetArchitecture.Wasm32)
                     {
                         bool hasPointerRelocs = false;
                         foreach (Relocation reloc in nodeContents.Relocs)
@@ -652,12 +665,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodSignature(ISymbolDefinitionNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
         {
-            if (LayoutMode != CodeDataLayout.Separate)
-            {
-                throw new InvalidOperationException($"RecordMethod() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
-            }
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
+        }
+
+        private protected virtual void RecordMethodSignature(WasmTypeNode signature)
+        {
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
@@ -759,8 +774,9 @@ namespace ILCompiler.ObjectWriter
         private struct ProgressReporter
         {
             private readonly Logger _logger;
-            private readonly int _increment;
+            private readonly int _total;
             private int _current;
+            private int _lastReportedStep;
 
             // Will report progress every (100 / 10) = 10%
             private const int Steps = 10;
@@ -768,18 +784,20 @@ namespace ILCompiler.ObjectWriter
             public ProgressReporter(Logger logger, int total)
             {
                 _logger = logger;
-                _increment = total / Steps;
+                _total = total;
                 _current = 0;
+                _lastReportedStep = 0;
             }
 
             public void LogProgress()
             {
                 _current++;
 
-                int adjusted = _current + Steps - 1;
-                if ((adjusted % _increment) == 0)
+                int step = (_current * Steps) / _total;
+                if (step > _lastReportedStep)
                 {
-                    _logger.LogMessage($"{(adjusted / _increment) * (100 / Steps)}%...");
+                    _logger.LogMessage($"{step * (100 / Steps)}%...");
+                    _lastReportedStep = step;
                 }
             }
         }

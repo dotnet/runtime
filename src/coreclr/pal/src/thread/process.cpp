@@ -140,18 +140,6 @@ CAllowedObjectTypes aotProcess(otiProcess);
 IPalObject* CorUnix::g_pobjProcess;
 
 //
-// Critical section that protects process data (e.g., the
-// list of active threads)/
-//
-minipal_mutex g_csProcess;
-
-//
-// List and count of active threads
-//
-CPalThread* CorUnix::pGThreadList;
-DWORD g_dwThreadCount;
-
-//
 // The command line and app name for the process
 //
 LPWSTR g_lpwstrCmdLine = NULL;
@@ -194,6 +182,9 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
+
+// Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
+Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32
@@ -498,7 +489,7 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
-#ifdef TARGET_TVOS
+#if defined(TARGET_TVOS) || defined(TARGET_WASM)
     return ERROR_NOT_SUPPORTED;
 #else
     PAL_ERROR palError = NO_ERROR;
@@ -1037,7 +1028,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
-#endif // !TARGET_TVOS
+#endif // !TARGET_TVOS && !TARGET_WASM
 }
 
 
@@ -1356,6 +1347,26 @@ PAL_SetCreateDumpCallback(
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetLogManagedCallstackForSignalCallback
+
+Abstract:
+  Sets a callback that is executed when a signal is received to log the managed callstack.
+  Used by Android CoreCLR since CreateDump is not supported on Android.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback)
+{
+    _ASSERTE(g_logManagedCallstackForSignalCallback == nullptr);
+    g_logManagedCallstackForSignalCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -2408,7 +2419,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WASM)
     return FALSE;
 #else
     _ASSERTE(argv[0] != nullptr);
@@ -2585,7 +2596,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
-#endif // !TARGET_IOS && !TARGET_TVOS
+#endif // !TARGET_IOS && !TARGET_TVOS && !TARGET_WASM
 }
 
 /*++
@@ -2684,6 +2695,7 @@ Return:
     FALSE failed
 --*/
 BOOL
+PALAPI
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
@@ -2722,6 +2734,43 @@ static void DoNotOptimize(const void* p)
     (void)p;
 }
 
+static LPCWSTR GetSignalName(int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV: return W("SIGSEGV");
+        case SIGBUS:  return W("SIGBUS");
+        case SIGFPE:  return W("SIGFPE");
+        case SIGILL:  return W("SIGILL");
+        case SIGABRT: return W("SIGABRT");
+        case SIGTRAP: return W("SIGTRAP");
+        case SIGTERM: return W("SIGTERM");
+        default:      return W("Unknown signal");
+    }
+}
+
+/*++
+Function:
+  PROCLogManagedCallstackForSignal
+
+  Invokes the registered callback to log the managed callstack for a signal.
+  Used by Android since CreateDump is not supported there.
+
+Parameters:
+  signal - POSIX signal number
+
+(no return value)
+--*/
+VOID
+PROCLogManagedCallstackForSignal(int signal)
+{
+    if (g_logManagedCallstackForSignalCallback != nullptr)
+    {
+        LPCWSTR signalName = GetSignalName(signal);
+        g_logManagedCallstackForSignalCallback(signalName);
+    }
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2745,7 +2794,6 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // TODO: Dump all managed threads callstacks into logcat and/or file?
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }
@@ -2932,31 +2980,6 @@ PROCGetProcessIDFromHandle(
 PROCGetProcessIDFromHandleExit:
 
     return dwProcessId;
-}
-
-PAL_ERROR
-CorUnix::InitializeProcessData(
-    void
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    bool fLockInitialized = FALSE;
-
-    pGThreadList = NULL;
-    g_dwThreadCount = 0;
-
-    minipal_mutex_init(&g_csProcess);
-    fLockInitialized = TRUE;
-
-    if (NO_ERROR != palError)
-    {
-        if (fLockInitialized)
-        {
-            minipal_mutex_destroy(&g_csProcess);
-        }
-    }
-
-    return palError;
 }
 
 /*++
@@ -3167,223 +3190,17 @@ Return
 VOID
 PROCCleanupInitialProcess(VOID)
 {
-    CPalThread *pThread = InternalGetCurrentThread();
-
-    minipal_mutex_enter(&g_csProcess);
-
     /* Free the application directory */
     free(g_lpwstrAppDir);
 
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    minipal_mutex_leave(&g_csProcess);
-
     //
     // Object manager shutdown will handle freeing the underlying
     // thread and process data
     //
-
 }
-
-/*++
-Function:
-  PROCAddThread
-
-Abstract
-  Add a thread to the thread list of the current process
-
-Parameter
-  pThread:   Thread object
-
---*/
-VOID
-CorUnix::PROCAddThread(
-    CPalThread *pCurrentThread,
-    CPalThread *pTargetThread
-    )
-{
-    /* protect the access of the thread list with critical section for
-       mutithreading access */
-    minipal_mutex_enter(&g_csProcess);
-
-    pTargetThread->SetNext(pGThreadList);
-    pGThreadList = pTargetThread;
-    g_dwThreadCount += 1;
-
-    TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
-          pTargetThread, pTargetThread->GetThreadId());
-
-    minipal_mutex_leave(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCRemoveThread
-
-Abstract
-  Remove a thread form the thread list of the current process
-
-Parameter
-  CPalThread *pThread : thread object to remove
-
-(no return value)
---*/
-VOID
-CorUnix::PROCRemoveThread(
-    CPalThread *pCurrentThread,
-    CPalThread *pTargetThread
-    )
-{
-    CPalThread *curThread, *prevThread;
-
-    /* protect the access of the thread list with critical section for
-       mutithreading access */
-    minipal_mutex_enter(&g_csProcess);
-
-    curThread = pGThreadList;
-
-    /* if thread list is empty */
-    if (curThread == NULL)
-    {
-        ASSERT("Thread list is empty.\n");
-        goto EXIT;
-    }
-
-    /* do we remove the first thread? */
-    if (curThread == pTargetThread)
-    {
-        pGThreadList =  curThread->GetNext();
-        TRACE("Thread 0x%p (id %#x) removed from the process thread list\n",
-            pTargetThread, pTargetThread->GetThreadId());
-        goto EXIT;
-    }
-
-    prevThread = curThread;
-    curThread = curThread->GetNext();
-    /* find the thread to remove */
-    while (curThread != NULL)
-    {
-        if (curThread == pTargetThread)
-        {
-            /* found, fix the chain list */
-            prevThread->SetNext(curThread->GetNext());
-            g_dwThreadCount -= 1;
-            TRACE("Thread %p removed from the process thread list\n", pTargetThread);
-            goto EXIT;
-        }
-
-        prevThread = curThread;
-        curThread = curThread->GetNext();
-    }
-
-    WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
-
-EXIT:
-    minipal_mutex_leave(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCGetNumberOfThreads
-
-Abstract
-  Return the number of threads in the thread list.
-
-Parameter
-  void
-
-Return
-  the number of threads.
---*/
-INT
-CorUnix::PROCGetNumberOfThreads(
-    VOID)
-{
-    return g_dwThreadCount;
-}
-
-
-/*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
-
-Parameter
-  void
-
-Return
-  void
---*/
-VOID
-PROCProcessLock(
-    VOID)
-{
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    minipal_mutex_enter(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
-
-Parameter
-  void
-
-Return
-  void
---*/
-VOID
-PROCProcessUnlock(
-    VOID)
-{
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    minipal_mutex_leave(&g_csProcess);
-}
-
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds
-
-Abstract
-  Cleanup SysV semaphore ids for all threads
-
-(no parameters, no return value)
---*/
-VOID
-PROCCleanupThreadSemIds(void)
-{
-    //
-    // When using SysV semaphores, the semaphore ids used by PAL threads must be removed
-    // so they can be used again.
-    //
-
-    PROCProcessLock();
-
-    CPalThread *pTargetThread = pGThreadList;
-    while (NULL != pTargetThread)
-    {
-        pTargetThread->suspensionInfo.DestroySemaphoreIds();
-        pTargetThread = pTargetThread->GetNext();
-    }
-
-    PROCProcessUnlock();
-
-}
-#endif // USE_SYSV_SEMAPHORES
 
 /*++
 Function:
@@ -3653,31 +3470,6 @@ bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicati
         && buffer.Append('/');
 }
 #endif // __APPLE__
-
-#ifdef _DEBUG
-void PROCDumpThreadList()
-{
-    CPalThread *pThread;
-
-    PROCProcessLock();
-
-    TRACE ("Threads:{\n");
-
-    pThread = pGThreadList;
-    while (NULL != pThread)
-    {
-        TRACE ("    {pThr=0x%p tid=%#x lwpid=%#x state=%d finsusp=%d}\n",
-               pThread, (int)pThread->GetThreadId(), (int)pThread->GetLwpId(),
-               (int)pThread->synchronizationInfo.GetThreadState(),
-               (int)pThread->suspensionInfo.GetSuspendedForShutdown());
-
-        pThread = pThread->GetNext();
-    }
-    TRACE ("Threads:}\n");
-
-    PROCProcessUnlock();
-}
-#endif
 
 /* Internal function definitions **********************************************/
 

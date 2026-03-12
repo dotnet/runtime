@@ -6,12 +6,14 @@ using System;
 using System.Reflection;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 #pragma warning disable CS0612, CS0618
 
 public class Test
 {
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/65698", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/179", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]

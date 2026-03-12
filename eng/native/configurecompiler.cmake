@@ -20,6 +20,21 @@ include(CheckLinkerFlag)
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
+# Validate tryrun cache version matches current Emscripten version (browser-wasm only)
+if(CLR_CMAKE_TARGET_BROWSER AND DEFINED TRYRUN_BROWSER_EMSCRIPTEN_VERSION)
+    file(READ "${CMAKE_CURRENT_LIST_DIR}/../../src/mono/browser/emscripten-version.txt" CURRENT_EMSCRIPTEN_VERSION)
+    string(STRIP "${CURRENT_EMSCRIPTEN_VERSION}" CURRENT_EMSCRIPTEN_VERSION)
+    
+    if(NOT TRYRUN_BROWSER_EMSCRIPTEN_VERSION STREQUAL CURRENT_EMSCRIPTEN_VERSION)
+        message(WARNING 
+            "Emscripten version mismatch detected!\n"
+            "  Current Emscripten: ${CURRENT_EMSCRIPTEN_VERSION}\n"
+            "  Cached features for: ${TRYRUN_BROWSER_EMSCRIPTEN_VERSION}\n"
+            "  The CMake feature cache (eng/native/tryrun.browser.cmake) may be outdated.\n"
+            "  Consider regenerating the cache - see instructions in eng/native/tryrun.browser.cmake")
+    endif()
+endif()
+
 #-----------------------------------------------------
 # Initialize Cmake compiler flags and other variables
 #-----------------------------------------------------
@@ -310,7 +325,7 @@ if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag(-Wl,--build-id=sha1)
   add_linker_flag(-Wl,-z,relro,-z,now)
-elseif(CLR_CMAKE_HOST_FREEBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag("-Wl,--build-id=sha1")
 elseif(CLR_CMAKE_HOST_SUNOS)
@@ -453,6 +468,14 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   elseif(CLR_CMAKE_HOST_NETBSD)
     message("Detected NetBSD amd64")
+  elseif(CLR_CMAKE_HOST_OPENBSD)
+    if(CLR_CMAKE_HOST_UNIX_ARM64)
+      message("Detected OpenBSD aarch64")
+    elseif(CLR_CMAKE_HOST_UNIX_AMD64)
+      message("Detected OpenBSD amd64")
+    else()
+      message(FATAL_ERROR "Unsupported OpenBSD architecture")
+    endif()
   elseif(CLR_CMAKE_HOST_SUNOS)
     message("Detected SunOS amd64")
   elseif(CLR_CMAKE_HOST_HAIKU)
@@ -712,6 +735,8 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
       endif()
     endif()
     add_link_options(${DISABLE_OVERRIDING_MIN_VERSION_ERROR})
+    # Keep the Catalyst version in the -target triples below in sync
+    # with MacCatalystVersionMin in SetOSTargetMinVersions in Directory.Build.props.
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios17.0-macabi")
       add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
@@ -768,6 +793,8 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
+  elseif(CLR_CMAKE_TARGET_OPENBSD)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_OPENBSD>)
   elseif(CLR_CMAKE_TARGET_SUNOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_SUNOS>)
     if(CLR_CMAKE_TARGET_OS_ILLUMOS)

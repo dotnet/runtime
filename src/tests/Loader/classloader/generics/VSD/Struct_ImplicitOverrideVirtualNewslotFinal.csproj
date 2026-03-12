@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="Struct_ImplicitOverrideVirtualNewslotFinal.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

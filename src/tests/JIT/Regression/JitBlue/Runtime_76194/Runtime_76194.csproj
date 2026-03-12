@@ -9,4 +9,7 @@
     <CMakeProjectReference Include="CMakeLists.txt" />
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

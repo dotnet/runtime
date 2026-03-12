@@ -3,12 +3,14 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 namespace ReproMAUI6811;
 
 public static class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

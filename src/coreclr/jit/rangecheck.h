@@ -289,6 +289,19 @@ struct Range
         return lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == INT32_MIN) &&
                (uLimit.GetConstant() == INT32_MAX);
     }
+
+    bool IsSingleValueConstant(int* cns = nullptr) const
+    {
+        if (lLimit.IsConstant() && uLimit.IsConstant() && (lLimit.GetConstant() == uLimit.GetConstant()))
+        {
+            if (cns != nullptr)
+            {
+                *cns = lLimit.GetConstant();
+            }
+            return true;
+        }
+        return false;
+    }
 };
 
 // Helpers for operations performed on ranges
@@ -311,9 +324,9 @@ struct RangeOps
         return result;
     }
 
-    static Range Add(const Range& r1, const Range& r2)
+    static Range Add(const Range& r1, const Range& r2, bool unsignedAdd = false)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
+        return ApplyRangeOp(r1, r2, [unsignedAdd](const Limit& a, const Limit& b) {
             // For Add we support:
             //   keConstant + keConstant  => keConstant
             //   keBinOpArray + keConstant => keBinOpArray
@@ -326,7 +339,8 @@ struct RangeOps
                     return Limit(Limit::keUnknown);
                 }
 
-                if (!IntAddOverflows(a.GetConstant(), b.GetConstant()))
+                static_assert(CheckedOps::Unsigned == true);
+                if (!CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd))
                 {
                     if (a.IsConstant() && b.IsConstant())
                     {
@@ -341,30 +355,73 @@ struct RangeOps
         });
     }
 
-    static Range Multiply(const Range& r1, const Range& r2)
+    static Range Subtract(const Range& r1, const Range& r2, bool unsignedSub = false)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            // For Mul we require both operands to be constant to produce a constant result.
-            if (b.IsConstant() && a.IsConstant() &&
-                !CheckedOps::MulOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() * b.GetConstant());
-            }
+        if (unsignedSub)
+        {
+            return Limit(Limit::keUnknown); // Give up on unsigned subtraction for now
+        }
+
+        // Delegate to Add after negating the second operand. Possible overflows will be handled there.
+        return Add(r1, Negate(r2));
+    }
+
+    static Range Multiply(const Range& r1, const Range& r2, bool unsignedMul = false)
+    {
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
+            Range result = Limit(Limit::keUnknown);
+            // Propagate the "dependent" property if either of the limits is dependent.
+            result.lLimit = r1.LowerLimit().IsDependent() || r2.LowerLimit().IsDependent() ? Limit(Limit::keDependent)
+                                                                                           : Limit(Limit::keUnknown);
+            result.uLimit = r1.UpperLimit().IsDependent() || r2.UpperLimit().IsDependent() ? Limit(Limit::keDependent)
+                                                                                           : Limit(Limit::keUnknown);
+            return result;
+        }
+
+        int r1lo = r1.LowerLimit().GetConstant();
+        int r1hi = r1.UpperLimit().GetConstant();
+        int r2lo = r2.LowerLimit().GetConstant();
+        int r2hi = r2.UpperLimit().GetConstant();
+
+        static_assert(CheckedOps::Unsigned == true);
+        if (CheckedOps::MulOverflows(r1lo, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1lo, r2hi, unsignedMul) ||
+            CheckedOps::MulOverflows(r1hi, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1hi, r2hi, unsignedMul))
+        {
             return Limit(Limit::keUnknown);
-        });
+        }
+
+        int lo = min(min(r1lo * r2lo, r1lo * r2hi), min(r1hi * r2lo, r1hi * r2hi));
+        int hi = max(max(r1lo * r2lo, r1lo * r2hi), max(r1hi * r2lo, r1hi * r2hi));
+        assert(hi >= lo);
+        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
     }
 
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            // For now, we only support r1 >> positive_cns (to simplify)
-            // Hence, it doesn't matter if it's logical or arithmetic.
-            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && ((unsigned)b.GetConstant() <= 31))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() >> b.GetConstant());
-            }
-            return Limit(Limit::keUnknown);
-        });
+        Range result = Limit(Limit::keUnknown);
+
+        // For SHR we require the rhs to be a constant range within [0..31].
+        // We only perform the shift if the lhs is also a constant range (never-negative for now
+        // to handle both logical and arithmetic shifts uniformly).
+        if (!r2.IsConstantRange() || (static_cast<unsigned>(r2.LowerLimit().GetConstant()) > 31) ||
+            (static_cast<unsigned>(r2.UpperLimit().GetConstant()) > 31))
+        {
+            return result;
+        }
+
+        // We shift by r2.UpperLimit() for the lower limit and by r2.LowerLimit() for the upper limit.
+        // Example: [0..65535] >> [0..3] = [0 >> 3 .. 65535 >> 0] = [0..65535]
+        //          [0..65535] >> [2..2] = [0 >> 2 .. 65535 >> 2] = [0..16383]
+        if (r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() >> r2.UpperLimit().GetConstant());
+        }
+        if (r1.UpperLimit().IsConstant() && (r1.UpperLimit().GetConstant() >= 0))
+        {
+            result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() >> r2.LowerLimit().GetConstant());
+        }
+        return result;
     }
 
     static Range ShiftLeft(const Range& r1, const Range& r2)
@@ -393,61 +450,45 @@ struct RangeOps
 
     static Range And(const Range& r1, const Range& r2)
     {
-        const Limit& r1lo = r1.LowerLimit();
-        const Limit& r2lo = r2.LowerLimit();
+        // Conservatively expect at least one operand to be a single-value constant.
+        // The math gets too complicated otherwise (and rarely useful in practice).
+        int  r1ConstVal;
+        int  r2ConstVal;
+        bool r1IsConstVal = r1.IsSingleValueConstant(&r1ConstVal);
+        bool r2IsConstVal = r2.IsSingleValueConstant(&r2ConstVal);
 
-        const Limit& r1hi = r1.UpperLimit();
-        const Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // if either lower bound is a non-negative constant, result >= 0
-        if ((r1lo.IsConstant() && (r1lo.GetConstant() >= 0)) || (r2lo.IsConstant() && (r2lo.GetConstant() >= 0)))
+        // Both ranges are single constant values.
+        // Example: [7..7] & [3..3] = [3..3]
+        if (r1IsConstVal && r2IsConstVal)
         {
-            // Example: [4.. ] & [unknown.. ] = [4.. ]
-            result.lLimit = Limit(Limit::keConstant, 0);
-        }
-        // Even if both r1 and r2 lower bounds are known non-negative constants, still the best we can do
-        // is >= 0 in a general case due to the way bitwise AND works.
-
-        // if either upper bound is a non-negative constant, result <= cns
-        if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
-        {
-            // Example: [ ..X] & [ ..5] = [ ..5]
-            result.uLimit = Limit(Limit::keConstant, r2hi.GetConstant());
-        }
-        else if (r1hi.IsConstant() && (r1hi.GetConstant() >= 0))
-        {
-            // Example: [ ..5] & [ ..X] = [ ..5]
-            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant());
+            return Range(Limit(Limit::keConstant, r1ConstVal & r2ConstVal));
         }
 
-        // Both upper bounds are constant, take the min
-        if (r1hi.IsConstant() && r2hi.IsConstant() && (r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
+        // One of the ranges is a single constant value.
+        // Example: [unknown..unknown] & [3..3] = [0..3]
+        if (r1IsConstVal && (r1ConstVal >= 0))
         {
-            // Example: [ ..7] & [ ..5] = [ ..5]
-            result.uLimit = Limit(Limit::keConstant, min(r1hi.GetConstant(), r2hi.GetConstant()));
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r1ConstVal));
+        }
+        if (r2IsConstVal && (r2ConstVal >= 0))
+        {
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal));
         }
 
-        return result;
+        // Otherwise, we cannot determine the result range.
+        return Range(Limit(Limit::keUnknown));
     }
 
     static Range UnsignedMod(const Range& r1, const Range& r2)
     {
-        Range result = Limit(Limit::keUnknown);
-
-        const Limit& r2lo = r2.LowerLimit();
-        const Limit& r2hi = r2.UpperLimit();
-
-        // For X UMOD Y we only handle the case when Y is a fixed non-negative constant.
+        // For X UMOD Y we only handle the case when Y is a fixed positive constant.
         // Example: X % 5 -> [0..4]
-        //
-        if (r2lo.IsConstant() && r2lo.Equals(r2hi) && (r2lo.GetConstant() > 0))
+        int r2ConstVal;
+        if (r2.IsSingleValueConstant(&r2ConstVal) && (r2ConstVal > 0))
         {
-            result.lLimit = Limit(Limit::keConstant, 0);
-            result.uLimit = Limit(Limit::keConstant, r2lo.GetConstant() - 1);
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal - 1));
         }
-        return result;
+        return Range(Limit(Limit::keUnknown));
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
@@ -620,13 +661,6 @@ struct RangeOps
         return result;
     }
 
-    enum class RelationKind
-    {
-        AlwaysTrue,
-        AlwaysFalse,
-        Unknown
-    };
-
     //------------------------------------------------------------------------
     // EvalRelop: Evaluate the relation between two ranges for the given relop
     //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
@@ -638,11 +672,9 @@ struct RangeOps
     //    y          - The right range
     //
     // Returns:
-    //    AlwaysTrue when the given relop always evaluates to true for the given ranges
-    //    AlwaysFalse when the given relop always evaluates to false for the given ranges
-    //    Otherwise Unknown
+    //    Either [0..0] (AlwaysFalse), [1..1] (AlwaysTrue), or [0..1] (all relops are guaranteed to return 0 or 1)
     //
-    static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
+    static Range EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
     {
         assert(x.IsValid());
         assert(y.IsValid());
@@ -655,10 +687,11 @@ struct RangeOps
         // For unsigned comparisons, we only support non-negative ranges.
         if (isUnsigned)
         {
-            if (!xLower.IsConstant() || !yUpper.IsConstant() || (xLower.GetConstant() < 0) ||
+            if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
                 (yLower.GetConstant() < 0))
             {
-                return RelationKind::Unknown;
+                // Relops always return either 0 or 1.
+                return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 1));
             }
         }
 
@@ -668,12 +701,12 @@ struct RangeOps
             case GT_LT:
                 if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() >= yUpper.GetConstant()))
                 {
-                    return relop == GT_GE ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                    return Range(Limit(Limit::keConstant, relop == GT_GE ? 1 : 0));
                 }
 
                 if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant()))
                 {
-                    return relop == GT_GE ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    return Range(Limit(Limit::keConstant, relop == GT_GE ? 0 : 1));
                 }
                 break;
 
@@ -681,21 +714,32 @@ struct RangeOps
             case GT_LE:
                 if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant()))
                 {
-                    return relop == GT_GT ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                    return Range(Limit(Limit::keConstant, relop == GT_GT ? 1 : 0));
                 }
 
                 if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() <= yLower.GetConstant()))
                 {
-                    return relop == GT_GT ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    return Range(Limit(Limit::keConstant, relop == GT_GT ? 0 : 1));
                 }
                 break;
 
             case GT_EQ:
             case GT_NE:
+                // If the ranges do not overlap, then EQ is always false, NE is always true.
+                // Example: x = [6..10], y = [0..5] -> EQ is always false, NE is always true.
                 if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
                     (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
                 {
-                    return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                    return Range(Limit(Limit::keConstant, relop == GT_EQ ? 0 : 1));
+                }
+
+                // If both ranges are single constant and equal, then EQ is always true, NE is always false.
+                // Example: x = [5..5], y = [5..5] -> EQ is always true, NE is always false.
+                if (x.LowerLimit().IsConstant() && y.LowerLimit().IsConstant() &&
+                    x.LowerLimit().Equals(x.UpperLimit()) && y.LowerLimit().Equals(y.UpperLimit()) &&
+                    x.LowerLimit().GetConstant() == y.LowerLimit().GetConstant())
+                {
+                    return Range(Limit(Limit::keConstant, relop == GT_EQ ? 1 : 0));
                 }
                 break;
 
@@ -703,7 +747,8 @@ struct RangeOps
                 assert(!"unknown comparison operator");
                 break;
         }
-        return RelationKind::Unknown;
+        // Relops always return either 0 or 1.
+        return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 1));
     }
 };
 
@@ -721,6 +766,9 @@ public:
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
+
+    // Compute the range from the given type
+    static Range GetRangeFromType(var_types type);
 
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
@@ -743,9 +791,6 @@ private:
     // Internal worker for GetRange.
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
-    // Compute the range from the given type
-    Range GetRangeFromType(var_types type);
-
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
@@ -763,6 +808,8 @@ private:
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
+
+    static Limit TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower);
 
     // Inspect the assertions about the current ValueNum to refine pRange
     static void MergeEdgeAssertions(Compiler*        comp,
@@ -832,7 +879,7 @@ private:
     void        ClearSearchPath();
     SearchPath* m_pSearchPath;
 
-    Compiler*     m_pCompiler;
+    Compiler*     m_compiler;
     CompAllocator m_alloc;
 
     // The number of nodes for which range is computed throughout the current method.

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -621,12 +622,18 @@ internal sealed class Xcode
                 File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
                     Utils.GetEmbeddedResource("host_runtime_contract.h"));
 
+                var (appContextKeys, appContextValues, propertyCount, propertyCountInvariant) = RenderCoreClrRuntimeConfigProperties(workspace);
+
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                     Utils.GetEmbeddedResource("runtime-coreclr.m")
                         .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                         .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
-                        .Replace("%EnvVariables%", envVariables));
+                        .Replace("%EnvVariables%", envVariables)
+                        .Replace("%AppContextPropertyCount%", propertyCount.ToString())
+                        .Replace("%AppContextPropertyCount_InvariantGlobalization%", propertyCountInvariant.ToString())
+                        .Replace("%AppContextKeys%", appContextKeys)
+                        .Replace("%AppContextValues%", appContextValues));
             }
         }
 
@@ -755,5 +762,79 @@ internal sealed class Xcode
     public static string GetAppPath(string appDirectory, string xcodePrjPath)
     {
         return Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+    }
+
+    private (string appContextKeys, string appContextValues, int propertyCount, int propertyCountInvariant) RenderCoreClrRuntimeConfigProperties(string workspace)
+    {
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(workspace);
+
+        // Hardcoded properties count:
+        // - RUNTIME_IDENTIFIER, APP_CONTEXT_BASE_DIRECTORY, TRUSTED_PLATFORM_ASSEMBLIES, HOST_RUNTIME_CONTRACT = 4
+        // - ICU_DAT_FILE_PATH (only when !INVARIANT_GLOBALIZATION) = 1
+        const int hardcodedPropertiesWithIcu = 5;
+        const int hardcodedPropertiesWithoutIcu = 4;
+
+        var appContextKeys = new StringBuilder();
+        var appContextValues = new StringBuilder();
+
+        int i = 0;
+        foreach ((string key, string value) in configProperties)
+        {
+            appContextKeys.AppendLine($"#if defined(INVARIANT_GLOBALIZATION)");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedPropertiesWithoutIcu}] = \"{key}\";");
+            appContextKeys.AppendLine($"#else");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedPropertiesWithIcu}] = \"{key}\";");
+            appContextKeys.AppendLine($"#endif");
+
+            appContextValues.AppendLine($"#if defined(INVARIANT_GLOBALIZATION)");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedPropertiesWithoutIcu}] = \"{value}\";");
+            appContextValues.AppendLine($"#else");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedPropertiesWithIcu}] = \"{value}\";");
+            appContextValues.AppendLine($"#endif");
+            i++;
+        }
+
+        int propertyCount = hardcodedPropertiesWithIcu + configProperties.Count;
+        int propertyCountInvariant = hardcodedPropertiesWithoutIcu + configProperties.Count;
+
+        return (appContextKeys.ToString().TrimEnd(), appContextValues.ToString().TrimEnd(), propertyCount, propertyCountInvariant);
+    }
+
+    private Dictionary<string, string> ParseRuntimeConfigProperties(string workspace)
+    {
+        var configProperties = new Dictionary<string, string>();
+        string runtimeConfigPath = Path.Combine(workspace, "runtimeconfig.bin");
+
+        if (!File.Exists(runtimeConfigPath))
+        {
+            return configProperties;
+        }
+
+        try
+        {
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
+            {
+                fixed (byte* ptr = fileBytes)
+                {
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    int count = blobReader.ReadCompressedInteger();
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
+        }
+
+        return configProperties;
     }
 }

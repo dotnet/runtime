@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Xunit;
+using TestLibrary;
 
 public class Base {}
 public class Sub : Base {}
@@ -170,6 +171,7 @@ public class TestClass
 		}	
 	}
 	
+ [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
 	[Fact]
 	public static int TestEntryPoint()
 	{			

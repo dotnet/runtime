@@ -88,12 +88,6 @@
 
     <UsePartialNGENOptimization Condition="'$(UsePartialNGENOptimization)' == ''">false</UsePartialNGENOptimization>
 
-    <RunWithAndroid>false</RunWithAndroid>
-    <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
-
-    <RunWithiOS>false</RunWithiOS>
-    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">true</RunWithiOS>
-
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
     <RuntimeVariant Condition="'$(__MonoAot)' == '1'">llvmaot</RuntimeVariant>
@@ -179,8 +173,7 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
   </PropertyGroup>
 
-  <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID
-       and including the RID breaks some of our glob expressions in issues.targets -->
+  <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID. -->
   <PropertyGroup>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>

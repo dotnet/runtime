@@ -8,6 +8,7 @@
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 #error Requires FEATURE_PORTABLE_ENTRYPOINTS to be set
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#include "cdacdata.h"
 
 class PortableEntryPoint final
 {
@@ -48,8 +49,10 @@ public:
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
 
-    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute
-    bool HasUnmanagedCallersOnlyAttribute();
+    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
+    // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
+    // already done.
+    bool EnsureCodeForUnmanagedCallersOnly();
 
     // Query methods for entry point state.
     bool HasInterpreterCode() const
@@ -74,7 +77,14 @@ public:
         // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
         return _pInterpreterData != nullptr && _pActualCode != nullptr;
     }
+    friend struct ::cdac_data<PortableEntryPoint>;
 };
+template<>
+struct cdac_data<PortableEntryPoint>
+{
+    static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
+};
+
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 

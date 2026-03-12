@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "exinfo.h"
+#include "exkind.h"
 #include "dbginterface.h"
 
 #include "eetoprofinterfacewrapper.inl"

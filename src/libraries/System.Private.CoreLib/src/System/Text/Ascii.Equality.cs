@@ -49,7 +49,7 @@ namespace System.Text
              || (typeof(TLeft) == typeof(byte) && typeof(TRight) == typeof(ushort))
              || (typeof(TLeft) == typeof(ushort) && typeof(TRight) == typeof(ushort)));
 
-            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<TLeft>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<TRight>.Count)
             {
                 for (nuint i = 0; i < length; ++i)
                 {
@@ -125,7 +125,7 @@ namespace System.Text
             else
             {
                 ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count128);
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - (uint)Vector128<TRight>.Count);
                 ref TRight currentRightSearchSpace = ref right;
                 ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector128<TRight>.Count);
 
@@ -135,7 +135,7 @@ namespace System.Text
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could loose some information)
+                    // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could lose some information)
                     leftValues = TLoader.Load128(ref currentLeftSearchSpace);
                     rightValues = Vector128.LoadUnsafe(ref currentRightSearchSpace);
 
@@ -145,7 +145,7 @@ namespace System.Text
                     }
 
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, (uint)Vector128<TRight>.Count);
                 }
                 while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
@@ -235,7 +235,7 @@ namespace System.Text
             else if (Vector512.IsHardwareAccelerated && length >= (uint)Vector512<TRight>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count512);
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - (uint)Vector512<TRight>.Count);
                 ref TRight currentRightSearchSpace = ref right;
                 ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector512<TRight>.Count);
 
@@ -272,7 +272,7 @@ namespace System.Text
                     }
 
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector512<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count512);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, (uint)Vector512<TRight>.Count);
                 }
                 while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
@@ -306,7 +306,7 @@ namespace System.Text
             else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - (uint)Vector256<TRight>.Count);
                 ref TRight currentRightSearchSpace = ref right;
                 ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
 
@@ -344,7 +344,7 @@ namespace System.Text
                     }
 
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector256<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, (uint)Vector256<TRight>.Count);
                 }
                 while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
@@ -378,7 +378,7 @@ namespace System.Text
             else
             {
                 ref TLeft currentLeftSearchSpace = ref left;
-                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count128);
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - (uint)Vector128<TRight>.Count);
                 ref TRight currentRightSearchSpace = ref right;
                 ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector128<TRight>.Count);
 
@@ -392,7 +392,7 @@ namespace System.Text
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
                 {
-                    // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could loose some information)
+                    // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could lose some information)
                     leftValues = TLoader.Load128(ref currentLeftSearchSpace);
                     rightValues = Vector128.LoadUnsafe(ref currentRightSearchSpace);
 
@@ -417,7 +417,7 @@ namespace System.Text
                     }
 
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
-                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, (uint)Vector128<TRight>.Count);
                 }
                 while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
@@ -456,9 +456,6 @@ namespace System.Text
             where TLeft : unmanaged, INumberBase<TLeft>
             where TRight : unmanaged, INumberBase<TRight>
         {
-            static abstract nuint Count128 { get; }
-            static abstract nuint Count256 { get; }
-            static abstract nuint Count512 { get; }
             static abstract Vector128<TRight> Load128(ref TLeft ptr);
             static abstract Vector256<TRight> Load256(ref TLeft ptr);
             static abstract Vector512<TRight> Load512(ref TLeft ptr);
@@ -468,9 +465,6 @@ namespace System.Text
 
         private readonly struct PlainLoader<T> : ILoader<T, T> where T : unmanaged, INumberBase<T>
         {
-            public static nuint Count128 => (uint)Vector128<T>.Count;
-            public static nuint Count256 => (uint)Vector256<T>.Count;
-            public static nuint Count512 => (uint)Vector512<T>.Count;
             public static Vector128<T> Load128(ref T ptr) => Vector128.LoadUnsafe(ref ptr);
             public static Vector256<T> Load256(ref T ptr) => Vector256.LoadUnsafe(ref ptr);
             public static Vector512<T> Load512(ref T ptr) => Vector512.LoadUnsafe(ref ptr);
@@ -507,10 +501,6 @@ namespace System.Text
 
         private readonly struct WideningLoader : ILoader<byte, ushort>
         {
-            public static nuint Count128 => sizeof(long);
-            public static nuint Count256 => (uint)Vector128<byte>.Count;
-            public static nuint Count512 => (uint)Vector256<byte>.Count;
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<ushort> Load128(ref byte ptr)
             {

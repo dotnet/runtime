@@ -281,7 +281,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
         {
             if (valueKind == optPropKind::OPK_ARRAYLEN)
             {
-                value = getArrayLengthFromAllocation(defValue DEBUGARG(ssaVarDsc->GetBlock()));
+                value = getArrayLengthFromAllocation(defValue);
                 if (value != nullptr)
                 {
                     if (!value->IsCnsIntOrI())

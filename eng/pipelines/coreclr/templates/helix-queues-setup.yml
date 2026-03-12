@@ -128,7 +128,7 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         - $(helix_macos_arm64)
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
-        - OSX.14.Arm64.Open
+        - OSX.15.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.14.Arm64
 

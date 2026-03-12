@@ -122,7 +122,7 @@ extends:
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SizeOpt
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false /p:RunAnalyzers=false
-            timeoutInMinutes: 240
+            timeoutInMinutes: 300
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
@@ -147,7 +147,7 @@ extends:
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SpeedOpt
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false /p:RunAnalyzers=false
-            timeoutInMinutes: 240
+            timeoutInMinutes: 300
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
