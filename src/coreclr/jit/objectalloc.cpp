@@ -1346,13 +1346,11 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
             const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
             if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
                 allocCtxInfo->supported && (TargetOS::IsWindows || TargetOS::IsUnix) &&
-                m_compiler->opts.OptimizationEnabled() &&
-                JitConfig.JitInlineAllocFast() != 0)
+                m_compiler->opts.OptimizationEnabled() && JitConfig.JitInlineAllocFast() != 0)
             {
-                JITDUMP("Marking allocation [%06u] for inline expansion\n",
-                        m_compiler->dspTreeID(allocObj));
+                JITDUMP("Marking allocation [%06u] for inline expansion\n", m_compiler->dspTreeID(allocObj));
                 // Morph to helper call, but mark it for inline expansion in codegen
-                GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(allocObj);
+                GenTree* const newData = MorphAllocObjNodeIntoHelperCall(allocObj);
                 newData->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPAND_INLINE_ALLOC;
                 stmtExpr->AsLclVar()->Data() = newData;
                 stmtExpr->AddAllEffectsFlags(newData);

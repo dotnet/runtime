@@ -1746,6 +1746,7 @@ void CodeGen::genCodeForAllocObj(GenTreeAllocObj* tree)
 //   2. Bump-pointer allocation (non-GC-interruptible)
 //   3. If allocation doesn't fit: fall through to the normal helper call
 //
+#ifdef TARGET_AMD64
 void CodeGen::genInlineAllocCall(GenTreeCall* call)
 {
     const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
@@ -1755,7 +1756,7 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     genCallPlaceRegArgs(call);
 
     regNumber dstReg = call->GetRegNum();
-    regNumber mtReg  = REG_ARG_0;  // MethodTable* argument (rcx on Windows, rdi on Linux)
+    regNumber mtReg  = REG_ARG_0; // MethodTable* argument (rcx on Windows, rdi on Linux)
 
     // We use r10 and r11 as scratch — they are caller-saved volatile registers
     // not used for argument passing on either Windows or SysV.
@@ -1806,19 +1807,13 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
         emit->emitIns_R(INS_pop, EA_PTRSIZE, mtReg);
     }
 
-    // ---- Non-GC-interruptible bump allocation ----
+    // ---- Bump allocation (non-GC-interruptible) ----
     GetEmitter()->emitDisableGC();
 
-    // tmpReg = baseSize from MethodTable
+    // Size not known at JIT time — read from MethodTable.m_BaseSize at runtime.
     emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
-
-    // dstReg = alloc_ptr
     emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
-
-    // tmpReg = alloc_ptr + baseSize (new alloc_ptr)
     emit->emitIns_R_ARX(INS_lea, EA_PTRSIZE, tmpReg, dstReg, tmpReg, 1, 0);
-
-    // Compare new alloc_ptr vs combined_limit
     emit->emitIns_R_AR(INS_cmp, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
 
     BasicBlock* slowPath = genCreateTempLabel();
@@ -1828,15 +1823,18 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
+    // End the no-GC region. This creates an IG boundary; all subsequent IGs
+    // (including the slow path after the label below) are GC-interruptible.
     GetEmitter()->emitEnableGC();
 
     BasicBlock* done = genCreateTempLabel();
     inst_JMP(EJ_jmp, done);
 
-    // ---- Slow path: emit the normal helper call ----
+    // ---- Slow path: call the allocation helper ----
+    // This IG is GC-interruptible (emitEnableGC was called above, and the label
+    // starts a new IG inheriting that state). The helper call is a GC safe point.
     genDefineTempLabel(slowPath);
 
-    // mtReg (REG_ARG_0/rcx) still holds the MethodTable* — call the helper directly.
     genEmitHelperCall(CORINFO_HELP_NEWSFAST, 0, EA_PTRSIZE);
 
     // Helper returns the new object in rax.
@@ -1860,6 +1858,7 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
 
     genProduceReg(call);
 }
+#endif // TARGET_AMD64
 
 /*****************************************************************************
  *
@@ -6017,6 +6016,12 @@ void CodeGen::genCall(GenTreeCall* call)
     // Check if this is an allocation helper call marked for inline expansion
     if ((call->gtCallMoreFlags & GTF_CALL_M_EXPAND_INLINE_ALLOC) != 0)
     {
+        // Handle AVX/SSE transition before the slow-path helper call
+        if (GetEmitter()->Contains256bitOrMoreAVX() && call->NeedsVzeroupper(m_compiler))
+        {
+            instGen(INS_vzeroupper);
+        }
+
         genInlineAllocCall(call);
         return;
     }

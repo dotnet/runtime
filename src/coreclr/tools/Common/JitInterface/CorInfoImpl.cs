@@ -3715,7 +3715,7 @@ namespace Internal.JitInterface
         private void getObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
         {
             // NativeAOT/crossgen2: not yet implemented
-            pInfo->supported = 0;
+            *pInfo = default;
         }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
