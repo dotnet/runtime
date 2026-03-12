@@ -60,35 +60,6 @@ namespace System.Security.Cryptography
             bytesRead = read;
         }
 
-        internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
-            string[] validOids,
-            ReadOnlyMemory<byte> source,
-            out int bytesRead)
-        {
-            SubjectPublicKeyInfoAsn spki;
-            int read;
-
-            try
-            {
-                // X.509 SubjectPublicKeyInfo is described as DER.
-                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.DER);
-                read = reader.PeekEncodedValue().Length;
-                SubjectPublicKeyInfoAsn.Decode(ref reader, source, out spki);
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
-
-            bytesRead = read;
-            return spki.SubjectPublicKey;
-        }
-
         internal static ReadOnlySpan<byte> ReadSubjectPublicKeyInfo(
             string[] validOids,
             ReadOnlySpan<byte> source,
