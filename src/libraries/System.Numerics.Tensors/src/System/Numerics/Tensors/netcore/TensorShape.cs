@@ -853,12 +853,13 @@ namespace System.Numerics.Tensors
             if (array is not null)
             {
                 int linearLength = array.Length;
-                nint stride = (linearLength > 1) ? 1 : 0;
+                nint stride = 1;
 
                 TensorFlags flags = TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
 
-                if (stride == 0)
+                if (linearLength <= 1)
                 {
+                    stride = 0;
                     flags |= TensorFlags.IsBroadcast;
                 }
 
@@ -917,13 +918,14 @@ namespace System.Numerics.Tensors
         {
             if (!Unsafe.IsNullRef(in reference))
             {
-                nint stride = (linearLength > 1) ? 1 : 0;
+                nint stride = 1;
 
                 TensorFlags flags = pinned ? TensorFlags.IsPinned : TensorFlags.None;
                 flags |= TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions;
 
-                if (stride == 0)
+                if (linearLength <= 1)
                 {
+                    stride = 0;
                     flags |= TensorFlags.IsBroadcast;
                 }
 
