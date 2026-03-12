@@ -846,9 +846,10 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            // Align the output file size with the image (including trailing padding for section and file alignment).
-            Debug.Assert(outputFileStream.Position <= sizeOfImage);
-            outputFileStream.SetLength(sizeOfImage);
+            // Ensure that the final file size is aligned to file alignment.
+            long paddedSize = AlignmentHelper.AlignUp((int)outputFileStream.Position, (int)_peFileAlignment);
+
+            outputFileStream.SetLength(paddedSize);
         }
 
         private void PopulateDataDirectoryForWellKnownSymbolIfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, SortableDependencyNode.ObjectNodeOrder wellKnownSymbol)
