@@ -3390,8 +3390,93 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        int numWritten = 0;
+#endif
+        try
+        {
+            if (rcw == 0)
+                throw new ArgumentException();
+
+            TargetPointer rcwPtr = rcw.ToTargetPointer(_target);
+            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
+            IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> entries = builtInCom.GetRCWInterfaces(rcwPtr);
+
+            if (interfaces == null)
+            {
+                if (pNeeded == null)
+                {
+                    throw new ArgumentException();
+                }
+                else
+                {
+                    *pNeeded = (uint)entries.Count();
+#if DEBUG
+                    numWritten = (int)*pNeeded;
+#endif
+                }
+            }
+            else
+            {
+                TargetPointer ctxCookie = builtInCom.GetRCWContext(rcwPtr);
+                uint itemIndex = 0;
+                foreach (var (methodTable, unknown) in entries)
+                {
+                    if (itemIndex >= count)
+                    {
+#if DEBUG
+                        numWritten = (int)itemIndex;
+#endif
+                        throw new ArgumentException();
+                    }
+
+                    interfaces[itemIndex].methodTable = methodTable.ToClrDataAddress(_target);
+                    interfaces[itemIndex].interfacePtr = unknown.ToClrDataAddress(_target);
+                    interfaces[itemIndex].comContext = ctxCookie.ToClrDataAddress(_target);
+                    itemIndex++;
+                }
+
+                if (pNeeded != null)
+                    *pNeeded = itemIndex;
+#if DEBUG
+                numWritten = (int)itemIndex;
+#endif
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint pNeededLocal = 0;
+            int hrLocal;
+            DacpCOMInterfacePointerData[]? interfacesLocal = interfaces != null ? new DacpCOMInterfacePointerData[count] : null;
+            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, pNeeded == null && interfacesLocal == null ? null : &pNeededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(numWritten == pNeededLocal, $"cDAC: {numWritten}, DAC: {pNeededLocal}");
+                if (interfacesLocal is not null && interfaces is not null)
+                {
+                    for (int i = 0; i < (int)pNeededLocal; i++)
+                    {
+                        Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -4119,7 +4204,7 @@ public sealed unsafe partial class SOSDacImpl
             if (pCallback is null)
                 throw new ArgumentException();
 
-            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
             TargetPointer listPtr = cleanupListPtr.ToTargetPointer(_target);
 
             cleanupInfos = contract.GetRCWCleanupList(listPtr);
