@@ -315,6 +315,25 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+        case GT_ALLOCOBJ:
+        {
+            // Inline object allocation: TLS access + bump pointer + slow-path helper call.
+            // Internal temps for TLS access intermediates and allocation calculations.
+            buildInternalIntRegisterDefForNode(tree);
+            buildInternalIntRegisterDefForNode(tree);
+            // The MethodTable operand must remain live until after we load alloc_ptr
+            // into the destination register (they may not alias).
+            srcCount = BuildDelayFreeUses(tree->gtGetOp1(), tree);
+            // Internal regs must not overlap with the destination register either,
+            // since allocCtxReg is used throughout the fast and slow paths.
+            setInternalRegsDelayFree = true;
+            buildInternalRegisterUses();
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_NEWSFAST);
+            BuildKills(tree, killMask);
+            BuildDef(tree);
+        }
+        break;
+
         case GT_MOD:
         case GT_DIV:
         case GT_UMOD:

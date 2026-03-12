@@ -1148,6 +1148,7 @@ protected:
     void genCodeForStoreLclFld(GenTreeLclFld* tree);
     void genCodeForStoreLclVar(GenTreeLclVar* tree);
     void genCodeForReturnTrap(GenTreeOp* tree);
+    void genCodeForAllocObj(GenTreeAllocObj* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpObj(GenTreeBlk* cpObjNode);

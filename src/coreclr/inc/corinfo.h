@@ -1696,6 +1696,33 @@ struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
 };
 
 //----------------------------------------------------------------------------
+// getObjectAllocContextInfo and CORINFO_OBJECT_ALLOC_CONTEXT_INFO: The EE instructs the JIT
+// about how to access the thread-local allocation context for inline object allocation.
+
+struct CORINFO_OBJECT_ALLOC_CONTEXT_INFO
+{
+    // Whether inline allocation is supported for this runtime configuration.
+    // False when: GCStress enabled, allocation tracking/sampling active,
+    // non-thread-local allocation contexts, etc.
+    bool supported;
+
+    // Offsets within the ee_alloc_context structure
+    uint32_t allocPtrFieldOffset;       // Offset of alloc_ptr
+    uint32_t combinedLimitFieldOffset;  // Offset of combined_limit
+
+    // Object/MethodTable layout offsets
+    uint32_t objectMethodTableOffset;   // Offset of MethodTable* in Object
+    uint32_t methodTableBaseSizeOffset; // Offset of m_BaseSize in MethodTable
+
+    // TLS access info (platform-specific)
+    CORINFO_CONST_LOOKUP tlsIndex;                  // Windows: address of _tls_index
+    uint32_t             offsetOfThreadLocalStoragePointer; // Windows: TEB offset for TLS array (0x58 on x64)
+    CORINFO_CONST_LOOKUP tlsRoot;                   // TLS symbol for t_runtime_thread_locals (SECTIONREL/TLSGD/TLVP)
+    void*                tlsGetAddrFtnPtr;           // Linux: address of __tls_get_addr
+    void*                threadVarsSection;           // macOS: section address for TLVP
+};
+
+//----------------------------------------------------------------------------
 // Exception handling
 
 struct CORINFO_EH_CLAUSE
@@ -3207,6 +3234,9 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Returns information about the thread-local allocation context for inline object allocation.
+    virtual void getObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo) = 0;
 };
 
 /*****************************************************************************

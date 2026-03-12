@@ -572,6 +572,20 @@ struct Agnostic_GetThreadStaticInfo_NativeAOT
     Agnostic_CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
 };
 
+struct Agnostic_GetObjectAllocContextInfo
+{
+    DWORD                         supported;
+    DWORD                         allocPtrFieldOffset;
+    DWORD                         combinedLimitFieldOffset;
+    DWORD                         objectMethodTableOffset;
+    DWORD                         methodTableBaseSizeOffset;
+    Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
+    DWORD                         offsetOfThreadLocalStoragePointer;
+    Agnostic_CORINFO_CONST_LOOKUP tlsRoot;
+    DWORDLONG                     tlsGetAddrFtnPtr;
+    DWORDLONG                     threadVarsSection;
+};
+
 struct Agnostic_GetClassCtorInitializationInfo
 {
     Agnostic_CORINFO_CONST_LOOKUP addr;

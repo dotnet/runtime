@@ -422,6 +422,9 @@ void getThreadLocalStaticBlocksInfo(
 void getThreadLocalStaticInfo_NativeAOT(
           CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override;
 
+void getObjectAllocContextInfo(
+          CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 

@@ -1068,6 +1068,7 @@ static uint32_t ThreadLocalOffset(void* p)
 }
 #elif defined(TARGET_APPLE)
 extern "C" void* GetThreadVarsAddress();
+extern "C" void* GetRuntimeThreadLocalsThreadVarsAddress();
 
 static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
 {
@@ -1108,6 +1109,7 @@ static void* GetThreadVarsSectionAddress()
 #ifdef TARGET_AMD64
 
 extern "C" void* GetTlsIndexObjectDescOffset();
+extern "C" void* GetRuntimeThreadLocalsTlsIndexObjectDescOffset();
 
 static void* GetThreadStaticDescriptor(uint8_t* p)
 {
@@ -1190,6 +1192,44 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cNonCollectibleTlsData));
     pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pNonCollectibleTlsArrayData));
     pInfo->offsetOfBaseOfThreadLocalData = (uint32_t)threadStaticBaseOffset;
+#endif // !TARGET_ANDROID
+}
+
+/*********************************************************************/
+// Returns TLS access information for t_runtime_thread_locals (the
+// thread-local allocation context) so the JIT can inline object allocation.
+void GetObjectAllocContextTlsInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
+{
+#if !defined(TARGET_ANDROID)
+    STANDARD_VM_CONTRACT;
+
+#if defined(TARGET_WINDOWS)
+    pInfo->tlsIndex.addr = (void*)&_tls_index;
+    pInfo->tlsIndex.accessType = IAT_PVALUE;
+    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+    pInfo->tlsRoot.addr = (void*)(uintptr_t)ThreadLocalOffset(&t_runtime_thread_locals);
+    pInfo->tlsRoot.accessType = IAT_VALUE;
+
+#elif defined(TARGET_APPLE) && defined(TARGET_AMD64)
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetRuntimeThreadLocalsThreadVarsAddress);
+    pInfo->threadVarsSection = GetThreadVarsSectionAddressFromDesc(p);
+
+#elif defined(TARGET_AMD64)
+    pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetRuntimeThreadLocalsTlsIndexObjectDescOffset);
+    pInfo->tlsRoot.addr = GetThreadStaticDescriptor(p);
+    pInfo->tlsRoot.accessType = IAT_VALUE;
+    if (pInfo->tlsRoot.addr == nullptr)
+    {
+        pInfo->supported = false;
+    }
+
+#else
+    pInfo->supported = false;
+#endif // TARGET_WINDOWS
+
+#else // TARGET_ANDROID
+    pInfo->supported = false;
 #endif // !TARGET_ANDROID
 }
 #endif // !DACCESS_COMPILE

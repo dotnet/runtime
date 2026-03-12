@@ -1726,6 +1726,112 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     genDefineTempLabel(skipLabel);
 }
 
+//------------------------------------------------------------------------
+// genCodeForAllocObj: Generate code for GT_ALLOCOBJ - inline object allocation.
+//
+// Emits an inline bump-pointer allocation fast path with a slow-path
+// fallback to CORINFO_HELP_NEWSFAST. The fast path accesses the thread-local
+// ee_alloc_context, checks if there's enough space, bumps the allocation
+// pointer, and sets the MethodTable on the new object. If there isn't enough
+// space, it falls through to the slow path which calls the runtime helper.
+//
+// The entire fast path (from reading alloc_ptr to updating it) is marked
+// as non-GC-interruptible via emitDisableGC/emitEnableGC.
+//
+void CodeGen::genCodeForAllocObj(GenTreeAllocObj* tree)
+{
+    assert(tree->OperIs(GT_ALLOCOBJ));
+
+    const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
+    assert(allocInfo->supported);
+
+    regNumber dstReg = tree->GetRegNum();
+    regNumber mtReg  = genConsumeReg(tree->gtGetOp1());
+
+    // Get internal temp registers
+    regNumber allocCtxReg = internalRegisters.Extract(tree, RBM_ALLINT);
+    regNumber tmpReg      = internalRegisters.Extract(tree, RBM_ALLINT);
+
+    emitter* emit = GetEmitter();
+
+    // ---- TLS access: get pointer to ee_alloc_context ----
+    if (TargetOS::IsWindows)
+    {
+        // Windows x64: gs:[0x58] -> TLS array -> [tls_index * 8] -> + SECTIONREL offset
+
+        // mov allocCtxReg, gs:[offsetOfThreadLocalStoragePointer]  (TEB.ThreadLocalStoragePointer)
+        emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
+                          (int)allocInfo->offsetOfThreadLocalStoragePointer);
+
+        // mov tmpReg, [&_tls_index]  -- load _tls_index value from its address
+        assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
+        emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
+
+        // mov allocCtxReg, [allocCtxReg + tmpReg * 8]  (index into TLS array)
+        emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
+
+        // lea allocCtxReg, [allocCtxReg + SECTIONREL t_runtime_thread_locals]
+        assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
+        ssize_t secrelOffset = (ssize_t)allocInfo->tlsRoot.addr;
+        emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)secrelOffset);
+    }
+    else
+    {
+        // Linux/macOS: not yet implemented - EE should return supported=false
+        unreached();
+    }
+
+    // ---- Disable GC for the allocation critical section ----
+    GetEmitter()->emitDisableGC();
+
+    // ---- Bump pointer allocation ----
+    // Read baseSize from MethodTable FIRST, before loading alloc_ptr into dstReg.
+    // LSRA guarantees dstReg != mtReg (via DelayFree), but reading baseSize first
+    // keeps the sequence clean and matches the runtime helper's pattern.
+    emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
+
+    // dstReg = alloc_ptr (this will be the returned object pointer)
+    emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+
+    // tmpReg = alloc_ptr + baseSize (potential new alloc_ptr)
+    emit->emitIns_R_ARX(INS_lea, EA_PTRSIZE, tmpReg, dstReg, tmpReg, 1, 0);
+
+    // Compare new alloc_ptr against combined_limit
+    emit->emitIns_R_AR(INS_cmp, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
+
+    BasicBlock* slowPath = genCreateTempLabel();
+    // If new alloc_ptr > combined_limit, go to slow path
+    inst_JMP(EJ_ja, slowPath);
+
+    // ---- Fast path: allocation succeeded ----
+    emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
+    emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+
+    BasicBlock* done = genCreateTempLabel();
+    inst_JMP(EJ_jmp, done);
+
+    // ---- Slow path: call the allocation helper ----
+    genDefineTempLabel(slowPath);
+
+    regNumber mtArgReg = REG_ARG_0;
+    inst_Mov(TYP_I_IMPL, mtArgReg, mtReg, /* canSkip */ true);
+    gcInfo.gcMarkRegSetNpt(genRegMask(mtArgReg));
+
+    genEmitHelperCall(CORINFO_HELP_NEWSFAST, 0, EA_PTRSIZE);
+
+    inst_Mov(TYP_REF, dstReg, REG_INTRET, /* canSkip */ true);
+
+    // ---- Done ----
+    genDefineTempLabel(done);
+
+    // Re-enable GC after both paths converge
+    GetEmitter()->emitEnableGC();
+
+    gcInfo.gcMarkRegPtrVal(dstReg, TYP_REF);
+    genProduceReg(tree);
+}
+
 /*****************************************************************************
  *
  * Generate code for a single node in the tree.
@@ -1805,6 +1911,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LCLHEAP:
             genLclHeap(treeNode);
+            break;
+
+        case GT_ALLOCOBJ:
+            genCodeForAllocObj(treeNode->AsAllocObj());
             break;
 
         case GT_CNS_INT:

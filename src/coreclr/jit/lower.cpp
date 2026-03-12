@@ -492,6 +492,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckReturnTrap(node->AsOp());
             break;
 
+#ifdef TARGET_XARCH
+        case GT_ALLOCOBJ:
+            // GT_ALLOCOBJ operand (MethodTable handle) must be in a register
+            break;
+#endif
+
         case GT_CAST:
         {
             GenTree* nextNode = node->gtNext;

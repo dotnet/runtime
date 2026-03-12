@@ -683,6 +683,7 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStac
 CONFIG_STRING(JitObjectStackAllocationConditionalEscapeRange, "JitObjectStackAllocationConditionalEscapeRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
+RELEASE_CONFIG_INTEGER(JitInlineAllocFast, "JitInlineAllocFast", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAllocationTrackFields", 1)
 CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
 CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)

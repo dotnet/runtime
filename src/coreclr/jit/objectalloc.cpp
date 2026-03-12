@@ -1337,11 +1337,26 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
                 candidate.m_onHeapReason);
         if ((candidate.m_allocType == OAT_NEWOBJ) || (candidate.m_allocType == OAT_NEWOBJ_HEAP))
         {
-            GenTree* const stmtExpr      = candidate.m_tree;
-            GenTree* const oldData       = stmtExpr->AsLclVar()->Data();
-            GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(oldData->AsAllocObj());
-            stmtExpr->AsLclVar()->Data() = newData;
-            stmtExpr->AddAllEffectsFlags(newData);
+            GenTree* const   stmtExpr = candidate.m_tree;
+            GenTreeAllocObj* allocObj = stmtExpr->AsLclVar()->Data()->AsAllocObj();
+
+#ifdef TARGET_XARCH
+            // Check if we can keep GT_ALLOCOBJ for inline allocation expansion in codegen
+            const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
+            if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
+                allocCtxInfo->supported && TargetOS::IsWindows && m_compiler->opts.OptimizationEnabled() &&
+                JitConfig.JitInlineAllocFast() != 0)
+            {
+                JITDUMP("Keeping GT_ALLOCOBJ [%06u] for inline allocation expansion\n",
+                        m_compiler->dspTreeID(allocObj));
+            }
+            else
+#endif // TARGET_XARCH
+            {
+                GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(allocObj);
+                stmtExpr->AsLclVar()->Data() = newData;
+                stmtExpr->AddAllEffectsFlags(newData);
+            }
         }
 
         if (IsTrackedLocal(lclNum))

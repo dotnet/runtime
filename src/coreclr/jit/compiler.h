@@ -10278,6 +10278,10 @@ public:
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
     bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
 
+    // Cached allocation context info for inline object allocation
+    CORINFO_OBJECT_ALLOC_CONTEXT_INFO compAllocContextInfo;
+    bool                              compAllocContextInfoInitialized = false;
+
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
 
@@ -11349,6 +11353,16 @@ public:
     //------------ Some utility functions --------------
 
     CORINFO_CONST_LOOKUP compGetHelperFtn(CorInfoHelpFunc ftnNum);
+
+    const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* compGetAllocContextInfo()
+    {
+        if (!compAllocContextInfoInitialized)
+        {
+            info.compCompHnd->getObjectAllocContextInfo(&compAllocContextInfo);
+            compAllocContextInfoInitialized = true;
+        }
+        return &compAllocContextInfo;
+    }
 
     // Several JIT/EE interface functions return a CorInfoType, and also return a
     // class handle as an out parameter if the type is a value class.  Returns the

@@ -1276,6 +1276,20 @@ namespace Internal.JitInterface
         public CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
     };
 
+    public unsafe struct CORINFO_OBJECT_ALLOC_CONTEXT_INFO
+    {
+        public byte supported;
+        public uint allocPtrFieldOffset;
+        public uint combinedLimitFieldOffset;
+        public uint objectMethodTableOffset;
+        public uint methodTableBaseSizeOffset;
+        public CORINFO_CONST_LOOKUP tlsIndex;
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP tlsRoot;
+        public nuint tlsGetAddrFtnPtr;
+        public nuint threadVarsSection;
+    };
+
     // System V struct passing
     // The Classification types are described in the ABI spec at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
     public enum SystemVClassificationType : byte

@@ -3709,6 +3709,12 @@ namespace Internal.JitInterface
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
+        private void getObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
+        {
+            // NativeAOT/crossgen2: not yet implemented
+            pInfo->supported = 0;
+        }
+
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {

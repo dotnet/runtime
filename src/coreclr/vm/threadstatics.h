@@ -347,6 +347,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+void GetObjectAllocContextTlsInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo);
 bool CanJITOptimizeTLSAccess();
 #else
 void EnumThreadMemoryRegions(ThreadLocalData* pThreadLocalData, CLRDataEnumMemoryFlags flags);

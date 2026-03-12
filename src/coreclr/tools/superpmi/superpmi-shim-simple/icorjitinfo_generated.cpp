@@ -719,6 +719,12 @@ void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(
     original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo);
 }
 
+void interceptor_ICJI::getObjectAllocContextInfo(
+          CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
+{
+    original_ICorJitInfo->getObjectAllocContextInfo(pInfo);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

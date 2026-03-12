@@ -323,6 +323,29 @@ LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif // !TARGET_ANDROID
 #endif // !TARGET_OSX
 
+#ifdef TARGET_APPLE
+# EXTERN_C void* GetRuntimeThreadLocalsThreadVarsAddress()
+LEAF_ENTRY GetRuntimeThreadLocalsThreadVarsAddress, _TEXT
+        mov     rdi,    _t_runtime_thread_locals@TLVP[rip]
+        ret
+LEAF_END GetRuntimeThreadLocalsThreadVarsAddress, _TEXT
+#endif // TARGET_APPLE
+
+#ifndef TARGET_APPLE
+#ifndef TARGET_ANDROID
+# EXTERN_C void* GetRuntimeThreadLocalsTlsIndexObjectDescOffset();
+LEAF_ENTRY GetRuntimeThreadLocalsTlsIndexObjectDescOffset, _TEXT
+        .byte 0x66
+        lea     rdi,    t_runtime_thread_locals@TLSGD[rip]
+        .byte 0x66
+        .byte 0x66
+        .byte 0x48 # rex.W prefix for padding
+        call    EXTERNAL_C_FUNC(__tls_get_addr)
+        int 3
+LEAF_END GetRuntimeThreadLocalsTlsIndexObjectDescOffset, _TEXT
+#endif // !TARGET_ANDROID
+#endif // !TARGET_APPLE
+
 LEAF_ENTRY  JIT_PollGC, _TEXT
         PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax
         cmp     dword ptr [rax], 0

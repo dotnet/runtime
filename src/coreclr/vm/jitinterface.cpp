@@ -1330,6 +1330,64 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 }
 
 /*********************************************************************/
+void CEEInfo::getObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    memset(pInfo, 0, sizeof(*pInfo));
+
+    // Inline allocation is only supported when thread allocation contexts are used,
+    // and when GC stress, allocation tracking, and allocation sampling are not active.
+    if (!GCHeapUtilities::UseThreadAllocationContexts())
+    {
+        pInfo->supported = false;
+    }
+#ifdef STRESS_HEAP
+    else if (GCStress<cfg_alloc>::IsEnabled())
+    {
+        pInfo->supported = false;
+    }
+#endif
+    else if (CORProfilerTrackAllocations() || CORProfilerTrackAllocationsEnabled())
+    {
+        pInfo->supported = false;
+    }
+    else if (ee_alloc_context::IsRandomizedSamplingEnabled())
+    {
+        pInfo->supported = false;
+    }
+#ifdef FEATURE_EVENT_TRACE
+    else if (ETW::TypeSystemLog::IsHeapAllocEventEnabled())
+    {
+        pInfo->supported = false;
+    }
+#endif
+    else
+    {
+        pInfo->supported = true;
+
+        // ee_alloc_context offsets
+        pInfo->allocPtrFieldOffset = (uint32_t)(offsetof(ee_alloc_context, m_GCAllocContext) + offsetof(gc_alloc_context, alloc_ptr));
+        pInfo->combinedLimitFieldOffset = (uint32_t)offsetof(ee_alloc_context, m_CombinedLimit);
+
+        // Object/MethodTable layout
+        pInfo->objectMethodTableOffset = (uint32_t)cdac_data<Object>::m_pMethTab;
+        pInfo->methodTableBaseSizeOffset = (uint32_t)cdac_data<MethodTable>::BaseSize;
+
+        // TLS access info - how to reach t_runtime_thread_locals
+        GetObjectAllocContextTlsInfo(pInfo);
+    }
+
+    EE_TO_JIT_TRANSITION();
+}
+
+/*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
                             CORINFO_ACCESS_FLAGS   flags,

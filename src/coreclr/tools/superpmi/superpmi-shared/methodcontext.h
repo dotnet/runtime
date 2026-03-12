@@ -501,6 +501,10 @@ public:
     void dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG key, const Agnostic_GetThreadStaticInfo_NativeAOT& value);
     void repGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
 
+    void recGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo);
+    void dmpGetObjectAllocContextInfo(DWORD key, const Agnostic_GetObjectAllocContextInfo& value);
+    void repGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo);
+
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
@@ -1222,6 +1226,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_GetObjectAllocContextInfo = 238,
 };
 
 void SetDebugDumpVariables();

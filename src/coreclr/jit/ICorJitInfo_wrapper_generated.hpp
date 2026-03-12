@@ -1005,6 +1005,14 @@ void WrapICorJitInfo::getThreadLocalStaticInfo_NativeAOT(
     API_LEAVE(getThreadLocalStaticInfo_NativeAOT);
 }
 
+void WrapICorJitInfo::getObjectAllocContextInfo(
+          CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
+{
+    API_ENTER(getObjectAllocContextInfo);
+    wrapHnd->getObjectAllocContextInfo(pInfo);
+    API_LEAVE(getObjectAllocContextInfo);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
