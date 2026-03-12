@@ -7825,6 +7825,9 @@ void MethodContext::recGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_IN
     value.combinedLimitFieldOffset         = pInfo->combinedLimitFieldOffset;
     value.objectMethodTableOffset          = pInfo->objectMethodTableOffset;
     value.methodTableBaseSizeOffset        = pInfo->methodTableBaseSizeOffset;
+    value.arrayLengthOffset                = pInfo->arrayLengthOffset;
+    value.arrayBaseSize                    = pInfo->arrayBaseSize;
+    value.methodTableComponentSizeOffset   = pInfo->methodTableComponentSizeOffset;
     value.tlsIndex                         = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndex);
     value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
     value.tlsRoot                          = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsRoot);
@@ -7865,6 +7868,9 @@ void MethodContext::repGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_IN
     pInfo->combinedLimitFieldOffset         = value.combinedLimitFieldOffset;
     pInfo->objectMethodTableOffset          = value.objectMethodTableOffset;
     pInfo->methodTableBaseSizeOffset        = value.methodTableBaseSizeOffset;
+    pInfo->arrayLengthOffset                = value.arrayLengthOffset;
+    pInfo->arrayBaseSize                    = value.arrayBaseSize;
+    pInfo->methodTableComponentSizeOffset   = value.methodTableComponentSizeOffset;
     pInfo->tlsIndex                         = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsIndex);
     pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
     pInfo->tlsRoot                          = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsRoot);

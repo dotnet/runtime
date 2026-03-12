@@ -579,6 +579,9 @@ struct Agnostic_GetObjectAllocContextInfo
     DWORD                         combinedLimitFieldOffset;
     DWORD                         objectMethodTableOffset;
     DWORD                         methodTableBaseSizeOffset;
+    DWORD                         arrayLengthOffset;
+    DWORD                         arrayBaseSize;
+    DWORD                         methodTableComponentSizeOffset;
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
     DWORD                         offsetOfThreadLocalStoragePointer;
     Agnostic_CORINFO_CONST_LOOKUP tlsRoot;

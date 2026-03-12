@@ -1712,8 +1712,13 @@ struct CORINFO_OBJECT_ALLOC_CONTEXT_INFO
     uint32_t combinedLimitFieldOffset;  // Offset of combined_limit
 
     // Object/MethodTable layout offsets
-    uint32_t objectMethodTableOffset;   // Offset of MethodTable* in Object
-    uint32_t methodTableBaseSizeOffset; // Offset of m_BaseSize in MethodTable
+    uint32_t objectMethodTableOffset;   // Offset of MethodTable* in Object (0)
+    uint32_t methodTableBaseSizeOffset; // Offset of m_BaseSize in MethodTable (4)
+
+    // Array layout info
+    uint32_t arrayLengthOffset;            // Offset of m_NumComponents in ArrayBase (8)
+    uint32_t arrayBaseSize;                // Fixed overhead for SZ arrays (SZARRAY_BASE_SIZE, 0x18)
+    uint32_t methodTableComponentSizeOffset; // Offset of component size in MethodTable (0, low 16 bits of m_dwFlags)
 
     // TLS access info (platform-specific)
     CORINFO_CONST_LOOKUP tlsIndex;                  // Windows: address of _tls_index (IAT_PVALUE)

@@ -1752,11 +1752,15 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
     assert(allocInfo->supported);
 
-    // The call infrastructure has already placed the MethodTable* in the arg register.
+    // Determine if this is an object or array allocation.
+    CorInfoHelpFunc helperNum = call->GetHelperNum();
+    bool            isArray   = (helperNum == CORINFO_HELP_NEWARR_1_VC || helperNum == CORINFO_HELP_NEWARR_1_PTR);
+
     genCallPlaceRegArgs(call);
 
     regNumber dstReg = call->GetRegNum();
-    regNumber mtReg  = REG_ARG_0; // MethodTable* argument (rcx on Windows, rdi on Linux)
+    regNumber mtReg  = REG_ARG_0;
+    regNumber lenReg = isArray ? REG_ARG_1 : REG_NA;
 
     // We use r10 and r11 as scratch — they are caller-saved volatile registers
     // not used for argument passing on either Windows or SysV.
@@ -1785,33 +1789,47 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     else
     {
         // Linux x64: call __tls_get_addr with the pre-resolved TLSGD descriptor.
-        // __tls_get_addr(descriptor) returns the address of t_runtime_thread_locals.
-        // The call clobbers all caller-saved registers, so save the MT pointer on the stack.
+        // The call clobbers all caller-saved registers, so save args on the stack.
 
         emit->emitIns_R(INS_push, EA_PTRSIZE, mtReg);
+        if (isArray)
+        {
+            emit->emitIns_R(INS_push, EA_PTRSIZE, lenReg);
+        }
 
-        // Load the TLSGD descriptor address into rdi (first arg for __tls_get_addr on SysV)
         assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)allocInfo->tlsRoot.addr);
 
-        // Call __tls_get_addr — result in rax
         assert(allocInfo->tlsGetAddrFtnPtr != nullptr);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R11, (ssize_t)allocInfo->tlsGetAddrFtnPtr);
         emit->emitIns_R(INS_call, EA_PTRSIZE, REG_R11);
 
-        // rax = address of t_runtime_thread_locals; move to r10 for allocCtxReg
         emit->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R10, REG_RAX, /* canSkip */ false);
         allocCtxReg = REG_R10;
 
-        // Restore the MethodTable pointer
+        if (isArray)
+        {
+            emit->emitIns_R(INS_pop, EA_PTRSIZE, lenReg);
+        }
         emit->emitIns_R(INS_pop, EA_PTRSIZE, mtReg);
     }
 
     // ---- Bump allocation (non-GC-interruptible) ----
     GetEmitter()->emitDisableGC();
 
-    // Size not known at JIT time — read from MethodTable.m_BaseSize at runtime.
-    emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
+    if (isArray)
+    {
+        // Array total size = ALIGN8(SZARRAY_BASE_SIZE + elementCount * componentSize)
+        emit->emitIns_R_AR(INS_mov, EA_2BYTE, tmpReg, mtReg, (int)allocInfo->methodTableComponentSizeOffset);
+        emit->emitIns_R_R(INS_imul, EA_PTRSIZE, tmpReg, lenReg);
+        emit->emitIns_R_I(INS_add, EA_PTRSIZE, tmpReg, (ssize_t)(allocInfo->arrayBaseSize + 7));
+        emit->emitIns_R_I(INS_and, EA_PTRSIZE, tmpReg, -8);
+    }
+    else
+    {
+        emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
+    }
+
     emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
     emit->emitIns_R_ARX(INS_lea, EA_PTRSIZE, tmpReg, dstReg, tmpReg, 1, 0);
     emit->emitIns_R_AR(INS_cmp, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
@@ -1821,21 +1839,21 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
 
     // ---- Fast path ----
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
+    if (isArray)
+    {
+        emit->emitIns_AR_R(INS_mov, EA_4BYTE, lenReg, dstReg, (int)allocInfo->arrayLengthOffset);
+    }
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
-    // End the no-GC region. This creates an IG boundary; all subsequent IGs
-    // (including the slow path after the label below) are GC-interruptible.
     GetEmitter()->emitEnableGC();
 
     BasicBlock* done = genCreateTempLabel();
     inst_JMP(EJ_jmp, done);
 
-    // ---- Slow path: call the allocation helper ----
-    // This IG is GC-interruptible (emitEnableGC was called above, and the label
-    // starts a new IG inheriting that state). The helper call is a GC safe point.
+    // ---- Slow path ----
     genDefineTempLabel(slowPath);
 
-    genEmitHelperCall(CORINFO_HELP_NEWSFAST, 0, EA_PTRSIZE);
+    genEmitHelperCall(helperNum, 0, EA_PTRSIZE);
 
     // Helper returns the new object in rax.
     if (dstReg != REG_INTRET)
