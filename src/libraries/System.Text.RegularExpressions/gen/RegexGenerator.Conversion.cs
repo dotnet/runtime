@@ -14,7 +14,7 @@ namespace System.Text.RegularExpressions.Generator
         /// into an immutable, structurally equatable <see cref="RegexTreeSpec"/> snapshot suitable for
         /// incremental caching in the Roslyn source generator pipeline.
         /// </summary>
-        private static RegexTreeSpec CreateRegexTreeSpec(RegexTree tree, AnalysisResults analysis)
+        private static RegexTreeSpec CreateRegexTreeSpec(RegexTree tree, AnalysisResults analysis, string? cultureName)
         {
             RegexNodeSpec rootSpec = ConvertNode(tree.Root, analysis);
 
@@ -22,7 +22,7 @@ namespace System.Text.RegularExpressions.Generator
                 Root: rootSpec,
                 Options: tree.Options,
                 CaptureCount: tree.CaptureCount,
-                CultureName: tree.Culture?.Name,
+                CultureName: cultureName,
                 CaptureNames: tree.CaptureNames?.ToImmutableEquatableArray(),
                 CaptureNameToNumberMapping: tree.CaptureNameToNumberMapping?.ToImmutableEquatableDictionary<string, int>(),
                 CaptureNumberSparseMapping: tree.CaptureNumberSparseMapping?.ToImmutableEquatableDictionary<int, int>(),

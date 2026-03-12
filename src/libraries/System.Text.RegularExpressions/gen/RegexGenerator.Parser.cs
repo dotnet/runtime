@@ -193,6 +193,7 @@ namespace System.Text.RegularExpressions.Generator
             //     the culture name is invalid, we'll emit a diagnostic.
             // - Default to use Invariant Culture if no culture name was passed in.
             CultureInfo culture = CultureInfo.InvariantCulture;
+            string? effectiveCultureName = null;
             RegexOptions regexOptionsWithPatternOptions;
             try
             {
@@ -216,6 +217,7 @@ namespace System.Text.RegularExpressions.Generator
                 try
                 {
                     culture = CultureInfo.GetCultureInfo(cultureName);
+                    effectiveCultureName = cultureName;
                 }
                 catch (CultureNotFoundException)
                 {
@@ -304,7 +306,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    treeSpec = CreateRegexTreeSpec(regexTree, analysis);
+                    treeSpec = CreateRegexTreeSpec(regexTree, analysis, effectiveCultureName);
                     limitedSupportReason = null;
                 }
             }
