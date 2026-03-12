@@ -9,6 +9,7 @@
 
 //TODO POWERPC64
 
+typedef unsigned int code_t;
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
 /************************************************************************/

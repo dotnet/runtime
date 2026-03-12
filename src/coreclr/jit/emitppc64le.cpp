@@ -24,6 +24,40 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+/*****************************************************************************/
+/* Minimal PPC64 encoding helpers                                            */
+/*****************************************************************************/
+
+
+// TODO: JK Let these be inline as of now
+static inline uint32_t ppc_bclrx(unsigned BO, unsigned BI, unsigned BH, unsigned LK)
+{
+    return (19u << 26) |
+           (BO  << 21) |
+           (BI  << 16) |
+           (0u  << 13) |   // reserved bits 16..18
+           (BH  << 11) |   // bits 19..20
+           (16u << 1 ) |   // XO for bclr
+           LK;
+}
+
+static inline uint32_t ppc_bclr(unsigned BO, unsigned BI, unsigned BH)
+{
+    return ppc_bclrx(BO, BI, BH, 0);
+}
+
+static inline uint32_t ppc_blr()
+{
+    return ppc_bclr(20, 0, 0);
+}
+
+static inline void writeU32LE(BYTE* dst, uint32_t w)
+{
+    dst[0] = (BYTE)(w >> 0);
+    dst[1] = (BYTE)(w >> 8);
+    dst[2] = (BYTE)(w >> 16);
+    dst[3] = (BYTE)(w >> 24);
+}
 
 /*****************************************************************************/
 
@@ -79,7 +113,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    return sizeof(instrDesc);
 }
 
 #ifdef DEBUG
@@ -89,7 +124,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
  */
 void emitter::emitInsSanityCheck(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
+   // _ASSERTE(!"NYI"); // will diabsle it now, not to assert for BLR
 }
 #endif // DEBUG
 
@@ -128,7 +163,8 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 //
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
-    _ASSERTE(!"NYI");
+   // _ASSERTE(!"NYI");
+   return "r?"; //TODO:JK, only for BLR will be changed
 }
 
 /*****************************************************************************
@@ -255,10 +291,21 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 
 void emitter::emitIns(instruction ins)
 {
-    //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
-}
+    instrDesc* id = emitNewInstr(EA_8BYTE);
 
+    id->idIns(ins);
+
+    switch (ins)
+    {
+        case INS_blr:
+            break;
+
+        default:
+            NO_WAY("Unsupported instruction in minimal PPC64 emitIns");
+    }
+
+    appendToCurIG(id);
+}
 /*****************************************************************************
  *
  *  Add an instruction with a single immediate value.
@@ -294,8 +341,9 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 //
 bool emitter::emitInsIsCompare(instruction ins)
 {
-    //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    //TODO POWERPC64 vikas JK
+    //_ASSERTE(!"NYI POWERPC64");
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -304,7 +352,8 @@ bool emitter::emitInsIsCompare(instruction ins)
 bool emitter::emitInsIsLoad(instruction ins)
 {
     //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    //_ASSERTE(!"NYI POWERPC64");
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -313,9 +362,17 @@ bool emitter::emitInsIsLoad(instruction ins)
 bool emitter::emitInsIsStore(instruction ins)
 {
     //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    //_ASSERTE(!"NYI POWERPC64");
+    return false;
 }
 
+//------------------------------------------------------------------------
+// emitInsIsLoadOrStore: Returns true if the instruction is a load or store instruction.
+//
+bool emitter::emitInsIsLoadOrStore(instruction ins)
+{
+    return false;
+}
 /*****************************************************************************
  *
  *  Record that a jump instruction uses the short encoding
@@ -339,10 +396,19 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    _ASSERTE(!"NYI");
+    BYTE* dst = *dp;
+
+    switch (id->idIns())
+    {
+        case INS_blr:
+            writeU32LE(dst, ppc_blr());
+            *dp = dst + 4;
+            return 4;
+
+        default:
+            NO_WAY("Unsupported instruction in minimal PPC64 emitOutputInstr");
+    }
 }
-
-
 /*****************************************************************************
  *
  *  Display (optionally) the instruction encoding in hex
@@ -350,7 +416,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
 }
 
 /*****************************************************************************
@@ -362,7 +428,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
 		    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
 }
 
 /*****************************************************************************

@@ -31,7 +31,7 @@ INST(movi,        "movi",         0,      IF_DV_1B,  	0x0F000400)
 INST(nop,         "nop",          0,      IF_SN_0A,  	0xD503201F)
 INST(push,        "push",         0,      IUM_RD, 	0x0030FE)
 INST(pop,         "pop",          0,      IUM_WR, 	0x00008E)
-
+INST(blr,         "blr",          0,      IF_SN_0A,     0x4E800020)
 // clang-format on
 /*****************************************************************************/
 #undef INST
