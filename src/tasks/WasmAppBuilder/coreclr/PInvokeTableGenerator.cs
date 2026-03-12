@@ -476,7 +476,7 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            extern const ReverseThunkMapEntry g_ReverseThunks[] =
+            const ReverseThunkMapEntry g_ReverseThunks[] =
             {
             {{callbacks.Join($",{w.NewLine}", cb => ThunkMapEntryLine(cb, Log))}}
             };
@@ -499,7 +499,7 @@ internal sealed class PInvokeTableGenerator
     {
         var fsName = FixedSymbolName(cb, Log);
 
-        return $"    {{ {cb.Token ^ HashString(cb.AssemblyFQName)}, {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }} /* alternate key source: {cb.Key} */";
+        return $"    {{ {HashString(cb.Key)}, \"{EscapeLiteral(cb.Key)}\", {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }}";
     }
 
     private static readonly Dictionary<Type, bool> _blittableCache = new();

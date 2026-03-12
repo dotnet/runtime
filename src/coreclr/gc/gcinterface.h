@@ -411,6 +411,7 @@ typedef enum
      * severed, even if the object will be visible from a pending finalization
      * graph.  This further implies that short weak handles do not track
      * across object resurrections.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_WEAK_SHORT   = 0,
@@ -422,6 +423,7 @@ typedef enum
      * object is actually reclaimed.  Unlike short weak handles, long weak handles
      * continue to track their referents through finalization and across any
      * resurrections that may occur.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_WEAK_LONG    = 1,
@@ -433,6 +435,7 @@ typedef enum
      * Strong handles are handles which function like a normal object reference.
      * The existence of a strong handle for an object will cause the object to
      * be promoted (remain alive) through a garbage collection cycle.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_STRONG       = 2,
@@ -445,6 +448,7 @@ typedef enum
      * prevent an object from moving during a garbage collection cycle.  This is
      * useful when passing a pointer to object innards out of the runtime while GC
      * may be enabled.
+     * [cDAC] [GC]: Contract depends on this value
      *
      * NOTE:  PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING
      *        OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS.  THIS TYPE
@@ -469,6 +473,7 @@ typedef enum
      *
      * Refcounted handles are handles that behave as strong handles while the
      * refcount on them is greater than 0 and behave as weak handles otherwise.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_REFCOUNTED   = 5,
@@ -485,7 +490,7 @@ typedef enum
      *
      * They are also used to implement the managed ConditionalWeakTable class. If you want to use
      * these from managed code, they are exposed to BCL through the managed DependentHandle class.
-     *
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_DEPENDENT    = 6,
@@ -538,7 +543,8 @@ typedef enum
      * Interior pointer handles allow the vm to request that the GC keep an interior pointer to
      * a given object updated to keep pointing at the same location within an object. These handles
      * have an extra pointer which points at an interior pointer into the first object.
-     *
+     * [cDAC] [GC]: Contract depends on this value
+     * 
      */
     HNDTYPE_WEAK_INTERIOR_POINTER = 10,
 
@@ -546,6 +552,7 @@ typedef enum
      * CROSSREFERENCE HANDLES
      *
      * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     * [cDAC] [GC]: Contract depends on this value
      */
     HNDTYPE_CROSSREFERENCE = 11
 } HandleType;

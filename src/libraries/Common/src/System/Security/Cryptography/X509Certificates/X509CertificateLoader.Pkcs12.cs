@@ -187,8 +187,8 @@ namespace System.Security.Cryptography.X509Certificates
                     bagState.ConfirmPassword();
                 }
 
-                AsnValueReader outer = new AsnValueReader(authSafeContents, AsnEncodingRules.BER);
-                AsnValueReader reader = outer.ReadSequence();
+                ValueAsnReader outer = new ValueAsnReader(authSafeContents, AsnEncodingRules.BER);
+                ValueAsnReader reader = outer.ReadSequence();
                 outer.ThrowIfNotEmpty();
 
                 ReadOnlyMemory<byte> rebind = pfxAsn.AuthSafe.Content;
@@ -276,8 +276,8 @@ namespace System.Security.Cryptography.X509Certificates
             ref int? workRemaining,
             ref BagState bagState)
         {
-            AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
-            AsnValueReader reader = outer.ReadSequence();
+            ValueAsnReader outer = new ValueAsnReader(contentData.Span, AsnEncodingRules.BER);
+            ValueAsnReader reader = outer.ReadSequence();
             outer.ThrowIfNotEmpty();
 
             HashSet<string> duplicateAttributeCheck = new();
@@ -1002,7 +1002,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     try
                     {
-                        AsnValueReader reader = new AsnValueReader(
+                        ValueAsnReader reader = new ValueAsnReader(
                             _decryptBuffer.AsSpan(saveOffset, written),
                             AsnEncodingRules.BER);
 
@@ -1114,7 +1114,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                                 try
                                 {
-                                    AsnValueReader reader = new AsnValueReader(decrypted, AsnEncodingRules.BER);
+                                    ValueAsnReader reader = new ValueAsnReader(decrypted, AsnEncodingRules.BER);
                                     reader.ReadSequence();
                                     reader.ThrowIfNotEmpty();
                                 }
@@ -1142,7 +1142,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                                 try
                                 {
-                                    AsnValueReader reader = new AsnValueReader(decrypted, AsnEncodingRules.BER);
+                                    ValueAsnReader reader = new ValueAsnReader(decrypted, AsnEncodingRules.BER);
                                     reader.ReadSequence();
                                     reader.ThrowIfNotEmpty();
                                 }

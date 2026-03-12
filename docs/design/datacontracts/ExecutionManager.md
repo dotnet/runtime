@@ -43,6 +43,8 @@ struct CodeBlockHandle
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
+    // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
+    JitManagerInfo GetEEJitManagerInfo();
 
     // Extension Methods (implemented in terms of other APIs)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
@@ -62,7 +64,7 @@ Data descriptors used:
 | `RangeSectionFragment`| `RangeBegin` | Begin address of the fragment |
 | `RangeSectionFragment`| `RangeEndOpen` | End address of the fragment |
 | `RangeSectionFragment`| `RangeSection` | Pointer to the corresponding `RangeSection` |
-| `RangeSectionFragment`| `Next` | Pointer to the next fragment |
+| `RangeSectionFragment`| `Next` | Tagged pointer to the next fragment (bit 0 is the collectible flag; must be stripped to obtain the address) |
 | `RangeSection` | `RangeBegin` | Begin address of the range section |
 | `RangeSection` | `RangeEndOpen` | End address of the range section |
 | `RangeSection` | `NextForDelete` | Pointer to next range section for deletion |
@@ -76,6 +78,7 @@ Data descriptors used:
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
 | `EEJitManager` | `StoreRichDebugInfo` | Boolean value determining if debug info associated with the JitManager contains rich info. |
+| `EEJitManager` | `AllCodeHeaps` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
 | `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
 | `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
@@ -108,6 +111,7 @@ Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
+| `EEJitManagerAddress` | TargetPointer | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
 | `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
@@ -399,6 +403,10 @@ On 64-bit targets, we take advantage of the fact that most architectures don't s
 
 That is, level 5 has 256 entires pointing to level 4 maps (or nothing if there's no
 code allocated in that address range), level 4 entires point to level 3 maps and so on.  Each level 1 map has 256 entries covering a 128 KiB chunk and pointing to a linked list of range section fragments that fall within that 128 KiB chunk.
+
+#### Tagged pointers in the range section map
+
+Both the interior map pointers and the `RangeSectionFragment::Next` linked-list pointers use bit 0 as a collectible flag (see `RangeSectionFragmentPointer` in `codeman.h`). When a range section fragment belongs to a collectible assembly load context, the runtime sets bit 0 on the pointer. Readers must strip this bit (mask with `~1`) before dereferencing the pointer to obtain the actual address.
 
 ### Native Format
 
