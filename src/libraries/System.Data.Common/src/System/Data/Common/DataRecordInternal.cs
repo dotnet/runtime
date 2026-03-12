@@ -114,15 +114,11 @@ namespace System.Data.Common
             // since arrays can't handle 64 bit values and this interface doesn't
             // allow chunked access to data, a dataIndex outside the rang of Int32
             // is invalid
-            if (dataIndex > int.MaxValue)
+            if ((ulong)dataIndex > int.MaxValue)
             {
                 throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, nameof(dataIndex));
             }
 
-            if (dataIndex < 0 || dataIndex > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dataIndex));
-            }
             ndataIndex = (int)dataIndex;
 
             // if no buffer is passed in, return the number of characters we have
@@ -188,15 +184,11 @@ namespace System.Data.Common
             // since arrays can't handle 64 bit values and this interface doesn't
             // allow chunked access to data, a dataIndex outside the rang of Int32
             // is invalid
-            if (dataIndex > int.MaxValue)
+            if ((ulong)dataIndex > int.MaxValue)
             {
                 throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
             }
 
-            if (dataIndex < 0)
-	     {
-                throw new ArgumentOutOfRangeException(nameof(dataIndex), dataIndex, SR.Format(SR.Argument_MustBeGEZeroString));
-            }
             int ndataIndex = (int)dataIndex;
 
 
