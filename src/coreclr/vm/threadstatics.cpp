@@ -1146,6 +1146,7 @@ static void* GetTlsIndexObjectAddress()
 #elif !defined(TARGET_ANDROID) && defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 extern "C" size_t GetThreadStaticsVariableOffset();
+extern "C" size_t GetRuntimeThreadLocalsVariableOffset();
 
 #endif // !TARGET_ANDROID && TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 #endif // TARGET_WINDOWS
@@ -1225,7 +1226,6 @@ void GetObjectAllocContextTlsInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
     }
 
 #elif defined(TARGET_ARM64)
-    extern "C" size_t GetRuntimeThreadLocalsVariableOffset();
     pInfo->tlsRootOffset = GetRuntimeThreadLocalsVariableOffset();
 
 #else
