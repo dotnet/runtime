@@ -510,6 +510,7 @@ public:
 
         struct
         {
+            // [cDAC] [BuiltInCOM] : Contract depends on the encoding of m_fURTAggregated, m_fURTContained, and m_MarshalingType.
             static_assert((1 << 4) > INTERFACE_ENTRY_CACHE_SIZE, "m_iEntryToRelease needs a bigger data type");
             DWORD       m_iEntryToRelease:4;
 

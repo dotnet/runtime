@@ -394,27 +394,6 @@ public struct DacpCOMInterfacePointerData
     public ClrDataAddress comContext;
 }
 
-// Mirrors struct DacpRCWData in src/coreclr/inc/dacprivate.h.
-// Size must remain 0x58 bytes (enforced by static_assert in the native code).
-public struct DacpRCWData
-{
-    public ClrDataAddress identityPointer;
-    public ClrDataAddress unknownPointer;
-    public ClrDataAddress managedObject;
-    public ClrDataAddress jupiterObject;
-    public ClrDataAddress vtablePtr;
-    public ClrDataAddress creatorThread;
-    public ClrDataAddress ctxCookie;
-    public int refCount;
-    public int interfaceCount;
-    public int isJupiterObject;   // BOOL
-    public int supportsIInspectable; // BOOL
-    public int isAggregated;     // BOOL
-    public int isContained;      // BOOL
-    public int isFreeThreaded;   // BOOL
-    public int isDisconnected;   // BOOL
-}
-
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 public unsafe partial interface ISOSEnum
@@ -580,6 +559,25 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
 {
     [PreserveSig]
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
+}
+
+public struct DacpRCWData
+{
+    public ClrDataAddress identityPointer;
+    public ClrDataAddress unknownPointer;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress jupiterObject;
+    public ClrDataAddress vtablePtr;
+    public ClrDataAddress creatorThread;
+    public ClrDataAddress ctxCookie;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isJupiterObject;
+    public Interop.BOOL supportsIInspectable;
+    public Interop.BOOL isAggregated;
+    public Interop.BOOL isContained;
+    public Interop.BOOL isFreeThreaded;
+    public Interop.BOOL isDisconnected;
 }
 
 [GeneratedComInterface]

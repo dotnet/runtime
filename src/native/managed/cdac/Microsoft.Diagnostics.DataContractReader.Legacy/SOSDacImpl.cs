@@ -604,7 +604,7 @@ public sealed unsafe partial class SOSDacImpl
             if (ccw == 0 || (interfaces == null && pNeeded == null))
                 throw new ArgumentException();
 
-            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM; // E_NOTIMPL if contract is not present
             // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
             // GetCCWInterfaces navigates to the start of the chain in both cases.
             TargetPointer startCCW = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
@@ -3393,15 +3393,12 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (addr == 0)
-                throw new ArgumentException();
-            if (data is null)
+            if (addr == 0 || data is null)
                 throw new ArgumentException();
 
+            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
             *data = default;
-
             TargetPointer rcwPtr = addr.ToTargetPointer(_target);
-            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM;
             Contracts.RCWData rcwData = builtInCom.GetRCWData(rcwPtr);
 
             data->identityPointer = rcwData.IdentityPointer.ToClrDataAddress(_target);
@@ -3412,10 +3409,10 @@ public sealed unsafe partial class SOSDacImpl
             data->ctxCookie = rcwData.CtxCookie.ToClrDataAddress(_target);
             data->refCount = (int)rcwData.RefCount;
             data->interfaceCount = builtInCom.GetRCWInterfaces(rcwPtr).Count();
-            data->isAggregated = rcwData.IsAggregated ? 1 : 0;
-            data->isContained = rcwData.IsContained ? 1 : 0;
-            data->isFreeThreaded = rcwData.IsFreeThreaded ? 1 : 0;
-            data->isDisconnected = rcwData.IsDisconnected ? 1 : 0;
+            data->isAggregated = rcwData.IsAggregated ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isContained = rcwData.IsContained ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isFreeThreaded = rcwData.IsFreeThreaded ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isDisconnected = rcwData.IsDisconnected ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

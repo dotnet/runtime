@@ -10,22 +10,24 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the BuiltInCOM contract's RCW APIs.
-/// Uses the RCWInterfaces debuggee which creates a COM RCW and populates the
-/// inline interface entry cache before crashing.
+/// Uses the RCW debuggee which creates both a plain and a contained
+/// COM RCW with populated interface entry caches before crashing.
 /// </summary>
-public class RCWInterfacesDumpTests : DumpTestBase
+public class RCWDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "RCWInterfaces";
+    protected override string DebuggeeName => "RCW";
     protected override string DumpType => "full";
 
     /// <summary>
-    /// Walks all strong GC handles and returns the first RCW pointer found.
-    /// Returns <see cref="TargetPointer.Null"/> if no RCW-bearing object is found.
+    /// Walks all strong GC handles and returns all RCW pointers found,
+    /// paired with their <see cref="RCWData"/>.
     /// </summary>
-    private TargetPointer FindFirstRCW()
+    private List<(TargetPointer Rcw, RCWData Data)> FindAllRCWs()
     {
         IGC gcContract = Target.Contracts.GC;
         IObject objectContract = Target.Contracts.Object;
+        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+        var results = new List<(TargetPointer, RCWData)>();
 
         foreach (HandleData handleData in gcContract.GetHandles([HandleType.Strong]))
         {
@@ -36,11 +38,12 @@ public class RCWInterfacesDumpTests : DumpTestBase
             if (objectContract.GetBuiltInComData(objectAddress, out TargetPointer rcw, out _, out _)
                 && rcw != TargetPointer.Null)
             {
-                return rcw;
+                RCWData data = builtInCOM.GetRCWData(rcw);
+                results.Add((rcw, data));
             }
         }
 
-        return TargetPointer.Null;
+        return results;
     }
 
     [ConditionalTheory]
@@ -51,8 +54,9 @@ public class RCWInterfacesDumpTests : DumpTestBase
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
 
-        TargetPointer rcwPtr = FindFirstRCW();
-        Assert.NotEqual(TargetPointer.Null, rcwPtr);
+        var allRcws = FindAllRCWs();
+        // Find the plain (non-contained) RCW
+        (TargetPointer rcwPtr, _) = allRcws.First(r => !r.Data.IsContained);
 
         // Assert that the cookie is not null
         TargetPointer cookie = builtInCOM.GetRCWContext(rcwPtr);
@@ -78,15 +82,13 @@ public class RCWInterfacesDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM interop (RCW) is only supported on Windows")]
-    public void GetRCWData_ReturnsExpectedData(TestConfiguration config)
+    public void GetRCWData_PlainRCW_ReturnsExpectedData(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
 
-        TargetPointer rcwPtr = FindFirstRCW();
-        Assert.NotEqual(TargetPointer.Null, rcwPtr);
-
-        RCWData data = builtInCOM.GetRCWData(rcwPtr);
+        var allRcws = FindAllRCWs();
+        // Find the plain (non-contained) RCW
+        (_, RCWData data) = allRcws.First(r => !r.Data.IsContained);
 
         // The RCW wraps a live COM object, so its identity and vtable pointers must be valid.
         Assert.NotEqual(TargetPointer.Null, data.IdentityPointer);
@@ -103,8 +105,38 @@ public class RCWInterfacesDumpTests : DumpTestBase
         Assert.False(data.IsAggregated);
         Assert.False(data.IsContained);
 
-        // RefCount must be positive — the debuggee held a live reference.
-        Assert.True(data.RefCount > 0,
-            $"Expected positive RefCount, got {data.RefCount}");
+        // RefCount must be 1 — the debuggee held a live reference.
+        Assert.True(data.RefCount == 1,
+            $"Expected RefCount of 1, got {data.RefCount}");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "COM interop (RCW) is only supported on Windows")]
+    public void GetRCWData_ContainedRCW_IsMarkedContained(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        var allRcws = FindAllRCWs();
+        // Find the contained RCW (created from ContainedGlobalInterfaceTable).
+        // The GIT singleton doesn't support aggregation, so the runtime falls back
+        // to containment when an extensible RCW is created for it.
+        (_, RCWData data) = allRcws.First(r => r.Data.IsContained);
+
+        Assert.True(data.IsContained);
+        Assert.False(data.IsAggregated);
+
+        // The contained RCW wraps a live COM object.
+        Assert.NotEqual(TargetPointer.Null, data.IdentityPointer);
+
+        // The managed object should be resolvable via the sync block index.
+        Assert.NotEqual(TargetPointer.Null, data.ManagedObject);
+
+        // The RCW is alive at the time of the crash.
+        Assert.False(data.IsDisconnected);
+
+        // RefCount must be 1 — the debuggee held a live reference.
+        Assert.True(data.RefCount == 1,
+            $"Expected RefCount of 1, got {data.RefCount}");
     }
 }

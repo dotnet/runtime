@@ -24,8 +24,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Slot_Basic = 0,
     }
     // Mirrors RCW::RCWFlags bits in src/coreclr/vm/runtimecallablewrapper.h.
-    // [cDAC] [BuiltInCOM]: Contract depends on these bit positions within m_dwFlags.
-    [System.Flags]
     private enum RCWFlags : uint
     {
         URTAggregated          = 0x010u, // bit 4: m_fURTAggregated
