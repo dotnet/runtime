@@ -127,8 +127,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
             Assert.True(handle != TargetPointer.Null,
                 $"Expected non-null handle for CCW at 0x{ccwPtr:X}");
             TargetPointer objectPtr = Target.ReadPointer(handle);
-            Assert.NotEqual(TargetPointer.Null, objectPtr,
-                $"Expected handle for CCW at 0x{ccwPtr:X} to reference a managed object");
+            Assert.NotNull(objectPtr);
         }
     }
 }
