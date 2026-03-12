@@ -63,7 +63,7 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | SyncBlockDumpTests | SyncBlock | SyncBlock |
 | BuiltInCOMDumpTests | BuiltInCOM | CCWInterfaces |
 | RCWCleanupListDumpTests | BuiltInCOM | RCWCleanupList |
-| RCWInterfacesDumpTests | BuiltInCOM | RCW |
+| RCWDumpTests | BuiltInCOM | RCW |
 
 ### Runtime Versions
 
