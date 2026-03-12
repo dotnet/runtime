@@ -1177,13 +1177,10 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 {
     STANDARD_VM_CONTRACT;
 
-    // Use the entry point hashtable to check if another thread already registered a MethodDesc
-    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
-        return;
-
     AllocMemTracker amTracker;
-    ILStubCache *pStubCache = m_pModule->GetILStubCache();
+    ILStubCache* pStubCache = m_pModule->GetILStubCache();
     MethodTable* pStubMT = pStubCache->GetOrCreateStubMethodTable(m_pModule);
+    LoaderAllocator* pLoaderAllocator = m_pModule->GetLoaderAllocator();
 
     // Resumption stub signature: object(object, ref byte)
     // This matches BuildResumptionStubSignature in jitinterface.cpp
@@ -1196,8 +1193,12 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         ELEMENT_TYPE_U1
     };
 
+    // Use the entry point hashtable to check if another thread already registered a MethodDesc
+    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+        return;
+
     MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
-        m_pModule->GetLoaderAllocator(),
+        pLoaderAllocator,
         pStubMT,
         stubEntryPoint,
         DynamicMethodDesc::StubAsyncResume,
