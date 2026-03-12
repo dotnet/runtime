@@ -816,29 +816,24 @@ namespace System.Diagnostics
             parentHandle = parentInputs ? writeHandle : readHandle;
             SafeFileHandle hTmpChild = parentInputs ? readHandle : writeHandle;
 
-            try
+            // Duplicate the child handle to be inheritable so that the child process
+            // has access. The original non-inheritable handle is closed afterwards.
+            IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
+            if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
+                                                 hTmpChild,
+                                                 currentProcHandle,
+                                                 out childHandle,
+                                                 0,
+                                                 bInheritHandle: true,
+                                                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
             {
-                // Duplicate the child handle to be inheritable so that the child process
-                // has access. The original non-inheritable handle is closed afterwards.
-                IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
-                if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
-                                                     hTmpChild,
-                                                     currentProcHandle,
-                                                     out childHandle,
-                                                     0,
-                                                     true,
-                                                     Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
-                {
-                    throw new Win32Exception();
-                }
+                int lastError = Marshal.GetLastWin32Error();
+                parentHandle.Dispose();
+                hTmpChild.Dispose();
+                throw new Win32Exception(lastError);
             }
-            finally
-            {
-                if (!hTmpChild.IsInvalid)
-                {
-                    hTmpChild.Dispose();
-                }
-            }
+
+            hTmpChild.Dispose();
         }
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)

@@ -1234,9 +1234,14 @@ int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 
 int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize)
 {
-    int32_t result = Common_Read(fd, buffer, bufferSize);
-    if (result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    while (1)
     {
+        int32_t result = Common_Read(fd, buffer, bufferSize);
+        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            return result;
+        }
+
         // The fd is non-blocking and no data is available yet.
         // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
         PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
@@ -1254,18 +1259,19 @@ int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t buff
             // The pipe/socket was closed with no data available (EOF).
             return 0;
         }
-
-        result = Common_Read(fd, buffer, bufferSize);
     }
-
-    return result;
 }
 
 int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize)
 {
-    int32_t result = Common_Write(fd, buffer, bufferSize);
-    if (result == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    while (1)
     {
+        int32_t result = Common_Write(fd, buffer, bufferSize);
+        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            return result;
+        }
+
         // The fd is non-blocking and the write buffer is full.
         // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
         PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
@@ -1284,11 +1290,7 @@ int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t
             errno = EPIPE;
             return -1;
         }
-
-        result = Common_Write(fd, buffer, bufferSize);
     }
-
-    return result;
 }
 
 int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)

@@ -180,13 +180,12 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             // Allocate the handles first, so in case of OOM we don't leak any handles.
             SafeFileHandle tempReadHandle = new();
             SafeFileHandle tempWriteHandle = new();
 
-            int* fds = stackalloc int[2];
             Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
             if (asyncRead)
             {
@@ -198,18 +197,26 @@ namespace Microsoft.Win32.SafeHandles
                 flags |= Interop.Sys.PipeFlags.O_NONBLOCK_WRITE;
             }
 
-            if (Interop.Sys.Pipe(fds, flags) != 0)
+            int readFd, writeFd;
+            unsafe
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                tempReadHandle.Dispose();
-                tempWriteHandle.Dispose();
-                throw Interop.GetExceptionForIoErrno(error);
+                int* fds = stackalloc int[2];
+                if (Interop.Sys.Pipe(fds, flags) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    tempReadHandle.Dispose();
+                    tempWriteHandle.Dispose();
+                    throw Interop.GetExceptionForIoErrno(error);
+                }
+
+                readFd = fds[Interop.Sys.ReadEndOfPipe];
+                writeFd = fds[Interop.Sys.WriteEndOfPipe];
             }
 
-            tempReadHandle.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
+            tempReadHandle.SetHandle(readFd);
             tempReadHandle.IsAsync = asyncRead;
 
-            tempWriteHandle.SetHandle(fds[Interop.Sys.WriteEndOfPipe]);
+            tempWriteHandle.SetHandle(writeFd);
             tempWriteHandle.IsAsync = asyncWrite;
 
             readHandle = tempReadHandle;
