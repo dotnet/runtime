@@ -66,7 +66,7 @@ namespace TestStructFields
             [FieldOffset(0)] public byte b0;
             [FieldOffset(3)] public byte b1;
         }
-
+        static bool BE => !BitConverter.IsLittleEndian;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int TestS4_Simple()
@@ -253,11 +253,11 @@ namespace TestStructFields
 
             s2.b0 = false;
             s1 = Unsafe.As<S4Corrupted1, S4>(ref s2);
-            if (s1.i != 0)
+            if (s1.i != (BE ? 2 : 0))
             {
                 return 101;
             }
-            if (s2.i != 0)
+            if (s2.i != (BE ? 2 : 0))
             {
                 return 101;
             }
@@ -288,11 +288,11 @@ namespace TestStructFields
 
             s2.b0 = false;
             s1 = Unsafe.As<S4Corrupted2, S4>(ref s2);
-            if (s1.i != 0)
+	    if (s1.i != (BE ? 2 : 0))
             {
                 return 101;
             }
-            if (s2.i != 0)
+	    if (s2.i != (BE ? 2 : 0))
             {
                 return 101;
             }
@@ -312,7 +312,7 @@ namespace TestStructFields
             }
             s1 = Unsafe.As<S4Corrupted3, S4>(ref s2);
             s2.b0 = 2;
-            if (s1.i != 1)
+            if (s1.i != (BE ? 16777216 : 1))
             {
                 return 101;
             }
@@ -323,7 +323,7 @@ namespace TestStructFields
 
             s2.b1 = 1;
             s1 = Unsafe.As<S4Corrupted3, S4>(ref s2);
-            if (s1.i != 16777218)
+            if (s1.i != (BE ? 33554433 : 16777218))
             {
                 return 101;
             }
@@ -791,7 +791,7 @@ namespace TestStructFields
             {
                 return 101;
             }
-            if (s1.i2 != 0x01000004)
+            if (s1.i2 != (BE ? 1 : 0x01000004))
             {
                 return 101;
             }
@@ -800,7 +800,7 @@ namespace TestStructFields
             {
                 return 101;
             }
-            if (s2.i2 != 0x01000104)
+            if (s2.i2 != (BE ? 65537 : 0x01000104))
             {
                 return 101;
             }
@@ -830,7 +830,7 @@ namespace TestStructFields
             {
                 return 101;
             }
-            if (s1.i2 != 0x02000000)
+            if (s1.i2 != (BE ? 2 : 0x02000000))
             {
                 return 101;
             }
@@ -849,7 +849,7 @@ namespace TestStructFields
             {
                 return 101;
             }
-            if (s1.i2 != 0x05000000)
+            if (s1.i2 != (BE ? 5 : 0x05000000))
             {
                 return 101;
             }

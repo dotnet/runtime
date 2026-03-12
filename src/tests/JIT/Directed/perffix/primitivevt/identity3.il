@@ -425,6 +425,7 @@
       IL_04b3:  call       native int [nativeinthelper]PrimitiveVT.VT1B::op_Subtraction(valuetype [nativeinthelper]PrimitiveVT.VT1B,
                                                                           valuetype [nativeinthelper]PrimitiveVT.VT1B)
       IL_04b8:  ldc.i4.8
+      IL_04b4:  conv.i4
       IL_04b9:  beq.s      IL_04e3
 
       IL_04bb:  ldstr      "FAILED, y-Int32.MinValue!=8"

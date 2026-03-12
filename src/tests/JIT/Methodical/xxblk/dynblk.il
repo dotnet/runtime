@@ -68,7 +68,7 @@
 
               ldloca.s   S
               ldfld      uint64 Test_dynblk_il.S8::val
-              ldc.i8     0x5555333333
+              ldc.i8     0x3333335555000000
               ceq
               brtrue.s  L1
 
