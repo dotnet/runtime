@@ -660,7 +660,8 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // If that's the case, extract its local variable containing a pointer to the windows style context of the hardware
     // exception and return that. This skips the hardware signal handler trampoline that the libunwind
     // cannot cross on some systems. On macOS, it skips a similar trampoline we create in HijackFaultingThread.
-    if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
+    if (g_SEHProcessExceptionReturnAddress != NULL &&
+        (void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
         CONTEXT* exceptionContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_hardware_exception_context_locvar_offset);
         memcpy_s(context, sizeof(CONTEXT), exceptionContext, sizeof(CONTEXT));
@@ -672,7 +673,8 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // If that's the case, extract its local variable containing a pointer to the windows style context of the activation
     // injection location and return that. This skips the signal handler trampoline that the libunwind
     // cannot cross on some systems.
-    if ((void*)curPc == g_InvokeActivationHandlerReturnAddress)
+    if (g_InvokeActivationHandlerReturnAddress != NULL &&
+        (void*)curPc == g_InvokeActivationHandlerReturnAddress)
     {
         CONTEXT* activationContext = (CONTEXT*)(CONTEXTGetFP(context) + g_inject_activation_context_locvar_offset);
         memcpy_s(context, sizeof(CONTEXT), activationContext, sizeof(CONTEXT));
