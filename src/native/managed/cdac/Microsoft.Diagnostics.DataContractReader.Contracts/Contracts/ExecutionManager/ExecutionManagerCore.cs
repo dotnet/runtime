@@ -392,6 +392,28 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private static bool IsTypedHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Typed;
     private static bool HasCachedTypeHandle(IExceptionClauseData clause) => (clause.Flags & (uint)ExceptionClauseFlags_1.CachedClass) != 0;
 
+    private bool IsObjectType(TargetPointer moduleAddr, uint classToken)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle module = loader.GetModuleHandleFromModulePtr(moduleAddr);
+        ModuleLookupTables tables = loader.GetLookupTables(module);
+
+        TargetPointer resolvedMethodTable = (EcmaMetadataUtils.TokenType)(classToken & EcmaMetadataUtils.TokenTypeMask) switch
+        {
+            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, classToken, out _),
+            _ => TargetPointer.Null,
+        };
+
+        if (resolvedMethodTable == TargetPointer.Null)
+            return false;
+
+        TargetPointer objectMethodTable = _target.ReadPointer(
+            _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+
+        return resolvedMethodTable == objectMethodTable;
+    }
+
     List<ExceptionClauseInfo> IExecutionManager.GetExceptionClauses(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
@@ -424,17 +446,23 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer? moduleAddr = null;
             uint? classToken = null;
 
-            if (HasCachedTypeHandle(entry) && !isR2R)
+            if (HasCachedTypeHandle(entry) && !isR2R) // Dynamic method path: we only have a cached type handle, no token.
             {
                 typeHandle = ((EEExceptionClause)entry).TypeHandle;
+                if (IsTypedHandler(flags) && !IsFilterHandler(flags))
+                {
+                    TargetPointer objectMethodTable = _target.ReadPointer(
+                        _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+                    isCatchAllHandler = typeHandle.Value.Value == objectMethodTable.Value;
+                }
             }
             else if (!IsFaultOrFinally(flags))
             {
                 if (IsTypedHandler(flags) && !IsFilterHandler(flags))
                 {
-                    isCatchAllHandler = entry.ClassToken == (uint)((ulong)TableIndex.TypeRef << 24);
-                    moduleAddr = handleModuleAddr;
+                    isCatchAllHandler = IsObjectType(handleModuleAddr, entry.ClassToken);
                 }
+                moduleAddr = handleModuleAddr;
                 classToken = entry.ClassToken;
             }
 

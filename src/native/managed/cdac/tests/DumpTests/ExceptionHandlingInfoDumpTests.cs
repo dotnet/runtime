@@ -13,6 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Uses the ExceptionHandlingInfo debuggee, which has a method with:
 ///   - A filter clause (catch-when)
 ///   - A typed catch clause
+///   - A catch-all handler (catch without a type)
 ///   - A finally clause
 /// The debuggee crashes via FailFast inside the finally block.
 /// </summary>
@@ -108,6 +109,19 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "EH clause enumeration was added after net10.0")]
+    public void GetExceptionClauses_ContainsCatchAllClause(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        CodeBlockHandle codeBlock = FindCrashMethodCodeBlock();
+        List<ExceptionClauseInfo> clauses = Target.Contracts.ExecutionManager.GetExceptionClauses(codeBlock);
+
+        Assert.Contains(clauses, c => c.IsCatchAllHandler == true);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "EH clause enumeration was added after net10.0")]
     public void GetExceptionClauses_AllClausesHaveValidOffsets(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -136,8 +150,8 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 
         ExceptionClauseInfo filterClause = clauses.First(c => c.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter);
         Assert.NotNull(filterClause.FilterOffset);
-        Assert.IsNull(filterClause.ClassToken);
-        Assert.IsNull(filterClause.TypeHandle);
+        Assert.Null(filterClause.ClassToken);
+        Assert.Null(filterClause.TypeHandle);
     }
 
     [ConditionalTheory]

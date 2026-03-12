@@ -169,6 +169,7 @@ Global variables used:
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
+| `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
 
 Contract constants used:
 | Name | Type | Purpose | Value |
@@ -180,6 +181,7 @@ Contracts used:
 | --- |
 | `PlatformMetadata` |
 | `GCInfo` |
+| `Loader` |
 | `PrecodeStubs` |
 | `RuntimeInfo` |
 | `RuntimeTypeSystem` |
@@ -446,7 +448,7 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 
 * For R2R code (`ReadyToRunJitManager`), exception clause data is found via the `ExceptionInfo` section (section type 104) of the R2R image. The section is located by traversing `ReadyToRunInfo::Composite` to reach the `ReadyToRunCoreInfo`, then reading its `Header` pointer to the `ReadyToRunCoreHeader`, and iterating through the inline `ReadyToRunSection` array that immediately follows the header. The `ExceptionInfo` section contains an `ExceptionLookupTableEntry` array, where each entry maps a `MethodStartRVA` to an `ExceptionInfoRVA`. A binary search (falling back to linear scan for small ranges) finds the entry matching the method's RVA. The exception clauses span from that entry's `ExceptionInfoRVA` to the next entry's `ExceptionInfoRVA`, both offset from the image base. The clause array is strided using the size of `R2RExceptionClause`.
 
-After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only), the union field contains a resolved `TypeHandle` pointer. Otherwise, the union field is a metadata `ClassToken` — if the token equals `mdTypeRefNil` (0x01000000), the clause is a catch-all handler. For non-fault/finally clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` → `MethodDesc` → `MethodTable` → `TypeHandle` → `Module` via the `RuntimeTypeSystem` contract.
+After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only), the union field contains a resolved `TypeHandle` pointer. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For non-fault/finally clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` → `MethodDesc` → `MethodTable` → `TypeHandle` → `Module` via the `RuntimeTypeSystem` contract.
 
 ### RangeSectionMap
 

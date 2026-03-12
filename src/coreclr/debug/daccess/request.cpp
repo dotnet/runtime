@@ -3454,7 +3454,8 @@ ClrDataAccess::TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pFunc, LPVOID token
             else if (IsTypedHandler(&EHClause))
             {
                 deh.clauseType = EHTyped;
-                deh.isCatchAllHandler = (&EHClause.TypeHandle == (void*)(size_t)mdTypeRefNil);
+                TypeHandle th = ClassLoader::LookupTypeDefOrRefInModule(codeInfo.GetMethodDesc()->GetModule(), (mdToken)EHClause.ClassToken);
+                deh.isCatchAllHandler = th.IsObjectType();
             }
             else
             {
@@ -3463,7 +3464,8 @@ ClrDataAccess::TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pFunc, LPVOID token
 
             if (HasCachedTypeHandle(&EHClause))
             {
-                deh.mtCatch = TO_CDADDR(&EHClause.TypeHandle);
+                deh.mtCatch = TO_CDADDR(EHClause.TypeHandle);
+                deh.isCatchAllHandler = TypeHandle::FromPtr(PTR_VOID((TADDR)EHClause.TypeHandle)).IsObjectType();
             }
             else if(!IsFaultOrFinally(&EHClause))
             {
