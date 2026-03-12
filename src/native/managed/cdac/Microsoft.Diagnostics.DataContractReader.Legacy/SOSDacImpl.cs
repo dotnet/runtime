@@ -3997,7 +3997,9 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token)
     {
         int hr = HResults.S_OK;
+#if DEBUG
         List<DACEHInfo> clausesLocal = new();
+#endif
         int E_ABORT = unchecked((int)0x80004004);
         uint lastIndex = 0;
 
@@ -4041,8 +4043,9 @@ public sealed unsafe partial class SOSDacImpl
                 ehInfo.tryEndOffset = (ulong)clause.TryEndPC;
                 ehInfo.handlerStartOffset = (ulong)clause.HandlerStartPC;
                 ehInfo.handlerEndOffset = (ulong)clause.HandlerEndPC;
+#if DEBUG
                 clausesLocal.Add(ehInfo);
-
+#endif
                 if (pCallback(i, numClauses, &ehInfo, token) == 0)
                 {
                     lastIndex = i;
