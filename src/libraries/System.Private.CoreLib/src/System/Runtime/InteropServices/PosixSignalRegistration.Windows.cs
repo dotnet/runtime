@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Lock object for critical section ensurring that only one of register and unregister happen at time.
         /// </summary>
-        private static readonly object s_oneOfRegisterUnregisterLock = new();
+        private static readonly object s_registerLock = new();
 
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
             var token = new Token(signal, signo, handler);
             var registration = new PosixSignalRegistration(token);
 
-            lock (s_oneOfRegisterUnregisterLock)
+            lock (s_registerLock)
             {
                 bool registerCtrlHandler = false;
                 lock (s_registrations)
@@ -77,21 +77,18 @@ namespace System.Runtime.InteropServices
 
         private unsafe void Unregister()
         {
-            lock (s_oneOfRegisterUnregisterLock)
+            lock (s_registrations)
             {
-                lock (s_registrations)
+                if (_token is Token token)
                 {
-                    if (_token is Token token)
-                    {
-                        _token = null;
+                    _token = null;
 
-                        if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
+                    if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
+                    {
+                        tokens.Remove(token);
+                        if (tokens.Count == 0)
                         {
-                            tokens.Remove(token);
-                            if (tokens.Count == 0)
-                            {
-                                s_registrations.Remove(token.SigNo);
-                            }
+                            s_registrations.Remove(token.SigNo);
                         }
                     }
                 }
