@@ -45,6 +45,8 @@ public enum DataType
     AssemblyBinder,
     PEImage,
     PEImageLayout,
+    WebcilHeader,
+    WebcilSectionHeader,
     CGrowableSymbolStream,
     ProbeExtensionResult,
     MethodTable,

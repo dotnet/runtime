@@ -1143,6 +1143,21 @@ CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBl
 CDAC_TYPE_FIELD(SyncBlockCache, /*pointer*/, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
 
+#ifdef FEATURE_WEBCIL
+CDAC_TYPE_BEGIN(WebcilHeader)
+CDAC_TYPE_SIZE(sizeof(WebcilHeader))
+CDAC_TYPE_FIELD(WebcilHeader, /*uint16*/, CoffSections, offsetof(WebcilHeader, CoffSections))
+CDAC_TYPE_END(WebcilHeader)
+
+CDAC_TYPE_BEGIN(WebcilSectionHeader)
+CDAC_TYPE_SIZE(sizeof(WebcilSectionHeader))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, VirtualSize, offsetof(WebcilSectionHeader, VirtualSize))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, VirtualAddress, offsetof(WebcilSectionHeader, VirtualAddress))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, SizeOfRawData, offsetof(WebcilSectionHeader, SizeOfRawData))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, PointerToRawData, offsetof(WebcilSectionHeader, PointerToRawData))
+CDAC_TYPE_END(WebcilSectionHeader)
+#endif
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1229,9 +1244,6 @@ CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 0)
 #endif // FEATURE_ON_STACK_REPLACEMENT
 #ifdef FEATURE_WEBCIL
 CDAC_GLOBAL(FeatureWebcil, uint8, 1)
-CDAC_GLOBAL(WebcilHeaderSize, uint32, sizeof(WebcilHeader))
-CDAC_GLOBAL(WebcilSectionHeaderSize, uint32, sizeof(WebcilSectionHeader))
-CDAC_GLOBAL(WebcilCoffSectionsOffset, uint32, offsetof(WebcilHeader, CoffSections))
 #else
 CDAC_GLOBAL(FeatureWebcil, uint8, 0)
 #endif

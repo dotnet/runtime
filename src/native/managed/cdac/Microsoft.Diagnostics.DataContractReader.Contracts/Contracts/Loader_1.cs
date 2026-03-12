@@ -229,43 +229,31 @@ internal readonly struct Loader_1 : ILoader
         return offset;
     }
 
-    // WebcilSectionHeader field offsets — must match the native WebcilSectionHeader
-    // packed struct layout in src/coreclr/inc/webcildecoder.h.
-    private const uint WebcilSectionVirtualSizeOffset = 0;
-    private const uint WebcilSectionVirtualAddressOffset = 4;
-    private const uint WebcilSectionSizeOfRawDataOffset = 8;
-    private const uint WebcilSectionPointerToRawDataOffset = 12;
-
     private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
         TargetPointer headerBase = imageLayout.Base;
-        // Read Webcil format constants from the runtime's data contract globals.
-        // These correspond to sizeof(WebcilHeader), sizeof(WebcilSectionHeader), and
-        // offsetof(WebcilHeader, CoffSections) defined in src/coreclr/inc/webcildecoder.h.
-        int webcilHeaderSize = _target.ReadGlobal<int>(Constants.Globals.WebcilHeaderSize);
-        int webcilSectionHeaderSize = _target.ReadGlobal<int>(Constants.Globals.WebcilSectionHeaderSize);
-        int webcilCoffSectionsOffset = _target.ReadGlobal<int>(Constants.Globals.WebcilCoffSectionsOffset);
-        Debug.Assert(webcilSectionHeaderSize == 16, "Webcil section header size changed — update field offset constants.");
-        ushort numSections = _target.Read<ushort>(headerBase + (uint)webcilCoffSectionsOffset);
+        Data.WebcilHeader webcilHeader = _target.ProcessedData.GetOrAdd<Data.WebcilHeader>(headerBase);
+        Target.TypeInfo webcilHeaderType = _target.GetTypeInfo(DataType.WebcilHeader);
+        Target.TypeInfo webcilSectionType = _target.GetTypeInfo(DataType.WebcilSectionHeader);
+
+        ushort numSections = webcilHeader.CoffSections;
         if (numSections == 0 || numSections > 16)
             throw new InvalidOperationException("Invalid Webcil section count.");
-        TargetPointer sectionTableBase = headerBase + (uint)webcilHeaderSize;
+
+        TargetPointer sectionTableBase = headerBase + webcilHeaderType.Size!.Value;
 
         for (int i = 0; i < numSections; i++)
         {
-            TargetPointer sectionPtr = sectionTableBase + (uint)(i * webcilSectionHeaderSize);
-            uint virtualSize = _target.Read<uint>(sectionPtr + WebcilSectionVirtualSizeOffset);
-            uint virtualAddress = _target.Read<uint>(sectionPtr + WebcilSectionVirtualAddressOffset);
-            uint sizeOfRawData = _target.Read<uint>(sectionPtr + WebcilSectionSizeOfRawDataOffset);
-            uint pointerToRawData = _target.Read<uint>(sectionPtr + WebcilSectionPointerToRawDataOffset);
+            TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)webcilSectionType.Size!.Value);
+            Data.WebcilSectionHeader section = _target.ProcessedData.GetOrAdd<Data.WebcilSectionHeader>(sectionPtr);
 
             uint rvaUnsigned = (uint)rva;
-            if (rvaUnsigned >= virtualAddress)
+            if (rvaUnsigned >= section.VirtualAddress)
             {
-                uint offset = rvaUnsigned - virtualAddress;
-                if (offset < virtualSize && offset < sizeOfRawData)
+                uint offset = rvaUnsigned - section.VirtualAddress;
+                if (offset < section.VirtualSize && offset < section.SizeOfRawData)
                 {
-                    return offset + pointerToRawData;
+                    return offset + section.PointerToRawData;
                 }
             }
         }

@@ -252,7 +252,10 @@ inline const void *GetResource(const TDecoder& decoder, COUNT_T offset, COUNT_T 
     _ASSERTE(resourceBlob != NULL);
 
     if (pSize != NULL)
-        *pSize = GET_UNALIGNED_VAL32(resourceBlob);
+    {
+        DWORD resourceSize = GET_UNALIGNED_VAL32(resourceBlob);
+        *pSize = resourceSize;
+    }
 
     // ECMA-335 II.24.2.4: Each resource entry is preceded by a 4-byte length prefix.
     RETURN (const void *)((BYTE *)resourceBlob + sizeof(DWORD));

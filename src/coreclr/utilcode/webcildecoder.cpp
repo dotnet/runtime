@@ -729,7 +729,7 @@ void WebcilDecoder::GetPEKindAndMachine(DWORD *pdwPEKind, DWORD *pdwMachine)
     if (pdwPEKind != NULL)
         *pdwPEKind = peILonly;
     if (pdwMachine != NULL)
-        // this is for compatibility, Webcil images are always flat and have machine type WASM
+        // IL-only arch-neutral images use IMAGE_FILE_MACHINE_I386 for historic reasons
         *pdwMachine = IMAGE_FILE_MACHINE_I386;
 }
 
