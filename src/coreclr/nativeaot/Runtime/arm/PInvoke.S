@@ -59,5 +59,3 @@ LOCAL_LABEL(ReturnRareTrapThread):
         // passing transition frame pointer in r0
         b       C_FUNC(RhpWaitForGC2)
 LEAF_END RhpPInvokeReturn, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

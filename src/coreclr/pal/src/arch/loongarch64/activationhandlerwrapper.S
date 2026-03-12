@@ -22,5 +22,3 @@ LOCAL_LABEL(ActivationHandlerReturn):
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, (16 + CONTEXT_Size)
     jirl  $r0, $ra, 0
 NESTED_END ActivationHandlerWrapper, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

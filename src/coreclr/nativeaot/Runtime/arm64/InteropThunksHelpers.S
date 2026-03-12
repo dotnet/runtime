@@ -50,5 +50,3 @@
         PREPARE_EXTERNAL_VAR RhCommonStub, x0
         ret
     LEAF_END RhGetCommonStubAddress, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

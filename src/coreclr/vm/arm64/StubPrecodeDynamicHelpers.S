@@ -282,5 +282,3 @@ LOCAL_LABEL(DynamicHelper_GenericDictionaryLookup_Method_TestForNull_HelperCall)
         LEAF_END DynamicHelper_GenericDictionaryLookup_Method_3, _TEXT
 
 #endif //// FEATURE_STUBPRECODE_DYNAMIC_HELPERS 
-
-NO_EXEC_STACK_DIRECTIVE

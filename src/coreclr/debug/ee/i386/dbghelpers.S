@@ -71,5 +71,3 @@ LEAF_ENTRY NotifyRightSideOfSyncCompleteFlare, _TEXT
         test eax,6
         ret
 LEAF_END NotifyRightSideOfSyncCompleteFlare, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

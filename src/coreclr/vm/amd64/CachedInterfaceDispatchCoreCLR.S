@@ -78,5 +78,3 @@ NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT, NoHandler
 NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
-NO_EXEC_STACK_DIRECTIVE

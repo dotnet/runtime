@@ -143,5 +143,3 @@ NESTED_END Rhp\FunctionName, _TEXT
 .endm
 
 UNIVERSAL_TRANSITION UniversalTransitionTailCall
-
-NO_EXEC_STACK_DIRECTIVE

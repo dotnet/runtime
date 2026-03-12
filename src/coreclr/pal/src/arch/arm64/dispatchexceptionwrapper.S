@@ -43,5 +43,3 @@ LOCAL_LABEL(PAL_DispatchExceptionReturn):
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
     ret
 NESTED_END PAL_DispatchExceptionWrapper, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

@@ -46,5 +46,3 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     addi a0, a1, 0
     tail ThrowExceptionHelper
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

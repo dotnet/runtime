@@ -17,5 +17,3 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         jmp qword ptr [rip + REL_C_FUNC(RhpUniversalTransitionTailCall)]
 
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

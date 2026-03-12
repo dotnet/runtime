@@ -10,5 +10,3 @@ LEAF_ENTRY FPFillR8, .TEXT
         fld  fa0, 0(a0)
         ret
 LEAF_END FPFillR8, .TEXT
-
-NO_EXEC_STACK_DIRECTIVE

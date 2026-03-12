@@ -20,5 +20,3 @@ _DBG_CheckStackAlignment:
   popq %rbp
   ret
 #endif
-
-NO_EXEC_STACK_DIRECTIVE

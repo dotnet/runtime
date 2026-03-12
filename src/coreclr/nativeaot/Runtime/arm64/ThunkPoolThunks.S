@@ -124,5 +124,3 @@ LEAF_ENTRY RhpGetThunkStubsBlockAddress
     sub     x0, x0, x12
     ret
 LEAF_END RhpGetThunkStubsBlockAddress
-
-NO_EXEC_STACK_DIRECTIVE

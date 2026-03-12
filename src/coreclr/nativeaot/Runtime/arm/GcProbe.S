@@ -135,5 +135,3 @@ LEAF_ENTRY RhpGcStressHijack
     EMIT_BREAKPOINT
 LEAF_END RhpGcStressHijack
 #endif
-
-NO_EXEC_STACK_DIRECTIVE

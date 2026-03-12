@@ -100,5 +100,3 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     ret     16
 
 NESTED_END CallEHFilterFunclet, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

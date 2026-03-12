@@ -49,5 +49,3 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         mov     rdi, rsi
         jmp     EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

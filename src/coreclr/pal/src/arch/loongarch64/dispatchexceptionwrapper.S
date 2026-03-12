@@ -45,5 +45,3 @@ LOCAL_LABEL(PAL_DispatchExceptionReturn):
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 16
     jirl  $r0, $ra, 0
 NESTED_END PAL_DispatchExceptionWrapper, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

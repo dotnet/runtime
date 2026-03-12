@@ -36,5 +36,3 @@ LOCAL_LABEL(CountReachedZero):
     ld t1, (CallCountingStubData__TargetForThresholdReached)(t2)
     jr t1
 LEAF_END_MARKED CallCountingStubCode
-
-NO_EXEC_STACK_DIRECTIVE

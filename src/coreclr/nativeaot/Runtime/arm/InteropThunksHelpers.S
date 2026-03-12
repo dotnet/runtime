@@ -50,5 +50,3 @@ LEAF_ENTRY RhGetCommonStubAddress, _TEXT
           bx            lr
 LEAF_END RhGetCommonStubAddress, _TEXT
 
-
-NO_EXEC_STACK_DIRECTIVE

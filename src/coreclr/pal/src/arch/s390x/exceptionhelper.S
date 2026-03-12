@@ -53,5 +53,3 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         lgr    %r2, %r3
         jg     EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

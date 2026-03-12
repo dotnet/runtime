@@ -342,5 +342,3 @@ LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
     add     rsi, 0x8
     ret
 LEAF_END RhpByRefAssignRef, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

@@ -6,5 +6,3 @@
 
 #error Unsupported platform
 
-
-NO_EXEC_STACK_DIRECTIVE

@@ -20,5 +20,3 @@ LEAF_ENTRY GetCurrentIP, _TEXT
         ret
 
 LEAF_END GetCurrentIP, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

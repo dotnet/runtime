@@ -1437,5 +1437,3 @@ NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
 NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
 
 #endif // FEATURE_INTERPRETER
-
-NO_EXEC_STACK_DIRECTIVE

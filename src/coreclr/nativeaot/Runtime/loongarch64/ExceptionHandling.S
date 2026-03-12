@@ -804,5 +804,3 @@ LOCAL_LABEL(Propagate_DonePopping):
     NESTED_END RhpCallPropagateExceptionCallback, _Text
 
 #endif // FEATURE_OBJCMARSHAL
-
-NO_EXEC_STACK_DIRECTIVE

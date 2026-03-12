@@ -285,5 +285,3 @@ LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
         tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
     NESTED_END RhpNewVariableSizeObject, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

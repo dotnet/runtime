@@ -304,5 +304,3 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 #endif
-
-NO_EXEC_STACK_DIRECTIVE

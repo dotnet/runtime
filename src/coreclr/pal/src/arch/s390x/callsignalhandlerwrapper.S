@@ -32,5 +32,3 @@ NESTED_END CallSignalHandlerWrapper\Alignment, _TEXT
 .endm
 
 CALL_SIGNAL_HANDLER_WRAPPER 0
-
-NO_EXEC_STACK_DIRECTIVE

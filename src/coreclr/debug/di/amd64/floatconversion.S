@@ -8,5 +8,3 @@ LEAF_ENTRY FPFillR8, _TEXT
             movdqa  xmm0, xmmword ptr [rdi]
             ret
 LEAF_END FPFillR8, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

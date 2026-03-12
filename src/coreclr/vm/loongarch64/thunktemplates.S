@@ -41,5 +41,3 @@ LOCAL_LABEL(CountReachedZero):
     jirl  $r0,$r21,0
 LEAF_END_MARKED CallCountingStubCode
 #endif // FEATURE_TIERED_COMPILATION
-
-NO_EXEC_STACK_DIRECTIVE

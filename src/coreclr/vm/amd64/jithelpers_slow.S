@@ -130,5 +130,3 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         REPRET
 LEAF_END_MARKED JIT_WriteBarrier_Debug, _TEXT
 #endif
-
-NO_EXEC_STACK_DIRECTIVE

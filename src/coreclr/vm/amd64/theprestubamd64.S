@@ -29,5 +29,3 @@ LEAF_ENTRY ThePreStubPatch, _TEXT
 PATCH_LABEL ThePreStubPatchLabel
         ret
 LEAF_END ThePreStubPatch, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

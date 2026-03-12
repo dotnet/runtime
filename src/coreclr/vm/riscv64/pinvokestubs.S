@@ -179,5 +179,3 @@ PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPIn
 //// t2 = MethodDesc*
 ////
 //PINVOKE_STUB VarargPInvokeStub_RetBuffArg, VarargPInvokeGenILStub_RetBuffArg, VarargPInvokeStubWorker, a1, t8, 0
-
-NO_EXEC_STACK_DIRECTIVE

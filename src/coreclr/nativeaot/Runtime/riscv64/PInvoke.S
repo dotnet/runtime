@@ -48,5 +48,3 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         tail    RhpWaitForGC2
 
 LEAF_END RhpPInvokeReturn, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

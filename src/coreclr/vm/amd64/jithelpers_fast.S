@@ -283,5 +283,3 @@ LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
         movabs r11, 0xCDCDCDCDCDCDCDCD
         rex64 jmp rax
 LEAF_END JIT_DispatchIndirectCall, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

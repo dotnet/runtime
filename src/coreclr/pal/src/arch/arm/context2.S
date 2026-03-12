@@ -194,5 +194,3 @@ LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     sub sp, sp, #4
     bx lr
 LEAF_END RtlRestoreContext, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

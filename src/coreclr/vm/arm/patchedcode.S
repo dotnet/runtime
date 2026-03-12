@@ -47,5 +47,3 @@
     LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         bx      lr
     LEAF_END JIT_PatchedCodeLast, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE

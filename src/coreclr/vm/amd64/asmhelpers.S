@@ -2082,5 +2082,3 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
         int3
 NESTED_END IL_Rethrow, _TEXT
 
-
-NO_EXEC_STACK_DIRECTIVE

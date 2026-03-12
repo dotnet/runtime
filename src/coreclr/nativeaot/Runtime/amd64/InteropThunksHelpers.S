@@ -38,5 +38,3 @@ LEAF_ENTRY RhGetCommonStubAddress, _TEXT
     lea rax, [rip + C_FUNC(RhCommonStub)]
     ret
 LEAF_END RhGetCommonStubAddress, _TEXT
-
-NO_EXEC_STACK_DIRECTIVE
