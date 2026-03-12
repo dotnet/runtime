@@ -2343,8 +2343,23 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         if (_lower is 0 or int.MaxValue)
                         {
-                            // infinite loop has the same size as a *-loop
-                            return _left.CountSingletons();
+                            int bodyCount = _left.CountSingletons();
+
+                            // When an unbounded loop's body is itself an unbounded loop, the derivative
+                            // computation creates a 2-way Alternate at each nesting level (because the
+                            // Concat derivative branches when its left side is nullable). This means
+                            // the per-character derivative cost doubles with each such nesting level.
+                            // Account for this so that the NFA size estimate catches deeply nested
+                            // patterns that would cause exponential blowup.
+                            // The loop flattening in CreateLoop already collapses same-laziness nesting
+                            // without captures, so this multiplier primarily affects patterns that survive
+                            // flattening (e.g., alternating lazy/greedy nesting at every level).
+                            if (_left._kind == SymbolicRegexNodeKind.Loop && _left._upper == int.MaxValue)
+                            {
+                                return Times(2, bodyCount);
+                            }
+
+                            return bodyCount;
                         }
 
                         // the upper bound is not being used, so the lower must be non-zero

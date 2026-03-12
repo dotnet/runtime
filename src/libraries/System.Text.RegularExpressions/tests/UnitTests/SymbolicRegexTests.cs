@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Text;
 using Xunit;
 using System.Text.RegularExpressions.Symbolic;
 using System.Collections.Generic;
@@ -228,6 +229,25 @@ namespace System.Text.RegularExpressions.Tests
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
                 yield return new object[] { rootNode };
             }
+
+            // Deeply nested unbounded loops with alternating laziness bypass loop flattening
+            // (which requires matching laziness) and cause exponential derivative blowup.
+            // CountSingletons accounts for this by multiplying by 2 per nesting level, so
+            // at depth 15+ the estimate exceeds the default 10,000 threshold.
+            // Build: (?:(?:(?:a)*?)*)*? ... with alternating greedy/lazy at each level
+            {
+                const int depth = 20;
+                var sb = new StringBuilder();
+                for (int i = 0; i < depth; i++)
+                    sb.Append("(?:");
+                sb.Append('a');
+                for (int i = depth - 1; i >= 0; i--)
+                    sb.Append(i % 2 == 0 ? ")*" : ")*?");
+
+                RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
+                SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+                yield return new object[] { rootNode };
+            }
         }
 
         [Theory]
@@ -236,6 +256,36 @@ namespace System.Text.RegularExpressions.Tests
         {
             int size = ((SymbolicRegexNode<BDD>)node).EstimateNfaSize();
             Assert.True(size > SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold());
+        }
+
+        /// <summary>
+        /// Verifies that deeply nested same-laziness unbounded loops do NOT exceed the threshold,
+        /// because loop flattening in CreateLoop collapses them (e.g. ((?:a)*)*  at depth 100 → a*).
+        /// </summary>
+        [Fact]
+        public void SameLazinessDeepNestingIsSafeAfterFlattening()
+        {
+            var charSetSolver = new CharSetSolver();
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
+            var converter = new RegexNodeConverter(bddBuilder, null);
+            RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture;
+
+            // Build (?:(?:(?:a)*)*...)*  at depth 100 — all same laziness (greedy)
+            const int depth = 100;
+            var sb = new StringBuilder();
+            for (int i = 0; i < depth; i++)
+                sb.Append("(?:");
+            sb.Append('a');
+            for (int i = 0; i < depth; i++)
+                sb.Append(")*");
+
+            RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
+            SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+
+            // After loop flattening, this collapses to a*, so the estimate should be tiny
+            int size = rootNode.EstimateNfaSize();
+            Assert.True(size <= SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold(),
+                $"Same-laziness nested loops should be safe after flattening, but EstimateNfaSize returned {size}");
         }
 
         [Theory]

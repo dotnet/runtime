@@ -2521,6 +2521,13 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"^(?:(?:a){2,})*$", "aa", 1 };
                 yield return new object[] { engine, @"^(?:(?:a){2,})*$", "", 1 };
 
+                // (R{2})* must NOT be simplified to R* — odd-length strings must not match
+                yield return new object[] { engine, @"^(?:(?:a){2})*$", "", 1 };
+                yield return new object[] { engine, @"^(?:(?:a){2})*$", "a", 0 };
+                yield return new object[] { engine, @"^(?:(?:a){2})*$", "aa", 1 };
+                yield return new object[] { engine, @"^(?:(?:a){2})*$", "aaa", 0 };
+                yield return new object[] { engine, @"^(?:(?:a){2})*$", "aaaa", 1 };
+
                 // Mixed laziness: greedy inner with lazy outer must not be conflated
                 yield return new object[] { engine, @"(?:(?:a*)+?)", "aaa", 2 };
             }
