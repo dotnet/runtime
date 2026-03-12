@@ -32,9 +32,6 @@ internal class GcScanContext
 
     public void GCEnumCallback(TargetPointer pObject, GcScanFlags flags, GcScanSlotLocation loc)
     {
-        // Yuck.  The GcInfoDecoder reports a local pointer for registers (as it's reading out of the REGDISPLAY
-        // in the stack walk), and it reports a TADDR for stack locations.  This is architecturally difficulty
-        // to fix, so we are leaving it for now.
         TargetPointer addr;
         TargetPointer obj;
 
