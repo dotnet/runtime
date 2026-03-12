@@ -106,12 +106,6 @@ namespace System.Security.Cryptography
             return parametersReader(parameters);
         }
 
-        // TODO: remove?
-        internal static TRet FromPkcs1PublicKey<TRet>(ReadOnlyMemory<byte> keyData, RSAParametersCallback<TRet> parametersReader)
-        {
-            return FromPkcs1PublicKey(keyData.Span, parametersReader);
-        }
-
         internal static AsnWriter WritePkcs1PublicKey(in RSAParameters rsaParameters)
         {
             if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
