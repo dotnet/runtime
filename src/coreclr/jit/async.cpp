@@ -45,6 +45,15 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
+//------------------------------------------------------------------------
+// SetCallEntrypointForR2R:
+//   Set the entrypoint for a call when compiling for Ready-to-Run.
+//
+// Parameters:
+//   call     - The call node to set the entrypoint on.
+//   compiler - The compiler instance.
+//   handle   - The method handle to look up the entrypoint for.
+//
 static void SetCallEntrypointForR2R(GenTreeCall* call, Compiler* compiler, CORINFO_METHOD_HANDLE handle)
 {
 #ifdef FEATURE_READYTORUN
@@ -438,6 +447,14 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     return newReturnBB;
 }
 
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::AddReturn:
+//   Add a return type to the continuation layout, if it is not already
+//   present.
+//
+// Parameters:
+//   info - The return type information to add.
+//
 void ContinuationLayoutBuilder::AddReturn(const ReturnTypeInfo& info)
 {
     for (const ReturnTypeInfo& ret : m_returns)
@@ -452,12 +469,30 @@ void ContinuationLayoutBuilder::AddReturn(const ReturnTypeInfo& info)
     m_returns.push_back(info);
 }
 
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::AddLocal:
+//   Add a local to the continuation layout. Locals must be added in
+//   ascending order by local number.
+//
+// Parameters:
+//   lclNum - The local number to add.
+//
 void ContinuationLayoutBuilder::AddLocal(unsigned lclNum)
 {
     assert(m_locals.empty() || (lclNum > m_locals[m_locals.size() - 1]));
     m_locals.push_back(lclNum);
 }
 
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::ContainsLocal:
+//   Check if the specified local is in this layout.
+//
+// Parameters:
+//   lclNum - The local number to check.
+//
+// Returns:
+//   True if the local is contained in this layout.
+//
 bool ContinuationLayoutBuilder::ContainsLocal(unsigned lclNum) const
 {
     return BinarySearch(m_locals.data(), (int)m_locals.size(), lclNum) != nullptr;
@@ -616,7 +651,6 @@ static bool IsDefaultValue(GenTree* node)
     return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
 }
 
-//------------------------------------------------------------------------
 //------------------------------------------------------------------------
 // UpdateMutatedLocal:
 //   If the given node is a local store or LCL_ADDR, and the local is tracked,
@@ -1590,6 +1624,19 @@ public:
     }
 };
 
+//------------------------------------------------------------------------
+// AsyncTransformation::BuildContinuation:
+//   Determine what fields the continuation object needs for the specified
+//   async call, including return values, exception, context, and OSR
+//   support, and configure the layout builder accordingly.
+//
+// Parameters:
+//   block          - The block containing the async call.
+//   call           - The async call.
+//   needsKeepAlive - Whether a KeepAlive field is needed to keep a
+//                    LoaderAllocator alive.
+//   layoutBuilder  - The continuation layout builder to configure.
+//
 void AsyncTransformation::BuildContinuation(BasicBlock*                block,
                                             GenTreeCall*               call,
                                             bool                       needsKeepAlive,
@@ -1643,6 +1690,14 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// ContinuationLayout::Dump:
+//   Debug helper to print the continuation layout including offsets of all
+//   fields and locals.
+//
+// Parameters:
+//   indent - Number of spaces to indent the output.
+//
 void ContinuationLayout::Dump(int indent)
 {
     printf("%*sContinuation layout (%u bytes):\n", indent, "", Size);
@@ -1685,6 +1740,16 @@ void ContinuationLayout::Dump(int indent)
 }
 #endif
 
+//------------------------------------------------------------------------
+// ContinuationLayout::FindReturn:
+//   Find the return info entry matching the specified call's return type.
+//
+// Parameters:
+//   call - The async call whose return type to look up.
+//
+// Returns:
+//   Pointer to the matching ReturnInfo entry.
+//
 const ReturnInfo* ContinuationLayout::FindReturn(GenTreeCall* call) const
 {
     for (const ReturnInfo& ret : Returns)
@@ -1700,6 +1765,15 @@ const ReturnInfo* ContinuationLayout::FindReturn(GenTreeCall* call) const
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::Create:
+//   Finalize the layout by computing offsets for all fields, locals, and
+//   return values. Allocates the continuation type from the VM.
+//
+// Returns:
+//   The finalized ContinuationLayout with computed offsets and a class
+//   handle for the continuation type.
+//
 ContinuationLayout* ContinuationLayoutBuilder::Create()
 {
     ContinuationLayout* layout = new (m_compiler, CMK_Async) ContinuationLayout(m_compiler);
@@ -2003,6 +2077,19 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
     return callDefInfo;
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateSuspensionBlock:
+//   Create an empty basic block that will hold the suspension IR for the
+//   specified async call.
+//
+// Parameters:
+//   block    - The block containing the async call.
+//   call     - The async call.
+//   stateNum - State number assigned to this suspension point.
+//
+// Returns:
+//   The new basic block.
+//
 BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, GenTreeCall* call, unsigned stateNum)
 {
     if (m_lastSuspensionBB == nullptr)
@@ -2028,18 +2115,17 @@ BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, GenTre
 
 //------------------------------------------------------------------------
 // AsyncTransformation::CreateSuspension:
-//   Create the basic block that when branched to suspends execution after the
-//   specified async call.
+//   Populate the suspension block with IR that allocates a continuation
+//   object, fills in its state, flags, resume info, data, and restores
+//   contexts.
 //
 // Parameters:
-//   block    - The block containing the async call
-//   call     - The async call
-//   stateNum - State number assigned to this suspension point
-//   life     - Liveness information about live locals
-//   layout   - Layout information for the continuation object
-//
-// Returns:
-//   The new basic block that was created.
+//   callBlock - The block containing the async call.
+//   call      - The async call.
+//   suspendBB - The suspension basic block to add IR to.
+//   stateNum  - State number assigned to this suspension point.
+//   layout    - Layout information for the continuation object.
+//   subLayout - Per-call layout builder indicating which fields are needed.
 //
 void AsyncTransformation::CreateSuspension(BasicBlock*                      callBlock,
                                            GenTreeCall*                     call,
@@ -2126,9 +2212,9 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 //   Create a call to the JIT helper that allocates a continuation.
 //
 // Parameters:
-//   life             - Liveness information about live locals
-//   prevContinuation - IR node that has the value of the previous continuation object
-//   layout           - Layout information
+//   hasKeepAlive     - Whether the continuation needs a KeepAlive field.
+//   prevContinuation - IR node that has the value of the previous continuation object.
+//   layout           - Layout information for the continuation.
 //
 // Returns:
 //   IR node representing the allocation.
@@ -2161,11 +2247,14 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool              
 
 //------------------------------------------------------------------------
 // AsyncTransformation::FillInDataOnSuspension:
-//   Create IR that fills the data array of the continuation object.
+//   Create IR that fills the data array of the continuation object with
+//   live local values, OSR IL offset, continuation context, and execution
+//   context.
 //
 // Parameters:
-//   call      - The async call
-//   layout    - Information about the continuation layout
+//   call      - The async call.
+//   layout    - Information about the continuation layout.
+//   subLayout - Per-call layout builder indicating which fields are needed.
 //   suspendBB - Basic block to add IR to.
 //
 void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                     call,
@@ -2457,6 +2546,20 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     block->GetFalseEdge()->setLikelihood(1);
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateResumptionBlock:
+//   Create an empty basic block that will hold the resumption IR for the
+//   specified async call.
+//
+// Parameters:
+//   remainder     - The block that contains the IR after the async call.
+//   call          - The async call.
+//   stateNum      - State number assigned to this suspension point.
+//   layoutBuilder - The continuation layout builder for this call.
+//
+// Returns:
+//   The new basic block.
+//
 BasicBlock* AsyncTransformation::CreateResumptionBlock(BasicBlock*                remainder,
                                                        GenTreeCall*               call,
                                                        unsigned                   stateNum,
@@ -2485,19 +2588,17 @@ BasicBlock* AsyncTransformation::CreateResumptionBlock(BasicBlock*              
 
 //------------------------------------------------------------------------
 // AsyncTransformation::CreateResumption:
-//   Create the basic block that when branched to resumes execution on entry to
-//   the function.
+//   Populate the resumption block with IR that restores live state from
+//   the continuation object, rethrows exceptions if necessary, and copies
+//   the return value.
 //
 // Parameters:
-//   block       - The block containing the async call
-//   remainder   - The block that contains the IR after the (split) async call
-//   call        - The async call
-//   callDefInfo - Information about the async call's definition
-//   stateNum    - State number assigned to this suspension point
-//   layout      - Layout information for the continuation object
-//
-// Returns:
-//   The new basic block that was created.
+//   callBlock   - The block containing the async call.
+//   call        - The async call.
+//   resumeBB    - The resumption basic block to add IR to.
+//   callDefInfo - Information about the async call's definition.
+//   layout      - Layout information for the continuation object.
+//   subLayout   - Per-call layout builder indicating which fields are needed.
 //
 void AsyncTransformation::CreateResumption(BasicBlock*                      callBlock,
                                            GenTreeCall*                     call,
@@ -2532,11 +2633,12 @@ void AsyncTransformation::CreateResumption(BasicBlock*                      call
 //------------------------------------------------------------------------
 // AsyncTransformation::RestoreFromDataOnResumption:
 //   Create IR that restores locals from the data array of the continuation
-//   object.
+//   object, including execution context restoration.
 //
 // Parameters:
-//   layout   - Information about the continuation layout
-//   resumeBB - Basic block to append IR to
+//   layout    - Information about the continuation layout.
+//   subLayout - Per-call layout builder indicating which fields are needed.
+//   resumeBB  - Basic block to append IR to.
 //
 void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                                       const ContinuationLayoutBuilder& subLayout,
@@ -2711,11 +2813,10 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
 //   right local.
 //
 // Parameters:
-//   call                  - The async call
-//   callDefInfo           - Information about the async call's definition
-//   block                 - The block containing the async call
-//   layout                - Layout information for the continuation object
-//   storeResultBB         - Basic block to append IR to
+//   call          - The async call.
+//   callDefInfo   - Information about the async call's definition.
+//   layout        - Layout information for the continuation object.
+//   storeResultBB - Basic block to append IR to.
 //
 void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              call,
                                                       const CallDefinitionInfo& callDefInfo,
@@ -2866,7 +2967,8 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(
 //   Create debug info for the specific suspension point we just created.
 //
 // Parameters:
-//   layout         - Layout of continuation
+//   layout    - Layout of continuation.
+//   subLayout - Per-call layout builder indicating which locals are present.
 //
 void AsyncTransformation::CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
                                                             const ContinuationLayoutBuilder& subLayout)
@@ -3016,6 +3118,11 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
 #endif
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateResumptionsAndSuspensions:
+//   Walk all recorded async states and create the suspension and resumption
+//   IR, continuation layouts, and debug info for each one.
+//
 void AsyncTransformation::CreateResumptionsAndSuspensions()
 {
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
@@ -3032,6 +3139,19 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
     }
 }
 
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::CreateSharedLayout:
+//   Create a shared continuation layout that is the union of all per-call
+//   layouts. The shared layout contains every local, return type, and
+//   optional field needed by any individual suspension point.
+//
+// Parameters:
+//   comp   - The compiler instance.
+//   states - The vector of async states to merge.
+//
+// Returns:
+//   A new ContinuationLayoutBuilder representing the merged layout.
+//
 ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compiler*                         comp,
                                                                          const jitstd::vector<AsyncState>& states)
 {
