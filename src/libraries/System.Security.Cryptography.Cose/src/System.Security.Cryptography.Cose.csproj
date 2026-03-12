@@ -4,8 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <ServicingVersion>1</ServicingVersion>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>2</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageDescription>Provides support for CBOR Object Signing and Encryption (COSE).</PackageDescription>
   </PropertyGroup>
 
