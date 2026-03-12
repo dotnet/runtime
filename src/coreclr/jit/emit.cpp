@@ -8437,8 +8437,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
-                BYTE* resumeStub      = (BYTE*)emitAsyncResumeStubEntryPoint;
+                BYTE* target     = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+                BYTE* resumeStub = (BYTE*)emitAsyncResumeStubEntryPoint;
 
 #ifdef TARGET_ARM
                 // ARM32 requires the Thumb bit (bit 0) set on code pointers.
