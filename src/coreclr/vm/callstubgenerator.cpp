@@ -1608,7 +1608,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
 #ifdef TARGET_ARM
     // AAPCS compliant stack alignment for function calls
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, 8), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, CALL_STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
 #else
     CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
 #endif // TARGET_ARM
@@ -1704,6 +1704,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
     memset(pRoutines, 0, tempStorageSize);
 
+    int totalStackSize = m_totalStackSize;
+#ifdef TARGET_ARM
+    // AAPCS compliant stack alignment for function calls
+    totalStackSize = ALIGN_UP(totalStackSize, CALL_STACK_ALIGN_SIZE);
+#endif // TARGET_ARM
+
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
     ComputeCallStub(sig, pRoutines, NULL);
@@ -1713,7 +1719,8 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     {
         hashState.AddPointer((void*)pRoutines[i]);
     }
-    hashState.Add(m_totalStackSize);
+
+    hashState.Add(totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
     hashState.Add(m_targetSlotIndex);
@@ -1726,7 +1733,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         m_routineIndex,
         m_targetSlotIndex,
         pRoutines,
-        ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         m_hasSwiftError,
@@ -1752,9 +1759,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
         // hasSwiftReturnLowering is always false here because m_interpreterToNative = true (see line 1601's logic)
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
 #else
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
 #endif
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
