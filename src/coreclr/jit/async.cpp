@@ -1721,7 +1721,7 @@ void ContinuationLayout::Dump(int indent)
         printf("%*s  +%03u Keep alive object\n", indent, "", KeepAliveOffset);
     }
 
-    if (ExecutionContextOffset)
+    if (ExecutionContextOffset != UINT_MAX)
     {
         printf("%*s  +%03u Execution context\n", indent, "", ExecutionContextOffset);
     }
