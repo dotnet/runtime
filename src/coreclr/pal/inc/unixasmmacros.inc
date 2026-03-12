@@ -75,9 +75,9 @@
 #include "unixasmmacrosppc64le.inc"
 #endif
 
-// Once we use an LLVM with proper --noexecstack behavior we should remove this
+// Mark the stack as non-executable for ELF targets.
 // https://github.com/dotnet/runtime/issues/125469
-#if defined(__ELF__) && defined(__clang__) && __clang_major__ >= 22
+#if !defined(__APPLE__)
 .pushsection .note.GNU-stack,"",%progbits
 .popsection
 #endif
