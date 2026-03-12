@@ -1210,8 +1210,8 @@ void GetObjectAllocContextTlsInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
     pInfo->tlsRoot.addr = (void*)(uintptr_t)ThreadLocalOffset(&t_runtime_thread_locals);
     pInfo->tlsRoot.accessType = IAT_VALUE;
 
-#elif defined(TARGET_APPLE) && defined(TARGET_AMD64)
-    // macOS TLVP model not yet implemented in JIT codegen
+#elif defined(TARGET_APPLE)
+    // macOS (both x64 and ARM64) TLVP model not yet implemented in JIT codegen
     pInfo->supported = false;
 
 #elif defined(TARGET_AMD64)
@@ -1223,6 +1223,10 @@ void GetObjectAllocContextTlsInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
     {
         pInfo->supported = false;
     }
+
+#elif defined(TARGET_ARM64)
+    extern "C" size_t GetRuntimeThreadLocalsVariableOffset();
+    pInfo->tlsRootOffset = GetRuntimeThreadLocalsVariableOffset();
 
 #else
     pInfo->supported = false;

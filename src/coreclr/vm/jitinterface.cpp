@@ -1376,14 +1376,8 @@ void CEEInfo::getObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo
         pInfo->allocPtrFieldOffset = (uint32_t)(offsetof(ee_alloc_context, m_GCAllocContext) + offsetof(gc_alloc_context, alloc_ptr));
         pInfo->combinedLimitFieldOffset = (uint32_t)offsetof(ee_alloc_context, m_CombinedLimit);
 
-        // Object/MethodTable layout
-        pInfo->objectMethodTableOffset = (uint32_t)cdac_data<Object>::m_pMethTab;
+        // MethodTable layout
         pInfo->methodTableBaseSizeOffset = (uint32_t)cdac_data<MethodTable>::BaseSize;
-
-        // Array layout
-        pInfo->arrayLengthOffset = (uint32_t)cdac_data<ArrayBase>::m_NumComponents;
-        pInfo->arrayBaseSize = ARRAYBASE_BASESIZE;
-        pInfo->methodTableComponentSizeOffset = (uint32_t)cdac_data<MethodTable>::MTFlags;// component size is low 16 bits of m_dwFlags
 
         // TLS access info - how to reach t_runtime_thread_locals
         GetObjectAllocContextTlsInfo(pInfo);

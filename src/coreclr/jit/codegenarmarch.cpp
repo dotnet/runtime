@@ -3051,10 +3051,152 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
+// genInlineAllocCall: Expand a CORINFO_HELP_NEWSFAST call inline with a
+// bump-pointer fast path and a slow-path fallback to the helper.
+//
+// On ARM64, the allocation sequence is:
+//   1. TLS access to get the ee_alloc_context
+//      - Windows: x18 (TEB) + TLS array + index + offset
+//      - Linux: mrs xN, tpidr_el0 + pre-computed offset
+//   2. Bump-pointer allocation (non-GC-interruptible)
+//   3. If allocation doesn't fit: fall through to the normal helper call
+//
+#ifdef TARGET_ARM64
+void CodeGen::genInlineAllocCall(GenTreeCall* call)
+{
+    const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
+    assert(allocInfo->supported);
+
+    genCallPlaceRegArgs(call);
+
+    regNumber dstReg = call->GetRegNum();
+    regNumber mtReg  = REG_ARG_0; // x0
+
+    // Use IP0/IP1 (x16/x17) as scratch — they are caller-saved and not arg regs.
+    regNumber allocCtxReg = REG_IP0; // x16
+    regNumber tmpReg      = REG_IP1; // x17
+
+    // Since this replaces a call, all caller-saved registers except mtReg (x0) are free.
+    // We use x1 to save mtReg, and x2 to hold alloc_ptr during the bump allocation.
+    regNumber savedMtReg    = REG_R1;
+    regNumber allocPtrScratch = REG_R2;
+
+    emitter* emit = GetEmitter();
+
+    // ---- TLS access: get pointer to ee_alloc_context ----
+    if (TargetOS::IsWindows)
+    {
+        // Windows ARM64: x18 holds TEB
+        //   ldr allocCtxReg, [x18, #offsetOfTLS]    // TEB -> TLS array
+        //   mov tmpReg, #_tls_index
+        //   ldr allocCtxReg, [allocCtxReg, tmpReg, lsl #3]
+        //   add allocCtxReg, allocCtxReg, #tlsRoot
+        emit->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, allocCtxReg, REG_R18,
+                            (int)allocInfo->offsetOfThreadLocalStoragePointer);
+
+        assert(allocInfo->tlsIndex.accessType == IAT_VALUE);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
+
+        emit->emitIns_R_R_R_Ext(INS_ldr, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, INS_OPTS_LSL, 3);
+
+        assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
+        ssize_t tlsRootVal = (ssize_t)allocInfo->tlsRoot.addr;
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, tlsRootVal);
+        emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg);
+    }
+    else
+    {
+        // Linux ARM64: mrs xN, tpidr_el0 + pre-computed offset. No function call needed!
+        emit->emitIns_R(INS_mrs_tpid0, EA_PTRSIZE, allocCtxReg);
+        if (allocInfo->tlsRootOffset != 0)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsRootOffset);
+            emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg);
+        }
+    }
+
+    BasicBlock* slowPath = genCreateTempLabel();
+
+    // ---- Bump allocation (non-GC-interruptible) ----
+    emit->emitDisableGC();
+
+    // Save mtReg so we can reuse x0 as a scratch register.
+    emit->emitIns_Mov(INS_mov, EA_PTRSIZE, savedMtReg, mtReg, /* canSkip */ false);
+
+    // Load m_BaseSize (32-bit) from the MethodTable
+    emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
+
+    // Load alloc_ptr and combined_limit
+    emit->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, allocPtrScratch, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+    emit->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
+
+    // available = combined_limit - alloc_ptr; if (baseSize > available) goto slowPath
+    emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, dstReg, dstReg, allocPtrScratch);
+    emit->emitIns_R_R(INS_cmp, EA_PTRSIZE, tmpReg, dstReg);
+    inst_JMP(EJ_hi, slowPath);
+
+    // Fast path: allocation fits.
+    // new_alloc_ptr = alloc_ptr + baseSize
+    emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, allocPtrScratch, tmpReg);
+
+    // Store MethodTable pointer at offset 0 of the new object
+    emit->emitIns_R_R_I(INS_str, EA_PTRSIZE, savedMtReg, allocPtrScratch, 0);
+
+    // Update alloc_ptr in the ee_alloc_context
+    emit->emitIns_R_R_I(INS_str, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+
+    // Result = alloc_ptr (the new object)
+    emit->emitIns_Mov(INS_mov, EA_PTRSIZE, dstReg, allocPtrScratch, /* canSkip */ true);
+
+    emit->emitEnableGC();
+
+    BasicBlock* done = genCreateTempLabel();
+    inst_JMP(EJ_jmp, done);
+
+    // ---- Slow path ----
+    genDefineTempLabel(slowPath);
+
+    // Restore mtReg for the helper call
+    emit->emitIns_Mov(INS_mov, EA_PTRSIZE, mtReg, savedMtReg, /* canSkip */ false);
+
+    genEmitHelperCall(CORINFO_HELP_NEWSFAST, 0, EA_PTRSIZE);
+
+    // Helper returns the new object in x0.
+    if (dstReg != REG_INTRET)
+    {
+        inst_Mov(TYP_REF, dstReg, REG_INTRET, /* canSkip */ false);
+    }
+
+    // ---- Done ----
+    genDefineTempLabel(done);
+
+    gcInfo.gcMarkRegPtrVal(dstReg, TYP_REF);
+
+    if (call->GetRegNum() != dstReg)
+    {
+        inst_Mov(TYP_REF, call->GetRegNum(), dstReg, /* canSkip */ false);
+        gcInfo.gcMarkRegPtrVal(call->GetRegNum(), TYP_REF);
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+
+    genProduceReg(call);
+}
+#endif // TARGET_ARM64
+
+//------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
+#ifdef TARGET_ARM64
+    // Check if this is an allocation helper call marked for inline expansion
+    if ((call->gtCallMoreFlags & GTF_CALL_M_EXPAND_INLINE_ALLOC) != 0)
+    {
+        genInlineAllocCall(call);
+        return;
+    }
+#endif
+
     genCallPlaceRegArgs(call);
 
     // Insert a null check on "this" pointer if asked.

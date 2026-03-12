@@ -1281,16 +1281,12 @@ namespace Internal.JitInterface
         public byte supported;
         public uint allocPtrFieldOffset;
         public uint combinedLimitFieldOffset;
-        public uint objectMethodTableOffset;
         public uint methodTableBaseSizeOffset;
-        public uint arrayLengthOffset;
-        public uint arrayBaseSize;
-        public uint methodTableComponentSizeOffset;
         public CORINFO_CONST_LOOKUP tlsIndex;
         public uint offsetOfThreadLocalStoragePointer;
         public CORINFO_CONST_LOOKUP tlsRoot;
         public nuint tlsGetAddrFtnPtr;
-        public nuint threadVarsSection;
+        public nuint tlsRootOffset;
     };
 
     // System V struct passing

@@ -1152,7 +1152,7 @@ protected:
     void genCodeForStoreLclVar(GenTreeLclVar* tree);
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForAllocObj(GenTreeAllocObj* tree);
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     void genInlineAllocCall(GenTreeCall* call);
 #endif
     void genCodeForStoreInd(GenTreeStoreInd* tree);

@@ -1711,22 +1711,16 @@ struct CORINFO_OBJECT_ALLOC_CONTEXT_INFO
     uint32_t allocPtrFieldOffset;       // Offset of alloc_ptr
     uint32_t combinedLimitFieldOffset;  // Offset of combined_limit
 
-    // Object/MethodTable layout offsets
-    uint32_t objectMethodTableOffset;   // Offset of MethodTable* in Object (0)
-    uint32_t methodTableBaseSizeOffset; // Offset of m_BaseSize in MethodTable (4)
-
-    // Array layout info
-    uint32_t arrayLengthOffset;            // Offset of m_NumComponents in ArrayBase (8)
-    uint32_t arrayBaseSize;                // Fixed overhead for SZ arrays (SZARRAY_BASE_SIZE, 0x18)
-    uint32_t methodTableComponentSizeOffset; // Offset of component size in MethodTable (0, low 16 bits of m_dwFlags)
+    // MethodTable layout offset
+    uint32_t methodTableBaseSizeOffset; // Offset of m_BaseSize in MethodTable
 
     // TLS access info (platform-specific)
-    CORINFO_CONST_LOOKUP tlsIndex;                  // Windows: address of _tls_index (IAT_PVALUE)
-    uint32_t             offsetOfThreadLocalStoragePointer; // Windows: TEB offset for TLS array (0x58 on x64)
+    CORINFO_CONST_LOOKUP tlsIndex;                  // Windows: address of _tls_index (IAT_VALUE)
+    uint32_t             offsetOfThreadLocalStoragePointer; // Windows: TEB offset for TLS array (0x58 on x64, 0x58 on ARM64)
     CORINFO_CONST_LOOKUP tlsRoot;                   // Windows: byte offset from the module TLS base to t_runtime_thread_locals (IAT_VALUE);
-                                                    // Linux: TLSGD descriptor address; macOS: TLVP descriptor address
-    void*                tlsGetAddrFtnPtr;           // Linux: address of __tls_get_addr
-    void*                threadVarsSection;           // macOS: section address for TLVP
+                                                    // Linux x64: TLSGD descriptor address
+    void*                tlsGetAddrFtnPtr;           // Linux x64: address of __tls_get_addr
+    size_t               tlsRootOffset;              // Linux ARM64: pre-computed tpidr_el0 offset to t_runtime_thread_locals
 };
 
 //----------------------------------------------------------------------------

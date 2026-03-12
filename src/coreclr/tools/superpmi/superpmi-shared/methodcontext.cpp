@@ -7823,16 +7823,12 @@ void MethodContext::recGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_IN
     value.supported                        = pInfo->supported ? 1 : 0;
     value.allocPtrFieldOffset              = pInfo->allocPtrFieldOffset;
     value.combinedLimitFieldOffset         = pInfo->combinedLimitFieldOffset;
-    value.objectMethodTableOffset          = pInfo->objectMethodTableOffset;
     value.methodTableBaseSizeOffset        = pInfo->methodTableBaseSizeOffset;
-    value.arrayLengthOffset                = pInfo->arrayLengthOffset;
-    value.arrayBaseSize                    = pInfo->arrayBaseSize;
-    value.methodTableComponentSizeOffset   = pInfo->methodTableComponentSizeOffset;
     value.tlsIndex                         = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsIndex);
     value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
     value.tlsRoot                          = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pInfo->tlsRoot);
     value.tlsGetAddrFtnPtr                 = CastPointer(pInfo->tlsGetAddrFtnPtr);
-    value.threadVarsSection                = CastPointer(pInfo->threadVarsSection);
+    value.tlsRootOffset                    = (DWORDLONG)pInfo->tlsRootOffset;
 
     DWORD key = 0;
     GetObjectAllocContextInfo->Add(key, value);
@@ -7843,17 +7839,17 @@ void MethodContext::dmpGetObjectAllocContextInfo(DWORD key, const Agnostic_GetOb
 {
     printf("GetObjectAllocContextInfo key %u, supported-%u"
            ", allocPtrFieldOffset-%u, combinedLimitFieldOffset-%u"
-           ", objectMethodTableOffset-%u, methodTableBaseSizeOffset-%u"
+           ", methodTableBaseSizeOffset-%u"
            ", tlsIndex-%s, offsetOfThreadLocalStoragePointer-%u"
            ", tlsRoot-%s, tlsGetAddrFtnPtr-%016" PRIX64
-           ", threadVarsSection-%016" PRIX64,
+           ", tlsRootOffset-%016" PRIX64,
            key, value.supported,
            value.allocPtrFieldOffset, value.combinedLimitFieldOffset,
-           value.objectMethodTableOffset, value.methodTableBaseSizeOffset,
+           value.methodTableBaseSizeOffset,
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex).c_str(),
            value.offsetOfThreadLocalStoragePointer,
            SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsRoot).c_str(),
-           value.tlsGetAddrFtnPtr, value.threadVarsSection);
+           value.tlsGetAddrFtnPtr, value.tlsRootOffset);
 }
 
 void MethodContext::repGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
@@ -7866,14 +7862,10 @@ void MethodContext::repGetObjectAllocContextInfo(CORINFO_OBJECT_ALLOC_CONTEXT_IN
     pInfo->supported                        = (value.supported != 0);
     pInfo->allocPtrFieldOffset              = value.allocPtrFieldOffset;
     pInfo->combinedLimitFieldOffset         = value.combinedLimitFieldOffset;
-    pInfo->objectMethodTableOffset          = value.objectMethodTableOffset;
     pInfo->methodTableBaseSizeOffset        = value.methodTableBaseSizeOffset;
-    pInfo->arrayLengthOffset                = value.arrayLengthOffset;
-    pInfo->arrayBaseSize                    = value.arrayBaseSize;
-    pInfo->methodTableComponentSizeOffset   = value.methodTableComponentSizeOffset;
     pInfo->tlsIndex                         = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsIndex);
     pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
     pInfo->tlsRoot                          = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.tlsRoot);
     pInfo->tlsGetAddrFtnPtr                 = (void*)value.tlsGetAddrFtnPtr;
-    pInfo->threadVarsSection                = (void*)value.threadVarsSection;
+    pInfo->tlsRootOffset                    = (size_t)value.tlsRootOffset;
 }

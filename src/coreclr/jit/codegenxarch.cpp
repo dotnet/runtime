@@ -1752,75 +1752,15 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
     assert(allocInfo->supported);
 
-    CorInfoHelpFunc helperNum = call->GetHelperNum();
-    bool            isArray   = (helperNum == CORINFO_HELP_NEWARR_1_VC || helperNum == CORINFO_HELP_NEWARR_1_PTR);
-
     genCallPlaceRegArgs(call);
 
     regNumber dstReg = call->GetRegNum();
     regNumber mtReg  = REG_ARG_0;
-    regNumber lenReg = isArray ? REG_ARG_1 : REG_NA;
 
     regNumber allocCtxReg = REG_R10;
     regNumber tmpReg      = REG_R11;
 
     emitter* emit = GetEmitter();
-
-    // Try to extract compile-time constants from the call arguments.
-    // The first arg is the MethodTable handle; for arrays, the second is the element count.
-    CORINFO_CLASS_HANDLE clsHnd      = nullptr;
-    unsigned             constLen    = 0;
-    bool                 hasConstLen = false;
-
-    CallArg* firstArg = call->gtArgs.GetArgByIndex(0);
-    if (firstArg != nullptr)
-    {
-        GenTree* argNode = firstArg->GetNode();
-        if (argNode->OperIs(GT_PUTARG_REG))
-            argNode = argNode->gtGetOp1();
-        if (argNode->IsIconHandle(GTF_ICON_CLASS_HDL))
-            clsHnd = (CORINFO_CLASS_HANDLE)argNode->AsIntCon()->gtIconVal;
-    }
-
-    if (isArray)
-    {
-        CallArg* secondArg = call->gtArgs.GetArgByIndex(1);
-        if (secondArg != nullptr)
-        {
-            GenTree* argNode = secondArg->GetNode();
-            if (argNode->OperIs(GT_PUTARG_REG))
-                argNode = argNode->gtGetOp1();
-            if (argNode->IsCnsIntOrI() && argNode->AsIntCon()->gtIconVal >= 0 &&
-                argNode->AsIntCon()->gtIconVal <= 0x7FFFFFFF)
-            {
-                constLen    = (unsigned)argNode->AsIntCon()->gtIconVal;
-                hasConstLen = true;
-            }
-        }
-    }
-
-    // Constant-fold the allocation size when possible.
-    // For objects: read m_BaseSize from the MethodTable at JIT time.
-    // For arrays: compute ALIGN8(arrayBaseSize + constLen * componentSize).
-    unsigned constSize = 0;
-    if (clsHnd != nullptr)
-    {
-        if (!isArray)
-        {
-            // Read m_BaseSize directly from the MethodTable at JIT time.
-            constSize = *(unsigned*)((uint8_t*)(void*)clsHnd + allocInfo->methodTableBaseSizeOffset);
-        }
-        else if (hasConstLen)
-        {
-            unsigned componentSize = *(uint16_t*)((uint8_t*)(void*)clsHnd + allocInfo->methodTableComponentSizeOffset);
-            uint64_t totalSize     = (uint64_t)allocInfo->arrayBaseSize + (uint64_t)constLen * componentSize;
-            totalSize              = (totalSize + 7) & ~(uint64_t)7;
-            if (totalSize <= 0x7FFFFFFF)
-            {
-                constSize = (unsigned)totalSize;
-            }
-        }
-    }
 
     // ---- TLS access: get pointer to ee_alloc_context ----
     if (TargetOS::IsWindows)
@@ -1838,17 +1778,10 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     }
     else
     {
-        // Linux x64: call __tls_get_addr. Save arg registers on the stack.
-        // Always push an even number of 8-byte values for 16-byte stack alignment.
+        // Linux x64: call __tls_get_addr. Save arg register on the stack.
+        // Push an even number of 8-byte values for 16-byte stack alignment.
         emit->emitIns_R(INS_push, EA_PTRSIZE, mtReg);
-        if (isArray)
-        {
-            emit->emitIns_R(INS_push, EA_PTRSIZE, lenReg);
-        }
-        else
-        {
-            emit->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, 8);
-        }
+        emit->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, 8);
 
         assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)allocInfo->tlsRoot.addr);
@@ -1866,14 +1799,7 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
         emit->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R10, REG_RAX, /* canSkip */ false);
         allocCtxReg = REG_R10;
 
-        if (isArray)
-        {
-            emit->emitIns_R(INS_pop, EA_PTRSIZE, lenReg);
-        }
-        else
-        {
-            emit->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, 8);
-        }
+        emit->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, 8);
         emit->emitIns_R(INS_pop, EA_PTRSIZE, mtReg);
     }
 
@@ -1882,27 +1808,8 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     // ---- Bump allocation (non-GC-interruptible) ----
     GetEmitter()->emitDisableGC();
 
-    if (constSize > 0)
-    {
-        // Size is known at JIT time — use immediate constant.
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)constSize);
-    }
-    else if (isArray)
-    {
-        // Validate element count: must be in [0, 0x7FFFFFFF].
-        emit->emitIns_R_I(INS_cmp, EA_PTRSIZE, lenReg, 0x7FFFFFFF);
-        inst_JMP(EJ_ja, slowPath);
-
-        // Array total size = ALIGN8(arrayBaseSize + elementCount * componentSize)
-        emit->emitIns_R_AR(INS_movzx, EA_2BYTE, tmpReg, mtReg, (int)allocInfo->methodTableComponentSizeOffset);
-        emit->emitIns_R_R(INS_imul, EA_PTRSIZE, tmpReg, lenReg);
-        emit->emitIns_R_I(INS_add, EA_PTRSIZE, tmpReg, (ssize_t)(allocInfo->arrayBaseSize + 7));
-        emit->emitIns_R_I(INS_and, EA_PTRSIZE, tmpReg, -8);
-    }
-    else
-    {
-        emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
-    }
+    // Load m_BaseSize from the MethodTable
+    emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
 
     // Use subtraction-based comparison (matches the runtime helper) to avoid
     // alloc_ptr + size overflow: available = combined_limit - alloc_ptr;
@@ -1919,12 +1826,8 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     emit->emitIns_R_R(INS_add, EA_PTRSIZE, tmpReg, dstReg);
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
-    // Set MethodTable pointer on the new object
-    emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
-    if (isArray)
-    {
-        emit->emitIns_AR_R(INS_mov, EA_4BYTE, lenReg, dstReg, (int)allocInfo->arrayLengthOffset);
-    }
+    // Set MethodTable pointer on the new object (always at offset 0)
+    emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, 0);
 
     GetEmitter()->emitEnableGC();
 
@@ -1934,7 +1837,7 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     // ---- Slow path ----
     genDefineTempLabel(slowPath);
 
-    genEmitHelperCall(helperNum, 0, EA_PTRSIZE);
+    genEmitHelperCall(CORINFO_HELP_NEWSFAST, 0, EA_PTRSIZE);
 
     // Helper returns the new object in rax.
     if (dstReg != REG_INTRET)

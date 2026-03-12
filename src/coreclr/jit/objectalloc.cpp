@@ -1267,26 +1267,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
             if (allocType == OAT_NONE)
             {
-#ifdef TARGET_AMD64
-                // Even if escape analysis doesn't apply, mark eligible array allocation
-                // calls for inline expansion in codegen.
-                if (data->IsHelperCall() && m_compiler->opts.OptimizationEnabled() &&
-                    JitConfig.JitInlineAllocFast() != 0)
-                {
-                    GenTreeCall* const call   = data->AsCall();
-                    CorInfoHelpFunc    helper = call->GetHelperNum();
-                    if (helper == CORINFO_HELP_NEWARR_1_VC || helper == CORINFO_HELP_NEWARR_1_PTR)
-                    {
-                        const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
-                        if (allocCtxInfo->supported)
-                        {
-                            JITDUMP("Marking array allocation [%06u] for inline expansion\n",
-                                    m_compiler->dspTreeID(call));
-                            call->gtCallMoreFlags |= GTF_CALL_M_EXPAND_INLINE_ALLOC;
-                        }
-                    }
-                }
-#endif
                 continue;
             }
 
@@ -1360,9 +1340,8 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
             GenTree* const   stmtExpr = candidate.m_tree;
             GenTreeAllocObj* allocObj = stmtExpr->AsLclVar()->Data()->AsAllocObj();
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             // Check if we can expand the allocation inline in codegen.
-            // Supported on Windows x64 and non-Apple Unix x64.
             const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
             if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
                 allocCtxInfo->supported && m_compiler->opts.OptimizationEnabled() &&
@@ -1375,36 +1354,13 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
                 stmtExpr->AddAllEffectsFlags(newData);
             }
             else
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_ARM64
             {
                 GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(allocObj);
                 stmtExpr->AsLclVar()->Data() = newData;
                 stmtExpr->AddAllEffectsFlags(newData);
             }
         }
-
-#ifdef TARGET_AMD64
-        // Mark non-stack-allocated array calls for inline expansion
-        if (candidate.m_allocType == OAT_NEWARR)
-        {
-            GenTree* const data = candidate.m_tree->AsLclVar()->Data();
-            if (data->IsHelperCall())
-            {
-                GenTreeCall* const call   = data->AsCall();
-                CorInfoHelpFunc    helper = call->GetHelperNum();
-                if ((helper == CORINFO_HELP_NEWARR_1_VC || helper == CORINFO_HELP_NEWARR_1_PTR) &&
-                    m_compiler->opts.OptimizationEnabled() && JitConfig.JitInlineAllocFast() != 0)
-                {
-                    const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
-                    if (allocCtxInfo->supported)
-                    {
-                        JITDUMP("Marking array allocation [%06u] for inline expansion\n", m_compiler->dspTreeID(call));
-                        call->gtCallMoreFlags |= GTF_CALL_M_EXPAND_INLINE_ALLOC;
-                    }
-                }
-            }
-        }
-#endif
 
         if (IsTrackedLocal(lclNum))
         {
