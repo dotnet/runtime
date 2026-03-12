@@ -3039,11 +3039,13 @@ SWITCH_OPCODE:
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // On portable entry point platforms, calli targets are portable entry points.
-                        // If the PE has a MethodDesc, route through CALL_INTERP_METHOD which derives
-                        // the cookie at runtime. This covers both interpreted methods and FCalls
-                        // (which have native code set but still carry an MD).
-                        // JIT helper PEs (no MethodDesc) fall through to InvokeCalliStub — the
-                        // cookie is resolved at runtime from the calli's signature token.
+                        // If the portable entry point has a MethodDesc, route through
+                        // CALL_INTERP_METHOD which derives the cookie at runtime. This covers
+                        // both interpreted methods and FCalls (which have native code set but
+                        // still carry a MethodDesc).
+                        // JIT helper portable entry points (no MethodDesc) fall through to
+                        // InvokeCalliStub — the cookie is resolved at runtime from the calli's
+                        // signature token.
                         targetMethod = PortableEntryPoint::TryGetMethodDesc(calliFunctionPointer);
                         if (targetMethod != nullptr)
                         {
@@ -3055,7 +3057,7 @@ SWITCH_OPCODE:
                             // pDataItems[calliCookie] = sig token (immutable)
                             // pDataItems[calliCookie + 1] = cached cookie (initially NULL)
                             cookie = VolatileLoadWithoutBarrier(&pMethod->pDataItems[calliCookie + 1]);
-                            if (cookie == nullptr)
+                            if (cookie == NULL)
                             {
                                 mdToken sigToken = (mdToken)(size_t)pMethod->pDataItems[calliCookie];
                                 MethodDesc* pCallerMD = (MethodDesc*)pMethod->methodHnd;

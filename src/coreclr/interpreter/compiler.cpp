@@ -4315,26 +4315,32 @@ bool InterpCompiler::DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_I
     return false;
 }
 
-void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig, bool deferredCookie)
+void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
 {
     AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
+    // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
+    bool suppressGCTransition = false;
+    CorInfoCallConv callConv = (CorInfoCallConv)(callSiteSig->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+    bool isPInvoke = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // On portable entry point platforms, managed callis defer cookie resolution to
+    // execution time. Allocate two consecutive data items: the sig token (immutable)
+    // and a cache slot (initially NULL) for the resolved cookie.
+    // calliCookie is non-NULL only for IL calli instructions where it holds
+    // the signature token. CODE_POINTER / LDVIRTFTN callis pass NULL because
+    // their targets always carry a MethodDesc resolved at execution time.
+    bool deferredCookie = !isPInvoke && calliCookie != NULL;
     if (deferredCookie)
     {
-        // Allocate two consecutive data items: sig token + cache slot (initially NULL).
-        // The executor uses pDataItems[index] for the sig token and pDataItems[index+1]
-        // for caching the resolved cookie.
         m_pLastNewIns->data[0] = GetNewDataItemIndex(calliCookie);
         int32_t cacheSlot = GetNewDataItemIndex(nullptr);
         _ASSERTE(cacheSlot == m_pLastNewIns->data[0] + 1);
     }
     else
+#endif
     {
         m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
     }
-    // data[1] is set to 1 if the calli is calling a pinvoke, 0 otherwise
-    bool suppressGCTransition = false;
-    CorInfoCallConv callConv = (CorInfoCallConv)(callSiteSig->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
-    bool isPInvoke = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
     if (isPInvoke)
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
@@ -4346,8 +4352,11 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
     }
     m_pLastNewIns->data[1] = (suppressGCTransition ? (int32_t)CalliFlags::SuppressGCTransition : 0) |
-                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0) |
-                             (deferredCookie ? (int32_t)CalliFlags::DeferredCookie : 0);
+                             (isPInvoke ? (int32_t)CalliFlags::PInvoke : 0)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                             | (deferredCookie ? (int32_t)CalliFlags::DeferredCookie : 0)
+#endif
+                             ;
     m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
 }
 
@@ -4787,7 +4796,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     int32_t callIFunctionPointerVar = -1;
     void* calliCookie = NULL;
-    bool calliDeferredCookie = false;
 
     ContinuationContextHandling continuationContextHandling = ContinuationContextHandling::None;
     if (isCalli)
@@ -4811,10 +4819,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // On platforms with portable entrypoints, managed calli targets with a MethodDesc
-        // are dispatched via CALL_INTERP_METHOD at execution time, which derives the cookie
-        // from the MethodDesc. For targets without a MethodDesc (JIT helper PEs), the cookie
-        // is computed at execution time from the calli's signature token.
+        // On platforms with portable entry points, managed calli targets are portable
+        // entry points. At execution time, if the portable entry point carries a MethodDesc,
+        // the call is dispatched via CALL_INTERP_METHOD which derives the cookie from the
+        // MethodDesc. Targets without a MethodDesc — JIT helper portable entry points such
+        // as object allocators (e.g. CORINFO_HELP_NEWFAST) called via delegate* from BCL
+        // code like ActivatorCache — fall through to deferred cookie resolution using the
+        // calli's signature token stored here.
         {
             CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
             bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
@@ -4826,7 +4837,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 // Store the sig token for runtime cookie resolution.
                 calliCookie = (void*)(size_t)token;
-                calliDeferredCookie = true;
             }
         }
 #else
@@ -5368,7 +5378,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig, calliDeferredCookie);
+                EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
                 if (((m_pLastNewIns->data[1] & (int32_t)CalliFlags::PInvoke) != 0)
                     && m_pVars[dVar].interpType == InterpTypeVT)
                 {
