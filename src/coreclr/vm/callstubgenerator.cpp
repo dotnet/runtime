@@ -1687,7 +1687,7 @@ void InitCallStubGenerator()
     s_callStubCache = new CallStubCacheHash;
 }
 
-CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1699,7 +1699,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
-    ComputeCallStub(sig, pRoutines, NULL);
+    ComputeCallStub(sig, pRoutines, pContextMD);
 
     xxHash hashState;
     for (int i = 0; i < m_routineIndex; i++)

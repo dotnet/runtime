@@ -31,6 +31,8 @@ public class RuntimeInfoDumpTests : DumpTestBase
             "x86" => RuntimeInfoArchitecture.X86,
             "arm64" => RuntimeInfoArchitecture.Arm64,
             "arm" => RuntimeInfoArchitecture.Arm,
+            "riscv64" => RuntimeInfoArchitecture.RiscV64,
+            "loongarch64" => RuntimeInfoArchitecture.LoongArch64,
             _ => RuntimeInfoArchitecture.Unknown,
         };
 

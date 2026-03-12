@@ -1485,6 +1485,8 @@ namespace Internal.JitInterface
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
                         module = ecmaType.Module;
                         return new ModuleToken(module, token);
+                    case TypeDesc typeDesc:
+                        return _compilation.NodeFactory.Resolver.GetModuleTokenForType(typeDesc, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                     default:
                         throw new NotImplementedException($"Unsupported token resolution for {resultDef.GetType()}");
                 }
