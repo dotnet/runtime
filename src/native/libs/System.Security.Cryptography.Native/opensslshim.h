@@ -293,6 +293,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(ASN1_OCTET_STRING_set) \
     REQUIRED_FUNCTION(ASN1_STRING_dup) \
     REQUIRED_FUNCTION(ASN1_STRING_free) \
+    REQUIRED_FUNCTION(ASN1_STRING_get0_data) \
+    REQUIRED_FUNCTION(ASN1_STRING_length) \
     REQUIRED_FUNCTION(ASN1_STRING_print_ex) \
     REQUIRED_FUNCTION(ASN1_TIME_new) \
     REQUIRED_FUNCTION(ASN1_TIME_set) \
@@ -852,6 +854,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define ASN1_OCTET_STRING_set ASN1_OCTET_STRING_set_ptr
 #define ASN1_STRING_dup ASN1_STRING_dup_ptr
 #define ASN1_STRING_free ASN1_STRING_free_ptr
+#define ASN1_STRING_get0_data ASN1_STRING_get0_data_ptr
+#define ASN1_STRING_length ASN1_STRING_length_ptr
 #define ASN1_STRING_print_ex ASN1_STRING_print_ex_ptr
 #define ASN1_TIME_free ASN1_TIME_free_ptr
 #define ASN1_TIME_new ASN1_TIME_new_ptr
