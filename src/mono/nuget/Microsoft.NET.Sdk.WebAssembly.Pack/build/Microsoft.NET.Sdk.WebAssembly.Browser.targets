@@ -612,6 +612,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile">
 
     <ItemGroup>
+      <!-- Track boot JSON for clean operations even when _WriteBuildWasmBootJsonFile was skipped -->
+      <FileWrites Include="$(_WasmBuildBootJsonPath)" />
       <_WasmBuildBootConfigCandidate
         Include="$(_WasmBuildBootJsonPath)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
@@ -923,6 +925,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
 
     <ItemGroup>
+      <!-- Track boot JSON for clean operations even when GeneratePublishWasmBootJson was skipped -->
+      <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
       <_WasmPublishBootConfigCandidate
         Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
