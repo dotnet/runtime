@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -194,7 +195,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions { IsServer = true });
             WebSocketException exception = await Assert.ThrowsAsync<WebSocketException>(() =>
                 websocket.ReceiveAsync(new byte[5], CancellationToken.None));
-            Assert.Equal(SR.net_Websockets_ServerReceivedUnmaskedFrame, exception.Message);
+            Assert.Equal("The WebSocket client sent an unmasked frame.", exception.Message);
             Assert.Equal(WebSocketState.Aborted, websocket.State);
         }
 
