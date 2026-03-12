@@ -182,7 +182,7 @@ LOCAL_LABEL(NotHiJacked):
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r5, saved from r2)
+        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind
         mov         r3, #0xFFFFFFFF
         str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
