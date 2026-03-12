@@ -707,10 +707,12 @@ inline size_t roundUp(size_t size, size_t mult = sizeof(size_t))
     return (size + (mult - 1)) & ~(mult - 1);
 }
 
+#ifdef HOST_64BIT
 inline unsigned int roundUp(unsigned size, unsigned mult)
 {
     return (unsigned int)roundUp((size_t)size, (size_t)mult);
 }
+#endif // HOST_64BIT
 
 inline unsigned int unsigned_abs(int x)
 {
