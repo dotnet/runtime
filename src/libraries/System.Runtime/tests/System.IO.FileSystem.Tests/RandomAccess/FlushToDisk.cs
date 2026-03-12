@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO.Pipes;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -23,8 +22,6 @@ namespace System.IO.Tests
         };
 
         protected override bool UsesOffsets => false;
-
-        protected override bool ThrowsForUnseekableFile => false;
 
         protected override long MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
         {

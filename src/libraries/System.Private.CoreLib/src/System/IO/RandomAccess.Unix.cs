@@ -81,7 +81,9 @@ namespace System.IO
 
                 fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
                 {
-                    result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
+                    result = handle.SupportsRandomAccess
+                        ? Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset)
+                        : Interop.Sys.ReadV(handle, pinnedVectors, buffers.Count);
                 }
             }
             finally
@@ -199,7 +201,9 @@ namespace System.IO
                     Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset);
                     fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(left))
                     {
-                        bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
+                        bytesWritten = handle.SupportsRandomAccess
+                            ? Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset)
+                            : Interop.Sys.WriteV(handle, pinnedVectors, left.Length);
                     }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
