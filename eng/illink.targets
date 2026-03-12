@@ -264,7 +264,7 @@
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
+    <ILLink AssemblyPaths="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"

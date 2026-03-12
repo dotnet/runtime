@@ -8,12 +8,12 @@ namespace Mono.Linker.Steps
 {
     public class RootAssemblyInput : BaseStep
     {
-        readonly string fileName;
+        readonly string assemblyName;
         readonly AssemblyRootMode rootMode;
 
-        public RootAssemblyInput(string fileName, AssemblyRootMode rootMode)
+        public RootAssemblyInput(string assemblyName, AssemblyRootMode rootMode)
         {
-            this.fileName = fileName;
+            this.assemblyName = assemblyName;
             this.rootMode = rootMode;
         }
 
@@ -106,9 +106,9 @@ namespace Mono.Linker.Steps
 
         AssemblyDefinition? LoadAssemblyByName()
         {
-            var assembly = Context.TryResolve(fileName);
+            var assembly = Context.TryResolve(assemblyName);
             if (assembly == null)
-                Context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, fileName);
+                Context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, assemblyName);
 
             return assembly;
         }
