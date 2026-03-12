@@ -666,16 +666,44 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
   </Target>
 
-  <Target Name="EnsureBundlerFriendlyFilesInOutputDirectory"
+  <Target Name="EnsureProjectAssetsInOutputDirectoryForBundlerFriendlyBuild"
           BeforeTargets="ResolveBuildStaticWebAssets"
-          Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">
+          Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(IsPublishing)' != 'true'">
+    <!-- Fix non-publishing scenarios by treating project assets the way they are treated during publish,
+         so bundler-friendly builds are complete for the js bundler -->
     <ItemGroup>
-      <StaticWebAsset Update="@(StaticWebAsset)">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <!-- We reuse non-Never CopyToPublishDirectory settings to ensure project assets are copied to the output dir for bundler-friendly builds -->
+      <StaticWebAsset Condition="'%(StaticWebAsset.CopyToPublishDirectory)' != 'Never' and '%(StaticWebAsset.CopyToPublishDirectory)' != ''">
+        <CopyToOutputDirectory>%(StaticWebAsset.CopyToPublishDirectory)</CopyToOutputDirectory>
       </StaticWebAsset>
     </ItemGroup>
   </Target>
+  
+  <Target Name="EnsurePublishAssetsInOutputDirectoryForBundlerFriendlyBuild"
+          AfterTargets="_SplitStaticWebAssetsByCopyOptions"
+          BeforeTargets="_BuildCopyStaticWebAssetsPreserveNewest;_BuildCopyStaticWebAssetsAlways;_BuildCopyStaticWebAssetsIfDifferent"
+          Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(IsPublishing)' != 'true'">
+    <!-- Fix non-publishing scenarios by manually adding the publish static web assets to the build static web assets 
+         so bundler-friendly builds are complete for the js bundler -->
+    <ComputeStaticWebAssetsForCurrentProject
+      Assets="@(StaticWebAsset)"
+      ProjectMode="$(StaticWebAssetProjectMode)"
+      AssetKind="Publish"
+      Source="$(PackageId)">
+      <Output TaskParameter="StaticWebAssets" ItemName="_StaticWebAssetsToCopy" />
+    </ComputeStaticWebAssetsForCurrentProject>
+    
+    <ComputeStaticWebAssetsTargetPaths Assets="@(_StaticWebAssetsToCopy)" PathPrefix="$(OutputPath)\wwwroot\">
+      <Output TaskParameter="AssetsWithTargetPath" ItemName="_StaticWebAssetsToCopyTargetPath" />
+    </ComputeStaticWebAssetsTargetPaths>
 
+    <ItemGroup>
+      <_BuildStaticWebAssetsCopyAlways Include="@(_StaticWebAssetsToCopyTargetPath)" Condition="'%(CopyToOutputDirectory)' == 'Always'" />
+      <_BuildStaticWebAssetsPreserveNewest Include="@(_StaticWebAssetsToCopyTargetPath)" Condition="'%(CopyToOutputDirectory)' == 'PreserveNewest'" />
+      <_BuildStaticWebAssetsIfDifferent Include="@(_StaticWebAssetsToCopyTargetPath)" Condition="'%(CopyToOutputDirectory)' == 'IfDifferent'" />
+    </ItemGroup>
+  </Target>
+  
   <!-- Publish starts here -->
 
   <!-- Make sure that ResolveAssemblyReferences runs early enough to ensure satellite assemblies are populated in the ResolvedFilesToPublish -->
