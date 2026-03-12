@@ -1385,11 +1385,11 @@ void AsyncTransformation::Transform(
     unsigned stateNum = (unsigned)m_states.size();
     JITDUMP("  Assigned state %u\n", stateNum);
 
-    BasicBlock* suspendBB = CreateSuspensionBlock(block, call, stateNum);
+    BasicBlock* suspendBB = CreateSuspensionBlock(block, stateNum);
 
     CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspendBB, remainder);
 
-    BasicBlock* resumeBB = CreateResumptionBlock(*remainder, call, stateNum, layoutBuilder);
+    BasicBlock* resumeBB = CreateResumptionBlock(*remainder, stateNum);
 
     m_states.push_back(AsyncState(stateNum, layoutBuilder, block, call, callDefInfo, suspendBB, resumeBB));
 
