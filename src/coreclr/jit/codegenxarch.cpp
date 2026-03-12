@@ -1752,7 +1752,6 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocInfo = m_compiler->compGetAllocContextInfo();
     assert(allocInfo->supported);
 
-    // Determine if this is an object or array allocation.
     CorInfoHelpFunc helperNum = call->GetHelperNum();
     bool            isArray   = (helperNum == CORINFO_HELP_NEWARR_1_VC || helperNum == CORINFO_HELP_NEWARR_1_PTR);
 
@@ -1762,8 +1761,6 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     regNumber mtReg  = REG_ARG_0;
     regNumber lenReg = isArray ? REG_ARG_1 : REG_NA;
 
-    // We use r10 and r11 as scratch — they are caller-saved volatile registers
-    // not used for argument passing on either Windows or SysV.
     regNumber allocCtxReg = REG_R10;
     regNumber tmpReg      = REG_R11;
 
@@ -1772,29 +1769,29 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
     // ---- TLS access: get pointer to ee_alloc_context ----
     if (TargetOS::IsWindows)
     {
-        // Windows x64: gs:[0x58] -> TLS array -> [tls_index * 8] -> + offset
         emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
                           (int)allocInfo->offsetOfThreadLocalStoragePointer);
 
-        assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
-        emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
+        assert(allocInfo->tlsIndex.accessType == IAT_VALUE);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
 
         emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
 
         assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
-        ssize_t tlsRootOffset = (ssize_t)allocInfo->tlsRoot.addr;
-        emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)tlsRootOffset);
+        emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)(ssize_t)allocInfo->tlsRoot.addr);
     }
     else
     {
-        // Linux x64: call __tls_get_addr with the pre-resolved TLSGD descriptor.
-        // The call clobbers all caller-saved registers, so save args on the stack.
-
+        // Linux x64: call __tls_get_addr. Save arg registers on the stack.
+        // Always push an even number of 8-byte values for 16-byte stack alignment.
         emit->emitIns_R(INS_push, EA_PTRSIZE, mtReg);
         if (isArray)
         {
             emit->emitIns_R(INS_push, EA_PTRSIZE, lenReg);
+        }
+        else
+        {
+            emit->emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, 8);
         }
 
         assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
@@ -1811,16 +1808,26 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
         {
             emit->emitIns_R(INS_pop, EA_PTRSIZE, lenReg);
         }
+        else
+        {
+            emit->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, 8);
+        }
         emit->emitIns_R(INS_pop, EA_PTRSIZE, mtReg);
     }
+
+    BasicBlock* slowPath = genCreateTempLabel();
 
     // ---- Bump allocation (non-GC-interruptible) ----
     GetEmitter()->emitDisableGC();
 
     if (isArray)
     {
-        // Array total size = ALIGN8(SZARRAY_BASE_SIZE + elementCount * componentSize)
-        emit->emitIns_R_AR(INS_mov, EA_2BYTE, tmpReg, mtReg, (int)allocInfo->methodTableComponentSizeOffset);
+        // Validate element count: must be in [0, 0x7FFFFFFF].
+        emit->emitIns_R_I(INS_cmp, EA_PTRSIZE, lenReg, 0x7FFFFFFF);
+        inst_JMP(EJ_ja, slowPath);
+
+        // Array total size = ALIGN8(arrayBaseSize + elementCount * componentSize)
+        emit->emitIns_R_AR(INS_movzx, EA_2BYTE, tmpReg, mtReg, (int)allocInfo->methodTableComponentSizeOffset);
         emit->emitIns_R_R(INS_imul, EA_PTRSIZE, tmpReg, lenReg);
         emit->emitIns_R_I(INS_add, EA_PTRSIZE, tmpReg, (ssize_t)(allocInfo->arrayBaseSize + 7));
         emit->emitIns_R_I(INS_and, EA_PTRSIZE, tmpReg, -8);
@@ -1830,20 +1837,27 @@ void CodeGen::genInlineAllocCall(GenTreeCall* call)
         emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
     }
 
-    emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
-    emit->emitIns_R_ARX(INS_lea, EA_PTRSIZE, tmpReg, dstReg, tmpReg, 1, 0);
-    emit->emitIns_R_AR(INS_cmp, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
-
-    BasicBlock* slowPath = genCreateTempLabel();
+    // Use subtraction-based comparison (matches the runtime helper) to avoid
+    // alloc_ptr + size overflow: available = combined_limit - alloc_ptr;
+    // if (size > available) goto slowPath;
+    emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
+    emit->emitIns_R_AR(INS_sub, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+    emit->emitIns_R_R(INS_cmp, EA_PTRSIZE, tmpReg, dstReg);
     inst_JMP(EJ_ja, slowPath);
 
-    // ---- Fast path ----
+    // Allocation fits. dstReg = alloc_ptr (the new object).
+    emit->emitIns_R_AR(INS_mov, EA_PTRSIZE, dstReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+
+    // Compute and store new alloc_ptr = alloc_ptr + size
+    emit->emitIns_R_R(INS_add, EA_PTRSIZE, tmpReg, dstReg);
+    emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
+
+    // Set MethodTable pointer on the new object
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
     if (isArray)
     {
         emit->emitIns_AR_R(INS_mov, EA_4BYTE, lenReg, dstReg, (int)allocInfo->arrayLengthOffset);
     }
-    emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
     GetEmitter()->emitEnableGC();
 

@@ -1204,15 +1204,15 @@ void GetObjectAllocContextTlsInfo(CORINFO_OBJECT_ALLOC_CONTEXT_INFO* pInfo)
     STANDARD_VM_CONTRACT;
 
 #if defined(TARGET_WINDOWS)
-    pInfo->tlsIndex.addr = (void*)&_tls_index;
-    pInfo->tlsIndex.accessType = IAT_PVALUE;
+    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
+    pInfo->tlsIndex.accessType = IAT_VALUE;
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     pInfo->tlsRoot.addr = (void*)(uintptr_t)ThreadLocalOffset(&t_runtime_thread_locals);
     pInfo->tlsRoot.accessType = IAT_VALUE;
 
 #elif defined(TARGET_APPLE) && defined(TARGET_AMD64)
-    uint8_t* p = reinterpret_cast<uint8_t*>(&GetRuntimeThreadLocalsThreadVarsAddress);
-    pInfo->threadVarsSection = GetThreadVarsSectionAddressFromDesc(p);
+    // macOS TLVP model not yet implemented in JIT codegen
+    pInfo->supported = false;
 
 #elif defined(TARGET_AMD64)
     pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);

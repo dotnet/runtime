@@ -1278,7 +1278,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     if (helper == CORINFO_HELP_NEWARR_1_VC || helper == CORINFO_HELP_NEWARR_1_PTR)
                     {
                         const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
-                        if (allocCtxInfo->supported && (TargetOS::IsWindows || TargetOS::IsUnix))
+                        if (allocCtxInfo->supported)
                         {
                             JITDUMP("Marking array allocation [%06u] for inline expansion\n",
                                     m_compiler->dspTreeID(call));
@@ -1362,14 +1362,13 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
 
 #ifdef TARGET_AMD64
             // Check if we can expand the allocation inline in codegen.
-            // Currently only Windows x64 is supported.
+            // Supported on Windows x64 and non-Apple Unix x64.
             const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
             if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
-                allocCtxInfo->supported && (TargetOS::IsWindows || TargetOS::IsUnix) &&
-                m_compiler->opts.OptimizationEnabled() && JitConfig.JitInlineAllocFast() != 0)
+                allocCtxInfo->supported && m_compiler->opts.OptimizationEnabled() &&
+                JitConfig.JitInlineAllocFast() != 0)
             {
                 JITDUMP("Marking allocation [%06u] for inline expansion\n", m_compiler->dspTreeID(allocObj));
-                // Morph to helper call, but mark it for inline expansion in codegen
                 GenTree* const newData = MorphAllocObjNodeIntoHelperCall(allocObj);
                 newData->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPAND_INLINE_ALLOC;
                 stmtExpr->AsLclVar()->Data() = newData;
@@ -1397,7 +1396,7 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
                     m_compiler->opts.OptimizationEnabled() && JitConfig.JitInlineAllocFast() != 0)
                 {
                     const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
-                    if (allocCtxInfo->supported && (TargetOS::IsWindows || TargetOS::IsUnix))
+                    if (allocCtxInfo->supported)
                     {
                         JITDUMP("Marking array allocation [%06u] for inline expansion\n", m_compiler->dspTreeID(call));
                         call->gtCallMoreFlags |= GTF_CALL_M_EXPAND_INLINE_ALLOC;
