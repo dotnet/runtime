@@ -144,6 +144,7 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         ldr         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
 
         // r4: exception object
+        // r5: ExKind
         // r1: hijacked return address
         // r0: pThread
         // r3: hijacked return address location
