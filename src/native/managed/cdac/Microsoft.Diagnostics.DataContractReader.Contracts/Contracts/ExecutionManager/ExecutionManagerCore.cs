@@ -387,7 +387,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     }
 
     private static bool IsFilterHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Filter;
-    private static bool IsFaultOrFinally(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Fault || flags == ExceptionClauseInfo.ExceptionClauseFlags.Finally;
     private static bool IsTypedHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Typed;
     private static bool HasCachedTypeHandle(IExceptionClauseData clause) => (clause.Flags & (uint)ExceptionClauseFlags_1.CachedClass) != 0;
 
@@ -445,19 +444,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer? moduleAddr = null;
             uint? classToken = null;
 
-            if (HasCachedTypeHandle(entry) && !isR2R) // Dynamic method path: we only have a cached type handle, no token.
+            if (IsTypedHandler(flags))
             {
-                typeHandle = ((EEExceptionClause)entry).TypeHandle;
-                if (IsTypedHandler(flags) && !IsFilterHandler(flags))
+                if (HasCachedTypeHandle(entry) && !isR2R) // Dynamic method path: we only have a cached type handle, no token.
                 {
+                    typeHandle = ((EEExceptionClause)entry).TypeHandle;
                     TargetPointer objectMethodTable = _target.ReadPointer(
                         _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
                     isCatchAllHandler = typeHandle.Value.Value == objectMethodTable.Value;
                 }
-            }
-            else if (!IsFaultOrFinally(flags))
-            {
-                if (IsTypedHandler(flags) && !IsFilterHandler(flags))
+                else
                 {
                     isCatchAllHandler = IsObjectType(handleModuleAddr, entry.ClassToken);
                     moduleAddr = handleModuleAddr;
