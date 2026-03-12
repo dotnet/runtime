@@ -774,7 +774,7 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GVMLookupForSlot;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
+                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpInterfaceDispatch"u8));
 
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                     id = ReadyToRunHelper.TypeHandleToRuntimeType;

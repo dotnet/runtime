@@ -6,7 +6,8 @@
 
 #include <unixasmmacros.inc>
 
-LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
+// Dispatching version of RhpResolveInterfaceMethod
+LEAF_ENTRY RhpInterfaceDispatch, _TEXT
 
         // r12 contains the indirection cell address.
         // Store it in the red zone for the universal transition thunk.
@@ -16,4 +17,4 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
 
         b           C_FUNC(RhpUniversalTransitionTailCall)
 
-LEAF_END RhpResolveInterfaceMethodFast, _TEXT
+LEAF_END RhpInterfaceDispatch, _TEXT

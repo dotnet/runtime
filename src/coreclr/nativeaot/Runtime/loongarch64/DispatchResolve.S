@@ -3,12 +3,13 @@
 
 #include <unixasmmacros.inc>
 
-LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
+// Dispatching version of RhpResolveInterfaceMethod
+LEAF_ENTRY RhpInterfaceDispatch, _TEXT
 
         // Load the MethodTable from the object instance in a0.
         // Trigger an AV if we're dispatching on a null this.
         // The exception handling infrastructure is aware of the fact that this is the first
-        // instruction of RhpResolveInterfaceMethodFast and uses it to translate an AV here
+        // instruction of RhpInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
         ld.d    $zero, $a0, 0
 
@@ -19,4 +20,4 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
         PREPARE_EXTERNAL_VAR RhpCidResolve, $t7
         b       C_FUNC(RhpUniversalTransitionTailCall)
 
-LEAF_END RhpResolveInterfaceMethodFast, _TEXT
+LEAF_END RhpInterfaceDispatch, _TEXT

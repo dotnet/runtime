@@ -7439,7 +7439,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
     if (m_compiler->opts.ShouldUseDispatchHelpers() || m_compiler->opts.IsCFGEnabled())
     {
         // Convert from VSD indirect call (call [r11]) to a direct call to a
-        // dispatch resolver helper (call RhpResolveInterfaceMethodFast).
+        // dispatch helper (call RhpInterfaceDispatch).
         // The dispatch cell is still passed via the VirtualStubCell arg in r11.
 
         // For CT_INDIRECT calls (shared generic code with dictionary lookup),

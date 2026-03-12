@@ -276,14 +276,14 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
     return false;
 }
 
-EXTERN_C CODE_LOCATION RhpResolveInterfaceMethodFast;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatch;
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
 #ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t interfaceDispatchAVLocations[] =
     {
-        (uintptr_t)&RhpResolveInterfaceMethodFast,
+        (uintptr_t)&RhpInterfaceDispatch,
     };
 
     // compare the IP against the list of known possible AV locations in the interface dispatch helpers

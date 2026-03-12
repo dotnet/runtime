@@ -11,12 +11,13 @@ include AsmMacros.inc
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransitionTailCall@0 : PROC
 
-FASTCALL_FUNC RhpResolveInterfaceMethodFast, 0
-ALTERNATE_ENTRY _RhpResolveInterfaceMethodFast
+;; Dispatching version of RhpResolveInterfaceMethod
+FASTCALL_FUNC RhpInterfaceDispatch, 0
+ALTERNATE_ENTRY _RhpInterfaceDispatch
 
         ;; Trigger an AV if we're dispatching on a null this.
         ;; The exception handling infrastructure is aware of the fact that this is the first
-        ;; instruction of RhpResolveInterfaceMethodFast and uses it to translate an AV here
+        ;; instruction of RhpInterfaceDispatch and uses it to translate an AV here
         ;; to a NullReferenceException at the callsite.
         cmp     dword ptr [ecx], ecx
 
