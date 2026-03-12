@@ -672,8 +672,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Fix non-publishing scenarios by treating project assets the way they are treated during publish,
          so bundler-friendly builds are complete for the js bundler -->
     <ItemGroup>
-      <!-- We reuse non-Never CopyToPublishDirectory settings to ensure project assets are copied to the output dir for bundler-friendly builds -->
-      <StaticWebAsset Condition="'%(StaticWebAsset.CopyToPublishDirectory)' != 'Never' and '%(StaticWebAsset.CopyToPublishDirectory)' != ''">
+      <StaticWebAsset Update="@(StaticWebAsset)" Condition="'%(StaticWebAsset.CopyToPublishDirectory)' != 'Never' and '%(StaticWebAsset.CopyToPublishDirectory)' != ''">
         <CopyToOutputDirectory>%(StaticWebAsset.CopyToPublishDirectory)</CopyToOutputDirectory>
       </StaticWebAsset>
     </ItemGroup>
