@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -44,6 +45,7 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ImportSection = new ObjectNodeSection("wasm.import", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection GlobalSection = new ObjectNodeSection("wasm.global", SectionType.ReadOnly, needsAlign: false);
     }
 
     /// <summary>
@@ -118,6 +120,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         private int _numImports;
+        private int _numImportedGlobals;
         /// <summary>
         /// Writes the given import entry, including its prefix (module/name/kind) and body (external ref).
         /// </summary>
@@ -182,6 +185,7 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
             { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
+            { WasmObjectNodeSection.GlobalSection, WasmSectionType.Global },
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
             { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount }
@@ -446,6 +450,45 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)_methodCount); // table limits: initial size in number of entries
         }
 
+        private int _numDefinedGlobals = 0;
+        private int NextGlobalIndex()
+        {
+
+            int next = _numImportedGlobals + _numDefinedGlobals;
+            _numDefinedGlobals++;
+            return next;
+        }
+
+        private Dictionary<string, WasmGlobal> _definedGlobals = new();
+
+        private void WriteGlobal(SectionWriter writer, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
+        {
+            WasmGlobal global = new WasmGlobal(
+                index: NextGlobalIndex(), // next available index
+                name: name,
+                valueType,
+                mutability,
+                initExpr);
+            if (!_definedGlobals.TryAdd(name, global))
+            {
+                throw new InvalidDataException($"Duplicate global name: {name}");
+            }
+
+            int size = global.EncodeSize();
+            int written = global.Encode(writer.Buffer.GetSpan(size));
+            Debug.Assert(written == size);
+            writer.Buffer.Advance(written);
+        }
+
+        private void WriteGlobalSection()
+        {
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.GlobalSection);
+
+            // webcilVersion: i32 const = 1
+            WriteGlobal(writer, "webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
+                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, 1)]));
+        }
+
         private void PrependCount(WasmSection section, int count)
         {
             section.PrependCount = count;
@@ -464,6 +507,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.ImportSection.Name,
             WasmObjectNodeSection.FunctionSection.Name,
             WasmObjectNodeSection.TableSection.Name,
+            WasmObjectNodeSection.GlobalSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
@@ -788,11 +832,17 @@ namespace ILCompiler.ObjectWriter
                 assignedImportIndices[(int)import.Kind]++;
                 WriteImport(import);
             }
+
+            _numImportedGlobals = assignedImportIndices[(int)WasmExternalKind.Global];
         }
 
         private void WriteExports()
         {
             WriteTableExport("table", 0);
+
+            Debug.Assert(_definedGlobals.ContainsKey("webcilVersion"));
+            WriteGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
+
             string[] functionExports = _uniqueSymbols.Keys.ToArray();
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
             // Also, see if we could leverage definedSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
@@ -807,9 +857,9 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             WriteImports();
+            WriteGlobalSection();
             WriteExports();
 
-            Console.WriteLine("Defined symbols:");
             foreach (var key in definedSymbols)
             {
                 Console.WriteLine($"{key.Key}: {key.Value}");
@@ -825,6 +875,8 @@ namespace ILCompiler.ObjectWriter
             PrependCount(_sections[exportIdx], _numExports);
 
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
+
+            PrependCount(SectionByName(WasmObjectNodeSection.GlobalSection.Name), _numDefinedGlobals);
 
             // Register defined symbols for future use during relocation resolution
             _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
