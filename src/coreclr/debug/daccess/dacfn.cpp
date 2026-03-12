@@ -1545,6 +1545,9 @@ void DacPatchCache::Populate()
         return;
     }
 
+    // Clear any stale entries from previous failed population attempts
+    m_entries.Clear();
+
     HASHFIND info;
 
     DebuggerPatchTable *      pTable = DebuggerController::GetPatchTable();

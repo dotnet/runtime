@@ -801,10 +801,10 @@ class DacStreamManager;
 //
 // DacReplacePatchesInHostMemory needs to iterate the target's patch hash table
 // to replace breakpoint instructions with original opcodes. This iteration is
-// expensive because it walks all hash buckets and entries via cross-process
-// reads. Since the target is not running during DAC operations, the patches
-// cannot change, so we cache them on first access and reuse across frames
-// within a single DAC session. The cache is invalidated on Flush().
+// expensive because it walks all hash buckets and entries and it will hit either a
+// hash lookup in the instance cache or a cache miss + remote read. Since the target
+// is not running during DAC operations, the patches should not change while we are performing
+// memory enumeration, but if they do we'll miss them until the next time Flush() gets called.
 //
 //----------------------------------------------------------------------------
 
