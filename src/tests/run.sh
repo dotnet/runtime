@@ -44,7 +44,7 @@ function print_usage {
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --node                           : Runs the tests with NodeJS (wasm only)'
-    echo '  --limitedDumpGeneration          : '
+    echo '  --limitedDumpGeneration          : Limits the number of core dumps generated for this test run'
 }
 
 # Exit code constants

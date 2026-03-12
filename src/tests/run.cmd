@@ -271,10 +271,12 @@ echo                             Note: some options override this ^(gcstressleve
 echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifacts/log^)
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
+echo tieringtest               - Run each test to encourage tier1 rejitting.
+echo runnativeaottests         - Run NativeAOT compiled tests.
 echo interpreter               - Runs the tests with the interpreter enabled.
-echo node                       - Runs the tests with NodeJS ^(wasm only^).
-echo verbose                  - Enable verbose output ^(show output from each test^).
-echo limitedDumpGeneration    - Generates a limited number of core dumps if tests crash, avoiding excessive dump storage.
+echo node                      - Runs the tests with NodeJS ^(wasm only^).
+echo verbose                   - Enable verbose output ^(show output from each test^).
+echo limitedDumpGeneration     - Limits the number of core dumps generated for this test run.
 echo.
 echo Note that arguments are not case-sensitive.
 echo.
