@@ -127,6 +127,7 @@ NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
         str         r4, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
 
         mov         r4, r0 // Save exception object
+        mov         r5, r2 // Save ExKind
         // r0 = GetThread()
         INLINE_GETTHREAD
 
@@ -180,7 +181,7 @@ LOCAL_LABEL(NotHiJacked):
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r2, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r2)
+        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r5, saved from r2)
         mov         r3, #0xFFFFFFFF
         str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
