@@ -847,8 +847,11 @@ int32_t CryptoNative_CheckX509IpAddress(
                 const X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
                 const ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
+                const char* data = (const char*)ASN1_STRING_get0_data(cn);
+
                 if (ASN1_STRING_length(cn) == cchHostname &&
-                    !strncasecmp((const char*)ASN1_STRING_get0_data(cn), hostname, (size_t)cchHostname))
+                    data != NULL &&
+                    !strncasecmp(data, hostname, (size_t)cchHostname))
                 {
                     success = 1;
                     break;
