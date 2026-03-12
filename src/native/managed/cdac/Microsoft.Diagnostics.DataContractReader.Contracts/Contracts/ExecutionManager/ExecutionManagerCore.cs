@@ -460,9 +460,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
                 if (IsTypedHandler(flags) && !IsFilterHandler(flags))
                 {
                     isCatchAllHandler = IsObjectType(handleModuleAddr, entry.ClassToken);
+                    moduleAddr = handleModuleAddr;
+                    classToken = entry.ClassToken;
                 }
-                moduleAddr = handleModuleAddr;
-                classToken = entry.ClassToken;
             }
 
             exceptionClauses.Add(new ExceptionClauseInfo
