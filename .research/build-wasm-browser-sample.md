@@ -30,7 +30,7 @@ cd src/mono/sample/wasm/browser
 ../../../../../../dotnet.sh build \
   /t:BuildSampleInTree \
   /p:RuntimeFlavor=CoreCLR \
-  /p:Configuration=Release \
+  /p:Configuration=Debug \
   Wasm.Browser.Sample.csproj
 ```
 
