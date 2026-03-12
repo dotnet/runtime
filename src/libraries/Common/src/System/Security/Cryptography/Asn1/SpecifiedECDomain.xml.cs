@@ -143,8 +143,8 @@ namespace System.Security.Cryptography.Asn1
     internal ref partial struct ValueSpecifiedECDomain
     {
         internal int Version;
-        internal ReadOnlySpan<byte> FieldID;
-        internal ReadOnlySpan<byte> Curve;
+        internal System.Security.Cryptography.Asn1.ValueFieldID FieldID;
+        internal System.Security.Cryptography.Asn1.ValueCurveAsn Curve;
         internal ReadOnlySpan<byte> Base;
         internal ReadOnlySpan<byte> Order;
         internal ReadOnlySpan<byte> Cofactor;
@@ -200,8 +200,8 @@ namespace System.Security.Cryptography.Asn1
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            decoded.FieldID = sequenceReader.ReadEncodedValue();
-            decoded.Curve = sequenceReader.ReadEncodedValue();
+            System.Security.Cryptography.Asn1.ValueFieldID.Decode(ref sequenceReader, out decoded.FieldID);
+            System.Security.Cryptography.Asn1.ValueCurveAsn.Decode(ref sequenceReader, out decoded.Curve);
 
             if (sequenceReader.TryReadPrimitiveOctetString(out tmpSpan))
             {

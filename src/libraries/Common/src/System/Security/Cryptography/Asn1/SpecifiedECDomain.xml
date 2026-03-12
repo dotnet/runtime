@@ -23,8 +23,14 @@
     ECPoint ::= OCTET STRING
   -->
   <asn:Integer name="Version" backingType="int" />
-  <asn:AsnType name="FieldID" typeName="System.Security.Cryptography.Asn1.FieldID" />
-  <asn:AsnType name="Curve" typeName="System.Security.Cryptography.Asn1.CurveAsn" />
+  <asn:AsnType
+    name="FieldID"
+    typeName="System.Security.Cryptography.Asn1.FieldID"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueFieldID" />
+  <asn:AsnType
+    name="Curve"
+    typeName="System.Security.Cryptography.Asn1.CurveAsn"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueCurveAsn" />
   <asn:OctetString name="Base" />
   <asn:Integer name="Order" backingType="ReadOnlyMemory" />
   <asn:Integer name="Cofactor" backingType="ReadOnlyMemory" optional="true" />
