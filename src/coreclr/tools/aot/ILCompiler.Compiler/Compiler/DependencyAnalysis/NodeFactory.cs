@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
@@ -611,6 +612,11 @@ namespace ILCompiler.DependencyAnalysis
             _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
             {
                 return new AnalysisCharacteristicNode(c);
+            });
+
+            _wasmTypeNodes = new NodeCache<WasmFuncType, WasmTypeNode>(key =>
+            {
+                return new WasmTypeNode(key);
             });
 
             NativeLayout = new NativeLayoutHelper(this);
@@ -1567,6 +1573,17 @@ namespace ILCompiler.DependencyAnalysis
         public AnalysisCharacteristicNode AnalysisCharacteristic(string ch)
         {
             return _analysisCharacteristics.GetOrAdd(ch);
+        }
+
+        private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
+        public WasmTypeNode WasmTypeNode(MethodDesc desc)
+        {
+            // TODO-Wasm: Construct proper function type based on the passed in MethodDesc
+            // once we have defined lowering rules for signatures in NativeAOT.
+            throw new NotImplementedException("NAOT wasm type signature lowering not yet implemented");
         }
 
         /// <summary>

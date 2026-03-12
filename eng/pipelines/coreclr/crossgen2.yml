@@ -106,8 +106,11 @@ extends:
           buildConfig: Release
           platforms:
             - linux_x64
+            - linux_arm64
             # - osx_x64 Not included to reduce pressure on osx_x64 machines
+            - osx_arm64
             - windows_x64
+            - windows_arm64
           jobParameters:
             testGroup: innerloop
             buildArgs: -s clr+libs+libs.tests
