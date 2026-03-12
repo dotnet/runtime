@@ -75,8 +75,6 @@ export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise
         const module = await modulePromise;
         if (typeof module.onRuntimeReady === "function") {
             await module.onRuntimeReady(dotnetApi);
-        } else {
-            dotnetLogger.warn(`Module '${asset.name}' does not export 'onRuntimeReady' function. Make sure the module initializer is correctly defined and exported.`);
         }
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
