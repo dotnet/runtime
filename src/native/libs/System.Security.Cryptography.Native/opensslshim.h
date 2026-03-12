@@ -38,9 +38,16 @@
 
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
+#define OPENSSL_VERSION_4_0_RTM 0x40000000L
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_4_0_RTM
+#define OSSL4CONST const
+#else
+#define OSSL4CONST
+#endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
@@ -50,9 +57,19 @@
 #include <openssl/kdf.h>
 #endif
 
-#if HAVE_OPENSSL_ENGINE
 // Some Linux distributions build without engine support.
+#if HAVE_OPENSSL_ENGINE
+// HAVE_OPENSSL_ENGINE might be true with OSSL4 headers, because there's
+// no good state to be in where 3.x says yes (deprecated since 1.1) and 4.0 says no
+// (in 4.0 it's deprecated without regard to OPENSSL_API_COMPAT).
+//
+// So, if it's on, and we're 4, turn it off.  (Portable will turn it back on, later).
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
 #include <openssl/engine.h>
+#else
+#undef HAVE_OPENSSL_ENGINE
+#define HAVE_OPENSSL_ENGINE 0
+#endif
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM

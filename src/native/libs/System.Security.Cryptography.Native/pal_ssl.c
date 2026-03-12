@@ -1078,11 +1078,13 @@ static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
 
         X509_set_pubkey(cert, evp);
 
-        asnName = X509_get_subject_name(cert);
+        asnName = X509_NAME_dup(X509_get_subject_name(cert));
         X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+        X509_set_subject_name(cert, asnName);
 
-        asnName =  X509_get_issuer_name(cert);
+        asnName =  X509_NAME_dup(X509_get_issuer_name(cert));
         X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+        X509_set_issuer_name(cert, asnName);
 
         ASN1_TIME_set(time, 0);
         X509_set1_notBefore(cert, time);
