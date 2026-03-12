@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
