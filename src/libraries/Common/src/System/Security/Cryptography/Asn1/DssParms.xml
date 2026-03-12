@@ -3,7 +3,8 @@
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="DssParms"
   namespace="System.Security.Cryptography.Asn1"
-  rebind="false">
+  rebind="false"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc3279#section-2.3.2
