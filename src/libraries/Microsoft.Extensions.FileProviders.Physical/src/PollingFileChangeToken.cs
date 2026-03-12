@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// <remarks>
     /// <para>Polling occurs every 4 seconds.</para>
     /// <para>By default, this change token does not raise change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
-    /// from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.
+    /// from <see langword="false"/> to <see langword="true"/>.
     /// When <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>, callbacks registered via
     /// <see cref="RegisterChangeCallback"/> will be invoked when the file changes.</para>
     /// </remarks>
