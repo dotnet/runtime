@@ -340,6 +340,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForBinop(node->AsOp());
             break;
 
+        case GT_STOREIND:
+            CollectReferencesForStoreInd(node->AsStoreInd());
+            break;
+
         case GT_STORE_BLK:
             CollectReferencesForBlockStore(node->AsBlk());
             break;
@@ -450,6 +454,19 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
     ConsumeTemporaryRegForOperand(binopNode->gtGetOp1() DEBUGARG("binop overflow check"));
 }
 
+//------------------------------------------------------------------------
+// CollectReferencesForStoreInd: Collect virtual register references for an indirect store
+//
+// Arguments:
+//    node - The GT_STOREIND node
+//
+void WasmRegAlloc::CollectReferencesForStoreInd(GenTreeStoreInd* node)
+{
+    GenTree* const addr = node->Addr();
+    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind null check"));
+}
+
+//------------------------------------------------------------------------
 // CollectReferencesForBlockStore: Collect virtual register references for a block store.
 //
 // Arguments:
@@ -505,10 +522,21 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
-    var_types    storeType = lclNode->TypeGet();
-    bool         isStruct  = storeType == TYP_STRUCT;
-    uint16_t     offset    = lclNode->GetLclOffs();
-    ClassLayout* layout    = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
+    var_types storeType = lclNode->TypeGet();
+    // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.
+    if ((storeType == TYP_STRUCT) && lclNode->OperIsCopyBlkOp())
+    {
+        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(lclNode->GetLclNum());
+        var_types  lclRegType = varDsc->GetRegisterType(lclNode);
+        if (lclRegType != TYP_UNDEF)
+        {
+            storeType = lclRegType;
+        }
+    }
+
+    bool         isStruct = storeType == TYP_STRUCT;
+    uint16_t     offset   = lclNode->GetLclOffs();
+    ClassLayout* layout   = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
     lclNode->SetOper(GT_LCL_ADDR);
     lclNode->ChangeType(TYP_I_IMPL);
     lclNode->AsLclFld()->SetLclOffs(offset);
