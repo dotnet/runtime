@@ -17,6 +17,7 @@
 
 #include <cahlpr.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include "mdinfo.h"
 
