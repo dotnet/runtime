@@ -23,6 +23,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task GetFileType_NamedPipe()
         {
             string pipePath = GetTestFilePath();
@@ -41,7 +42,7 @@ namespace System.IO.Tests
             await readerTask;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void GetFileType_SymbolicLink()
         {
             string targetPath = GetTestFilePath();
