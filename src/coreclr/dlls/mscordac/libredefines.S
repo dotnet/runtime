@@ -10,3 +10,5 @@
 #endif
 
 #include "libredefines.inc"
+
+NO_EXEC_STACK_DIRECTIVE

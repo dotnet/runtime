@@ -53,3 +53,5 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         b         C_FUNC(RhpWaitForGC2)
 LEAF_END RhpPInvokeReturn, _TEXT
 
+
+NO_EXEC_STACK_DIRECTIVE

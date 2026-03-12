@@ -186,3 +186,5 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
 	// Branch to CTR register location
 	bctr
 LEAF_END RtlRestoreContext, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

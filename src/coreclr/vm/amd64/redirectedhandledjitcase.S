@@ -92,3 +92,5 @@ NESTED_ENTRY RedirectForThrowControl2, _TEXT, NoHandler
 NESTED_END RedirectForThrowControl2, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThrowControl, RedirectForThrowControl2
+
+NO_EXEC_STACK_DIRECTIVE

@@ -180,3 +180,5 @@ LEAF_ENTRY CallCountingStubCode, _TEXT
         jmp    QWORD PTR [rip + DATA_SLOT(CallCountingStub, TargetForThresholdReached)]
 LEAF_END_MARKED CallCountingStubCode, _TEXT
 #endif // FEATURE_TIERED_COMPILATION
+
+NO_EXEC_STACK_DIRECTIVE

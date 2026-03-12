@@ -453,3 +453,5 @@ LOCAL_LABEL(Array8OutOfMemory1):
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
 NESTED_END RhpNewArrayFastAlign8, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

@@ -176,3 +176,5 @@ LEAF_ENTRY RhpGcStressHijack, _TEXT
 LEAF_END RhpGcStressHijack, _TEXT
 
 #endif  // FEATURE_GC_STRESS
+
+NO_EXEC_STACK_DIRECTIVE

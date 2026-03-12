@@ -41,3 +41,5 @@ PAGE_SIZE = 4096
 LOCAL_LABEL(CountReachedZero):
         ldr pc, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
     LEAF_END_MARKED CallCountingStubCode
+
+NO_EXEC_STACK_DIRECTIVE

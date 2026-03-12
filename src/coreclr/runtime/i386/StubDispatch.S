@@ -2,3 +2,5 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // TODO: Implement
+
+NO_EXEC_STACK_DIRECTIVE

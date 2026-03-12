@@ -349,3 +349,5 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
         jirl  $r0, $ra, 0
 
 LEAF_END RhpCheckedXchg, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

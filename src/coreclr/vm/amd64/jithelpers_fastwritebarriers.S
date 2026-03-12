@@ -791,3 +791,5 @@ PATCH_LABEL JIT_WriteBarrier_WriteWatch_Bit_Region64_Patch_Label_CardBundleTable
 LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
 
 #endif
+
+NO_EXEC_STACK_DIRECTIVE

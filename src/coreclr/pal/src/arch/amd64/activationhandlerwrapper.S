@@ -27,3 +27,5 @@ LOCAL_LABEL(ActivationHandlerReturn):
 NESTED_END ActivationHandlerWrapper, _TEXT
 
 #endif // HOST_64BIT
+
+NO_EXEC_STACK_DIRECTIVE

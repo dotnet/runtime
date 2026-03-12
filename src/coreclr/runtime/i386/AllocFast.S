@@ -272,3 +272,5 @@ LOCAL_LABEL(RhpNewVariableSizeObject_AllocFailed):
 
         jmp         RhExceptionHandling_FailedAllocation
 NESTED_END RhpNewVariableSizeObject, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

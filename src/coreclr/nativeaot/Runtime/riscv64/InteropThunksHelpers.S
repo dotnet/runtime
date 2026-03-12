@@ -45,3 +45,5 @@
         PREPARE_EXTERNAL_VAR RhCommonStub, a0
         jr  ra                 // Return address in ra
     LEAF_END RhGetCommonStubAddress, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

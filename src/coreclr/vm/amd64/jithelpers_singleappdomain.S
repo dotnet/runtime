@@ -40,3 +40,5 @@ CallHelper1:
         jmp     [r10]
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
+
+NO_EXEC_STACK_DIRECTIVE

@@ -103,3 +103,5 @@ LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER):
     br %r1
 LEAF_END RtlRestoreContext, _TEXT
 
+
+NO_EXEC_STACK_DIRECTIVE

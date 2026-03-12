@@ -327,3 +327,5 @@ LOCAL_LABEL(RhpByRefAssignRef_NotInHeap):
           add           r1, #4
           bx            lr
 LEAF_END RhpByRefAssignRef, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

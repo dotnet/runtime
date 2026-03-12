@@ -334,3 +334,5 @@ C_FUNC(CONTEXT_CaptureContext):
     ret
 
 #endif
+
+NO_EXEC_STACK_DIRECTIVE

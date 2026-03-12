@@ -10,3 +10,5 @@ LEAF_ENTRY FPFillR8, .TEXT
         ld.d     $a0, $a0, 0
         jirl   $r0, $ra, 0
 LEAF_END FPFillR8, .TEXT
+
+NO_EXEC_STACK_DIRECTIVE

@@ -174,3 +174,5 @@
     .endm
 
     UNIVERSAL_TRANSITION UniversalTransitionTailCall
+
+NO_EXEC_STACK_DIRECTIVE

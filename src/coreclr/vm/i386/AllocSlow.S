@@ -98,3 +98,5 @@ NESTED_ENTRY RhExceptionHandling_FailedAllocation, _TEXT, NoHandler
     ret
 
 NESTED_END RhExceptionHandling_FailedAllocation, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

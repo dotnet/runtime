@@ -527,3 +527,5 @@ GLOBAL_LABEL RhpCallFilterFunclet2
         EPILOG_POP  "{r2,r4-r11,pc}"
 
 NESTED_END RhpCallFilterFunclet, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

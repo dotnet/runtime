@@ -9,3 +9,5 @@ LEAF_ENTRY DBG_DebugBreak, _TEXT
         ret
 LEAF_END_MARKED DBG_DebugBreak, _TEXT
 
+
+NO_EXEC_STACK_DIRECTIVE

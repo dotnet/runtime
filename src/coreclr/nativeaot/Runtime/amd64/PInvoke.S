@@ -51,3 +51,5 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         // passing transition frame pointer in rdi
         jmp         C_FUNC(RhpWaitForGC2)
 LEAF_END RhpPInvokeReturn, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

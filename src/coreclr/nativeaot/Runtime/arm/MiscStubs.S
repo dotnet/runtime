@@ -42,3 +42,5 @@ ProbeLoop:
     EPILOG_POP "{r7}"
     EPILOG_BRANCH_REG lr
 LEAF_END RhpStackProbe, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

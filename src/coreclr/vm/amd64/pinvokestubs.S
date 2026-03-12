@@ -201,3 +201,5 @@ RarePath:
         jmp             C_FUNC(JIT_PInvokeEndRarePath)
 
 LEAF_END JIT_PInvokeEnd, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

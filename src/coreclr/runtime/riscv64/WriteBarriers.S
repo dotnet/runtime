@@ -369,3 +369,5 @@ DoCardsXchg:
         jalr ra
 
 LEAF_END RhpCheckedXchg, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

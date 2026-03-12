@@ -20,3 +20,5 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     jmp     eax     // Tail Jmp
 #undef STK_ALIGN_PADDING
 NESTED_END TheUMEntryPrestub, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

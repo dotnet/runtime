@@ -534,3 +534,5 @@ LEAF_ENTRY JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
 LEAF_END_MARKED JIT_WriteBarrier_WriteWatch_Bit_Region64, _TEXT
 
 
+
+NO_EXEC_STACK_DIRECTIVE

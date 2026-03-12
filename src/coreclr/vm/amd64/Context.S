@@ -69,3 +69,5 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         pop     rbp
         ret
 NESTED_END ClrRestoreNonvolatileContextWorker, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

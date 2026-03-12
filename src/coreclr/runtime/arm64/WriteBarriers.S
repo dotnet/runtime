@@ -412,3 +412,5 @@ LOCAL_LABEL(NoBarrierXchg):
 .arch_extension nolse
 #endif
 #endif // FEATURE_NATIVEAOT
+
+NO_EXEC_STACK_DIRECTIVE

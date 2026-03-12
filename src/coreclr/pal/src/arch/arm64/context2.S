@@ -304,3 +304,5 @@ LEAF_END RestoreCompleteContext, _TEXT
         rdvl    x0, 1
         ret     lr
     LEAF_END CONTEXT_GetSveLengthFromOS, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

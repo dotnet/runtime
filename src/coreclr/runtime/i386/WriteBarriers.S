@@ -300,3 +300,5 @@ LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired):
     pop     eax
     ret
 LEAF_END RhpByRefAssignRef, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

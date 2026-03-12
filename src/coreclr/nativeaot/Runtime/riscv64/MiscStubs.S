@@ -3,3 +3,5 @@
 
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
+
+NO_EXEC_STACK_DIRECTIVE

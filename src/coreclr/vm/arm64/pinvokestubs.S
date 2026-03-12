@@ -178,3 +178,5 @@ PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker,
 // x12 = Unmanaged target
 //
 PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, x15, x12, 1, 1
+
+NO_EXEC_STACK_DIRECTIVE

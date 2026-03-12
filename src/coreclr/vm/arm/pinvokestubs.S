@@ -219,3 +219,5 @@ PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPIn
 // r12 = MethodDesc*
 //
 PINVOKE_STUB VarargPInvokeStub_RetBuffArg, VarargPInvokeGenILStub_RetBuffArg, VarargPInvokeStubWorker, r1, 0
+
+NO_EXEC_STACK_DIRECTIVE

@@ -42,3 +42,5 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     ori  $a0, $a1, 0
     b  ThrowExceptionHelper
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

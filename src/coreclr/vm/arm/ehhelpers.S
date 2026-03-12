@@ -146,3 +146,5 @@ GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
         EPILOG_POP   "{r11, pc}"
 
         NESTED_END CallEHFilterFunclet, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

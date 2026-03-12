@@ -55,3 +55,11 @@
 #elif defined(HOST_RISCV64)
 #include "unixasmmacrosriscv64.inc"
 #endif
+
+// Once we use an LLVM with proper --noexecstack behavior we should remove this
+// https://github.com/dotnet/runtime/issues/125469
+#if defined(__ELF__) && defined(__clang__) && __clang_major__ >= 22
+#define NO_EXEC_STACK_DIRECTIVE .section .note.GNU-stack,"",%progbits
+#else
+#define NO_EXEC_STACK_DIRECTIVE
+#endif

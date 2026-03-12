@@ -57,3 +57,5 @@ NESTED_ENTRY RhExceptionHandling_FailedAllocation, _TEXT, NoHandler
         POP_COOP_PINVOKE_FRAME
         bx          lr
 NESTED_END RhExceptionHandling_FailedAllocation, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

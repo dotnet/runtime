@@ -40,3 +40,5 @@ LOCAL_LABEL(ProbeLoop):
     ret
 
 NESTED_END RhpStackProbe, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

@@ -20,3 +20,5 @@ LOCAL_LABEL(ActivationHandlerReturn):
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, (16 + CONTEXT_Size)
     ret
 NESTED_END ActivationHandlerWrapper, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

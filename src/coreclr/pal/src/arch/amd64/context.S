@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "unixasmmacros.inc"
+
 #if defined(_DEBUG)
     .text
     .globl _DBG_CheckStackAlignment
@@ -18,3 +20,5 @@ _DBG_CheckStackAlignment:
   popq %rbp
   ret
 #endif
+
+NO_EXEC_STACK_DIRECTIVE

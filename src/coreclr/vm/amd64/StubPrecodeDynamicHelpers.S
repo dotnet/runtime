@@ -262,3 +262,5 @@ LEAF_ENTRY DynamicHelper_GenericDictionaryLookup_Method_3, _TEXT
 LEAF_END DynamicHelper_GenericDictionaryLookup_Method_3, _TEXT
 
 #endif //// FEATURE_STUBPRECODE_DYNAMIC_HELPERS 
+
+NO_EXEC_STACK_DIRECTIVE

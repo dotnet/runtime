@@ -10,3 +10,5 @@
 #endif
 
 #include "palredefines.inc"
+
+NO_EXEC_STACK_DIRECTIVE

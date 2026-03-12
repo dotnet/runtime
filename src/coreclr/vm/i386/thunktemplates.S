@@ -57,3 +57,5 @@ LOCAL_LABEL(CountReachedZero):
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, TargetForThresholdReached
 LEAF_END_MARKED CallCountingStubCode
 #endif // FEATURE_TIERED_COMPILATION
+
+NO_EXEC_STACK_DIRECTIVE

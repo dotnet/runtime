@@ -26,3 +26,5 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     TAILJMP_RAX
 
 NESTED_END TheUMEntryPrestub, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

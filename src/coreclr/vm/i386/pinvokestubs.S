@@ -128,3 +128,5 @@ LEAF_ENTRY JIT_InitPInvokeFrame, _TEXT
         ret
 
 LEAF_END JIT_InitPInvokeFrame, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

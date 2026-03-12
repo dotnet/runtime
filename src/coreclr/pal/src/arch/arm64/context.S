@@ -13,3 +13,5 @@ NESTED_ENTRY DBG_CheckStackAlignment, _TEXT, NoHandler
 NESTED_END _DBG_CheckStackAlignment, _TEXT
 #endif
 
+
+NO_EXEC_STACK_DIRECTIVE

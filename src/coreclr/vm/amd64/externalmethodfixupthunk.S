@@ -58,3 +58,5 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 
 #endif // FEATURE_READYTORUN
 
+
+NO_EXEC_STACK_DIRECTIVE

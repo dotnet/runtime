@@ -49,3 +49,5 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     mov x0, x1
     b   EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

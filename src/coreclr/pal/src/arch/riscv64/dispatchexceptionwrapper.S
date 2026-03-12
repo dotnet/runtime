@@ -11,3 +11,5 @@
 #include "unixasmmacros.inc"
 
 // #error "TODO-RISCV64: missing implementation"
+
+NO_EXEC_STACK_DIRECTIVE

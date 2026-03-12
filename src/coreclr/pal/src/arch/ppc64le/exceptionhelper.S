@@ -61,3 +61,5 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
 	mr     %r3, %r4
 	b      EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END ThrowExceptionFromContextInternal, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

@@ -44,3 +44,5 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
 PATCH_LABEL ExceptionHijackEnd
 
 NESTED_END ExceptionHijack, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

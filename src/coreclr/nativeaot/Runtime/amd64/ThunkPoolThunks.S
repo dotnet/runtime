@@ -117,3 +117,5 @@ LEAF_ENTRY RhpGetThunkStubsBlockAddress
     sub     rax, THUNKS_MAP_SIZE
     ret
 LEAF_END RhpGetThunkStubsBlockAddress
+
+NO_EXEC_STACK_DIRECTIVE

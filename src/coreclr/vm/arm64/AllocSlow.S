@@ -62,3 +62,5 @@ NESTED_ENTRY RhExceptionHandling_FailedAllocation, _TEXT, NoHandler
     EPILOG_RETURN
 
 NESTED_END RhExceptionHandling_FailedAllocation, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

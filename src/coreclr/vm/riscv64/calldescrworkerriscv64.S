@@ -109,3 +109,5 @@ PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
     .quad LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
 
 NESTED_END CallDescrWorkerInternal, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

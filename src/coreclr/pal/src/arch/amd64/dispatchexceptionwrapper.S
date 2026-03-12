@@ -44,3 +44,5 @@ LOCAL_LABEL(PAL_DispatchExceptionReturn):
     pop_nonvol_reg rbp
     ret
 NESTED_END PAL_DispatchExceptionWrapper, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

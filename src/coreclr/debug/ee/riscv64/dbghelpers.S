@@ -41,3 +41,5 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
     EMIT_BREAKPOINT
 // exported label so the debugger knows where the end of this function is
 NESTED_END ExceptionHijack, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

@@ -44,3 +44,5 @@ LOCAL_LABEL(ProbeLoop):
         RESET_FRAME_WITH_RBP
         ret
 NESTED_END RhpStackProbe, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE

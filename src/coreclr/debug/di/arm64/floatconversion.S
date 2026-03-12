@@ -11,3 +11,5 @@ LEAF_ENTRY FPFillR8, .TEXT
         LDR     Q0, [X0]
         ret     lr
 LEAF_END FPFillR8, .TEXT
+
+NO_EXEC_STACK_DIRECTIVE

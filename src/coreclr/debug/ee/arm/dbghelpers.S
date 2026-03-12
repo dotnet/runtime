@@ -57,3 +57,5 @@ NESTED_ENTRY ExceptionHijack, _TEXT, UnhandledExceptionHandlerUnix
     EMIT_BREAKPOINT
 
 NESTED_END_MARKED ExceptionHijack, _TEXT
+
+NO_EXEC_STACK_DIRECTIVE
