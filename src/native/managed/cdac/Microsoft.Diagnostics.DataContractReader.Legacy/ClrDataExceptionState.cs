@@ -156,17 +156,20 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            char[] strLocal = new char[(int)bufLen];
+            char[] strLocal = new char[Math.Max((int)bufLen, 1)];
             uint legacyStrLen;
             int hrLocal;
             fixed (char* strLocalPtr = strLocal)
             {
-                hrLocal = _legacyImpl.GetString(bufLen, &legacyStrLen, strLocalPtr);
+                hrLocal = _legacyImpl.GetString(bufLen, &legacyStrLen, str is null ? null : strLocalPtr);
             }
             Debug.ValidateHResult(hr, hrLocal);
-            Debug.Assert(strLen == null || *strLen == legacyStrLen);
-            int cmpLen = Math.Min((int)legacyStrLen, (int)bufLen) - 1;
-            Debug.Assert(str == null || cmpLen <= 0 || new ReadOnlySpan<char>(strLocal, 0, cmpLen).SequenceEqual(new ReadOnlySpan<char>(str, cmpLen)));
+            if (hr >= 0)
+            {
+                Debug.Assert(strLen == null || *strLen == legacyStrLen);
+                int cmpLen = Math.Min((int)legacyStrLen, (int)bufLen) - 1;
+                Debug.Assert(str == null || cmpLen <= 0 || new ReadOnlySpan<char>(strLocal, 0, cmpLen).SequenceEqual(new ReadOnlySpan<char>(str, cmpLen)));
+            }
         }
 #endif
 
