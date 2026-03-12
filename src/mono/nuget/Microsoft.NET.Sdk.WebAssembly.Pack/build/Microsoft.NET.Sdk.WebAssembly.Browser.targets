@@ -378,17 +378,19 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ConvertBuildDllsToWebcil"
     DependsOnTargets="_ComputeWasmBuildCandidates"
     Condition="'$(_WasmEnableWebcil)' == 'true'"
-    Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath)"
+    Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmExpectedWebcilOutputs)">
 
     <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
 
     <!-- The ConvertDllsToWebcil task uses content comparison and preserves old timestamps when
-         the output content is unchanged. Touch the outputs so MSBuild's Inputs/Outputs check
-         sees current timestamps and can correctly skip this target on subsequent builds. -->
-    <Touch Files="@(_WasmExpectedWebcilOutputs)" />
+         the output content is unchanged. Touch the files that were actually written so
+         MSBuild's Inputs/Outputs check sees current timestamps and can correctly skip this
+         target on subsequent builds. -->
+    <Touch Files="@(_WasmConvertedWebcilOutputs)" Condition="'@(_WasmConvertedWebcilOutputs)' != ''" />
   </Target>
 
   <!-- Resolve webcil candidate items and define static web assets for the build.
@@ -558,7 +560,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        on no-op rebuilds. -->
   <Target Name="_WriteBuildWasmBootJsonFile"
     DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints"
-    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath)"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="$(_WasmBuildBootJsonPath)">
 
     <GenerateWasmBootJson
@@ -1004,7 +1006,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        inputs are older than the output. -->
   <Target Name="GeneratePublishWasmBootJson"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs"
-    Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath)"
+    Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)">
 
     <GenerateWasmBootJson
