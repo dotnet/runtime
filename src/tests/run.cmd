@@ -67,7 +67,6 @@ if /i "%1" == "jitforcerelocs"                          (set DOTNET_ForceRelocs=
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "logsdir"                                 (set LogsDirArg=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shift&goto Arg_Loop)
-REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
@@ -247,6 +246,7 @@ echo TestEnv ^<test_env_script^> - Run a custom script before every test to set 
 echo sequential                - Run tests sequentially ^(no parallelism^).
 echo parallel ^<type^>           - Run tests with given level of parallelism: none, collections, assemblies, all. Default: collections.
 echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
+echo runlargeversionbubblecrossgen2tests - ^(Experimental^) Runs Crossgen2 tests with large version bubble enabled.
 echo synthesizepgo             - Enabled synthesizing PGO data in CrossGen2
 echo jitstress ^<n^>             - Runs the tests with DOTNET_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with DOTNET_JitStressRegs=n
