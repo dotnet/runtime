@@ -255,8 +255,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/124344
-      # - maccatalyst_x64
+      - maccatalyst_x64
       - maccatalyst_arm64
     variables:
       # map dependencies variables to local variables
