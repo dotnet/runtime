@@ -57,28 +57,32 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
 
 export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
     const module = await loadJSModule(asset);
+    const name = asset.name || asset.resolvedUrl || "unknown";
     try {
         if (typeof module.onRuntimeConfigLoaded === "function") {
             await module.onRuntimeConfigLoaded(loaderConfig);
-        } else {
-            dotnetLogger.warn(`Module '${asset.name}' does not export 'onRuntimeConfigLoaded' function. Make sure the module initializer is correctly defined and exported.`);
+        } else if (typeof module.onRuntimeReady !== "function") {
+            dotnetLogger.warn(`Module '${name}' does not export 'onRuntimeConfigLoaded' function. Make sure the module initializer is correctly defined and exported.`);
         }
         return module;
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        throw new Error(`Failed to invoke 'onRuntimeConfigLoaded' on library initializer '${asset.name}': ${message}`, { cause: err });
+        throw new Error(`Failed to invoke 'onRuntimeConfigLoaded' on library initializer '${name}': ${message}`, { cause: err });
     }
 }
 
 export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise]: [JsAsset, Promise<any>]): Promise<void> {
+    const module = await modulePromise;
+    const name = asset.name || asset.resolvedUrl || "unknown";
     try {
-        const module = await modulePromise;
         if (typeof module.onRuntimeReady === "function") {
             await module.onRuntimeReady(dotnetApi);
+        } else if (typeof module.onRuntimeConfigLoaded !== "function") {
+            dotnetLogger.warn(`Module '${name}' does not export 'onRuntimeReady' function. Make sure the module initializer is correctly defined and exported.`);
         }
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        throw new Error(`Failed to invoke 'onRuntimeReady' on library initializer '${asset.name}': ${message}`, { cause: err });
+        throw new Error(`Failed to invoke 'onRuntimeReady' on library initializer '${name}': ${message}`, { cause: err });
     }
 }
 
