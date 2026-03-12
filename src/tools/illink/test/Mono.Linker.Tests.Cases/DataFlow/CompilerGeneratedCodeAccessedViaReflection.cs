@@ -64,7 +64,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Using C# 14 compiler changes codegen in a way that introduces this warning
-			// [UnexpectedWarning("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/110553", CompilerGeneratedCode = true)]
+			[UnexpectedWarning("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/110553", CompilerGeneratedCode = true)]
 			public static IEnumerable<int> IteratorWithIntegerDataflow ()
 			{
 				int integerLocal = 0;

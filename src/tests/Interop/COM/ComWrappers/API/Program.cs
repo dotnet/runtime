@@ -1121,7 +1121,7 @@ namespace ComWrappersTests
                     }
                 }
 
-                return CustomQueryInterfaceResult.Failed;
+                return CustomQueryInterfaceResult.NotHandled;
             }
         }
     }
