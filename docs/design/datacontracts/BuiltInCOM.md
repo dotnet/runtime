@@ -23,6 +23,12 @@ public struct SimpleComCallWrapperData
     public TargetPointer OuterIUnknown;
 }
 
+public record struct RCWCleanupInfo(
+    TargetPointer RCW,
+    TargetPointer Context,
+    TargetPointer STAThread,
+    bool IsFreeThreaded);
+
 // Resolves a COM interface pointer to a ComCallWrapper in the chain.
 // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
 // Use GetStartWrapper on the result to navigate to the start of the chain.
@@ -40,19 +46,6 @@ public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw);
 // Navigates to the start ComCallWrapper in a linked chain.
 // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
 public TargetPointer GetStartWrapper(TargetPointer ccw);
-// Enumerates entries in the RCW cleanup list.
-public record struct RCWCleanupInfo(
-    TargetPointer RCW,
-    TargetPointer Context,
-    TargetPointer STAThread,
-    bool IsFreeThreaded);
-
-// Resolves a COM interface pointer to the ComCallWrapper.
-// Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
-public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
-// Enumerate the COM interfaces exposed by the ComCallWrapper chain.
-// ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
-public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
 // Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
