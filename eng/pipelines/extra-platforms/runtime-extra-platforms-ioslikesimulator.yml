@@ -54,7 +54,7 @@ jobs:
     buildConfig: Debug
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
       - iossimulator_x64
       - iossimulator_arm64
@@ -97,7 +97,7 @@ jobs:
     buildConfig: Debug
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
       - iossimulator_x64
       - iossimulator_arm64

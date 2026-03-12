@@ -53,7 +53,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
       - maccatalyst_arm64
     variables:
@@ -209,7 +209,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
       # Tracking issue: https://github.com/dotnet/runtime/issues/124344
       # - maccatalyst_x64
