@@ -1887,34 +1887,18 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
 
                     case Property:
                     {
-                        BOOL bCanRead = FALSE;
-                        BOOL bCanWrite = FALSE;
-
-                        // Find the MethodDesc's for the CanRead property.
-                        MethodDesc *pCanReadMD = MemberLoader::FindPropertyMethod(MemberInfoObj->GetMethodTable(), PROPERTY_INFO_CAN_READ_PROP, PropertyGet);
-                        _ASSERTE_MSG((pCanReadMD != NULL), "Unable to find getter method for property PropertyInfo::CanRead");
-                        MethodDescCallSite canRead(pCanReadMD, &MemberInfoObj);
-
-                        // Find the MethodDesc's for the CanWrite property.
-                        MethodDesc *pCanWriteMD = MemberLoader::FindPropertyMethod(MemberInfoObj->GetMethodTable(), PROPERTY_INFO_CAN_WRITE_PROP, PropertyGet);
-                        _ASSERTE_MSG((pCanWriteMD != NULL), "Unable to find setter method for property PropertyInfo::CanWrite");
-                        MethodDescCallSite canWrite(pCanWriteMD, &MemberInfoObj);
-
-                        // Check to see if the property can be read.
-                        ARG_SLOT CanReadArgs[] =
+                        enum : INT32
                         {
-                            ObjToArgSlot(MemberInfoObj)
+                            DispatchExPropertyCanRead = 1,
+                            DispatchExPropertyCanWrite = 2,
                         };
 
-                        bCanRead = canRead.Call_RetBool(CanReadArgs);
+                        INT32 propertyFlags = 0;
+                        UnmanagedCallersOnlyCaller getDispatchExPropertyFlags(METHOD__STUBHELPERS__GET_DISPATCH_EX_PROPERTY_FLAGS);
+                        getDispatchExPropertyFlags.InvokeThrowing(&MemberInfoObj, &propertyFlags);
 
-                        // Check to see if the property can be written to.
-                        ARG_SLOT CanWriteArgs[] =
-                        {
-                            ObjToArgSlot(MemberInfoObj)
-                        };
-
-                        bCanWrite = canWrite.Call_RetBool(CanWriteArgs);
+                        BOOL bCanRead = (propertyFlags & DispatchExPropertyCanRead) != 0;
+                        BOOL bCanWrite = (propertyFlags & DispatchExPropertyCanWrite) != 0;
 
                         *pgrfdex = (bCanRead ? fdexPropCanGet : fdexPropCannotGet) |
                                    (bCanWrite ? fdexPropCanPut : fdexPropCannotPut) |

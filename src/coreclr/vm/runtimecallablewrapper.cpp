@@ -322,25 +322,15 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         // Otherwise we just CoCreateInstance it.
         if (bUseDelegate)
         {
-            ARG_SLOT args[2];
-
             OBJECTREF orDelegate = pCallbackMT->GetObjCreateDelegate();
-            MethodDesc *pMeth = COMDelegate::GetMethodDesc(orDelegate);
 
             GCPROTECT_BEGIN(orDelegate)
             {
-                _ASSERTE(pMeth);
-                MethodDescCallSite  delegateMethod(pMeth, &orDelegate);
+                INT_PTR callbackResult = NULL;
+                UnmanagedCallersOnlyCaller invokeComObjectCreationCallback(METHOD__STUBHELPERS__INVOKE_COM_OBJECT_CREATION_CALLBACK);
+                invokeComObjectCreationCallback.InvokeThrowing(&orDelegate, reinterpret_cast<INT_PTR>((IUnknown*)pOuter), &callbackResult);
 
-                // Get the OR on which we are going to invoke the method and set it
-                //  as the first parameter in arg above.
-                args[0] = (ARG_SLOT)OBJECTREFToObject(COMDelegate::GetTargetObject(orDelegate));
-
-                // Pass the IUnknown of the aggregator as the second argument.
-                args[1] = (ARG_SLOT)(IUnknown*)pOuter;
-
-                // Call the method...
-                pUnk = (IUnknown *)delegateMethod.Call_RetArgSlot(args);
+                pUnk = reinterpret_cast<IUnknown*>(callbackResult);
                 if (!pUnk)
                     COMPlusThrowHR(E_FAIL);
             }

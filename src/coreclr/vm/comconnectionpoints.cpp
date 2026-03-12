@@ -547,29 +547,13 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
 
         GCPROTECT_BEGIN( pDelegate );
         {
-            // Initialize the delegate using the arguments structure.
-            // <TODO>Generics: ensure we get the right MethodDesc here and in similar places</TODO>
-            // Accept both void (object, native int) and void (object, native uint)
-            MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
-            if (pDlgCtorMD == NULL)
-                pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
+            UnmanagedCallersOnlyCaller delegateCtor(METHOD__DELEGATE__CONSTRUCT_DELEGATE_UCO);
+            delegateCtor.InvokeThrowing(&pDelegate, &pSubscriber, (INT_PTR)pEventMethodDesc->GetMultiCallableAddrOfCode());
 
-            // The loader is responsible for only accepting well-formed delegate classes.
-            _ASSERTE(pDlgCtorMD);
+            UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
-            MethodDescCallSite dlgCtor(pDlgCtorMD);
-
-            ARG_SLOT CtorArgs[3] = { ObjToArgSlot(pDelegate),
-                                     ObjToArgSlot(pSubscriber),
-                                     (ARG_SLOT)pEventMethodDesc->GetMultiCallableAddrOfCode()
-                                   };
-            dlgCtor.Call(CtorArgs);
-
-            MethodDescCallSite prov(pProvMethodDesc, &pProvider);
-
-            // Do the actual invocation of the method method.
-            ARG_SLOT Args[2] = { ObjToArgSlot( pProvider ), ObjToArgSlot( pDelegate ) };
-            prov.Call(Args);
+            // Do the actual invocation of the provider method.
+            invokeConnectionPointProviderMethod.InvokeThrowing(&pProvider, (INT_PTR)pProvMethodDesc, &pDelegate);
         }
         GCPROTECT_END();
     }

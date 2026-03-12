@@ -1494,6 +1494,116 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
+        private static unsafe void GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, int* pResult, Exception* pException)
+        {
+            try
+            {
+                int result = 0;
+                PropertyInfo property = *pMemberInfo;
+                if (property.CanRead)
+                {
+                    result |= 1;
+                }
+
+                if (property.CanWrite)
+                {
+                    result |= 2;
+                }
+
+                *pResult = result;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        private static unsafe void CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, int* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = (int)(*pObject).GetInterface(ref *pIid, out *ppObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        private static unsafe void InvokeComObjectCreationCallback(Delegate* pDelegate, IntPtr pOuter, IntPtr* pResult, Exception* pException)
+        {
+            try
+            {
+                object? callbackResult = (*pDelegate).DynamicInvoke([pOuter]);
+                *pResult = callbackResult is null ? IntPtr.Zero : (IntPtr)callbackResult;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        private static unsafe void InvokeConnectionPointProviderMethod(object* pProvider, IntPtr pMethodDesc, Delegate* pDelegate, Exception* pException)
+        {
+            try
+            {
+                RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
+                MethodBase method = MethodBase.GetMethodFromHandle(methodHandle)!;
+                method.Invoke(*pProvider, [*pDelegate]);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex is TargetInvocationException { InnerException: Exception inner } ? inner : ex;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        private static unsafe void InvokeClrToComEventProviderMethod(object* pEventProvider, IntPtr pMethodDesc, Delegate* pEventHandler, IntPtr* pResult, Exception* pException)
+        {
+            try
+            {
+                RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
+                MethodBase method = MethodBase.GetMethodFromHandle(methodHandle)!;
+                object? result = method.Invoke(*pEventProvider, [*pEventHandler]);
+                *pResult = ConvertToArgSlot(result);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex is TargetInvocationException { InnerException: Exception inner } ? inner : ex;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static IntPtr ConvertToArgSlot(object? value)
+        {
+            return value switch
+            {
+                null => IntPtr.Zero,
+                IntPtr pointer => pointer,
+                UIntPtr pointer => unchecked((IntPtr)pointer),
+                bool boolean => boolean ? (IntPtr)1 : IntPtr.Zero,
+                char character => (IntPtr)character,
+                byte number => (IntPtr)number,
+                sbyte number => (IntPtr)number,
+                short number => (IntPtr)number,
+                ushort number => (IntPtr)number,
+                int number => (IntPtr)number,
+                uint number => unchecked((IntPtr)number),
+                long number => checked((IntPtr)number),
+                ulong number => unchecked((IntPtr)number),
+                _ => throw new NotSupportedException()
+            };
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
         private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try

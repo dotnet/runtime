@@ -236,6 +236,7 @@ DEFINE_FIELD(DELEGATE,            TARGET,                 _target)
 DEFINE_FIELD(DELEGATE,            METHOD_PTR,             _methodPtr)
 DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
+DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE_UCO, DelegateConstructUco,       SM_PtrDelegate_PtrObj_IntPtr_PtrException_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
 DEFINE_CLASS(INT128,               System,                 Int128)
@@ -1046,6 +1047,11 @@ DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExce
 DEFINE_METHOD(STUBHELPERS,          CREATE_CUSTOM_MARSHALER, CreateCustomMarshaler, SM_IntPtr_Int_IntPtr_RetObj)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, GetIEnumeratorToEnumVariantMarshaler, SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          GET_DISPATCH_EX_PROPERTY_FLAGS, GetDispatchExPropertyFlags, SM_PtrPropertyInfo_PtrInt_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          CALL_ICUSTOM_QUERY_INTERFACE, CallICustomQueryInterface, SM_PtrICustomQueryInterface_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          INVOKE_COM_OBJECT_CREATION_CALLBACK, InvokeComObjectCreationCallback, SM_PtrDelegate_IntPtr_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          INVOKE_CONNECTION_POINT_PROVIDER_METHOD, InvokeConnectionPointProviderMethod, SM_PtrObj_IntPtr_PtrDelegate_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          INVOKE_CLR_TO_COM_EVENT_PROVIDER_METHOD, InvokeClrToComEventProviderMethod, SM_PtrObj_IntPtr_PtrDelegate_PtrIntPtr_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)

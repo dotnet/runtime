@@ -2340,22 +2340,13 @@ VOID __stdcall InvokeICustomQueryInterfaceGetInterface_CallBack(LPVOID ptr)
 
         GCPROTECT_BEGIN(pObj);
 
-        // 1. Get MD
-        MethodDesc *pMD = pArgs->pWrap->GetSimpleWrapper()->GetComCallWrapperTemplate()->GetICustomQueryInterfaceGetInterfaceMD();
+        INT_PTR queriedInterface = reinterpret_cast<INT_PTR>(*pArgs->ppUnk);
+        INT32 result = static_cast<INT32>(CustomQueryInterfaceResult::NotHandled);
+        UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__STUBHELPERS__CALL_ICUSTOM_QUERY_INTERFACE);
+        callICustomQueryInterface.InvokeThrowing(&pObj, pArgs->pGuid, &queriedInterface, &result);
 
-        // 2. Get Object Handle
-        OBJECTHANDLE hndCustomQueryInterface = pArgs->pWrap->GetObjectHandle();
-
-        // 3 construct the MethodDescCallSite
-        MethodDescCallSite GetInterface(pMD, hndCustomQueryInterface);
-
-        ARG_SLOT Args[] = {
-            ObjToArgSlot(pObj),
-            PtrToArgSlot(pArgs->pGuid),
-            PtrToArgSlot(pArgs->ppUnk),
-            };
-
-        *(pArgs->pRetVal) = (CustomQueryInterfaceResult)GetInterface.Call_RetArgSlot(Args);
+        *pArgs->ppUnk = reinterpret_cast<IUnknown*>(queriedInterface);
+        *(pArgs->pRetVal) = (CustomQueryInterfaceResult)result;
         GCPROTECT_END();
     }
 }
