@@ -3,10 +3,11 @@
 
 using System.Collections.Generic;
 using System.IO;
+using static Interop;
 
 namespace System.Runtime.InteropServices
 {
-    public sealed partial class PosixSignalRegistration
+    public sealed unsafe partial class PosixSignalRegistration
     {
         private static readonly Dictionary<int, List<Token>> s_registrations = new();
 
@@ -15,7 +16,13 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static readonly object s_registerLock = new();
 
-        private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
+        /// <summary>
+        /// Runtime can generate multiple addresses to same function. For registering and unregistering allways
+        /// the same instance, we capture it in this statics.
+        /// </summary>
+        private static readonly delegate* unmanaged<int, BOOL> s_HandlerRoutineAddr = &HandlerRoutine;
+
+        private static PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
             int signo = signal switch
             {
@@ -45,7 +52,7 @@ namespace System.Runtime.InteropServices
                     // User may reset registrations externally by direct calls of Free/Attach/AllocConsole.
                     // We do not know if it is currently registered or not. To prevent duplicate
                     // registration, we try unregister existing one first.
-                    if (!Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
+                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_HandlerRoutineAddr, Add: false))
                     {
                         // Returns ERROR_INVALID_PARAMETER if it was not registered. Throw for everything else.
                         int error = Marshal.GetLastPInvokeError();
@@ -55,7 +62,7 @@ namespace System.Runtime.InteropServices
                         }
                     }
 
-                    if (!Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: true))
+                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_HandlerRoutineAddr, Add: true))
                     {
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
@@ -75,7 +82,7 @@ namespace System.Runtime.InteropServices
             return registration;
         }
 
-        private unsafe void Unregister()
+        private void Unregister()
         {
             lock (s_registrations)
             {
