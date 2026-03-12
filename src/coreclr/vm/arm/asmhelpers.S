@@ -986,22 +986,26 @@ LEAF_ENTRY Load_R0_R1_4B
     EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1_4B
 
+LEAF_ENTRY Load_R0_R1_R2_4B
+    ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_4B
+    ldr r1, [r7], #4
+    ldr r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_4B
+
 LEAF_ENTRY Load_R0_R1_R2_R3_4B
     ldr r0, [r7], #4
+ALTERNATE_ENTRY Load_R1_R2_R3_4B
     ldr r1, [r7], #4
 ALTERNATE_ENTRY Load_R2_R3_4B
     ldr r2, [r7], #4
+ALTERNATE_ENTRY Load_R3_4B
     ldr r3, [r7], #4
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Load_R0_R1_R2_R3_4B
-
-LEAF_ENTRY Load_R1_R2_4B
-    ldr r1, [r7], #4
-    ldr r2, [r7], #4
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Load_R1_R2_4B
 
 LEAF_ENTRY Store_R0
     str r0, [r7], #8
@@ -1046,22 +1050,26 @@ LEAF_ENTRY Store_R0_R1_4B
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_4B
 
+LEAF_ENTRY Store_R0_R1_R2_4B
+    str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_4B
+    str r1, [r7], #4
+    str r2, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_4B
+
 LEAF_ENTRY Store_R0_R1_R2_R3_4B
     str r0, [r7], #4
+ALTERNATE_ENTRY Store_R1_R2_R3_4B
     str r1, [r7], #4
 ALTERNATE_ENTRY Store_R2_R3_4B
     str r2, [r7], #4
+ALTERNATE_ENTRY Store_R3_4B
     str r3, [r7], #4
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2_R3_4B
-
-LEAF_ENTRY Store_R1_R2_4B
-    str r1, [r7], #4
-    str r2, [r7], #4
-    ldr r5, [r6], #4
-    EPILOG_BRANCH_REG r5
-LEAF_END Store_R1_R2_4B
 
 LEAF_ENTRY InjectInterpStackAlign
     add r7, r7, #4
