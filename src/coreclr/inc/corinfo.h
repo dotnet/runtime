@@ -1715,9 +1715,10 @@ struct CORINFO_OBJECT_ALLOC_CONTEXT_INFO
     uint32_t methodTableBaseSizeOffset; // Offset of m_BaseSize in MethodTable
 
     // TLS access info (platform-specific)
-    CORINFO_CONST_LOOKUP tlsIndex;                  // Windows: address of _tls_index
+    CORINFO_CONST_LOOKUP tlsIndex;                  // Windows: address of _tls_index (IAT_PVALUE)
     uint32_t             offsetOfThreadLocalStoragePointer; // Windows: TEB offset for TLS array (0x58 on x64)
-    CORINFO_CONST_LOOKUP tlsRoot;                   // TLS symbol for t_runtime_thread_locals (SECTIONREL/TLSGD/TLVP)
+    CORINFO_CONST_LOOKUP tlsRoot;                   // Windows: byte offset from the module TLS base to t_runtime_thread_locals (IAT_VALUE);
+                                                    // Linux: TLSGD descriptor address; macOS: TLVP descriptor address
     void*                tlsGetAddrFtnPtr;           // Linux: address of __tls_get_addr
     void*                threadVarsSection;           // macOS: section address for TLVP
 };

@@ -1755,40 +1755,31 @@ void CodeGen::genCodeForAllocObj(GenTreeAllocObj* tree)
     emitter* emit = GetEmitter();
 
     // ---- TLS access: get pointer to ee_alloc_context ----
-    if (TargetOS::IsWindows)
-    {
-        // Windows x64: gs:[0x58] -> TLS array -> [tls_index * 8] -> + SECTIONREL offset
+    // Currently only Windows x64 is supported for inline TLS access.
+    assert(TargetOS::IsWindows);
 
-        // mov allocCtxReg, gs:[offsetOfThreadLocalStoragePointer]  (TEB.ThreadLocalStoragePointer)
-        emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
-                          (int)allocInfo->offsetOfThreadLocalStoragePointer);
+    // Windows x64: gs:[0x58] -> TLS array -> [tls_index * 8] -> + offset
+    emit->emitIns_R_C(INS_mov, EA_PTRSIZE, allocCtxReg, FLD_GLOBAL_GS,
+                      (int)allocInfo->offsetOfThreadLocalStoragePointer);
 
-        // mov tmpReg, [&_tls_index]  -- load _tls_index value from its address
-        assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
-        emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
+    // Load _tls_index value (accessType == IAT_PVALUE means addr points to the value)
+    assert(allocInfo->tlsIndex.accessType == IAT_PVALUE);
+    instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, (ssize_t)allocInfo->tlsIndex.addr);
+    emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, tmpReg, 0);
 
-        // mov allocCtxReg, [allocCtxReg + tmpReg * 8]  (index into TLS array)
-        emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
+    // Index into TLS array to get module's TLS block base
+    emit->emitIns_R_ARX(INS_mov, EA_PTRSIZE, allocCtxReg, allocCtxReg, tmpReg, 8, 0);
 
-        // lea allocCtxReg, [allocCtxReg + SECTIONREL t_runtime_thread_locals]
-        assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
-        ssize_t secrelOffset = (ssize_t)allocInfo->tlsRoot.addr;
-        emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)secrelOffset);
-    }
-    else
-    {
-        // Linux/macOS: not yet implemented - EE should return supported=false
-        unreached();
-    }
+    // Add byte offset from TLS base to t_runtime_thread_locals
+    assert(allocInfo->tlsRoot.accessType == IAT_VALUE);
+    ssize_t tlsRootOffset = (ssize_t)allocInfo->tlsRoot.addr;
+    emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, allocCtxReg, allocCtxReg, (int)tlsRootOffset);
 
-    // ---- Disable GC for the allocation critical section ----
+    // ---- Disable GC for the fast-path critical section ----
     GetEmitter()->emitDisableGC();
 
     // ---- Bump pointer allocation ----
-    // Read baseSize from MethodTable FIRST, before loading alloc_ptr into dstReg.
-    // LSRA guarantees dstReg != mtReg (via DelayFree), but reading baseSize first
-    // keeps the sequence clean and matches the runtime helper's pattern.
+    // Read baseSize from MethodTable first, before loading alloc_ptr into dstReg.
     emit->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, mtReg, (int)allocInfo->methodTableBaseSizeOffset);
 
     // dstReg = alloc_ptr (this will be the returned object pointer)
@@ -1801,17 +1792,20 @@ void CodeGen::genCodeForAllocObj(GenTreeAllocObj* tree)
     emit->emitIns_R_AR(INS_cmp, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->combinedLimitFieldOffset);
 
     BasicBlock* slowPath = genCreateTempLabel();
-    // If new alloc_ptr > combined_limit, go to slow path
     inst_JMP(EJ_ja, slowPath);
 
     // ---- Fast path: allocation succeeded ----
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, mtReg, dstReg, (int)allocInfo->objectMethodTableOffset);
     emit->emitIns_AR_R(INS_mov, EA_PTRSIZE, tmpReg, allocCtxReg, (int)allocInfo->allocPtrFieldOffset);
 
+    // End the non-GC-interruptible region before leaving the fast path.
+    GetEmitter()->emitEnableGC();
+
     BasicBlock* done = genCreateTempLabel();
     inst_JMP(EJ_jmp, done);
 
     // ---- Slow path: call the allocation helper ----
+    // This is in a GC-interruptible region so the helper call is a proper GC safe point.
     genDefineTempLabel(slowPath);
 
     regNumber mtArgReg = REG_ARG_0;
@@ -1824,9 +1818,6 @@ void CodeGen::genCodeForAllocObj(GenTreeAllocObj* tree)
 
     // ---- Done ----
     genDefineTempLabel(done);
-
-    // Re-enable GC after both paths converge
-    GetEmitter()->emitEnableGC();
 
     gcInfo.gcMarkRegPtrVal(dstReg, TYP_REF);
     genProduceReg(tree);

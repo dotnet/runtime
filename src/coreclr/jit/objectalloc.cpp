@@ -1340,8 +1340,9 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
             GenTree* const   stmtExpr = candidate.m_tree;
             GenTreeAllocObj* allocObj = stmtExpr->AsLclVar()->Data()->AsAllocObj();
 
-#ifdef TARGET_XARCH
-            // Check if we can keep GT_ALLOCOBJ for inline allocation expansion in codegen
+#ifdef TARGET_AMD64
+            // Check if we can keep GT_ALLOCOBJ for inline allocation expansion in codegen.
+            // Currently only Windows x64 is supported.
             const CORINFO_OBJECT_ALLOC_CONTEXT_INFO* allocCtxInfo = m_compiler->compGetAllocContextInfo();
             if (allocObj->gtNewHelper == CORINFO_HELP_NEWSFAST && !allocObj->gtHelperHasSideEffects &&
                 allocCtxInfo->supported && TargetOS::IsWindows && m_compiler->opts.OptimizationEnabled() &&
@@ -1351,7 +1352,7 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
                         m_compiler->dspTreeID(allocObj));
             }
             else
-#endif // TARGET_XARCH
+#endif // TARGET_AMD64
             {
                 GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(allocObj);
                 stmtExpr->AsLclVar()->Data() = newData;
