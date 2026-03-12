@@ -780,6 +780,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_NAME_entry_count) \
     REQUIRED_FUNCTION(X509_NAME_ENTRY_get_data) \
     REQUIRED_FUNCTION(X509_NAME_ENTRY_get_object) \
+    REQUIRED_FUNCTION(X509_NAME_dup) \
     REQUIRED_FUNCTION(X509_NAME_free) \
     REQUIRED_FUNCTION(X509_NAME_get_entry) \
     REQUIRED_FUNCTION(X509_NAME_get_index_by_NID) \
@@ -788,7 +789,9 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_PUBKEY_get) \
     REQUIRED_FUNCTION(X509_PUBKEY_get0_param) \
     REQUIRED_FUNCTION(X509_set_ex_data) \
+    REQUIRED_FUNCTION(X509_set_issuer_name) \
     REQUIRED_FUNCTION(X509_set_pubkey) \
+    REQUIRED_FUNCTION(X509_set_subject_name) \
     REQUIRED_FUNCTION(X509_sign) \
     REQUIRED_FUNCTION(X509_subject_name_hash) \
     REQUIRED_FUNCTION(X509_STORE_add_cert) \
@@ -1347,6 +1350,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_NAME_entry_count X509_NAME_entry_count_ptr
 #define X509_NAME_ENTRY_get_data X509_NAME_ENTRY_get_data_ptr
 #define X509_NAME_ENTRY_get_object X509_NAME_ENTRY_get_object_ptr
+#define X509_NAME_dup X509_NAME_dup_ptr
 #define X509_NAME_free X509_NAME_free_ptr
 #define X509_NAME_get0_der X509_NAME_get0_der_ptr
 #define X509_NAME_get_entry X509_NAME_get_entry_ptr
@@ -1355,7 +1359,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_PUBKEY_get0_param X509_PUBKEY_get0_param_ptr
 #define X509_PUBKEY_get X509_PUBKEY_get_ptr
 #define X509_set_ex_data X509_set_ex_data_ptr
+#define X509_set_issuer_name X509_set_issuer_name_ptr
 #define X509_set_pubkey X509_set_pubkey_ptr
+#define X509_set_subject_name X509_set_subject_name_ptr
 #define X509_subject_name_hash X509_subject_name_hash_ptr
 #define X509_sign X509_sign_ptr
 #define X509_STORE_add_cert X509_STORE_add_cert_ptr
