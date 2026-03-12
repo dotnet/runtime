@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdlib.h>
-#include <new>
-
 #include "dllexport.h"
 
 class JitConfigProvider
@@ -38,21 +35,12 @@ public:
 
     virtual void* allocateMemory(size_t size)
     {
-        if (size == 0)
-        {
-            size++;
-        }
-        void* result = malloc(size);
-        if (result == nullptr)
-        {
-            throw std::bad_alloc();
-        }
-        return result;
+        return new char[size];
     }
 
     virtual void freeMemory(void* block)
     {
-        free(block);
+        delete[] (char*)block;
     }
 
     virtual int getIntConfigValue(
@@ -75,11 +63,7 @@ public:
         }
 
         // getStringConfigValue returns required buffer size
-        char* retBuffer = (char*)calloc(numRequired, sizeof(char));
-        if (retBuffer == nullptr)
-        {
-            throw std::bad_alloc();
-        }
+        char* retBuffer = new char[numRequired]();
         pConfigProvider->getStringConfigValue(name, retBuffer, numRequired);
 
         return retBuffer;
@@ -89,7 +73,7 @@ public:
         wchar_t* value
         )
     {
-        free(value);
+        delete[] (char*)value;
     }
 
     virtual void* allocateSlab(size_t size, size_t* pActualSize)
