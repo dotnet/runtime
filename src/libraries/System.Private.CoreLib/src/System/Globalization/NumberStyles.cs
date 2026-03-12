@@ -77,7 +77,10 @@ namespace System.Globalization
         /// Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
         /// <see cref="AllowLeadingSign"/>, <see cref="AllowHexSpecifier"/>, and <see cref="AllowDecimalPoint"/>
         /// styles are used. This is a composite number style used for parsing hexadecimal floating-point values
-        /// as defined in IEEE 754:2008 §5.12.3.
+        /// based on the syntax defined in IEEE 754:2008 §5.12.3. The parsed string can include an optional "0x"
+        /// or "0X" prefix, a hexadecimal significand with an optional decimal point, and an optional binary
+        /// exponent introduced by 'p' or 'P'. For compatibility, forms without the "0x"/"0X" prefix are also
+        /// accepted, and integer-only hexadecimal values may omit the 'p'/'P' exponent.
         /// </summary>
         HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowHexSpecifier | AllowDecimalPoint,
 

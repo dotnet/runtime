@@ -1031,7 +1031,7 @@ namespace System
                 return false;
             }
 
-            // Skip optional "0x" or "0X" prefix (consistent with integer hex parsing)
+            // Skip optional "0x" or "0X" prefix to accept both prefixed and non-prefixed forms for round-tripping
             if (TChar.CastToUInt32(value[index]) == '0' &&
                 index + 1 < value.Length &&
                 (TChar.CastToUInt32(value[index + 1]) | 0x20) == 'x')
