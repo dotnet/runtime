@@ -18,7 +18,7 @@ namespace Wasm.Build.Tests;
 
 public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
-    protected new readonly WasmSdkBasedProjectProvider _provider;
+    protected readonly WasmSdkBasedProjectProvider _provider;
     private readonly string _blazorExtraMSBuildArgs = "/warnaserror";
     protected readonly PublishOptions _defaultBlazorPublishOptions;
     private readonly BuildOptions _defaultBlazorBuildOptions;
