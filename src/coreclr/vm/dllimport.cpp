@@ -3886,8 +3886,6 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
         return false;
     }
 
-    _ASSERTE(IsStructMarshalable(TypeHandle(pStructMT)));
-
     SigTypeContext genericContext;
     SigTypeContext::InitTypeContext(pMD, &genericContext);
 
