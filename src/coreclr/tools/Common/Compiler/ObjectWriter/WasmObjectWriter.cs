@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -202,8 +203,11 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
-            Console.WriteLine($"Updating section alignment with: {alignment}");
-            // This is a no-op for now under Wasm
+            WebcilSection section = _sections[sectionIndex] as WebcilSection;
+            // We should only be updating the alignment of Webcil sections; Wasm-native sections should
+            // not have alignment constraints.
+            Debug.Assert(section != null, $"Section: {sectionIndex} is not a WebcilSection");
+            section.MinAlignment = Math.Max(section.MinAlignment, alignment);
         }
 
         private class WebcilSegment
@@ -324,6 +328,8 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < webcilSections.Length; i++)
             {
                 WebcilSection webcilSection = webcilSections[i];
+                Debug.Assert(BitOperations.IsPow2(webcilSection.MinAlignment) && BitOperations.IsPow2(WebcilSectionAlignment) &&
+                    WebcilSectionAlignment >= webcilSection.MinAlignment);
 
                 uint rawSectionSize = (uint)webcilSection.Stream.Length;
                 uint alignedSectionSize = (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
@@ -1178,6 +1184,8 @@ namespace ILCompiler.ObjectWriter
         public readonly int Index;
         public WebcilSectionHeader Header;
         public readonly Stream _stream;
+        public int MinAlignment = 1;
+
         public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
 
         public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
