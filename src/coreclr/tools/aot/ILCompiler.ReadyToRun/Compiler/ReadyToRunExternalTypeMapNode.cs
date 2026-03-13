@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
@@ -56,7 +57,7 @@ namespace ILCompiler.ReadyToRun
                 Vertex keyVertex = writer.GetStringConstant(key);
                 Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
-                typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), typeMapEntriesSection.Place(entry));
+                typeMapHashTable.Append((uint)VersionResilientHashCode.NameHashCode(Encoding.UTF8.GetBytes(key)), typeMapEntriesSection.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state

@@ -295,8 +295,6 @@ namespace NativeFormat
 
         bool StringEquals(uint offset, LPCUTF8 value, uint valueLength)
         {
-            uint originalOffset = offset;
-
             uint numBytes;
             offset = DecodeUnsigned(offset, &numBytes);
 
