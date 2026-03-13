@@ -174,7 +174,6 @@ namespace Microsoft.Interop
                     SyntaxKind.ClassDeclaration => "class",
                     SyntaxKind.StructDeclaration => "struct",
                     SyntaxKind.InterfaceDeclaration => "interface",
-                    SyntaxKind.EnumDeclaration => "enum",
                     SyntaxKind.RecordDeclaration => "record",
                     SyntaxKind.RecordStructDeclaration => "record struct",
                     _ => throw new UnreachableException(),
