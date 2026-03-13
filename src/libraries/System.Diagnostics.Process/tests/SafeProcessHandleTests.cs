@@ -489,7 +489,7 @@ namespace System.Diagnostics.Tests
 
             options.CreateNewProcessGroup = true; // the child needs to have CreateNewProcessGroup enabled
 
-            using IDisposable server = CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite);
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: outputWrite, error: Console.OpenStandardErrorHandle());
             outputWrite.Dispose();
 
@@ -672,16 +672,6 @@ namespace System.Diagnostics.Tests
             }
 
             return options;
-        }
-
-        private static IDisposable CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle)
-        {
-            AnonymousPipeServerStream server = new(PipeDirection.Out);
-
-            writeHandle = new(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: true);
-            readHandle = new(server.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: true);
-
-            return server;
         }
     }
 }
