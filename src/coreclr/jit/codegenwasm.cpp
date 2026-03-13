@@ -335,8 +335,18 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
     }
 
+#ifdef DEBUG
     JITDUMP("Could not find " FMT_BB "[%u]%s in active control stack\n", targetBlock->bbNum, targetIndex,
             isBackedge ? " (backedge)" : "");
+    JITDUMP("Current stack is\n");
+
+    for (int i = 0; i < h; i++)
+    {
+        WasmInterval* const ii = wasmControlFlowStack->Top(i);
+        JITDUMPEXEC(ii->Dump());
+    }
+#endif
+
     assert(!"Can't find target in control stack");
 
     return ~0;
@@ -390,15 +400,16 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 // Empty stack sig, one catch clause
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
-                // Catch clause is the false target.
-                // True target should be the next block.
-                assert(block->GetTrueTarget() == block->Next());
-                BasicBlock* const target = block->GetFalseTarget();
+                // Post-catch continuation dispatch block is the true target.
+                // False target should be the next block.
+                assert(block->GetFalseTarget() == block->Next());
+                BasicBlock* const target = block->GetTrueTarget();
                 unsigned          depth  = findTargetDepth(target);
-                GetEmitter()->emitIns_J(INS_catch, EA_4BYTE, depth, target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, depth, target);
             }
             else
             {
+                // TODL: If block is try start, probably need a block sig here
                 GetEmitter()->emitIns_BlockTy(INS_block);
             }
 

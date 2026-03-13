@@ -42,6 +42,10 @@ instrDesc*           emitNewInstrLclVarDecl(emitAttr attr, unsigned int localCou
 static WasmValueType emitGetLclVarDeclType(const instrDesc* id);
 static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
 
+instrDesc*           emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int localCount);
+static WasmValueType emitGetValTypeImmType(const instrDesc* id);
+static unsigned int  emitGetValTypeImmImm(const instrDesc* id);
+
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
 /************************************************************************/

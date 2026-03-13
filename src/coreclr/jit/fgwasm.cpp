@@ -1392,23 +1392,29 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
 
         // Tiebreakers for exactly overlapping cases:
-        // try before loops before blocks
+        // loops before blocks, blocks before trys
         //
-        if (i1->IsTry() != !i2->IsTry())
-        {
-            return i1->IsTry();
-        }
-
-        if (i1->IsTry() && i2->IsTry())
-        {
-            return false;
-        }
-
+        // One or both is a loop
+        //
         if (i1->IsLoop() != i2->IsLoop())
         {
             return i1->IsLoop();
         }
 
+        if (i1->IsLoop() && i2->IsLoop())
+        {
+            return false;
+        }
+
+        // Neither is a loop
+        //
+        if (i1->IsBlock() != i2->IsBlock())
+        {
+            return i1->IsBlock();
+        }
+
+        // Either both are blocks or both are trys.
+        //
         return false;
     };
 
@@ -2075,14 +2081,20 @@ PhaseStatus Compiler::fgWasmEhFlow()
         switchEdge->setLikelihood(0);
 
         regionEntryBlock->SetKind(BBJ_COND);
-        regionEntryBlock->SetTrueEdge(defaultEdge);
-        regionEntryBlock->SetFalseEdge(switchEdge);
+        regionEntryBlock->SetTrueEdge(switchEdge);
+        regionEntryBlock->SetFalseEdge(defaultEdge);
 
         // Create the IR for the branch block.
+        // (branch to switch if contorl var != 0)
+        //
+        // Note this IR is just a placeholder... during codegen it turns into a try_table
+        // and the GT_NE ends up unused.
+        //
+        // (consider some other kind opaque JTRUE node here instead)
         //
         GenTree* const defaultValue = gtNewIconNode(0);
         GenTree* const controlVar   = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
-        GenTree* const compareNode  = gtNewOperNode(GT_EQ, TYP_INT, controlVar, defaultValue);
+        GenTree* const compareNode  = gtNewOperNode(GT_NE, TYP_INT, controlVar, defaultValue);
         GenTree* const jumpNode     = gtNewOperNode(GT_JTRUE, TYP_VOID, compareNode);
 
         jumpNode->gtFlags |= GTF_JTRUE_WASM_EH;

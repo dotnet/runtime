@@ -297,6 +297,28 @@ void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valT
     appendToCurIG(id);
 }
 
+//-----------------------------------------------------------------------------
+// emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
+// declaration.
+//
+// Arguments:
+//   attr        - emit attributes
+//   localCount  - the count of locals in this declaration
+//   type        - the type of local in the declaration
+//   lclOffset   - used to provide the starting index of this local
+//
+// Notes:
+//   `lclOffset` is stored as debug info attached to the instruction,
+//    so the offset will only be used if m_debugInfoSize > 0
+emitter::instrDesc* emitter::emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int imm)
+{
+    instrDescValTypeImm* id = static_cast<instrDescValTypeImm*>(emitAllocAnyInstr(sizeof(instrDescValTypeImm), attr));
+    id->idValType(type);
+    id->idImm(imm);
+
+    return id;
+}
+
 //-----------------------------------------------------------------------------------
 // emitIns_Ty_I: Emit an instruction for encoding both a value type and a count (immediate).
 //    This is used for try_table.
@@ -309,7 +331,7 @@ void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valT
 //
 void emitter::emitIns_Ty_I(instruction ins, WasmValueType valType, unsigned int imm)
 {
-    instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, 0);
+    instrDesc* id  = emitNewInstrValTypeImm(EA_8BYTE, valType, imm);
     insFormat  fmt = emitInsFormat(ins);
 
     id->idIns(ins);
@@ -329,6 +351,18 @@ unsigned int emitter::emitGetLclVarDeclCount(const instrDesc* id)
 {
     assert(id->idIsLclVarDecl());
     return static_cast<const instrDescLclVarDecl*>(id)->lclCnt;
+}
+
+WasmValueType emitter::emitGetValTypeImmType(const instrDesc* id)
+{
+    assert(id->idIsValTypeImm());
+    return static_cast<const instrDescValTypeImm*>(id)->valType;
+}
+
+unsigned int emitter::emitGetValTypeImmImm(const instrDesc* id)
+{
+    assert(id->idIsValTypeImm());
+    return static_cast<const instrDescValTypeImm*>(id)->imm;
 }
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
@@ -373,6 +407,11 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     if (id->idIsLclVarDecl())
     {
         return sizeof(instrDescLclVarDecl);
+    }
+
+    if (id->idIsValTypeImm())
+    {
+        return sizeof(instrDescValTypeImm);
     }
 
     return sizeof(instrDesc);
@@ -488,13 +527,15 @@ unsigned emitter::instrDesc::idCodeSize() const
         }
         case IF_TRY_TABLE:
         {
-            size += 1;                                           // for the sig
-            size += SizeOfULEB128(emitGetLclVarDeclCount(this)); // for the case count
+            size += 1;                                         // for the sig
+            size += SizeOfULEB128(emitGetValTypeImmImm(this)); // for the case count
             break;
         }
         case IF_CATCH_DECL:
         {
-            size += 1;                                 // catch kind
+            // no opcode, this is part of a try_table
+
+            size = 1;                                  // catch kind
             size += PADDED_RELOC_SIZE;                 // catch type tag
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
@@ -744,19 +785,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_TRY_TABLE:
         {
-            assert(id->idIsLclVarDecl());
-            uint8_t        sig     = GetWasmValueTypeCode(emitGetLclVarDeclType(id));
-            cnsval_ssize_t caseCnt = emitGetLclVarDeclCount(id);
+            dst += emitOutputOpcode(dst, ins);
+            assert(id->idIsValTypeImm());
+            uint8_t        sig     = GetWasmValueTypeCode(emitGetValTypeImmType(id));
+            cnsval_ssize_t caseCnt = emitGetValTypeImmImm(id);
             dst += emitOutputByte(dst, sig);
             dst += emitOutputULEB128(dst, (uint64_t)caseCnt);
             break;
         }
         case IF_CATCH_DECL:
         {
-            uint8_t catchKind = 0; // catch with type tag
+            uint8_t catchKind = 1; // catch_ref with type tag
             dst += emitOutputByte(dst, catchKind);
+            // TODO: figure out how to get proper type index here
             dst += emitOutputPaddedReloc(dst);
-            dst += emitOutputSLEB128(dst, (int64_t)emitGetInsSC(id));
+            dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;
         }
         default:
@@ -989,8 +1032,8 @@ void emitter::emitDispIns(
 
         case IF_TRY_TABLE:
         {
-            unsigned int  caseCnt = emitGetLclVarDeclCount(id);
-            WasmValueType valType = emitGetLclVarDeclType(id);
+            unsigned int  caseCnt = emitGetValTypeImmImm(id);
+            WasmValueType valType = emitGetValTypeImmType(id);
 
             if (valType != WasmValueType::Invalid)
             {

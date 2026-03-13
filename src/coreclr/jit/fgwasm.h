@@ -190,6 +190,11 @@ public:
         return m_chain;
     }
 
+    bool IsBlock() const
+    {
+        return m_kind == Kind::Block;
+    }
+
     bool IsLoop() const
     {
         return m_kind == Kind::Loop;
@@ -229,7 +234,7 @@ public:
 #ifdef DEBUG
     void Dump(bool chainExtent = false)
     {
-        printf("[%03u,%03u]s", m_start, chainExtent ? m_chainEnd : m_end);
+        printf("[%03u,%03u]", m_start, chainExtent ? m_chainEnd : m_end);
 
         if (!chainExtent)
         {
