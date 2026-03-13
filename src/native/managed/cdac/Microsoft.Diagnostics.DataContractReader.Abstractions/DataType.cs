@@ -33,6 +33,10 @@ public enum DataType
     EEAllocContext,
     Exception,
     ExceptionInfo,
+    EEExceptionClause,
+    ExceptionLookupTableEntry,
+    EEILException,
+    R2RExceptionClause,
     RuntimeThreadLocals,
     IdDispenser,
     Module,
@@ -105,6 +109,9 @@ public enum DataType
     ILCodeVersionNode,
     ReadyToRunInfo,
     ReadyToRunHeader,
+    ReadyToRunSection,
+    ReadyToRunCoreHeader,
+    ReadyToRunCoreInfo,
     ImageDataDirectory,
     RuntimeFunction,
     HashMap,
@@ -124,6 +131,7 @@ public enum DataType
     EEJitManager,
     PatchpointInfo,
     PortableEntryPoint,
+    VirtualCallStubManager,
 
     TransitionBlock,
     DebuggerEval,
@@ -147,6 +155,7 @@ public enum DataType
     RCWCleanupList,
     RCW,
     CtxEntry,
+    InterfaceEntry,
 
 
     /* GC Data Types */
