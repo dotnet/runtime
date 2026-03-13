@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -8,21 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct GeneralNameAsn
-    {
-        internal System.Security.Cryptography.Asn1.OtherNameAsn? OtherName;
-        internal string? Rfc822Name;
-        internal string? DnsName;
-        internal ReadOnlyMemory<byte>? X400Address;
-        internal ReadOnlyMemory<byte>? DirectoryName;
-        internal System.Security.Cryptography.Asn1.EdiPartyNameAsn? EdiPartyName;
-        internal string? Uri;
-        internal ReadOnlyMemory<byte>? IPAddress;
-        internal string? RegisteredId;
-
 #if DEBUG
-        static GeneralNameAsn()
+    file static class ValidateGeneralNameAsn
+    {
+        static ValidateGeneralNameAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -45,7 +34,21 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 7), "IPAddress");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 8), "RegisteredId");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct GeneralNameAsn
+    {
+        internal System.Security.Cryptography.Asn1.OtherNameAsn? OtherName;
+        internal string? Rfc822Name;
+        internal string? DnsName;
+        internal ReadOnlyMemory<byte>? X400Address;
+        internal ReadOnlyMemory<byte>? DirectoryName;
+        internal System.Security.Cryptography.Asn1.EdiPartyNameAsn? EdiPartyName;
+        internal string? Uri;
+        internal ReadOnlyMemory<byte>? IPAddress;
+        internal string? RegisteredId;
 
         internal readonly void Encode(AsnWriter writer)
         {

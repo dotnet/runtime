@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct TimeAsn
-    {
-        internal DateTimeOffset? UtcTime;
-        internal DateTimeOffset? GeneralTime;
-
 #if DEBUG
-        static TimeAsn()
+    file static class ValidateTimeAsn
+    {
+        static ValidateTimeAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,7 +27,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             ensureUniqueTag(Asn1Tag.UtcTime, "UtcTime");
             ensureUniqueTag(Asn1Tag.GeneralizedTime, "GeneralTime");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct TimeAsn
+    {
+        internal DateTimeOffset? UtcTime;
+        internal DateTimeOffset? GeneralTime;
 
         internal readonly void Encode(AsnWriter writer)
         {

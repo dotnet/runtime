@@ -8,15 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct MLDsaPrivateKeyAsn
-    {
-        internal ReadOnlyMemory<byte>? Seed;
-        internal ReadOnlyMemory<byte>? ExpandedKey;
-        internal System.Security.Cryptography.Asn1.MLDsaPrivateKeyBothAsn? Both;
-
 #if DEBUG
-        static MLDsaPrivateKeyAsn()
+    file static class ValidateMLDsaPrivateKeyAsn
+    {
+        static ValidateMLDsaPrivateKeyAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -33,7 +28,15 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(Asn1Tag.PrimitiveOctetString, "ExpandedKey");
             ensureUniqueTag(Asn1Tag.Sequence, "Both");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct MLDsaPrivateKeyAsn
+    {
+        internal ReadOnlyMemory<byte>? Seed;
+        internal ReadOnlyMemory<byte>? ExpandedKey;
+        internal System.Security.Cryptography.Asn1.MLDsaPrivateKeyBothAsn? Both;
 
         internal readonly void Encode(AsnWriter writer)
         {

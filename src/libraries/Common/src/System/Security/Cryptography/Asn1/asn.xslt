@@ -226,13 +226,11 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
 namespace <xsl:value-of select="@namespace" />
-{<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct <xsl:value-of select="@name" />
-    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="ValidateChoice" /><xsl:apply-templates mode="FieldDef" />
-
+{
 #if DEBUG
-        static <xsl:value-of select="@name" />()
+    file static class Validate<xsl:value-of select="@name" />
+    {
+        static Validate<xsl:value-of select="@name" />()
         {
             var usedTags = new System.Collections.Generic.Dictionary&lt;Asn1Tag, string&gt;();
             Action&lt;Asn1Tag, string&gt; ensureUniqueTag = (tag, fieldName) =&gt;
@@ -246,7 +244,12 @@ namespace <xsl:value-of select="@namespace" />
             };
 <xsl:apply-templates mode="EnsureUniqueTag" />
         }
+    }
 #endif
+<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct <xsl:value-of select="@name" />
+    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="ValidateChoice" /><xsl:apply-templates mode="FieldDef" />
 
         internal readonly void Encode(AsnWriter writer)
         {

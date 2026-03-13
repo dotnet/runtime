@@ -3,7 +3,7 @@
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="MLKemPrivateKeyAsn"
   namespace="System.Security.Cryptography.Asn1"
-  emitType="both">
+  emitType="ref">
 
   <!--
     https://github.com/lamps-wg/kyber-certificates/blob/0049058dafdd2d103e924f70d47363548b3026df/draft-ietf-lamps-kyber-certificates.md

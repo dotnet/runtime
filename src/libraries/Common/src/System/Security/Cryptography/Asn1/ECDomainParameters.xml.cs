@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct ECDomainParameters
-    {
-        internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
-        internal string? Named;
-
 #if DEBUG
-        static ECDomainParameters()
+    file static class ValidateECDomainParameters
+    {
+        static ValidateECDomainParameters()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,7 +27,14 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(Asn1Tag.Sequence, "Specified");
             ensureUniqueTag(Asn1Tag.ObjectIdentifier, "Named");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct ECDomainParameters
+    {
+        internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
+        internal string? Named;
 
         internal readonly void Encode(AsnWriter writer)
         {

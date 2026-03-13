@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -9,14 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct DistributionPointNameAsn
-    {
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
-        internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
-
 #if DEBUG
-        static DistributionPointNameAsn()
+    file static class ValidateDistributionPointNameAsn
+    {
+        static ValidateDistributionPointNameAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -32,7 +28,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "FullName");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "NameRelativeToCRLIssuer");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct DistributionPointNameAsn
+    {
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
+        internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
 
         internal readonly void Encode(AsnWriter writer)
         {

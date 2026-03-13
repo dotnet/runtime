@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct KeyAgreeRecipientIdentifierAsn
-    {
-        internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
-        internal System.Security.Cryptography.Pkcs.Asn1.RecipientKeyIdentifier? RKeyId;
-
 #if DEBUG
-        static KeyAgreeRecipientIdentifierAsn()
+    file static class ValidateKeyAgreeRecipientIdentifierAsn
+    {
+        static ValidateKeyAgreeRecipientIdentifierAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,7 +27,14 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             ensureUniqueTag(Asn1Tag.Sequence, "IssuerAndSerialNumber");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "RKeyId");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct KeyAgreeRecipientIdentifierAsn
+    {
+        internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
+        internal System.Security.Cryptography.Pkcs.Asn1.RecipientKeyIdentifier? RKeyId;
 
         internal readonly void Encode(AsnWriter writer)
         {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -9,13 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct SignedAttributesSet
-    {
-        internal System.Security.Cryptography.Asn1.AttributeAsn[]? SignedAttributes;
-
 #if DEBUG
-        static SignedAttributesSet()
+    file static class ValidateSignedAttributesSet
+    {
+        static ValidateSignedAttributesSet()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -30,7 +27,13 @@ namespace System.Security.Cryptography.Pkcs
 
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "SignedAttributes");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct SignedAttributesSet
+    {
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? SignedAttributes;
 
         internal readonly void Encode(AsnWriter writer)
         {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -8,17 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct DirectoryStringAsn
-    {
-        internal string? TeletexString;
-        internal string? PrintableString;
-        internal ReadOnlyMemory<byte>? UniversalString;
-        internal string? Utf8String;
-        internal string? BmpString;
-
 #if DEBUG
-        static DirectoryStringAsn()
+    file static class ValidateDirectoryStringAsn
+    {
+        static ValidateDirectoryStringAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -37,7 +30,17 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(new Asn1Tag(UniversalTagNumber.UTF8String), "Utf8String");
             ensureUniqueTag(new Asn1Tag(UniversalTagNumber.BMPString), "BmpString");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct DirectoryStringAsn
+    {
+        internal string? TeletexString;
+        internal string? PrintableString;
+        internal ReadOnlyMemory<byte>? UniversalString;
+        internal string? Utf8String;
+        internal string? BmpString;
 
         internal readonly void Encode(AsnWriter writer)
         {

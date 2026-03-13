@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct Pbkdf2SaltChoice
-    {
-        internal ReadOnlyMemory<byte>? Specified;
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn? OtherSource;
-
 #if DEBUG
-        static Pbkdf2SaltChoice()
+    file static class ValidatePbkdf2SaltChoice
+    {
+        static ValidatePbkdf2SaltChoice()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,7 +27,14 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(Asn1Tag.PrimitiveOctetString, "Specified");
             ensureUniqueTag(Asn1Tag.Sequence, "OtherSource");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct Pbkdf2SaltChoice
+    {
+        internal ReadOnlyMemory<byte>? Specified;
+        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn? OtherSource;
 
         internal readonly void Encode(AsnWriter writer)
         {

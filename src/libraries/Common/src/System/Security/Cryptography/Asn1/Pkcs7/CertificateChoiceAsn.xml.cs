@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -8,17 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1.Pkcs7
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct CertificateChoiceAsn
-    {
-        internal ReadOnlyMemory<byte>? Certificate;
-        internal ReadOnlyMemory<byte>? ExtendedCertificate;
-        internal ReadOnlyMemory<byte>? AttributeCertificateV1;
-        internal ReadOnlyMemory<byte>? AttributeCertificateV2;
-        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
-
 #if DEBUG
-        static CertificateChoiceAsn()
+    file static class ValidateCertificateChoiceAsn
+    {
+        static ValidateCertificateChoiceAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -37,7 +30,17 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 2), "AttributeCertificateV2");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 3), "OtherCertificateFormat");
         }
+    }
 #endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct CertificateChoiceAsn
+    {
+        internal ReadOnlyMemory<byte>? Certificate;
+        internal ReadOnlyMemory<byte>? ExtendedCertificate;
+        internal ReadOnlyMemory<byte>? AttributeCertificateV1;
+        internal ReadOnlyMemory<byte>? AttributeCertificateV2;
+        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
 
         internal readonly void Encode(AsnWriter writer)
         {
