@@ -1595,10 +1595,12 @@ public sealed unsafe partial class SOSDacImpl
     internal sealed unsafe partial class SOSMemoryEnum : ISOSMemoryEnum
     {
         private readonly SOSMemoryRegion[] _regions;
+        private readonly ISOSMemoryEnum? _legacyMemoryEnum;
         private uint _index;
 
-        public SOSMemoryEnum(Target target, IReadOnlyList<GCMemoryRegionData> regions)
+        public SOSMemoryEnum(Target target, IReadOnlyList<GCMemoryRegionData> regions, ISOSMemoryEnum? legacyMemoryEnum = null)
         {
+            _legacyMemoryEnum = legacyMemoryEnum;
             _regions = new SOSMemoryRegion[regions.Count];
             for (int i = 0; i < regions.Count; i++)
             {
@@ -1614,28 +1616,61 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegions, uint* pNeeded)
         {
-            if (pNeeded is null)
-                return HResults.E_POINTER;
-            if (memRegions is null)
-                return HResults.E_POINTER;
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pNeeded is null || memRegions is null)
+                    throw new NullReferenceException();
 
-            uint written = 0;
-            while (written < count && _index < _regions.Length)
-                memRegions[written++] = _regions[(int)_index++];
+                uint written = 0;
+                while (written < count && _index < _regions.Length)
+                    memRegions[written++] = _regions[(int)_index++];
 
-            *pNeeded = written;
-            return _index < _regions.Length ? HResults.S_FALSE : HResults.S_OK;
+                *pNeeded = written;
+                hr = _index < _regions.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+#if DEBUG
+            if (_legacyMemoryEnum is not null)
+            {
+                SOSMemoryRegion[] regionsLocal = new SOSMemoryRegion[count];
+                uint neededLocal;
+                int hrLocal = _legacyMemoryEnum.Next(count, regionsLocal, &neededLocal);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+                {
+                    Debug.Assert(*pNeeded == neededLocal, $"cDAC: {*pNeeded}, DAC: {neededLocal}");
+                    for (int i = 0; i < neededLocal; i++)
+                    {
+                        Debug.Assert(memRegions[i].Start == regionsLocal[i].Start, $"cDAC: {memRegions[i].Start:x}, DAC: {regionsLocal[i].Start:x}");
+                        Debug.Assert(memRegions[i].Size == regionsLocal[i].Size, $"cDAC: {memRegions[i].Size:x}, DAC: {regionsLocal[i].Size:x}");
+                        Debug.Assert(memRegions[i].ExtraData == regionsLocal[i].ExtraData, $"cDAC: {memRegions[i].ExtraData:x}, DAC: {regionsLocal[i].ExtraData:x}");
+                        Debug.Assert(memRegions[i].Heap == regionsLocal[i].Heap, $"cDAC: {memRegions[i].Heap}, DAC: {regionsLocal[i].Heap}");
+                    }
+                }
+            }
+#endif
+            return hr;
         }
 
         int ISOSEnum.Skip(uint count)
         {
             _index += count;
+#if DEBUG
+            _legacyMemoryEnum?.Skip(count);
+#endif
             return HResults.S_OK;
         }
 
         int ISOSEnum.Reset()
         {
             _index = 0;
+#if DEBUG
+            _legacyMemoryEnum?.Reset();
+#endif
             return HResults.S_OK;
         }
 
@@ -1644,6 +1679,14 @@ public sealed unsafe partial class SOSDacImpl
             if (pCount is null)
                 return HResults.E_POINTER;
             *pCount = (uint)_regions.Length;
+#if DEBUG
+            if (_legacyMemoryEnum is not null)
+            {
+                uint countLocal;
+                _legacyMemoryEnum.GetCount(&countLocal);
+                Debug.Assert(countLocal == (uint)_regions.Length);
+            }
+#endif
             return HResults.S_OK;
         }
     }
@@ -5785,21 +5828,23 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetHandleTableMemoryRegions();
-            ppEnum.Interface = new SOSMemoryEnum(_target, regions);
+            ISOSMemoryEnum? legacyMemoryEnum = null;
+#if DEBUG
+            if (_legacyImpl13 is not null)
+            {
+                DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
+                int hrLocal = _legacyImpl13.GetHandleTableMemoryRegions(legacyOut);
+                Debug.ValidateHResult(hr, hrLocal);
+                legacyMemoryEnum = legacyOut.Interface;
+            }
+#endif
+            ppEnum.Interface = new SOSMemoryEnum(_target, regions, legacyMemoryEnum);
         }
         catch (System.Exception e)
         {
             hr = e.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl13 is not null)
-        {
-            DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
-            int hrLocal = _legacyImpl13.GetHandleTableMemoryRegions(legacyOut);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
@@ -5808,21 +5853,23 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetGCBookkeepingMemoryRegions();
-            ppEnum.Interface = new SOSMemoryEnum(_target, regions);
+            ISOSMemoryEnum? legacyMemoryEnum = null;
+#if DEBUG
+            if (_legacyImpl13 is not null)
+            {
+                DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
+                int hrLocal = _legacyImpl13.GetGCBookkeepingMemoryRegions(legacyOut);
+                Debug.ValidateHResult(hr, hrLocal);
+                legacyMemoryEnum = legacyOut.Interface;
+            }
+#endif
+            ppEnum.Interface = new SOSMemoryEnum(_target, regions, legacyMemoryEnum);
         }
         catch (System.Exception e)
         {
             hr = e.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl13 is not null)
-        {
-            DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
-            int hrLocal = _legacyImpl13.GetGCBookkeepingMemoryRegions(legacyOut);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
     int ISOSDacInterface13.GetGCFreeRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
@@ -5831,21 +5878,23 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetGCFreeRegions();
-            ppEnum.Interface = new SOSMemoryEnum(_target, regions);
+            ISOSMemoryEnum? legacyMemoryEnum = null;
+#if DEBUG
+            if (_legacyImpl13 is not null)
+            {
+                DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
+                int hrLocal = _legacyImpl13.GetGCFreeRegions(legacyOut);
+                Debug.ValidateHResult(hr, hrLocal);
+                legacyMemoryEnum = legacyOut.Interface;
+            }
+#endif
+            ppEnum.Interface = new SOSMemoryEnum(_target, regions, legacyMemoryEnum);
         }
         catch (System.Exception e)
         {
             hr = e.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl13 is not null)
-        {
-            DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
-            int hrLocal = _legacyImpl13.GetGCFreeRegions(legacyOut);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
     int ISOSDacInterface13.LockedFlush()

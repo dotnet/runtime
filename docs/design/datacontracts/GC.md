@@ -796,7 +796,12 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
         ? target.Read<uint>(target.ReadGlobalPointer("TotalCpuCount"))
         : 1;
 
-    int maxRegions = 8192;
+    // Safety caps matching native DAC
+    const int MaxHandleTableRegions = 8192;
+    const int MaxBookkeepingRegions = 32;
+    const int MaxSegmentListIterations = 2048;
+
+    int maxRegions = MaxHandleTableRegions;
     TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
     while (handleTableMap != null && maxRegions >= 0)
     {
@@ -846,7 +851,9 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
 
     TargetPointer next = cti.NextCardTable;
     TargetPointer firstNext = next;
-    int maxRegions = 32;
+    int maxRegions = MaxBookkeepingRegions;
+    // Compare next > cardTableInfoSize to guard against underflow when subtracting
+    // cardTableInfoSize. Matches native DAC: `while (next > card_table_info_size)`.
     while (next != null && next > cardTableInfoSize && maxRegions > 0)
     {
         TargetPointer ctAddr = next - cardTableInfoSize;
@@ -910,7 +917,7 @@ void AddFreeList(TargetPointer freeListAddr, FreeRegionKind kind, List<GCMemoryR
 
 void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
 {
-    int iterationMax = 2048;
+    int iterationMax = MaxSegmentListIterations;
     TargetPointer curr = start;
     while (curr != null && iterationMax-- > 0)
     {

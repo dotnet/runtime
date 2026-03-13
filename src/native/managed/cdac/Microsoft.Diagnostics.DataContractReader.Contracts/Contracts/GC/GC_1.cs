@@ -13,6 +13,11 @@ internal readonly struct GC_1 : IGC
 {
     private const uint WRK_HEAP_COUNT = 1;
 
+    // Safety caps to limit traversals in case of memory corruption, matching native DAC.
+    private const int MaxHandleTableRegions = 8192;
+    private const int MaxBookkeepingRegions = 32;
+    private const int MaxSegmentListIterations = 2048;
+
     private enum GCType
     {
         Unknown,
@@ -506,7 +511,7 @@ internal readonly struct GC_1 : IGC
             _ => 0
         };
 
-        int maxRegions = 8192;
+        int maxRegions = MaxHandleTableRegions;
         TargetPointer handleTableMap = _target.ReadGlobalPointer(Constants.Globals.HandleTableMap);
         while (handleTableMap != TargetPointer.Null && maxRegions >= 0)
         {
@@ -575,8 +580,11 @@ internal readonly struct GC_1 : IGC
 
         TargetPointer next = cardTableInfo.NextCardTable;
         TargetPointer firstNext = next;
-        int maxRegions = 32;
+        int maxRegions = MaxBookkeepingRegions;
 
+        // This comparison guards against underflow when subtracting cardTableInfoSize from `next`.
+        // If `next` is a corrupted or small value, the subtraction would underflow.
+        // This matches the native DAC: `while (next > card_table_info_size)`.
         while (next != TargetPointer.Null && next > cardTableInfoSize && maxRegions > 0)
         {
             TargetPointer ctAddr = next - cardTableInfoSize;
@@ -644,7 +652,7 @@ internal readonly struct GC_1 : IGC
 
                 Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(heapAddress);
 
-                if (heap.FreeRegions is TargetPointer freeRegionsBase)
+                if (heap.FreeRegions is TargetPointer freeRegionsBase && freeRegionsBase != TargetPointer.Null)
                 {
                     for (int j = 0; j < countFreeRegionKinds; j++)
                     {
@@ -699,7 +707,7 @@ internal readonly struct GC_1 : IGC
 
     private void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
     {
-        int iterationMax = 2048;
+        int iterationMax = MaxSegmentListIterations;
         TargetPointer curr = start;
         while (curr != TargetPointer.Null)
         {
