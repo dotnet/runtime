@@ -27,15 +27,11 @@ namespace Microsoft.Win32.SafeHandles
         // Thread handle for suspended processes
         private IntPtr _threadHandle;
 
-        // Job handle for CreateNewProcessGroup functionality
-        private SafeJobHandle? _processGroupJobHandle;
-
-        private SafeProcessHandle(IntPtr processHandle, IntPtr threadHandle, SafeJobHandle? processGroupJobHandle, int processId)
+        private SafeProcessHandle(IntPtr processHandle, IntPtr threadHandle, int processId)
             : base(ownsHandle: true)
         {
             SetHandle(processHandle);
             _threadHandle = threadHandle;
-            _processGroupJobHandle = processGroupJobHandle;
             ProcessId = processId;
         }
 
@@ -66,8 +62,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.Kernel32.CloseHandle(threadHandle);
             }
-
-            _processGroupJobHandle?.Dispose();
 
             return Interop.Kernel32.CloseHandle(handle);
         }
@@ -148,7 +142,6 @@ namespace Microsoft.Win32.SafeHandles
             int maxHandleCount = 3 + (options.HasInheritedHandles ? options.InheritedHandles.Count : 0);
 
             IntPtr* handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
-            SafeJobHandle? processGroupJobHandle = null;
 
             try
             {
@@ -161,18 +154,8 @@ namespace Microsoft.Win32.SafeHandles
 
                 PrepareHandleAllowList(options, handlesToInherit, ref handleCount, inputPtr, outputPtr, errorPtr, ref handlesToRelease);
 
-                if (options.CreateNewProcessGroup)
-                {
-                    // This must happen before starting the process to ensure atomicity.
-                    processGroupJobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
-                    if (processGroupJobHandle.IsInvalid)
-                    {
-                        throw new Win32Exception();
-                    }
-                }
-
                 int attributeCount = 1; // Always need handle list
-                if (options.KillOnParentExit || options.CreateNewProcessGroup)
+                if (options.KillOnParentExit)
                     attributeCount++;
 
                 nuint size = 0;
@@ -199,16 +182,14 @@ namespace Microsoft.Win32.SafeHandles
                     throw new Win32Exception();
                 }
 
-                if (options.KillOnParentExit || options.CreateNewProcessGroup)
+                if (options.KillOnParentExit)
                 {
-                    IntPtr* pJobHandle = stackalloc IntPtr[2];
+                    IntPtr* pJobHandle = stackalloc IntPtr[1];
                     int jobsCount = 0;
 
                     // It's OK to use DangerousGetHandle here as we own both Job handles.
                     if (options.KillOnParentExit)
                         pJobHandle[jobsCount++] = s_killOnParentExitJob.Value.DangerousGetHandle();
-                    if (processGroupJobHandle is not null)
-                        pJobHandle[jobsCount++] = processGroupJobHandle.DangerousGetHandle();
 
                     if (!Interop.Kernel32.UpdateProcThreadAttribute(
                         attributeList,
@@ -231,8 +212,10 @@ namespace Microsoft.Win32.SafeHandles
                 startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
 
                 int creationFlags = Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
-                if (createSuspended) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_SUSPENDED;
-                if (options.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
+                if (createSuspended)
+                {
+                    creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_SUSPENDED;
+                }
 
                 string? environmentBlock = null;
                 if (options.HasEnvironmentBeenAccessed)
@@ -284,7 +267,6 @@ namespace Microsoft.Win32.SafeHandles
                 procSH = new SafeProcessHandle(
                     processInfo.hProcess,
                     createSuspended ? processInfo.hThread : IntPtr.Zero,
-                    processGroupJobHandle,
                     processInfo.dwProcessId);
 
                 if (!createSuspended)
@@ -313,8 +295,6 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         Interop.Kernel32.CloseHandle(processInfo.hThread);
                     }
-
-                    processGroupJobHandle?.Dispose();
                 }
 
                 if (handlesToRelease is not null)
@@ -444,7 +424,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
-                wasKilledOnTimeout = KillCore(throwOnError: false, entireProcessGroup: _processGroupJobHandle is not null);
+                wasKilledOnTimeout = KillCore(throwOnError: false);
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
@@ -514,7 +494,7 @@ namespace Microsoft.Win32.SafeHandles
                         static state =>
                         {
                             var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.KillCore(throwOnError: false, entireProcessGroup: handle._processGroupJobHandle is not null);
+                            wasCancelled.Value = handle.KillCore(throwOnError: false);
                         },
                         (this, wasKilledBox));
                 }
@@ -530,16 +510,9 @@ namespace Microsoft.Win32.SafeHandles
             return new ProcessExitStatus(GetExitCode(), wasKilledBox.Value);
         }
 
-        internal bool KillCore(bool throwOnError, bool entireProcessGroup = false)
+        internal bool KillCore(bool throwOnError)
         {
-            if (entireProcessGroup && _processGroupJobHandle is null)
-            {
-                throw new InvalidOperationException(SR.KillProcessGroupWithoutNewProcessGroup);
-            }
-
-            if (entireProcessGroup
-                ? Interop.Kernel32.TerminateJobObject(_processGroupJobHandle!, unchecked((uint)-1))
-                : Interop.Kernel32.TerminateProcess(this, exitCode: -1))
+            if (Interop.Kernel32.TerminateProcess(this, exitCode: -1))
             {
                 return true;
             }
@@ -576,25 +549,15 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private void SendSignalCore(PosixSignal signal, bool entireProcessGroup)
+        private void SendSignalCore(PosixSignal signal)
         {
             if (signal == PosixSignal.SIGKILL)
             {
-                KillCore(throwOnError: true, entireProcessGroup);
+                KillCore(throwOnError: true);
                 return;
             }
 
-            int ctrlEvent = signal switch
-            {
-                PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
-                PosixSignal.SIGQUIT => Interop.Kernel32.CTRL_BREAK_EVENT,
-                _ => throw new PlatformNotSupportedException(SR.Format(SR.SignalNotSupportedOnWindows, signal))
-            };
-
-            if (!Interop.Kernel32.GenerateConsoleCtrlEvent(ctrlEvent, ProcessId))
-            {
-                throw new Win32Exception();
-            }
+            throw new PlatformNotSupportedException(SR.Format(SR.SignalNotSupportedOnWindows, signal));
         }
 
         private static SafeProcessHandle OpenCore(int processId)

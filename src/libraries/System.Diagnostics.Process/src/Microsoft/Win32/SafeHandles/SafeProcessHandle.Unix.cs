@@ -58,10 +58,10 @@ namespace Microsoft.Win32.SafeHandles
 
         private Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken) => throw new NotImplementedException();
 
-        internal bool KillCore(bool throwOnError, bool entireProcessGroup = false) => throw new NotImplementedException();
+        internal bool KillCore(bool throwOnError) => throw new NotImplementedException();
 
         private void ResumeCore() => throw new NotImplementedException();
 
-        private void SendSignalCore(PosixSignal signal, bool entireProcessGroup) => throw new NotImplementedException();
+        private void SendSignalCore(PosixSignal signal) => throw new NotImplementedException();
     }
 }

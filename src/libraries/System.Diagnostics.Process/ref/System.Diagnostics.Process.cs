@@ -15,7 +15,6 @@ namespace Microsoft.Win32.SafeHandles
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
         protected override bool ReleaseHandle() { throw null; }
         public void Signal(System.Runtime.InteropServices.PosixSignal signal) { }
-        public void SignalProcessGroup(System.Runtime.InteropServices.PosixSignal signal) { }
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartOptions options, Microsoft.Win32.SafeHandles.SafeFileHandle? input, Microsoft.Win32.SafeHandles.SafeFileHandle? output, Microsoft.Win32.SafeHandles.SafeFileHandle? error) { throw null; }
         public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
         public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
@@ -283,7 +282,6 @@ namespace System.Diagnostics
     {
         public ProcessStartOptions(string fileName) { }
         public System.Collections.Generic.IList<string> Arguments { get { throw null; } set { } }
-        public bool CreateNewProcessGroup { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
         public string FileName { get { throw null; } }
         public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> InheritedHandles { get { throw null; } set { } }
