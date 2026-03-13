@@ -576,6 +576,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
+            Debug.Assert(target != null);
             RelocType = relocType;
             Offset = offset;
             Target = target;

@@ -65,23 +65,23 @@ namespace ILCompiler.ObjectWriter
             _uniqueSignatures.Add(mangledName, _uniqueSignatures.Count);
         }
 
-        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
+        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WriteSignatureIndexForFunction(desc);
+            WriteSignatureIndexForFunction(node.Signature, 4, node.IsUnmanagedCallersOnly, node);
 
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
         }
 
-        private void WriteSignatureIndexForFunction(MethodDesc desc)
+        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, int pointerSize, bool isUnmanagedCallersOnly, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(desc);
+            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(managedSignature, pointerSize, isUnmanagedCallersOnly);
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
-                throw new InvalidOperationException($"Signature index of {key} not found for function: {desc.GetName()}");
+                throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
             }
 
             writer.WriteULEB128((ulong)signatureIndex);
@@ -382,6 +382,11 @@ namespace ILCompiler.ObjectWriter
                                 throw new InvalidDataException($"Type signature symbol definition '{reloc.SymbolName}' not found");
                             }
 
+                            break;
+                        }
+                        case RelocType.WASM_MEMORY_ADDR_SLEB:
+                        {
+                            // WASM-TODO actually implement this
                             break;
                         }
                         default:

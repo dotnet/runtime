@@ -1404,9 +1404,9 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->ImmedValNeedsReloc(m_compiler))
         {
-            // WASM-TODO: Generate reloc for this handle
-            ins  = INS_I_const;
-            bits = 0;
+            GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
+            WasmProduceReg(treeNode);
+            return;
         }
         else
         {

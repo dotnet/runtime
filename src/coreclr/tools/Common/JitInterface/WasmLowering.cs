@@ -158,9 +158,13 @@ namespace Internal.JitInterface
         /// <returns></returns>
         public static WasmFuncType GetSignature(MethodDesc method)
         {
-            MethodSignature signature = method.Signature;
+            return GetSignature(method.Signature, method.Context.Target.PointerSize, method.IsUnmanagedCallersOnly);
+        }
+
+        public static WasmFuncType GetSignature(MethodSignature signature, int pointerSize, bool isUnmanagedCallersOnly)
+        {
             TypeDesc returnType = signature.ReturnType;
-            WasmValueType pointerType = (method.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+            WasmValueType pointerType = (pointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
 
             // Determine if the return value is via a return buffer
             //
@@ -193,7 +197,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (method.IsUnmanagedCallersOnly) // reverse P/Invoke
+            if (isUnmanagedCallersOnly) // reverse P/Invoke
             {
                 if (hasReturnBuffer)
                 {
@@ -220,7 +224,7 @@ namespace Internal.JitInterface
                 result.Add(LowerType(signature[i]));
             }
 
-            if (!method.IsUnmanagedCallersOnly)
+            if (!isUnmanagedCallersOnly)
             {
                 result.Add(pointerType); // PE entrypoint parameter
             }

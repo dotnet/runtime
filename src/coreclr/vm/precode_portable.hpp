@@ -24,7 +24,11 @@ public: // static
 
 private:
     Volatile<void*> _pActualCode;
-    MethodDesc* _pMD;
+    union
+    {
+        MethodDesc* _pMD;
+        DWORD _dwR2RImportThunk;
+    };
     void* _pInterpreterData;
 
     enum PortableEntryPointFlag
@@ -32,6 +36,7 @@ private:
         kNone = 0,
         kUnmanagedCallersOnly_Has = 0x1,
         kUnmanagedCallersOnly_Checked = 0x2,
+        kR2RImportThunk = 0x12345678,
     };
     Volatile<int32_t> _flags;
 

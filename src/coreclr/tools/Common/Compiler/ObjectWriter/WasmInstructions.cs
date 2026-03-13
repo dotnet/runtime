@@ -207,7 +207,14 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             int pos = 0;
             foreach (var expr in _wasmExprs)
             {
+#if DEBUG
+                int encodeSizeExpected = expr.EncodeSize();
+                int adjustSize = expr.Encode(buffer.Slice(pos, encodeSizeExpected));
+                Debug.Assert(adjustSize == encodeSizeExpected);
+                pos += adjustSize;
+#else
                 pos += expr.Encode(buffer.Slice(pos));
+#endif
             }
             buffer[pos++] = 0x0B; // end opcode
             return pos;
@@ -379,7 +386,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public override Relocation[] GetRelocations()
         {
-            return new Relocation[] { new Relocation(RelocType.WASM_TYPE_INDEX_LEB, 0, _type) };
+            return new Relocation[] { new Relocation(RelocType.WASM_TYPE_INDEX_LEB, base.EncodeSize(), _type) };
         }
     }
 
@@ -410,7 +417,6 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                     DwarfHelper.WritePaddedSLEB128(buffer.Slice(pos, relocSize), 0);
-                    pos += relocSize;
                     break;
 
                 default:

@@ -54,6 +54,7 @@ MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
     _ASSERTE(portableEntryPoint->_pMD != nullptr);
+    _ASSERTE(_flags != kR2RImportThunk);
     return portableEntryPoint->_pMD;
 }
 
@@ -80,7 +81,8 @@ void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
 bool PortableEntryPoint::IsValid() const
 {
     LIMITED_METHOD_CONTRACT;
-    return _canary == CANARY_VALUE;
+    // R2R import thunks won't have the canary value, but they are still valid.
+    return _flags == kR2RImportThunk || _canary == CANARY_VALUE;
 }
 #endif // _DEBUG
 
