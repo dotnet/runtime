@@ -181,7 +181,7 @@ internal static partial class Interop
             [InlineArray(130)]
             internal struct Dhcpv6ClientDuidBuffer
             {
-                private byte _element;
+                private byte _element0;
             }
             internal uint dhcpv6ClientDuidLength;
             internal uint dhcpV6Iaid;
@@ -254,13 +254,13 @@ internal static partial class Interop
             [InlineArray(IfMaxStringSize + 1)]
             internal struct AliasBuffer
             {
-                private char _element;
+                private char _element0;
             }
 
             [InlineArray(IfMaxPhysAddressLength)]
             internal struct PhysAddrBuffer
             {
-                private byte _element;
+                private byte _element0;
             }
             internal uint mtu;
             internal NetworkInterfaceType type;
@@ -397,7 +397,7 @@ internal static partial class Interop
             [InlineArray(256)]
             internal struct TypeCountBuffer
             {
-                private uint _element;
+                private uint _element0;
             }
         }
 
