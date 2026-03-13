@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System;
 using System.Collections.Generic;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -24,6 +25,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Slot_Basic = 0,
     }
     // Mirrors RCW::RCWFlags bits in src/coreclr/vm/runtimecallablewrapper.h.
+    [Flags]
     private enum RCWFlags : uint
     {
         URTAggregated          = 0x010u, // bit 4: m_fURTAggregated
@@ -245,8 +247,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             CreatorThread: rcwData.CreatorThread,
             CtxCookie: rcwData.CtxCookie,
             RefCount: rcwData.RefCount,
-            IsAggregated: ((RCWFlags)rcwData.Flags & RCWFlags.URTAggregated) != 0,
-            IsContained: ((RCWFlags)rcwData.Flags & RCWFlags.URTContained) != 0,
+            IsAggregated: ((RCWFlags)rcwData.Flags).HasFlag(RCWFlags.URTAggregated),
+            IsContained: ((RCWFlags)rcwData.Flags).HasFlag(RCWFlags.URTContained),
             IsFreeThreaded: ((RCWFlags)rcwData.Flags & RCWFlags.MarshalingTypeMask) == RCWFlags.MarshalingTypeFreeThreaded,
             IsDisconnected: IsRCWDisconnected(rcwData));
     }

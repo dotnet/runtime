@@ -49,7 +49,7 @@ public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInt
 // Get the COM context cookie for an RCW.
 public TargetPointer GetRCWContext(TargetPointer rcw);
 // Get detailed data about an RCW, including flags and the managed object reference.
-RCWData GetRCWData(TargetPointer rcw);
+public RCWData GetRCWData(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -235,8 +235,8 @@ public RCWData GetRCWData(TargetPointer rcw)
         CreatorThread: _target.ReadPointer(rcw + /* RCW::CreatorThread offset */),
         CtxCookie: _target.ReadPointer(rcw + /* RCW::CtxCookie offset */),
         RefCount: _target.Read<uint>(rcw + /* RCW::RefCount offset */),
-        IsAggregated: ((RCWFlags)flags & RCWFlags.URTAggregated) != 0,
-        IsContained: ((RCWFlags)flags & RCWFlags.URTContained) != 0,
+        IsAggregated: ((RCWFlags)flags).HasFlag(RCWFlags.URTAggregated),
+        IsContained: ((RCWFlags)flags).HasFlag(RCWFlags.URTContained),
         IsFreeThreaded: ((RCWFlags)flags & RCWFlags.MarshalingTypeMask) == RCWFlags.MarshalingTypeFreeThreaded,
         IsDisconnected: IsRCWDisconnected(rcw));
 }
