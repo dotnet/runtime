@@ -48,8 +48,6 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct WSAPROTOCOLCHAIN
         {
-            private const int MAX_PROTOCOL_CHAIN = 7;
-
             internal int ChainLen;
             internal InlineArray7<uint> ChainEntries;
         }
