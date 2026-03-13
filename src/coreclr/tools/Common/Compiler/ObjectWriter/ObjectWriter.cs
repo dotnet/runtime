@@ -453,13 +453,6 @@ namespace ILCompiler.ObjectWriter
                 }
 
 
-                if (node is AssemblyStubNode && _nodeFactory.Target.IsWasm)
-                {
-                    // TODO-Wasm: Handle AssemblyStubNode.
-                    // It is the other primary IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
-                    continue;
-                }
-
                 if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
                     Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");

@@ -58,6 +58,7 @@ namespace ILCompiler.ObjectWriter
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
+        public const int WebcilVersionMajor = 0;
 
         public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
@@ -201,6 +202,7 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
+            Console.WriteLine($"Updating section alignment with: {alignment}");
             // This is a no-op for now under Wasm
         }
 
@@ -342,7 +344,7 @@ namespace ILCompiler.ObjectWriter
             WebcilHeader header = new WebcilHeader
             {
                 Id = 0x4c496257, // 'WbCIL', little endian
-                VersionMajor = 1,
+                VersionMajor = WebcilVersionMajor,
                 VersionMinor = 0,
                 CoffSections = (ushort)webcilSections.Length,
                 PeCliHeaderRva = 0, // This RVA will be resolved later
@@ -477,13 +479,14 @@ namespace ILCompiler.ObjectWriter
             writer.Buffer.Advance(written);
         }
 
+
         private void WriteGlobalSection()
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.GlobalSection);
 
-            // webcilVersion: i32 const = 1
+            // webcilVersion: i32 const = 0
             WriteGlobal(writer, "webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
-                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, 1)]));
+                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilVersionMajor)]));
         }
 
         private void PrependCount(WasmSection section, int count)
