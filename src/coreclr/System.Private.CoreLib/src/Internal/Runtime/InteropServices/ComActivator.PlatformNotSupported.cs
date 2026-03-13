@@ -3,9 +3,11 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Internal.Runtime.InteropServices
 {
+    [UnsupportedOSPlatform("browser")]
     internal static class ComActivator
     {
         /// <summary>
