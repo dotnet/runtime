@@ -605,10 +605,16 @@ internal readonly struct GC_1 : IGC
     {
         List<GCMemoryRegionData> regions = new();
 
-        int countFreeRegionKinds = (int)_target.ReadGlobal<uint>(Constants.Globals.CountFreeRegionKinds);
-        countFreeRegionKinds = Math.Min(countFreeRegionKinds, 16);
-        uint regionFreeListSize = _target.GetTypeInfo(DataType.RegionFreeList).Size
-            ?? throw new InvalidOperationException("RegionFreeList type has no size");
+        // CountFreeRegionKinds and RegionFreeList are only available on regions GC builds.
+        // On segment GC builds, we still enumerate freeable segments (BACKGROUND_GC).
+        int countFreeRegionKinds = 0;
+        uint regionFreeListSize = 0;
+        if (_target.TryReadGlobal<uint>(Constants.Globals.CountFreeRegionKinds, out uint? freeRegionKindsValue))
+        {
+            countFreeRegionKinds = Math.Min((int)freeRegionKindsValue.Value, 16);
+            regionFreeListSize = _target.GetTypeInfo(DataType.RegionFreeList).Size
+                ?? throw new InvalidOperationException("RegionFreeList type has no size");
+        }
 
         // Global free huge regions
         if (_target.TryReadGlobalPointer(Constants.Globals.GlobalFreeHugeRegions, out TargetPointer? globalFreeHugePtr))
