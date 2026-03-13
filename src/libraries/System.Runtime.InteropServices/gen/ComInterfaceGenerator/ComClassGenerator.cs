@@ -42,7 +42,7 @@ namespace Microsoft.Interop
                     })
                 .Where(static info => info is not null);
 
-            context.RegisterSourceOutput(attributedClasses, (context, data) =>
+            context.RegisterSourceOutput(attributedClasses, static (context, data) =>
             {
                 string className = data.ClassName;
                 SequenceEqualImmutableArray<string> implementedInterfaces = data.ImplementedInterfacesNames;
