@@ -19,8 +19,21 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         GLOBAL_LABEL RhpInterfaceDispatchAVLocation
         ldr         r1, [r0]
 
-        // TODO: monomorphic fast path, you can use r1/r2 as scratch registers
+        // r12 contains the indirection cell address.
+        ldr         r2, [r12]               // load cached MethodTable
+        cmp         r2, r1                  // is this the monomorphic MethodTable?
+        bne         LOCAL_LABEL(SlowPath)
 
+        // Fast path: restore r1/r2 before jumping to cached code.
+        ldr         r1, [sp, #-8]
+        ldr         r2, [sp, #-4]
+        // dmb ensures that the Code load below sees the value written before
+        // MethodTable. ARM32 has no load-acquire instruction (LDAR is ARMv8 only).
+        dmb
+        ldr         r12, [r12, #4]          // load the cached monomorphic resolved code address
+        bx          r12
+
+LOCAL_LABEL(SlowPath):
         // restore original value of r1 and r2
         ldr         r1, [sp, #-8]
         ldr         r2, [sp, #-4]

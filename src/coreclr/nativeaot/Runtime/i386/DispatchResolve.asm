@@ -22,6 +22,18 @@ ALTERNATE_ENTRY _RhpInterfaceDispatch
         cmp     dword ptr [ecx], ecx
 
         ;; eax currently contains the indirection cell address.
+        ;; Save ebx so we can use it as scratch for the MethodTable pointer.
+        push    ebx
+        mov     ebx, [ecx]              ;; load object's MethodTable
+        cmp     dword ptr [eax], ebx    ;; is this the monomorphic MethodTable?
+        jne     @F
+
+        pop     ebx
+        mov     eax, [eax + 4]          ;; load the cached monomorphic resolved code address
+        jmp     eax
+
+      @@:
+        pop     ebx
         ;; Setup call to Universal Transition thunk
         push    ebp
         mov     ebp, esp
