@@ -179,12 +179,11 @@ internal static partial class Interop
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v1 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal
-#if NET
-        struct BCRYPT_DSA_KEY_BLOB
+        internal struct BCRYPT_DSA_KEY_BLOB
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;
+#if NET
             internal InlineArray4<byte> Count;
             internal KeyParamBuffer Seed;
             internal KeyParamBuffer q;
@@ -194,46 +193,31 @@ internal static partial class Interop
             {
                 private byte _element0;
             }
-        }
 #else
-        unsafe struct BCRYPT_DSA_KEY_BLOB
-        {
-            internal KeyBlobMagicNumber Magic;
-            internal int cbKey;
             internal fixed byte Count[4];
             internal fixed byte Seed[20];
             internal fixed byte q[20];
-        }
 #endif
+        }
 
         /// <summary>
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v2 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal
+        internal struct BCRYPT_DSA_KEY_BLOB_V2
+        {
+            internal KeyBlobMagicNumber Magic;
+            internal int cbKey;
+            internal HASHALGORITHM_ENUM hashAlgorithm;
+            internal DSAFIPSVERSION_ENUM standardVersion;
+            internal int cbSeedLength;
+            internal int cbGroupSize;
 #if NET
-        struct BCRYPT_DSA_KEY_BLOB_V2
-        {
-            internal KeyBlobMagicNumber Magic;
-            internal int cbKey;
-            internal HASHALGORITHM_ENUM hashAlgorithm;
-            internal DSAFIPSVERSION_ENUM standardVersion;
-            internal int cbSeedLength;
-            internal int cbGroupSize;
             internal InlineArray4<byte> Count;
-        }
 #else
-        unsafe struct BCRYPT_DSA_KEY_BLOB_V2
-        {
-            internal KeyBlobMagicNumber Magic;
-            internal int cbKey;
-            internal HASHALGORITHM_ENUM hashAlgorithm;
-            internal DSAFIPSVERSION_ENUM standardVersion;
-            internal int cbSeedLength;
-            internal int cbGroupSize;
             internal fixed byte Count[4];
-        }
 #endif
+        }
 
         public enum HASHALGORITHM_ENUM
         {

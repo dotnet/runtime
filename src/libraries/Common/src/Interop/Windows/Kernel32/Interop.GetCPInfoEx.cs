@@ -15,10 +15,16 @@ internal static partial class Interop
         private struct CPINFOEXW
         {
             internal uint MaxCharSize;
+#if NET
             internal InlineArray2<byte> DefaultChar;
             internal InlineArray12<byte> LeadByte;
+#else
+            internal fixed byte DefaultChar[2];
+            internal fixed byte LeadByte[12];
+#endif
             internal char UnicodeDefaultChar;
             internal uint CodePage;
+#if NET
             internal CodePageNameBuffer CodePageName;
 
             [InlineArray(MAX_PATH)]
@@ -26,6 +32,9 @@ internal static partial class Interop
             {
                 private char _element0;
             }
+#else
+            internal fixed char CodePageName[MAX_PATH];
+#endif
         }
 
         internal static unsafe int GetLeadByteRanges(int codePage, byte[] leadByteRanges)

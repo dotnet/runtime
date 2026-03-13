@@ -34,6 +34,7 @@ internal static partial class Interop
             internal int th32ParentProcessID;
             internal int pcPriClassBase;
             internal int dwFlags;
+#if NET
             internal ExeFileNameBuffer szExeFile;
 
             [InlineArray(MAX_PATH)]
@@ -41,6 +42,9 @@ internal static partial class Interop
             {
                 private char _element0;
             }
+#else
+            internal fixed char szExeFile[MAX_PATH];
+#endif
         }
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot
