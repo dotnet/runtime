@@ -1350,6 +1350,7 @@ namespace System.StubHelpers
         internal const int Free = 2;
     }
 
+    #pragma warning disable IDE0060 // Remove unused parameter
     internal static unsafe class StructureMarshaler<T>  where T : notnull
     {
         [Conditional("DEBUG")]
@@ -1363,9 +1364,7 @@ namespace System.StubHelpers
         }
 
         [Intrinsic]
-#pragma warning disable IDE0060 // Remove unused parameter
         private static void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-#pragma warning restore IDE0060 // Remove unused parameter
         {
             Validate();
             SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
@@ -1388,18 +1387,14 @@ namespace System.StubHelpers
         }
 
         [Intrinsic]
-#pragma warning disable IDE0060 // Remove unused parameter
         public static void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-#pragma warning restore IDE0060 // Remove unused parameter
         {
             Validate();
             SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
         }
 
         [Intrinsic]
-#pragma warning disable IDE0060 // Remove unused parameter
         private static void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-#pragma warning restore IDE0060 // Remove unused parameter
         {
             Validate();
         }
@@ -1410,7 +1405,9 @@ namespace System.StubHelpers
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);
         }
     }
+    #pragma warning restore IDE0060 // Remove unused parameter
 
+    #pragma warning disable IDE0060 // Remove unused parameter
     internal static unsafe class LayoutClassMarshaler<T> where T : notnull
     {
         private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToUnmanaged;
@@ -1436,23 +1433,17 @@ namespace System.StubHelpers
         }
 #pragma warning restore CA1810
 
-#pragma warning disable IDE0060 // Remove unused parameter
         private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-#pragma warning restore IDE0060 // Remove unused parameter
         {
             SpanHelpers.Memmove(ref *unmanaged, ref managed, (nuint)sizeof(T));
         }
 
-#pragma warning disable IDE0060 // Remove unused parameter
         private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-#pragma warning restore IDE0060 // Remove unused parameter
         {
             SpanHelpers.Memmove(ref managed, ref *unmanaged, (nuint)sizeof(T));
         }
 
-#pragma warning disable IDE0060 // Remove unused parameter
         private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-#pragma warning restore IDE0060 // Remove unused parameter
         {
             // Nothing to do for blittable types.
         }
