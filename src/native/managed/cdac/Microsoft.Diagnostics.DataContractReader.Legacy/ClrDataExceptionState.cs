@@ -39,6 +39,9 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         int hr = HResults.S_OK;
         try
         {
+            if (flags is null)
+                throw new ArgumentNullException(nameof(flags));
+
             *flags = _flags;
             if (_previousExInfoAddress != TargetPointer.Null)
                 *flags |= (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_NESTED;

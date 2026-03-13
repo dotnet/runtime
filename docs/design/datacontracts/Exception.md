@@ -32,6 +32,10 @@ TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out Target
 {
     nextNestedExceptionInfo = target.ReadPointer(exceptionInfoAddr + /* ExceptionInfo::PreviousNestedInfo offset*/);
     thrownObjectHandle = target.ReadPointer(exceptionInfoAddr + /* ExceptionInfo::ThrownObject offset */);
+    if (thrownObjectHandle == TargetPointer.Null)
+    {
+        return TargetPointer.Null;
+    }
     return target.ReadPointer(thrownObjectHandle);
 }
 
