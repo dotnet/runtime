@@ -72,10 +72,10 @@ public:
     }
 
     virtual void freeStringConfigValue(
-        wchar_t* value
+        char* value
         )
     {
-        delete[] (char*)value;
+        delete[] value;
     }
 
     virtual void* allocateSlab(size_t size, size_t* pActualSize)
