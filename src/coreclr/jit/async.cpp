@@ -2156,11 +2156,53 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
-    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), allocContinuation);
+    unsigned newContinuationVar = GetNewContinuationVar();
+    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
+    if (ReuseContinuations())
+    {
+        // Split suspendBB into suspendBB -> [reuse continuation with Next store] -> [allocNewBlock with allocation call] -> suspendBBTail [empty]
+        BasicBlock* allocNewBB = m_compiler->fgSplitBlockAfterNode(suspendBB, recordOffset);
+        BasicBlock* reuseContinuationBB = m_compiler->fgSplitBlockAtEnd(suspendBB);
+        BasicBlock* suspendTailBB = m_compiler->fgSplitBlockAtEnd(allocNewBB);
+
+        m_compiler->fgRemoveRefPred(reuseContinuationBB->GetTargetEdge());
+        FlowEdge* toSuspendTail = m_compiler->fgAddRefPred(suspendTailBB, reuseContinuationBB);
+        reuseContinuationBB->SetTargetEdge(toSuspendTail);
+
+        FlowEdge* toAllocNew = m_compiler->fgAddRefPred(allocNewBB, suspendBB);
+        suspendBB->SetCond(suspendBB->GetTargetEdge(), toAllocNew);
+        suspendBB->GetTrueEdge()->setLikelihood(1.0);
+        suspendBB->GetFalseEdge()->setLikelihood(0.0);
+
+        JITDUMP("Continuation reuse is active. Split suspendBB into suspendBB " FMT_BB " -> reuseContinuationBlock " FMT_BB " -> allocNewBlock " FMT_BB " -> suspendBBTail " FMT_BB "\n",
+            suspendBB->bbNum, reuseContinuationBB->bbNum, allocNewBB->bbNum, suspendTailBB->bbNum);
+
+        // Store newContinuationVar = asyncContinuationArg in suspendBB
+        GenTree* continuationParam = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* storeContinuationParam = m_compiler->gtNewStoreLclVarNode(newContinuationVar, continuationParam);
+        LIR::AsRange(suspendBB).InsertAtEnd(continuationParam, storeContinuationParam);
+
+        // Check if newContinuationVar != null, jump to reuseContinuationBlock
+        GenTree* reusedContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        GenTree* null = m_compiler->gtNewNull();
+        GenTree* neNull = m_compiler->gtNewOperNode(GT_NE, TYP_INT, reusedContinuation, null);
+        GenTree* jtrue = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusedContinuation, null, neNull, jtrue);
+
+        // Fill in 'Next' in reuseContinuationBB
+        GenTree* newContinuation  = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        unsigned nextOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationNextFldHnd);
+        returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+        GenTree* storeNext = StoreAtOffset(returnedContinuation, nextOffset, newContinuation, TYP_REF);
+        LIR::AsRange(reuseContinuationBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeNext));
+
+        suspendBB = suspendTailBB;
+    }
+
     // Fill in 'ResumeInfo'
-    GenTree* newContinuation  = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    GenTree* newContinuation  = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
     GenTree* resumeInfoAddr =
         new (m_compiler, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
@@ -2168,7 +2210,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResume));
 
     // Fill in 'state'
-    newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation       = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
     GenTree* stateNumNode = m_compiler->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
@@ -2204,7 +2246,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
-    newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
@@ -2219,7 +2261,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
-        newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
         GenTree* ret    = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
         LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
     }
@@ -2460,10 +2502,10 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 
     GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = m_compiler->gtNewNull();
-    GenTree* started      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* resumed      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
-    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, started));
-    use.ReplaceWith(started);
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, resumed));
+    use.ReplaceWith(resumed);
     LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
 
     // Replace execContextPlaceholder with actual value
@@ -3143,8 +3185,7 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
 //
 void AsyncTransformation::CreateResumptionsAndSuspensions()
 {
-    bool useSharedLayout = m_states.size() > 1;
-    INDEBUG(useSharedLayout &= JitConfig.JitAsyncReuseContinuations() != 0);
+    bool useSharedLayout = (m_states.size() > 1) && ReuseContinuations();
         
     ContinuationLayout* sharedLayout = nullptr;
     if (useSharedLayout)
@@ -3166,6 +3207,22 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
 
         JITDUMP("\n");
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ReuseContinuations:
+//   Returns true if continuation reuse is enabled.
+//
+// Returns:
+//   True if so.
+//
+bool AsyncTransformation::ReuseContinuations()
+{
+#ifdef DEBUG
+    return JitConfig.JitAsyncReuseContinuations() != 0;
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------

@@ -251,7 +251,7 @@ class AsyncTransformation
                                         const ContinuationLayout&        layout,
                                         const ContinuationLayoutBuilder& subLayout,
                                         BasicBlock*                      suspendBB);
-    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB);
+    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
@@ -295,6 +295,7 @@ class AsyncTransformation
     unsigned    GetExceptionVar();
     BasicBlock* GetSharedReturnBB();
 
+    bool ReuseContinuations();
     void CreateResumptionsAndSuspensions();
     void CreateResumptionSwitch();
 
