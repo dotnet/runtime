@@ -153,10 +153,10 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(0);
 
             // FIXME: Add a way to encode directly into the writer without a scratch buffer
-            int bufSize = e0.EncodeSize();
-            byte[] buf = new byte[bufSize];
-            e0.Encode(buf);
-            writer.Write(buf);
+            int encodeSize = e0.EncodeSize();
+            int bytesWritten = e0.Encode(writer.Buffer.GetSpan(encodeSize));
+            Debug.Assert(bytesWritten == encodeSize);
+            writer.Buffer.Advance((int)bytesWritten);
 
             writer.WriteULEB128((ulong)functionIndices.Length);
 
