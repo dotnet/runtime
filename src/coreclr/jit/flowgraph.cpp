@@ -7559,6 +7559,12 @@ FlowGraphTryRegion* FlowGraphTryRegions::GetTryRegionByHeader(BasicBlock* block)
     }
 
     const EHblkDsc* dsc = GetCompiler()->ehGetBlockTryDsc(block);
+
+    if (block != dsc->ebdTryBeg)
+    {
+        return nullptr;
+    }
+
     return m_tryRegions[dsc->ebdID];
 }
 
@@ -7639,6 +7645,18 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     return regions;
 }
 
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::NumBlocks: Dump the number of blocks in the try region.
+//
+// Arguments:
+//    region -- region of interest
+//
+unsigned FlowGraphTryRegion::NumBlocks() const
+{
+    BitVecTraits traits = m_regions->GetBlockBitVecTraits();
+    return BitVecOps::Count(&traits, m_blocks);
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -7650,8 +7668,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
 {
     unsigned const regionNum = region->m_regions->GetCompiler()->ehGetIndex(region->m_ehDsc);
-    BitVecTraits   traits    = region->m_regions->GetBlockBitVecTraits();
-    printf("EH#%02u: %u blocks", regionNum, BitVecOps::Count(&traits, region->m_blocks));
+    printf("EH#%02u: %u blocks", regionNum, region->NumBlocks());
 
     // print block ranges like loops do?
 }

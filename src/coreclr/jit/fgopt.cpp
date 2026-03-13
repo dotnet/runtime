@@ -1644,15 +1644,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         assert(switchTree->OperIs(GT_SWITCH));
     }
 
-#if defined(TARGET_WASM)
-    if ((switchTree->gtFlags & GTF_SWITCH_WASM_EH) != 0)
-    {
-        // Don't optimize a switch with EH info, as the switch lowering for WASM relies on the EH info to be present
-        // on the GT_SWITCH node.
-        return false;
-    }
-#endif // defined(TARGET_WASM)
-
     noway_assert(switchTree->TypeIs(TYP_VOID));
 
     // At this point all of the case jump targets have been updated such

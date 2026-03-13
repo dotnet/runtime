@@ -27,6 +27,7 @@
 INST(invalid,              "INVALID",              0, IF_NONE,          BAD_CODE)
 INST(unreachable,          "unreachable",          0, IF_OPCODE,        0x00)
 INST(label,                "label",                0, IF_RAW_ULEB128,   0x00)
+INST(catch,                "catch",                0, IF_CATCH_DECL,    0x00)
 INST(local_cnt,            "local.cnt",            0, IF_RAW_ULEB128,   0x00)
 INST(local_decl,           "local",                0, IF_LOCAL_DECL,    0x00)
 INST(nop,                  "nop",                  0, IF_OPCODE,        0x01)
@@ -45,6 +46,7 @@ INST(return_call,          "return_call",          0, IF_FUNCIDX,       0x12)
 INST(return_call_indirect, "return_call_indirect", 0, IF_CALL_INDIRECT, 0x13)
 
 INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
+INST(try_table,   "try_table",   0, IF_TRY_TABLE,   0x1F)
 
 INST(local_get,    "local.get",    0, IF_ULEB128, 0x20)
 INST(local_set,    "local.set",    0, IF_ULEB128, 0x21)

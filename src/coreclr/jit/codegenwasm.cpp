@@ -264,7 +264,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
 #endif
 
-    NYI_WASM("genFuncletProlog");
+    // NYI_WASM("genFuncletProlog");
 }
 
 void CodeGen::genFuncletEpilog()
@@ -276,7 +276,7 @@ void CodeGen::genFuncletEpilog()
     }
 #endif
 
-    NYI_WASM("genFuncletEpilog");
+    // NYI_WASM("genFuncletEpilog");
 }
 
 //------------------------------------------------------------------------
@@ -325,7 +325,7 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
         else
         {
-            // blocks bind to end
+            // blocks and trys bind to end
             match = ii->End();
         }
 
@@ -377,6 +377,25 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             if (interval->IsLoop())
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
+            }
+            else if (interval->IsTry())
+            {
+                // We have to handle try table emission here, since there may be blocks nested inside.
+                //
+                LIR::Range&    blockRange = LIR::AsRange(block);
+                GenTree* const jTrue      = blockRange.LastNode();
+                assert(jTrue->OperIs(GT_JTRUE));
+                assert((jTrue->gtFlags & GTF_JTRUE_WASM_EH) != 0);
+
+                // Empty stack sig, one catch clause
+                GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
+
+                // Catch clause is the false target.
+                // True target should be the next block.
+                assert(block->GetTrueTarget() == block->Next());
+                BasicBlock* const target = block->GetFalseTarget();
+                unsigned          depth  = findTargetDepth(target);
+                GetEmitter()->emitIns_J(INS_catch, EA_4BYTE, depth, target);
             }
             else
             {
@@ -550,19 +569,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-            genCodeForJTrue(treeNode->AsOp());
-            break;
 
-        case GT_SWITCH:
-
-            if (treeNode->gtFlags & GTF_SWITCH_WASM_EH)
+            if ((treeNode->gtFlags & GTF_JTRUE_WASM_EH) != 0)
             {
-                genWasmTryTable(treeNode);
+                // hack -- remove tree earlier or something to avoid this?
+                GetEmitter()->emitIns(INS_drop);
             }
             else
             {
-                genTableBasedSwitch(treeNode);
+                genCodeForJTrue(treeNode->AsOp());
             }
+            break;
+
+        case GT_SWITCH:
+            genTableBasedSwitch(treeNode);
             break;
 
         case GT_RETURN:
@@ -749,51 +769,17 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // Remarks:
 //    Logically we transform
 //
-//    switch (v) {c0, c1, ... cn-2, default}
+//    JTRUE (tree) bTrue bFalse
 //
 //    into
 //
-//    block
-//      try_table (emptysig) catch (exsig) 0
+//      try_table (emptysig) catch (exsig) bFalse
 //
-//    local.get $sp
-//    memory.load <eh state offset>
-//    br_table c0 c1 ... cn-2 default
-//    unreached
-//
-//    The default case is the non-exceptional continuation.
-//
-//
-void CodeGen::genWasmTryTable(GenTree* treeNode)
+void CodeGen::genWasmTryTable(GenTreeOp* treeNode)
 {
-    BasicBlock* const block = m_compiler->compCurBB;
-    assert(block->KindIs(BBJ_SWITCH));
-
-    genConsumeOperands(treeNode->AsOp());
-
-    BBswtDesc* const desc      = block->GetSwitchTargets();
-    unsigned const   caseCount = desc->GetCaseCount();
-
-    // We don't expect degenerate or default-less switches
-    //
-    assert(caseCount > 0);
-    assert(desc->HasDefaultCase());
-
-    //// try_table list (labelidx*) labelidx
-    //// list is prefixed with length, which is caseCount - 1
-    ////
-    // GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount - 1);
-
-    //// Emit the list case targets, then default case target
-    //// (which is always the last case in the desc).
-    ////
-    // for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
-    //{
-    //     BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
-    //     unsigned          depth = findTargetDepth(caseTarget);
-
-    //    GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
-    //}
+    // This has the right control flow shape but wrong opcode.
+    // TODO -- implement for real
+    genCodeForJTrue(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -2944,9 +2930,15 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// genEHCatchRet - Generate code for an EH catch return.
+//
+// Arguments:
+//    block -- the block with BBJ_EHCATCHRET that we need to generate code for
+//
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    NYI_WASM("genEHCatchRet");
+    // No codegen needed for Wasm
 }
 
 void CodeGen::genStructReturn(GenTree* treeNode)

@@ -4990,7 +4990,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef TARGET_WASM
     // Make EH continuation flow explicit
     //
-    DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgWasmEhFlow);
+    DoPhase(this, PHASE_WASM_EH_FLOW, &Compiler::fgWasmEhFlow);
 
     // Clean up unreachable blocks.
     //

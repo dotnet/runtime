@@ -542,7 +542,7 @@ enum GenTreeFlags : unsigned
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
 #endif // FEATURE_HW_INTRINSICS
 
-    GTF_SWITCH_WASM_EH          = 0x80000000, // GT_SWITCH -- this switch is used for WebAssembly exception handling
+    GTF_JTRUE_WASM_EH          = 0x80000000, // GT_JTRUE -- this JTRUE will become a wasm try_table
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)

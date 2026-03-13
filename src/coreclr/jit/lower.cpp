@@ -861,15 +861,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     JITDUMP("Lowering switch " FMT_BB ", %d cases\n", originalSwitchBB->bbNum, jumpCnt);
 
-#ifdef TARGET_WASM
-    // Wasm encodes EH flow via special switches. Do not alter these in any way.
-    //
-    if (node->gtFlags & GTF_SWITCH_WASM_EH)
-    {
-        return node->gtNext;
-    }
-#endif // TARGET_WASM
-
     // Handle a degenerate case: if the switch has only a default case, just convert it
     // to an unconditional branch. This should only happen in minopts or with debuggable
     // code.

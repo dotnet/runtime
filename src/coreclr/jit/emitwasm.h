@@ -19,6 +19,7 @@ public:
 void emitIns(instruction ins);
 void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Invalid);
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_Ty_I(instruction ins, WasmValueType ty, unsigned int imm);
 void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
 void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);

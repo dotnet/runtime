@@ -2258,6 +2258,12 @@ public:
     template<typename TFunc>
     BasicBlockVisit VisitTryRegionBlocksReversePostOrder(TFunc func);
 
+    unsigned NumBlocks() const;
+
+    bool HasCatchHandler() const {
+        return m_ehDsc->HasCatchHandler();
+    }
+
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegion* region);
 #endif
