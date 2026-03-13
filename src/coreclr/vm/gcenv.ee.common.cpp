@@ -205,11 +205,14 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
         // we MUST NOT attempt to do promotion here, as the GC is not expecting conservative reporting to report
         // conservative roots during the relocate phase.
     }
-    else if (flags & GC_CALL_INTERIOR)
+    else if ((flags & GC_CALL_INTERIOR)
+#ifdef HAVE_GCCOVER
+        // In GC stress cDAC verification mode, skip the PromoteCarefully filter
+        // so the runtime reports all interior refs, matching DAC/cDAC behavior.
+        && !pCtx->skipPromoteCarefully
+#endif
+        )
     {
-        // for interior pointers, we optimize the case in which
-        //  it points into the current threads stack area
-        //
         PromoteCarefully(pCtx->f, ppObj, pCtx->sc, flags);
     }
     else

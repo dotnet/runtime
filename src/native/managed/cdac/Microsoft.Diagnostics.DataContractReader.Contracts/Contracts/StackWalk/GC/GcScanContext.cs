@@ -9,7 +9,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 internal class GcScanContext
 {
 
-
     private readonly Target _target;
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];

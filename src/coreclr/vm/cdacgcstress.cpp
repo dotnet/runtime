@@ -48,7 +48,6 @@ static const int MAX_COLLECTED_REFS = 4096;
 static HMODULE          s_cdacModule = NULL;
 static intptr_t         s_cdacHandle = 0;
 static IUnknown*        s_cdacSosInterface = nullptr;
-static decltype(&cdac_reader_flush_cache) s_flushCache = nullptr;
 
 // Static state — legacy DAC
 static HMODULE          s_dacModule = NULL;
@@ -61,8 +60,10 @@ static FILE*            s_logFile = nullptr;
 
 // Verification counters (reported at shutdown)
 static volatile LONG    s_verifyCount = 0;
-static volatile LONG    s_verifyPass = 0;
-static volatile LONG    s_verifyFail = 0;
+static volatile LONG    s_dacPass = 0;
+static volatile LONG    s_dacFail = 0;
+static volatile LONG    s_rtPass = 0;
+static volatile LONG    s_rtFail = 0;
 static volatile LONG    s_verifySkip = 0;
 
 // Thread-local storage for the current thread context at the stress point.
@@ -135,24 +136,30 @@ public:
         return S_OK;
     }
 
+    // Helper for ReadVirtual — AVInRuntimeImplOkayHolder cannot be directly
+    // inside PAL_TRY scope (see controller.cpp:109).
+    static void ReadVirtualHelper(void* src, BYTE* buffer, ULONG32 bytesRequested)
+    {
+        AVInRuntimeImplOkayHolder AVOkay;
+        memcpy(buffer, src, bytesRequested);
+    }
+
     HRESULT STDMETHODCALLTYPE ReadVirtual(CLRDATA_ADDRESS address, BYTE* buffer, ULONG32 bytesRequested, ULONG32* bytesRead) override
     {
         void* src = reinterpret_cast<void*>(static_cast<uintptr_t>(address));
-        MEMORY_BASIC_INFORMATION mbi;
-        if (VirtualQuery(src, &mbi, sizeof(mbi)) == 0 || mbi.State != MEM_COMMIT)
+        struct Param { void* src; BYTE* buffer; ULONG32 bytesRequested; ULONG32* bytesRead; } param;
+        param.src = src; param.buffer = buffer; param.bytesRequested = bytesRequested; param.bytesRead = bytesRead;
+        PAL_TRY(Param *, pParam, &param)
+        {
+            ReadVirtualHelper(pParam->src, pParam->buffer, pParam->bytesRequested);
+            *pParam->bytesRead = pParam->bytesRequested;
+        }
+        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
         {
             *bytesRead = 0;
             return E_FAIL;
         }
-        DWORD prot = mbi.Protect & 0xFF;
-        if (!(prot == PAGE_READONLY || prot == PAGE_READWRITE || prot == PAGE_EXECUTE_READ ||
-              prot == PAGE_EXECUTE_READWRITE || prot == PAGE_WRITECOPY || prot == PAGE_EXECUTE_WRITECOPY))
-        {
-            *bytesRead = 0;
-            return E_FAIL;
-        }
-        memcpy(buffer, src, bytesRequested);
-        *bytesRead = bytesRequested;
+        PAL_ENDTRY
         return S_OK;
     }
 
@@ -192,51 +199,34 @@ static InProcessDataTarget* s_dataTarget = nullptr;
 // These allow the cDAC to read memory from the current process.
 //-----------------------------------------------------------------------------
 
+// Helper for ReadFromTargetCallback — AVInRuntimeImplOkayHolder cannot be
+// directly inside PAL_TRY scope (see controller.cpp:109).
+static void ReadFromTargetHelper(void* src, uint8_t* dest, uint32_t count)
+{
+    AVInRuntimeImplOkayHolder AVOkay;
+    memcpy(dest, src, count);
+}
+
 static int ReadFromTargetCallback(uint64_t addr, uint8_t* dest, uint32_t count, void* context)
 {
-    // In-process memory read with address validation.
-    // The cDAC may try to read from addresses that are not yet mapped or are invalid
-    // (e.g., following stale pointer chains). We validate with VirtualQuery before reading
-    // because the CLR's vectored exception handler intercepts AVs before SEH __except.
     void* src = reinterpret_cast<void*>(static_cast<uintptr_t>(addr));
-    MEMORY_BASIC_INFORMATION mbi;
-    if (VirtualQuery(src, &mbi, sizeof(mbi)) == 0)
+    struct Param { void* src; uint8_t* dest; uint32_t count; } param;
+    param.src = src; param.dest = dest; param.count = count;
+    PAL_TRY(Param *, pParam, &param)
+    {
+        ReadFromTargetHelper(pParam->src, pParam->dest, pParam->count);
+    }
+    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+    {
         return E_FAIL;
-
-    if (mbi.State != MEM_COMMIT)
-        return E_FAIL;
-
-    // Check the page protection allows reading
-    DWORD prot = mbi.Protect & 0xFF;
-    if (!(prot == PAGE_READONLY || prot == PAGE_READWRITE || prot == PAGE_EXECUTE_READ ||
-          prot == PAGE_EXECUTE_READWRITE || prot == PAGE_WRITECOPY || prot == PAGE_EXECUTE_WRITECOPY))
-        return E_FAIL;
-
-    // Ensure the entire range falls within this region
-    uintptr_t regionEnd = reinterpret_cast<uintptr_t>(mbi.BaseAddress) + mbi.RegionSize;
-    if (addr + count > regionEnd)
-        return E_FAIL;
-
-    memcpy(dest, src, count);
+    }
+    PAL_ENDTRY
     return S_OK;
 }
 
 static int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
 {
-    void* dst = reinterpret_cast<void*>(static_cast<uintptr_t>(addr));
-    MEMORY_BASIC_INFORMATION mbi;
-    if (VirtualQuery(dst, &mbi, sizeof(mbi)) == 0)
-        return E_FAIL;
-
-    if (mbi.State != MEM_COMMIT)
-        return E_FAIL;
-
-    DWORD prot = mbi.Protect & 0xFF;
-    if (!(prot == PAGE_READWRITE || prot == PAGE_EXECUTE_READWRITE || prot == PAGE_WRITECOPY || prot == PAGE_EXECUTE_WRITECOPY))
-        return E_FAIL;
-
-    memcpy(dst, buff, count);
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, uint32_t contextBufferSize, uint8_t* contextBuffer, void* context)
@@ -351,10 +341,6 @@ bool CdacGcStress::Initialize()
     // Read configuration for fail-fast behavior
     s_failFast = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacFailFast) != 0;
 
-    // Resolve flush_cache for invalidating stale data between stress points
-    s_flushCache = reinterpret_cast<decltype(&cdac_reader_flush_cache)>(
-        ::GetProcAddress(s_cdacModule, "cdac_reader_flush_cache"));
-
     // Load legacy DAC (mscordaccore.dll) for three-way comparison
     {
         PathString dacPath;
@@ -412,19 +398,21 @@ void CdacGcStress::Shutdown()
         return;
 
     // Print summary to stderr so results are always visible
-    fprintf(stderr, "CDAC GC Stress: %ld verifications (%ld passed, %ld failed, %ld skipped)\n",
-        (long)s_verifyCount, (long)s_verifyPass, (long)s_verifyFail, (long)s_verifySkip);
+    fprintf(stderr, "CDAC GC Stress: %ld verifications (DAC: %ld pass / %ld fail, RT: %ld pass / %ld fail, %ld skipped)\n",
+        (long)s_verifyCount, (long)s_dacPass, (long)s_dacFail, (long)s_rtPass, (long)s_rtFail, (long)s_verifySkip);
     STRESS_LOG4(LF_GCROOTS, LL_ALWAYS,
-        "CDAC GC Stress shutdown: %d verifications (%d passed, %d failed, %d skipped)\n",
-        (int)s_verifyCount, (int)s_verifyPass, (int)s_verifyFail, (int)s_verifySkip);
+        "CDAC GC Stress shutdown: %d verifications (DAC: %d pass / %d fail, skipped: %d)\n",
+        (int)s_verifyCount, (int)s_dacPass, (int)s_dacFail, (int)s_verifySkip);
 
     if (s_logFile != nullptr)
     {
         fprintf(s_logFile, "\n=== Summary ===\n");
         fprintf(s_logFile, "Total verifications: %ld\n", (long)s_verifyCount);
-        fprintf(s_logFile, "  Passed:  %ld\n", (long)s_verifyPass);
-        fprintf(s_logFile, "  Failed:  %ld\n", (long)s_verifyFail);
-        fprintf(s_logFile, "  Skipped: %ld\n", (long)s_verifySkip);
+        fprintf(s_logFile, "  DAC  Passed: %ld\n", (long)s_dacPass);
+        fprintf(s_logFile, "  DAC  Failed: %ld\n", (long)s_dacFail);
+        fprintf(s_logFile, "  RT   Passed: %ld\n", (long)s_rtPass);
+        fprintf(s_logFile, "  RT   Failed: %ld\n", (long)s_rtFail);
+        fprintf(s_logFile, "  Skipped:     %ld\n", (long)s_verifySkip);
         fclose(s_logFile);
         s_logFile = nullptr;
     }
@@ -643,6 +631,7 @@ static void CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* ou
     gcctx.f = CollectRuntimeRefsPromoteFunc;
     gcctx.sc = &sc;
     gcctx.cf = NULL;
+    gcctx.skipPromoteCarefully = true;  // Report all interior refs for cDAC comparison
 
     // Set FORBIDGC_LOADER_USE_ENABLED so MethodDesc::GetName uses NOTHROW
     // instead of THROWS inside EECodeManager::EnumGcRefs.
@@ -788,8 +777,17 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     s_currentThreadId = pThread->GetOSThreadId();
 
     // Flush both caches at the same point so both read fresh data.
-    if (s_flushCache != nullptr)
-        s_flushCache(s_cdacHandle);
+    // Use IXCLRDataProcess::Flush() which clears the cDAC's ProcessedData cache.
+    if (s_cdacSosInterface != nullptr)
+    {
+        IXCLRDataProcess* pCdacProcess = nullptr;
+        HRESULT hr = s_cdacSosInterface->QueryInterface(__uuidof(IXCLRDataProcess), reinterpret_cast<void**>(&pCdacProcess));
+        if (SUCCEEDED(hr) && pCdacProcess != nullptr)
+        {
+            pCdacProcess->Flush();
+            pCdacProcess->Release();
+        }
+    }
 
     if (s_dacSosInterface != nullptr)
     {
@@ -830,7 +828,7 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     int cdacCount = (int)cdacRefs.GetCount();
     int dacCount = haveDac ? (int)dacRefs.GetCount() : -1;
 
-    // Primary comparison: cDAC vs DAC (apples-to-apples, same SOSStackRefData contract)
+    // Compare cDAC vs DAC
     bool cdacMatchesDac = true;
     if (haveDac)
     {
@@ -841,17 +839,25 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         if (dacBuf != nullptr) dacRefs.CloseRawBuffer();
     }
 
-    if (!cdacMatchesDac)
-    {
-        InterlockedIncrement(&s_verifyFail);
-        STRESS_LOG3(LF_GCROOTS, LL_ERROR,
-            "CDAC GC Stress MISMATCH: cDAC=%d vs DAC=%d at IP=0x%p\n",
-            cdacCount, dacCount, GetIP(regs));
+    // Compare cDAC vs runtime (count-only for now)
+    bool cdacMatchesRt = (cdacCount == runtimeCount);
 
-        if (s_logFile != nullptr)
+    // Update counters
+    if (cdacMatchesDac) InterlockedIncrement(&s_dacPass); else InterlockedIncrement(&s_dacFail);
+    if (cdacMatchesRt) InterlockedIncrement(&s_rtPass); else InterlockedIncrement(&s_rtFail);
+
+    // Determine log tag
+    const char* dacTag = cdacMatchesDac ? "DAC-PASS" : "DAC-FAIL";
+    const char* rtTag = cdacMatchesRt ? "RT-PASS" : "RT-FAIL";
+
+    if (s_logFile != nullptr)
+    {
+        fprintf(s_logFile, "[%s][%s] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
+            dacTag, rtTag, pThread->GetOSThreadId(), (void*)GetIP(regs), cdacCount, dacCount, runtimeCount);
+
+        // Log detailed refs on any failure
+        if (!cdacMatchesDac || !cdacMatchesRt)
         {
-            fprintf(s_logFile, "[FAIL] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
-                pThread->GetOSThreadId(), (void*)GetIP(regs), cdacCount, dacCount, runtimeCount);
             for (int i = 0; i < cdacCount; i++)
                 fprintf(s_logFile, "  cDAC [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx SourceType=%d\n",
                     i, (unsigned long long)cdacRefs[i].Address, (unsigned long long)cdacRefs[i].Object,
@@ -865,41 +871,14 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
             for (int i = 0; i < runtimeCount; i++)
                 fprintf(s_logFile, "  RT   [%d]: Address=0x%llx Object=0x%llx Flags=0x%x\n",
                     i, (unsigned long long)runtimeRefsBuf[i].Address, (unsigned long long)runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags);
-
-            // Dump Frame chain for diagnostics
-            fprintf(s_logFile, "  FRAMES: initSP=0x%llx\n", (unsigned long long)GetSP(regs));
-            Frame* pFrame = pThread->GetFrame();
-            int frameIdx = 0;
-            while (pFrame != nullptr && pFrame != FRAME_TOP && frameIdx < 20)
-            {
-                TADDR frameAddr = dac_cast<TADDR>(pFrame);
-                PCODE retAddr = 0;
-                retAddr = pFrame->GetReturnAddress();
-                fprintf(s_logFile, "  FRAME[%d]: addr=0x%llx id=%d retAddr=0x%llx",
-                    frameIdx, (unsigned long long)frameAddr, (int)pFrame->GetFrameIdentifier(), (unsigned long long)retAddr);
-                if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
-                {
-                    InlinedCallFrame* pICF = (InlinedCallFrame*)pFrame;
-                    bool hasActive = InlinedCallFrame::FrameHasActiveCall(pFrame);
-                    fprintf(s_logFile, " [ICF active=%d callSiteSP=0x%llx callerRetAddr=0x%llx]",
-                        hasActive, (unsigned long long)(TADDR)pICF->GetCallSiteSP(),
-                        (unsigned long long)pICF->m_pCallerReturnAddress);
-                }
-                fprintf(s_logFile, "\n");
-                pFrame = pFrame->PtrNextFrame();
-                frameIdx++;
-            }
             fflush(s_logFile);
         }
-
-        ReportMismatch("cDAC stack reference verification failed - mismatch between cDAC and DAC GC refs", pThread, regs);
     }
-    else
+
+    // Fail-fast on DAC mismatch (the primary correctness check)
+    if (!cdacMatchesDac)
     {
-        InterlockedIncrement(&s_verifyPass);
-        if (s_logFile != nullptr)
-            fprintf(s_logFile, "[PASS] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
-                pThread->GetOSThreadId(), (void*)GetIP(regs), cdacCount, dacCount, runtimeCount);
+        ReportMismatch("cDAC stack reference verification failed - mismatch between cDAC and DAC GC refs", pThread, regs);
     }
 }
 

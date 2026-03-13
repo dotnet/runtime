@@ -27,12 +27,6 @@ int cdac_reader_init(
 //   handle: handle to the reader
 int cdac_reader_free(intptr_t handle);
 
-// Flush the cDAC reader's data cache
-// Must be called before each use when reading from a live (non-frozen) target,
-// since cached data may be stale.
-//   handle: handle to the reader
-int cdac_reader_flush_cache(intptr_t handle);
-
 // Get the SOS interface from the cDAC reader
 //   handle: handle to the reader
 //   legacyImpl: optional legacy implementation of the interface tha will be used as a fallback

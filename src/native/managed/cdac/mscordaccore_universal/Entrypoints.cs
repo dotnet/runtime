@@ -62,17 +62,6 @@ internal static class Entrypoints
         return 0;
     }
 
-    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}flush_cache")]
-    private static unsafe int FlushCache(IntPtr handle)
-    {
-        ContractDescriptorTarget? target = GCHandle.FromIntPtr(handle).Target as ContractDescriptorTarget;
-        if (target == null)
-            return -1;
-
-        target.ProcessedData.Clear();
-        return 0;
-    }
-
     /// <summary>
     /// Create the SOS-DAC interface implementation.
     /// </summary>

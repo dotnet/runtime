@@ -347,6 +347,9 @@ typedef struct
     ScanContext*   sc;
     CrawlFrame *   cf;
     SetSHash<Object**, PtrSetSHashTraits<Object**> > *pScannedSlots;
+#ifdef HAVE_GCCOVER
+    bool           skipPromoteCarefully; // When true, interior pointers bypass PromoteCarefully filtering
+#endif
 } GCCONTEXT;
 
 #if defined(_DEBUG)
