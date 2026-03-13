@@ -3,7 +3,7 @@
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="ECDomainParameters"
   namespace="System.Security.Cryptography.Asn1"
-  emitType="both">
+  emitType="ref">
 
   <!--
     https://www.secg.org/sec1-v2.pdf, C.2
