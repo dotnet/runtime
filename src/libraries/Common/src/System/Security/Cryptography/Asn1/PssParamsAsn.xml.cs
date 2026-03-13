@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -261,6 +261,76 @@ namespace System.Security.Cryptography.Asn1
         internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn MaskGenAlgorithm;
         internal int SaltLength;
         internal int TrailerField;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+
+            // DEFAULT value handler for HashAlgorithm.
+            {
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                HashAlgorithm.Encode(tmp);
+
+                if (!tmp.EncodedValueEquals(SharedPssParamsAsn.DefaultHashAlgorithm))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                }
+            }
+
+
+            // DEFAULT value handler for MaskGenAlgorithm.
+            {
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                MaskGenAlgorithm.Encode(tmp);
+
+                if (!tmp.EncodedValueEquals(SharedPssParamsAsn.DefaultMaskGenAlgorithm))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+                }
+            }
+
+
+            // DEFAULT value handler for SaltLength.
+            {
+                const int AsnManagedIntegerDerMaxEncodeSize = 6;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
+                tmp.WriteInteger(SaltLength);
+
+                if (!tmp.EncodedValueEquals(SharedPssParamsAsn.DefaultSaltLength))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 2));
+                }
+            }
+
+
+            // DEFAULT value handler for TrailerField.
+            {
+                const int AsnManagedIntegerDerMaxEncodeSize = 6;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
+                tmp.WriteInteger(TrailerField);
+
+                if (!tmp.EncodedValueEquals(SharedPssParamsAsn.DefaultTrailerField))
+                {
+                    writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 3));
+                    tmp.CopyTo(writer);
+                    writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 3));
+                }
+            }
+
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePssParamsAsn decoded)
         {

@@ -217,16 +217,7 @@ namespace Internal.Cryptography
         internal static CryptographicException CreateAlgorithmUnknownException(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             AsnWriter encodedId = new(AsnEncodingRules.DER);
-
-            using (encodedId.PushSequence())
-            {
-                encodedId.WriteObjectIdentifier(identifier.Algorithm);
-
-                if (identifier.HasParameters)
-                {
-                    encodedId.WriteEncodedValue(identifier.Parameters);
-                }
-            }
+            identifier.Encode(encodedId);
 #if NET
             return encodedId.Encode(static encoded => CreateAlgorithmUnknownException(Convert.ToHexString(encoded)));
 #else

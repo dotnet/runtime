@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -128,6 +128,26 @@ namespace System.Security.Cryptography.Asn1
         internal ReadOnlySpan<byte> B;
         internal ReadOnlySpan<byte> Seed;
         internal bool HasSeed;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteOctetString(A);
+            writer.WriteOctetString(B);
+
+            if (HasSeed)
+            {
+                writer.WriteBitString(Seed, 0);
+            }
+
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCurveAsn decoded)
         {

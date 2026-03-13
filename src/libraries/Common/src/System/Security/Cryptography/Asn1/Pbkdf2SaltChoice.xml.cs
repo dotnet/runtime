@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -131,6 +131,34 @@ namespace System.Security.Cryptography.Asn1
         internal bool HasSpecified;
         internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn OtherSource;
         internal bool HasOtherSource;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            bool wroteValue = false;
+
+            if (HasSpecified)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                writer.WriteOctetString(Specified);
+                wroteValue = true;
+            }
+
+            if (HasOtherSource)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                OtherSource.Encode(writer);
+                wroteValue = true;
+            }
+
+            if (!wroteValue)
+            {
+                throw new CryptographicException();
+            }
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2SaltChoice decoded)
         {

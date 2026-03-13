@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -155,6 +155,38 @@ namespace System.Security.Cryptography.Asn1
         internal int IterationCount;
         internal int? KeyLength;
         internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn Prf;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            Salt.Encode(writer);
+            writer.WriteInteger(IterationCount);
+
+            if (KeyLength.HasValue)
+            {
+                writer.WriteInteger(KeyLength.Value);
+            }
+
+
+            // DEFAULT value handler for Prf.
+            {
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                Prf.Encode(tmp);
+
+                if (!tmp.EncodedValueEquals(SharedPbkdf2Params.DefaultPrf))
+                {
+                    tmp.CopyTo(writer);
+                }
+            }
+
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2Params decoded)
         {

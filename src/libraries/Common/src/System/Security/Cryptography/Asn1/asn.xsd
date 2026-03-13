@@ -154,6 +154,7 @@
           </xs:choice>
         </xs:sequence>
         <xs:attribute name="valueName" use="optional" type="xs:NCName" />
+        <xs:attribute name="emitValueBuilder" use="optional" type="xs:boolean" default="false" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

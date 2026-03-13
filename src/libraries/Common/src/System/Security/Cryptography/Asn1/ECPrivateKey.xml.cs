@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -151,6 +151,36 @@ namespace System.Security.Cryptography.Asn1
         internal bool HasParameters;
         internal ReadOnlySpan<byte> PublicKey;
         internal bool HasPublicKey;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(Version);
+            writer.WriteOctetString(PrivateKey);
+
+            if (HasParameters)
+            {
+                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                Parameters.Encode(writer);
+                writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            }
+
+
+            if (HasPublicKey)
+            {
+                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+                writer.WriteBitString(PublicKey, 0);
+                writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
+            }
+
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueECPrivateKey decoded)
         {

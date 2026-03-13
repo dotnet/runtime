@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -140,6 +140,45 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal ReadOnlySpan<byte> Subject;
         internal System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal ReadOnlySpan<byte> Attributes;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(Version);
+            // Validator for tag constraint for Subject
+            {
+                if (!Asn1Tag.TryDecode(Subject, out Asn1Tag validateTag, out _) ||
+                    !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
+                {
+                    throw new CryptographicException();
+                }
+            }
+
+            try
+            {
+                writer.WriteEncodedValue(Subject);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            SubjectPublicKeyInfo.Encode(writer);
+            try
+            {
+                writer.WriteEncodedValue(Attributes);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCertificationRequestInfoAsn decoded)
         {

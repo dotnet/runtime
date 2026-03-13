@@ -144,6 +144,34 @@ namespace System.Security.Cryptography.Asn1
         internal ReadOnlySpan<byte> Attributes;
         internal bool HasAttributes;
 
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(Version);
+            PrivateKeyAlgorithm.Encode(writer);
+            writer.WriteOctetString(PrivateKey);
+
+            if (HasAttributes)
+            {
+                try
+                {
+                    writer.WriteEncodedValue(Attributes);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+            }
+
+            writer.PopSequence(tag);
+        }
+
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePrivateKeyInfoAsn decoded)
         {
             Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
@@ -263,6 +291,28 @@ namespace System.Security.Cryptography.Asn1
                     System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref _reader, out _current);
                     return true;
                 }
+            }
+        }
+
+
+        internal ref struct AttributesBuilder
+        {
+            private readonly AsnWriter _writer;
+
+            internal AttributesBuilder(AsnWriter writer)
+            {
+                _writer = writer;
+                _writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
+            }
+
+            public void Add(scoped in System.Security.Cryptography.Asn1.ValueAttributeAsn value)
+            {
+                value.Encode(_writer);
+            }
+
+            public void Finish()
+            {
+                _writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
             }
         }
     }

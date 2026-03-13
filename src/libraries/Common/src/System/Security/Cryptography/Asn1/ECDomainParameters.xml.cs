@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -125,6 +125,41 @@ namespace System.Security.Cryptography.Asn1
         internal System.Security.Cryptography.Asn1.ValueSpecifiedECDomain Specified;
         internal bool HasSpecified;
         internal string? Named;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            bool wroteValue = false;
+
+            if (HasSpecified)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                Specified.Encode(writer);
+                wroteValue = true;
+            }
+
+            if (Named != null)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                try
+                {
+                    writer.WriteObjectIdentifier(Named);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+                wroteValue = true;
+            }
+
+            if (!wroteValue)
+            {
+                throw new CryptographicException();
+            }
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueECDomainParameters decoded)
         {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -157,6 +157,43 @@ namespace System.Security.Cryptography.Asn1
         internal bool HasExpandedKey;
         internal System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn Both;
         internal bool HasBoth;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            bool wroteValue = false;
+
+            if (HasSeed)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                writer.WriteOctetString(Seed, new Asn1Tag(TagClass.ContextSpecific, 0));
+                wroteValue = true;
+            }
+
+            if (HasExpandedKey)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                writer.WriteOctetString(ExpandedKey);
+                wroteValue = true;
+            }
+
+            if (HasBoth)
+            {
+                if (wroteValue)
+                    throw new CryptographicException();
+
+                Both.Encode(writer);
+                wroteValue = true;
+            }
+
+            if (!wroteValue)
+            {
+                throw new CryptographicException();
+            }
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueMLDsaPrivateKeyAsn decoded)
         {

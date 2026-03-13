@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -87,6 +87,21 @@ namespace System.Security.Cryptography.Asn1
         internal System.Numerics.BigInteger P;
         internal System.Numerics.BigInteger Q;
         internal System.Numerics.BigInteger G;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(P);
+            writer.WriteInteger(Q);
+            writer.WriteInteger(G);
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueDssParms decoded)
         {

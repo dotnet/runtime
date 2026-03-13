@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -127,6 +127,27 @@ namespace System.Security.Cryptography.Asn1
         internal ReadOnlySpan<byte> Exponent1;
         internal ReadOnlySpan<byte> Exponent2;
         internal ReadOnlySpan<byte> Coefficient;
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(Version);
+            writer.WriteInteger(Modulus);
+            writer.WriteInteger(PublicExponent);
+            writer.WriteInteger(PrivateExponent);
+            writer.WriteInteger(Prime1);
+            writer.WriteInteger(Prime2);
+            writer.WriteInteger(Exponent1);
+            writer.WriteInteger(Exponent2);
+            writer.WriteInteger(Coefficient);
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRSAPrivateKeyAsn decoded)
         {
