@@ -165,9 +165,9 @@ namespace System.Diagnostics.Tests
         [MemberData(nameof(SignalTestData))]
         public void SignalHandler_CanDisposeInHandler(PosixSignal signal)
         {
-            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created...";
-            const string PosixSignalHandlerStartedMessage = "PosixSignalHandlerStartedMessage created...";
-            const string PosixSignalHandlerDisposedMessage = "PosixSignalHandlerDisposedMessage created...";
+            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created.";
+            const string PosixSignalHandlerStartedMessage = "PosixSignalRegistration handler started.";
+            const string PosixSignalHandlerDisposedMessage = "PosixSignalRegistration disposed.";
 
             var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
