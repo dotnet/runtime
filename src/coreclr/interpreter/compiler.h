@@ -252,6 +252,7 @@ struct InterpInst
     uint32_t flags;
     int32_t dVar;
     int32_t sVars[3]; // Currently all instructions have at most 3 sregs
+    int32_t stackDepth;
 
     int32_t data[];
 

@@ -3188,7 +3188,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
         if (sfInterceptStackFrame.SP == GetSP(pvRegDisplay->pCurrentContext))
         {
-            PCODE pStartAddress = pInterceptMD->GetNativeCode();
+            PCODE pStartAddress = pInterceptMD->GetCodeForInterpreterOrJitted();
 
             EECodeInfo codeInfo(pStartAddress);
             _ASSERTE(codeInfo.IsValid());
@@ -3226,7 +3226,8 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     {
         if (fIntercepted)
         {
-            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+            EECodeInfo codeInfo(GetIP(pvRegDisplay->pCurrentContext));
+            codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
         }
 #ifdef HOST_UNIX
         if (propagateExceptionCallback)
@@ -3338,7 +3339,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
 
     STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
-    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
+    codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
 }
 
 void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
