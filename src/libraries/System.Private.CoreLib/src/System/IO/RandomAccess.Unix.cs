@@ -81,9 +81,27 @@ namespace System.IO
 
                 fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
                 {
-                    result = handle.SupportsRandomAccess
-                        ? Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset)
-                        : Interop.Sys.ReadV(handle, pinnedVectors, buffers.Count);
+                    if (handle.SupportsRandomAccess)
+                    {
+                        result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
+                        if (result == -1)
+                        {
+                            // We need to fallback to the non-offset version for certain file types
+                            // e.g: character devices (such as /dev/tty), pipes, and sockets.
+                            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                            if (errorInfo.Error == Interop.Error.ENXIO ||
+                                errorInfo.Error == Interop.Error.ESPIPE)
+                            {
+                                handle.SupportsRandomAccess = false;
+                                result = Interop.Sys.ReadV(handle, pinnedVectors, buffers.Count);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        result = Interop.Sys.ReadV(handle, pinnedVectors, buffers.Count);
+                    }
                 }
             }
             finally
@@ -201,9 +219,27 @@ namespace System.IO
                     Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset);
                     fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(left))
                     {
-                        bytesWritten = handle.SupportsRandomAccess
-                            ? Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset)
-                            : Interop.Sys.WriteV(handle, pinnedVectors, left.Length);
+                        if (handle.SupportsRandomAccess)
+                        {
+                            bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
+                            if (bytesWritten == -1)
+                            {
+                                // We need to fallback to the non-offset version for certain file types
+                                // e.g: character devices (such as /dev/tty), pipes, and sockets.
+                                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                                if (errorInfo.Error == Interop.Error.ENXIO ||
+                                    errorInfo.Error == Interop.Error.ESPIPE)
+                                {
+                                    handle.SupportsRandomAccess = false;
+                                    bytesWritten = Interop.Sys.WriteV(handle, pinnedVectors, left.Length);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            bytesWritten = Interop.Sys.WriteV(handle, pinnedVectors, left.Length);
+                        }
                     }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
