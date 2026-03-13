@@ -1323,7 +1323,7 @@ namespace System
 
         // (Vectorized) implementation for D, N, P and B formats:
         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used from two callers
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, int flags) where TChar : unmanaged, IUtfChar<TChar>
         {
             // The low byte of flags contains the required length.
