@@ -2,8 +2,6 @@ project(System.Security.Cryptography.Native.Apple C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
-add_compile_options(-gline-tables-only)
-
 set(NATIVE_LIBS_EXTRA)
 append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
 
@@ -91,7 +89,7 @@ endif()
 
 add_custom_command(
     OUTPUT pal_swiftbindings.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution ${SWIFT_COMPILER_ERRORS_FLAG} -gline-tables-only ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution ${SWIFT_COMPILER_ERRORS_FLAG} -gnone ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
     COMMENT "Compiling Swift file pal_swiftbindings.swift"
 )

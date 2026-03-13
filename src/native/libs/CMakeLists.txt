@@ -104,6 +104,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_APPLE)
         add_definitions(-D__APPLE_USE_RFC_3542)
+        add_compile_options(-gline-tables-only)
     endif ()
 
     if (CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_HAIKU)
