@@ -14,7 +14,7 @@ internal readonly struct Loader_1 : ILoader
 {
     private const string DefaultDomainFriendlyName = "DefaultDomain";
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
-    private const ushort MaxWebcilSections = 16; // // Must stay in sync with native WEBCIL_MAX_SECTIONS.
+    private const ushort MaxWebcilSections = 16; // Must stay in sync with native WEBCIL_MAX_SECTIONS.
 
     private enum ModuleFlags_1 : uint
     {
