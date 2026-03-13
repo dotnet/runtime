@@ -4219,6 +4219,39 @@ namespace System
             return ret;
         }
 
+        [RequiresUnreferencedCode("The member might be removed")]
+        [UnmanagedCallersOnly]
+        private static unsafe void ForwardCallToInvokeMember(
+            RuntimeType* pRuntimeType,
+            string* pMemberName,
+            int flags,
+            object* pTarget,
+            object[]* pArgs,
+            bool[]* pArgsIsByRef,
+            int[]* pArgsWrapperTypes,
+            Type[]* pArgsTypes,
+            Type* pRetType,
+            object* pResult,
+            Exception* pException)
+        {
+            try
+            {
+                *pResult = pRuntimeType->ForwardCallToInvokeMember(
+                    *pMemberName,
+                    (BindingFlags)flags,
+                    *pTarget,
+                    *pArgs,
+                    *pArgsIsByRef,
+                    *pArgsWrapperTypes,
+                    *pArgsTypes,
+                    *pRetType);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
         {
             int cArgs = aArgs.Length;

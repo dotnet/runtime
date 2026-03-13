@@ -119,8 +119,15 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void GetReferencedAssemblies_ReturnsValue()
         {
-            AssemblyName[] refs = _customAssembly.GetReferencedAssemblies();
-            Assert.NotEmpty(refs);
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => _customAssembly.GetReferencedAssemblies());
+            }
+            else
+            {
+                AssemblyName[] refs = _customAssembly.GetReferencedAssemblies();
+                Assert.NotEmpty(refs);
+            }
         }
 
         [Fact]
@@ -245,7 +252,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(concreteMethod.ContainsGenericParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void Invoke_OnMadeGenericMethod_Works()
         {
             MethodInfo concreteMethod = _genericMethod.MakeGenericMethod(typeof(int));
