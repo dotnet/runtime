@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
                 ValueSubjectPublicKeyInfoAsn.Decode(ref reader, out spki);
             }
             catch (AsnContentException e)
-                {
+            {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
