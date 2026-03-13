@@ -391,40 +391,34 @@ namespace System.Security.Cryptography
         // signaling the original exception should be thrown.
         private static unsafe AsnWriter? RewritePkcs8ECPrivateKeyWithZeroPublicKey(ReadOnlySpan<byte> source)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(manager.Memory, AsnEncodingRules.BER);
-                    AlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
+            ValuePrivateKeyInfoAsn.Decode(source, AsnEncodingRules.BER, out ValuePrivateKeyInfoAsn privateKeyInfo);
+            ValueAlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
 
-                    if (privateAlgorithm.Algorithm != Oids.EcPublicKey)
+            if (privateAlgorithm.Algorithm != Oids.EcPublicKey)
+            {
+                return null;
+            }
+
+            ValueECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER, out ValueECPrivateKey privateKey);
+            EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
+
+            fixed (byte* pD = ecParameters.D)
+            {
+                try
+                {
+                    if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
                     {
                         return null;
                     }
 
-                    ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
-                    EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
-
-                    fixed (byte* pD = ecParameters.D)
-                    {
-                        try
-                        {
-                            if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
-                            {
-                                return null;
-                            }
-
-                            byte[] zero = new byte[ecParameters.D!.Length];
-                            ecParameters.Q.Y = zero;
-                            ecParameters.Q.X = zero;
-                            return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
-                        }
-                        finally
-                        {
-                            Array.Clear(ecParameters.D!);
-                        }
-                    }
+                    byte[] zero = new byte[ecParameters.D!.Length];
+                    ecParameters.Q.Y = zero;
+                    ecParameters.Q.X = zero;
+                    return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
+                }
+                finally
+                {
+                    Array.Clear(ecParameters.D!);
                 }
             }
         }
