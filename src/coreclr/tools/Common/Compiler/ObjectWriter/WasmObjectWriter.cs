@@ -148,8 +148,22 @@ namespace ILCompiler.ObjectWriter
         private void WriteFunctionElement(WasmInstructionGroup e0, ReadOnlySpan<int> functionIndices)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ElementSection);
+            // e0:expr y*:list(funcidx)
+            //  elem (ref func) (ref.func y)* (active 0 e0)
+            writer.WriteULEB128(0);
+
+            // FIXME: Add a way to encode directly into the writer without a scratch buffer
+            int bufSize = e0.EncodeSize();
+            byte[] buf = new byte[bufSize];
+            e0.Encode(buf);
+            writer.Write(buf);
+
+            writer.WriteULEB128((ulong)functionIndices.Length);
+
+            foreach (int index in functionIndices)
+                writer.WriteULEB128((ulong)index);
+
             _numElements++;
-            throw new NotImplementedException();
         }
 
         private List<WasmSection> _sections = new();
@@ -179,6 +193,15 @@ namespace ILCompiler.ObjectWriter
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
             // This is a no-op for now under Wasm
+        }
+
+        WasmInstructionGroup GetImagePointerBaseOffset(int offset)
+        {
+            return new WasmInstructionGroup([
+                Global.Get(ImagePointerBaseGlobalIndex),
+                I32.Const(offset),
+                I32.Add,
+            ]);
         }
 
         private WasmDataSection CreateCombinedDataSection()
@@ -467,11 +490,23 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void WriteElements()
+        {
+            // Generate the function pointer table element that contains function pointers for all of our functions
+            int[] functionIndices = new int[_uniqueSymbols.Count];
+            _uniqueSymbols.Values.CopyTo(functionIndices, 0);
+            // Enforce that the function pointers are sequential so that (image_pointer_base + 0) == ftn index 0
+            Array.Sort(functionIndices);
+            Debug.Assert(functionIndices.FirstOrDefault() == 0);
+            WriteFunctionElement(GetImagePointerBaseOffset(0), functionIndices);
+        }
+
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             WriteImports();
             WriteExports();
+            WriteElements();
 
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
