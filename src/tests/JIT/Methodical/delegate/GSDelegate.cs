@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+
 using Xunit;
 
 public interface IGetContents<T> {

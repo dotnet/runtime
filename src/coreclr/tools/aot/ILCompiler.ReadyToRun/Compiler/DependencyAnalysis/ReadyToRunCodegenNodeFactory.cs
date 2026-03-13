@@ -364,7 +364,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmTypeNodes = new(key =>
             {
-                return new WasmTypeNode(key.Types);
+                return new WasmTypeNode(key);
             });
         }
 
@@ -484,6 +484,16 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
+                // Async methods are not emitted in composite mode nor on ARM32
+                // The mutable module tokens emission is not well tested for composite mode and we should find a real solution for that problem
+                // ARM32 relocs require the thumb bit set, and the JIT/crossgen doesn't set it properly for the usages in async methods.
+                // https://github.com/dotnet/runtime/issues/125337
+                // https://github.com/dotnet/runtime/issues/125338
+                if ((CompilationModuleGroup.IsCompositeBuildMode || Target.Architecture == TargetArchitecture.ARM)
+                    && (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
+                {
+                    continue;
+                }
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
@@ -1087,26 +1097,20 @@ namespace ILCompiler.DependencyAnalysis
             return default;
         }
 
-        private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
-        {
-            public readonly CorInfoWasmType[] Types;
-
-            public WasmTypeNodeKey(CorInfoWasmType[] types)
-            {
-                Types = types;
-            }
-
-            public bool Equals(WasmTypeNodeKey other) => Types.SequenceEqual(other.Types);
-            public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
-            public override int GetHashCode()
-                => Types.Length; // TODO-WASM: Hash all the types
-        }
-
-        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
+        private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
-            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(types));
+            WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
+            return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
+        public WasmTypeNode WasmTypeNode(MethodDesc method)
+        {
+            WasmFuncType funcType = WasmLowering.GetSignature(method);
+            return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
 }

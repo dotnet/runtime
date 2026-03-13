@@ -7,10 +7,15 @@ function libCoreRunFactory() {
         "$DOTNET",
         "$ENV",
         "$FS",
-        "$NODEFS",
-        "$NODERAWFS",
-        "corerun_shutdown"
+        "corerun_shutdown",
+        "BrowserHost_ShutdownDotnet",
     ];
+    if (LibraryManager.library.$NODEFS) {
+        commonDeps.push("$NODEFS");
+    }
+    if (LibraryManager.library.$NODERAWFS) {
+        commonDeps.push("$NODERAWFS");
+    }
     const mergeCoreRun = {
         $CORERUN: {
             selfInitialize: () => {
@@ -25,28 +30,11 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-                const originalExitJS = exitJS;
-                exitJS = (status, implicit) => {
-                    if (!implicit) {
-                        EXITSTATUS = status;
-                        ABORT = true;
-                        if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                            dotnetBrowserUtilsExports.abortBackgroundTimers();
-                        }
-                    }
-                    if (!keepRuntimeAlive()) {
-                        ABORT = true;
-                        var latched = _corerun_shutdown(EXITSTATUS || 0);
-                        if (EXITSTATUS === undefined) {
-                            EXITSTATUS = latched;
-                        }
-                    }
-                    return originalExitJS(EXITSTATUS, implicit);
-                };
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
         $CORERUN__deps: commonDeps,
+        BrowserHost_ShutdownDotnet: (exitCode) => _corerun_shutdown(exitCode),
     };
     const patchNODERAWFS = {
         cwd: () => {

@@ -294,7 +294,7 @@ void CodeGen::genCodeForBBlist()
            (thanks to GTF_ORDER_SIDEEFF).
          */
 
-        if (handlerGetsXcptnObj(block->bbCatchTyp))
+        if (handlerGetsXcptnObj(block->GetCatchType()))
         {
             for (GenTree* node : LIR::AsRange(block))
             {
@@ -407,6 +407,16 @@ void CodeGen::genCodeForBBlist()
         if (block->IsFirst() && m_compiler->lvaHasAnySwiftStackParamToReassemble())
         {
             genHomeSwiftStructStackParameters();
+        }
+#endif
+
+#ifdef TARGET_WASM
+        // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
+        // we have moved it out of the prolog to the first basic block in order to
+        // work around the restriction that the prolog can only be one insGroup.
+        if (block->IsFirst())
+        {
+            genHomeRegisterParamsOutsideProlog();
         }
 #endif
 
@@ -790,6 +800,7 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_THROW:
+        {
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -822,7 +833,17 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
                 }
             }
 
+#if defined(TARGET_WASM)
+            // For wasm the last instruction in a function or funclet must be end.
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                GetEmitter()->emitIns(INS_end);
+            }
+#endif // defined(TARGET_WASM)
+
             break;
+        }
 
         case BBJ_CALLFINALLY:
             result = genCallFinally(block);
