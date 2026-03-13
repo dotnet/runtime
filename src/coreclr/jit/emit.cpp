@@ -8442,7 +8442,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
 #ifdef TARGET_ARM
                 // ARM32 requires the Thumb bit (bit 0) set on code pointers.
-                resumeStub = (BYTE*)((size_t)resumeStub | 1);
+                // For target (intra-code pointer), OR directly — findKnownBlock preserves it.
+                // For resumeStub (external handle), use addlDelta so the handle stays clean
+                // for HandleToObject's integer division in crossgen2.
                 if (target != nullptr)
                 {
                     target = (BYTE*)((size_t)target | 1);
@@ -8453,7 +8455,11 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
                 if (m_compiler->opts.compReloc)
                 {
+#ifdef TARGET_ARM
+                    emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, resumeStub, CorInfoReloc::DIRECT, 1);
+#else
                     emitRecordRelocation(&aDstRW[i].Resume, resumeStub, CorInfoReloc::DIRECT);
+#endif
                     if (target != nullptr)
                     {
                         emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);

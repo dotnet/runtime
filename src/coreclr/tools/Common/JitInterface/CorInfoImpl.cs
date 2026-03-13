@@ -4294,13 +4294,7 @@ namespace Internal.JitInterface
 #endif
 
                 default:
-                    // Reloc points to something outside of the generated blocks.
-                    // HandleToObject resolves via integer division (by handleMultiplier) which
-                    // truncates low bits. On ARM, the JIT may have set bit 0 on the handle to
-                    // indicate a Thumb code target. Preserve those bits before they are lost.
-                    Debug.Assert(int.IsPow2(handleMultiplier), "handleMultiplier must be a power of 2 for the bitmask to capture the correct low bits");
-                    relocDelta = (int)((nint)target & (handleMultiplier - 1));
-
+                    // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject(target);
 
 #if READYTORUN
