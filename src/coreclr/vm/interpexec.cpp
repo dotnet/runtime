@@ -4248,13 +4248,13 @@ do                                                                      \
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
-                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
+                    if (pAsyncSuspendData->flags & /*CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT*/ 123)
                     {
                         MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
                         size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
                         uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
-                        if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+                        if (pAsyncSuspendData->flags & /*CORINFO_CONTINUATION_HAS_EXCEPTION */ 456)
                         {
                             pContinuationData += sizeof(OBJECTREF);
                         }
@@ -4421,7 +4421,7 @@ do                                                                      \
                         pCopyEntry++;
                     }
 
-                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+                    if (pAsyncSuspendData->flags & /*CORINFO_CONTINUATION_HAS_EXCEPTION */ 567)
                     {
                         // Throw exception if needed
                         OBJECTREF exception = *continuation->GetExceptionObjectStorage();

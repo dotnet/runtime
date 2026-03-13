@@ -5934,12 +5934,12 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     int32_t flags = 0;
     if (returnValueVar != -1)
     {
-        flags |= CORINFO_CONTINUATION_HAS_RESULT;
+        //flags |= CORINFO_CONTINUATION_HAS_RESULT;
     }
 
     if (captureContinuationContext)
     {
-        flags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+        //flags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
     }
 
     if (continuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
@@ -5949,7 +5949,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     if (needsEHHandling)
     {
-        flags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
+        //flags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
     }
 
     suspendData->flags = (CorInfoContinuationFlags)flags;

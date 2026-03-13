@@ -57,33 +57,20 @@ namespace System.Runtime.CompilerServices
 
     [Flags]
     // Keep in sync with CORINFO_CONTINUATION_FLAGS
-    internal enum ContinuationFlags
+    internal enum ContinuationFlags : uint
     {
-        // Note: the following 'Has' members determine the members present at
-        // the beginning of the continuation's data chunk. Each field is
-        // pointer sized when present, apart from the result that has variable
-        // size.
+        ContinueOnThreadPool = 1u << 0,
+        ContinueOnCapturedSynchronizationContext = 1u << 1,
+        ContinueOnCapturedTaskScheduler = 1u << 2,
 
-        // Whether or not the continuation starts with an OSR IL offset.
-        HasOsrILOffset = 1,
-        // If this bit is set the continuation resumes inside a try block and
-        // thus if an exception is being propagated, needs to be resumed.
-        HasException = 2,
-        // If this bit is set the continuation has space for a continuation
-        // context.
-        HasContinuationContext = 4,
-        // If this bit is set the continuation has space to store a result
-        // returned by the callee.
-        HasResult = 8,
-        // If this bit is set the continuation should continue on the thread
-        // pool.
-        ContinueOnThreadPool = 16,
-        // If this bit is set the continuation context is a
-        // SynchronizationContext that we should continue on.
-        ContinueOnCapturedSynchronizationContext = 32,
-        // If this bit is set the continuation context is a TaskScheduler that
-        // we should continue on.
-        ContinueOnCapturedTaskScheduler = 64,
+        ExceptionIndexFirstBit = 3u,
+        ExceptionIndexNumBits = 2u,
+
+        ContinuationContextIndexFirstBit = 5u,
+        ContinuationContextIndexNumBits = 2u,
+
+        ResultIndexFirstBit = 7u,
+        ResultIndexBits = 26u,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -120,28 +107,37 @@ namespace System.Runtime.CompilerServices
 
         public unsafe object GetContinuationContext()
         {
-            Debug.Assert((Flags & ContinuationFlags.HasContinuationContext) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasContinuationContext - 1));
+            const uint mask = (1u << (int)ContinuationFlags.ContinuationContextIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ContinuationContextIndexFirstBit) & mask;
+            Debug.Assert(index != mask);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize));
+            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, DataOffset + index * PointerSize));
+        }
+
+        public bool HasException()
+        {
+            const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ExceptionIndexFirstBit) & mask;
+            return index != mask;
         }
 
         public void SetException(Exception ex)
         {
-            Debug.Assert((Flags & ContinuationFlags.HasException) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasException - 1));
+            const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ExceptionIndexFirstBit) & mask;
+            Debug.Assert(index != mask);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize)) = ex;
+            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, DataOffset + index * PointerSize)) = ex;
         }
 
         public ref byte GetResultStorageOrNull()
         {
-            if ((Flags & ContinuationFlags.HasResult) == 0)
+            const uint mask = (1u << (int)ContinuationFlags.ResultIndexBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ResultIndexFirstBit) & mask;
+            if (index == mask)
                 return ref Unsafe.NullRef<byte>();
-
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasResult - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize);
+            return ref Unsafe.Add(ref data, DataOffset + index * PointerSize);
         }
     }
 
@@ -627,7 +623,7 @@ namespace System.Runtime.CompilerServices
                         System.Exception.AppendExceptionStackFrame(ex, ip, 0);
 #endif
                     }
-                    if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
+                    if (continuation == null || continuation.HasException())
                         return continuation;
                     if (Task.s_asyncDebuggingEnabled)
                     {

@@ -1881,6 +1881,8 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
     // Now allocate all  returns
     for (ReturnInfo& ret : layout->Returns)
     {
+        // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
+        layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
         ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
     }
 
@@ -2175,14 +2177,30 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
     unsigned             continuationFlags = 0;
-    if (subLayout.NeedsOSRILOffset())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
+    auto encodeIndex = [&continuationFlags](unsigned offset, unsigned firstBit, unsigned numBits) {
+        assert(numBits < 32);
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        unsigned index = offset / TARGET_POINTER_SIZE;
+        unsigned mask = (1u << numBits) - 1;
+
+        if ((index & mask) != index)
+        {
+            IMPL_LIMITATION("Cannot encode continuation offset in flags");
+        }
+
+        continuationFlags |= index << firstBit;
+        };
+
     if (subLayout.NeedsException())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
+        encodeIndex(layout.ExceptionOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
     if (subLayout.NeedsContinuationContext())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+        encodeIndex(layout.ContinuationContextOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
     if (call->gtReturnType != TYP_VOID)
-        continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
+    {
+        const ReturnInfo* returnInfo = layout.FindReturn(call);
+        assert(returnInfo != nullptr);
+        encodeIndex(returnInfo->Offset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
+    }
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
@@ -3125,12 +3143,23 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
 //
 void AsyncTransformation::CreateResumptionsAndSuspensions()
 {
+    bool useSharedLayout = m_states.size() > 1;
+    INDEBUG(useSharedLayout &= JitConfig.JitAsyncReuseContinuations() != 0);
+        
+    ContinuationLayout* sharedLayout = nullptr;
+    if (useSharedLayout)
+    {
+        JITDUMP("Creating shared layout:\n");
+        ContinuationLayoutBuilder* sharedLayoutBuilder = ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
+        sharedLayout = sharedLayoutBuilder->Create();
+    }
+
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
-        ContinuationLayout* layout = state.Layout->Create();
+        ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
         CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout);
         CreateResumption(state.CallBlock, state.Call, state.ResumptionBB, state.CallDefInfo, *layout, *state.Layout);
         CreateDebugInfoForSuspensionPoint(*layout, *state.Layout);
