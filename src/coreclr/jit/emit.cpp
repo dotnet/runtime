@@ -8437,8 +8437,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-                BYTE* target     = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
-                BYTE* resumeStub = (BYTE*)emitAsyncResumeStubEntryPoint;
+                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
+                aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
 
 #ifdef TARGET_ARM
                 // ARM32 requires the Thumb bit (bit 0) set on code pointers.
@@ -8451,14 +8452,12 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 }
 #endif
 
-                aDstRW[i].Resume       = (target_size_t)(uintptr_t)resumeStub;
-                aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
                 if (m_compiler->opts.compReloc)
                 {
 #ifdef TARGET_ARM
-                    emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, resumeStub, CorInfoReloc::DIRECT, 1);
+                    emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT, 1);
 #else
-                    emitRecordRelocation(&aDstRW[i].Resume, resumeStub, CorInfoReloc::DIRECT);
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
 #endif
                     if (target != nullptr)
                     {
