@@ -68,6 +68,7 @@ if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsO
 if /i "%1" == "logsdir"                                 (set LogsDirArg=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shift&goto Arg_Loop)
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
+if /i "%1" == "composite"                               (set __CompositeBuildMode=1&shift&goto Arg_Loop)
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -170,6 +171,10 @@ if defined CrossgenLargeVersionBubble (
     set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
 )
 
+if defined __CompositeBuildMode (
+    set __RuntestPyArgs=%__RuntestPyArgs% --composite
+)
+
 if defined CrossGen2SynthesizePgo (
     set __RuntestPyArgs=%__RuntestPyArgs% --synthesize_pgo
 )
@@ -247,6 +252,7 @@ echo sequential                - Run tests sequentially ^(no parallelism^).
 echo parallel ^<type^>           - Run tests with given level of parallelism: none, collections, assemblies, all. Default: collections.
 echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
 echo runlargeversionbubblecrossgen2tests - ^(Experimental^) Runs Crossgen2 tests with large version bubble enabled.
+echo composite                 - ^(Experimental^) Use Crossgen2 composite mode for tests.
 echo synthesizepgo             - Enabled synthesizing PGO data in CrossGen2
 echo jitstress ^<n^>             - Runs the tests with DOTNET_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with DOTNET_JitStressRegs=n

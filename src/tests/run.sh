@@ -22,6 +22,8 @@ function print_usage {
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --parallel=<type>                : Run tests in parallel (none, collections, assemblies, all) (default: collections).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
+    echo '  --runlargeversionbubblecrossgen2tests : (Experimental) Runs Crossgen2 tests with large version bubble enabled'
+    echo '  --composite                      : (Experimental) Use Crossgen2 composite mode for tests'
     echo '  --synthesizepgo                  : Runs the tests allowing crossgen2 to synthesize PGO data'
     echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
@@ -75,6 +77,8 @@ parallelType=
 runincontext=0
 tieringtest=0
 nativeaottest=0
+largeversionbubble=0
+compositemode=0
 
 for i in "$@"
 do
@@ -154,6 +158,13 @@ do
             ;;
         --runcrossgen2tests)
             export RunCrossGen2=1
+            ;;
+        --runlargeversionbubblecrossgen2tests)
+            export RunCrossGen2=1
+            largeversionbubble=1
+            ;;
+        --composite)
+            compositemode=1
             ;;
         --synthesizepgo)
             export CrossGen2SynthesizePgo=1
@@ -290,6 +301,14 @@ fi
 
 if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
+fi
+
+if [[ "$largeversionbubble" -ne 0 ]]; then
+    runtestPyArguments+=("--large_version_bubble")
+fi
+
+if [[ "$compositemode" -ne 0 ]]; then
+    runtestPyArguments+=("--composite")
 fi
 
 if [[ -n "$CrossGen2SynthesizePgo" ]]; then

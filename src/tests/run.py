@@ -103,6 +103,7 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
+parser.add_argument("--composite", dest="composite", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
@@ -834,6 +835,10 @@ def run_tests(args,
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "1"
 
+    if args.composite:
+        print("Composite Crossgen2 mode enabled")
+        os.environ["CompositeBuildMode"] = "1"
+
     if args.synthesize_pgo:
         print("Synthesizing PGO")
         os.environ["CrossGen2SynthesizePgo"] = "1"
@@ -978,6 +983,11 @@ def setup_args(args):
                               "large_version_bubble",
                               lambda arg: True,
                               "Error setting large_version_bubble")
+
+    coreclr_setup_args.verify(args,
+                              "composite",
+                              lambda arg: True,
+                              "Error setting composite")
 
     coreclr_setup_args.verify(args,
                               "run_crossgen2_tests",
