@@ -1717,7 +1717,7 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
 
     UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
     uint32_t keyLen = (uint32_t)strlen(pKey);
-    UINT32 typeArgHash = ComputeNameHashCode(pKey);
+    UINT32 typeArgHash = ComputeNameHashCode(pKey, keyLen);
     NativeHashtable::Enumerator lookup = m_externalTypeMaps.Lookup(hash);
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
