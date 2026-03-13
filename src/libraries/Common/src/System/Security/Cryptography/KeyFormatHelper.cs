@@ -11,7 +11,6 @@ namespace System.Security.Cryptography
 {
     internal static partial class KeyFormatHelper
     {
-        internal delegate void KeyReader<TRet>(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out TRet ret);
         internal delegate void ValueKeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
 
         internal static void ReadSubjectPublicKeyInfo<TRet>(
@@ -119,34 +118,6 @@ namespace System.Security.Cryptography
 
                 bytesRead = read;
                 return privateKeyInfo.PrivateKey;
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-        }
-
-        private static void ReadPkcs8<TRet>(
-            string[] validOids,
-            ReadOnlyMemory<byte> source,
-            KeyReader<TRet> keyReader,
-            out int bytesRead,
-            out TRet ret)
-        {
-            try
-            {
-                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
-                int read = reader.PeekEncodedValue().Length;
-                PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
-
-                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
-                {
-                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-                }
-
-                // Fails if there are unconsumed bytes.
-                keyReader(privateKeyInfo.PrivateKey, privateKeyInfo.PrivateKeyAlgorithm, out ret);
-                bytesRead = read;
             }
             catch (AsnContentException e)
             {
