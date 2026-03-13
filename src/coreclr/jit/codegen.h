@@ -217,7 +217,6 @@ protected:
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
     void                       genEmitNullCheck(regNumber reg);
-    void                       genWasmTryTable(GenTreeOp* node);
 #endif
 
     void        genEmitStartBlock(BasicBlock* block);

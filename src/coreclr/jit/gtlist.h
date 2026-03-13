@@ -343,8 +343,8 @@ GTNODE(SWIFT_ERROR_RET  , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE) // Retu
 //  Wasm specific nodes:
 //-----------------------------------------------------------------------------
 
-GTNODE(WASM_IF_EXCEPT   , GenTree            ,0,0, GTK_LEAF|DBK_NOTHIR)              // Pseudo-predicate, true if there is a wasm exception
-GTNODE(WASM_THROW_REF   , GenTree            ,0,0, GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm rethrow host exception (exception is an implicit operand)
+GTNODE(WASM_IF_EXCEPT   , GenTree            ,0,0,GTK_LEAF|DBK_NOTHIR)              // Pseudo-predicate, true if there is a wasm exception
+GTNODE(WASM_THROW_REF   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // Wasm rethrow host exception (exception is an implicit operand)
 
 //-----------------------------------------------------------------------------
 //  Nodes used by Lower to generate a closer CPU representation of other nodes

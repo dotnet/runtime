@@ -264,7 +264,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
 #endif
 
-    // NYI_WASM("genFuncletProlog");
+    NYI_WASM("genFuncletProlog");
 }
 
 void CodeGen::genFuncletEpilog()
@@ -276,7 +276,7 @@ void CodeGen::genFuncletEpilog()
     }
 #endif
 
-    // NYI_WASM("genFuncletEpilog");
+    NYI_WASM("genFuncletEpilog");
 }
 
 //------------------------------------------------------------------------
@@ -390,7 +390,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             }
             else if (interval->IsTry())
             {
-                // We have to handle try table emission here, since there may be blocks nested inside.
+                // We have to handle try_table emission here, since there may be blocks nested inside.
+                // (that is, we can't wait until we do codegen for JTRUE or WASM_IF_EXCEPT
                 //
                 LIR::Range&    blockRange = LIR::AsRange(block);
                 GenTree* const jTrue      = blockRange.LastNode();
@@ -414,6 +415,9 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 
                 bool isTryWrapper = false;
 
+#if FALSE
+                // TODO-WASM: block sig when we emit catch_ref
+
                 // If this interval exactly wraps a try, it represents the branch to the
                 // catch handlers. We need to emit an exnref block sig
                 //
@@ -436,6 +440,7 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                         }
                     }
                 }
+#endif
 
                 if (isTryWrapper)
                 {
@@ -722,7 +727,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_WASM_THROW_REF:
-            GetEmitter()->emitIns(INS_throw_ref);
+            // TODO-WASM: enable when we emit catch_ref instead of catch_all
+            // GetEmitter()->emitIns(INS_throw_ref);
             break;
 
         case GT_PINVOKE_PROLOG:
@@ -811,28 +817,6 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 
         GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
-}
-
-//------------------------------------------------------------------------
-// genTableBasedSwitch: emit Wasm try_table
-//
-// Arguments:
-//    treeNode - swich describing the possible EH continuations
-//
-// Remarks:
-//    Logically we transform
-//
-//    JTRUE (tree) bTrue bFalse
-//
-//    into
-//
-//      try_table (emptysig) catch (exsig) bFalse
-//
-void CodeGen::genWasmTryTable(GenTreeOp* treeNode)
-{
-    // This has the right control flow shape but wrong opcode.
-    // TODO -- implement for real
-    genCodeForJTrue(treeNode);
 }
 
 //------------------------------------------------------------------------

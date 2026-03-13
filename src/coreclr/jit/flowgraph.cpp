@@ -7535,6 +7535,10 @@ void BlockReachabilitySets::Dump()
 //------------------------------------------------------------------------
 // FlowGraphTryRegions::FlowGraphTryRegions: Constructor for FlowGraphTryRegions.
 //
+// Arguments:
+//    dfsTree    -- DFS tree for the flow graph
+//    numRegions -- Number of try regions in the method
+//
 FlowGraphTryRegions::FlowGraphTryRegions(FlowGraphDfsTree* dfsTree, unsigned numRegions)
     : m_dfsTree(dfsTree)
     , m_tryRegions(numRegions, nullptr, dfsTree->GetCompiler()->getAllocator(CMK_BasicBlock))
@@ -7571,6 +7575,10 @@ FlowGraphTryRegion* FlowGraphTryRegions::GetTryRegionByHeader(BasicBlock* block)
 //------------------------------------------------------------------------
 // FlowGraphTryRegion::FlowGraphTryRegion: Constructor for FlowGraphTryRegion.
 //
+// Arguments:
+//   ehDsc -- EH descriptor for the try region
+//   regions -- parent collection of try regions
+//
 FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions)
     : m_regions(regions)
     , m_parent(nullptr)
@@ -7583,6 +7591,13 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 
 //------------------------------------------------------------------------
 // FlowGraphTryRegions::Build: Build the flow graph try regions.
+//
+// Arguments:
+//    comp    -- Compiler instance
+//    dfsTree -- DFS tree for the flow graph
+//
+// Returns:
+//    Collection object describing all the try regions
 //
 FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree)
 {
@@ -7670,7 +7685,7 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
     unsigned const regionNum = region->m_regions->GetCompiler()->ehGetIndex(region->m_ehDsc);
     printf("EH#%02u: %u blocks", regionNum, region->NumBlocks());
 
-    // print block ranges like loops do?
+    // TODO: print block ranges like loops do?
 }
 
 //------------------------------------------------------------------------
@@ -7689,11 +7704,13 @@ void FlowGraphTryRegions::Dump(FlowGraphTryRegions* regions)
     {
         printf("%u try regions:\n", regions->NumTryRegions());
 
-        // show nesting? We currently only have parent links
-
+        // TODO:show nesting? We currently only have parent links
+        //
         for (FlowGraphTryRegion* region : regions->m_tryRegions)
         {
-            // Collection is indexed by EH ID, so may have gaps if we've deleted EH regions. Skip those.
+            // Collection is indexed by EH ID, so may have gaps if we've deleted EH regions.
+            // Skip those.
+            //
             if (region != nullptr)
             {
                 region->Dump(region);
@@ -7703,4 +7720,4 @@ void FlowGraphTryRegions::Dump(FlowGraphTryRegions* regions)
     }
 }
 
-#endif // debug
+#endif // DEBUG

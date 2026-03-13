@@ -537,7 +537,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             // no opcode, this is part of a try_table
 
             size = 1; // catch kind
-            // TODO: tag index
+            // TODO-WASM: tag index
             // size += PADDED_RELOC_SIZE;                 // catch type tag
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
@@ -806,9 +806,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_CATCH_DECL:
         {
-            uint8_t catchKind = 3; // should be 1: catch_ref with type tag
+            // TODO-WASM: this should be Kind 1: catch_ref with type tag
+            uint8_t catchKind = 2;
             dst += emitOutputByte(dst, catchKind);
-            // TODO: figure out how to get proper tag index here
+            // TODO-WASM: figure out how to get proper tag index here
             // dst += emitOutputPaddedReloc(dst);
             dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;

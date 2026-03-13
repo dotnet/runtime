@@ -140,7 +140,7 @@ private:
     // Largest end index of any chained interval
     unsigned m_chainEnd;
 
-    // true if this is a loop interval (extents cannot change)
+    // kind of interval
     Kind m_kind;
 
 public:
