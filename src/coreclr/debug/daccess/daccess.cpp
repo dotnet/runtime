@@ -6378,27 +6378,22 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
     PEImageLayout   *layout = NULL;
-    IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
-    if (pDir == NULL || pDir->Size == 0)
+    mdImage = pPEAssembly->GetPEImage();
+    if (mdImage != NULL)
     {
-        mdImage = pPEAssembly->GetPEImage();
-        if (mdImage != NULL)
-        {
-            layout = mdImage->GetLoadedLayout();
-            pDir = &layout->GetCorHeader()->MetaData;
+        layout = mdImage->GetLoadedLayout();
 
-            // In IL image case, we do not have any hint to IL metadata since it is stored
-            // in the corheader.
-            //
-            dwRvaHint = 0;
-            dwDataSize = pDir->Size;
-        }
-        else
-        {
-            return false;
-        }
+        // In IL image case, we do not have any hint to IL metadata since it is stored
+        // in the corheader.
+        //
+        dwRvaHint = 0;
+        dwDataSize = layout->GetCorHeader()->MetaData.Size;
+    }
+    else
+    {
+        return false;
     }
 
     // Do not fail if path can not be read. Triage dumps don't have paths and we want to fallback

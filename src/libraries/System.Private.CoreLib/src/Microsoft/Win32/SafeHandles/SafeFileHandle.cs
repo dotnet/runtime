@@ -11,6 +11,24 @@ namespace Microsoft.Win32.SafeHandles
         private volatile int _cachedFileType = -1;
 
         /// <summary>
+        /// Creates an anonymous pipe.
+        /// </summary>
+        /// <param name="readHandle">When this method returns, contains the read end of the pipe.</param>
+        /// <param name="writeHandle">When this method returns, contains the write end of the pipe.</param>
+        /// <param name="asyncRead"><see langword="true"/> to enable asynchronous IO for the read end of the pipe; otherwise, <see langword="false"/>.</param>
+        /// <param name="asyncWrite"><see langword="true"/> to enable asynchronous IO for the write end of the pipe; otherwise, <see langword="false"/>.</param>
+        /// <remarks>
+        /// <para>
+        /// The created handles are not inheritable by design to avoid accidental handle leaks to child processes.
+        /// </para>
+        /// <para>
+        /// On Windows, async handles are created with the FILE_FLAG_OVERLAPPED flag.
+        /// On Unix, async handles are created with the O_NONBLOCK flag.
+        /// </para>
+        /// </remarks>
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead = false, bool asyncWrite = false);
+
+        /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeFileHandle" /> around a file handle.
         /// </summary>
         /// <param name="preexistingHandle">Handle to wrap</param>
