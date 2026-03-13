@@ -212,7 +212,7 @@ namespace <xsl:value-of select="@namespace" />
 
             sequenceReader.ThrowIfNotEmpty();
         }
-<xsl:apply-templates mode="ValueCollectionEnumerable" /><xsl:apply-templates mode="ValueCollectionBuilder" />    }
+<xsl:apply-templates mode="ValueCollectionEnumerable" />    }
 </xsl:if>}
 </xsl:template>
 
@@ -359,7 +359,7 @@ namespace <xsl:value-of select="@namespace" />
                 throw new CryptographicException();
             }
         }
-<xsl:apply-templates select="*" mode="ValueCollectionEnumerable" /><xsl:apply-templates select="*" mode="ValueCollectionBuilder" />    }
+<xsl:apply-templates select="*" mode="ValueCollectionEnumerable" />    }
 </xsl:if>}
 </xsl:template>
 
@@ -373,10 +373,6 @@ namespace <xsl:value-of select="@namespace" />
 
   <xsl:template match="*[@implicitTag and @universalTagNumber]" mode="Validate">
     <xsl:message terminate="yes">Error: implicitTag and universalTagNumber both specified in [<xsl:copy-of select="."/>]</xsl:message>
-  </xsl:template>
-
-  <xsl:template match="asn:SequenceOf[@emitValueBuilder='true' and not(@valueName)] | asn:SetOf[@emitValueBuilder='true' and not(@valueName)]" mode="Validate">
-    <xsl:message terminate="yes">Error: emitValueBuilder requires valueName in [<xsl:copy-of select="."/>]</xsl:message>
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit | @optional]" mode="ValidateChoice">
@@ -1699,63 +1695,5 @@ namespace <xsl:value-of select="@namespace" />
                 wroteValue = true;
             }
 </xsl:template>
-
-  <!-- ==== Value* ref struct: collection builder types ==== -->
-
-  <xsl:template match="asn:SequenceOf[@valueName and @emitValueBuilder='true'] | asn:SetOf[@valueName and @emitValueBuilder='true']" mode="ValueCollectionBuilder" xml:space="default">
-    <xsl:variable name="collNoun">
-      <xsl:choose>
-        <xsl:when test="self::asn:SetOf">SetOf</xsl:when>
-        <xsl:otherwise>Sequence</xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:variable name="elementType">
-      <xsl:choose>
-        <xsl:when test="*/@valueTypeName"><xsl:value-of select="*/@valueTypeName"/></xsl:when>
-        <xsl:otherwise>ReadOnlySpan&lt;byte&gt;</xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:if test="1" xml:space="preserve">
-
-        internal ref struct <xsl:value-of select="@name"/>Builder
-        {
-            private readonly AsnWriter _writer;
-
-            internal <xsl:value-of select="@name"/>Builder(AsnWriter writer)
-            {
-                _writer = writer;
-                _writer.Push<xsl:value-of select="$collNoun"/>(<xsl:call-template name="MaybeImplicitCall0"/>);
-            }
-<xsl:choose><xsl:when test="*/@valueTypeName">
-            public void Add(scoped in <xsl:value-of select="$elementType"/> value)
-            {
-                value.Encode(_writer);
-            }
-</xsl:when><xsl:otherwise>
-            public void Add(ReadOnlySpan&lt;byte&gt; encodedValue)
-            {
-                try
-                {
-                    _writer.WriteEncodedValue(encodedValue);
-                }
-                catch (ArgumentException e)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                }
-            }
-</xsl:otherwise></xsl:choose>
-            public void Finish()
-            {
-                _writer.Pop<xsl:value-of select="$collNoun"/>(<xsl:call-template name="MaybeImplicitCall0"/>);
-            }
-        }
-</xsl:if>
-  </xsl:template>
-
-  <!-- No-op for SequenceOf/SetOf without @valueName -->
-  <xsl:template match="asn:SequenceOf[not(@valueName)] | asn:SetOf[not(@valueName)]" mode="ValueCollectionBuilder" />
-
-  <!-- No-op for all other element types -->
-  <xsl:template match="*" mode="ValueCollectionBuilder" />
 
 </xsl:stylesheet>

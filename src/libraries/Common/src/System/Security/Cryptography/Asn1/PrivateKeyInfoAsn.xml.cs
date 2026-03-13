@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -291,28 +291,6 @@ namespace System.Security.Cryptography.Asn1
                     System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref _reader, out _current);
                     return true;
                 }
-            }
-        }
-
-
-        internal ref struct AttributesBuilder
-        {
-            private readonly AsnWriter _writer;
-
-            internal AttributesBuilder(AsnWriter writer)
-            {
-                _writer = writer;
-                _writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
-            }
-
-            public void Add(scoped in System.Security.Cryptography.Asn1.ValueAttributeAsn value)
-            {
-                value.Encode(_writer);
-            }
-
-            public void Finish()
-            {
-                _writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
             }
         }
     }
