@@ -1570,6 +1570,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="@name"/>
     <xsl:if test="@implicitTag | @universalTagNumber" xml:space="preserve">
+
             <xsl:value-of select="$indent"/>// Validator for tag constraint for <xsl:value-of select="@name"/>
             <xsl:value-of select="$indent"/>{
             <xsl:value-of select="$indent"/>    if (!Asn1Tag.TryDecode(<xsl:value-of select="$name"/>, out Asn1Tag validateTag, out _) ||
@@ -1580,6 +1581,7 @@ namespace <xsl:value-of select="@namespace" />
             <xsl:value-of select="$indent"/>}
 </xsl:if>
     <xsl:if test="1" xml:space="preserve">
+
             <xsl:value-of select="$indent"/>try
             <xsl:value-of select="$indent"/>{
             <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/>);
@@ -1632,6 +1634,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="@name"/>
     <xsl:if test="1" xml:space="preserve">
+
             <xsl:value-of select="$indent"/>try
             <xsl:value-of select="$indent"/>{
             <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/>);
@@ -1648,6 +1651,7 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:param name="name" select="@name"/>
     <xsl:if test="1" xml:space="preserve">
+
             <xsl:value-of select="$indent"/>try
             <xsl:value-of select="$indent"/>{
             <xsl:value-of select="$indent"/>    <xsl:value-of select="$writerName"/>.WriteEncodedValue(<xsl:value-of select="$name"/>);
