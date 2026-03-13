@@ -202,6 +202,10 @@ int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
+#include "osslcompat_40.h"
+#endif
+
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 #include "osslcompat_30.h"
 #endif
