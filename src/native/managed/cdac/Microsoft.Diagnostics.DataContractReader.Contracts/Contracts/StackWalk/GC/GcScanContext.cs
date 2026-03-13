@@ -87,7 +87,7 @@ internal class GcScanContext
 
         // Read the object pointer from the stack slot, matching legacy DAC behavior
         // (DacStackReferenceWalker::GCReportCallback in daccess.cpp)
-        _target.TryReadPointer(ppObj, out TargetPointer obj);
+        TargetPointer obj = _target.ReadPointer(ppObj);
 
         StackRefData data = new()
         {

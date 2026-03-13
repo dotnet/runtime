@@ -185,6 +185,16 @@ internal partial class StackWalk_1 : IStackWalk
                             ? CodeManagerFlags.ActiveStackFrame
                             : 0;
 
+                        // TODO(stackref): Wire up funclet parent frame flags from Filter:
+                        // - ShouldParentToFuncletSkipReportingGCReferences → ParentOfFuncletStackFrame
+                        //   (tells GCInfoDecoder to skip reporting since funclet already reported)
+                        // - ShouldParentFrameUseUnwindTargetPCforGCReporting → use exception's
+                        //   unwind target IP instead of current IP for GC liveness lookup
+                        // - ShouldParentToFuncletReportSavedFuncletSlots → report funclet's
+                        //   callee-saved register slots from the parent frame
+                        // These require careful validation to ensure Filter sets them correctly
+                        // for all stack configurations before wiring them into EnumGcRefs.
+
                         GcScanner gcScanner = new(_target);
                         gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext);
                     }
@@ -594,7 +604,10 @@ internal partial class StackWalk_1 : IStackWalk
                                 {
                                     // State indicating that the next marker frame should turn off the reporting again. That would be the caller of the managed RhThrowEx
                                     forceReportingWhileSkipping = ForceGcReportingStage.LookForMarkerFrame;
-                                    // TODO(stackref): need to add case to find the marker frame
+                                    // TODO(stackref): Implement marker frame detection. The native code checks
+                                    // if the caller IP is within DispatchManagedException / RhThrowEx to
+                                    // transition back to Off. Without this, force-reporting stays active
+                                    // indefinitely during funclet skipping.
                                 }
 
                                 if (forceReportingWhileSkipping != ForceGcReportingStage.Off)
