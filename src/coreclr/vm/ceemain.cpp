@@ -639,7 +639,7 @@ void EEStartupHelper()
 
         IfFailGo(EEConfig::Setup());
 
-
+        g_EnableFastHeapDumps = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableFastHeapDumps);
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
 
@@ -2223,4 +2223,3 @@ void ContractRegressionCheck()
 }
 
 #endif // ENABLE_CONTRACTS_IMPL
-
