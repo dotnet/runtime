@@ -20,14 +20,20 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal static class PaddingHelper
+    internal class PaddingHelper
     {
-        public static void PadStream(Stream s, int n, byte padByte = 0)
+        private static byte[] _padding;
+        public PaddingHelper(int n, byte padByte = 0)
         {
-            for (int i = 0; i < n; i++)
-            {
-                s.WriteByte(padByte);
-            }
+            _padding = new byte[n];
+            _padding.AsSpan().Fill(padByte);
+        }
+
+        public void PadStream(Stream s, int n, byte padByte = 0)
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(n, _padding.Length);
+            ArgumentOutOfRangeException.ThrowIfLessThan(n, 0);
+            s.Write(_padding, 0, n);
         }
     }
 
@@ -259,7 +265,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32]), new([WasmValueType.I32])), // (func (destPtr i32) (result i32))
+            new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
                 [
                     Local.Get(0), // (local.get $destPtr)
                     I32.Const(0),
@@ -316,7 +322,7 @@ namespace ILCompiler.ObjectWriter
             RegisterStubIndexAndSignature(body);
         }
 
-        const int WebcilSectionAlignment = 16;
+        public const int WebcilSectionAlignment = 16;
         private WebcilSegment BuildWebcilDataSegment()
         {
             WebcilSection[] webcilSections = _sections.Where(section => section is WebcilSection)
@@ -524,6 +530,8 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
+
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             EmitWasmHeader(outputFileStream);
@@ -606,7 +614,7 @@ namespace ILCompiler.ObjectWriter
                 // Write final padding after last section
                 WebcilSection lastSection = _webcilSegment.Sections[_webcilSegment.Sections.Length - 1];
                 webcilStream.Seek(0, SeekOrigin.End);
-                PaddingHelper.PadStream(webcilStream, (int)lastSection.Padding);
+                _paddingHelper.PadStream(webcilStream, (int)lastSection.Padding);
             }
             Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
 
@@ -788,7 +796,7 @@ namespace ILCompiler.ObjectWriter
         {
             // Calculate the minimum required memory size based on the Webcil Segment size
             ulong contentSize = (ulong)_webcilSegment.GetFlatMappedSize();
-            uint dataPages = checked((uint)((contentSize + (1<<16) - 1) >> 16));
+            uint dataPages = checked((uint)((contentSize + (1 << 16) - 1) >> 16));
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
             // TODO-Wasm: decide on convention here; webcil spec states this should be "webcil"
@@ -1049,12 +1057,14 @@ namespace ILCompiler.ObjectWriter
         Stream _stream;
         WasmDataSectionType _type;
         WasmInstructionGroup _initExpr;
+        private PaddingHelper _paddingHelper;
 
         public WasmDataSegment(Stream contents, Utf8String name, WasmDataSectionType type, WasmInstructionGroup initExpr)
         {
             _stream = contents;
             _type = type;
             _initExpr = initExpr;
+            _paddingHelper = new PaddingHelper(4);
         }
 
         public int HeaderSize
@@ -1137,7 +1147,7 @@ namespace ILCompiler.ObjectWriter
 
             _stream.Position = 0;
             _stream.CopyTo(outputFileStream);
-            PaddingHelper.PadStream(outputFileStream, Padding);
+            _paddingHelper.PadStream(outputFileStream, (int)Padding);
 
             return headerSize + (int)_stream.Length + Padding;
         }
@@ -1148,6 +1158,7 @@ namespace ILCompiler.ObjectWriter
         public readonly int Index;
         public WebcilSectionHeader Header;
         public readonly Stream _stream;
+        private PaddingHelper _paddingHelper;
         public int MinAlignment = 1;
 
         public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
@@ -1158,6 +1169,7 @@ namespace ILCompiler.ObjectWriter
             Header = header;
             _stream = stream;
             Index = index;
+            _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
         }
 
         public override int EncodeSize()
@@ -1168,12 +1180,9 @@ namespace ILCompiler.ObjectWriter
         public override int Emit(Stream outputFileStream)
         {
             // Emit the raw contents of this Webcil section followed by any required padding.
-            // This provides a safe implementation in case WebcilSection participates in the
-            // generic Wasm section emission pipeline.
-
             _stream.Position = 0;
             _stream.CopyTo(outputFileStream);
-            PaddingHelper.PadStream(outputFileStream, Padding);
+            _paddingHelper.PadStream(outputFileStream, (int)Padding);
 
             return (int)_stream.Length + (int)Padding;
         }
