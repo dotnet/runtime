@@ -126,7 +126,7 @@ switch (testCase) {
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
-        const maxParallelDownloads = params.get("maxParallelDownloads");
+        const maxParallelDownloads = parseInt(params.get("maxParallelDownloads"), 10) || 16;
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
         globalThis.fetch = async (...args) => {
@@ -247,7 +247,7 @@ try {
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
-            dotnet.run();
+            await dotnet.runMainAndExit();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);

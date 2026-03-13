@@ -26,6 +26,8 @@ namespace System.IO.Hashing
     public sealed partial class Crc32 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public Crc32() : base (default(int)) { }
+        public Crc32(System.IO.Hashing.Crc32ParameterSet parameterSet) : base (default(int)) { }
+        public System.IO.Hashing.Crc32ParameterSet ParameterSet { get { throw null; } }
         public override void Append(System.ReadOnlySpan<byte> source) { }
         public System.IO.Hashing.Crc32 Clone() { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -33,29 +35,73 @@ namespace System.IO.Hashing
         protected override void GetCurrentHashCore(System.Span<byte> destination) { }
         protected override void GetHashAndResetCore(System.Span<byte> destination) { }
         public static byte[] Hash(byte[] source) { throw null; }
+        public static byte[] Hash(System.IO.Hashing.Crc32ParameterSet parameterSet, byte[] source) { throw null; }
+        public static byte[] Hash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int Hash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
         public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static uint HashToUInt32(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint HashToUInt32(System.ReadOnlySpan<byte> source) { throw null; }
         public override void Reset() { }
+        public static bool TryHash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public partial class Crc32ParameterSet
+    {
+        internal Crc32ParameterSet() { }
+        public static System.IO.Hashing.Crc32ParameterSet Crc32 { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Crc32C { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public uint FinalXorValue { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public uint InitialValue { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public uint Polynomial { get { throw null; } }
+        public bool ReflectValues { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.IO.Hashing.Crc32ParameterSet Create(uint polynomial, uint initialValue, uint finalXorValue, bool reflectValues) { throw null; }
     }
     public sealed partial class Crc64 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public Crc64() : base (default(int)) { }
-        public System.IO.Hashing.Crc64 Clone() { throw null; }
+        public Crc64(System.IO.Hashing.Crc64ParameterSet parameterSet) : base (default(int)) { }
+        public System.IO.Hashing.Crc64ParameterSet ParameterSet { get { throw null; } }
         public override void Append(System.ReadOnlySpan<byte> source) { }
+        public System.IO.Hashing.Crc64 Clone() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public ulong GetCurrentHashAsUInt64() { throw null; }
         protected override void GetCurrentHashCore(System.Span<byte> destination) { }
         protected override void GetHashAndResetCore(System.Span<byte> destination) { }
         public static byte[] Hash(byte[] source) { throw null; }
+        public static byte[] Hash(System.IO.Hashing.Crc64ParameterSet parameterSet, byte[] source) { throw null; }
+        public static byte[] Hash(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int Hash(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
         public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static ulong HashToUInt64(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static ulong HashToUInt64(System.ReadOnlySpan<byte> source) { throw null; }
         public override void Reset() { }
+        public static bool TryHash(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    public partial class Crc64ParameterSet
+    {
+        internal Crc64ParameterSet() { }
+        public static System.IO.Hashing.Crc64ParameterSet Crc64 { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ulong FinalXorValue { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ulong InitialValue { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet Nvme { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ulong Polynomial { get { throw null; } }
+        public bool ReflectValues { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public static System.IO.Hashing.Crc64ParameterSet Create(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectValues) { throw null; }
     }
     public abstract partial class NonCryptographicHashAlgorithm
     {

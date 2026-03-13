@@ -112,11 +112,11 @@ HRESULT EEConfig::Init()
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
-    fForceEnc = false;
 
     INDEBUG(fStressLog = true;)
 
     fDebuggable = false;
+    modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
@@ -439,13 +439,21 @@ HRESULT EEConfig::sync()
     }
 #endif
     fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
-    fForceEnc         =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ForceEnc) != 0;
 
     {
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
-            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+        {
+            if (_wcsicmp(wszModifiableAssemblies, W("debug")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_DEBUG;
+            }
+            else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_NONE;
+            }
+        }
     }
 
     pReadyToRunExcludeList = NULL;
@@ -781,11 +789,35 @@ HRESULT EEConfig::sync()
         }
     #endif
 
+#ifdef FEATURE_PGO
+        if (fTieredPGO)
+        {
+            // Initial tier for R2R is always just OptimizationTier0
+            // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+            // OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+            // OptimizationTier0Instrumented - instrument all ILOnly code
+            if (g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+            }
+            else
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0Instrumented;
+            }
+        }
+        else
+#endif
+        {
+            tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+        }
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#else // !FEATURE_TIERED_COMPILATION
+    tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTierOptimized;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

@@ -599,7 +599,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
@@ -800,7 +800,7 @@ namespace System.Diagnostics.Tests
         /// there is still an existing Process instance. Operations on the existing instance will
         /// throw since that process has exited.
         /// </summary>
-        [ConditionalFact(nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ProcessTests), nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
         public void TestProcessRecycledPid()
         {
             const int LinuxPidMaxDefault = 32768;

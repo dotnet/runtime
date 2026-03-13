@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions { Converters = { new EmbeddedJsonKeyConverter<string>() } };
             var value = new PocoWithExtensionDataProperty();
 
-            string expectedJson = @"{""key"":42}";
+            string expectedJson = """{"key":42}""";
             string json = JsonSerializer.Serialize(value, options);
 
             Assert.Equal(expectedJson, json);
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void InvalidCustomKeyConverter_Deserialization(InvalidCustomKeyConverter.InvalidOperationType invalidOperationType, Type exceptionType)
         {
             var options = new JsonSerializerOptions { Converters = { new InvalidCustomKeyConverter { OperationType = invalidOperationType } } };
-            string json = @"{""key1"" : 1, ""key2"" : 2 }";
+            string json = """{"key1" : 1, "key2" : 2 }""";
 
             Assert.Throws(exceptionType, () => JsonSerializer.Deserialize<Dictionary<string, int>>(json, options));
         }
@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // The fallback StringConverter should be used for property names, preserving "key"
             string json = JsonSerializer.Serialize(value, options);
-            Assert.Equal(@"{""key"":123}", json);
+            Assert.Equal("""{"key":123}""", json);
 
             // Deserialization should also use the fallback converter for property names
             var deserialized = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
