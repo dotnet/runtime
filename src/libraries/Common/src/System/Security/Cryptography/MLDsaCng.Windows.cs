@@ -493,12 +493,12 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> privateKey = KeyFormatHelper.ReadPkcs8(KnownOids, pkcs8.AsMemory(), out _);
+                ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8(KnownOids, pkcs8.AsSpan(), out _);
                 scoped ValueMLDsaPrivateKeyAsn mldsaPrivateKeyAsn;
 
                 try
                 {
-                    ValueMLDsaPrivateKeyAsn.Decode(privateKey.Span, AsnEncodingRules.BER, out mldsaPrivateKeyAsn);
+                    ValueMLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER, out mldsaPrivateKeyAsn);
                 }
                 catch (AsnContentException e)
                 {

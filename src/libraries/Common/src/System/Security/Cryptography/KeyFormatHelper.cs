@@ -73,22 +73,6 @@ namespace System.Security.Cryptography
             return spki.SubjectPublicKey;
         }
 
-        internal static unsafe void ReadPkcs8<TRet>(
-            string[] validOids,
-            ReadOnlySpan<byte> source,
-            KeyReader<TRet> keyReader,
-            out int bytesRead,
-            out TRet ret)
-        {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    ReadPkcs8(validOids, manager.Memory, keyReader, out bytesRead, out ret);
-                }
-            }
-        }
-
         internal static void ReadPkcs8<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
@@ -110,32 +94,6 @@ namespace System.Security.Cryptography
                 // Fails if there are unconsumed bytes.
                 keyReader(privateKeyInfo.PrivateKey, privateKeyInfo.PrivateKeyAlgorithm, out ret);
                 bytesRead = read;
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-        }
-
-        // TODO vcsjones nuke
-        internal static ReadOnlyMemory<byte> ReadPkcs8(
-            string[] validOids,
-            ReadOnlyMemory<byte> source,
-            out int bytesRead)
-        {
-            try
-            {
-                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
-                int read = reader.PeekEncodedValue().Length;
-                PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
-
-                if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
-                {
-                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-                }
-
-                bytesRead = read;
-                return privateKeyInfo.PrivateKey;
             }
             catch (AsnContentException e)
             {
