@@ -534,7 +534,7 @@ namespace ILCompiler.ObjectWriter
         {
             if (!outputFileStream.CanSeek)
             {
-                throw new NotSupportedException("EmitObjectFile requieres seekable output stream");
+                throw new NotSupportedException("EmitObjectFile requires seekable output stream");
             }
 
             EmitWasmHeader(outputFileStream);
