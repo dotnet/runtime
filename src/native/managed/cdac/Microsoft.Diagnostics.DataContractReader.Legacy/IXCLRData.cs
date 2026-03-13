@@ -29,6 +29,12 @@ public struct DacpGetModuleData
     public ulong InMemoryPdbSize;
 }
 
+public enum CLRDataByNameFlag : uint
+{
+    CLRDATA_BYNAME_CASE_SENSITIVE = 0,
+    CLRDATA_BYNAME_CASE_INSENSITIVE = 0x1
+}
+
 [GeneratedComInterface]
 [Guid("88E32849-0A0A-4cb0-9022-7CD2E9E139E2")]
 public unsafe partial interface IXCLRDataModule
