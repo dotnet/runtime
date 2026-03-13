@@ -29,15 +29,34 @@ namespace System
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
-            try
+            fixed (byte* bufPtr = buffer)
             {
-                RandomAccess.Write(_handle, buffer, fileOffset: 0);
+                Write(_handle, bufPtr, buffer.Length);
             }
-            catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
+        }
+
+        private static unsafe void Write(SafeFileHandle fd, byte* bufPtr, int count)
+        {
+            while (count > 0)
             {
-                // Broken pipe... simply pretend we were successful.
+                int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
+                if (bytesWritten < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EPIPE)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        throw Interop.GetIOException(errorInfo);
+                    }
+                }
+
+                count -= bytesWritten;
+                bufPtr += bytesWritten;
             }
         }
 
