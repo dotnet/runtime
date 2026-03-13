@@ -11,13 +11,14 @@ namespace System.Runtime.InteropServices
         private static readonly Dictionary<int, List<Token>> s_registrations = new();
 
         /// <summary>
-        /// Lock object used to serialize registration changes that affect calls to SetConsoleCtrlHandler.
+        /// Serializes concurrent <see cref="Register"/> calls to make the emptiness check and
+        /// the subsequent token insertion atomic.
         /// </summary>
         private static readonly object s_registerLock = new();
 
         /// <summary>
-        /// Runtime can generate multiple addresses to the same function. To ensure that registering and unregistering always
-        /// use the same instance, we capture it in this static field.
+        /// Runtime can generate multiple addresses to the same function. To ensure that registering and
+        /// unregistering always use the same instance, we capture it in this static field.
         /// </summary>
         private static readonly unsafe delegate* unmanaged<int, Interop.BOOL> s_handlerRoutineAddr = &HandlerRoutine;
 
@@ -45,6 +46,9 @@ namespace System.Runtime.InteropServices
                         registerCtrlHandler = true;
                     }
                 }
+
+                // All SetConsoleCtrlHandler calls must happen outside s_registrations locked section
+                // otherwise we risk AB/BA deadlock between it and internal critical section in OS.
 
                 if (registerCtrlHandler)
                 {
