@@ -1169,36 +1169,17 @@ protected:
         unsigned idCodeSize() const
         {
             int size = 4;
-            switch (idInsFmt())
+            switch (idIns())
             {
-                case IF_LARGEADR:
-                // adrp + add
-                case IF_LARGEJMP:
-                    // b<cond> + b<uncond>
-                    size = 8;
-                    break;
-                case IF_LARGELDC:
-                    if (isVectorRegister(idReg1()))
-                    {
-                        // (adrp + ldr + fmov) or (adrp + add + ld1)
-                        size = 12;
-                    }
-                    else
-                    {
-                        // adrp + ldr
-                        size = 8;
-                    }
-                    break;
-                case IF_SN_0A:
-                    if (idIsEmptyAlign())
-                    {
-                        size = 0;
-                    }
-                    break;
-		case IF_BR_1A:
+		case INS_ret:
+		case INS_br:
 			size = 2;
 			break;
-		case IF_DI_1B:
+		case INS_mov:
+		case INS_stg:
+		case INS_lay:
+		case INS_stmg:
+		case INS_lmg:
 			size = 6;
 			break;
                 default:

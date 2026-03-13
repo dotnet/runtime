@@ -6098,9 +6098,14 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 {
     // (1) Account for things that are set up by the prolog and undone by the epilog.
     //
+#if defined TARGET_S390X
+    int stkOffs              = 160;
+    int originalFrameSize    = 160;
+#else
     int stkOffs              = 0;
-    int originalFrameStkOffs = 0;
     int originalFrameSize    = 0;
+#endif
+    int originalFrameStkOffs = 0;
     // codeGen->isFramePointerUsed is set in regalloc phase. Initialize it to a guess for pre-regalloc layout.
     if (lvaDoneFrameLayout <= PRE_REGALLOC_FRAME_LAYOUT)
     {
@@ -6915,9 +6920,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
     pushedCount += 1; // pushed PC (return address)
 #endif
-
+#if defined TARGET_S390X
     noway_assert(compLclFrameSize + originalFrameSize ==
-                 (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+                 (unsigned)(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+#else
+    noway_assert(compLclFrameSize + originalFrameSize ==
+                 (unsigned) - (stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -7054,7 +7063,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     /* Reserve space on the stack by bumping the frame size */
 
     lvaIncrementFrameSize(size);
-    stkOffs -= size;
+    stkOffs += size;
     lcl->SetStackOffset(stkOffs);
 
 #ifdef DEBUG

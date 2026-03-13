@@ -46,13 +46,20 @@ INST(lgb,		"lgb",			0,		0xe377)
 INST(lgh,		"lgh",			0,		0xe315)
 INST(llgh,		"lgh",			0,		0xe391)
 INST(l,			"l",			0,		0x58)
+//// R_R_I
 INST(stc,		"stc",			0,		0x42)
 INST(sth,		"sth",			0,		0x40)
 INST(st,		"st",			0,		0x50)
-//// R_R_I
+INST(stg,		"stg",			0,		0xe324)
+INST(std,		"std",			0,		0x60)
+INST(lay,		"lay",			0,		0xe371)
 
 //// R_R_R
 INST(add,		"ark",			0,		0xb9f8)
+
+//// R_R_R_I
+INST(stmg,		"stmg",			0,		0xeb24)
+INST(lmg,		"lmg",			0,		0xeb04)
 
 //// R_I_R
 
@@ -86,6 +93,7 @@ INST(add,		"ark",			0,		0xb9f8)
 //// R_R
 //// R_R_R
 //// R_R
+INST(lgr,		"lgr",			0,		0xb904)
 //// R_R_I
 // RV64F
 //// R_R

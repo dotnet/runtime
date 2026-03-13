@@ -152,7 +152,7 @@ public:
 private:
     regMaskTP _rsMaskVars; // backing store for rsMaskVars property
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     // TODO: the funclet's callee-saved registers should not shared with main function.
     regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
 #endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
