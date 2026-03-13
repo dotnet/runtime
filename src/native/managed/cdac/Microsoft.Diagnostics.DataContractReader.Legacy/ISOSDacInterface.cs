@@ -387,6 +387,13 @@ public struct DacpGcHeapAnalyzeData
     public int heap_analyze_success; // BOOL
 }
 
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
+}
+
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 public unsafe partial interface ISOSEnum
@@ -491,6 +498,29 @@ public unsafe partial interface ISOSHandleEnum : ISOSEnum
 {
     [PreserveSig]
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
+}
+
+public struct DACEHInfo
+{
+    public enum EHClauseType : uint
+    {
+        EHFault,
+        EHFinally,
+        EHFilter,
+        EHTyped,
+        EHUnknown,
+    }
+    public EHClauseType clauseType;
+    public ClrDataAddress tryStartOffset;
+    public ClrDataAddress tryEndOffset;
+    public ClrDataAddress handlerStartOffset;
+    public ClrDataAddress handlerEndOffset;
+    public Interop.BOOL isDuplicateClause;
+    public ClrDataAddress filterOffset;
+    public Interop.BOOL isCatchAllHandler;
+    public ClrDataAddress moduleAddr;
+    public ClrDataAddress mtCatch;
+    public uint tokCatch;
 }
 
 public enum SOSStackSourceType : uint
@@ -723,7 +753,7 @@ public unsafe partial interface ISOSDacInterface
 
     // EH
     [PreserveSig]
-    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ void* pCallback, void* token);
+    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token);
     [PreserveSig]
     int GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
 
@@ -753,7 +783,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
     [PreserveSig]
-    int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
     int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
     [PreserveSig]
@@ -794,13 +824,6 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 };
-
-public struct DacpCOMInterfacePointerData
-{
-    public ClrDataAddress methodTable;
-    public ClrDataAddress interfacePtr;
-    public ClrDataAddress comContext;
-}
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 public struct DacpExceptionObjectData

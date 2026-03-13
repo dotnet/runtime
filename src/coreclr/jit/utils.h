@@ -588,8 +588,7 @@ enum class ExceptionSetFlags : uint32_t
     ArithmeticException      = 0x4,
     NullReferenceException   = 0x8,
     IndexOutOfRangeException = 0x10,
-    StackOverflowException   = 0x20,
-    UnknownException         = 0x40,
+    UnknownException         = 0x20,
 };
 
 class HelperCallProperties

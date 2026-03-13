@@ -267,7 +267,7 @@ internal sealed class PInvokeTableGenerator
         if (!t.IsValueType)
             return "void *";
         // Pass pointers and function pointers by-value
-        else if (t.IsPointer || t.IsFunctionPointer)
+        else if (t.IsPointer || IsFunctionPointer(t))
             return "void *";
         else if (t.IsPrimitive)
             throw new NotImplementedException("No native type mapping for type " + t);
@@ -504,6 +504,12 @@ internal sealed class PInvokeTableGenerator
 
     private static readonly Dictionary<Type, bool> _blittableCache = new();
 
+    public static bool IsFunctionPointer(Type type)
+    {
+        object? bIsFunctionPointer = type.GetType().GetProperty("IsFunctionPointer")?.GetValue(type);
+        return (bIsFunctionPointer is bool b) && b;
+    }
+
     public static bool IsBlittable(Type type, LogAdapter log)
     {
         // We maintain a cache of results in order to only produce log messages the first time
@@ -523,7 +529,7 @@ internal sealed class PInvokeTableGenerator
             if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
                 return true;
 
-            if (type.IsFunctionPointer)
+            if (IsFunctionPointer(type))
                 return true;
 
             // HACK: SkiaSharp has pinvokes that rely on this

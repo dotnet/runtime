@@ -548,12 +548,12 @@ void InvokeCalliStub(CalliStubParam* pParam)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
     CallStubGenerator callStubGenerator;
-    return callStubGenerator.GenerateCallStubForSig(metaSig);
+    return callStubGenerator.GenerateCallStubForSig(metaSig, pContextMD);
 }
 
 // Create call stub for calling interpreted methods from JITted/AOTed code.
