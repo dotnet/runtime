@@ -3583,7 +3583,7 @@ public sealed unsafe partial class SOSDacImpl
 
     private static readonly string[] s_riscV64Registers =
     [
-        "R0", "RA", "SP", "GP",
+        "zero", "RA", "SP", "GP",
         "TP", "T0", "T1", "T2",
         "FP", "S1", "A0", "A1",
         "A2", "A3", "A4", "A5",
