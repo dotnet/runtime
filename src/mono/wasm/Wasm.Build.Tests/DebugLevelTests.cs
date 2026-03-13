@@ -113,8 +113,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         AssertDebugLevel(result.TestOutput, -1);
     }
 
-    [Fact]
-    [TestCategory("bundler-friendly")]
+    [ConditionalFact(typeof(BuildTestBase), nameof(UseJavascriptBundler)), TestCategory("bundler-friendly")]
     public void BundlerFriendlyBuildProvidesValidOutputForNpmBuild()
     {
         Configuration config = Configuration.Debug;
