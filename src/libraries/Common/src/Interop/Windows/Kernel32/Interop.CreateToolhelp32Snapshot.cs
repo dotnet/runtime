@@ -23,7 +23,11 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+#if NET
         internal struct PROCESSENTRY32
+#else
+        internal unsafe struct PROCESSENTRY32
+#endif
         {
             internal int dwSize;
             internal int cntUsage;
