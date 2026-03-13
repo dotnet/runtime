@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -23,7 +20,7 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
-    public static class PaddingHelper
+    internal static class PaddingHelper
     {
         public static void PadStream(Stream s, int n, byte padByte = 0)
         {
@@ -343,7 +340,7 @@ namespace ILCompiler.ObjectWriter
 
             WebcilHeader header = new WebcilHeader
             {
-                Id = 0x4c496257, // 'WbCIL', little endian
+                Id = 0x4c496257, // 'WbIL', little endian
                 VersionMajor = WebcilVersionMajor,
                 VersionMinor = 0,
                 CoffSections = (ushort)webcilSections.Length,
@@ -516,12 +513,6 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void PadStream(MemoryStream s, int n, byte padding = 0)
-        {
-            for (int i = 0; i < n; i++)
-                s.WriteByte(padding);
-        }
-
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             EmitWasmHeader(outputFileStream);
@@ -604,7 +595,7 @@ namespace ILCompiler.ObjectWriter
                 // Write final padding after last section
                 WebcilSection lastSection = _webcilSegment.Sections[_webcilSegment.Sections.Length - 1];
                 webcilStream.Seek(0, SeekOrigin.End);
-                PadStream(webcilStream, (int)lastSection.Padding);
+                PaddingHelper.PadStream(webcilStream, (int)lastSection.Padding);
             }
             Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
 
@@ -995,6 +986,7 @@ namespace ILCompiler.ObjectWriter
 
             // seek forward past pre-allocated header portion
             outputFileStream.Position += (int)HeaderSize;
+            size += (int)HeaderSize;
 
             Span<byte> countBuffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count)];
             int countSize = DwarfHelper.WriteULEB128(countBuffer, (ulong)_segments.Count);
@@ -1017,13 +1009,14 @@ namespace ILCompiler.ObjectWriter
                 {
                     segment.Padding = 0;
                 }
-                segment.Emit(outputFileStream);
+                size += segment.Emit(outputFileStream);
             }
 
-            // Write the header (this must be done second because we first need to determine inter-segment padding)
+            // Write the header (this must be done second because we first need to determine inter-segment padding based on file placement)
             outputFileStream.Position = headerPosition;
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
-            size += EncodeHeader(headerBuffer);
+            int wroteHeaderSize = EncodeHeader(headerBuffer);
+            Debug.Assert(wroteHeaderSize == HeaderSize);
             outputFileStream.Write(headerBuffer);
 
             outputFileStream.Seek(0, SeekOrigin.End);
