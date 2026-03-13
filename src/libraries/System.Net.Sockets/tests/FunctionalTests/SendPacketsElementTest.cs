@@ -714,6 +714,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // FileStream.IsAsync is always false on Unix for regular files
         [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
         public void FileStreamCtorSynchronous_ArgumentException()
         {
