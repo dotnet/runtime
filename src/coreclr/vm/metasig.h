@@ -216,7 +216,9 @@ DEFINE_METASIG(SM(RefByte_UIntPtr_RetVoid, r(b) U, v))
 DEFINE_METASIG(SM(PtrVoid_Byte_UInt_RetVoid, P(v) b K, v))
 DEFINE_METASIG_T(SM(PtrDelegate_IntPtr_PtrIntPtr_PtrException_RetVoid, P(C(DELEGATE)) I P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrDelegate_PtrObj_IntPtr_PtrException_RetVoid, P(C(DELEGATE)) P(j) I P(C(EXCEPTION)), v))
+#ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrICustomQueryInterface_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid, P(C(ICUSTOM_QUERYINTERFACE)) P(g(GUID)) P(I) P(i) P(C(EXCEPTION)), v))
+#endif // FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrObj_IntPtr_PtrDelegate_PtrException_RetVoid, P(j) I P(C(DELEGATE)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_IntPtr_PtrDelegate_PtrIntPtr_PtrException_RetVoid, P(j) I P(C(DELEGATE)) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrPropertyInfo_PtrInt_PtrException_RetVoid, P(C(PROPERTY_INFO)) P(i) P(C(EXCEPTION)), v))
