@@ -1104,8 +1104,6 @@ namespace System
                 && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
         }
 
-        private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
-
         public int CompareTo(object? value)
         {
             if (value == null)
@@ -1123,61 +1121,23 @@ namespace System
         {
             if (value._a != _a)
             {
-                return GetResult((uint)_a, (uint)value._a);
+                return ((uint)_a).CompareTo((uint)value._a);
             }
 
-            if (value._b != _b)
+            if ((ushort)value._b != (ushort)_b)
             {
-                return GetResult((uint)_b, (uint)value._b);
+                return ((ushort)_b).CompareTo((ushort)value._b);
             }
 
-            if (value._c != _c)
+            if ((ushort)value._c != (ushort)_c)
             {
-                return GetResult((uint)_c, (uint)value._c);
+                return ((ushort)_c).CompareTo((ushort)value._c);
             }
 
-            if (value._d != _d)
-            {
-                return GetResult(_d, value._d);
-            }
-
-            if (value._e != _e)
-            {
-                return GetResult(_e, value._e);
-            }
-
-            if (value._f != _f)
-            {
-                return GetResult(_f, value._f);
-            }
-
-            if (value._g != _g)
-            {
-                return GetResult(_g, value._g);
-            }
-
-            if (value._h != _h)
-            {
-                return GetResult(_h, value._h);
-            }
-
-            if (value._i != _i)
-            {
-                return GetResult(_i, value._i);
-            }
-
-            if (value._j != _j)
-            {
-                return GetResult(_j, value._j);
-            }
-
-            if (value._k != _k)
-            {
-                return GetResult(_k, value._k);
-            }
-
-            return 0;
+            return GetLow64().CompareTo(value.GetLow64());
         }
+
+        private ulong GetLow64() => BinaryPrimitives.ReadUInt64BigEndian(MemoryMarshal.CreateReadOnlySpan(in _d, 8));
 
         public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
 
@@ -1593,57 +1553,17 @@ namespace System
                 return (uint)left._a < (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if ((ushort)left._b != (ushort)right._b)
             {
-                return (uint)left._b < (uint)right._b;
+                return (ushort)left._b < (ushort)right._b;
             }
 
-            if (left._c != right._c)
+            if ((ushort)left._c != (ushort)right._c)
             {
-                return (uint)left._c < (uint)right._c;
+                return (ushort)left._c < (ushort)right._c;
             }
 
-            if (left._d != right._d)
-            {
-                return left._d < right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e < right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f < right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g < right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h < right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i < right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j < right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k < right._k;
-            }
-
-            return false;
+            return left.GetLow64() < right.GetLow64();
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
@@ -1654,180 +1574,24 @@ namespace System
                 return (uint)left._a < (uint)right._a;
             }
 
-            if (left._b != right._b)
+            if ((ushort)left._b != (ushort)right._b)
             {
-                return (uint)left._b < (uint)right._b;
+                return (ushort)left._b < (ushort)right._b;
             }
 
-            if (left._c != right._c)
+            if ((ushort)left._c != (ushort)right._c)
             {
-                return (uint)left._c < (uint)right._c;
+                return (ushort)left._c < (ushort)right._c;
             }
 
-            if (left._d != right._d)
-            {
-                return left._d < right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e < right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f < right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g < right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h < right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i < right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j < right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k < right._k;
-            }
-
-            return true;
+            return left.GetLow64() <= right.GetLow64();
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
-        public static bool operator >(Guid left, Guid right)
-        {
-            if (left._a != right._a)
-            {
-                return (uint)left._a > (uint)right._a;
-            }
-
-            if (left._b != right._b)
-            {
-                return (uint)left._b > (uint)right._b;
-            }
-
-            if (left._c != right._c)
-            {
-                return (uint)left._c > (uint)right._c;
-            }
-
-            if (left._d != right._d)
-            {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
-            }
-
-            return false;
-        }
+        public static bool operator >(Guid left, Guid right) => right < left;
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        public static bool operator >=(Guid left, Guid right)
-        {
-            if (left._a != right._a)
-            {
-                return (uint)left._a > (uint)right._a;
-            }
-
-            if (left._b != right._b)
-            {
-                return (uint)left._b > (uint)right._b;
-            }
-
-            if (left._c != right._c)
-            {
-                return (uint)left._c > (uint)right._c;
-            }
-
-            if (left._d != right._d)
-            {
-                return left._d > right._d;
-            }
-
-            if (left._e != right._e)
-            {
-                return left._e > right._e;
-            }
-
-            if (left._f != right._f)
-            {
-                return left._f > right._f;
-            }
-
-            if (left._g != right._g)
-            {
-                return left._g > right._g;
-            }
-
-            if (left._h != right._h)
-            {
-                return left._h > right._h;
-            }
-
-            if (left._i != right._i)
-            {
-                return left._i > right._i;
-            }
-
-            if (left._j != right._j)
-            {
-                return left._j > right._j;
-            }
-
-            if (left._k != right._k)
-            {
-                return left._k > right._k;
-            }
-
-            return true;
-        }
+        public static bool operator >=(Guid left, Guid right) => right <= left;
 
         //
         // IParsable
