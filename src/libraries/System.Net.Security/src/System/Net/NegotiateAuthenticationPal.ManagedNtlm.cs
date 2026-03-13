@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
@@ -124,7 +125,7 @@ namespace System.Net
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct MessageField
+            private struct MessageField
             {
                 public ushort Length;
                 public ushort MaximumLength;
@@ -137,9 +138,9 @@ namespace System.Net
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct MessageHeader
+            private struct MessageHeader
             {
-                public fixed byte Header[HeaderLength];
+                public InlineArray8<byte> Header;
                 public MessageType MessageType;
                 private byte _unused1;
                 private byte _unused2;
@@ -147,7 +148,7 @@ namespace System.Net
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct Version
+            private struct Version
             {
                 public byte VersionMajor;
                 public byte VersionMinor;
@@ -165,7 +166,7 @@ namespace System.Net
 
             // Type 1 message
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct NegotiateMessage
+            private struct NegotiateMessage
             {
                 public MessageHeader Header;
                 private Flags _flags;
@@ -181,12 +182,12 @@ namespace System.Net
 
             // TYPE 2 message
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct ChallengeMessage
+            private struct ChallengeMessage
             {
                 public MessageHeader Header;
                 public MessageField TargetName;
                 public Flags Flags;
-                public fixed byte ServerChallenge[ChallengeLength];
+                public InlineArray8<byte> ServerChallenge;
                 private ulong _unused;
                 public MessageField TargetInfo;
                 public Version Version;
@@ -194,7 +195,7 @@ namespace System.Net
 
             // TYPE 3 message
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct AuthenticateMessage
+            private struct AuthenticateMessage
             {
                 public MessageHeader Header;
                 public MessageField LmChallengeResponse;
@@ -205,23 +206,23 @@ namespace System.Net
                 public MessageField EncryptedRandomSessionKey;
                 public Flags Flags;
                 public Version Version;
-                public fixed byte Mic[16];
+                public InlineArray16<byte> Mic;
             }
 
             // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct NtChallengeResponse
+            private struct NtChallengeResponse
             {
-                public fixed byte Hmac[DigestLength];
+                public InlineArray16<byte> Hmac;
                 public byte Responserversion;
                 public byte HiResponserversion;
                 private byte _reserved1;
                 private byte _reserved2;
                 private int _reserved3;
                 public long Time;
-                public fixed byte ClientChallenge[ChallengeLength];
+                public InlineArray8<byte> ClientChallenge;
                 private int _reserved4;
-                public fixed byte ServerInfo[4]; // Has to be non-zero size, so set it to the Z(4) padding
+                public InlineArray4<byte> ServerInfo; // Has to be non-zero size, so set it to the Z(4) padding
             }
 
             public override bool IsAuthenticated => _isAuthenticated;

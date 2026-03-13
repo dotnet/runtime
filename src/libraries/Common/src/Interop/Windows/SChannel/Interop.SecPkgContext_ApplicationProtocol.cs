@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -21,15 +22,21 @@ internal static partial class Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct SecPkgContext_ApplicationProtocol
+    internal struct SecPkgContext_ApplicationProtocol
     {
         private const int MaxProtocolIdSize = 0xFF;
 
         public ApplicationProtocolNegotiationStatus ProtoNegoStatus;
         public ApplicationProtocolNegotiationExt ProtoNegoExt;
         public byte ProtocolIdSize;
-        public fixed byte ProtocolId[MaxProtocolIdSize];
+        public ProtocolIdBuffer ProtocolId;
         public ReadOnlySpan<byte> Protocol =>
             MemoryMarshal.CreateReadOnlySpan(ref ProtocolId[0], ProtocolIdSize);
+
+        [InlineArray(MaxProtocolIdSize)]
+        internal struct ProtocolIdBuffer
+        {
+            private byte _element0;
+        }
     }
 }

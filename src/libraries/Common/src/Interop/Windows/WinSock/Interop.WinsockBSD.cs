@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -81,10 +82,10 @@ internal static partial class Interop
                 public static Native ConvertToUnmanaged(IPv6MulticastRequest managed) => new(managed);
                 public static IPv6MulticastRequest ConvertToManaged(Native native) => native.ToManaged();
 
-                public unsafe struct Native
+                public struct Native
                 {
                     private const int MulticastAddressLength = 16;
-                    private fixed byte _multicastAddress[MulticastAddressLength];
+                    private InlineArray16<byte> _multicastAddress;
                     private int _interfaceIndex;
 
                     public Native(IPv6MulticastRequest managed)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -11,14 +12,20 @@ internal static partial class Interop
         private static unsafe partial Interop.BOOL GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private unsafe struct CPINFOEXW
+        private struct CPINFOEXW
         {
             internal uint MaxCharSize;
-            internal fixed byte DefaultChar[2];
-            internal fixed byte LeadByte[12];
+            internal InlineArray2<byte> DefaultChar;
+            internal InlineArray12<byte> LeadByte;
             internal char UnicodeDefaultChar;
             internal uint CodePage;
-            internal fixed char CodePageName[MAX_PATH];
+            internal CodePageNameBuffer CodePageName;
+
+            [InlineArray(MAX_PATH)]
+            internal struct CodePageNameBuffer
+            {
+                private char _element0;
+            }
         }
 
         internal static unsafe int GetLeadByteRanges(int codePage, byte[] leadByteRanges)
