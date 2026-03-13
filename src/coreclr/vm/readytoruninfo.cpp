@@ -384,7 +384,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
 
 #ifndef DACCESS_COMPILE
 
-void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
+bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
 {
     CONTRACTL
     {
@@ -397,7 +397,9 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
+        return true;
     }
+    return false;
 }
 
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
@@ -850,6 +852,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         }
 
         m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pamTracker);
+        m_pLoadedImageBase = m_pComposite->GetLayout()->GetBase();
     }
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
@@ -1175,13 +1178,10 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 {
     STANDARD_VM_CONTRACT;
 
-    // Use the entry point hashtable to check if another thread already registered a MethodDesc
-    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
-        return;
-
     AllocMemTracker amTracker;
-    ILStubCache *pStubCache = m_pModule->GetILStubCache();
+    ILStubCache* pStubCache = m_pModule->GetILStubCache();
     MethodTable* pStubMT = pStubCache->GetOrCreateStubMethodTable(m_pModule);
+    LoaderAllocator* pLoaderAllocator = m_pModule->GetLoaderAllocator();
 
     // Resumption stub signature: object(object, ref byte)
     // This matches BuildResumptionStubSignature in jitinterface.cpp
@@ -1194,8 +1194,12 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         ELEMENT_TYPE_U1
     };
 
+    // Use the entry point hashtable to check if another thread already registered a MethodDesc
+    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+        return;
+
     MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
-        m_pModule->GetLoaderAllocator(),
+        pLoaderAllocator,
         pStubMT,
         stubEntryPoint,
         DynamicMethodDesc::StubAsyncResume,
@@ -1203,12 +1207,14 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         sizeof(s_resumptionStubSig),
         &amTracker);
 
-    amTracker.SuppressRelease();
-
     // Register the stub's entry point so GC can find it during stack walks.
     // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
-    // already registered a MethodDesc for this entry point, ours is simply discarded.
-    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
+    // already registered a MethodDesc for this entry point, ours is simply discarded
+    // and the AllocMemTracker will back out the allocation on destruction.
+    if (m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD))
+    {
+        amTracker.SuppressRelease();
+    }
 }
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
