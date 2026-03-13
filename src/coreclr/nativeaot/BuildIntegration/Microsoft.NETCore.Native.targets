@@ -194,26 +194,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       DependsOnTargets="$(IlcCompileDependsOn)">
 
     <ItemGroup>
-      <_IlcRootedAssembliesRaw Include="@(TrimmerRootAssembly)" Condition="%(TrimmerRootAssembly.RootMode) != 'EntryPoint'" />
-      <_IlcRootedAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'copy'" />
-      <_IlcConditionallyRootedAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'copyused'" />
-      <_IlcTrimmedAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'link'" />
-      <_IlcSingleWarnAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimmerSingleWarn) == 'true'" />
-      <_IlcNoSingleWarnAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimmerSingleWarn) == 'false'" />
-
-      <!-- Now process the raw ItemGroup into the form that ILC accepts: assembly names only -->
-      <!-- Use the logic that ILLinker uses: if the file exists, this is a file name. Otherwise it's an assembly name -->
-      <!-- Use System.IO.File.Exists() to avoid directories-->
-      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
-      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcRootedAssemblies Include="@(TrimmerRootAssembly)" Condition="%(TrimmerRootAssembly.RootMode) != 'EntryPoint'" />
+      <_IlcRootedAssemblies Include="@(_IlcManagedInputAssemblies->'%(Filename)')" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'copy'" />
+      <_IlcConditionallyRootedAssemblies Include="@(_IlcManagedInputAssemblies->'%(Filename)')" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'copyused'" />
+      <_IlcTrimmedAssemblies Include="@(_IlcManagedInputAssemblies->'%(Filename)')" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'link'" />
+      <_IlcSingleWarnAssemblies Include="@(_IlcManagedInputAssemblies->'%(Filename)')" Condition="%(_IlcManagedInputAssemblies.TrimmerSingleWarn) == 'true'" />
+      <_IlcNoSingleWarnAssemblies Include="@(_IlcManagedInputAssemblies->'%(Filename)')" Condition="%(_IlcManagedInputAssemblies.TrimmerSingleWarn) == 'false'" />
     </ItemGroup>
 
     <PropertyGroup>
