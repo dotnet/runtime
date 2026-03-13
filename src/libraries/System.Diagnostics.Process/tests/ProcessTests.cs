@@ -204,7 +204,7 @@ namespace System.Diagnostics.Tests
                     // Wait for signal which unregisters itself
                     Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
 
-                    // Wait for second signal which should temrinate process by default system handler
+                    // Wait for second signal which should terminate process by default system handler
                     Thread.Sleep(1000);
 
                     // If we did not terminated yet, return failure exit code
