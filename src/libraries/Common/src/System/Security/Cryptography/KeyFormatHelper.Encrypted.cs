@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
             string[] validOids,
             ReadOnlySpan<byte> source,
             ReadOnlySpan<char> password,
-            ValueKeyReader<TRet> keyReader,
+            KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
         {
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
             string[] validOids,
             ReadOnlySpan<byte> source,
             ReadOnlySpan<byte> passwordBytes,
-            ValueKeyReader<TRet> keyReader,
+            KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
         {
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,
-            ValueKeyReader<TRet> keyReader,
+            KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
         {

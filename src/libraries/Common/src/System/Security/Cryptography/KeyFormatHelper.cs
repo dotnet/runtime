@@ -11,12 +11,12 @@ namespace System.Security.Cryptography
 {
     internal static partial class KeyFormatHelper
     {
-        internal delegate void ValueKeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
+        internal delegate void KeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
 
         internal static void ReadSubjectPublicKeyInfo<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
-            ValueKeyReader<TRet> keyReader,
+            KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
         {
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
         internal static void ReadPkcs8<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
-            ValueKeyReader<TRet> keyReader,
+            KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
         {
