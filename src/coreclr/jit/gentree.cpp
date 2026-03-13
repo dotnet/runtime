@@ -11613,7 +11613,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         /* Then print the general purpose flags */
         GenTreeFlags flags = tree->gtFlags;
 
-        if (tree->OperIsBinary() || tree->OperIsMultiOp() || tree->IsPartOfAddressMode())
+        if (tree->IsPartOfAddressMode())
         {
             genTreeOps oper = tree->OperGet();
 
