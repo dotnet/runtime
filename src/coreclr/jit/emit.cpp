@@ -71,20 +71,26 @@ int emitLocation::GetInsOffset() const
     return emitGetInsOfsFromCodePos(codePos);
 }
 
-// Get the instruction offset in the current instruction group, which must be a funclet prolog group.
+// Get the instruction offset in the current instruction region, which must be a funclet prolog.
 // This is used to find an instruction offset used in unwind data.
-// TODO-AMD64-Bug?: We only support a single main function prolog group, but allow for multiple funclet prolog
-// groups (not that we actually use that flexibility, since the funclet prolog will be small). How to
-// handle that?
 UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
 {
     assert(ig->igFuncIdx != 0);
     assert((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
-    assert(ig == emit->emitCurIG);
+    assert((ig->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0);
+    assert(GetInsOffset() == 0);
 
-    return emit->emitCurIGsize;
+    unsigned  offset = 0;
+    insGroup* lastIG = ig;
+    while (lastIG != emit->emitCurIG)
+    {
+        offset += lastIG->igSize;
+        lastIG = lastIG->igNext;
+    }
+    assert((lastIG->igFlags & IGF_FUNCLET_PROLOG) != 0);
+
+    return offset + emit->emitCurIGsize;
 }
-
 //------------------------------------------------------------------------
 // IsPreviousInsNum: Returns true if the emitter is on the next instruction
 //  of the same group as this emitLocation.
@@ -120,26 +126,133 @@ void emitLocation::Print(LONG compMethodID) const
 }
 #endif // DEBUG
 
+//------------------------------------------------------------------------
+// InitializeNum: Initialize this IG's order/display number.
+//
+// Each subsequently allocated group should be assigned a monotonically
+// increasing number.
+//
+// Arguments:
+//    num - The number
+//
 void insGroup::InitializeNum(unsigned num)
 {
     igNum = num;
 }
 
+//------------------------------------------------------------------------
+// GetDisplayId: Get the ID of this group used for display.
+//
+// Return Value:
+//    A unique ID for this group.
+//
 unsigned insGroup::GetDisplayId() const
 {
     return igNum;
 }
 
+//------------------------------------------------------------------------
+// IsBefore: Is this group before 'ig' in layout (IG list) order?
+//
+// Most groups are generated in-order, such that their 'numbers' reflect
+// both the layout and IG linked list order. However, for prologs/epilogs,
+// we can have extend groups that are generated after the IR-driven code,
+// and this function accounts for that.
+//
+// Arguments:
+//    ig - The group to compare to
+//
+// Return Value:
+//    Whether 'this' is before 'ig'.
+//
 bool insGroup::IsBefore(const insGroup* ig) const
 {
-    return igNum < ig->igNum;
+    assert(ig != nullptr);
+
+    // All IGs are generated in order, except the extend groups that may hangs off prologs and epilogs.
+    // In turn, those groups themselves are generated in order within their respective regions.
+    unsigned positionOfThis;
+    if ((igFlags & IGF_OUT_OF_ORDER_MASK) != 0)
+    {
+        const insGroup* nextIG = igNext;
+        while (true)
+        {
+            if (nextIG == nullptr)
+            {
+                return false;
+            }
+            if (((nextIG->igFlags & IGF_OUT_OF_ORDER_MASK) == 0) || ((nextIG->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0))
+            {
+                positionOfThis = nextIG->igNum - 1; // Position equal to the in-order 'head' of the region.
+                break;
+            }
+            if (nextIG == ig)
+            {
+                return true;
+            }
+
+            nextIG = nextIG->igNext;
+        }
+    }
+    else
+    {
+        positionOfThis = igNum;
+    }
+
+    unsigned positionOfIG;
+    if ((ig->igFlags & IGF_OUT_OF_ORDER_MASK) != 0)
+    {
+        const insGroup* nextIG = ig->igNext;
+        while (true)
+        {
+            if (nextIG == nullptr)
+            {
+                return true;
+            }
+            if (((nextIG->igFlags & IGF_OUT_OF_ORDER_MASK) == 0) || ((nextIG->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0))
+            {
+                positionOfIG = nextIG->igNum - 1;
+                break;
+            }
+            if (nextIG == this)
+            {
+                return false;
+            }
+
+            nextIG = nextIG->igNext;
+        }
+    }
+    else
+    {
+        positionOfIG = ig->igNum;
+    }
+
+    return positionOfThis < positionOfIG;
 }
 
+//------------------------------------------------------------------------
+// IsBefore: Is this group before 'ig' in layout order, or equal to it?
+//
+// Arguments:
+//    ig - The group to compare to
+//
+// Return Value:
+//    Whether 'this' is before 'ig' or is equal to it.
+//
 bool insGroup::IsBeforeOrEqual(const insGroup* ig) const
 {
     return !IsAfter(ig);
 }
 
+//------------------------------------------------------------------------
+// IsBefore: Is this group after 'ig' in layout order?
+//
+// Arguments:
+//    ig - The group to compare to
+//
+// Return Value:
+//    Whether 'this' is after 'ig'.
+//
 bool insGroup::IsAfter(const insGroup* ig) const
 {
     return ig->IsBefore(this);
@@ -1623,16 +1736,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
-    // We can't do this for a prolog, epilog, funclet prolog, or funclet epilog,
-    // because those are generated out of order. We currently have a limitation
-    // where the jump shortening pass uses the instruction group number to determine
-    // if something is earlier or later in the code stream. This implies that
-    // these groups cannot be more than a single instruction group. Note that
-    // the prolog/epilog placeholder groups ARE generated in order, and are
-    // re-used. But generating additional groups would not work.
     if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitIGisInEpilog(emitCurIG) && !emitCurIG->endsWithAlignInstr() && !emitIGisInFuncletProlog(emitCurIG) &&
-        !emitIGisInFuncletEpilog(emitCurIG))
+        !emitCurIG->endsWithAlignInstr())
     {
         emitNxtIG(true);
     }
@@ -2161,6 +2266,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     {
         igPh->igFlags |= IGF_FUNCLET_EPILOG;
     }
+    igPh->igFlags |= IGF_OUT_OF_ORDER_HEAD;
 
     /* Link it into the placeholder list */
 
@@ -2402,7 +2508,7 @@ void emitter::emitBegPrologEpilog(insGroup* igPh)
     m_compiler->funSetCurrentFunc(ig->igFuncIdx);
 
     /* Set the new IG as the place to generate code */
-
+    emitCurCodeOffset = ig->igOffs;
     emitGenIG(ig);
 
 #if EMIT_TRACK_STACK_DEPTH

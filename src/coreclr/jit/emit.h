@@ -314,6 +314,7 @@ public:
 #ifdef TARGET_ARM64
 #define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
 #endif
+#define IGF_OUT_OF_ORDER_HEAD 0x2000 // first group (generated in-order) of a region generated out-of-order
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -323,6 +324,7 @@ public:
 #else // DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
 #endif // DEBUG
+#define IGF_OUT_OF_ORDER_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
 
