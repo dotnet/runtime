@@ -7,7 +7,7 @@ using static Interop;
 
 namespace System.Runtime.InteropServices
 {
-    public sealed unsafe partial class PosixSignalRegistration
+    public sealed partial class PosixSignalRegistration
     {
         private static readonly Dictionary<int, List<Token>> s_registrations = new();
 
@@ -20,9 +20,9 @@ namespace System.Runtime.InteropServices
         /// Runtime can generate multiple addresses to same function. For registering and unregistering allways
         /// the same instance, we capture it in this statics.
         /// </summary>
-        private static readonly delegate* unmanaged<int, BOOL> s_HandlerRoutineAddr = &HandlerRoutine;
+        private static readonly unsafe delegate* unmanaged<int, BOOL> s_HandlerRoutineAddr = &HandlerRoutine;
 
-        private static PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
+        private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
             int signo = signal switch
             {
