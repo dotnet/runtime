@@ -13,7 +13,6 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
@@ -279,7 +278,6 @@ namespace ILCompiler.ObjectWriter
             Utf8String signatureKey = body.Signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
             {
-                Console.WriteLine($"Adding signature: {signatureKey}");
                 signatureIndex = _uniqueSignatures.Count;
                 _uniqueSignatures.Add(signatureKey, signatureIndex);
 
@@ -295,10 +293,6 @@ namespace ILCompiler.ObjectWriter
 
         private void InsertWasmStub(Utf8String name, WasmFunctionBody body)
         {
-            Console.WriteLine($"Inserting stub: {name}");
-            Console.WriteLine($"method count: {_methodCount}");
-            Console.WriteLine($"unique signature count: {_uniqueSignatures.Count}");
-
             SectionWriter codeWriter = GetOrCreateSection(ObjectNodeSection.WasmCodeSection);
 
             int codeSize = body.EncodeSize();
@@ -409,18 +403,6 @@ namespace ILCompiler.ObjectWriter
             _sectionNameToIndex.Add(section.Name, sectionIndex);
         }
 
-        private void WriteMemorySection(ulong contentSize)
-        {
-            // TODO-WASM: Reserve an extra page or two for runtime stack as a temporary measure
-            // pages are 64 kb each, so we need to calculate how many pages we need
-            ulong numPages = (contentSize + (1 << 16) - 1) >> 16;
-
-            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.MemorySection);
-            writer.WriteByte(0x01); // number of memories
-            writer.WriteByte(0x00); // memory limits: flags (0 = only minimum)
-            writer.WriteULEB128(numPages); // memory limits: initial size in pages (64kb each)
-        }
-
         private void WriteDataCountSection()
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.DataCountSection);
@@ -432,14 +414,11 @@ namespace ILCompiler.ObjectWriter
         {
 
             _webcilSegment = BuildWebcilDataSegment();
+
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
+
             WriteDataCountSection();
-
-            Console.WriteLine("Done inserting stubs...");
-            Console.WriteLine($"method count: {_methodCount}");
-            Console.WriteLine($"unique signature count: {_uniqueSignatures.Count}");
-
             WriteTableSection();
 
             PrependCount(SectionByName(ObjectNodeSection.WasmCodeSection.Name), _methodCount);
@@ -595,13 +574,6 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidDataException($"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
 
             MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
-            Console.WriteLine($"webcilSection has flat mapped size: {_webcilSegment.GetFlatMappedSize()}");
-
-            Console.WriteLine($"Header.PEDebugRVA={_webcilSegment.Header.PeDebugRva}");
-            Console.WriteLine($"Header.PEDebugSize={_webcilSegment.Header.PeDebugSize}");
-            Console.WriteLine($"Header.PeCliHeaderRVA={_webcilSegment.Header.PeCliHeaderRva}");
-            Console.WriteLine($"Header.PeCliHeaderSize={_webcilSegment.Header.PeCliHeaderSize}");
-
             _webcilSegment.Header.Emit(webcilStream);
 
             foreach (WebcilSection section in _webcilSegment.Sections)
@@ -611,7 +583,7 @@ namespace ILCompiler.ObjectWriter
 
             foreach (WebcilSection section in _webcilSegment.Sections)
             {
-                // Stream position forward to pad implicitly
+                // Move stream position forward to account for inter-section padding (precalculated in BuildWebcilDataSegment())
                 webcilStream.Position = section.Header.PointerToRawData;
                 section.Stream.Position = 0;
                 section.Stream.CopyTo(webcilStream);
@@ -629,13 +601,12 @@ namespace ILCompiler.ObjectWriter
 
             if (_webcilSegment.Sections.Length > 0)
             {
-                // Write final padding
+                // Write final padding after last section
                 WebcilSection lastSection = _webcilSegment.Sections[_webcilSegment.Sections.Length - 1];
                 webcilStream.Seek(0, SeekOrigin.End);
                 PadStream(webcilStream, (int)lastSection.Padding);
             }
             Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
-
 
             // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
             byte[] lengthBuffer = new byte[sizeof(uint)];
@@ -663,8 +634,8 @@ namespace ILCompiler.ObjectWriter
                 {
                     _resolvableRelocations[sectionIndex] = resolvable = new List<SymbolicRelocation>();
                 }
-                // Unconditionally add the reloc to our resolvable list; all relocs must be resolvable for Wasm since we are linker-less
-                // and do not emit any relocations in the output object file.
+                // Unconditionally add the reloc to our resolvable list; all relocs must be resolvable for Wasm
+                // since we do not emit any relocations in the output object file.
                 resolvable.Add(reloc);
             }
         }
@@ -689,8 +660,8 @@ namespace ILCompiler.ObjectWriter
                 webcilVirtualStart = curSection.Header.VirtualAddress;
             }
 
-            // If we have a webcil section, we expect it to have a nonzero section start. This is because,
-            // for webcil, we should have written the webcil header and each of the section headers (always non-zero size) before any
+            // If we have a webcil section, we expect it to have a nonzero section start. This is because for webcil,
+            // we should have written the webcil header and each of the section headers (always non-zero size) before any
             // section contents
             Debug.Assert(webcilSection is null || sectionStart != 0);
 
@@ -714,10 +685,10 @@ namespace ILCompiler.ObjectWriter
 
                 // TODO-Wasm: Enforce the below boolean as an assert once we are emitting proper Wasm code
                 // relocs for all code containing nodes
-                //bool betweenWebcilSections = false;
+                // ---> bool betweenWebcilSections = false;
                 if (webcilSection is not null && _sections[definedSymbol.SectionIndex] is WebcilSection targetSection)
                 {
-                    //betweenWebcilSections = true;
+                    // ---> betweenWebcilSections = true;
                     symbolWebcilSection = targetSection;
 
                     virtualRelocOffset = webcilVirtualStart + (uint)reloc.Offset;
@@ -732,8 +703,6 @@ namespace ILCompiler.ObjectWriter
                 {
                     long addend = Relocation.ReadValue(reloc.Type, pData);
                     int relocLength = Relocation.GetSize(reloc.Type);
-
-                    Console.WriteLine($"Resolving relocation: {reloc.SymbolName} at offset {reloc.Offset} in section: {_sections[sectionIndex].Name}");
 
                     switch (reloc.Type)
                     {
@@ -790,7 +759,6 @@ namespace ILCompiler.ObjectWriter
             Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer, long sectionStart)
             {
                 Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type));
-                Console.WriteLine($"Reading reloc at {reloc.Offset} + {sectionStart} to data span");
                 sectionStream.Position = reloc.Offset + sectionStart;
                 sectionStream.ReadExactly(relocContents);
                 return relocContents;
@@ -816,13 +784,13 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteImports()
         {
-            // Calculate the minimum required memory size based on the combined data section size
-            //ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
-            //uint dataPages = checked((uint)((contentSize + (1<<16) - 1) >> 16));
-            //uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
-            uint numPages = 2;
+            // Calculate the minimum required memory size based on the Webcil Segment size
+            ulong contentSize = (ulong)_webcilSegment.GetFlatMappedSize();
+            uint dataPages = checked((uint)((contentSize + (1<<16) - 1) >> 16));
+            uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
-            _defaultImports[0] = new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            // TODO-Wasm: decide on convention here; webcil spec states this should be "webcil"
+            _defaultImports[0] = new WasmImport("env", "webcil", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
 
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
             foreach (WasmImport import in _defaultImports)
@@ -865,11 +833,6 @@ namespace ILCompiler.ObjectWriter
             WriteImports();
             WriteGlobalSection();
             WriteExports();
-
-            foreach (var key in definedSymbols)
-            {
-                Console.WriteLine($"{key.Key}: {key.Value}");
-            }
 
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
@@ -1049,7 +1012,6 @@ namespace ILCompiler.ObjectWriter
                     int position = (int)outputFileStream.Position + segment.HeaderSize + (int)segment.RawContentSize + _segments[i + 1].HeaderSize;
                     int padding = AlignmentHelper.AlignUp(position, _contentAlign) - position;
                     segment.Padding = padding;
-                    Console.WriteLine($"Segment Padding: {padding}");
                 }
                 else
                 {
@@ -1150,7 +1112,6 @@ namespace ILCompiler.ObjectWriter
                 }
                 case WasmDataSectionType.Passive:
                 {
-                    Console.WriteLine($"Header buffer length is: {headerBuffer.Length}");
                     int len = 0;
                     len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
                     Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32, $"{headerBuffer.Slice(len).Length} != {Relocation.WASM_PADDED_RELOC_SIZE_32}");
@@ -1165,7 +1126,6 @@ namespace ILCompiler.ObjectWriter
 
         public int Emit(Stream outputFileStream)
         {
-            Console.WriteLine($"Emitting segment at: {outputFileStream.Position}");
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             int headerSize = EncodeHeader(headerBuffer);
             Debug.Assert(headerSize == HeaderSize);

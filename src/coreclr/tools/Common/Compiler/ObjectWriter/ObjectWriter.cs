@@ -224,7 +224,6 @@ namespace ILCompiler.ObjectWriter
                     }
                     else
                     {
-                        Console.WriteLine($"Resolving reloc: {addend} + {definedSymbol.Value} (symbol {symbolName}) at offset {offset} in section {sectionIndex}");
                         Relocation.WriteValue(relocType, (void*)pData, adjustedAddend);
                     }
                 }
@@ -234,13 +233,11 @@ namespace ILCompiler.ObjectWriter
             {
                 fixed (byte* pData = data)
                 {
-                    Console.WriteLine($"Resolving reloc: {addend} + {definedSymbol.Value} (symbol {symbolName}) at offset {offset} in section {sectionIndex}");
                     Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size);
                 }
             }
             else
             {
-                Console.WriteLine($"Emitting relocation for future resolution: {symbolName}, {relocType} at offset {offset} in section {sectionIndex}");
                 EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
             }
         }
@@ -347,7 +344,6 @@ namespace ILCompiler.ObjectWriter
 
         public virtual void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
-            Console.WriteLine(_nodeFactory.Target.OperatingSystem);
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);
             if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
@@ -383,7 +379,6 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
-
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
                 // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
@@ -440,18 +435,10 @@ namespace ILCompiler.ObjectWriter
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
-                if (isMethod && node is AssemblyStubNode asmStub)
-                {
-                    Console.WriteLine($"Assembly stub: {asmStub.GetMangledName(_nodeFactory.NameMangler)}");
-                    Console.WriteLine($"Represents indirection cell: {asmStub.RepresentsIndirectionCell}");
-                    Console.WriteLine($"Underlying type: {asmStub.GetType()}");
-                }
-
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
                 }
-
 
                 if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
