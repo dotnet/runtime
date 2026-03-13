@@ -30,7 +30,6 @@ namespace Microsoft.Extensions.Hosting
         {
             using var _ = RemoteExecutor.Invoke(static () =>
             {
-                string processId = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
                 int nonMatchingPid = int.MaxValue; // No real process will ever have this PID.
 
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", nonMatchingPid.ToString(CultureInfo.InvariantCulture));
