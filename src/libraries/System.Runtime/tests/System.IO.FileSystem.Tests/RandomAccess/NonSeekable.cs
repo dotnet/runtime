@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
+    [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
     public class RandomAccess_NonSeekable : FileSystemTest
     {
         private const int VectorCount = 10;
@@ -219,8 +219,10 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public void PartialReadsAreSupported()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task PartialReadsAreSupported(bool useAsync)
         {
             (SafeFileHandle readHandle, SafeFileHandle writeHandle) = GetAnonymousPipeHandles();
 
@@ -228,34 +230,27 @@ namespace System.IO.Tests
             using (writeHandle)
             {
                 byte[] content = RandomNumberGenerator.GetBytes(BufferSize);
-                RandomAccess.Write(writeHandle, content, fileOffset: 0);
-
-                byte[] buffer = new byte[BufferSize];
-
-                for (int i = 0; i < BufferSize; i++)
+                if (useAsync)
                 {
-                    Assert.Equal(1, RandomAccess.Read(readHandle, buffer.AsSpan(i, 1), fileOffset: 0));
+                    await RandomAccess.WriteAsync(writeHandle, content, fileOffset: 0);
                 }
-                Assert.Equal(content, buffer);
-            }
-        }
-
-        [Fact]
-        public async Task PartialReadsAreSupportedAsync()
-        {
-            (SafeFileHandle readHandle, SafeFileHandle writeHandle) = GetAnonymousPipeHandles();
-
-            using (readHandle)
-            using (writeHandle)
-            {
-                byte[] content = RandomNumberGenerator.GetBytes(BufferSize);
-                ValueTask write = RandomAccess.WriteAsync(writeHandle, content, fileOffset: 0);
+                else
+                {
+                    RandomAccess.Write(writeHandle, content, fileOffset: 0);
+                }
 
                 byte[] buffer = new byte[BufferSize];
 
                 for (int i = 0; i < BufferSize; i++)
                 {
-                    Assert.Equal(1, await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(i, 1), fileOffset: 0));
+                    if (useAsync)
+                    {
+                        Assert.Equal(1, await RandomAccess.ReadAsync(readHandle, buffer.AsMemory(i, 1), fileOffset: 0));
+                    }
+                    else
+                    {
+                        Assert.Equal(1, RandomAccess.Read(readHandle, buffer.AsSpan(i, 1), fileOffset: 0));
+                    }
                 }
                 Assert.Equal(content, buffer);
             }

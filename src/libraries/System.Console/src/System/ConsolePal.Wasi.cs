@@ -244,17 +244,6 @@ namespace System
         {
         }
 
-        /// <summary>Reads data from the file descriptor into the buffer.</summary>
-        /// <param name="fd">The file descriptor.</param>
-        /// <param name="buffer">The buffer to read into.</param>
-        /// <returns>The number of bytes read, or an exception if there's an error.</returns>
-        private static int Read(SafeFileHandle fd, Span<byte> buffer)
-        {
-            int result = RandomAccess.Read(fd, buffer, fileOffset: 0);
-            Debug.Assert(result <= buffer.Length);
-            return result;
-        }
-
         internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
         {
             EnsureConsoleInitialized();
