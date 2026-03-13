@@ -150,7 +150,7 @@ internal static partial class Interop
 
             private AddrBuffer _address;
             private uint _addressLength;
-            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan<byte>(ref _address[0], (int)_addressLength).ToArray();
+            internal byte[] Address => ((ReadOnlySpan<byte>)_address).Slice(0, (int)_addressLength).ToArray();
 
             [InlineArray(MAX_ADAPTER_ADDRESS_LENGTH)]
             private struct AddrBuffer
@@ -165,7 +165,7 @@ internal static partial class Interop
             internal uint ipv6Index;
 
             private InlineArray16<uint> _zoneIndices;
-            internal uint[] ZoneIndices => MemoryMarshal.CreateReadOnlySpan<uint>(ref _zoneIndices[0], 16).ToArray();
+            internal uint[] ZoneIndices => ((ReadOnlySpan<uint>)_zoneIndices).ToArray();
 
             internal IntPtr firstPrefix;
 

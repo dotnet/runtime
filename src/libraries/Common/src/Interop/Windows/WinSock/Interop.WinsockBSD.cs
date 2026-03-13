@@ -91,7 +91,7 @@ internal static partial class Interop
                     public Native(IPv6MulticastRequest managed)
                     {
                         Debug.Assert(managed.MulticastAddress.Length == MulticastAddressLength);
-                        managed.MulticastAddress.CopyTo(MemoryMarshal.CreateSpan(ref _multicastAddress[0], MulticastAddressLength));
+                        managed.MulticastAddress.CopyTo((Span<byte>)_multicastAddress);
                         _interfaceIndex = managed.InterfaceIndex;
                     }
 
@@ -102,7 +102,7 @@ internal static partial class Interop
                             MulticastAddress = new byte[MulticastAddressLength],
                             InterfaceIndex = _interfaceIndex
                         };
-                        MemoryMarshal.CreateReadOnlySpan(ref _multicastAddress[0], MulticastAddressLength).CopyTo(managed.MulticastAddress);
+                        ((ReadOnlySpan<byte>)_multicastAddress).CopyTo(managed.MulticastAddress);
                         return managed;
                     }
                 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -30,8 +31,9 @@ internal static partial class Interop
         public ApplicationProtocolNegotiationExt ProtoNegoExt;
         public byte ProtocolIdSize;
         public ProtocolIdBuffer ProtocolId;
+        [UnscopedRef]
         public ReadOnlySpan<byte> Protocol =>
-            MemoryMarshal.CreateReadOnlySpan(ref ProtocolId[0], ProtocolIdSize);
+            ((ReadOnlySpan<byte>)ProtocolId).Slice(0, ProtocolIdSize);
 
         [InlineArray(MaxProtocolIdSize)]
         internal struct ProtocolIdBuffer

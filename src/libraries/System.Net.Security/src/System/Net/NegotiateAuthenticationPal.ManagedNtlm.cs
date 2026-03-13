@@ -462,7 +462,7 @@ namespace System.Net
                 temp.Responserversion = 1;
                 temp.Time = time.ToFileTimeUtc();
 
-                clientChallenge.CopyTo(MemoryMarshal.CreateSpan(ref temp.ClientChallenge[0], ChallengeLength));
+                clientChallenge.CopyTo((Span<byte>)temp.ClientChallenge);
                 serverInfo.CopyTo(MemoryMarshal.CreateSpan(ref temp.ServerInfo[0], serverInfo.Length));
 
                 // Calculate NTProofStr
@@ -735,7 +735,7 @@ namespace System.Net
                     hmacMic.AppendData(_negotiateMessage);
                     hmacMic.AppendData(blob);
                     hmacMic.AppendData(responseBytes.AsSpan(0, payloadOffset));
-                    hmacMic.GetHashAndReset(MemoryMarshal.CreateSpan(ref response.Mic[0], hmacMic.HashLengthInBytes));
+                    hmacMic.GetHashAndReset((Span<byte>)response.Mic);
                 }
 
                 // Derive signing keys

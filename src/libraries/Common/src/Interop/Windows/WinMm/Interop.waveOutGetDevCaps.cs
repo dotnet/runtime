@@ -57,7 +57,7 @@ internal static partial class Interop
                         wMid = managed.wMid;
                         wPid = managed.wPid;
                         vDriverVersion = managed.vDriverVersion;
-                        Span<char> szPnameSpan = MemoryMarshal.CreateSpan(ref szPname[0], szPnameLength);
+                        Span<char> szPnameSpan = szPname;
                         szPnameSpan.Clear();
                         managed.szPname?.CopyTo(szPnameSpan);
                         dwFormats = managed.dwFormats;
@@ -72,7 +72,7 @@ internal static partial class Interop
                             wMid = wMid,
                             wPid = wPid,
                             vDriverVersion = vDriverVersion,
-                            szPname = MemoryMarshal.CreateReadOnlySpan(ref szPname[0], szPnameLength).ToString(),
+                            szPname = ((ReadOnlySpan<char>)szPname).ToString(),
                             dwFormats = dwFormats,
                             wChannels = wChannels,
                             wReserved1 = wReserved1,

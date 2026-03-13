@@ -62,7 +62,7 @@ internal static partial class Interop
 
             // Replying address.
             private InlineArray16<byte> _Address;
-            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan(ref _Address[0], 16).ToArray();
+            internal byte[] Address => ((ReadOnlySpan<byte>)_Address).ToArray();
 
             internal uint ScopeID;
         }
