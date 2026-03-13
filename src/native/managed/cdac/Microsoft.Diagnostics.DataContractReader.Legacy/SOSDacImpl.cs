@@ -3583,7 +3583,7 @@ public sealed unsafe partial class SOSDacImpl
 
     private static readonly string[] s_riscV64Registers =
     [
-        "R0", "RA", "SP", "GP",
+        "zero", "RA", "SP", "GP",
         "TP", "T0", "T1", "T2",
         "FP", "S1", "A0", "A1",
         "A2", "A3", "A4", "A5",
@@ -4109,8 +4109,142 @@ public sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
+
+#if DEBUG
+    internal sealed class TraverseEhInfoExpected
+    {
+        public TraverseEhInfoExpected(List<DACEHInfo> elements, bool expectAbort, uint? abortIndex = null)
+        {
+            Elements = elements;
+            ExpectAbort = expectAbort;
+            AbortIndex = abortIndex;
+        }
+
+        public List<DACEHInfo> Elements { get; }
+        public bool ExpectAbort { get; }
+        public uint? AbortIndex { get; }
+        public int CallbackCount { get; set; }
+    }
+
+    [UnmanagedCallersOnly]
+    private static int TraverseEHInfoCallback(uint clauseIndex, uint totalClauses, DACEHInfo* pEHInfo, void* expectedEhInfo)
+    {
+        var expected = (TraverseEhInfoExpected)GCHandle.FromIntPtr((nint)expectedEhInfo).Target!;
+        Debug.Assert(clauseIndex < totalClauses, $"Invalid clause index {clauseIndex} of {totalClauses}");
+        if (clauseIndex < expected.Elements.Count)
+        {
+            DACEHInfo expectedEhClause = expected.Elements[(int)clauseIndex];
+            Debug.Assert(pEHInfo->clauseType == expectedEhClause.clauseType, $"cDAC: {expectedEhClause.clauseType}, DAC: {pEHInfo->clauseType}");
+            Debug.Assert(pEHInfo->tryStartOffset == expectedEhClause.tryStartOffset, $"cDAC: {expectedEhClause.tryStartOffset:x}, DAC: {pEHInfo->tryStartOffset:x}");
+            Debug.Assert(pEHInfo->tryEndOffset == expectedEhClause.tryEndOffset, $"cDAC: {expectedEhClause.tryEndOffset:x}, DAC: {pEHInfo->tryEndOffset:x}");
+            Debug.Assert(pEHInfo->handlerStartOffset == expectedEhClause.handlerStartOffset, $"cDAC: {expectedEhClause.handlerStartOffset:x}, DAC: {pEHInfo->handlerStartOffset:x}");
+            Debug.Assert(pEHInfo->handlerEndOffset == expectedEhClause.handlerEndOffset, $"cDAC: {expectedEhClause.handlerEndOffset:x}, DAC: {pEHInfo->handlerEndOffset:x}");
+            Debug.Assert(pEHInfo->isDuplicateClause == expectedEhClause.isDuplicateClause, $"cDAC: {expectedEhClause.isDuplicateClause}, DAC: {pEHInfo->isDuplicateClause}");
+            Debug.Assert(pEHInfo->filterOffset == expectedEhClause.filterOffset, $"cDAC: {expectedEhClause.filterOffset:x}, DAC: {pEHInfo->filterOffset:x}");
+            Debug.Assert(pEHInfo->isCatchAllHandler == expectedEhClause.isCatchAllHandler, $"cDAC: {expectedEhClause.isCatchAllHandler}, DAC: {pEHInfo->isCatchAllHandler}");
+            Debug.Assert(pEHInfo->moduleAddr == expectedEhClause.moduleAddr, $"cDAC: {expectedEhClause.moduleAddr:x}, DAC: {pEHInfo->moduleAddr:x}");
+            Debug.Assert(pEHInfo->mtCatch == expectedEhClause.mtCatch, $"cDAC: {expectedEhClause.mtCatch:x}, DAC: {pEHInfo->mtCatch:x}");
+            Debug.Assert(pEHInfo->tokCatch == expectedEhClause.tokCatch, $"cDAC: {expectedEhClause.tokCatch:x}, DAC: {pEHInfo->tokCatch:x}");
+        }
+        else
+        {
+            Debug.Fail($"Received unexpected clause index {clauseIndex} of {totalClauses}");
+        }
+
+        expected.CallbackCount++;
+
+        if (expected.ExpectAbort && expected.AbortIndex == clauseIndex)
+        {
+            return 0; // Return 0 to trigger E_ABORT and stop enumeration
+        }
+        return 1; // Return non-zero to continue enumeration
+    }
+#endif
+    int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<DACEHInfo> clausesLocal = new();
+#endif
+        int E_ABORT = unchecked((int)0x80004004);
+        uint lastIndex = 0;
+
+        try
+        {
+            if (ip == 0 || pCallback == null)
+            {
+                throw new ArgumentException();
+            }
+
+            IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+
+            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
+            if (handle is not CodeBlockHandle codeBlockHandle)
+            {
+                throw new ArgumentException();
+            }
+
+            List<ExceptionClauseInfo> exceptionClauses = executionManager.GetExceptionClauses(codeBlockHandle);
+            uint numClauses = (uint)exceptionClauses.Count;
+            for (uint i = 0; i < numClauses; i++)
+            {
+                ExceptionClauseInfo clause = exceptionClauses[(int)i];
+                DACEHInfo ehInfo = default;
+                ehInfo.clauseType = clause.ClauseType switch
+                {
+                    ExceptionClauseInfo.ExceptionClauseFlags.Fault => DACEHInfo.EHClauseType.EHFault,
+                    ExceptionClauseInfo.ExceptionClauseFlags.Finally => DACEHInfo.EHClauseType.EHFinally,
+                    ExceptionClauseInfo.ExceptionClauseFlags.Filter => DACEHInfo.EHClauseType.EHFilter,
+                    ExceptionClauseInfo.ExceptionClauseFlags.Typed => DACEHInfo.EHClauseType.EHTyped,
+                    _ => DACEHInfo.EHClauseType.EHUnknown,
+                };
+
+                ehInfo.filterOffset = clause.FilterOffset is uint filterOffset ? (ulong)filterOffset : 0;
+                ehInfo.isCatchAllHandler = clause.IsCatchAllHandler is true ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                ehInfo.tokCatch = clause.ClassToken is uint classToken ? classToken : 0;
+                ehInfo.moduleAddr = clause.ModuleAddr is TargetPointer moduleAddr ? moduleAddr.ToClrDataAddress(_target) : 0;
+                ehInfo.mtCatch = clause.TypeHandle is TargetNUInt th ? new TargetPointer(th.Value).ToClrDataAddress(_target) : 0;
+
+                ehInfo.tryStartOffset = (ulong)clause.TryStartPC;
+                ehInfo.tryEndOffset = (ulong)clause.TryEndPC;
+                ehInfo.handlerStartOffset = (ulong)clause.HandlerStartPC;
+                ehInfo.handlerEndOffset = (ulong)clause.HandlerEndPC;
+#if DEBUG
+                clausesLocal.Add(ehInfo);
+#endif
+                if (pCallback(i, numClauses, &ehInfo, token) == 0)
+                {
+                    lastIndex = i;
+                    throw Marshal.GetExceptionForHR(E_ABORT)!;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            TraverseEhInfoExpected expected = new(clausesLocal, hr == E_ABORT, hr == E_ABORT ? lastIndex : null);
+            GCHandle expectedHandle = GCHandle.Alloc(expected);
+            try
+            {
+                void* tokenDebug = GCHandle.ToIntPtr(expectedHandle).ToPointer();
+                delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> callbackDebugPtr = &TraverseEHInfoCallback;
+
+                int hrLocal = _legacyImpl.TraverseEHInfo(ip, callbackDebugPtr, tokenDebug);
+                Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.Exact);
+            }
+            finally
+            {
+                expectedHandle.Free();
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback) : HResults.E_NOTIMPL;
 
