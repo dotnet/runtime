@@ -560,16 +560,16 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
     assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
 
-    // Remove all Then/Else blocks
-    auto removeBlocks = [&](BasicBlock* start) {
+    // Remove Then/Else block
+    auto removeBlock = [&](BasicBlock* start) {
         start->bbWeight = BB_ZERO_WEIGHT;
         m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
         m_compiler->fgRemoveBlock(start, true);
     };
-    removeBlocks(falseBb);
+    removeBlock(falseBb);
     if (m_doElseConversion)
     {
-        removeBlocks(trueBb);
+        removeBlock(trueBb);
     }
 
 #ifdef DEBUG
