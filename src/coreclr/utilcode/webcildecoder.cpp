@@ -210,7 +210,6 @@ CHECK WebcilDecoder::CheckILFormat() const
     }
     CONTRACT_CHECK_END;
 
-    // TODO: implement — validate COR header and metadata
     CHECK(CheckFormat());
     CHECK(HasCorHeader());
     CHECK(CheckCorHeader());
@@ -770,17 +769,16 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
             return (TADDR)0;
         }
 
-        if (pSize != NULL)
-            *pSize = debugSize;
-
-        // Validate the debug directory range is within a section
-        const WebcilSectionHeader *section = RvaToSection(debugRva);
-        if (section == NULL)
+        // Validate the full debug directory range is within a section
+        if (!CheckRva(debugRva, debugSize, 0, NULL_NOT_OK))
         {
             if (pSize != NULL)
                 *pSize = 0;
             return (TADDR)0;
         }
+
+        if (pSize != NULL)
+            *pSize = debugSize;
 
         return GetRvaData(debugRva);
     }

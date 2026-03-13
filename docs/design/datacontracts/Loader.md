@@ -493,7 +493,7 @@ uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
         }
     }
 
-    throw new InvalidOperationException("RVA not found in any Webcil section.");
+    throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
 }
 
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
