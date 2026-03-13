@@ -22,7 +22,7 @@ namespace ILCompiler.ObjectWriter
 {
     internal class PaddingHelper
     {
-        private static byte[] _padding;
+        private byte[] _padding;
         public PaddingHelper(int n, byte padByte = 0)
         {
             _padding = new byte[n];
