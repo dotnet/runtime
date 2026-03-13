@@ -281,12 +281,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.AddRange(_nonRelocationDependencies);
             }
 
-            if (factory.Target.Architecture is TargetArchitecture.Wasm32)
-            {
-                DependencyNode node = factory.WasmTypeNode(_method);
-                dependencyList.Add(node, "wasmMethodsNeedExplicitSignatures");
-            }
-
             return dependencyList;
         }
 
