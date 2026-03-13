@@ -12,19 +12,15 @@ internal static partial class Interop
         private static unsafe partial Interop.BOOL GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-#if NET
         private struct CPINFOEXW
-#else
-        private unsafe struct CPINFOEXW
-#endif
         {
             internal uint MaxCharSize;
 #if NET
             internal InlineArray2<byte> DefaultChar;
             internal InlineArray12<byte> LeadByte;
 #else
-            internal fixed byte DefaultChar[2];
-            internal fixed byte LeadByte[12];
+            internal unsafe fixed byte DefaultChar[2];
+            internal unsafe fixed byte LeadByte[12];
 #endif
             internal char UnicodeDefaultChar;
             internal uint CodePage;
@@ -37,7 +33,7 @@ internal static partial class Interop
                 private char _element0;
             }
 #else
-            internal fixed char CodePageName[MAX_PATH];
+            internal unsafe fixed char CodePageName[MAX_PATH];
 #endif
         }
 
