@@ -370,6 +370,8 @@ public:
         GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
+        GCSTRESS_CDAC               = 0x20, // Verify cDAC GC references at stress points
+        GCSTRESS_ALLSTRESS          = GCSTRESS_ALLOC | GCSTRESS_TRANSITION | GCSTRESS_INSTR_JIT | GCSTRESS_INSTR_NGEN | GCSTRESS_CDAC,
     };
 
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }

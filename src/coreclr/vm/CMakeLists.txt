@@ -329,6 +329,7 @@ set(VM_SOURCES_WKS
     finalizerthread.cpp
     floatdouble.cpp
     floatsingle.cpp
+    cdacgcstress.cpp
     frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.cpp
