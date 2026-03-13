@@ -3218,11 +3218,7 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
 //
 bool AsyncTransformation::ReuseContinuations()
 {
-#ifdef DEBUG
     return JitConfig.JitAsyncReuseContinuations() != 0;
-#else
-    return false;
-#endif
 }
 
 //------------------------------------------------------------------------
