@@ -73,11 +73,10 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         public IEnumerator<uint> MethodEnumerator = Enumerable.Empty<uint>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
-        public EnumMethodDefinitions(MetadataReader reader, uint flags, TargetPointer legacyHandle = default)
+        public EnumMethodDefinitions(MetadataReader reader, uint flags)
         {
             _reader = reader;
             _flags = flags;
-            LegacyHandle = legacyHandle;
         }
 
         public void Start(string fullName)
@@ -226,11 +225,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
         ulong handleLocal = default;
         int hrLocal = default;
-        if (_legacyModule is not null)
-        {
-            hrLocal = _legacyModule.StartEnumMethodDefinitionsByName(name, flags, &handleLocal);
-        }
-
         try
         {
             if (name == null || *name == '\0')
@@ -244,24 +238,19 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
             MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
 
-            EnumMethodDefinitions emd = new(reader, flags, handleLocal);
+            EnumMethodDefinitions emd = new(reader, flags);
+            emd.Start(fullName);
+            if (_legacyModule is not null)
+            {
+                hrLocal = _legacyModule.StartEnumMethodDefinitionsByName(name, flags, &handleLocal);
+            }
+            emd.LegacyHandle = handleLocal;
             GCHandle gcHandle = GCHandle.Alloc(emd);
             *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
-            emd.Start(fullName);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-
-        finally
-        {
-            if (hr < 0 && *handle != 0)
-            {
-                // Free the GCHandle if we failed to start the enumeration
-                GCHandle.FromIntPtr((IntPtr)(*handle)).Free();
-                *handle = 0;
-            }
         }
 
 #if DEBUG
@@ -279,6 +268,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         EnumMethodDefinitions emd;
         try
         {
+            if (method.IsNullRef)
+                throw new NullReferenceException();
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
             if (gcHandle.Target is not EnumMethodDefinitions emdLocal)
                 throw new ArgumentException();

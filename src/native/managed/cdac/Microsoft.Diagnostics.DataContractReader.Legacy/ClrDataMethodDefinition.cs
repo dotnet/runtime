@@ -13,7 +13,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     private readonly Target _target;
     private readonly TargetPointer _module;
     private readonly uint _token;
-    private readonly TargetPointer _methodDesc;
     private readonly IXCLRDataMethodDefinition? _legacyImpl;
     public ClrDataMethodDefinition(
         Target target,
@@ -24,7 +23,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         _target = target;
         _module = module;
         _token = token;
-        _methodDesc = TargetPointer.Null; // MethodDesc is lazily initialized in GetRepresentativeEntryAddress
         _legacyImpl = legacyImpl;
     }
     int IXCLRDataMethodDefinition.GetTypeDefinition(DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
