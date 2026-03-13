@@ -750,14 +750,8 @@ namespace Mono.Linker
                         }
                         case "a":
                         {
-                            if (!GetStringParam(token, out string? assemblyFile))
+                            if (!GetStringParam(token, out string? assemblyName))
                                 return -1;
-
-                            if (!File.Exists(assemblyFile) && assemblyFile.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, assemblyFile);
-                                return -1;
-                            }
 
                             AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
                             var rootMode = GetNextStringValue();
@@ -770,7 +764,7 @@ namespace Mono.Linker
                                 rmode = parsed_rmode.Value;
                             }
 
-                            inputs.Add(new RootAssemblyInput(assemblyFile, rmode));
+                            inputs.Add(new RootAssemblyInput(assemblyName, rmode));
                             continue;
                         }
                         case "b":
@@ -1460,7 +1454,7 @@ namespace Mono.Linker
             Console.WriteLine(_linker);
 
             Console.WriteLine($"illink [options] {resolvers}");
-            Console.WriteLine("  -a FILE [MODE]      Assembly file used as root assembly with optional MODE value to alter default root mode");
+            Console.WriteLine("  -a ASSEMBLYNAME [MODE]  Assembly name used as root assembly with optional MODE value to alter default root mode");
             Console.WriteLine("                      Mode can be one of the following values");
             Console.WriteLine("                        all: Keep all members in root assembly");
             Console.WriteLine("                        default: Use entry point for applications and all members for libraries");
