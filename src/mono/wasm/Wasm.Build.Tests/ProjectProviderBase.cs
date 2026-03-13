@@ -554,7 +554,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
 
         EnsureProjectDirIsSet();
-        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         AssetsData assets = (AssetsData)bootJson.resources;
 

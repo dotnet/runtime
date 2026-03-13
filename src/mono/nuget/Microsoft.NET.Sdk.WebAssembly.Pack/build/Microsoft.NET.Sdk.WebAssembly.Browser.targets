@@ -205,8 +205,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
-      <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
-      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(WasmBootConfigFileName)' == ''">true</_WasmInlineBootConfig>
+      <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
@@ -216,7 +215,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
-      <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true' and '$(_WasmInlineBootConfig)' == 'true'">dotnet.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == '' and '$(_TargetingNET100OrLater)' == 'true'">dotnet.boot.js</_WasmBootConfigFileName>
       <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>

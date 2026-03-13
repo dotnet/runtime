@@ -6,13 +6,8 @@ import type { EmscriptenModule, NativePointer } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
-    /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
-     */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -476,7 +471,6 @@ export const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: MonoConfig,
-    configSrc?: string,
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;

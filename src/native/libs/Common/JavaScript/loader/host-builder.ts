@@ -18,9 +18,6 @@ export class HostBuilder implements DotnetHostBuilder {
         mergeLoaderConfig(config);
         return this;
     }
-    withConfigSrc(_: string): DotnetHostBuilder {
-        throw new Error("Not supported in this build");
-    }
     withApplicationArguments(...args: string[]): DotnetHostBuilder {
         applicationArguments = args;
         return this;

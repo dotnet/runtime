@@ -175,9 +175,6 @@ switch (testCase) {
         break;
     case "BrowserProfilerTest":
         break;
-    case "OverrideBootConfigName":
-        dotnet.withConfigSrc("boot.json");
-        break;
     case "MainWithArgs":
         dotnet.withApplicationArgumentsFromQuery();
         break;
@@ -359,11 +356,6 @@ try {
 
             exit(foundB && retB == 42 ? 0 : 1);
 
-            break;
-        case "OverrideBootConfigName":
-            testOutput("ConfigSrc: " + Module.configSrc);
-            exports.OverrideBootConfigNameTest.Run();
-            exit(0);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

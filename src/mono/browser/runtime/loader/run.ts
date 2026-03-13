@@ -59,17 +59,6 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withConfigSrc (configSrc: string): DotnetHostBuilder {
-        try {
-            mono_assert(configSrc && typeof configSrc === "string", "must be file path or URL");
-            deep_merge_module(emscriptenModule, { configSrc });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
     withVirtualWorkingDirectory (vfsPath: string): DotnetHostBuilder {
         try {
             mono_assert(vfsPath && typeof vfsPath === "string", "must be directory path");

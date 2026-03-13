@@ -441,6 +441,7 @@ export declare interface EmscriptenModuleInternal {
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    configSrc?: string;
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
     safeSetTimeout(func: Function, timeout: number): number;
     runtimeKeepalivePush(): void;
