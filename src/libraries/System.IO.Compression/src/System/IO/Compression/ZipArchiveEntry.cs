@@ -419,13 +419,13 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
-        /// <exception cref="ArgumentException">The password provided is null.</exception>
+        /// <exception cref="ArgumentException">The password provided is empty.</exception>
         public Stream Open(string password)
         {
             ThrowIfInvalidArchive();
             if (string.IsNullOrEmpty(password))
             {
-                throw new ArgumentException(SR.EmptyPassword);
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
             switch (_archive.Mode)
             {
@@ -460,7 +460,7 @@ namespace System.IO.Compression
             ThrowIfInvalidArchive();
             if (string.IsNullOrEmpty(password))
             {
-                throw new ArgumentException(SR.EmptyPassword);
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
             switch (_archive.Mode)
             {
@@ -531,9 +531,9 @@ namespace System.IO.Compression
         public Stream Open(FileAccess access, string password)
         {
             ThrowIfInvalidArchive();
-            if (string.IsNullOrEmpty(password))
+            if (password.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyPassword);
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
@@ -571,6 +571,10 @@ namespace System.IO.Compression
         public Stream Open(FileAccess access, string password, EncryptionMethod encryptionMethod)
         {
             ThrowIfInvalidArchive();
+            if (password.Length == 0)
+            {
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
+            }
 
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
@@ -1170,7 +1174,7 @@ namespace System.IO.Compression
             {
                 if (string.IsNullOrEmpty(password))
                 {
-                    throw new ArgumentException(SR.EmptyPassword);
+                    throw new ArgumentException(SR.EmptyPassword, nameof(password));
                 }
 
                 Encryption = encryptionMethod;
@@ -1195,7 +1199,7 @@ namespace System.IO.Compression
                 }
 
                 if (string.IsNullOrEmpty(password))
-                    throw new InvalidOperationException(SR.EmptyPassword);
+                    throw new ArgumentException(SR.EmptyPassword, nameof(password));
 
                 Encryption = encryptionMethod;
 

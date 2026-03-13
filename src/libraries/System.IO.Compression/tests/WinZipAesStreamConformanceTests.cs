@@ -38,7 +38,9 @@ namespace System.IO.Compression.Tests
         private const string TestPassword = "test-password";
 
         private static readonly Type s_winZipAesStreamType;
-        private static readonly MethodInfo s_createKeyMethod;
+        private static readonly Type s_winZipAesKeyMaterialType;
+        private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
+        private static readonly CreateKeyDelegate s_createKey;
         private static readonly MethodInfo s_createMethod;
 
         protected abstract int KeySizeBits { get; }
@@ -48,17 +50,21 @@ namespace System.IO.Compression.Tests
         {
             var assembly = typeof(ZipArchive).Assembly;
             s_winZipAesStreamType = assembly.GetType("System.IO.Compression.WinZipAesStream", throwOnError: true)!;
+            s_winZipAesKeyMaterialType = assembly.GetType("System.IO.Compression.WinZipAesKeyMaterial", throwOnError: true)!;
 
-            s_createKeyMethod = s_winZipAesStreamType.GetMethod("CreateKey",
+            // Use WinZipAesKeyMaterial.Create directly since it's the underlying implementation
+            // and we need a delegate to handle ReadOnlySpan<char> (ref struct can't be boxed for MethodInfo.Invoke)
+            MethodInfo createKeyMethod = s_winZipAesKeyMaterialType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(ReadOnlyMemory<char>), typeof(byte[]), typeof(int) },
+                new[] { typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int) },
                 null)!;
+            s_createKey = createKeyMethod.CreateDelegate<CreateKeyDelegate>();
 
             s_createMethod = s_winZipAesStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), typeof(byte[]), typeof(int), typeof(long), typeof(bool), typeof(bool) },
+                new[] { typeof(Stream), s_winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool) },
                 null)!;
         }
 
@@ -70,14 +76,11 @@ namespace System.IO.Compression.Tests
         protected override Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData)
         {
             var ms = new MemoryStream();
-            byte[] keyMaterial = (byte[])s_createKeyMethod.Invoke(null, new object?[]
-            {
-                TestPassword.AsMemory(), null, KeySizeBits
-            })!;
+            object keyMaterial = s_createKey(TestPassword, null, KeySizeBits);
 
             var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                ms, keyMaterial, KeySizeBits, 0L, true, false
+                ms, keyMaterial, 0L, true, false
             })!;
 
             if (initialData != null && initialData.Length > 0)
@@ -93,16 +96,13 @@ namespace System.IO.Compression.Tests
             byte[] plaintext = initialData ?? Array.Empty<byte>();
 
             // Create key material for encryption (generates random salt)
-            byte[] encryptKeyMaterial = (byte[])s_createKeyMethod.Invoke(null, new object?[]
-            {
-                TestPassword.AsMemory(), null, KeySizeBits
-            })!;
+            object encryptKeyMaterial = s_createKey(TestPassword, null, KeySizeBits);
 
             // Encrypt data first
             using var encryptedMs = new MemoryStream();
             using (var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                encryptedMs, encryptKeyMaterial, KeySizeBits, 0L, true, true
+                encryptedMs, encryptKeyMaterial, 0L, true, true
             })!)
             {
                 encryptStream.Write(plaintext);
@@ -113,16 +113,13 @@ namespace System.IO.Compression.Tests
             byte[] salt = new byte[SaltSize];
             Array.Copy(encryptedData, 0, salt, 0, SaltSize);
 
-            byte[] decryptKeyMaterial = (byte[])s_createKeyMethod.Invoke(null, new object?[]
-            {
-                TestPassword.AsMemory(), salt, KeySizeBits
-            })!;
+            object decryptKeyMaterial = s_createKey(TestPassword, salt, KeySizeBits);
 
             // Create decryption stream over the encrypted data
             var ms = new MemoryStream(encryptedData);
             var decryptStream = (Stream)s_createMethod.Invoke(null, new object[]
             {
-                ms, decryptKeyMaterial, KeySizeBits, (long)encryptedData.Length, false, false
+                ms, decryptKeyMaterial, (long)encryptedData.Length, false, false
             })!;
 
             return Task.FromResult<Stream?>(decryptStream);

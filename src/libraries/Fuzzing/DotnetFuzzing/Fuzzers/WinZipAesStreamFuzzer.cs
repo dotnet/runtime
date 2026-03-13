@@ -25,10 +25,17 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
     private static readonly Type _winZipAesKeyMaterialType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.WinZipAesKeyMaterial", throwOnError: true)!;
 #pragma warning restore IL2026
 
+    // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
+    // so we use a strongly-typed delegate instead.
+    private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
+
 #pragma warning disable IL2077 // dynamic access to non-public members
-    private static readonly MethodInfo _createKeyMethod = _winZipAesStreamType.GetMethod(
-        "CreateKey",
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
+    private static readonly CreateKeyDelegate _createKey = _winZipAesKeyMaterialType.GetMethod(
+        "Create",
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+        binder: null,
+        types: [typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int)],
+        modifiers: null)!.CreateDelegate<CreateKeyDelegate>();  
 
     private static readonly MethodInfo _createMethod = _winZipAesStreamType.GetMethod(
         "Create",
@@ -50,9 +57,7 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
 
     // Pre-derive key material once with a fixed password and no salt so the fuzzer focuses
     // on the stream's decryption/HMAC logic rather than key derivation.
-    private static readonly object s_keyMaterial = _createKeyMethod.Invoke(
-        obj: null,
-        parameters: ["fuzz".AsMemory(), null, KeySizeBits])!;
+    private static readonly object s_keyMaterial = _createKey("fuzz", null, KeySizeBits);
 
     // Cache the salt and password verifier bytes for prepending to the fuzz input.
     private static readonly byte[] s_salt = (byte[])_saltProp.GetValue(s_keyMaterial)!;

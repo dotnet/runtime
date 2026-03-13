@@ -20,7 +20,7 @@ namespace System.IO.Compression
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry's name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -50,7 +50,7 @@ namespace System.IO.Compression
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry's name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -89,7 +89,7 @@ namespace System.IO.Compression
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry's name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -120,7 +120,7 @@ namespace System.IO.Compression
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry's name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>

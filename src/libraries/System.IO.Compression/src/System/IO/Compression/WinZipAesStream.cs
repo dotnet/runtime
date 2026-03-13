@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 namespace System.IO.Compression
 {
     [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("browser")]
     internal sealed class WinZipAesStream : Stream
     {
         private const int BlockSize = 16; // AES block size in bytes

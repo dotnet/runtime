@@ -30,6 +30,7 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
 
 #pragma warning disable IL2026 // RequiresUnreferencedCode
     private static readonly Type _zipCryptoStreamType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
+    private static readonly Type _zipCryptoKeysType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipCryptoKeys", throwOnError: true)!;
 #pragma warning restore IL2026
 
 #pragma warning disable IL2077 // dynamic access to non-public members
@@ -41,12 +42,12 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
         "Create",
         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
         binder: null,
-        types: [typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(bool)],
+        types: [typeof(Stream), _zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool)],
         modifiers: null)!;
 #pragma warning restore IL2077
 
-    // Derive key bytes from a fixed password so the key state is realistic.
-    private static readonly byte[] s_keyBytes = (byte[])_createKeyMethod.Invoke(
+    // Derive keys from a fixed password so the key state is realistic.
+    private static readonly object s_keys = _createKeyMethod.Invoke(
         obj: null,
         parameters: ["fuzz".AsMemory()])!;
 
@@ -59,7 +60,7 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
 #pragma warning disable IL2072 // dynamic invocation
         return (Stream)_createMethod.Invoke(
             obj: null,
-            parameters: [baseStream, s_keyBytes, expectedCheckByte, /*encrypting*/ false, /*leaveOpen*/ false])!;
+            parameters: [baseStream, s_keys, expectedCheckByte, /*encrypting*/ false, /*leaveOpen*/ false])!;
 #pragma warning restore IL2072
     }
 

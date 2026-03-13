@@ -116,7 +116,7 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
-        if (string.IsNullOrEmpty(password))
+        if (password.Length == 0)
         {
             throw new ArgumentException(SR.EmptyPassword, nameof(password));
         }
@@ -185,9 +185,13 @@ public partial class ZipArchiveEntry
             throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
         }
 
-        if (string.IsNullOrEmpty(password))
+        if (password is null)
         {
             throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+        }
+        if (password.Length == 0)
+        {
+            throw new ArgumentException(SR.EmptyPassword, nameof(password));
         }
 
         switch (_archive.Mode)
@@ -214,9 +218,9 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
-        if (string.IsNullOrEmpty(password))
+        if (password.Length == 0)
         {
-            throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+            throw new ArgumentException(SR.EmptyPassword, nameof(password));
         }
 
         switch (_archive.Mode)
