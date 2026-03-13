@@ -202,7 +202,7 @@ namespace System.Net
             {
                 public MessageHeader Header;
                 public MessageField TargetName;
-                public Flags Flags;
+                private Flags _flags;
                 public ChallengeBuffer ServerChallenge;
 
                 [InlineArray(ChallengeLength)]
@@ -213,6 +213,12 @@ namespace System.Net
                 private ulong _unused;
                 public MessageField TargetInfo;
                 public Version Version;
+
+                public Flags Flags
+                {
+                    readonly get => BitConverter.IsLittleEndian ? _flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    set => _flags = BitConverter.IsLittleEndian ? value : (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
+                }
             }
 
             // TYPE 3 message
@@ -226,7 +232,7 @@ namespace System.Net
                 public MessageField UserName;
                 public MessageField Workstation;
                 public MessageField EncryptedRandomSessionKey;
-                public Flags Flags;
+                private Flags _flags;
                 public Version Version;
                 public MicBuffer Mic;
 
@@ -234,6 +240,12 @@ namespace System.Net
                 public struct MicBuffer
                 {
                     private byte _element0;
+                }
+
+                public Flags Flags
+                {
+                    readonly get => BitConverter.IsLittleEndian ? _flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    set => _flags = BitConverter.IsLittleEndian ? value : (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
                 }
             }
 
