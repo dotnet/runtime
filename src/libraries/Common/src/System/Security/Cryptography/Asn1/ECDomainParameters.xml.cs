@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -27,6 +27,11 @@ namespace System.Security.Cryptography.Asn1
             ensureUniqueTag(Asn1Tag.Sequence, "Specified");
             ensureUniqueTag(Asn1Tag.ObjectIdentifier, "Named");
         }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
     }
 #endif
 
@@ -36,6 +41,13 @@ namespace System.Security.Cryptography.Asn1
         internal System.Security.Cryptography.Asn1.ValueSpecifiedECDomain Specified;
         internal bool HasSpecified;
         internal string? Named;
+
+#if DEBUG
+        static ValueECDomainParameters()
+        {
+            ValidateECDomainParameters.Validate();
+        }
+#endif
 
         internal readonly void Encode(AsnWriter writer)
         {

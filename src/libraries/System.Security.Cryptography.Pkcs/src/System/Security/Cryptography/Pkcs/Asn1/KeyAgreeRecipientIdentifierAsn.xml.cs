@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -27,6 +27,11 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             ensureUniqueTag(Asn1Tag.Sequence, "IssuerAndSerialNumber");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "RKeyId");
         }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
     }
 #endif
 
@@ -35,6 +40,13 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
         internal System.Security.Cryptography.Pkcs.Asn1.RecipientKeyIdentifier? RKeyId;
+
+#if DEBUG
+        static KeyAgreeRecipientIdentifierAsn()
+        {
+            ValidateKeyAgreeRecipientIdentifierAsn.Validate();
+        }
+#endif
 
         internal readonly void Encode(AsnWriter writer)
         {

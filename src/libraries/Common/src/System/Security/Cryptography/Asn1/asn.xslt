@@ -245,12 +245,24 @@ namespace <xsl:value-of select="@namespace" />
             };
 <xsl:apply-templates mode="EnsureUniqueTag" />
         }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
     }
 #endif
 <xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct <xsl:value-of select="@name" />
     {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="ValidateChoice" /><xsl:apply-templates mode="FieldDef" />
+
+#if DEBUG
+        static <xsl:value-of select="@name" />()
+        {
+            Validate<xsl:value-of select="@name" />.Validate();
+        }
+#endif
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -310,6 +322,13 @@ namespace <xsl:value-of select="@namespace" />
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct Value<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="ValueFieldDef" />
+
+#if DEBUG
+        static Value<xsl:value-of select="@name" />()
+        {
+            Validate<xsl:value-of select="@name" />.Validate();
+        }
+#endif
 
         internal readonly void Encode(AsnWriter writer)
         {
