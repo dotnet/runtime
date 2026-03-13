@@ -1897,8 +1897,8 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
                         UnmanagedCallersOnlyCaller getDispatchExPropertyFlags(METHOD__STUBHELPERS__GET_DISPATCH_EX_PROPERTY_FLAGS);
                         getDispatchExPropertyFlags.InvokeThrowing(&MemberInfoObj, &propertyFlags);
 
-                        BOOL bCanRead = (propertyFlags & DispatchExPropertyCanRead) != 0;
-                        BOOL bCanWrite = (propertyFlags & DispatchExPropertyCanWrite) != 0;
+                        bool bCanRead = (propertyFlags & DispatchExPropertyCanRead) != 0;
+                        bool bCanWrite = (propertyFlags & DispatchExPropertyCanWrite) != 0;
 
                         *pgrfdex = (bCanRead ? fdexPropCanGet : fdexPropCannotGet) |
                                    (bCanWrite ? fdexPropCanPut : fdexPropCannotPut) |

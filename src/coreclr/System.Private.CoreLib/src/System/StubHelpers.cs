@@ -1492,6 +1492,9 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         internal static object GetIEnumeratorToEnumVariantMarshaler() => EnumeratorToEnumVariantMarshaler.GetInstance(string.Empty);
 
+        private const int DispatchExPropertyCanRead = 1;
+        private const int DispatchExPropertyCanWrite = 2;
+
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         private static unsafe void GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, int* pResult, Exception* pException)
@@ -1502,12 +1505,12 @@ namespace System.StubHelpers
                 PropertyInfo property = *pMemberInfo;
                 if (property.CanRead)
                 {
-                    result |= 1;
+                    result |= DispatchExPropertyCanRead;
                 }
 
                 if (property.CanWrite)
                 {
-                    result |= 2;
+                    result |= DispatchExPropertyCanWrite;
                 }
 
                 *pResult = result;
@@ -1524,7 +1527,7 @@ namespace System.StubHelpers
         {
             try
             {
-                *pResult = (int)(*pObject).GetInterface(ref *pIid, out *ppObject);
+                *pResult = (int)pObject->GetInterface(ref *pIid, out *ppObject);
             }
             catch (Exception ex)
             {
@@ -1532,17 +1535,10 @@ namespace System.StubHelpers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Signature GetMethodSignature(RuntimeMethodHandle methodHandle)
-        {
-            IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
-            return new Signature(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe object? InvokeMethodWithArgs(object? target, RuntimeMethodHandle methodHandle, Span<object?> copyOfArgs)
         {
-            Signature signature = GetMethodSignature(methodHandle);
+            IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
+            Signature signature = new(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
 
             MethodBase.StackAllocatedByRefs byrefs = default;
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
@@ -1559,14 +1555,12 @@ namespace System.StubHelpers
             return RuntimeMethodHandle.InvokeMethod(target, (void**)pByRefFixedStorage, signature, isConstructor: false);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe object? InvokeMethodWithOneArg(object? target, RuntimeMethodHandle methodHandle, object? arg0)
         {
             MethodBase.StackAllocatedArguments stackStorage = new(arg0, null, null, null);
             return InvokeMethodWithArgs(target, methodHandle, ((Span<object?>)stackStorage._args).Slice(0, 1));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe object? InvokeMethodWithTwoArgs(object? target, RuntimeMethodHandle methodHandle, object? arg0, object? arg1)
         {
             MethodBase.StackAllocatedArguments stackStorage = new(arg0, arg1, null, null);
@@ -1588,7 +1582,8 @@ namespace System.StubHelpers
             try
             {
                 RuntimeMethodHandle delegateCtorMethodHandle = RuntimeMethodHandle.FromIntPtr(pDelegateCtorMethodDesc);
-                object eventMethodCodeArg = useUIntPtrCtor ? unchecked((UIntPtr)(nuint)pEventMethodCodePtr) : pEventMethodCodePtr;
+                nuint eventMethodCodeValue = (nuint)pEventMethodCodePtr;
+                object eventMethodCodeArg = useUIntPtrCtor ? (UIntPtr)eventMethodCodeValue : unchecked((IntPtr)eventMethodCodeValue);
 
                 // Construct the delegate before invoking the provider method.
                 InvokeMethodWithTwoArgs(*pDelegate, delegateCtorMethodHandle, *pSubscriber, eventMethodCodeArg);
@@ -1605,7 +1600,7 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
         [UnmanagedCallersOnly]
-        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, IntPtr* pResult, Exception* pException)
+        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
         {
             try
             {
@@ -1621,23 +1616,23 @@ namespace System.StubHelpers
         }
 
         [SupportedOSPlatform("windows")]
-        private static IntPtr ConvertToArgSlot(object? value)
+        private static ulong ConvertToArgSlot(object? value)
         {
             return value switch
             {
-                null => IntPtr.Zero,
-                IntPtr pointer => pointer,
-                UIntPtr pointer => unchecked((IntPtr)pointer),
-                bool boolean => boolean ? (IntPtr)1 : IntPtr.Zero,
-                char character => (IntPtr)character,
-                byte number => (IntPtr)number,
-                sbyte number => (IntPtr)number,
-                short number => (IntPtr)number,
-                ushort number => (IntPtr)number,
-                int number => (IntPtr)number,
-                uint number => unchecked((IntPtr)number),
-                long number => checked((IntPtr)number),
-                ulong number => unchecked((IntPtr)number),
+                null => 0,
+                IntPtr pointer => (ulong)(nuint)pointer,
+                UIntPtr pointer => (ulong)(nuint)pointer,
+                bool boolean => boolean ? 1UL : 0UL,
+                char character => character,
+                byte number => number,
+                sbyte number => unchecked((ulong)number),
+                short number => unchecked((ulong)number),
+                ushort number => number,
+                int number => unchecked((ulong)number),
+                uint number => number,
+                long number => unchecked((ulong)number),
+                ulong number => number,
                 _ => throw new NotSupportedException()
             };
         }

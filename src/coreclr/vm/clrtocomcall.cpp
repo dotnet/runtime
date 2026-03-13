@@ -321,7 +321,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         // Retrieve the event handler passed in.
         OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
 
-        INT_PTR eventProviderResult = NULL;
+        ARG_SLOT eventProviderResult = 0;
         UnmanagedCallersOnlyCaller invokeClrToComEventProviderMethod(METHOD__STUBHELPERS__INVOKE_CLR_TO_COM_EVENT_PROVIDER_METHOD);
         invokeClrToComEventProviderMethod.InvokeThrowing(
             &gc.ThisObj,
@@ -334,7 +334,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         // If this can ever return something bigger than an INT64 byval
         // then this code is broken.  Currently, however, it cannot.
         //
-        *(ARG_SLOT *)(pFrame->GetReturnValuePtr()) = (ARG_SLOT)eventProviderResult;
+        *(ARG_SLOT *)(pFrame->GetReturnValuePtr()) = eventProviderResult;
 
         // The COM event call worker does not support value returned in
         // floating point registers.
