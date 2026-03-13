@@ -16,7 +16,7 @@ public readonly struct ByteArrayWrapper
 
 public readonly ref struct RefWrapper
 {
-    public static readonly ByteArrayWrapper _data = new ByteArrayWrapper(new byte[] { 1, 2, 3, 4, 0 });
+    public static readonly ByteArrayWrapper _data = new ByteArrayWrapper(new byte[] { 0, 1, 2, 3, 4 });
 }
 
 public class Runtime_125169
@@ -39,5 +39,10 @@ public class Runtime_125169
 
         // Prevent the compiler from optimizing out the loop above.
         GC.KeepAlive(arr);
+
+        for (int i = 0; i < testSpan.Length; i++)
+        {
+            Assert.Equal(i, testSpan[i]);
+        }
     }
 }
