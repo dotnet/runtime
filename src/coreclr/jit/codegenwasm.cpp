@@ -395,7 +395,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 LIR::Range&    blockRange = LIR::AsRange(block);
                 GenTree* const jTrue      = blockRange.LastNode();
                 assert(jTrue->OperIs(GT_JTRUE));
-                assert((jTrue->gtFlags & GTF_JTRUE_WASM_EH) != 0);
+                GenTree* const ifExcept = jTrue->gtGetOp1();
+                assert(ifExcept->OperIs(GT_WASM_IF_EXCEPT));
 
                 // Empty stack sig, one catch clause
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
@@ -583,8 +584,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             if ((treeNode->gtFlags & GTF_JTRUE_WASM_EH) != 0)
             {
-                // hack -- remove tree earlier or something to avoid this?
-                GetEmitter()->emitIns(INS_drop);
+                // part of the try table pattern
+                // no codegen needed
             }
             else
             {
@@ -681,6 +682,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_INTRINSIC:
             genIntrinsic(treeNode->AsIntrinsic());
+            break;
+
+        case GT_WASM_IF_EXCEPT:
+            // no codegen needed here.
+            break;
+
+        case GT_WASM_THROW_REF:
+            GetEmitter()->emitIns(INS_throw_ref);
             break;
 
         case GT_PINVOKE_PROLOG:

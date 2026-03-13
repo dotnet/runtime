@@ -2085,17 +2085,11 @@ PhaseStatus Compiler::fgWasmEhFlow()
         regionEntryBlock->SetFalseEdge(defaultEdge);
 
         // Create the IR for the branch block.
-        // (branch to switch if contorl var != 0)
+        // Use the special wasm GT_WASM_IF_EXCEPT for predicate.
+        // (branch to switch if there is an exception)
         //
-        // Note this IR is just a placeholder... during codegen it turns into a try_table
-        // and the GT_NE ends up unused.
-        //
-        // (consider some other kind opaque JTRUE node here instead)
-        //
-        GenTree* const defaultValue = gtNewIconNode(0);
-        GenTree* const controlVar   = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
-        GenTree* const compareNode  = gtNewOperNode(GT_NE, TYP_INT, controlVar, defaultValue);
-        GenTree* const jumpNode     = gtNewOperNode(GT_JTRUE, TYP_VOID, compareNode);
+        GenTree* const compareNode = new (this, GT_WASM_IF_EXCEPT) GenTree(GT_WASM_IF_EXCEPT, TYP_INT);
+        GenTree* const jumpNode    = gtNewOperNode(GT_JTRUE, TYP_VOID, compareNode);
 
         jumpNode->gtFlags |= GTF_JTRUE_WASM_EH;
 
@@ -2172,8 +2166,21 @@ PhaseStatus Compiler::fgWasmEhFlow()
             fgSetStmtSeq(switchStmt);
         }
 
-        // We can leave the rethrow block empty for now?
-        // Or some new placeholder IR node....
+        // Build the IR for the rethrow block.
+        //
+        GenTree* const rethrowNode = new (this, GT_WASM_THROW_REF) GenTree(GT_WASM_THROW_REF, TYP_VOID);
+
+        if (rethrowBlock->IsLIR())
+        {
+            LIR::Range range = LIR::SeqTree(this, rethrowNode);
+            LIR::AsRange(rethrowBlock).InsertAtEnd(std::move(range));
+        }
+        else
+        {
+            Statement* const rethrowStmt = fgNewStmtAtEnd(rethrowBlock, rethrowNode);
+            gtSetStmtInfo(rethrowStmt);
+            fgSetStmtSeq(rethrowStmt);
+        }
     }
 
     // At the end of each catchret block, set the control variable to the appropriate value.
