@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
         /// Runtime can generate multiple addresses to same function. For registering and unregistering allways
         /// the same instance, we capture it in this statics.
         /// </summary>
-        private static readonly unsafe delegate* unmanaged<int, Interop.BOOL> s_HandlerRoutineAddr = &HandlerRoutine;
+        private static readonly unsafe delegate* unmanaged<int, Interop.BOOL> s_handlerRoutineAddr = &HandlerRoutine;
 
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices
                     // User may reset registrations externally by direct calls of Free/Attach/AllocConsole.
                     // We do not know if it is currently registered or not. To prevent duplicate
                     // registration, we try unregister existing one first.
-                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_HandlerRoutineAddr, Add: false))
+                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_handlerRoutineAddr, Add: false))
                     {
                         // Returns ERROR_INVALID_PARAMETER if it was not registered. Throw for everything else.
                         int error = Marshal.GetLastPInvokeError();
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
                         }
                     }
 
-                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_HandlerRoutineAddr, Add: true))
+                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_handlerRoutineAddr, Add: true))
                     {
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
