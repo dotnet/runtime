@@ -6,6 +6,16 @@
       "component": {
         "type": "git",
         "git": {
+          "repositoryUrl": "https://github.com/facebook/zstd",
+          "commitHash": "f8745da6ff1ad1e7bab384bd1f9d742439278e99"
+        }
+      },
+      "developmentDependency": false
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
           "repositoryUrl": "https://github.com/google/brotli",
           "commitHash": "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"
         }

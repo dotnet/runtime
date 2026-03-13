@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CLR-x86-JIT\V1-M09.5-PDC\b28787\b28787.cs" />
+    <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b50145\b50145.cs" />
+    <Compile Include="CLR-x86-JIT\V1.2-M02\b30251\b578931.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b610562\b610562.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b611219\b611219.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b72218\b72218.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\DDB\b121938\ConstToString.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\DDB\b170362\b170362.cs" />
+    <Compile Include="Dev11\dev11_165544\seqpts.cs" />
+    <Compile Include="Dev11\dev11_20929\dev11_20929.cs" />
+    <Compile Include="Dev14\DevDiv_876169\DevDiv_876169.cs" />
+    <Compile Include="JitBlue\DevDiv_359736\DevDiv_359736.cs" />
+    <Compile Include="JitBlue\DevDiv_794115\DevDiv_794115.cs" />
+    <Compile Include="JitBlue\DevDiv_794631\DevDiv_794631.cs" />
+    <Compile Include="JitBlue\DevDiv_815940\DevDiv_815940.cs" />
+    <Compile Include="JitBlue\DevDiv_816617\DevDiv_816617.cs" />
+    <Compile Include="JitBlue\devdiv_911875\DevDiv_911875.cs" />
+    <Compile Include="JitBlue\GitHub_16892\GitHub_16892.cs" />
+    <Compile Include="VS-ia64-JIT\V2.0-Beta2\b311420\b311420.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

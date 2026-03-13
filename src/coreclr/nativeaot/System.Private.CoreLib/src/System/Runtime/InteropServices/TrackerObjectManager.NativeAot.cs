@@ -196,6 +196,7 @@ namespace System.Runtime.InteropServices
     }
 
     // Callback implementation of IFindReferenceTargetsCallback
+    [EagerStaticClassConstruction]
     internal static unsafe class FindReferenceTargetsCallback
     {
         // Define an on-stack compatible COM instance to avoid allocating

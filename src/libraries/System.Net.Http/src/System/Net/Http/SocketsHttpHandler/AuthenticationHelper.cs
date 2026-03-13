@@ -212,29 +212,44 @@ namespace System.Net.Http
 
         private static async ValueTask<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            // If preauth is enabled and this isn't proxy auth, try to get a basic credential from the
-            // preauth credentials cache, and if successful, set an auth header for it onto the request.
+            // If preauth is enabled, try to set a Basic auth header proactively on the first request.
             // Currently we only support preauth for Basic.
             NetworkCredential? preAuthCredential = null;
             Uri? preAuthCredentialUri = null;
             if (preAuthenticate)
             {
-                Debug.Assert(pool.PreAuthCredentials != null);
-                (Uri uriPrefix, NetworkCredential credential)? preAuthCredentialPair;
-                lock (pool.PreAuthCredentials)
+                if (isProxyAuth)
                 {
-                    // Just look for basic credentials.  If in the future we support preauth
-                    // for other schemes, this will need to search in order of precedence.
-                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NegotiateScheme) == null);
-                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NtlmScheme) == null);
-                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, DigestScheme) == null);
-                    preAuthCredentialPair = pool.PreAuthCredentials.GetCredential(authUri, BasicScheme);
+                    // For proxy pre-authentication, get Basic credentials directly from the
+                    // supplied proxy credentials. This is needed for proxies that don't send 407
+                    // challenges but instead drop or reject unauthenticated connections.
+                    NetworkCredential? credential = credentials.GetCredential(authUri, BasicScheme);
+                    if (credential != null && credential != CredentialCache.DefaultNetworkCredentials)
+                    {
+                        preAuthCredential = credential;
+                        SetBasicAuthToken(request, credential, isProxyAuth: true);
+                    }
                 }
-
-                if (preAuthCredentialPair != null)
+                else
                 {
-                    (preAuthCredentialUri, preAuthCredential) = preAuthCredentialPair.Value;
-                    SetBasicAuthToken(request, preAuthCredential, isProxyAuth);
+                    // For request pre-authentication, look up credentials from the preauth cache.
+                    Debug.Assert(pool.PreAuthCredentials != null);
+                    (Uri uriPrefix, NetworkCredential credential)? preAuthCredentialPair;
+                    lock (pool.PreAuthCredentials)
+                    {
+                        // Just look for basic credentials.  If in the future we support preauth
+                        // for other schemes, this will need to search in order of precedence.
+                        Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NegotiateScheme) == null);
+                        Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NtlmScheme) == null);
+                        Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, DigestScheme) == null);
+                        preAuthCredentialPair = pool.PreAuthCredentials.GetCredential(authUri, BasicScheme);
+                    }
+
+                    if (preAuthCredentialPair != null)
+                    {
+                        (preAuthCredentialUri, preAuthCredential) = preAuthCredentialPair.Value;
+                        SetBasicAuthToken(request, preAuthCredential, isProxyAuth);
+                    }
                 }
             }
 
@@ -299,7 +314,7 @@ namespace System.Net.Http
                         SetBasicAuthToken(request, challenge.Credential, isProxyAuth);
                         response = await InnerSendAsync(request, async, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
 
-                        if (preAuthenticate)
+                        if (preAuthenticate && !isProxyAuth)
                         {
                             switch (response.StatusCode)
                             {
@@ -359,7 +374,7 @@ namespace System.Net.Http
 
         public static ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            return SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: false, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
+            return SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: GlobalHttpSettings.SocketsHttpHandler.ProxyPreAuthenticate, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
         }
 
         public static ValueTask<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)

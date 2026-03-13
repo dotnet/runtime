@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public override int GetHashCode() => AssemblyName == null ? 0 : AssemblyName.GetHashCode() ^ Token.GetHashCode();
         public override string ToString() => $"{AssemblyName}: {Token}";
         public bool Equals(AssemblyQualifiedToken other) =>
-            string.CompareOrdinal(AssemblyName, other.AssemblyName) == 0 && Token == other.Token;
+            AssemblyName == other.AssemblyName && Token == other.Token;
         public override bool Equals([NotNullWhen(true)] object? obj) => ((AssemblyQualifiedToken?)obj)?.Equals(this) == true;
 
         public bool IsNil => AssemblyName == null;

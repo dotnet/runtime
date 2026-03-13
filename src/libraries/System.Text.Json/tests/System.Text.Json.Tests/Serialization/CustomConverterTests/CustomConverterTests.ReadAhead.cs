@@ -47,9 +47,13 @@ namespace System.Text.Json.Serialization.Tests
 
             for (int i = 0; i <= 9; i++)
             {
-                builder.Append(@"""MyString");
+                builder.Append("""
+                    "MyString
+                    """);
                 builder.Append(i.ToString());
-                builder.Append(@""":");
+                builder.Append("""
+                    ":
+                    """);
                 AppendTestString(i, stringSize, builder);
 
                 if (i != 9)
@@ -65,9 +69,13 @@ namespace System.Text.Json.Serialization.Tests
 
         private static void AppendTestString(int i, int stringSize, StringBuilder builder)
         {
-            builder.Append(@"""");
-            builder.Append(new string(i.ToString()[0], stringSize));
-            builder.Append(@"""");
+            builder.Append("""
+                "
+                """);
+            builder.Append(i.ToString()[0], stringSize);
+            builder.Append("""
+                "
+                """);
         }
 
         [Theory,
@@ -123,11 +131,13 @@ namespace System.Text.Json.Serialization.Tests
 
             StringBuilder builder = new StringBuilder();
             builder.Append("{");
-            builder.Append(@"""Property1"":");
+            builder.Append("""
+                "Property1":
+                """);
             builder.Append(jsonProperties);
-            builder.Append(@",""Property2"":");
+            builder.Append(""","Property2":""");
             builder.Append(jsonProperties);
-            builder.Append(@",""Property3"":");
+            builder.Append(""","Property3":""");
             builder.Append(jsonProperties);
             builder.Append("}");
 

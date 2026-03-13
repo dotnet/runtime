@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdint.h>
 #include "contractconfiguration.h"
 
 #ifdef _MSC_VER
@@ -10,22 +9,11 @@
 #define DLLEXPORT __attribute__((visibility("default")))
 #endif
 
-struct ContractDescriptor
-{
-    uint64_t magic;
-    uint32_t flags;
-    const uint32_t descriptor_size;
-    const char *descriptor;
-    const uint32_t pointer_data_count;
-    uint32_t pad0;
-    const void** pointer_data;
-};
-
 // POINTER_DATA_NAME and CONTRACT_NAME are macros provided by
 // contractconfiguration.h which is configured by CMake
 extern const void* POINTER_DATA_NAME[];
 
-#if EXPORT_CONTRACT
+#ifdef EXPORT_CONTRACT
 DLLEXPORT
 #endif // EXPORT_CONTRACT
 struct ContractDescriptor CONTRACT_NAME = {
@@ -36,3 +24,19 @@ struct ContractDescriptor CONTRACT_NAME = {
     .pointer_data_count = %%pointerDataCount%%,
     .pointer_data = &POINTER_DATA_NAME[0],
 };
+
+// When using emscripten, we need to export the contract descriptor
+// symbol through a function export to ensure it is not removed by the linker.
+// Due to linking order, the export may also need to be added to
+// the EXPORTED_FUNCTIONS setting for emcc.
+// See https://emscripten.org/docs/getting_started/FAQ.html#why-do-functions-in-my-c-c-source-code-vanish-when-i-compile-to-webassembly
+#if defined(EXPORT_CONTRACT) && defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+
+#define _GETTER_NAME(exportname) Get ## exportname
+#define GETTER_NAME(exportname) _GETTER_NAME(exportname)
+extern void* EMSCRIPTEN_KEEPALIVE GETTER_NAME(CONTRACT_NAME)()
+{
+    return (void*)&CONTRACT_NAME;
+}
+#endif // EXPORT_CONTRACT && __EMSCRIPTEN__

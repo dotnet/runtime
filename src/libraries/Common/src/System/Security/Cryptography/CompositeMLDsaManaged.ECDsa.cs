@@ -72,9 +72,14 @@ namespace System.Security.Cryptography
                         ECPrivateKey ecPrivateKey = ECPrivateKey.Decode(manager.Memory, AsnEncodingRules.BER);
 
                         if (ecPrivateKey.Version != 1 ||
-                            ecPrivateKey.Parameters is not null ||
                             ecPrivateKey.PublicKey is not null)
                         {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        }
+
+                        if (ecPrivateKey.Parameters?.Named != algorithm.CurveOidValue)
+                        {
+                            // The curve specified must be named and match the required curve for the Composite ML-DSA algorithm.
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
@@ -206,7 +211,7 @@ namespace System.Security.Cryptography
 
                     try
                     {
-                        WriteKey(ecParameters.D, writer);
+                        WriteKey(ecParameters.D, _algorithm.CurveOidValue, writer);
                         return writer.TryEncode(destination, out bytesWritten);
                     }
                     finally
@@ -239,7 +244,7 @@ namespace System.Security.Cryptography
                                         throw new CryptographicException();
                                     }
 
-                                    WriteKey(d, writer);
+                                    WriteKey(d, _algorithm.CurveOidValue, writer);
                                     return true;
                                 });
                         });
@@ -252,7 +257,7 @@ namespace System.Security.Cryptography
                 }
 #endif
 
-                static void WriteKey(byte[] d, AsnWriter writer)
+                static void WriteKey(byte[] d, string curveOid, AsnWriter writer)
                 {
                     // ECPrivateKey
                     using (writer.PushSequence())
@@ -262,6 +267,12 @@ namespace System.Security.Cryptography
 
                         // privateKey
                         writer.WriteOctetString(d);
+
+                        // parameters
+                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
+                        {
+                            writer.WriteObjectIdentifier(curveOid);
+                        }
                     }
                 }
             }

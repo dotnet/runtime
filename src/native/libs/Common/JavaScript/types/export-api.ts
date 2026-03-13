@@ -4,13 +4,11 @@
 import type { CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, ModuleAPI, LoaderConfig, IMemoryView, AssetEntry, GlobalizationMode, AssetBehaviors, RuntimeAPI, dotnet, exit } from "./public-api";
 import type { EmscriptenModule } from "./emscripten";
 
-// Here, declare things that go in the global namespace, or augment existing declarations in the global namespace
+declare const createDotnetRuntime: CreateDotnetRuntimeType;
+
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-    const dotnetSidecar: boolean | undefined;
 }
-
-declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export default createDotnetRuntime;
 

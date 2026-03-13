@@ -223,6 +223,39 @@ namespace pal
         return { buffer.get() };
     }
 
+    inline string_t convert_from_utf8(const char* str)
+    {
+        int wchar_req = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+
+        malloc_ptr<wchar_t> buffer{ (wchar_t*)::malloc(wchar_req * sizeof(wchar_t)) };
+        assert(buffer != nullptr);
+
+        int written = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, buffer.get(), wchar_req);
+        assert(wchar_req == written);
+
+        return { buffer.get() };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+        // On Windows, the HMODULE is the base address
+        return (void*)m;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        IMAGE_DOS_HEADER* dos_header = (IMAGE_DOS_HEADER*)base_address;
+        if (dos_header->e_magic == IMAGE_DOS_SIGNATURE)
+        {
+            IMAGE_NT_HEADERS* nt_headers = (IMAGE_NT_HEADERS*)((BYTE*)base_address + dos_header->e_lfanew);
+            if (nt_headers->Signature == IMAGE_NT_SIGNATURE)
+            {
+                return nt_headers->OptionalHeader.SizeOfImage;
+            }
+        }
+        return 0;
+    }
+
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
         const char_t* hostpolicyName = W("hostpolicy.dll");
@@ -333,6 +366,7 @@ public:
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cstddef>
 
 // Needed for detecting the debugger attach scenario
 #if defined(__APPLE__)
@@ -341,6 +375,16 @@ public:
 #else // !__APPLE__
 #include <ctype.h>
 #endif // !__APPLE__
+
+// For getting image size
+#if defined(TARGET_APPLE)
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+#elif !defined(TARGET_WASM)
+#include <link.h>
+#include <elf.h>
+#include <cstring>
+#endif
 
 // CMake generated
 #include <config.h>
@@ -566,6 +610,89 @@ namespace pal
     inline string_utf8_t convert_to_utf8(const char_t* str)
     {
         return { str };
+    }
+
+    inline string_t convert_from_utf8(const char* str)
+    {
+        return { str };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+#ifndef TARGET_WASM
+        Dl_info info;
+        if (dladdr(sym, &info) != 0)
+        {
+            return info.dli_fbase;
+        }
+#endif
+        return nullptr;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        if (base_address == nullptr)
+            return 0;
+
+#if defined(TARGET_APPLE)
+        uint32_t image_count = _dyld_image_count();
+        for (uint32_t i = 0; i < image_count; ++i)
+        {
+            const struct mach_header_64* header =
+                reinterpret_cast<const struct mach_header_64*>(_dyld_get_image_header(i));
+            if (reinterpret_cast<const void*>(header) != base_address)
+                continue;
+
+            const struct load_command* cmd =
+                reinterpret_cast<const struct load_command*>(
+                    reinterpret_cast<const char*>(header) + sizeof(struct mach_header_64));
+
+            size_t image_size = 0;
+            for (uint32_t j = 0; j < header->ncmds; ++j)
+            {
+                if (cmd->cmd == LC_SEGMENT_64)
+                {
+                    const struct segment_command_64* seg =
+                        reinterpret_cast<const struct segment_command_64*>(cmd);
+                    size_t end_addr = static_cast<size_t>(seg->vmaddr + seg->vmsize);
+                    if (end_addr > image_size)
+                        image_size = end_addr;
+                }
+
+                cmd = reinterpret_cast<const struct load_command*>(
+                    reinterpret_cast<const char*>(cmd) + cmd->cmdsize);
+            }
+
+            return image_size;
+        }
+#elif !defined(TARGET_WASM)
+        ElfW(Ehdr)* ehdr = reinterpret_cast<ElfW(Ehdr)*>(base_address);
+        if (std::memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
+            return 0;
+
+        ElfW(Phdr)* phdr = reinterpret_cast<ElfW(Phdr)*>(
+            reinterpret_cast<char*>(base_address) + ehdr->e_phoff);
+
+        size_t max_addr = 0;
+        size_t min_addr = static_cast<size_t>(-1);
+
+        for (int i = 0; i < ehdr->e_phnum; ++i)
+        {
+            if (phdr[i].p_type == PT_LOAD)
+            {
+                size_t seg_start = phdr[i].p_vaddr;
+                size_t seg_end   = phdr[i].p_vaddr + phdr[i].p_memsz;
+                if (seg_start < min_addr)
+                    min_addr = seg_start;
+                if (seg_end > max_addr)
+                    max_addr = seg_end;
+            }
+        }
+
+        if (max_addr > min_addr)
+            return max_addr - min_addr;
+#endif
+        return 0;
     }
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)

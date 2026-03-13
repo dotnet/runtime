@@ -126,6 +126,133 @@ namespace System
             }
         }
 
+        // Allocate new multidimensional array of given dimensions. Assumes that pLengths is immutable.
+        internal static unsafe Array NewMultiDimArray(MethodTable* eeType, int* pLengths, int rank)
+        {
+            Debug.Assert(eeType->IsArray && !eeType->IsSzArray);
+            Debug.Assert(rank == eeType->ArrayRank);
+
+            // Code below assumes 0 lower bounds. MdArray of rank 1 with zero lower bounds should never be allocated.
+            // The runtime always allocates an SzArray for those:
+            // * newobj instance void int32[0...]::.ctor(int32)" actually gives you int[]
+            // * int[] is castable to int[*] to make it mostly transparent
+            // The callers need to check for this.
+            Debug.Assert(rank != 1);
+
+            ulong totalLength = 1;
+            bool maxArrayDimensionLengthOverflow = false;
+
+            for (int i = 0; i < rank; i++)
+            {
+                int length = pLengths[i];
+                if (length < 0)
+                    throw new OverflowException();
+                if (length > MaxLength)
+                    maxArrayDimensionLengthOverflow = true;
+                totalLength *= (ulong)length;
+                if (totalLength > int.MaxValue)
+                    throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
+            }
+
+            // Throw this exception only after everything else was validated for backward compatibility.
+            if (maxArrayDimensionLengthOverflow)
+                throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
+
+            Debug.Assert(eeType->NumVtableSlots != 0, "Compiler enforces we never have unconstructed MTs for multi-dim arrays since those can be template-constructed anytime");
+            Array ret = RuntimeImports.RhNewVariableSizeObject(eeType, (int)totalLength);
+
+            ref int bounds = ref ret.GetMultiDimensionalArrayBounds();
+            for (int i = 0; i < rank; i++)
+            {
+                Unsafe.Add(ref bounds, i) = pLengths[i];
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Implementation of CORINFO_HELP_NEW_MDARR
+        /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
+        /// The content of the dimensions block may be modified by the helper.
+        /// </summary>
+        internal static unsafe Array Ctor(MethodTable* pEEType, int nDimensions, int* pDimensions)
+        {
+            Debug.Assert(pEEType->IsArray && !pEEType->IsSzArray);
+            Debug.Assert(nDimensions > 0);
+
+            // Rank 1 arrays are handled below.
+            Debug.Assert(pEEType->ArrayRank > 1);
+
+            // Multidimensional arrays have two ctors, one with and one without lower bounds
+            int rank = pEEType->ArrayRank;
+            Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
+
+            if (rank < nDimensions)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    if (pDimensions[2 * i] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+
+                    pDimensions[i] = pDimensions[2 * i + 1];
+                }
+            }
+
+            return NewMultiDimArray(pEEType, pDimensions, rank);
+        }
+
+        /// <summary>
+        /// Implementation of CORINFO_HELP_NEW_MDARR_RARE
+        /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
+        /// The content of the dimensions block may be modified by the helper.
+        /// </summary>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures that if we have a TypeHandle of a Rank-1 MdArray, we also generated the SzArray.")]
+        internal static unsafe Array CtorRare(MethodTable* pEEType, int nDimensions, int* pDimensions)
+        {
+            Debug.Assert(pEEType->IsArray);
+            Debug.Assert(nDimensions > 0);
+
+            Debug.Assert(pEEType->ArrayRank == 1);
+
+            if (pEEType->IsSzArray)
+            {
+                Array ret = RuntimeImports.RhNewArray(pEEType, pDimensions[0]);
+
+                if (nDimensions > 1)
+                {
+                    // Jagged arrays have constructor for each possible depth
+                    MethodTable* elementType = pEEType->RelatedParameterType;
+                    Debug.Assert(elementType->IsSzArray);
+
+                    Array[] arrayOfArrays = Unsafe.As<Array[]>(ret);
+                    for (int i = 0; i < arrayOfArrays.Length; i++)
+                        arrayOfArrays[i] = CtorRare(elementType, nDimensions - 1, pDimensions + 1);
+                }
+
+                return ret;
+            }
+            else
+            {
+                // Multidimensional arrays have two ctors, one with and one without lower bounds
+                const int rank = 1;
+                Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
+
+                if (rank < nDimensions)
+                {
+                    if (pDimensions[0] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+
+                    pDimensions[0] = pDimensions[1];
+                }
+
+                // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
+                // as an SzArray. SzArray is castable to MdArray rank 1.
+                RuntimeType elementType = Type.GetTypeFromMethodTable(pEEType->RelatedParameterType);
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToMethodTable(), pDimensions[0]);
+            }
+        }
+
         public unsafe void Initialize()
         {
             MethodTable* pElementEEType = ElementMethodTable;
@@ -206,7 +333,7 @@ namespace System
                 EETypeElementType sourceElementType = sourceElementEEType->ElementType;
                 EETypeElementType destElementType = destinationElementEEType->ElementType;
 
-                if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
+                if (TypeCast.GetNormalizedIntegralArrayElementType(sourceElementType) == TypeCast.GetNormalizedIntegralArrayElementType(destElementType))
                     return ArrayAssignType.SimpleCopy;
                 else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
                     return ArrayAssignType.PrimitiveWiden;
@@ -241,69 +368,12 @@ namespace System
             return ArrayAssignType.WrongType;
         }
 
-        private static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
-        {
-            Debug.Assert(elementType >= EETypeElementType.Boolean && elementType <= EETypeElementType.Double);
-
-            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-            // Enums with interchangeable underlying types are interchangeable
-            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-
-            // U1/U2/U4/U8/U
-            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
-            return (EETypeElementType)((int)elementType - shift);
-        }
-
         public unsafe int Rank
         {
             get
             {
                 return this.GetMethodTable()->ArrayRank;
             }
-        }
-
-        // Allocate new multidimensional array of given dimensions. Assumes that pLengths is immutable.
-        internal static unsafe Array NewMultiDimArray(MethodTable* eeType, int* pLengths, int rank)
-        {
-            Debug.Assert(eeType->IsArray && !eeType->IsSzArray);
-            Debug.Assert(rank == eeType->ArrayRank);
-
-            // Code below assumes 0 lower bounds. MdArray of rank 1 with zero lower bounds should never be allocated.
-            // The runtime always allocates an SzArray for those:
-            // * newobj instance void int32[0...]::.ctor(int32)" actually gives you int[]
-            // * int[] is castable to int[*] to make it mostly transparent
-            // The callers need to check for this.
-            Debug.Assert(rank != 1);
-
-            ulong totalLength = 1;
-            bool maxArrayDimensionLengthOverflow = false;
-
-            for (int i = 0; i < rank; i++)
-            {
-                int length = pLengths[i];
-                if (length < 0)
-                    throw new OverflowException();
-                if (length > MaxLength)
-                    maxArrayDimensionLengthOverflow = true;
-                totalLength *= (ulong)length;
-                if (totalLength > int.MaxValue)
-                    throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
-            }
-
-            // Throw this exception only after everything else was validated for backward compatibility.
-            if (maxArrayDimensionLengthOverflow)
-                throw new OutOfMemoryException(); // "Array dimensions exceeded supported range."
-
-            Debug.Assert(eeType->NumVtableSlots != 0, "Compiler enforces we never have unconstructed MTs for multi-dim arrays since those can be template-constructed anytime");
-            Array ret = RuntimeImports.RhNewVariableSizeObject(eeType, (int)totalLength);
-
-            ref int bounds = ref ret.GetMultiDimensionalArrayBounds();
-            for (int i = 0; i < rank; i++)
-            {
-                Unsafe.Add(ref bounds, i) = pLengths[i];
-            }
-
-            return ret;
         }
 
         internal unsafe object? InternalGetValue(nint flattenedIndex)

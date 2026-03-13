@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
                 if (length == 0)
                 {
-                    return Array.Empty<T>();
+                    return [];
                 }
 
                 dest = new T[length];
@@ -184,5 +184,11 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
+
+        [Intrinsic]
+        internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [Intrinsic]
+        internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }
 }

@@ -2090,6 +2090,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
+        public static Vector<double> CreateBreakAfterMask(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
         public static Vector<byte> CreateBreakAfterMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -2134,8 +2140,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakAfterMask(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
+
 
         // Break after first true condition, propagating from previous partition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkpa[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPA Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakAfterPropagateMask(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkpa[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
@@ -2185,8 +2203,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakAfterPropagateMask(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrkpa[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPA Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakAfterPropagateMask(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
 
         // Break before first true condition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakBeforeMask(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
@@ -2236,8 +2266,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakBeforeMask(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
+
 
         // Break before first true condition, propagating from previous partition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkpb[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPB Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakBeforePropagateMask(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkpb[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
@@ -2287,8 +2329,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakBeforePropagateMask(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrkpb[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPB Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakBeforePropagateMask(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
 
         // Propagate break to next partition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakPropagateMask(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
@@ -2337,6 +2391,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B</para>
         /// </summary>
         public static Vector<ulong> CreateBreakPropagateMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakPropagateMask(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Set all predicate elements to false
@@ -2435,6 +2495,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
+        public static Vector<double> CreateMaskForFirstActiveElement(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
+        ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
+        /// </summary>
         public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -2478,6 +2544,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
         public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
+        ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
+        /// </summary>
+        public static Vector<float> CreateMaskForFirstActiveElement(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Find next active predicate
@@ -4870,18 +4942,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svld1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
         ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
         /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<int> mask, uint* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svld1uw_gather_[u64]offset_s64(svbool_t pg, const uint32_t *base, svuint64_t offsets)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<int> mask, uint* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svld1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<long> mask, uint* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -4889,18 +4949,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
         /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<long> mask, uint* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svld1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<uint> mask, uint* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svld1uw_gather_[u64]offset_u64(svbool_t pg, const uint32_t *base, svuint64_t offsets)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<uint> mask, uint* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svuint64_t svld1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
@@ -4921,18 +4969,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldff1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
         ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
         /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting(Vector<int> mask, uint* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svldff1uw_gather_[u64]offset_s64(svbool_t pg, const uint32_t *base, svuint64_t offsets)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting(Vector<int> mask, uint* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svldff1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting(Vector<long> mask, uint* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -4940,18 +4976,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
         /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting(Vector<long> mask, uint* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svldff1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting(Vector<uint> mask, uint* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svldff1uw_gather_[u64]offset_u64(svbool_t pg, const uint32_t *base, svuint64_t offsets)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting(Vector<uint> mask, uint* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svuint64_t svldff1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)</para>
@@ -4972,25 +4996,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svld1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
         ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
         /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, uint* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // svint64_t svld1uw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
-        //   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svld1uw_gather_[u64]index_s64(svbool_t pg, const uint32_t *base, svuint64_t indices)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, uint* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svld1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32ZeroExtend(Vector<long> mask, uint* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -5004,25 +5009,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
         /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32ZeroExtend(Vector<long> mask, uint* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svld1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, uint* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // svuint64_t svld1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
-        //   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svld1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)</para>
-        ///   <para>  LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, uint* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svuint64_t svld1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
@@ -5049,25 +5035,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svint64_t svldff1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
         ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
         /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<int> mask, uint* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // svint64_t svldff1uw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
-        //   LDFF1W Zresult.D, Pg/Z, [Zbases.D, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static Vector<int> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svldff1uw_gather_[u64]index_s64(svbool_t pg, const uint32_t *base, svuint64_t indices)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<int> mask, uint* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svint64_t svldff1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<long> mask, uint* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -5081,25 +5048,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
         /// </summary>
         public static unsafe Vector<long> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<long> mask, uint* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svldff1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<uint> mask, uint* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // svuint64_t svldff1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
-        //   LDFF1W Zresult.D, Pg/Z, [Zbases.D, #0]
-        // </summary>
-        // Removed as per #103297
-        // public static Vector<uint> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svuint64_t svldff1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)</para>
-        ///   <para>  LDFF1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]</para>
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtendFirstFaulting(Vector<uint> mask, uint* address, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svuint64_t svldff1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)</para>
@@ -5345,6 +5293,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svrdffr()</para>
         ///   <para>  RDFFR Presult.B</para>
         /// </summary>
+        public static Vector<double> GetFfrDouble() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svrdffr()</para>
+        ///   <para>  RDFFR Presult.B</para>
+        /// </summary>
         public static Vector<short> GetFfrInt16() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -5364,6 +5318,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  RDFFR Presult.B</para>
         /// </summary>
         public static Vector<sbyte> GetFfrSByte() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svrdffr()</para>
+        ///   <para>  RDFFR Presult.B</para>
+        /// </summary>
+        public static Vector<float> GetFfrSingle() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svrdffr()</para>
@@ -9158,6 +9118,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svwrffr(svbool_t op)</para>
         ///   <para>  WRFFR Pop.B</para>
         /// </summary>
+        public static void SetFfr(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>void svwrffr(svbool_t op)</para>
+        ///   <para>  WRFFR Pop.B</para>
+        /// </summary>
         public static void SetFfr(Vector<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -9201,6 +9167,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  WRFFR Pop.B</para>
         /// </summary>
         public static void SetFfr(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>void svwrffr(svbool_t op)</para>
+        ///   <para>  WRFFR Pop.B</para>
+        /// </summary>
+        public static void SetFfr(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
         // Logical shift left
@@ -10173,6 +10145,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
+        public static bool TestAnyTrue(Vector<double> mask, Vector<double> rightMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
         public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -10217,8 +10195,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestAnyTrue(Vector<float> mask, Vector<float> rightMask) { throw new PlatformNotSupportedException(); }
+
 
         // Test whether the first active element is true
+
+        /// <summary>
+        ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestFirstTrue(Vector<double> leftMask, Vector<double> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
@@ -10268,8 +10258,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestFirstTrue(Vector<float> leftMask, Vector<float> rightMask) { throw new PlatformNotSupportedException(); }
+
 
         // Test whether the last active element is true
+
+        /// <summary>
+        ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestLastTrue(Vector<double> leftMask, Vector<double> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
@@ -10318,6 +10320,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  PTEST</para>
         /// </summary>
         public static bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestLastTrue(Vector<float> leftMask, Vector<float> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Interleave even elements from two inputs

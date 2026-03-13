@@ -136,5 +136,39 @@ namespace System.PrivateUri.Tests
             Assert.True(uri.IsUnc);
             Assert.Equal("file://host/share", uri.AbsoluteUri);
         }
+
+        [Theory]
+        [InlineData("/\\\u200E//")]
+        [InlineData("\\\\/\u200e")]
+        [InlineData("\\\\\\\\\\\u200E")]
+        [InlineData("\\\\\\\\\\\u200E/")]
+        [InlineData("\\\\\\\\\\\u200E/ab")]
+        public static void UncWithBidiControlCharacters_CanBeParsed(string uriString)
+        {
+            Uri uri = new Uri(uriString, UriKind.Absolute);
+            Assert.True(uri.IsUnc);
+            Assert.Empty(uri.Host);
+        }
+
+        [Fact]
+        public static void UncWithTrailingSpaces_CanBeParsed()
+        {
+            Uri uri = new Uri("//9\n");
+            Assert.True(uri.IsUnc);
+            Assert.Equal(UriHostNameType.IPv4, uri.HostNameType);
+            Assert.Equal("0.0.0.9", uri.Host);
+            Assert.Equal(@"\\0.0.0.9", uri.LocalPath);
+        }
+
+        [Fact]
+        public static void Uri_UncBase_WithFileRelative_DoesNotAssert()
+        {
+            // Combining a UNC file URI base with a "file:" relative URI should not trigger
+            // a debug assert in CreateThisFromUri (Debug_LeftConstructor flag must not be copied).
+            var baseUri = new Uri(@"\\aa", UriKind.Absolute);   // parses as file://aa/
+            var relUri = new Uri("file:", UriKind.Relative);
+            Uri resolved = new Uri(baseUri, relUri);
+            Assert.Equal("file://aa/", resolved.AbsoluteUri);
+        }
     }
 }

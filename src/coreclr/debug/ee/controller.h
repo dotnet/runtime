@@ -17,6 +17,10 @@
 #if !defined(DACCESS_COMPILE)
 
 #include "frameinfo.h"
+#include "executioncontrol.h"
+#ifdef FEATURE_INTERPRETER
+#include "interpreterwalker.h"
+#endif // FEATURE_INTERPRETER
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
@@ -438,6 +442,13 @@ struct DebuggerControllerPatch
     TraceDestination        trace;
     MethodDesc*             pMethodDescFilter; // used for IL Primary patches that should only bind to jitted
                                                // code versions for a single generic instantiation
+#ifdef FEATURE_INTERPRETER
+    // Interpreter opcodes can have value 0 (e.g., INTOP_RET), so we need a separate flag
+    // to track activation state since PRDIsEmpty() returns true for opcode 0.
+    // TODO: We should consider using the activated flag for all patches and stop using opcode == 0 as a special case for "not active".
+    // https://github.com/dotnet/runtime/issues/124499
+    bool                    m_interpActivated;
+#endif // FEATURE_INTERPRETER
 private:
     DebuggerPatchKind       kind;
     int                     refCount;
@@ -537,6 +548,15 @@ public:
 
     bool IsActivated()
     {
+#ifdef FEATURE_INTERPRETER
+        // m_interpActivated is set only by InterpreterExecutionControl::ApplyPatch
+        if (m_interpActivated)
+        {
+            _ASSERTE(address != NULL);
+            return TRUE;
+        }
+#endif // FEATURE_INTERPRETER
+
         // Patch is activate if we've stored a non-zero opcode
         // Note: this might be a problem as opcode 0 may be a valid opcode (see issue 366221).
         if( PRDIsEmpty(opcode) ) {
@@ -600,6 +620,13 @@ public:
 };
 
 typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
+
+// Determines whether a breakpoint patch should be bound to a given MethodDesc.
+// When pMethodDescFilter is NULL, the default filtering policy is applied which
+// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
+// MethodDesc and no default filtering is applied.
+bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter);
 
 /* class DebuggerPatchTable:  This is the table that contains
  *  information about the patches (breakpoints) maintained by the
@@ -1645,6 +1672,9 @@ protected:
                       TraceDestination *pTD);
 
     bool TrapStep(ControllerStackInfo *info, bool in);
+#ifdef FEATURE_INTERPRETER
+    bool TrapInterpreterCodeStep(ControllerStackInfo *info, bool in, DebuggerJitInfo *ji);
+#endif
 
     // @todo - must remove that fForceTraditional flag. Need a way for a JMC stepper
     // to do a Trad step out.
@@ -1767,11 +1797,9 @@ protected:
     // This is the only frame that the ranges are valid in.
     FramePointer            m_fp;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // This frame pointer is used for funclet stepping.
     // See IsRangeAppropriate() for more information.
     FramePointer            m_fpParentMethod;
-#endif // FEATURE_EH_FUNCLETS
 
     //m_fpException is 0 if we haven't stepped into an exception,
     //  and is ignored.  If we get a TriggerUnwind while mid-step, we note
@@ -1841,6 +1869,66 @@ protected:
 private:
 
 };
+
+
+#ifdef FEATURE_INTERPRETER
+/* ------------------------------------------------------------------------- *
+ * InterpreterStepHelper
+ * ------------------------------------------------------------------------- */
+// InterpreterStepHelper: Implements stepping through interpreter code using
+// control flow prediction and breakpoint patches.
+//
+// The interpreter runtime doesn't support single-stepping, nor do we emulate
+// it in a general-purpose way (cf. FEATURE_EMULATE_SINGLESTEP for ARM).
+// Instead we've implemented alternate solutions for debugger scenarios that
+// traditionally rely upon it:
+//
+//   - For breakpoint skipping the interpreter allows executing an alternate
+//     opcode on a per-thread basis (see BypassPatch in ActivatePatchSkip).
+//   - For stepping we primarily use control flow prediction + breakpoints:
+//     we analyze the current bytecode instruction and place breakpoint patches
+//     at all possible next instruction locations.
+//   - For step-in on calls (both direct and indirect) we rely on JMC
+//     method-enter backstops. The interpreter's INTOP_DEBUG_METHOD_ENTER fires
+//     for all interpreted methods (not just JMC), so this reliably catches
+//     entry into any interpreted target. A step-over patch is also placed as
+//     fallback in case the target doesn't trigger MethodEnter.
+//
+class InterpreterStepHelper
+{
+public:
+    // Result of SetupStep operation
+    enum StepSetupResult
+    {
+        SSR_Success,            // Breakpoints placed, step can proceed
+        SSR_NeedStepIn,         // Caller should handle step-in (call target available)
+        SSR_NeedStepOut,        // Caller should invoke TrapStepOut (return/throw)
+        SSR_Failed              // Could not set up step
+    };
+
+    InterpreterStepHelper(DebuggerStepper* pStepper,
+                           ControllerStackInfo* pInfo,
+                           DebuggerJitInfo* pJitInfo);
+
+    // Analyze instruction at current IP and set up breakpoints for stepping.
+    // Returns result indicating how caller should proceed.
+    StepSetupResult SetupStep(bool stepIn);
+
+    // Get the walk type of the current instruction (for logging/debugging)
+    WALK_TYPE GetWalkType() const { return m_walkType; }
+
+private:
+    // Add a breakpoint patch at the given interpreter bytecode address
+    void AddInterpreterPatch(const int32_t* pIP);
+
+    DebuggerStepper*        m_pStepper;
+    ControllerStackInfo*    m_pInfo;
+    DebuggerJitInfo*        m_pJitInfo;
+    PCODE                   m_currentPC;
+    InterpMethod*           m_pInterpMethod;
+    WALK_TYPE               m_walkType;
+};
+#endif // FEATURE_INTERPRETER
 
 
 /* ------------------------------------------------------------------------- *

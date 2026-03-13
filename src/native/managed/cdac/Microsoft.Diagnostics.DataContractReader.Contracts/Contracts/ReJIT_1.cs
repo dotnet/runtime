@@ -25,13 +25,9 @@ internal readonly partial struct ReJIT_1 : IReJIT
     {
         kStateRequested = 0x00000000,
 
-        kStateGettingReJITParameters = 0x00000001,
-
         kStateActive = 0x00000002,
 
-        kStateMask = 0x0000000F,
-
-        kSuppressParams = 0x80000000
+        kStateMask = 0x0000000F
     }
 
     public ReJIT_1(Target target, Data.ProfControlBlock profControlBlock)
@@ -43,11 +39,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
     bool IReJIT.IsEnabled()
     {
         bool profEnabledReJIT = (_profControlBlock.GlobalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
-        // FIXME: it is very likely this is always true in the DAC
-        // Most people don't set DOTNET_ProfAPI_RejitOnAttach = 0
-        // See https://github.com/dotnet/runtime/issues/106148
-        bool clrConfigEnabledReJIT = true;
-        return profEnabledReJIT || clrConfigEnabledReJIT;
+        return profEnabledReJIT || _profControlBlock.RejitOnAttachEnabled;
     }
 
     RejitState IReJIT.GetRejitState(ILCodeVersionHandle ilCodeVersionHandle)

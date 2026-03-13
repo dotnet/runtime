@@ -2796,21 +2796,9 @@ namespace System.Numerics
                 Span<uint> bits = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
                                 ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
                                 : bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
-
-                BigIntegerCalculator.Square(left, bits);
-                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
-            }
-            else if (left.Length < right.Length)
-            {
-                Debug.Assert(!left.IsEmpty && !right.IsEmpty);
-
-                int size = left.Length + right.Length;
-                Span<uint> bits = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                                : bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
                 bits.Clear();
 
-                BigIntegerCalculator.Multiply(right, left, bits);
+                BigIntegerCalculator.Square(left, bits);
                 result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
             else

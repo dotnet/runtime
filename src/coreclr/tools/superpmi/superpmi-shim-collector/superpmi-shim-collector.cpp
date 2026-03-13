@@ -17,68 +17,70 @@
 // -We'll never be unloaded - we leak memory and have no facility to unload libraries
 // -printf output to console is okay
 
-HMODULE        g_hRealJit           = 0; // We leak this currently (could do the proper shutdown in process_detach)
-WCHAR*         g_realJitPath        = nullptr; // We leak this (could do the proper shutdown in process_detach)
-WCHAR*         g_logPath            = nullptr; // Again, we leak this one too...
-WCHAR*         g_dataFileName       = nullptr; // We leak this
-char*          g_logFilePath        = nullptr; // We *don't* leak this, hooray!
-WCHAR*         g_HomeDirectory      = nullptr;
-WCHAR*         g_DefaultRealJitPath = nullptr;
-MethodContext* g_globalContext      = nullptr;
-bool           g_initialized        = false;
-char*          g_collectionFilter   = nullptr;
+HMODULE        g_hRealJit = 0;    // We leak this currently (could do the proper shutdown in process_detach)
+std::string    g_realJitPath{""}; // Destructable objects will be cleaned up and won't leak
+std::string    g_logPath{""};
+std::string    g_HomeDirectory{""};
+std::string    g_DefaultRealJitPath{""};
+std::string    g_dataFileName{""};
+MethodContext* g_globalContext    = nullptr;
+bool           g_initialized      = false;
+char*          g_collectionFilter = nullptr;
+
+// RAII holder for logger
+// Global deconstructors are unreliable. We only use it for superpmi shim.
+class LoggerHolder
+{
+public:
+    LoggerHolder()
+    {
+        Logger::Initialize();
+        // If the environment variable isn't set, we don't enable file logging
+        const char* logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
+        if (logFilePath)
+        {
+            Logger::OpenLogFile(logFilePath);
+        }
+    }
+
+    ~LoggerHolder()
+    {
+        Logger::Shutdown();
+    }
+} loggerHolder;
 
 void SetDefaultPaths()
 {
-    if (g_HomeDirectory == nullptr)
+    if (g_HomeDirectory.empty())
     {
-        g_HomeDirectory = GetEnvironmentVariableWithDefaultW(W("HOME"), W("."));
+        g_HomeDirectory = GetEnvWithDefault("HOME", ".");
     }
 
-    if (g_DefaultRealJitPath == nullptr)
+    if (g_DefaultRealJitPath.empty())
     {
-        size_t len           = u16_strlen(g_HomeDirectory) + 1 + u16_strlen(DEFAULT_REAL_JIT_NAME_W) + 1;
-        g_DefaultRealJitPath = new WCHAR[len];
-        wcscpy_s(g_DefaultRealJitPath, len, g_HomeDirectory);
-        wcscat_s(g_DefaultRealJitPath, len, DIRECTORY_SEPARATOR_STR_W);
-        wcscat_s(g_DefaultRealJitPath, len, DEFAULT_REAL_JIT_NAME_W);
+        g_DefaultRealJitPath = g_HomeDirectory + DIRECTORY_SEPARATOR_CHAR_A + DEFAULT_REAL_JIT_NAME_A;
     }
 }
 
 void SetLibName()
 {
-    if (g_realJitPath == nullptr)
+    if (g_realJitPath.empty())
     {
-        g_realJitPath = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimPath"), g_DefaultRealJitPath);
+        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.c_str());
     }
 }
 
 void SetLogPath()
 {
-    if (g_logPath == nullptr)
+    if (g_logPath.empty())
     {
-        g_logPath = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimLogPath"), g_HomeDirectory);
+        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.c_str());
     }
 }
 
 void SetLogPathName()
 {
-    // NOTE: under PAL, we don't get the command line, so we depend on the random number generator to give us a unique
-    // filename
-    const WCHAR* fileName  = GetCommandLineW();
-    const WCHAR* extension = W(".mc");
-
-    g_dataFileName = GetResultFileName(g_logPath, fileName, extension);
-}
-
-// TODO: this only works for ANSI file paths...
-void SetLogFilePath()
-{
-    if (g_logFilePath == nullptr)
-    {
-        // If the environment variable isn't set, we don't enable file logging
-        g_logFilePath = GetEnvironmentVariableWithDefaultA("SuperPMIShimLogFilePath", nullptr);
-    }
+    g_dataFileName = GetResultFileName(g_logPath, GetProcessCommandLine(), ".mc");
 }
 
 void SetCollectionFilter()
@@ -114,10 +116,6 @@ void InitializeShim()
     _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
 #endif // HOST_WINDOWS
 
-    Logger::Initialize();
-    SetLogFilePath();
-    Logger::OpenLogFile(g_logFilePath);
-
     g_initialized = true;
 }
 
@@ -135,13 +133,6 @@ extern "C"
             break;
 
         case DLL_PROCESS_DETACH:
-            Logger::Shutdown();
-
-            delete[] g_logFilePath;
-            g_logFilePath = nullptr;
-
-            break;
-
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
             break;
@@ -165,7 +156,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     }
 
     // Get the required entrypoint
-    PjitStartup pnjitStartup = (PjitStartup)::GetProcAddress(g_hRealJit, "jitStartup");
+    PjitStartup pnjitStartup = (PjitStartup)GET_PROC_ADDRESS(g_hRealJit, "jitStartup");
     if (pnjitStartup == nullptr)
     {
         // This portion of the interface is not used by the JIT under test.
@@ -196,7 +187,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     }
 
     // get the required entrypoints
-    pngetJit = (PgetJit)::GetProcAddress(g_hRealJit, "getJit");
+    pngetJit = (PgetJit)GET_PROC_ADDRESS(g_hRealJit, "getJit");
     if (pngetJit == 0)
     {
         LogError("getJit() - GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
@@ -224,11 +215,11 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #endif
 
     // create our datafile
-    pJitInstance->hFile = CreateFileW(g_dataFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    pJitInstance->hFile = CreateFileA(g_dataFileName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
+                                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (pJitInstance->hFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Couldn't open file '%ws': error %d", g_dataFileName, GetLastError());
+        LogError("Couldn't open file '%s': error %d", g_dataFileName.c_str(), GetLastError());
     }
 
     return pJitInstance;

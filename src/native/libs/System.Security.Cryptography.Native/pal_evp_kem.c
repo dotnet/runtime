@@ -187,6 +187,7 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
             sharedSecretLengthT != Int32ToSizeT(sharedSecretLength))
         {
             ret = -1;
+            goto done;
         }
 
         ret = 1;

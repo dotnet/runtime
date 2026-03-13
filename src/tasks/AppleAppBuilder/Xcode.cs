@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -235,7 +236,7 @@ internal sealed class Xcode
         else
         {
             // arch is passed later when invoking xcodebuild
-            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2");
+            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0");
         }
 
         Utils.RunProcess(Logger, "cmake", cmakeArgs.ToString(), workingDir: cmakeDirectoryPath);
@@ -294,6 +295,12 @@ internal sealed class Xcode
         if (targetRuntime != TargetRuntime.CoreCLR)
         {
             predefinedExcludes.Add("libcoreclr.dylib");
+        }
+        else
+        {
+            // Interpreter is statically linked into the runtime already
+            predefinedExcludes.Add("libclrjit.dylib");
+            predefinedExcludes.Add("libclrinterpreter.dylib");
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
@@ -386,52 +393,49 @@ internal sealed class Xcode
         }
         else
         {
-            string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
-            string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
-
-            // by default, component stubs will be linked and depending on how mono runtime has been build,
-            // stubs can disable or dynamic load components.
-            foreach (string staticComponentStubLib in staticComponentStubLibs)
-            {
-                string componentLibToLink = staticComponentStubLib;
-                foreach (string runtimeComponent in runtimeComponents)
-                {
-                    if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // static link component.
-                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                        break;
-                    }
-                }
-
-                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
-                if (!File.Exists(componentLibToLink))
-                {
-                    Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                    componentLibToLink = staticComponentStubLib;
-                }
-
-                toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
-            }
-
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-                // Interpreter-FIXME: CoreCLR on iOS currently supports only static linking.
-                // The build system needs to be updated to conditionally initialize the compiler at runtime based on an environment variable.
-                // Tracking issue: https://github.com/dotnet/runtime/issues/119006
-                string[] staticLibPatterns = new string[] {
-                    "libcoreclr_static.a",
-                    "libbrotli*.a",
-                    "libSystem*.a"
+                string[] dylibsPatterns = new string[] {
+                    "libcoreclr.dylib",
+                    "libbrotli*.dylib",
+                    "libSystem*.dylib"
                 };
-                string[] staticLibs = staticLibPatterns.SelectMany(pattern => Directory.GetFiles(workspace, pattern)).ToArray();
-                foreach (string lib in staticLibs)
+                string[] dylibs = dylibsPatterns.SelectMany(pattern => Directory.GetFiles(workspace, pattern)).ToArray();
+                foreach (string lib in dylibs)
                 {
-                    toLink += $"    -Wl,-force_load,\"{lib}\"{Environment.NewLine}";
+                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
                 }
             }
             else
             {
+                string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
+                string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
+
+                // by default, component stubs will be linked and depending on how mono runtime has been build,
+                // stubs can disable or dynamic load components.
+                foreach (string staticComponentStubLib in staticComponentStubLibs)
+                {
+                    string componentLibToLink = staticComponentStubLib;
+                    foreach (string runtimeComponent in runtimeComponents)
+                    {
+                        if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // static link component.
+                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        }
+                    }
+
+                    // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
+                    if (!File.Exists(componentLibToLink))
+                    {
+                        Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                        componentLibToLink = staticComponentStubLib;
+                    }
+
+                    toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
+                }
+
                 string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
                 // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
                 List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
@@ -615,13 +619,21 @@ internal sealed class Xcode
             {
                 File.WriteAllText(Path.Combine(binDir, "coreclrhost.h"),
                     Utils.GetEmbeddedResource("coreclrhost.h"));
+                File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
+                    Utils.GetEmbeddedResource("host_runtime_contract.h"));
+
+                var (appContextKeys, appContextValues, propertyCount, propertyCountInvariant) = RenderCoreClrRuntimeConfigProperties(workspace);
 
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                     Utils.GetEmbeddedResource("runtime-coreclr.m")
                         .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                         .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
-                        .Replace("%EnvVariables%", envVariables));
+                        .Replace("%EnvVariables%", envVariables)
+                        .Replace("%AppContextPropertyCount%", propertyCount.ToString())
+                        .Replace("%AppContextPropertyCount_InvariantGlobalization%", propertyCountInvariant.ToString())
+                        .Replace("%AppContextKeys%", appContextKeys)
+                        .Replace("%AppContextValues%", appContextValues));
             }
         }
 
@@ -685,7 +697,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -710,7 +722,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -750,5 +762,79 @@ internal sealed class Xcode
     public static string GetAppPath(string appDirectory, string xcodePrjPath)
     {
         return Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+    }
+
+    private (string appContextKeys, string appContextValues, int propertyCount, int propertyCountInvariant) RenderCoreClrRuntimeConfigProperties(string workspace)
+    {
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(workspace);
+
+        // Hardcoded properties count:
+        // - RUNTIME_IDENTIFIER, APP_CONTEXT_BASE_DIRECTORY, TRUSTED_PLATFORM_ASSEMBLIES, HOST_RUNTIME_CONTRACT = 4
+        // - ICU_DAT_FILE_PATH (only when !INVARIANT_GLOBALIZATION) = 1
+        const int hardcodedPropertiesWithIcu = 5;
+        const int hardcodedPropertiesWithoutIcu = 4;
+
+        var appContextKeys = new StringBuilder();
+        var appContextValues = new StringBuilder();
+
+        int i = 0;
+        foreach ((string key, string value) in configProperties)
+        {
+            appContextKeys.AppendLine($"#if defined(INVARIANT_GLOBALIZATION)");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedPropertiesWithoutIcu}] = \"{key}\";");
+            appContextKeys.AppendLine($"#else");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedPropertiesWithIcu}] = \"{key}\";");
+            appContextKeys.AppendLine($"#endif");
+
+            appContextValues.AppendLine($"#if defined(INVARIANT_GLOBALIZATION)");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedPropertiesWithoutIcu}] = \"{value}\";");
+            appContextValues.AppendLine($"#else");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedPropertiesWithIcu}] = \"{value}\";");
+            appContextValues.AppendLine($"#endif");
+            i++;
+        }
+
+        int propertyCount = hardcodedPropertiesWithIcu + configProperties.Count;
+        int propertyCountInvariant = hardcodedPropertiesWithoutIcu + configProperties.Count;
+
+        return (appContextKeys.ToString().TrimEnd(), appContextValues.ToString().TrimEnd(), propertyCount, propertyCountInvariant);
+    }
+
+    private Dictionary<string, string> ParseRuntimeConfigProperties(string workspace)
+    {
+        var configProperties = new Dictionary<string, string>();
+        string runtimeConfigPath = Path.Combine(workspace, "runtimeconfig.bin");
+
+        if (!File.Exists(runtimeConfigPath))
+        {
+            return configProperties;
+        }
+
+        try
+        {
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
+            {
+                fixed (byte* ptr = fileBytes)
+                {
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    int count = blobReader.ReadCompressedInteger();
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
+        }
+
+        return configProperties;
     }
 }

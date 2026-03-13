@@ -15,11 +15,6 @@ check_function_exists(
 	HAVE_OPENSSL_ALPN)
 
 check_function_exists(
-    EVP_sha3_256
-    HAVE_OPENSSL_SHA3
-)
-
-check_function_exists(
     EVP_DigestSqueeze
     HAVE_OPENSSL_SHA3_SQUEEZE
 )

@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public MetadataType Type => _type;
 
-        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        public static Utf8String GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
             return nameMangler.NodeMangler.GCStatics(type);
         }

@@ -73,17 +73,9 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
     set(CLR_CMAKE_HOST_LINUX 1)
 
     # Detect Linux ID
-    set(LINUX_ID_FILE "/etc/os-release")
-    if(CMAKE_CROSSCOMPILING)
-        set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
-    endif()
-
-    if(EXISTS ${LINUX_ID_FILE})
-        execute_process(
-            COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
-            OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
-    endif()
+    # In cross-building scenarios,
+    # cmake_host_system_information looks in the sysroot for the /etc/os-release file.
+    cmake_host_system_information(RESULT CLR_CMAKE_LINUX_ID QUERY DISTRIB_ID)
 
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
@@ -499,6 +491,31 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     endif()
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+else()
+    if(CLR_CMAKE_RUNTIME_CORECLR)
+        if(CLR_CMAKE_TARGET_BROWSER)
+            add_link_options(-fwasm-exceptions)
+            add_link_options(-Wno-unused-command-line-argument)
+            add_link_options(-Wl,-error-limit=0)
+
+            add_link_options(-nostdlib)
+            add_link_options(-lbulkmemory)
+            add_link_options(-lstubs)
+            add_link_options(-lc)
+            add_link_options(-lmalloc)
+            add_link_options(-lcompiler_rt)
+            add_link_options(-lc++)
+            add_link_options(-lc++abi)
+            add_link_options(-lunwind)
+
+            add_compile_options(-fwasm-exceptions)
+            add_compile_options(-mbulk-memory)
+            add_compile_options(-msimd128)
+        endif()
+        if(CLR_CMAKE_TARGET_WASI)
+            add_compile_options(-fexceptions)
+        endif()
+    endif()
 endif()
 
 if (CLR_CMAKE_HOST_ANDROID)

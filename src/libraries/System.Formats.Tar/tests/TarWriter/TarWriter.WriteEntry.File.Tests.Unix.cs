@@ -9,7 +9,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
     {
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -96,7 +96,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -140,7 +140,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -190,7 +190,7 @@ namespace System.Formats.Tar.Tests
             }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -240,7 +240,7 @@ namespace System.Formats.Tar.Tests
             }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -303,6 +303,40 @@ namespace System.Formats.Tar.Tests
                     Assert.Null(reader.GetNextEntry());
                 }
             }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Create_Entry_From_HiddenFile(TarEntryFormat format)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string hiddenFileName = ".hidden_file";
+            string hiddenFilePath = Path.Join(root.Path, hiddenFileName);
+
+            File.WriteAllText(hiddenFilePath, "This is a hidden file");
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: true))
+            {
+                writer.WriteEntry(hiddenFilePath, hiddenFileName);
+            }
+
+            archiveStream.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(hiddenFileName, entry.Name);
+                Assert.NotNull(entry.DataStream);
+
+                using StreamReader sr = new StreamReader(entry.DataStream);
+                string content = sr.ReadToEnd();
+                Assert.Equal("This is a hidden file", content);
+            }
         }
     }
 }

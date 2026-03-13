@@ -1,21 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <Nullable>disable</Nullable>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- TODO: Remove when a newer SDK with that property exposed is available. -->
+    <NetCoreSdkRoot Condition="'$(NetCoreSdkRoot)' == ''">$([System.IO.Path]::GetDirectoryName('$(BundledRuntimeIdentifierGraphFile)'))\</NetCoreSdkRoot>
   </PropertyGroup>
 
+  <!-- Reference these assemblies from the SDK directly. We do this to avoid bringing the package closure for assemblies we don't use here. -->
   <ItemGroup>
-    <PackageDownloadAndReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" Folder="lib/netstandard2.0" />
-    <!-- Revert this after the next VMR re-bootstrap: https://github.com/dotnet/dotnet/issues/1985 -->
-    <!-- <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net472" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" /> -->
-    <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
-
-    <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
+    <Reference Include="$(NetCoreSdkRoot)Microsoft.Extensions.DependencyModel.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)NuGet.Packaging.dll" Private="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
 </Project>

@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
     <Compile Include="..\src\System\Diagnostics\RateLimiter.cs" Link="RateLimiter.cs" />
     <Compile Include="..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />

@@ -779,7 +779,7 @@ namespace System.Data.Common
         // { "a", "A", "a1" } -> { "a", "A2", "a1" }
         internal static void BuildSchemaTableInfoTableNames(string[] columnNameArray)
         {
-            Dictionary<string, int> hash = new Dictionary<string, int>(columnNameArray.Length);
+            Dictionary<string, int> hash = new Dictionary<string, int>(columnNameArray.Length, StringComparer.InvariantCultureIgnoreCase);
 
             int startIndex = columnNameArray.Length; // lowest non-unique index
             for (int i = columnNameArray.Length - 1; 0 <= i; --i)
@@ -787,7 +787,6 @@ namespace System.Data.Common
                 string columnName = columnNameArray[i];
                 if ((null != columnName) && (0 < columnName.Length))
                 {
-                    columnName = columnName.ToLowerInvariant();
                     int index;
                     if (hash.TryGetValue(columnName, out index))
                     {
@@ -813,7 +812,6 @@ namespace System.Data.Common
                 }
                 else
                 {
-                    columnName = columnName.ToLowerInvariant();
                     if (i != hash[columnName])
                     {
                         GenerateUniqueName(hash, ref columnNameArray[i], i, 1);
@@ -827,8 +825,7 @@ namespace System.Data.Common
             for (; ; ++uniqueIndex)
             {
                 string uniqueName = columnName + uniqueIndex.ToString(CultureInfo.InvariantCulture);
-                string lowerName = uniqueName.ToLowerInvariant();
-                if (hash.TryAdd(lowerName, index))
+                if (hash.TryAdd(uniqueName, index))
                 {
                     columnName = uniqueName;
                     break;

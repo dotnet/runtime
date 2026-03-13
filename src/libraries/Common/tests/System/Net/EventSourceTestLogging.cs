@@ -19,19 +19,19 @@ namespace System.Net.Test.Common
             }
         }
 
-        [Event(1, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(1, Level = EventLevel.Informational)]
         public void TestMessage(string message)
         {
             WriteEvent(1, message);
         }
 
-        [Event(2, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        [Event(2, Level = EventLevel.Verbose)]
         public void TestVerboseMessage(string message)
         {
             WriteEvent(2, message);
         }
 
-        [Event(3, Keywords = Keywords.Debug, Level = EventLevel.Error)]
+        [Event(3, Level = EventLevel.Error)]
         public void TestAncillaryError(Exception ex)
         {
             WriteEvent(3, ex.ToString());

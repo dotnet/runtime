@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import { _ems_ } from "../../Common/JavaScript/ems-ambient";
+
 
 export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): number {
     // batchedQuotaMax is the max number of bytes as specified by the api spec.
@@ -10,18 +11,19 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
     const batchedQuotaMax = 65536;
 
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
-        if (!(globalThis as any)["cryptoWarnOnce"]) {
-            dotnetLogger.warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
-            (globalThis as any)["cryptoWarnOnce"] = true;
+        if (!_ems_.DOTNET.cryptoWarnOnce) {
+            _ems_.dotnetLogger.debug("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
+            _ems_.DOTNET.cryptoWarnOnce = true;
         }
         return -1;
     }
 
-    const memoryView = dotnetApi.localHeapViewU8();
+    bufferPtr = bufferPtr >>> 0;
+    const memoryView = _ems_.dotnetApi.localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
     // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = false;//TODOHelpers.isSharedArrayBuffer(memoryView.buffer);
+    const needsCopy = _ems_.dotnetBrowserUtilsExports.isSharedArrayBuffer(memoryView.buffer);
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;

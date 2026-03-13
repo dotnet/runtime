@@ -5,6 +5,9 @@
 // Reduced from 30.05 KB to 2.35 KB.
 // Further redued by hand
 
+
+namespace Runtime_106478;
+
 using System;
 using System.Runtime.Intrinsics;
 using Xunit;

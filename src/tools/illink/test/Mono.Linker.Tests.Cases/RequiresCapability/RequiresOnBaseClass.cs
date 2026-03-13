@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
             public DerivedFromBaseWithRDC()
             { }
-            
+
             public static void StaticMethod() { }
         }
 

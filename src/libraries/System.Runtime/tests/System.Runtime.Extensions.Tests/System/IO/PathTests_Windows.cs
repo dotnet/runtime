@@ -16,14 +16,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetDirectoryName_DevicePath()
         {
-            if (PathFeatures.IsUsingLegacyPathNormalization())
-            {
-                Assert.Equal(@"\\?\C:", Path.GetDirectoryName(@"\\?\C:\foo"));
-            }
-            else
-            {
-                Assert.Equal(@"\\?\C:\", Path.GetDirectoryName(@"\\?\C:\foo"));
-            }
+            Assert.Equal(@"\\?\C:\", Path.GetDirectoryName(@"\\?\C:\foo"));
         }
 
         [Theory, MemberData(nameof(TestData_GetDirectoryName_Windows))]
@@ -101,15 +94,8 @@ namespace System.IO.Tests
                 longPath.Append(Path.DirectorySeparatorChar).Append('a').Append(Path.DirectorySeparatorChar).Append('.');
             }
 
-            if (PathFeatures.AreAllLongPathsAvailable())
-            {
-                // Now no longer throws unless over ~32K
-                Assert.NotNull(Path.GetFullPath(longPath.ToString()));
-            }
-            else
-            {
-                Assert.Throws<PathTooLongException>(() => Path.GetFullPath(longPath.ToString()));
-            }
+            // Now no longer throws unless over ~32K
+            Assert.NotNull(Path.GetFullPath(longPath.ToString()));
         }
 
         [Theory,
@@ -120,32 +106,17 @@ namespace System.IO.Tests
             InlineData(@"\ .\")]
         public void GetFullPath_LegacyArgumentExceptionPaths(string path)
         {
-            if (PathFeatures.IsUsingLegacyPathNormalization())
-            {
-                // We didn't allow these paths on < 4.6.2
-                AssertExtensions.Throws<ArgumentException>(null, () => Path.GetFullPath(path));
-            }
-            else
-            {
-                // These paths are legitimate Windows paths that can be created without extended syntax.
-                // We now allow them through.
-                Path.GetFullPath(path);
-            }
+            // These paths are legitimate Windows paths that can be created without extended syntax.
+            // We now allow them through.
+            Path.GetFullPath(path);
         }
 
         [Fact]
         public void GetFullPath_MaxPathNotTooLong()
         {
             string value = @"C:\" + new string('a', 255) + @"\";
-            if (PathFeatures.AreAllLongPathsAvailable())
-            {
-                // Shouldn't throw anymore
-                Path.GetFullPath(value);
-            }
-            else
-            {
-                Assert.Throws<PathTooLongException>(() => Path.GetFullPath(value));
-            }
+            // Shouldn't throw anymore
+            Path.GetFullPath(value);
         }
 
         [Fact]
@@ -173,31 +144,15 @@ namespace System.IO.Tests
             // (such as "md ...\"). We used to filter these out, but now allow them to prevent apps from
             // being blocked when they hit these paths.
             string curDir = Directory.GetCurrentDirectory();
-            if (PathFeatures.IsUsingLegacyPathNormalization())
-            {
-                // Legacy path Path.GetFullePath() ignores . when there is less or more that two, when there is .. in the path it returns one directory up.
-                Assert.Equal(
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar),
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ". " + Path.DirectorySeparatorChar));
-                Assert.Equal(
-                    Path.GetFullPath(Path.GetDirectoryName(curDir) + Path.DirectorySeparatorChar),
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar + "..." + Path.DirectorySeparatorChar));
-                Assert.Equal(
-                    Path.GetFullPath(Path.GetDirectoryName(curDir) + Path.DirectorySeparatorChar),
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ".. " + Path.DirectorySeparatorChar));
-            }
-            else
-            {
-                Assert.NotEqual(
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar),
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ". " + Path.DirectorySeparatorChar));
-                Assert.NotEqual(
-                    Path.GetFullPath(Path.GetDirectoryName(curDir) + Path.DirectorySeparatorChar),
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar + "..." + Path.DirectorySeparatorChar));
-                Assert.NotEqual(
-                    Path.GetFullPath(Path.GetDirectoryName(curDir) + Path.DirectorySeparatorChar),
-                    Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ".. " + Path.DirectorySeparatorChar));
-            }
+            Assert.NotEqual(
+                Path.GetFullPath(curDir + Path.DirectorySeparatorChar),
+                Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ". " + Path.DirectorySeparatorChar));
+            Assert.NotEqual(
+                Path.GetFullPath(Path.GetDirectoryName(curDir) + Path.DirectorySeparatorChar),
+                Path.GetFullPath(curDir + Path.DirectorySeparatorChar + "..." + Path.DirectorySeparatorChar));
+            Assert.NotEqual(
+                Path.GetFullPath(Path.GetDirectoryName(curDir) + Path.DirectorySeparatorChar),
+                Path.GetFullPath(curDir + Path.DirectorySeparatorChar + ".. " + Path.DirectorySeparatorChar));
         }
 
         [Theory,
@@ -237,13 +192,6 @@ namespace System.IO.Tests
             InlineData(@"\\.\C:\Foo2\..")]
         public void GetFullPath_ValidExtendedPaths(string path)
         {
-            if (PathFeatures.IsUsingLegacyPathNormalization())
-            {
-                // Legacy Path doesn't support any of these paths.
-                AssertExtensions.ThrowsAny<ArgumentException, NotSupportedException>(() => Path.GetFullPath(path));
-                return;
-            }
-
             // None of these should throw
             if (path.StartsWith(@"\\?\"))
             {
@@ -289,26 +237,12 @@ namespace System.IO.Tests
             InlineData(@"\\.\UNC\LOCALHOST\shareF\test.txt.~SS", @"\\.\UNC\LOCALHOST\shareF\test.txt.~SS"),
             InlineData(@"\\.\UNC\LOCALHOST\shareG", @"\\.\UNC\LOCALHOST\shareG"),
             InlineData(@"\\.\UNC\LOCALHOST\shareH\dir", @"\\.\UNC\LOCALHOST\shareH\dir"),
+            InlineData(@"\\.\UNC\LOCALHOST\shareI\. ", @"\\.\UNC\LOCALHOST\shareI\"),
+            InlineData(@"\\.\UNC\LOCALHOST\shareJ\.. ", @"\\.\UNC\LOCALHOST\shareJ\"),
             InlineData(@"\\.\UNC\LOCALHOST\shareK\    ", @"\\.\UNC\LOCALHOST\shareK\"),
             InlineData(@"\\.\UNC\LOCALHOST\  shareL\", @"\\.\UNC\LOCALHOST\  shareL\")]
         public void GetFullPath_UNC_Valid(string path, string expected)
         {
-            if (path.StartsWith(@"\\?\") && PathFeatures.IsUsingLegacyPathNormalization())
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () => Path.GetFullPath(path));
-            }
-            else
-            {
-                Assert.Equal(expected, Path.GetFullPath(path));
-            }
-        }
-
-        [Theory,
-            InlineData(@"\\.\UNC\LOCALHOST\shareI\. ", @"\\.\UNC\LOCALHOST\shareI\", @"\\.\UNC\LOCALHOST\shareI"),
-            InlineData(@"\\.\UNC\LOCALHOST\shareJ\.. ", @"\\.\UNC\LOCALHOST\shareJ\", @"\\.\UNC\LOCALHOST")]
-        public static void GetFullPath_Windows_UNC_Valid_LegacyPathSupport(string path, string normalExpected, string legacyExpected)
-        {
-            string expected = PathFeatures.IsUsingLegacyPathNormalization() ? legacyExpected : normalExpected;
             Assert.Equal(expected, Path.GetFullPath(path));
         }
 
@@ -333,14 +267,11 @@ namespace System.IO.Tests
                     Assert.Equal(tempFilePath, shortName);
 
                     // Should work with device paths that aren't well-formed extended syntax
-                    if (!PathFeatures.IsUsingLegacyPathNormalization())
-                    {
-                        Assert.Equal(@"\\.\" + tempFilePath, Path.GetFullPath(@"\\.\" + shortName));
-                        Assert.Equal(@"\\?\" + tempFilePath, Path.GetFullPath(@"//?/" + shortName));
+                    Assert.Equal(@"\\.\" + tempFilePath, Path.GetFullPath(@"\\.\" + shortName));
+                    Assert.Equal(@"\\?\" + tempFilePath, Path.GetFullPath(@"//?/" + shortName));
 
-                        // Shouldn't mess with well-formed extended syntax
-                        Assert.Equal(@"\\?\" + shortName, Path.GetFullPath(@"\\?\" + shortName));
-                    }
+                    // Shouldn't mess with well-formed extended syntax
+                    Assert.Equal(@"\\?\" + shortName, Path.GetFullPath(@"\\?\" + shortName));
 
                     // Validate case where short name doesn't expand to a real file
                     string invalidShortName = @"S:\DOESNT~1\USERNA~1.RED\LOCALS~1\Temp\bg3ylpzp";

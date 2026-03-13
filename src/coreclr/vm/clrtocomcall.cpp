@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: CLRtoCOMCall.cpp
 //
-
-//
 // CLR to COM call support.
 //
-
 
 #include "common.h"
 
@@ -38,15 +36,12 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
-
 PCODE TheGenericCLRToCOMCallStub()
 {
     LIMITED_METHOD_CONTRACT;
 
     return GetEEFuncEntryPoint(GenericCLRToCOMCallStub);
 }
-
-
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
@@ -69,7 +64,9 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
+#ifdef TARGET_X86
             pTemp->InitStackArgumentSize();
+#endif // TARGET_X86
 
             InterlockedCompareExchangeT(&pCMD->m_pCLRToCOMCallInfo, pTemp, NULL);
         }
@@ -162,8 +159,6 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
                     dwStubFlags);
 }
 
-
-
 PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -202,7 +197,6 @@ PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     return pStub;
 }
 
-
 I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 {
     CONTRACTL
@@ -212,6 +206,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -229,13 +224,6 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
 
         GCX_PREEMP();
-        
-        
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-        {
-            ThrowHR(COR_E_NOTSUPPORTED);
-        }
 
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
@@ -328,16 +316,10 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         gc.EventProviderTypeObj = pEvProvMT->GetManagedClassObject();
         gc.ThisObj = pFrame->GetThis();
 
-        MethodDescCallSite getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER, &gc.ThisObj);
+        UnmanagedCallersOnlyCaller getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER);
 
         // Retrieve the event provider for the event interface type.
-        ARG_SLOT GetEventProviderArgs[] =
-        {
-            ObjToArgSlot(gc.ThisObj),
-            ObjToArgSlot(gc.EventProviderTypeObj)
-        };
-
-        gc.EventProviderObj = getEventProvider.Call_RetOBJECTREF(GetEventProviderArgs);
+        getEventProvider.InvokeThrowing(&gc.ThisObj, &gc.EventProviderTypeObj, &gc.EventProviderObj);
 
         // Set up an arg iterator to retrieve the arguments from the frame.
         MetaSig mSig(pMD);
@@ -511,11 +493,9 @@ UINT32 CLRToCOMLateBoundWorker(
     LPCUTF8 strMemberName;
     ULONG uSemantic;
 
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pItfMD->IsAsyncMethod())
-    {
-        ThrowHR(COR_E_NOTSUPPORTED);
-    }
+    // We should never see an async method here, as the async variant should go down
+    // the async stub path and call the non-async variant (which ends up here).
+    _ASSERTE(!pItfMD->IsAsyncMethod());
 
     // See if there is property information for this member.
     hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);
@@ -615,6 +595,7 @@ UINT32 CLRToCOMLateBoundWorker(
     {
         OBJECTREF MemberName;
         OBJECTREF ItfTypeObj;
+        OBJECTREF ThisObj;
         PTRARRAYREF Args;
         BOOLARRAYREF ArgsIsByRef;
         PTRARRAYREF ArgsTypes;
@@ -624,6 +605,7 @@ UINT32 CLRToCOMLateBoundWorker(
     } gc;
     gc.MemberName = NULL;
     gc.ItfTypeObj = NULL;
+    gc.ThisObj = NULL;
     gc.Args = NULL;
     gc.ArgsIsByRef = NULL;
     gc.ArgsTypes = NULL;
@@ -662,6 +644,7 @@ UINT32 CLRToCOMLateBoundWorker(
         // Return type
         TypeHandle retValHandle = callsite.MetaSig.GetRetTypeHandleThrowing();
         gc.RetValType = retValHandle.GetManagedClassObject();
+        gc.ThisObj = pFrame->GetThis();
 
         // the return value is written into the Frame's neginfo, so we don't
         // need to return it directly. We can just have the stub do that work.
@@ -676,24 +659,20 @@ UINT32 CLRToCOMLateBoundWorker(
         }
 
         // Create a call site for the invoke
-        MethodDescCallSite forwardCallToInvoke(METHOD__CLASS__FORWARD_CALL_TO_INVOKE, &gc.ItfTypeObj);
-
-        // Prepare the arguments that will be passed to the method.
-        ARG_SLOT invokeArgs[] =
-        {
-            ObjToArgSlot(gc.ItfTypeObj),
-            ObjToArgSlot(gc.MemberName),
-            (ARG_SLOT)binderFlags,
-            ObjToArgSlot(pFrame->GetThis()),
-            ObjToArgSlot(gc.Args),
-            ObjToArgSlot(gc.ArgsIsByRef),
-            ObjToArgSlot(gc.ArgsWrapperTypes),
-            ObjToArgSlot(gc.ArgsTypes),
-            ObjToArgSlot(gc.RetValType)
-        };
+        UnmanagedCallersOnlyCaller forwardCallToInvoke(METHOD__CLASS__FORWARD_CALL_TO_INVOKE);
 
         // Invoke the method
-        gc.RetVal = forwardCallToInvoke.CallWithValueTypes_RetOBJECTREF(invokeArgs);
+        forwardCallToInvoke.InvokeThrowing(
+            &gc.ItfTypeObj,
+            &gc.MemberName,
+            (INT32)binderFlags,
+            &gc.ThisObj,
+            &gc.Args,
+            &gc.ArgsIsByRef,
+            &gc.ArgsWrapperTypes,
+            &gc.ArgsTypes,
+            &gc.RetValType,
+            &gc.RetVal);
 
         // Ensure all outs and return values are moved back to the current callsite
         CallsiteInspect::PropagateOutParametersBackToCallsite(gc.Args, gc.RetVal, callsite);

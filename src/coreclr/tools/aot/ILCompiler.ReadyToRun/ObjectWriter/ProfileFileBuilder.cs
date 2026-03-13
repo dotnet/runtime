@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.PEWriter
 {
@@ -132,7 +133,7 @@ namespace ILCompiler.PEWriter
                 return;
             }
             _symbolMethodMap = new Dictionary<MethodDesc, ISymbolDefinitionNode>();
-            foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> kvpSymbolMethod in _outputInfoBuilder.MethodSymbolMap)
+            foreach (KeyValuePair<ISymbolDefinitionNode, IMethodNode> kvpSymbolMethod in _outputInfoBuilder.MethodSymbolMap)
             {
                 _symbolMethodMap.Add(kvpSymbolMethod.Value.Method, kvpSymbolMethod.Key);
             }
@@ -152,32 +153,35 @@ namespace ILCompiler.PEWriter
             foreach (KeyValuePair<MethodDesc, Dictionary<MethodDesc, int>> kvpCallerCalleeCount in _callChainProfile.ResolvedProfileData)
             {
                 OutputNode callerNode = null;
-                int callerRVA = 0;
+                ulong callerRVA = 0;
                 if (_symbolMethodMap.TryGetValue(kvpCallerCalleeCount.Key, out ISymbolDefinitionNode callerSymbol) &&
                     _outputInfoBuilder.NodeSymbolMap.TryGetValue(callerSymbol, out callerNode))
                 {
-                    callerRVA = _outputInfoBuilder.Sections[callerNode.SectionIndex].RVAWhenPlaced + callerNode.Offset;
+                    callerRVA = _outputInfoBuilder.Sections[callerNode.SectionIndex].VirtualAddress + callerNode.Offset;
                 }
 
                 foreach (KeyValuePair<MethodDesc, int> kvpCalleeCount in kvpCallerCalleeCount.Value)
                 {
                     OutputNode calleeNode = null;
-                    int calleeRVA = 0;
+                    ulong calleeRVA = 0;
                     if (_symbolMethodMap.TryGetValue(kvpCalleeCount.Key, out ISymbolDefinitionNode calleeSymbol) &&
                         _outputInfoBuilder.NodeSymbolMap.TryGetValue(calleeSymbol, out calleeNode))
                     {
-                        calleeRVA = _outputInfoBuilder.Sections[calleeNode.SectionIndex].RVAWhenPlaced + calleeNode.Offset;
+                        calleeRVA = _outputInfoBuilder.Sections[calleeNode.SectionIndex].VirtualAddress + calleeNode.Offset;
                     }
+
+                    int callerRVA32Bit = checked((int)callerRVA);
+                    int calleeRVA32Bit = checked((int)calleeRVA);
 
                     _callInfo.Add(new CallInfo(
                         caller: kvpCallerCalleeCount.Key,
                         callerNode: callerNode,
-                        callerRVA: callerRVA,
+                        callerRVA: callerRVA32Bit,
                         callee: kvpCalleeCount.Key,
                         calleeNode: calleeNode,
-                        calleeRVA: calleeRVA,
+                        calleeRVA: calleeRVA32Bit,
                         callCount: kvpCalleeCount.Value,
-                        callType: GetCallType(callerNode, callerRVA, calleeNode, calleeRVA)));
+                        callType: GetCallType(callerNode, callerRVA32Bit, calleeNode, calleeRVA32Bit)));
                 }
             }
         }

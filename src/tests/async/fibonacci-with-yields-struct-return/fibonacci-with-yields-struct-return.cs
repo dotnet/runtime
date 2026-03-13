@@ -40,7 +40,7 @@ public class Async2FibonacceWithYields
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            MyInt result = await Fib(new MyInt(25));
+            MyInt result = await Fib(new MyInt(TestLibrary.Utilities.IsCoreClrInterpreter ? 5 : 25));
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result.i}");

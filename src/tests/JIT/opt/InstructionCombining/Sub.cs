@@ -54,7 +54,7 @@ namespace TestSub
             {
                 fail = true;
             }
-            
+
             if (SubsLSR(1, 0x80000000) != 1)
             {
                 fail = true;
@@ -121,6 +121,106 @@ namespace TestSub
                 fail = true;
             }
 
+            if (SubGtZero(5, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(3, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(2, 4) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(int.MinValue, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGtZero(int.MaxValue, -1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(5, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(3, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(2, 4) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(int.MinValue, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubGeZero(int.MaxValue, -1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(5, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(3, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(2, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(int.MinValue, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLtZero(int.MaxValue, -1) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(5, 3) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(3, 3) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(2, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(int.MinValue, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (SubLeZero(int.MaxValue, -1) != 1)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -139,35 +239,35 @@ namespace TestSub
         static int SubLSL(int a, int b)
         {
             //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #3
-            return a - (b<<3);
+            return a - (b << 3);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint SubLSR(uint a, uint b)
         {
             //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #4
-            return a - (b>>4);
+            return a - (b >> 4);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SubASR(int a, int b)
         {
             //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ASR #6
-            return a - (b>>6);
+            return a - (b >> 6);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SubLargeShift(int a, int b)
         {
             //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #22
-            return a - (b<<118);
+            return a - (b << 118);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long SubLargeShift64Bit(long a, long b)
         {
             //ARM64-FULL-LINE: sub {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, LSL #54
-            return a - (b<<118);
+            return a - (b << 118);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -216,7 +316,8 @@ namespace TestSub
         static int Subs(int a, int b)
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
-            if (a - b == 0) {
+            if (a - b == 0)
+            {
                 return 1;
             }
             return -1;
@@ -226,17 +327,19 @@ namespace TestSub
         static int SubsLSL(int a, int b)
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #1
-            if (a - (b<<1) == 0) {
+            if (a - (b << 1) == 0)
+            {
                 return 1;
             }
             return -1;
         }
-        
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int SubsLSR(uint a, uint b)
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #31
-            if (a - (b>>31) == 0) {
+            if (a - (b >> 31) == 0)
+            {
                 return 1;
             }
             return -1;
@@ -246,7 +349,8 @@ namespace TestSub
         static int SubsASR(int a, int b)
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ASR #20
-            if (a - (b>>20) == 0) {
+            if (a - (b >> 20) == 0)
+            {
                 return 1;
             }
             return -1;
@@ -256,7 +360,8 @@ namespace TestSub
         static int SubsLargeShift(int a, int b)
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #1
-            if (a - (b<<33) == 0) {
+            if (a - (b << 33) == 0)
+            {
                 return 1;
             }
             return -1;
@@ -266,7 +371,8 @@ namespace TestSub
         static int SubsLargeShift64Bit(long a, long b)
         {
             //ARM64-FULL-LINE: subs {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, LSL #32
-            if (a - (b<<96) == 0) {
+            if (a - (b << 96) == 0)
+            {
                 return 1;
             }
             return -1;
@@ -283,7 +389,7 @@ namespace TestSub
         static bool SubsSingleLineLSL(int a, int b)
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
-            return a - (b<<2) == 0;
+            return a - (b << 2) == 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -291,7 +397,8 @@ namespace TestSub
         {
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #3
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ASR #1
-            if ((a - (b<<3) == 0) == (c - (d>>1) == 0)) {
+            if ((a - (b << 3) == 0) == (c - (d >> 1) == 0))
+            {
                 return 1;
             }
             return -1;
@@ -303,6 +410,49 @@ namespace TestSub
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: subs {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a - b == 0) | (c - d == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubGtZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, gt
+            if (a - b > 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubGeZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, ge
+            if (a - b >= 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubLtZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #31
+            if (a - b < 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int SubLeZero(int a, int b) {
+            //ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, le
+            if (a - b <= 0) {
+                return 1;
+            }
+            return 0;
         }
     }
 }

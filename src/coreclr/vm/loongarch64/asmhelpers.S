@@ -9,7 +9,7 @@ LEAF_ENTRY GetCurrentIP, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
     ori  $a0, $sp, 0
     jirl  $r0, $ra, 0
@@ -623,10 +623,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     st.d  $a0, $sp, 88
     st.d  $a1, $sp, 96
+    // save async continuation return value
+    st.d  $a2, $sp, 104
 
     // save any FP return value(s)
-    fst.d  $f0, $sp, 104
-    fst.d  $f1, $sp, 112
+    fst.d  $f0, $sp, 112
+    fst.d  $f1, $sp, 120
 
     ori  $a0, $sp, 0
     bl C_FUNC(OnHijackWorker)
@@ -636,10 +638,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld.d  $a0, $sp, 88
     ld.d  $a1, $sp, 96
+    // restore async continuation return value
+    ld.d  $a2, $sp, 104
 
     // restore any FP return value(s)
-    fld.d  $f0, $sp, 104
-    fld.d  $f1, $sp, 112
+    fld.d  $f0, $sp, 112
+    fld.d  $f1, $sp, 120
 
     EPILOG_RESTORE_REG_PAIR   23, 24, 16
     EPILOG_RESTORE_REG_PAIR   25, 26, 32
@@ -1006,3 +1010,48 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     move  $a1, $t0     // Move temp register to first arg register for static method with return buffer
     EPILOG_BRANCH_REG $METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Throw_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a0
+    // $a0 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Rethrow, _TEXT
+

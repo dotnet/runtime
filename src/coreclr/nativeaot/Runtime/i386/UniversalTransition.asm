@@ -8,8 +8,6 @@
 
 include AsmMacros.inc
 
-ifdef FEATURE_DYNAMIC_CODE
-
 ;;
 ;; Defines an assembly thunk used to make a transition from managed code to a callee,
 ;; then (based on the return value from the callee), either returning or jumping to
@@ -86,12 +84,6 @@ FASTCALL_ENDFUNC
 
         endm
 
-        ; To enable proper step-in behavior in the debugger, we need to have two instances
-        ; of the thunk. For the first one, the debugger steps into the call in the function,
-        ; for the other, it steps over it.
-        UNIVERSAL_TRANSITION UniversalTransition
-        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
-
-endif
+        UNIVERSAL_TRANSITION UniversalTransitionTailCall
 
 end

@@ -132,6 +132,11 @@ namespace R2RDump
         private int _addInstructionTarget;
 
         /// <summary>
+        /// RISC-V: temporary address for combos like "auipc temp, hi20; jalr/addi/ld rd, temp, lo12"
+        /// </summary>
+        private (uint Register, int Value) _address;
+
+        /// <summary>
         /// Indentation of instruction mnemonics.
         /// </summary>
         public int MnemonicIndentation { get; private set; }
@@ -358,7 +363,7 @@ namespace R2RDump
                         break;
 
                     case Machine.RiscV64:
-                        // TODO-RISCV64-RVC: Add back ProbeRiscV64Quirks here once it's modified to support compressed instructions.
+                        ProbeRiscV64Quirks(rtf, imageOffset, rtfOffset, instrSize, ref fixedTranslatedLine);
                         break;
 
                     default:
@@ -1217,178 +1222,73 @@ namespace R2RDump
         /// <param name="rtf">Runtime function</param>
         /// <param name="imageOffset">Offset within the image byte array</param>
         /// <param name="rtfOffset">Offset within the runtime function</param>
+        /// <param name="instrSize">Instruction size</param>
         /// <param name="instruction">Textual representation of the instruction</param>
-        private void ProbeRiscV64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, ref string instruction)
+        private void ProbeRiscV64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
         {
-            // TODO-RISCV64-RVC: Modify this method to detect patterns in forward traversal. See ProbeArm64Quirks implementation.
-            const int InstructionSize = 4;
-            uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
+            uint instr = (instrSize == 4)
+                ? BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset)
+                : BitConverter.ToUInt16(_reader.Image, imageOffset + rtfOffset);
+            Debug.Assert((instrSize == 4) == ((instr & 0b11) == 0b11), "instruction size mismatch");
 
-            if (IsRiscV64JalrInstruction(instr))
+            // Lookup cell name for auipc + jalr/ld/addi
+            if (AnalyzeRiscV64Auipc(instr, ref _address.Register, out int imm))
             {
-                /*
-                Supported patterns:
-                    auipc
-                    addi
-                    ld
-                    jalr
-
-                    auipc
-                    ld
-                    jalr
-
-                    auipc
-                    addi
-                    ld
-                    ld
-                    jalr
-
-                Irrelevant instructions for calle address calculations are skiped.
-                */
-
-                AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
-                uint register = rs1;
-                int target = imm;
-
-                bool isFound = false;
-                int currentInstrOffset = rtfOffset - InstructionSize;
-                int currentPC = rtf.StartAddress + currentInstrOffset;
-                do
-                {
-                    instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
-
-                    if (IsRiscV64LdInstruction(instr))
-                    {
-                        AnalyzeRiscV64Itype(instr, out rd, out rs1, out imm);
-                        if (rd == register)
-                        {
-                            target = imm;
-                            register = rs1;
-                        }
-                    }
-                    else  if (IsRiscV64AddiInstruction(instr))
-                    {
-                        AnalyzeRiscV64Itype(instr, out rd, out rs1, out imm);
-                        if (rd == register)
-                        {
-                            target =+ imm;
-                            register = rs1;
-                        }
-                    }
-                    else if (IsRiscV64AuipcInstruction(instr))
-                    {
-                        AnalyzeRiscV64Utype(instr, out rd, out imm);
-                        if (rd == register)
-                        {
-                            target += currentPC + imm;
-                            isFound = true;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // check if callee address is calculated using an unsupported instruction
-                        rd = (instr >> 7) & 0b_11111U;
-                        if (rd == register)
-                        {
-                            break;
-                        }
-                    }
-
-                    currentInstrOffset -= InstructionSize;
-                    currentPC -= InstructionSize;
-                } while (currentInstrOffset > 0);
-
-                if (isFound)
-                {
-                    if (!TryGetImportCellName(target, out string targetName) || string.IsNullOrWhiteSpace(targetName))
-                    {
-                        return;
-                    }
-
-                    instruction = $"{instruction} // {targetName}";
-                }
+                _address.Value = rtf.StartAddress + rtfOffset + imm;
+                return;
             }
+            else if (_address.Register != 0 && AnalyzeRiscV64Itype(instr, _address.Register, out imm))
+            {
+                _address.Value += imm;
+                if (TryGetImportCellName(_address.Value, out string name) && !string.IsNullOrWhiteSpace(name))
+                    instruction = $"{instruction} // {name}";
+            }
+            _address.Register = 0;
         }
 
         /// <summary>
-        /// Checks if instruction is auipc.
+        /// Retrieves destination register and immediate value from an auipc instruction.
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
-        /// <returns>It returns true if instruction is auipc. Otherwise false</returns>
-        private bool IsRiscV64AuipcInstruction(uint instruction)
-        {
-            const uint OpcodeAuipc = 0b_0010111;
-            return (instruction & 0x7f) == OpcodeAuipc;
-        }
-
-        /// <summary>
-        /// Checks if instruction is jalr.
-        /// </summary>
-        /// <param name="instruction">Assembly code of instruction</param>
-        /// <returns>It returns true if instruction is jalr. Otherwise false</returns>
-        private bool IsRiscV64JalrInstruction(uint instruction)
-        {
-            const uint OpcodeJalr = 0b_1100111;
-            const uint Funct3Jalr = 0b_000;
-            return (instruction & 0x7f) == OpcodeJalr &&
-                ((instruction >> 12) & 0b_111) == Funct3Jalr;
-        }
-
-        /// <summary>
-        /// Checks if instruction is addi.
-        /// </summary>
-        /// <param name="instruction">Assembly code of instruction</param>
-        /// <returns>It returns true if instruction is addi. Otherwise false</returns>
-        private bool IsRiscV64AddiInstruction(uint instruction)
-        {
-            const uint OpcodeAddi = 0b_0010011;
-            const uint Funct3Addi = 0b_000;
-            return (instruction & 0x7f) == OpcodeAddi &&
-                ((instruction >> 12) & 0b_111) == Funct3Addi;
-        }
-
-        /// <summary>
-        /// Checks if instruction is ld.
-        /// </summary>
-        /// <param name="instruction">Assembly code of instruction</param>
-        /// <returns>It returns true if instruction is ld. Otherwise false</returns>
-        private bool IsRiscV64LdInstruction(uint instruction)
-        {
-            const uint OpcodeLd = 0b_0000011;
-            const uint Funct3Ld = 0b_011;
-            return (instruction & 0x7f) == OpcodeLd &&
-                ((instruction >> 12) & 0b_111) == Funct3Ld;
-        }
-
-        /// <summary>
-        /// Retrieves output register and immediate value from U-type instruction.
-        /// </summary>
-        /// <param name="instruction">Assembly code of instruction</param>
-        /// <param name="rd">Output register</param>
+        /// <param name="rd">Destination register</param>
         /// <param name="imm">Immediate value</param>
-        private void AnalyzeRiscV64Utype(uint instruction, out uint rd, out int imm)
+        /// <returns>Whether the instruction is an auipc</returns>
+        private bool AnalyzeRiscV64Auipc(uint instruction, ref uint rd, out int imm)
         {
             // U-type    31                12   11    7   6      0
             //          [        imm         ] [   rd  ] [ opcode ]
+            const uint Auipc = 0b_0010111;
+            if ((instruction & 0x7f) != Auipc)
+            {
+                imm = 0;
+                return false;
+            }
             rd = (instruction >> 7) & 0b_11111U;
             imm = unchecked((int)(instruction & (0xfffff << 12)));
+            return true;
         }
 
         /// <summary>
-        /// Retrieves output register, resource register and immediate value from U-type instruction.
+        /// Retrieves immediate value from an I-type instruction that is interesting,
+        /// i.e. jalr, ld, addi with source register matching the address register.
         /// </summary>
         /// <param name="instruction">Assembly code of instruction</param>
-        /// <param name="rd">Output register</param>
-        /// <param name="rs1">Resource register</param>
+        /// <param name="addrReg">address register</param>
         /// <param name="imm">Immediate value</param>
-        private void AnalyzeRiscV64Itype(uint instruction, out uint rd, out uint rs1, out int imm)
+        /// <returns>Whether the instruction is an interesting I-type</returns>
+        private bool AnalyzeRiscV64Itype(uint instruction, uint addrReg, out int imm)
         {
             // I-type    31      20   19   15   14    12   11    7   6      0
             //          [    imm   ] [  rs1  ] [ funct3 ] [   rd  ] [ opcode ]
-            rd = (instruction >> 7) & 0b_11111U;
-            rs1 = (instruction >> 15) & 0b_11111U;
-            imm = unchecked((int)instruction) >> 20;
+            const uint Mask = 0b_111_00000_1111111;
+            const uint Jalr = 0b_000_00000_1100111;
+            const uint Ld   = 0b_011_00000_0000011;
+            const uint Addi = 0b_000_00000_0010011;
+
+            uint rs1 = (instruction >> 15) & 0b_11111U;
+            bool isInteresting = ((instruction & Mask) is Jalr or Ld or Addi) && (rs1 == addrReg);
+            imm = isInteresting ? unchecked((int)instruction) >> 20 : 0;
+            return isInteresting;
         }
 
         /// <summary>

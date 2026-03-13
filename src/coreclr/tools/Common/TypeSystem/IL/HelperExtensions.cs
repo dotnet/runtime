@@ -101,12 +101,12 @@ namespace Internal.IL
         /// Retrieves a nested type on <paramref name="type"/> that is well known to the compiler.
         /// Throws an exception if the nested type doesn't exist.
         /// </summary>
-        public static MetadataType GetKnownNestedType(this MetadataType type, string name)
+        public static MetadataType GetKnownNestedType(this MetadataType type, ReadOnlySpan<byte> name)
         {
             MetadataType nestedType = type.GetNestedType(name);
             if (nestedType == null)
             {
-                throw new InvalidOperationException(string.Format("Expected type '{0}' not found on type '{1}'", name, type));
+                throw new InvalidOperationException(string.Format("Expected type '{0}' not found on type '{1}'", Encoding.UTF8.GetString(name), type));
             }
 
             return nestedType;

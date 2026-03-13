@@ -1976,49 +1976,59 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
 
     uint64_t mask;
     memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
-    uint32_t finalOne = count;
+    uint32_t firstZero = count;
 
-    // A mask pattern starts with zero of more 1s and then the rest of the mask is filled with 0s.
+    constexpr uint64_t laneMask = (1ull << sizeof(TBase)) - 1ull;
+
+    // A mask is a vector of unsigned integers, where 1 indicates the lane is set, 0 is not set,
+    // and all other values are undefined.
+    // For a valid mask pattern:
+    // * Each element of size TBase contains 0 or 1 in the lowest bit, and no other bits set.
+    // * The sequence starts with zero or more 1s and then the rest of the mask is filled with 0s.
 
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
     {
-        // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We set
-        // the result element to AllBitsSet or Zero depending
-        // on the corresponding mask bit
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase          elem = (TBase)(lane & laneMask);
 
-        bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
-        if (!isSet)
+        if (elem == 0)
         {
-            finalOne = i;
+            // Found the first zero
+            firstZero = i;
             break;
         }
+        else if (elem != 1)
+        {
+            // Other bits are set. Invalid sequence
+            return SveMaskPatternNone;
+        }
+        // else just bit 1 in elem was set
     }
 
     // Find an unbroken sequence of 0s.
-    for (uint32_t i = finalOne; i < count; i++)
+    for (uint32_t i = firstZero; i < count; i++)
     {
-        // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We set
-        // the result element to AllBitsSet or Zero depending
-        // on the corresponding mask bit
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase          elem = (TBase)(lane & laneMask);
 
-        bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
-        if (isSet)
+        if (elem != 0)
         {
-            // Invalid sequence
+            // Either a 1 or other bits are set. Invalid sequence
             return SveMaskPatternNone;
         }
     }
 
-    if (finalOne == count)
+    assert(firstZero <= count);
+
+    if (firstZero == count)
     {
+        // No zeros in the pattern
         return SveMaskPatternAll;
     }
-    else if (finalOne >= SveMaskPatternVectorCount1 && finalOne <= SveMaskPatternVectorCount8)
+    else if (firstZero >= SveMaskPatternVectorCount1 && firstZero <= SveMaskPatternVectorCount8)
     {
-        return (SveMaskPattern)finalOne;
+        return (SveMaskPattern)firstZero;
     }
     else
     {
@@ -2065,6 +2075,79 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
         }
     }
 }
+
+//------------------------------------------------------------------------
+// NarrowAndDuplicateSimdLong: Narrow each ULONG element in arg0 to size
+//    TSimd. Each element is then duplicated to the number of TSimd values
+//    that fit into a ULONG.
+//    For example, [1, 2] with TBase of UINT becomes [1, 1, 2, 2]
+//
+// Arguments:
+//    result -  Returns the narrowed and duplicated simd value
+//    arg0   -  The simd value to narrow and duplicate
+//
+template <typename TSimd, typename TBase>
+void NarrowAndDuplicateSimdLong(TSimd* result, const TSimd& arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint64_t input0;
+        memcpy(&input0, &arg0.u8[(i * sizeof(TBase) / sizeof(uint64_t)) * sizeof(uint64_t)], sizeof(uint64_t));
+
+        // Saturate to largest value for TBase
+        if (input0 > (TBase)-1)
+        {
+            input0 = (TBase)-1;
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &input0, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void NarrowAndDuplicateSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint64_t>(result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint16_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
 #endif // TARGET_ARM64
 
 #endif // FEATURE_MASKED_HW_INTRINSICS

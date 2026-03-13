@@ -27,16 +27,15 @@ Exit:
 }
 
 
-NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName)
+NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName, bool isPlatformNative)
 {
     STANDARD_VM_CONTRACT;
 
     AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-    AssemblyBinder* binder = componentModule->GetPEAssembly()->GetAssemblyBinder();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
     bool isNewNativeImage;
-    NativeImage* nativeImage = NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage);
+    NativeImage* nativeImage = NativeImage::Open(componentModule->GetPath(), nativeImageName, this, moduleLoaderAllocator, isPlatformNative, &isNewNativeImage);
 
     return nativeImage;
 }
@@ -176,20 +175,19 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
-
     GCX_COOP();
-    struct {
+    struct
+    {
+        OBJECTREF obj;
         STRINGREF alcName;
     } gc;
+    gc.obj = ObjectToOBJECTREF(*(Object**)managedALC);
     gc.alcName = NULL;
 
     GCPROTECT_BEGIN(gc);
 
-    PREPARE_VIRTUAL_CALLSITE(METHOD__OBJECT__TO_STRING, *alc);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
-    CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
+    UnmanagedCallersOnlyCaller callToString(METHOD__RUNTIME_HELPERS__CALL_TO_STRING);
+    callToString.InvokeThrowing(&gc.obj, &gc.alcName);
     gc.alcName->GetSString(alcName);
 
     GCPROTECT_END();

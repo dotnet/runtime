@@ -26,9 +26,14 @@ public class BringUpTest
 
     public static int Main()
     {
-        // This test also doubles as server GC test
-        if (!System.Runtime.GCSettings.IsServerGC)
-            return 42;
+        if (!OperatingSystem.IsAndroid())
+        {
+            // Disabled on Android due to https://github.com/dotnet/runtime/issues/121353
+
+            // This test also doubles as server GC test
+            if (!System.Runtime.GCSettings.IsServerGC)
+                return 42;
+        }
 
         if (string.Empty.Length > 0)
         {
@@ -163,9 +168,17 @@ public class BringUpTest
 
         TestUnwindInFunclet();
 
-        throw new Exception("UnhandledException");
+        if (!OperatingSystem.IsAndroid())
+        {
+            // Environment.Exit doesn't propagate to MonoRunner.java
+            throw new Exception("UnhandledException");
 
-        return Fail;
+            return Fail;
+        }
+        else
+        {
+            return Pass;
+        }
     }
 
     static void UnhandledExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)

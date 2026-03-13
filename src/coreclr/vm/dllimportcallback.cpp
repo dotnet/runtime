@@ -198,6 +198,14 @@ VOID CallbackOnCollectedDelegate(UMEntryThunkData* pEntryThunkData)
 #if defined(FEATURE_INTERPRETER)
 PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
 
+UMEntryThunkData* GetMostRecentUMEntryThunkDataNonDestructive()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UMEntryThunkData* result = t_MostRecentUMEntryThunkData;
+    return result;
+}
+
 UMEntryThunkData* GetMostRecentUMEntryThunkData()
 {
     LIMITED_METHOD_CONTRACT;

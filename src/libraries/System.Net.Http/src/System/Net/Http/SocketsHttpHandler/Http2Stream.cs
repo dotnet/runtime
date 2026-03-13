@@ -654,7 +654,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (statusCode == 200 && _response.RequestMessage!.IsExtendedConnectRequest)
+                        if (statusCode >= 200 && statusCode <= 299 && _response.RequestMessage!.IsExtendedConnectRequest)
                         {
                             ConnectProtocolEstablished = true;
                         }

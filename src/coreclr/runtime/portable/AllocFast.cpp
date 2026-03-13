@@ -34,7 +34,6 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
     if (size < 0 || size > INT32_MAX)
     {
         RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
-        return nullptr;
     }
 
     Thread* thread = GetThread();
@@ -66,7 +65,6 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     if (size < 0 || size > INT32_MAX)
     {
         RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
-        return nullptr;
     }
 
     Thread* thread = GetThread();
@@ -76,9 +74,9 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    bool requiresAlignObject = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    bool requiresPadding = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
     size_t paddedSize = sizeInBytes;
-    if (requiresAlignObject)
+    if (requiresPadding)
     {
         // We are assuming that allocation of minimal object flips the alignment
         paddedSize += MIN_OBJECT_SIZE;
@@ -88,12 +86,13 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
-        if (requiresAlignObject)
+        if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
+        _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
         PtrArray* pObject = (PtrArray *)alloc_ptr;
         pObject->SetMethodTable(pMT);
         pObject->SetNumComponents((INT32)size);
@@ -146,21 +145,104 @@ EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
 
 EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT)
 {
-    PORTABILITY_ASSERT("RhpNewFast is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize();
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    {
+        cxt->setAllocPtr(alloc_ptr + sizeInBytes);
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, 0, 0);
 }
 
+#if defined(FEATURE_64BIT_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
 {
-    PORTABILITY_ASSERT("RhpNewFastAlign8 is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize();
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    bool requiresPadding = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    size_t paddedSize = sizeInBytes;
+    if (requiresPadding)
+    {
+        // We are assuming that allocation of minimal object flips the alignment
+        paddedSize += MIN_OBJECT_SIZE;
+    }
+
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
+    {
+        cxt->setAllocPtr(alloc_ptr + paddedSize);
+        if (requiresPadding)
+        {
+            Object* dummy = (Object*)alloc_ptr;
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            alloc_ptr += MIN_OBJECT_SIZE;
+        }
+        _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8, 0);
 }
 
 EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
 {
-    PORTABILITY_ASSERT("RhpNewFastMisalign is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize();
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    bool requiresPadding = IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    size_t paddedSize = sizeInBytes;
+    if (requiresPadding)
+    {
+        // We are assuming that allocation of minimal object flips the alignment
+        paddedSize += MIN_OBJECT_SIZE;
+    }
+
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
+    {
+        cxt->setAllocPtr(alloc_ptr + paddedSize);
+        if (requiresPadding)
+        {
+            Object* dummy = (Object*)alloc_ptr;
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            alloc_ptr += MIN_OBJECT_SIZE;
+        }
+        _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
 }
+#endif // FEATURE_64BIT_ALIGNMENT
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF
 

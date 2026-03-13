@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#define INTERPRETER_COMPILER_INTERNAL
 #include <stdint.h>
 #include <wchar.h>
 #include <stdio.h>

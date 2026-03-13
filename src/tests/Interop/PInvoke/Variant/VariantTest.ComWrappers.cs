@@ -27,6 +27,7 @@ public partial class Test_VariantTest
             TestOut();
             TestFieldByValue(testComMarshal);
             TestFieldByRef(testComMarshal);
+            TestBSTRWithTrailingByte();
         }
         catch (Exception e)
         {

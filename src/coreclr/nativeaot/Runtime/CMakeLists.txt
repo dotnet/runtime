@@ -1,11 +1,11 @@
 set(GC_DIR ../../gc)
-set(RUNTIME_DIR ../../runtime)
 
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     rhassert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Aot.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -55,6 +55,12 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/softwarewritewatch.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
+    )
+endif()
 
 set(SERVER_GC_SOURCES
     ${GC_DIR}/gceesvr.cpp
@@ -236,6 +242,14 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
   )
 endif ()
 
+if(CLR_CMAKE_TARGET_WIN32)
+  if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+    list(APPEND RUNTIME_SOURCES_ARCH_ASM
+      ${ARCH_SOURCES_DIR}/DispatchResolve.${ASM_SUFFIX}
+    )
+  endif()
+endif()
+
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})
@@ -267,8 +281,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_definitions(-DFEATURE_CUSTOM_IMPORTS)
-add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)

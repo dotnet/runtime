@@ -38,6 +38,7 @@ msbuild.wrn
 .libs/
 *.lo
 *.o
+*.exe
 
 # Cross building rootfs
 cross/rootfs/
@@ -359,6 +360,9 @@ src/coreclr/System.Private.CoreLib/common
 !src/coreclr/inc/obj/
 !src/coreclr/vm/.vscode/
 !src/coreclr/vm/.vscode/c_cpp_properties.json
+!src/libraries/System.Diagnostics.FileVersionInfo/tests/System.Diagnostics.FileVersionInfo.Tests/NativeConsoleApp.exe
+!src/libraries/System.Reflection.Metadata/tests/Resources/NetModule/AppCS.exe
+!src/libraries/System.Reflection.Metadata/tests/Resources/Misc/Signed.exe
 
 # Temporary artifacts from local libraries stress builds
 .dotnet-daily/

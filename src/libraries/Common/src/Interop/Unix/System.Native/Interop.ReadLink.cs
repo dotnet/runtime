@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 internal static partial class Interop
@@ -21,7 +22,7 @@ internal static partial class Interop
         /// Returns the number of bytes placed into the buffer on success; bufferSize if the buffer is too small; and -1 on error.
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadLink", SetLastError = true)]
-        private static partial int ReadLink(ref byte path, ref byte buffer, int bufferSize);
+        private static partial int ReadLink([MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> path, ref byte buffer, int bufferSize);
 
         /// <summary>
         /// Takes a path to a symbolic link and returns the link target path.
@@ -32,18 +33,14 @@ internal static partial class Interop
         {
             const int StackBufferSize = 256;
 
-            // Use an initial buffer size that prevents disposing and renting
-            // a second time when calling ConvertAndTerminateString.
-            using var converter = new ValueUtf8Converter(stackalloc byte[StackBufferSize]);
             Span<byte> spanBuffer = stackalloc byte[StackBufferSize];
             byte[]? arrayBuffer = null;
-            ref byte pathReference = ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path));
             while (true)
             {
                 int error = 0;
                 try
                 {
-                    int resultLength = ReadLink(ref pathReference, ref MemoryMarshal.GetReference(spanBuffer), spanBuffer.Length);
+                    int resultLength = ReadLink(path, ref MemoryMarshal.GetReference(spanBuffer), spanBuffer.Length);
 
                     if (resultLength < 0)
                     {

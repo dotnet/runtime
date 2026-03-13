@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -294,6 +295,38 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(emittedAssemblyImage);
         }
 
+        [Fact]
+        public async Task BindingToCollectionOnlyTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settingsSection = config.GetSection("Settings");
+
+                        IDictionary<string, string> options = settingsSection.Get<IDictionary<string, string>>()!;
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Ensure the generated code can be compiled.
+            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
+            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
+            Assert.NotNull(emittedAssemblyImage);
+        }
+
         /// <summary>
         /// We binding the type "SslClientAuthenticationOptions" which has a property "CipherSuitesPolicy" of type "CipherSuitesPolicy". We can't bind this type.
         /// This test is to ensure not including the property "CipherSuitesPolicy" in the generated code caused a build break.
@@ -381,6 +414,130 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.TypeNotSupported.Id));
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.PropertyNotSupported.Id));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            // SYSLIB1103: ValueTypesInvalidForBind (Warning, configurable).
+            string source = """
+                #pragma warning disable SYSLIB1103
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.True(diagnostic.IsSuppressed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_NoPragma_IsNotSuppressed()
+        {
+            string source = """
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.False(diagnostic.IsSuppressed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_MultipleDiagnostics_OnlySomeSuppressed()
+        {
+            string source = """
+                using System;
+                using System.Collections.Immutable;
+                using System.Text;
+                using System.Text.Json;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        // SYSLIB1103 suppressed for this call only.
+                        #pragma warning disable SYSLIB1103
+                        int myInt = 1;
+                        config.Bind(myInt);
+                        #pragma warning restore SYSLIB1103
+
+                        // SYSLIB1103 NOT suppressed for this call.
+                        long myLong = 1;
+                        config.Bind(myLong);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation)
+                .Where(d => d.Id == "SYSLIB1103")
+                .ToList();
+
+            Assert.Equal(2, effective.Count);
+            Assert.Single(effective, d => d.IsSuppressed);
+            Assert.Single(effective, d => !d.IsSuppressed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_PragmaRestoreOutsideSpan_IsNotSuppressed()
+        {
+            string source = """
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        // Suppress and restore BEFORE the diagnostic site.
+                        #pragma warning disable SYSLIB1103
+                        #pragma warning restore SYSLIB1103
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.False(diagnostic.IsSuppressed);
         }
     }
 }

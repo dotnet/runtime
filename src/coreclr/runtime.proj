@@ -4,6 +4,8 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
+    <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
+    <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,11 +13,11 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)native.props" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
   
   <Target Name="BuildRuntime"
-          DependsOnTargets="GetPgoDataPackagePath"
+          DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
     <ItemGroup>
       <_CMakeArgs Include="$(CMakeArgs)" />
@@ -39,6 +41,7 @@
                                    '$(PgoInstrument)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
+      <_CoreClrBuildArg Condition="'$(Ninja)' != 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja false" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
@@ -48,9 +51,11 @@
       <_CoreClrBuildArg Include="-targetrid $(TargetRid)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(PortableTargetRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH='$(DOTNET_HOST_PATH)'&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
+      <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
+      <_CoreClrBuildArg Condition="'$(FeatureDynamicCodeCompiled)' == 'true' or '$(FeatureDynamicCodeCompiled)' == ''" Include="-cmakeargs &quot;-DFEATURE_DYNAMIC_CODE_COMPILED=1&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
@@ -69,6 +74,7 @@
       <_CoreClrBuildArg Condition="'$(ClrHostsSubset)' == 'true'" Include="-component hosts" />
       <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' == 'true'" Include="-component runtime" />
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' == 'true'" Include="-component jit" />
+      <_CoreClrBuildArg Condition="'$(ClrWasmJitSubset)' == 'true'" Include="-component wasmjit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' == 'true'" Include="-component alljits" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsCommunitySubset)' == 'true'" Include="-component alljits;-cmakeargs &quot;-DCLR_CMAKE_BUILD_COMMUNITY_ALTJITS=1&quot;" />
@@ -112,7 +118,9 @@
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
     <Message Text="Executing $(_CoreClrBuildCommand)" Importance="High" />
     <Exec Command="$(_CoreClrBuildCommand)"
-          IgnoreStandardErrorWarningFormat="true" />
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="EMSDK_PATH=$(EMSDK_PATH)"
+          />
   </Target>
 
   <Target Name="CreateNativeAotBreadcrumbs"

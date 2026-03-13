@@ -9298,8 +9298,10 @@ get_concrete_sig (MonoMethodSignature *sig)
 			concrete = FALSE;
 	}
 	copy->has_type_parameters = 0;
-	if (!concrete)
+	if (!concrete) {
+		g_free (copy);
 		return NULL;
+	}
 	return copy;
 }
 

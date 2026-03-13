@@ -60,7 +60,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
-#include <vector>
 
 #ifdef __linux__
 #include <linux/membarrier.h>
@@ -130,8 +129,7 @@ CObjectType CorUnix::otProcess(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CAllowedObjectTypes aotProcess(otiProcess);
@@ -140,18 +138,6 @@ CAllowedObjectTypes aotProcess(otiProcess);
 // The representative IPalObject for this process
 //
 IPalObject* CorUnix::g_pobjProcess;
-
-//
-// Critical section that protects process data (e.g., the
-// list of active threads)/
-//
-minipal_mutex g_csProcess;
-
-//
-// List and count of active threads
-//
-CPalThread* CorUnix::pGThreadList;
-DWORD g_dwThreadCount;
 
 //
 // The command line and app name for the process
@@ -174,7 +160,6 @@ DWORD gSID = (DWORD) -1;
 LPCSTR gApplicationGroupId = nullptr;
 int gApplicationGroupIdLength = 0;
 #endif // __APPLE__
-PathCharString* gSharedFilesPath = nullptr;
 
 // The lowest common supported semaphore length, including null character
 // NetBSD-7.99.25: 15 characters
@@ -198,8 +183,12 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
+// Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
+Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
+
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
-std::vector<const char*> g_argvCreateDump;
+#define MAX_ARGV_ENTRIES 32
+const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -500,7 +489,7 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
-#ifdef TARGET_TVOS
+#if defined(TARGET_TVOS) || defined(TARGET_WASM)
     return ERROR_NOT_SUPPORTED;
 #else
     PAL_ERROR palError = NO_ERROR;
@@ -1039,7 +1028,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
-#endif // !TARGET_TVOS
+#endif // !TARGET_TVOS && !TARGET_WASM
 }
 
 
@@ -1358,6 +1347,26 @@ PAL_SetCreateDumpCallback(
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetLogManagedCallstackForSignalCallback
+
+Abstract:
+  Sets a callback that is executed when a signal is received to log the managed callstack.
+  Used by Android CoreCLR since CreateDump is not supported on Android.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback)
+{
+    _ASSERTE(g_logManagedCallstackForSignalCallback == nullptr);
+    g_logManagedCallstackForSignalCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -2284,7 +2293,7 @@ Return
 --*/
 BOOL
 PROCBuildCreateDumpCommandLine(
-    std::vector<const char*>& argv,
+    const char* argv[],
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
@@ -2325,27 +2334,29 @@ PROCBuildCreateDumpCommandLine(
     {
         return FALSE;
     }
-    argv.push_back(program);
+    
+    int argc = 0;
+    argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
-        argv.push_back("--name");
-        argv.push_back(dumpName);
+        argv[argc++] = "--name";
+        argv[argc++] = dumpName;
     }
 
     switch (dumpType)
     {
         case DumpTypeNormal:
-            argv.push_back("--normal");
+            argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
-            argv.push_back("--withheap");
+            argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
-            argv.push_back("--triage");
+            argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
-            argv.push_back("--full");
+            argv[argc++] = "--full";
             break;
         default:
             break;
@@ -2353,37 +2364,39 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
-        argv.push_back("--diag");
+        argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
-        argv.push_back("--verbose");
+        argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
-        argv.push_back("--crashreport");
+        argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
-        argv.push_back("--crashreportonly");
+        argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
-        argv.push_back("--singlefile");
+        argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
-        argv.push_back("--logtofile");
-        argv.push_back(logFileName);
+        argv[argc++] = "--logtofile";
+        argv[argc++] = logFileName;
     }
 
-    argv.push_back(*ppidarg);
-    argv.push_back(nullptr);
+    argv[argc++] = *ppidarg;
+
+    argv[argc] = nullptr;
+    _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
 }
@@ -2401,15 +2414,15 @@ Return:
 --*/
 BOOL
 PROCCreateCrashDump(
-    std::vector<const char*>& argv,
+    const char* argv[],
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WASM)
     return FALSE;
 #else
-    _ASSERTE(argv.size() > 0);
+    _ASSERTE(argv[0] != nullptr);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
     if (serialize)
@@ -2477,7 +2490,7 @@ PROCCreateCrashDump(
         int bytesRead;
         while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
         close(child_read_pipe);
-        
+
         if (bytesRead != 1)
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
@@ -2496,7 +2509,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            int argc = 0;
+            while (argv[argc] != nullptr && argc < MAX_ARGV_ENTRIES)
+            {
+                argc++;
+            }
+            callbackResult = g_createdumpCallback(argc, argv);
             // Set the shutdown callback to nullptr and exit
             // If we don't exit, the child's execution will continue into the diagnostic server behavior
             // which causes all sorts of problems.
@@ -2506,7 +2524,7 @@ PROCCreateCrashDump(
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 exit(-1);
@@ -2578,7 +2596,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
-#endif // !TARGET_IOS && !TARGET_TVOS
+#endif // !TARGET_IOS && !TARGET_TVOS && !TARGET_WASM
 }
 
 /*++
@@ -2677,6 +2695,7 @@ Return:
     FALSE failed
 --*/
 BOOL
+PALAPI
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
@@ -2684,7 +2703,7 @@ PAL_GenerateCoreDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer)
 {
-    std::vector<const char*> argvCreateDump;
+    const char* argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -2706,6 +2725,52 @@ PAL_GenerateCoreDump(
     return result;
 }
 
+// Helper function to prevent compiler from optimizing away a variable
+__attribute__((noinline,NOOPT_ATTRIBUTE))
+static void DoNotOptimize(const void* p)
+{
+    // This function takes the address of a variable to ensure
+    // it's preserved and available in crash dumps
+    (void)p;
+}
+
+static LPCWSTR GetSignalName(int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV: return W("SIGSEGV");
+        case SIGBUS:  return W("SIGBUS");
+        case SIGFPE:  return W("SIGFPE");
+        case SIGILL:  return W("SIGILL");
+        case SIGABRT: return W("SIGABRT");
+        case SIGTRAP: return W("SIGTRAP");
+        case SIGTERM: return W("SIGTERM");
+        default:      return W("Unknown signal");
+    }
+}
+
+/*++
+Function:
+  PROCLogManagedCallstackForSignal
+
+  Invokes the registered callback to log the managed callstack for a signal.
+  Used by Android since CreateDump is not supported there.
+
+Parameters:
+  signal - POSIX signal number
+
+(no return value)
+--*/
+VOID
+PROCLogManagedCallstackForSignal(int signal)
+{
+    if (g_logManagedCallstackForSignalCallback != nullptr)
+    {
+        LPCWSTR signalName = GetSignalName(signal);
+        g_logManagedCallstackForSignalCallback(signalName);
+    }
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2716,6 +2781,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
@@ -2723,45 +2789,54 @@ Parameters:
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
-    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }
 #else
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // If enabled, launch the create minidump utility and wait until it completes
-    if (!g_argvCreateDump.empty())
+    if (g_argvCreateDump[0] != nullptr)
     {
-        std::vector<const char*> argv(g_argvCreateDump);
+        const char* argv[MAX_ARGV_ENTRIES];
         char* signalArg = nullptr;
         char* crashThreadArg = nullptr;
         char* signalCodeArg = nullptr;
         char* signalErrnoArg = nullptr;
         char* signalAddressArg = nullptr;
 
+        // Copy the createdump argv
+        int argc = 0;
+        for (; argc < MAX_ARGV_ENTRIES && g_argvCreateDump[argc] != nullptr; argc++)
+        {
+            argv[argc] = g_argvCreateDump[argc];
+        }
+
         if (signal != 0)
         {
-            // Remove the terminating nullptr
-            argv.pop_back();
-
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
             if (signalArg != nullptr)
             {
-                argv.push_back("--signal");
-                argv.push_back(signalArg);
+                argv[argc++] = "--signal";
+                argv[argc++] = signalArg;
             }
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
             if (crashThreadArg != nullptr)
             {
-                argv.push_back("--crashthread");
-                argv.push_back(crashThreadArg);
+                argv[argc++] = "--crashthread";
+                argv[argc++] = crashThreadArg;
             }
 
             if (siginfo != nullptr)
@@ -2769,25 +2844,26 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
                 if (signalCodeArg != nullptr)
                 {
-                    argv.push_back("--code");
-                    argv.push_back(signalCodeArg);
+                    argv[argc++] = "--code";
+                    argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
                 if (signalErrnoArg != nullptr)
                 {
-                    argv.push_back("--errno");
-                    argv.push_back(signalErrnoArg);
+                    argv[argc++] = "--errno";
+                    argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
                 if (signalAddressArg != nullptr)
                 {
-                    argv.push_back("--address");
-                    argv.push_back(signalAddressArg);
+                    argv[argc++] = "--address";
+                    argv[argc++] = signalAddressArg;
                 }
             }
-
-            argv.push_back(nullptr);
         }
+
+        argv[argc] = nullptr;
+        _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
@@ -2809,6 +2885,7 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -2816,12 +2893,12 @@ Parameters:
 PAL_NORETURN
 #endif
 VOID
-PROCAbort(int signal, siginfo_t* siginfo)
+PROCAbort(int signal, siginfo_t* siginfo, void* context)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
@@ -2903,31 +2980,6 @@ PROCGetProcessIDFromHandle(
 PROCGetProcessIDFromHandleExit:
 
     return dwProcessId;
-}
-
-PAL_ERROR
-CorUnix::InitializeProcessData(
-    void
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    bool fLockInitialized = FALSE;
-
-    pGThreadList = NULL;
-    g_dwThreadCount = 0;
-
-    minipal_mutex_init(&g_csProcess);
-    fLockInitialized = TRUE;
-
-    if (NO_ERROR != palError)
-    {
-        if (fLockInitialized)
-        {
-            minipal_mutex_destroy(&g_csProcess);
-        }
-    }
-
-    return palError;
 }
 
 /*++
@@ -3138,223 +3190,17 @@ Return
 VOID
 PROCCleanupInitialProcess(VOID)
 {
-    CPalThread *pThread = InternalGetCurrentThread();
-
-    minipal_mutex_enter(&g_csProcess);
-
     /* Free the application directory */
     free(g_lpwstrAppDir);
 
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    minipal_mutex_leave(&g_csProcess);
-
     //
     // Object manager shutdown will handle freeing the underlying
     // thread and process data
     //
-
 }
-
-/*++
-Function:
-  PROCAddThread
-
-Abstract
-  Add a thread to the thread list of the current process
-
-Parameter
-  pThread:   Thread object
-
---*/
-VOID
-CorUnix::PROCAddThread(
-    CPalThread *pCurrentThread,
-    CPalThread *pTargetThread
-    )
-{
-    /* protect the access of the thread list with critical section for
-       mutithreading access */
-    minipal_mutex_enter(&g_csProcess);
-
-    pTargetThread->SetNext(pGThreadList);
-    pGThreadList = pTargetThread;
-    g_dwThreadCount += 1;
-
-    TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
-          pTargetThread, pTargetThread->GetThreadId());
-
-    minipal_mutex_leave(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCRemoveThread
-
-Abstract
-  Remove a thread form the thread list of the current process
-
-Parameter
-  CPalThread *pThread : thread object to remove
-
-(no return value)
---*/
-VOID
-CorUnix::PROCRemoveThread(
-    CPalThread *pCurrentThread,
-    CPalThread *pTargetThread
-    )
-{
-    CPalThread *curThread, *prevThread;
-
-    /* protect the access of the thread list with critical section for
-       mutithreading access */
-    minipal_mutex_enter(&g_csProcess);
-
-    curThread = pGThreadList;
-
-    /* if thread list is empty */
-    if (curThread == NULL)
-    {
-        ASSERT("Thread list is empty.\n");
-        goto EXIT;
-    }
-
-    /* do we remove the first thread? */
-    if (curThread == pTargetThread)
-    {
-        pGThreadList =  curThread->GetNext();
-        TRACE("Thread 0x%p (id %#x) removed from the process thread list\n",
-            pTargetThread, pTargetThread->GetThreadId());
-        goto EXIT;
-    }
-
-    prevThread = curThread;
-    curThread = curThread->GetNext();
-    /* find the thread to remove */
-    while (curThread != NULL)
-    {
-        if (curThread == pTargetThread)
-        {
-            /* found, fix the chain list */
-            prevThread->SetNext(curThread->GetNext());
-            g_dwThreadCount -= 1;
-            TRACE("Thread %p removed from the process thread list\n", pTargetThread);
-            goto EXIT;
-        }
-
-        prevThread = curThread;
-        curThread = curThread->GetNext();
-    }
-
-    WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
-
-EXIT:
-    minipal_mutex_leave(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCGetNumberOfThreads
-
-Abstract
-  Return the number of threads in the thread list.
-
-Parameter
-  void
-
-Return
-  the number of threads.
---*/
-INT
-CorUnix::PROCGetNumberOfThreads(
-    VOID)
-{
-    return g_dwThreadCount;
-}
-
-
-/*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
-
-Parameter
-  void
-
-Return
-  void
---*/
-VOID
-PROCProcessLock(
-    VOID)
-{
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    minipal_mutex_enter(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
-
-Parameter
-  void
-
-Return
-  void
---*/
-VOID
-PROCProcessUnlock(
-    VOID)
-{
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    minipal_mutex_leave(&g_csProcess);
-}
-
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds
-
-Abstract
-  Cleanup SysV semaphore ids for all threads
-
-(no parameters, no return value)
---*/
-VOID
-PROCCleanupThreadSemIds(void)
-{
-    //
-    // When using SysV semaphores, the semaphore ids used by PAL threads must be removed
-    // so they can be used again.
-    //
-
-    PROCProcessLock();
-
-    CPalThread *pTargetThread = pGThreadList;
-    while (NULL != pTargetThread)
-    {
-        pTargetThread->suspensionInfo.DestroySemaphoreIds();
-        pTargetThread = pTargetThread->GetNext();
-    }
-
-    PROCProcessUnlock();
-
-}
-#endif // USE_SYSV_SEMAPHORES
 
 /*++
 Function:
@@ -3624,31 +3470,6 @@ bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicati
         && buffer.Append('/');
 }
 #endif // __APPLE__
-
-#ifdef _DEBUG
-void PROCDumpThreadList()
-{
-    CPalThread *pThread;
-
-    PROCProcessLock();
-
-    TRACE ("Threads:{\n");
-
-    pThread = pGThreadList;
-    while (NULL != pThread)
-    {
-        TRACE ("    {pThr=0x%p tid=%#x lwpid=%#x state=%d finsusp=%d}\n",
-               pThread, (int)pThread->GetThreadId(), (int)pThread->GetLwpId(),
-               (int)pThread->synchronizationInfo.GetThreadState(),
-               (int)pThread->suspensionInfo.GetSuspendedForShutdown());
-
-        pThread = pThread->GetNext();
-    }
-    TRACE ("Threads:}\n");
-
-    PROCProcessUnlock();
-}
-#endif
 
 /* Internal function definitions **********************************************/
 

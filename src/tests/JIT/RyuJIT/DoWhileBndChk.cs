@@ -5,6 +5,7 @@
 //
 // Reference: TF Bug 150041
 
+using TestLibrary;
 #pragma warning disable SYSLIB0032 // HandleProcessCorruptedStateExceptionsAttribute is obsolete
 
 using System;
@@ -14,6 +15,7 @@ using Xunit;
 public class Program
 {
     [HandleProcessCorruptedStateExceptions]
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

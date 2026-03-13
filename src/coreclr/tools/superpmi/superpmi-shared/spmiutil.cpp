@@ -9,6 +9,8 @@
 #include "logging.h"
 #include "spmiutil.h"
 
+#include <sstream>
+#include <iomanip>
 #include <minipal/debugger.h>
 #include <minipal/random.h>
 
@@ -99,86 +101,103 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     return retString;
 }
 
-#ifdef TARGET_UNIX
-// For some reason, the PAL doesn't have GetCommandLineA(). So write it.
-LPSTR GetCommandLineA()
+const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue)
 {
-    LPSTR  pCmdLine  = nullptr;
-    LPWSTR pwCmdLine = GetCommandLineW();
+    // getenv isn't thread safe, but it's simple and sufficient since we are development-only tool
+    char* env = getenv(envVarName);
+    return env ? env : defaultValue;
+}
 
-    if (pwCmdLine != nullptr)
+std::string GetProcessCommandLine()
+{
+#ifdef TARGET_WINDOWS
+    return ::GetCommandLineA();
+#else
+    FILE* fp = fopen("/proc/self/cmdline", "r");
+    if (fp != NULL)
     {
-        // Convert to ASCII
+        std::string result;
+        char*       cmdLine = nullptr;
+        size_t      size    = 0;
 
-        int n = WideCharToMultiByte(CP_ACP, 0, pwCmdLine, -1, nullptr, 0, nullptr, nullptr);
-        if (n == 0)
+        while (getdelim(&cmdLine, &size, '\0', fp) != -1)
         {
-            LogError("MultiByteToWideChar failed %d", GetLastError());
-            return nullptr;
+            // /proc/self/cmdline uses \0 as delimiter, convert it to space
+            if (!result.empty())
+                result += ' ';
+
+            result += cmdLine;
+
+            free(cmdLine);
+            cmdLine = nullptr;
+            size    = 0;
         }
 
-        pCmdLine = new char[n];
-
-        int n2 = WideCharToMultiByte(CP_ACP, 0, pwCmdLine, -1, pCmdLine, n, nullptr, nullptr);
-        if ((n2 == 0) || (n2 != n))
-        {
-            LogError("MultiByteToWideChar failed %d", GetLastError());
-            return nullptr;
-        }
+        fclose(fp);
+        return result;
     }
 
-    return pCmdLine;
+    return "";
+#endif
 }
-#endif // TARGET_UNIX
 
-bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
+bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
 {
     // Load Library
     if (jitLib == NULL)
     {
-        if (jitLibPath == nullptr)
+        if (jitLibPath.empty())
         {
             LogError("LoadRealJitLib - No real jit path");
             return false;
         }
-        jitLib = ::LoadLibraryExW(jitLibPath, NULL, 0);
+#ifdef TARGET_WINDOWS
+        jitLib = ::LoadLibraryExA(jitLibPath.c_str(), NULL, 0);
         if (jitLib == NULL)
         {
-            LogError("LoadRealJitLib - LoadLibrary failed to load '%ws' (0x%08x)", jitLibPath, ::GetLastError());
+            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (0x%08x)", jitLibPath.c_str(), ::GetLastError());
             return false;
         }
+#else
+        jitLib = ::dlopen(jitLibPath.c_str(), RTLD_LAZY);
+        // The simulated DllMain of JIT doesn't do any meaningful initialization. Skip it.
+        if (jitLib == NULL)
+        {
+            LogError("LoadRealJitLib - dlopen failed to load '%s' (%s)", jitLibPath.c_str(), ::dlerror());
+            return false;
+        }
+#endif
     }
     return true;
 }
 
-void ReplaceIllegalCharacters(WCHAR* fileName)
+void ReplaceIllegalCharacters(std::string& fileName)
 {
-    WCHAR* quote = nullptr;
-
     // Perform the following transforms:
     //  - Convert non-ASCII to ASCII for simplicity
     //  - Remove any illegal or annoying characters from the file name by
     // converting them to underscores.
     //  - Replace any quotes in the file name with spaces.
-    for (quote = fileName; *quote != '\0'; quote++)
+
+    for (char& quote : fileName)
     {
-        WCHAR ch = *quote;
+        char ch = quote;
         if ((ch <= 32) || (ch >= 127)) // Only allow textual ASCII characters
         {
-            *quote = W('_');
+            quote = '_';
         }
         else
         {
             switch (ch)
             {
-                case W('('): case W(')'): case W('='): case W('<'):
-                case W('>'): case W(':'): case W('/'): case W('\\'):
-                case W('|'): case W('?'): case W('!'): case W('*'):
-                case W('.'): case W(','):
-                    *quote = W('_');
+                case '(': case ')': case '=': case '<':
+                case '>': case ':': case '/': case '\\':
+                case '|': case '?': case '!': case '*':
+                case '.': case ',':
+                    quote = '_';
                     break;
-                case W('"'):
-                    *quote = W(' ');
+                case '"':
+                    quote = ' ';
                     break;
                 default:
                     break;
@@ -187,67 +206,34 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
     }
 }
 
-// All lengths in this function exclude the terminal NULL.
-WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
+std::string GetResultFileName(const std::string& folderPath,
+                              const std::string& fileName,
+                              const std::string& extension)
 {
-    const size_t extensionLength    = u16_strlen(extension);
-    const size_t fileNameLength     = u16_strlen(fileName);
-    const size_t randomStringLength = 8;
-    const size_t maxPathLength      = MAX_PATH - 50;
-
-    // See how long the folder part is, and start building the file path with the folder part.
-    //
-    WCHAR* fullPath = new WCHAR[MAX_PATH];
-    fullPath[0] = W('\0');
-    const size_t folderPathLength = GetFullPathNameW(folderPath, MAX_PATH, (LPWSTR)fullPath, NULL);
-
-    if (folderPathLength == 0)
-    {
-        LogError("GetResultFileName - can't resolve folder path '%ws'", folderPath);
-        return nullptr;
-    }
-
-    // Account for the folder, directory separator and extension.
-    //
-    size_t fullPathLength = folderPathLength + 1 + extensionLength;
-
-    // If we won't have room for a minimal file name part, bail.
-    //
-    if ((fullPathLength + randomStringLength) > maxPathLength)
-    {
-        LogError("GetResultFileName - folder path '%ws' length + minimal file name exceeds limit %d", fullPath, maxPathLength);
-        return nullptr;
-    }
-
-    // Now figure out the file name part.
-    //
-    const size_t maxFileNameLength = maxPathLength - fullPathLength;
-    size_t usableFileNameLength = min(fileNameLength, maxFileNameLength - randomStringLength);
-    fullPathLength += usableFileNameLength + randomStringLength;
-
-    // Append the file name part
-    //
-    wcsncat_s(fullPath, fullPathLength + 1, DIRECTORY_SEPARATOR_STR_W, 1);
-    wcsncat_s(fullPath, fullPathLength + 1, fileName, usableFileNameLength);
-
-    // Clean up anything in the file part that can't be in a file name.
-    //
-    ReplaceIllegalCharacters(fullPath + folderPathLength + 1);
-
     // Append a random string to improve uniqueness.
     //
-    unsigned int randomNumber = 0;
+    uint32_t randomNumber = 0;
     minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
+    std::stringstream ss;
+    ss << std::hex << std::setw(8) << std::setfill('0') << randomNumber;
+    std::string suffix = ss.str() + extension;
 
-    WCHAR randomString[randomStringLength + 1];
-    FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
-    wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
+    // Limit the total file name length to MAX_PATH - 50
+    int usableLength = MAX_PATH - 50 - (int)folderPath.size() - (int)suffix.size();
+    if (usableLength < 0)
+    {
+        LogError("GetResultFileName - folder path '%s' length + minimal file name exceeds limit %d", folderPath.c_str(), MAX_PATH - 50);
+        return "";
+    }
 
-    // Append extension
-    //
-    wcsncat_s(fullPath, fullPathLength + 1, extension, extensionLength);
+    std::string copy = fileName;
+    if ((int)copy.size() > usableLength)
+    {
+        copy = copy.substr(0, usableLength);
+    }
 
-    return fullPath;
+    ReplaceIllegalCharacters(copy);
+    return folderPath + DIRECTORY_SEPARATOR_CHAR_A + copy + suffix;
 }
 
 #ifdef TARGET_AMD64
@@ -262,6 +248,8 @@ static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTUR
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_LOONGARCH64;
 #elif defined(TARGET_RISCV64)
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_RISCV64;
+#elif defined(TARGET_WASM32)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_WASM32;
 #else
 #error Unsupported architecture
 #endif
@@ -478,51 +466,64 @@ void PutArm32MovtConstant(UINT32* p, unsigned con)
 }
 
 //*****************************************************************************
-//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-INT64 GetRiscV64AuipcItype(UINT32 * pCode)
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype)
 {
     enum
     {
-        OpcodeAuipc = 0x00000017,
-        OpcodeAddi = 0x00000013,
-        OpcodeLd = 0x00003003,
-        OpcodeJalr = 0x00000067,
-        OpcodeUTypeMask = 0x0000007F,
-        OpcodeITypeMask = 0x0000307F,
+        OpcodeAuipc = 0x17,
+        OpcodeAddi = 0x13,
+        OpcodeLoad = 0x03,
+        OpcodeStore = 0x23,
+        OpcodeLoadFp = 0x07,
+        OpcodeStoreFp = 0x27,
+        OpcodeJalr = 0x67,
+        OpcodeMask = 0x7F,
+
+        Funct3AddiJalr = 0x0000,
+        Funct3Mask = 0x7000,
     };
 
     UINT32 auipc = pCode[0];
-    _ASSERTE((auipc & OpcodeUTypeMask) == OpcodeAuipc);
+    _ASSERTE((auipc & OpcodeMask) == OpcodeAuipc);
     int auipcRegDest = (auipc >> 7) & 0x1F;
     _ASSERTE(auipcRegDest != 0);
 
     INT64 hi20 = (INT32(auipc) >> 12) << 12;
 
-    UINT32 iType = pCode[1];
-    UINT32 opcode = iType & OpcodeITypeMask;
-    _ASSERTE(opcode == OpcodeAddi || opcode == OpcodeLd || opcode == OpcodeJalr);
-    int iTypeRegSrc = (iType >> 15) & 0x1F;
-    _ASSERTE(auipcRegDest == iTypeRegSrc);
+    UINT32 instr = pCode[1];
+    UINT32 opcode = instr & OpcodeMask;
+    UINT32 funct3 = instr & Funct3Mask;
+    _ASSERTE(opcode == OpcodeLoad || opcode == OpcodeStore || opcode == OpcodeLoadFp || opcode == OpcodeStoreFp ||
+        ((opcode == OpcodeAddi || opcode == OpcodeJalr) && funct3 == Funct3AddiJalr));
+    _ASSERTE(isStype == (opcode == OpcodeStore || opcode == OpcodeStoreFp));
+    int addrReg = (instr >> 15) & 0x1F;
+    _ASSERTE(auipcRegDest == addrReg);
 
-    INT64 lo12 = INT32(iType) >> 20;
+    INT64 lo12 = (INT32(instr) >> 25) << 5; // top 7 bits are in the same spot
+    int bottomBitsPos = isStype ? 7 : 20;
+    lo12 |= (instr >> bottomBitsPos) & 0x1F;
 
     return hi20 + lo12;
 }
 
-//*****************************************************************************
-//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
-//*****************************************************************************
-void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset)
-{
-    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-    INT32 hi20 = INT32(offset - lo12);
-    _ASSERTE(INT64(hi20) + INT64(lo12) == offset);
 
-    _ASSERTE(GetRiscV64AuipcItype(pCode) == 0);
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
+{
+    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
+    INT32 hi20 = INT32(offset - lo12);
+    _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
+
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
     pCode[0] |= hi20;
-    pCode[1] |= lo12 << 20;
-    _ASSERTE(GetRiscV64AuipcItype(pCode) == offset);
+    int bottomBitsPos = isStype ? 7 : 20;
+    pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
+    pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 
 template<typename TPrint>

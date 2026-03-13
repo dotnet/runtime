@@ -619,6 +619,77 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorCreateSingleElementTests()
+        {
+            // Tensor.Create with a single-element array should have stride 0
+            Tensor<double> src = Tensor.Create([1.0]);
+            Assert.Equal(1, src.Rank);
+            Assert.Equal(1, src.Lengths[0]);
+            Assert.Equal(0, src.Strides[0]);
+            Assert.Equal(1, src.FlattenedLength);
+            Assert.Equal(1.0, src[0]);
+
+            // CreateFromShapeUninitialized without strides should work
+            Tensor<double> dst = Tensor.CreateFromShapeUninitialized<double>(src.Lengths);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            // CopyTo should succeed
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShapeUninitialized with explicit strides should work
+            dst = Tensor.CreateFromShapeUninitialized<double>(src.Lengths, src.Strides);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShape without strides should also work
+            dst = Tensor.CreateFromShape<double>(src.Lengths);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShape with explicit strides should also work
+            dst = Tensor.CreateFromShape<double>(src.Lengths, src.Strides);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // TensorSpan from single-element span should also have stride 0
+            Span<double> span = [42.0];
+            TensorSpan<double> tensorSpan = new TensorSpan<double>(span);
+            Assert.Equal(1, tensorSpan.Rank);
+            Assert.Equal(1, tensorSpan.Lengths[0]);
+            Assert.Equal(0, tensorSpan.Strides[0]);
+            Assert.Equal(1, tensorSpan.FlattenedLength);
+            Assert.Equal(42.0, tensorSpan[0]);
+
+            // ReadOnlyTensorSpan from single-element span should also have stride 0
+            ReadOnlySpan<double> roSpan = [42.0];
+            ReadOnlyTensorSpan<double> roTensorSpan = new ReadOnlyTensorSpan<double>(roSpan);
+            Assert.Equal(1, roTensorSpan.Rank);
+            Assert.Equal(1, roTensorSpan.Lengths[0]);
+            Assert.Equal(0, roTensorSpan.Strides[0]);
+            Assert.Equal(1, roTensorSpan.FlattenedLength);
+            Assert.Equal(42.0, roTensorSpan[0]);
+        }
+
+        [Fact]
         public static void TensorCosineSimilarityTests()
         {
             float[] a = [0, 0, 0, 1, 1, 1];
@@ -936,6 +1007,70 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorReverseTests()
         {
+            // Helper: verify Reverse correctness for any shape
+            static void AssertReverseCorrect(nint[] shape)
+            {
+                nint totalLengthNative = 1;
+                foreach (var s in shape)
+                    totalLengthNative = checked(totalLengthNative * s);
+
+                int totalLength = checked((int)totalLengthNative);
+
+                // Use 1-based values so 0 (default) is never a valid value - makes bugs obvious
+                int[] data = new int[totalLength];
+                for (int i = 0; i < totalLength; i++)
+                    data[i] = i + 1;
+
+                var tensor = Tensor.Create<int>(data, shape);
+                var reversed = Tensor.Reverse<int>(tensor);
+
+                // Shape must be preserved
+                Assert.Equal(tensor.Lengths.ToArray(), reversed.Lengths.ToArray());
+
+                // Flattened elements should be in reverse order
+                var flatOriginal = new int[totalLength];
+                tensor.FlattenTo(flatOriginal);
+                Array.Reverse(flatOriginal);
+
+                var actualFlat = new int[totalLength];
+                reversed.FlattenTo(actualFlat);
+
+                Assert.Equal(flatOriginal, actualFlat);
+            }
+
+            // Test the reproduction case from issue #124105
+            AssertReverseCorrect([1, 3]);
+
+            // Test 1D tensors
+            AssertReverseCorrect([1]);
+            AssertReverseCorrect([3]);
+            AssertReverseCorrect([5]);
+
+            // Test 2D tensors with length-1 dimensions
+            AssertReverseCorrect([3, 1]);
+            AssertReverseCorrect([1, 1]);
+            AssertReverseCorrect([1, 4]);
+            AssertReverseCorrect([4, 1]);
+
+            // Test 2D tensors asymmetric
+            AssertReverseCorrect([2, 3]);
+            AssertReverseCorrect([3, 2]);
+
+            // Test 3D tensors with length-1 dimensions
+            AssertReverseCorrect([1, 2, 3]);
+            AssertReverseCorrect([2, 1, 3]);
+            AssertReverseCorrect([2, 3, 1]);
+            AssertReverseCorrect([1, 1, 3]);
+            AssertReverseCorrect([1, 3, 1]);
+            AssertReverseCorrect([3, 1, 1]);
+            AssertReverseCorrect([1, 1, 1]);
+
+            // Test larger tensors
+            AssertReverseCorrect([2, 3, 4]);
+            AssertReverseCorrect([1, 2, 3, 4]);
+            AssertReverseCorrect([2, 1, 3, 2]);
+
+            // Keep existing explicit test case
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 8).ToArray(), lengths: [2, 2, 2]);
             var t1 = Tensor.Reverse<int>(t0);
             Assert.Equal(7, t1[0, 0, 0]);
@@ -2219,6 +2354,42 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, tensor[2, 1]);
             Assert.Equal(9, tensor[2, 2]);
 
+            dims = [-1];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(9, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides.Length);
+            Assert.Equal(1, tensor.Strides[0]);
+            Assert.Equal(1, tensor[0]);
+            Assert.Equal(2, tensor[1]);
+            Assert.Equal(3, tensor[2]);
+            Assert.Equal(4, tensor[3]);
+            Assert.Equal(5, tensor[4]);
+            Assert.Equal(6, tensor[5]);
+            Assert.Equal(7, tensor[6]);
+            Assert.Equal(8, tensor[7]);
+            Assert.Equal(9, tensor[8]);
+
+            dims = [3, -1];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(3, tensor.Lengths[0]);
+            Assert.Equal(3, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides.Length);
+            Assert.Equal(3, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+            Assert.Equal(1, tensor[0, 0]);
+            Assert.Equal(2, tensor[0, 1]);
+            Assert.Equal(3, tensor[0, 2]);
+            Assert.Equal(4, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(6, tensor[1, 2]);
+            Assert.Equal(7, tensor[2, 0]);
+            Assert.Equal(8, tensor[2, 1]);
+            Assert.Equal(9, tensor[2, 2]);
+
+            Assert.Throws<ArgumentException>(() => Tensor.Reshape(tensor, [-1, -1]));
+
             Assert.Throws<ArgumentException>(() => Tensor.Reshape(tensor, [1, 2, 3, 4, 5]));
 
             // Make sure reshape works correctly with 0 strides.
@@ -2246,6 +2417,17 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, tensor.Strides[0]);
             Assert.Equal(0, tensor.Strides[1]);
             Assert.Equal(0, tensor.Strides[2]);
+
+            tensor = Tensor.Reshape(tensor, [1, 1, -1, 1]);
+            Assert.Equal(4, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Lengths[2]);
+            Assert.Equal(1, tensor.Lengths[3]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+            Assert.Equal(0, tensor.Strides[2]);
+            Assert.Equal(0, tensor.Strides[3]);
         }
 
         [Fact]

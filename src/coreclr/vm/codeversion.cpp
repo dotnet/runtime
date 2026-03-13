@@ -30,6 +30,7 @@
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
 BOOL NativeCodeVersion::IsDefaultVersion() const { return TRUE; }
 PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
+ReJITID NativeCodeVersion::GetILCodeVersionId() const { return 0; }
 
 #ifndef DACCESS_COMPILE
 BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }
@@ -345,22 +346,28 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     }
     else
     {
-        return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
+        PTR_MethodDesc pMethodDesc = GetMethodDesc();
+        OptimizationTier tier = pMethodDesc->GetMethodDescOptimizationTier();
+        if (tier == OptimizationTier::OptimizationTierUnknown)
+        {
+            tier = TieredCompilationManager::GetInitialOptimizationTier(pMethodDesc);
+        }
+        return tier;
     }
 }
 
 #ifndef DACCESS_COMPILE
 void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 {
-    WRAPPER_NO_CONTRACT;
+    STANDARD_VM_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         AsNode()->SetOptimizationTier(tier);
     }
     else
     {
-        // State changes should have been made previously such that the initial tier is the new tier
-        _ASSERTE(TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc()) == tier);
+        GetMethodDesc()->SetMethodDescOptimizationTier(tier);
     }
 }
 #endif
@@ -1979,7 +1986,14 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
                 pMethod,
                 nativeCodeVersion.GetVersionId()));
 
-        #ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_INTERPRETER
+            // When we hit the Precode that should fixup any issues with an unset interpreter code pointer. This is notably most important in ReJIT scenarios
+            pMethod->ClearInterpreterCodePointer();
+#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            pMethod->ResetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_TIERED_COMPILATION
             bool wasSet = CallCountingManager::SetCodeEntryPoint(nativeCodeVersion, pCode, false, nullptr);
             _ASSERTE(wasSet);
         #else

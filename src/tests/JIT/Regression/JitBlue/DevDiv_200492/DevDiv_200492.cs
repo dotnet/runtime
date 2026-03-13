@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace DevDiv_200492;
+
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -77,6 +80,7 @@ public class Program
         return (attribute.Field == (ulong)6);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -1,5 +1,5 @@
 # Required for StaticOpenSslLinking
-cmake_minimum_required(VERSION 3.10..3.20)
+cmake_minimum_required(VERSION 3.10..3.26)
 
 project(System.Security.Cryptography.Native C)
 
@@ -23,7 +23,6 @@ append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    apibridge.c
     apibridge_30.c
     memory_debug.c
     openssl.c

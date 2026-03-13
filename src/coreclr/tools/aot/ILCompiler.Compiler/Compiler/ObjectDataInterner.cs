@@ -33,7 +33,7 @@ namespace ILCompiler
             if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
                 return true;
 
-            if (method.GetTypicalMethodDefinition() is ValueTypeGetFieldHelperMethodOverride)
+            if (method.GetTypicalMethodDefinition() is GetFieldHelperMethodOverride)
                 return true;
 
             return false;
@@ -69,7 +69,7 @@ namespace ILCompiler
 
                     // Bodies that are visible from outside should not be folded because we don't know
                     // if they're address taken.
-                    if (factory.GetSymbolAlternateName(body, out _) != null)
+                    if (!factory.GetSymbolAlternateName(body, out _).IsNull)
                         continue;
 
                     var key = new MethodInternKey(body, factory);
