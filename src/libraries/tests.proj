@@ -742,6 +742,12 @@
                     BuildInParallel="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'maccatalyst' and '$(UseNativeAOTRuntime)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
+                    Exclude="@(ProjectExclusions)"
+                    BuildInParallel="false" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator' and '$(RuntimeFlavor)' == 'Mono'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
