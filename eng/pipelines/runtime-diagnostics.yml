@@ -298,7 +298,7 @@ extends:
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
                 parameters:
-                  buildDebugees: false
+                  buildDebuggees: false
                   skipDebuggeeCopy: true
               # Download dump artifacts from all source platforms
               - ${{ each platform in parameters.cdacDumpPlatforms }}:

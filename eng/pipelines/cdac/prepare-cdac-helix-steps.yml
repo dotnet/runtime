@@ -4,11 +4,11 @@
 # Handles: building debuggees, preparing Helix payload, finding testhost and Helix queue.
 
 parameters:
-  buildDebugees: true
+  buildDebuggees: true
   skipDebuggeeCopy: false
 
 steps:
-- ${{ if parameters.buildDebugees }}:
+- ${{ if parameters.buildDebuggees }}:
   - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
       $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
       /t:BuildDebuggeesOnly
@@ -28,7 +28,11 @@ steps:
   displayName: 'Prepare Helix Payload'
 
 - pwsh: |
-    $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*" | Select-Object -First 1 -ExpandProperty FullName
+    $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-*-$(archType)" | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $testhostDir) {
+        Write-Error "No testhost directory found matching net*-$(osGroup)-*-$(archType) under artifacts/bin/testhost/"
+        exit 1
+    }
     Write-Host "TestHost directory: $testhostDir"
     Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
 
@@ -39,6 +43,7 @@ steps:
         "linux_arm64"  { "$(helix_linux_arm64_oldest)" }
         "osx_x64"     { "$(helix_macos_x64)" }
         "osx_arm64"   { "$(helix_macos_arm64)" }
+        default        { Write-Error "Unsupported platform: $(osGroup)_$(archType)"; exit 1 }
     }
     Write-Host "Helix queue: $queue"
     Write-Host "##vso[task.setvariable variable=CdacHelixQueue]$queue"

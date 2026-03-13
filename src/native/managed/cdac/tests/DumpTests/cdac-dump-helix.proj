@@ -113,7 +113,7 @@
   <!-- Pre-commands: enable dump generation -->
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <!-- Allow heap dump generation with the unsigned locally-built DAC -->
-    <HelixPreCommand Include="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f" />
+    <HelixPreCommand Include="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f 2&gt;nul || (echo DisableAuxProviderSignatureCheck registry write skipped &amp; exit /b 0)" />
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">

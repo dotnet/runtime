@@ -92,8 +92,8 @@
     </MSBuild>
 
     <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
-      <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="'%(DumpTypes)' == 'Heap'" DumpDir="heap" MiniDumpType="2" />
-      <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="'%(DumpTypes)' == 'Full'" DumpDir="full" MiniDumpType="4" />
+      <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap'))" DumpDir="heap" MiniDumpType="2" />
+      <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" MiniDumpType="4" />
       <_AllDebuggeeMetadata Include="@(_HeapDebuggee);@(_FullDebuggee)" />
     </ItemGroup>
 
