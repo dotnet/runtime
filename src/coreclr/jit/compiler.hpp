@@ -3324,7 +3324,7 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 }
 
 //------------------------------------------------------------------------
-// IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+// IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
 // 16 bits worth of offset.
@@ -3334,17 +3334,70 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //    offset - The address' offset
 //
 // Return Value:
-//    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+//    Whether "LCL_ADDR<lclNum> [+offset]" would be valid IR.
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
 #ifdef TARGET_ARM64
-    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    if (lvaIsUnknownSizeLocal(lclNum))
     {
-        return false;
+        return (offset == 0);
     }
 #endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
+}
+
+//------------------------------------------------------------------------
+// IsEntireAccess: Is the access to a local entire?
+//
+// The access is entire when the size of the access is equivalent to the size
+// of the local, and the access address is equivalent to the local address
+// (offset == 0).
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The access offset
+//    accessSize - The size of the access (may be unknown at compile-time)
+//
+// Return Value:
+//     True is the access is entire by the definition above, else false.
+//
+inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
+{
+    return (lvaLclValueSize(lclNum) == accessSize) && (offset == 0);
+}
+
+//------------------------------------------------------------------------
+// IsWideAccess: Is the access to a local wide?
+//
+// An access is wide when the access overflows the end of the local. If the
+// access size is unknown, the access is assumed wide if it is not entire.
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The access offset
+//    accessSize - The size of the access (may be unknown at compile-time)
+//
+// Return Value:
+//     True is the access is wide by the definition above, else false.
+//
+inline bool Compiler::IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
+{
+    assert(!accessSize.IsNull());
+    if (accessSize.IsExact())
+    {
+        ClrSafeInt<uint32_t> extent = ClrSafeInt<uint32_t>(offset) + ClrSafeInt<uint32_t>(accessSize.GetExact());
+        // The access is wide if:
+        // * The offset computation overflows uint16_t.
+        // * The address at `offset + accessSize - 1`, (the last byte of the access) is out of bounds of the local.
+        return extent.IsOverflow() || !FitsIn<uint16_t>(extent.Value()) || !IsValidLclAddr(lclNum, extent.Value() - 1);
+    }
+    else
+    {
+        // If we don't know the size of the access or the local at compile time, we assume any access overflows if
+        // it is not an entire access to the local.
+        return !IsEntireAccess(lclNum, offset, accessSize);
+    }
 }
 
 //------------------------------------------------------------------------

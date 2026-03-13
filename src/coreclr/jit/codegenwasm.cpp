@@ -121,6 +121,22 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 //------------------------------------------------------------------------
 // genHomeRegisterParams: place register arguments into their RA-assigned locations.
 //
+// We can't actually do this task here because the prolog will overflow. Instead, we
+// do this later on and inject all the relevant code into the first basic block.
+// See genHomeRegisterParamsOutsideProlog, below.
+//
+// Arguments:
+//    initReg            - Unused
+//    initRegStillZeroed - Unused
+//
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    // Intentionally empty
+}
+
+//------------------------------------------------------------------------
+// genHomeRegisterParamsOutsideProlog: place register arguments into their RA-assigned locations.
+//
 // For the WASM RA, we have a much simplified (compared to LSRA) contract of:
 // - If an argument is live on entry in a set of registers, then the RA will
 //   assign those registers to that argument on entry.
@@ -129,14 +145,9 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 // The main motivation for this (along with the obvious CQ implications) is
 // obviating the need to adapt the general "RegGraph"-based algorithm to
 // !HAS_FIXED_REGISTER_SET constraints (no reg masks).
-//
-// Arguments:
-//    initReg            - Unused
-//    initRegStillZeroed - Unused
-//
-void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+void CodeGen::genHomeRegisterParamsOutsideProlog()
 {
-    JITDUMP("*************** In genHomeRegisterParams()\n");
+    JITDUMP("*************** In genHomeRegisterParamsOutsideProlog()\n");
 
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());

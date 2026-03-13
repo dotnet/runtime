@@ -8,28 +8,31 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct Pbkdf2Params
+    file static class SharedPbkdf2Params
     {
-        private static ReadOnlySpan<byte> DefaultPrf => [0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00];
-
-        internal System.Security.Cryptography.Asn1.Pbkdf2SaltChoice Salt;
-        internal int IterationCount;
-        internal int? KeyLength;
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn Prf;
+        internal static ReadOnlySpan<byte> DefaultPrf => [0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00];
 
 #if DEBUG
-        static Pbkdf2Params()
+        static SharedPbkdf2Params()
         {
             Pbkdf2Params decoded = default;
             ReadOnlyMemory<byte> rebind = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultPrf, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedPbkdf2Params.DefaultPrf, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.Prf);
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct Pbkdf2Params
+    {
+        internal System.Security.Cryptography.Asn1.Pbkdf2SaltChoice Salt;
+        internal int IterationCount;
+        internal int? KeyLength;
+        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn Prf;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -54,7 +57,7 @@ namespace System.Security.Cryptography.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
                 Prf.Encode(tmp);
 
-                if (!tmp.EncodedValueEquals(DefaultPrf))
+                if (!tmp.EncodedValueEquals(SharedPbkdf2Params.DefaultPrf))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -136,7 +139,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultPrf, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedPbkdf2Params.DefaultPrf, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.Prf);
             }
 

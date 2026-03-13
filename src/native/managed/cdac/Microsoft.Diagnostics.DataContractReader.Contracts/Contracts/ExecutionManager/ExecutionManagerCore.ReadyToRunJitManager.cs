@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -21,6 +22,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             _hashMap = PtrHashMapLookup.Create(target);
             _hotCold = HotColdLookup.Create(target);
             _runtimeFunctions = RuntimeFunctionLookup.Create(target);
+        }
+
+        private enum ReadyToRunSectionType
+        {
+            ExceptionInfo = 104,
         }
 
         public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
@@ -261,7 +267,84 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             return methodDesc;
         }
-
         #endregion
+
+        private void GetExceptionClauses(TargetPointer exceptionLookupTableAddr, uint count, TargetPointer rangeStart, uint methodRVA, out TargetPointer startExInfoRVA, out TargetPointer endExInfoRVA)
+        {
+            startExInfoRVA = TargetPointer.Null;
+            endExInfoRVA = TargetPointer.Null;
+            if (count < 2)
+                return;
+
+            uint low = 0;
+            uint high = count - 2;
+            uint entrySize = Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
+            while (high - low > 10)
+            {
+                uint mid = low + ((high - low) / 2);
+                Data.ExceptionLookupTableEntry middleEntry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (mid * entrySize));
+
+                if (methodRVA < middleEntry.MethodStartRVA)
+                {
+                    high = mid - 1;
+                }
+                else
+                {
+                    low = mid;
+                }
+            }
+
+            for (uint i = low; i <= high; i++)
+            {
+                Data.ExceptionLookupTableEntry entry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (i * entrySize));
+                if (entry.MethodStartRVA == methodRVA)
+                {
+                    Data.ExceptionLookupTableEntry nextEntry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + ((i + 1) * entrySize));
+                    startExInfoRVA = new TargetPointer(entry.ExceptionInfoRVA + rangeStart);
+                    endExInfoRVA = new TargetPointer(nextEntry.ExceptionInfoRVA + rangeStart);
+                    return;
+                }
+            }
+
+        }
+
+        public override void GetExceptionClauses(RangeSection range, CodeBlockHandle cbh, out TargetPointer startAddr, out TargetPointer endAddr)
+        {
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(range);
+            ImageDataDirectory? section = FindSection(r2rInfo, (uint)ReadyToRunSectionType.ExceptionInfo);
+            if (section == null)
+            {
+                startAddr = TargetPointer.Null;
+                endAddr = TargetPointer.Null;
+                return;
+            }
+
+            uint count = section.Size / Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
+            ulong exceptionLookupTableAddr = section.VirtualAddress + r2rInfo.LoadedImageBase;
+
+            GetMethodRVAAndRangeStart(cbh, out TargetPointer methodStart, out TargetPointer rangeStart);
+            uint methodRVA = (uint)(methodStart - rangeStart);
+
+            GetExceptionClauses(exceptionLookupTableAddr, count, rangeStart, methodRVA, out startAddr, out endAddr);
+        }
+
+        private ImageDataDirectory? FindSection(Data.ReadyToRunInfo r2rInfo, uint sectionType)
+        {
+            Data.ReadyToRunCoreInfo coreInfo = Target.ProcessedData.GetOrAdd<Data.ReadyToRunCoreInfo>(r2rInfo.Composite);
+            foreach (Data.ReadyToRunSection section in coreInfo.Header.Sections)
+            {
+                if (section.Type == sectionType)
+                    return section.Section;
+            }
+            return null;
+        }
+
+        private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)
+        {
+            IExecutionManager executionManager = Target.Contracts.ExecutionManager;
+            methodStart = executionManager.GetStartAddress(cbh).AsTargetPointer;
+            rangeStart = executionManager.GetUnwindInfoBaseAddress(cbh);
+        }
+
     }
 }
