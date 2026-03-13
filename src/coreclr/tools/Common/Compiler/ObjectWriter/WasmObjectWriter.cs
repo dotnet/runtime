@@ -78,7 +78,13 @@ namespace ILCompiler.ObjectWriter
             if (classCode is SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
                 or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode)
             {
-                _wellKnownSymbols.Add(classCode, currentSymbolName);
+                if (!_wellKnownSymbols.TryAdd(classCode, currentSymbolName))
+                {
+                    Utf8String existingSymbolName = _wellKnownSymbols[classCode];
+                    throw new InvalidOperationException(
+                        $"Well-known symbol for '{classCode}' was already recorded as '{existingSymbolName}', " +
+                        $"cannot record duplicate symbol '{currentSymbolName}'.");
+                }
             }
         }
 
@@ -203,6 +209,11 @@ namespace ILCompiler.ObjectWriter
             // We should only be updating the alignment of Webcil sections; Wasm-native sections should
             // not have alignment constraints.
             Debug.Assert(section != null, $"Section: {sectionIndex} is not a WebcilSection");
+            if (section == null)
+            {
+                throw new InvalidOperationException($"Section at index {sectionIndex} is not a WebcilSection and cannot have its alignment updated.");
+            }
+
             section.MinAlignment = Math.Max(section.MinAlignment, alignment);
         }
 
@@ -1154,6 +1165,17 @@ namespace ILCompiler.ObjectWriter
             return (int)_stream.Length;
         }
 
-        public override int Emit(Stream outputFileStream) => throw new NotImplementedException();
+        public override int Emit(Stream outputFileStream)
+        {
+            // Emit the raw contents of this Webcil section followed by any required padding.
+            // This provides a safe implementation in case WebcilSection participates in the
+            // generic Wasm section emission pipeline.
+
+            _stream.Position = 0;
+            _stream.CopyTo(outputFileStream);
+            PaddingHelper.PadStream(outputFileStream, Padding);
+
+            return (int)_stream.Length + (int)Padding;
+        }
     }
 }
