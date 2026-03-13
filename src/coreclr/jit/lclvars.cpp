@@ -6121,17 +6121,30 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 {
     int       offset;
     regNumber baseReg;
+    int       printed = 0;
 
-#ifdef TARGET_ARM
-    offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
-#else
-    bool EBPbased;
-    offset  = lvaFrameAddress(lclNum, &EBPbased);
-    baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
+#ifdef TARGET_ARM64
+    if (lvaIsUnknownSizeLocal(lclNum))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        offset            = unkSizeFrame.GetAddressingOffset(varDsc);
+        printed           = printf("[%2s%1s0x%02X*%s] ", getRegName(REG_UNKBASE), (offset < 0 ? "-" : "+"),
+                                   (offset < 0 ? -offset : offset), varDsc->TypeIs(TYP_MASK) ? "PL" : "VL");
+    }
+    else
 #endif
+    {
+#ifdef TARGET_ARM
+        offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
+#else
+        bool EBPbased;
+        offset  = lvaFrameAddress(lclNum, &EBPbased);
+        baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
+#endif
+        printed =
+            printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    }
 
-    int printed =
-        printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
     if ((printed >= 0) && (printed < minLength))
     {
         printf("%*s", minLength - printed, "");

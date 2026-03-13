@@ -2721,6 +2721,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
+        assert(!lvaIsUnknownSizeLocal(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -2744,7 +2745,7 @@ inline
 #endif // !TARGET_AMD64
         }
 
-        FPbased = varDsc->lvFramePointerBased && !lvaIsUnknownSizeLocal(varNum);
+        FPbased = varDsc->lvFramePointerBased;
 
 #ifdef DEBUG
 #if FEATURE_FIXED_OUT_ARGS
@@ -2765,17 +2766,7 @@ inline
         }
 #endif // DEBUG
 
-#ifdef TARGET_ARM64
-        if (lvaIsUnknownSizeLocal(varNum) && !varDsc->lvIsStructField)
-        {
-            assert(!FPbased);
-            varOffset = unkSizeFrame.GetOffset(varDsc->GetStackOffset(), varDsc->TypeIs(TYP_MASK));
-        }
-        else
-#endif
-        {
-            varOffset = varDsc->GetStackOffset();
-        }
+        varOffset = varDsc->GetStackOffset();
     }
     else // Its a spill-temp
     {
@@ -2789,6 +2780,7 @@ inline
                 tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
             }
             assert(tmpDsc != nullptr);
+            assert(!varTypeHasUnknownSize(tmpDsc->tdTempType()));
             varOffset = tmpDsc->tdTempOffs();
         }
         else

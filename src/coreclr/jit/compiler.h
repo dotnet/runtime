@@ -4282,6 +4282,15 @@ public:
             return -(int)(offset + 1);
         }
 
+        // Given a local on the UnknownSizeFrame, compute the offset used for addressing
+        // this local relative to the base address of the UnknownSizeFrame. This offset
+        // can be used with addvl/addpl for TYP_SIMD/TYP_MASK respectively. The offset
+        // needs to be scaled by VL/PL to produce an absolute address value.
+        int GetAddressingOffset(LclVarDsc* varDsc)
+        {
+            return GetOffset(varDsc->GetStackOffset(), varDsc->TypeIs(TYP_MASK));
+        }
+
         // This system ensures we don't try and generate an address on the frame
         // without finishing all allocations.
         void Finalize()
