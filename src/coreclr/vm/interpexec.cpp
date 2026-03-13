@@ -208,7 +208,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 void InvokeCalliStub(CalliStubParam* pParam);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
-void* GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -3068,7 +3068,7 @@ SWITCH_OPCODE:
                                 // nullptr type context is safe here — this path is only reached for
                                 // JIT helper portable entry points which are non-generic.
                                 MetaSig sig(pSig, cbSig, pModule, nullptr);
-                                cookie = GetCookieForCalliSig(sig);
+                                cookie = GetCookieForCalliSig(sig, nullptr);
                                 VolatileStoreWithoutBarrier(&pMethod->pDataItems[calliCookie + 1], cookie);
                             }
                         }
