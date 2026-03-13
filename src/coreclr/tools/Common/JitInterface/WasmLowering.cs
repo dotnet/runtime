@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 using Internal.TypeSystem;
@@ -119,6 +119,30 @@ namespace Internal.JitInterface
                 default:
                     throw new NotSupportedException($"Unknown wasm mapping for type: {type.UnderlyingType.Category}");
             }
+        }
+
+        private static TypeDesc RaiseType(WasmValueType valueType, TypeSystemContext context)
+        {
+            return valueType switch
+            {
+                WasmValueType.I32 => context.GetWellKnownType(WellKnownType.Int32),
+                WasmValueType.I64 => context.GetWellKnownType(WellKnownType.Int64),
+                WasmValueType.F32 => context.GetWellKnownType(WellKnownType.Single),
+                WasmValueType.F64 => context.GetWellKnownType(WellKnownType.Double),
+                WasmValueType.V128 => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
+                _ => throw new InvalidOperationException("Unknown WasmValueType: " + valueType),
+            };
+        }
+
+        public static MethodSignature RaiseSignature(WasmFuncType funcType, TypeSystemContext context)
+        {
+            List<TypeDesc> parameters = new List<TypeDesc>();
+            for (int i = 1; i < funcType.Params.Types.Length - 1; i++)
+            {
+                parameters.Add(RaiseType(funcType.Params.Types[i], context));
+            }
+            TypeDesc returnType = funcType.Returns.Types.Length > 0 ? RaiseType(funcType.Returns.Types[0], context) : context.GetWellKnownType(WellKnownType.Void);
+            return new MethodSignature(MethodSignatureFlags.Static, 0, returnType, parameters.ToArray());
         }
 
         /// <summary>

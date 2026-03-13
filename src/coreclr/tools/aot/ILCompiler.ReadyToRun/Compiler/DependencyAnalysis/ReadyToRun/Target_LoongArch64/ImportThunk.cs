@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         protected override void EmitCode(NodeFactory factory, ref LoongArch64Emitter instructionEncoder, bool relocsOnly)
         {
-            if (_thunkKind == Kind.Eager)
+            if (_thunkKind == ImportThunkKind.Eager)
             {
                 // branch to helper
                 instructionEncoder.EmitJMP(_helperCell);
@@ -32,9 +32,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             switch (_thunkKind)
             {
-                case Kind.DelayLoadHelper:
-                case Kind.VirtualStubDispatch:
-                case Kind.DelayLoadHelperWithExistingIndirectionCell:
+                case ImportThunkKind.DelayLoadHelper:
+                case ImportThunkKind.VirtualStubDispatch:
+                case ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell:
                 {
                     // T8 contains indirection cell
                     // Do nothing T8=R20 contains our first param
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
                 }
 
-                case Kind.Lazy:
+                case ImportThunkKind.Lazy:
                 {
                     instructionEncoder.EmitLD(Register.R5, factory.ModuleImport);
                     break;

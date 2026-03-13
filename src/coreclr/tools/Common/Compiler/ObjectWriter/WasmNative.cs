@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
-
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
@@ -14,6 +14,7 @@ namespace ILCompiler.ObjectWriter
     {
         int EncodeSize();
         int Encode(Span<byte> buffer);
+        Relocation[] GetRelocations() => Array.Empty<Relocation>();
     }
 
     public enum WasmSectionType
