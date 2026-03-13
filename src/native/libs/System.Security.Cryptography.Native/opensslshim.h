@@ -606,6 +606,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(OPENSSL_sk_pop) \
     REQUIRED_FUNCTION(OPENSSL_sk_pop_free) \
     REQUIRED_FUNCTION(OPENSSL_sk_push) \
+    LIGHTUP_FUNCTION(OPENSSL_sk_set_thunks) \
     REQUIRED_FUNCTION(OPENSSL_sk_value) \
     REQUIRED_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_LIB_CTX_free) \
@@ -1173,6 +1174,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OPENSSL_sk_pop OPENSSL_sk_pop_ptr
 #define OPENSSL_sk_pop_free OPENSSL_sk_pop_free_ptr
 #define OPENSSL_sk_push OPENSSL_sk_push_ptr
+#define OPENSSL_sk_set_thunks OPENSSL_sk_set_thunks_ptr
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define OSSL_LIB_CTX_free OSSL_LIB_CTX_free_ptr
