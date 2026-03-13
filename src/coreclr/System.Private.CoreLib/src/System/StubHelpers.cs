@@ -1600,6 +1600,8 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
         [UnmanagedCallersOnly]
+        // pResult is an unmanaged ARG_SLOT* (see vm/callhelpers.h). ARG_SLOT is always 8 bytes,
+        // so we use ulong purely as a fixed-width bit container, not for numeric semantics.
         private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
         {
             try
@@ -1616,6 +1618,8 @@ namespace System.StubHelpers
         }
 
         [SupportedOSPlatform("windows")]
+        // Convert a managed primitive return value into raw ARG_SLOT bits.
+        // For signed integral inputs, unchecked casts preserve the original two's-complement bit pattern.
         private static ulong ConvertToArgSlot(object? value)
         {
             return value switch
