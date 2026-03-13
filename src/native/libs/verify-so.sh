@@ -11,7 +11,7 @@ while read -r line; do
     # AddressSanitizer-instrumented shared libraries don't define the
     # symbols from the ASAN runtime. They are provided by the entry executable.
     # Therefore, we ignore them here as they're expected to not be present.
-    if [[ "$sym" =~ "^__asan" ]]; then
+    if [[ "$sym" =~ ^"__asan" ]]; then
       continue
     fi
 
@@ -19,7 +19,7 @@ while read -r line; do
       printf "Undefined symbol(s) found:\n"
     fi
 
-    printf " %s\n" "${array[2]}"
+    printf " %s\n" "${sym}"
     ((count++))
   fi
 done < <(ldd -r $1 2>&1)
