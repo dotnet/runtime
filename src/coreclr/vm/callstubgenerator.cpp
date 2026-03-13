@@ -2298,20 +2298,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             }
         }
         else
-#elif defined(TARGET_ARM) && defined(ARM_SOFTFP)
-        if (argLocDesc.m_cGenReg > 1 && argLocDesc.m_byteStackSize > 4)
-        {
-            ArgLocDesc argLocDescReg = {};
-            argLocDescReg.m_idxGenReg = argLocDesc.m_idxGenReg;
-            argLocDescReg.m_cGenReg = argLocDesc.m_cGenReg;
-            ProcessArgument(&argIt, argLocDescReg, pRoutines);
-
-            ArgLocDesc argLocDescStack = {};
-            argLocDescStack.m_byteStackIndex = argLocDesc.m_byteStackIndex;
-            argLocDescStack.m_byteStackSize = argLocDesc.m_byteStackSize;
-            ProcessArgument(&argIt, argLocDescStack, pRoutines);
-        }
-        else
 #endif // UNIX_AMD64_ABI
         {
             ProcessArgument(&argIt, argLocDesc, pRoutines);
@@ -2387,10 +2373,10 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     RoutineType argType = RoutineType::None;
 #ifdef TARGET_ARM
-    bool needToHandleAs4B = false;
+    bool useRoutine4B = false;
     if ((argLocDesc.m_cGenReg * 4 + argLocDesc.m_byteStackSize) >= 8)
     {
-        needToHandleAs4B = true;
+        useRoutine4B = true;
     }
     else
 #endif // TARGET_ARM
@@ -2426,7 +2412,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg));
 #ifdef TARGET_ARM
-        if (needToHandleAs4B)
+        if (useRoutine4B)
         {
             pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
         }
@@ -2510,7 +2496,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         LOG2((LF2_INTERPRETER, LL_INFO10000, "m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize));
 #ifdef TARGET_ARM
-        if (needToHandleAs4B)
+        if (useRoutine4B)
         {
             pRoutines[m_routineIndex++] = GetStackRoutine_4B();
             pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
@@ -2613,6 +2599,15 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 #endif // UNIX_AMD64_ABI
+#ifdef TARGET_ARM
+    if (useRoutine4B)
+    {
+        if ((argLocDesc.m_cGenReg * 4 + argLocDesc.m_byteStackSize) % INTERP_STACK_SLOT_SIZE != 0)
+        {
+            pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
+        }
+    }
+#endif // TARGET_ARM
 
     m_currentRoutineType = argType;
 }
