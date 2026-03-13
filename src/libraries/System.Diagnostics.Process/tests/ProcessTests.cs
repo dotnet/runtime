@@ -192,7 +192,7 @@ namespace System.Diagnostics.Tests
                         Assert.NotNull(p);
                         p?.Dispose();
 
-                        // Used for checking that Dispose returned and did not stuck
+                        // Used for checking that Dispose returned and did not get stuck
                         Console.WriteLine(PosixSignalHandlerDisposedMessage);
 
                         receivedSignalEvent.Set();
