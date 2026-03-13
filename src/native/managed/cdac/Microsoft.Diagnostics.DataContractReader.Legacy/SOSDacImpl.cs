@@ -2939,7 +2939,8 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.IException contract = _target.Contracts.Exception;
             TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(
                 exception.ToTargetPointer(_target),
-                out TargetPointer nextNestedExceptionLocal);
+                out TargetPointer nextNestedExceptionLocal,
+                out _);
             *exceptionObject = exceptionObjectLocal.ToClrDataAddress(_target);
             *nextNestedException = nextNestedExceptionLocal.Value;
         }

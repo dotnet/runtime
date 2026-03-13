@@ -130,11 +130,14 @@
 
     <ItemGroup>
       <SharedFrameworkAssembly RootMode="library" />
+      <_SharedFrameworkRootAssemblyName Include="@(SharedFrameworkAssembly->'%(Filename)')">
+        <RootMode>library</RootMode>
+      </_SharedFrameworkRootAssemblyName>
     </ItemGroup>
 
     <MakeDir Directories="$(SharedFrameworkAssembliesTrimDir)" />
-    <ILLink AssemblyPaths=""
-        RootAssemblyNames="@(SharedFrameworkAssembly)"
+    <ILLink AssemblyPaths="@(SharedFrameworkAssembly)"
+        RootAssemblyNames="@(_SharedFrameworkRootAssemblyName)"
         OutputDirectory="$(SharedFrameworkAssembliesTrimDir)"
         ExtraArgs="$(SharedFrameworkILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
