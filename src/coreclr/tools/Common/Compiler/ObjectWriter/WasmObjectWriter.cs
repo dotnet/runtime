@@ -300,8 +300,8 @@ namespace ILCompiler.ObjectWriter
             writer.WriteByte(0x01); // number of tables
             writer.WriteByte(0x70); // element type: funcref
             writer.WriteByte(0x01); // table limits: flags (1 = has maximum)
-            writer.WriteULEB128((ulong)0);
-            writer.WriteULEB128((ulong)_methodCount); // table limits: initial size in number of entries
+            writer.WriteULEB128((ulong)_methodCount); // minimum
+            writer.WriteULEB128((ulong)_methodCount); // maximum
         }
 
         private void PrependCount(WasmSection section, int count)
