@@ -198,6 +198,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_SP            0x00000200
 #define PTFF_SAVE_R4            0x00000800
 #define PTFF_SAVE_R5            0x00001000
+#define PTFF_SAVE_R6            0x00002000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
 #define PTFF_THREAD_HIJACK      0x80000000
 

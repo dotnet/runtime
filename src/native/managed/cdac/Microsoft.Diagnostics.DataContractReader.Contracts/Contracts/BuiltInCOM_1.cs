@@ -198,4 +198,23 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.CtxEntry ctxEntry = _target.ProcessedData.GetOrAdd<Data.CtxEntry>(ctxEntryPtr);
         return ctxEntry.STAThread;
     }
+
+    public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw)
+    {
+        Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
+        foreach (Data.InterfaceEntry entry in rcwData.InterfaceEntries)
+        {
+            if (entry.Unknown != TargetPointer.Null)
+            {
+                yield return (entry.MethodTable, entry.Unknown);
+            }
+        }
+    }
+
+    public TargetPointer GetRCWContext(TargetPointer rcw)
+    {
+        Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
+
+        return rcwData.CtxCookie;
+    }
 }
