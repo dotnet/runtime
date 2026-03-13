@@ -479,19 +479,6 @@ namespace System
             Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
         }
 
-        [UnmanagedCallersOnly]
-        private static unsafe void DelegateConstructUco(Delegate* pDelegate, object* pTarget, IntPtr method, Exception* pException)
-        {
-            try
-            {
-                (*pDelegate).DelegateConstruct(*pTarget, method);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
         private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 

@@ -539,6 +539,20 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         // Retrieve the EE class representing the argument.
         MethodTable *pDelegateCls = MethodSig.GetLastTypeHandleThrowing().GetMethodTable();
 
+        // Initialize the delegate using the arguments structure.
+        // <TODO>Generics: ensure we get the right MethodDesc here and in similar places</TODO>
+        // Accept both void (object, native int) and void (object, native uint)
+        MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
+        BOOL useUIntPtrCtor = FALSE;
+        if (pDlgCtorMD == NULL)
+        {
+            pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
+            useUIntPtrCtor = TRUE;
+        }
+
+        // The loader is responsible for only accepting well-formed delegate classes.
+        _ASSERTE(pDlgCtorMD);
+
         // Make sure we activate the assembly containing the target method desc
         pEventMethodDesc->EnsureActive();
 
@@ -547,13 +561,17 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
 
         GCPROTECT_BEGIN( pDelegate );
         {
-            UnmanagedCallersOnlyCaller delegateCtor(METHOD__DELEGATE__CONSTRUCT_DELEGATE_UCO);
-            delegateCtor.InvokeThrowing(&pDelegate, &pSubscriber, (INT_PTR)pEventMethodDesc->GetMultiCallableAddrOfCode());
-
             UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
-            // Do the actual invocation of the provider method.
-            invokeConnectionPointProviderMethod.InvokeThrowing(&pProvider, (INT_PTR)pProvMethodDesc, &pDelegate);
+            // Construct the delegate and invoke the provider method in one helper.
+            invokeConnectionPointProviderMethod.InvokeThrowing(
+                &pProvider,
+                (INT_PTR)pProvMethodDesc,
+                &pDelegate,
+                (INT_PTR)pDlgCtorMD,
+                &pSubscriber,
+                (INT_PTR)pEventMethodDesc->GetMultiCallableAddrOfCode(),
+                CLR_BOOL_ARG(useUIntPtrCtor));
         }
         GCPROTECT_END();
     }

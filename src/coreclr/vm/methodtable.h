@@ -1062,9 +1062,6 @@ public:
     BOOL                    SetComClassFactory(ClassFactoryBase *pFactory);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-    OBJECTREF GetObjCreateDelegate();
-    void SetObjCreateDelegate(OBJECTREF orDelegate);
-
 private:
     // This is for COM Interop backwards compatibility
     BOOL InsertComInteropData(InteropMethodTableData *pData);

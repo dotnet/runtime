@@ -4665,7 +4665,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pClassComMT = NULL;        // Defer setting this up.
         pTemplate->m_pBasicComMT = NULL;
         pTemplate->m_pDefaultItf = NULL;
-        pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
         pTemplate->m_flags = 0;
 
         // Determine the COM visibility of classes in our hierarchy.
@@ -4785,7 +4784,6 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
     pTemplate->m_pClassComMT = NULL;
     pTemplate->m_pBasicComMT = NULL;
     pTemplate->m_pDefaultItf = pItfMT;
-    pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
     pTemplate->m_flags = enum_RepresentsVariantInterface;
 
     // Initialize the one ComMethodTable
@@ -4918,24 +4916,6 @@ ComMethodTable *ComCallWrapperTemplate::SetupComMethodTableForClass(MethodTable 
     RETURN pIClassXComMT;
 }
 
-
-MethodDesc * ComCallWrapperTemplate::GetICustomQueryInterfaceGetInterfaceMD()
-{
-    CONTRACT (MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(m_flags & enum_ImplementsICustomQueryInterface);
-    }
-    CONTRACT_END;
-
-    if (m_pICustomQueryInterfaceGetInterfaceMD == NULL)
-        m_pICustomQueryInterfaceGetInterfaceMD = m_thClass.GetMethodTable()->GetMethodDescForInterfaceMethod(
-           CoreLibBinder::GetMethod(METHOD__ICUSTOM_QUERYINTERFACE__GET_INTERFACE),
-           TRUE /* throwOnConflict */);
-    RETURN m_pICustomQueryInterfaceGetInterfaceMD;
-}
 
 //--------------------------------------------------------------------------
 //  Module* ComCallMethodDesc::GetModule()

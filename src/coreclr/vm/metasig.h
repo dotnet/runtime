@@ -214,13 +214,10 @@ DEFINE_METASIG(SM(RefByte_RefByte_UIntPtr_RetVoid, r(b) r(b) U, v))
 DEFINE_METASIG(SM(RefByte_Byte_UIntPtr_RetVoid, r(b) b U, v))
 DEFINE_METASIG(SM(RefByte_UIntPtr_RetVoid, r(b) U, v))
 DEFINE_METASIG(SM(PtrVoid_Byte_UInt_RetVoid, P(v) b K, v))
-DEFINE_METASIG_T(SM(PtrDelegate_IntPtr_PtrIntPtr_PtrException_RetVoid, P(C(DELEGATE)) I P(I) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrDelegate_PtrObj_IntPtr_PtrException_RetVoid, P(C(DELEGATE)) P(j) I P(C(EXCEPTION)), v))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrICustomQueryInterface_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid, P(C(ICUSTOM_QUERYINTERFACE)) P(g(GUID)) P(I) P(i) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMINTEROP
-DEFINE_METASIG_T(SM(PtrObj_IntPtr_PtrDelegate_PtrException_RetVoid, P(j) I P(C(DELEGATE)) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrObj_IntPtr_PtrDelegate_PtrIntPtr_PtrException_RetVoid, P(j) I P(C(DELEGATE)) P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrObj_IntPtr_PtrObj_IntPtr_PtrObj_IntPtr_Bool_PtrException_RetVoid, P(j) I P(j) I P(j) I F P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrPropertyInfo_PtrInt_PtrException_RetVoid, P(C(PROPERTY_INFO)) P(i) P(C(EXCEPTION)), v))
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_RetVoid, I r(j) I, v))
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_Int_RetVoid, I r(j) I i,v))
@@ -438,6 +435,7 @@ DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrClass_PtrStr_Int_PtrObj_PtrArrObj_PtrArrBool_PtrArrInt_PtrArrType_PtrType_PtrObj_PtrException_RetVoid, P(C(CLASS)) P(s) i P(j) P(a(j)) P(a(F)) P(a(i)) P(a(C(TYPE))) P(C(TYPE)) P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrComObject_PtrClass_PtrObj_PtrException_RetVoid, P(C(COM_OBJECT)) P(C(CLASS)) P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrComObject_PtrClass_IntPtr_PtrDelegate_PtrIntPtr_PtrException_RetVoid, P(C(COM_OBJECT)) P(C(CLASS)) I P(C(DELEGATE)) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrLicenseInteropProxy_IntPtr_PtrException_RetVoid, P(C(LICENSE_INTEROP_PROXY)) I P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrLicenseInteropProxy_PtrType_PtrBool_PtrIntPtr_PtrException_RetVoid, P(C(LICENSE_INTEROP_PROXY)) P(C(TYPE)) P(F) P(I) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMINTEROP

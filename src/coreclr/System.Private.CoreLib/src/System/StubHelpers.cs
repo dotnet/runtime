@@ -1532,14 +1532,65 @@ namespace System.StubHelpers
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Signature GetMethodSignature(RuntimeMethodHandle methodHandle)
+        {
+            IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
+            return new Signature(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe object? InvokeMethodWithArgs(object? target, RuntimeMethodHandle methodHandle, Span<object?> copyOfArgs)
+        {
+            Signature signature = GetMethodSignature(methodHandle);
+
+            MethodBase.StackAllocatedByRefs byrefs = default;
+            IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
+
+            for (int i = 0; i < copyOfArgs.Length; i++)
+            {
+                *(ByReference*)(pByRefFixedStorage + i) = ByReference.Create(ref copyOfArgs[i]);
+            }
+
+            return RuntimeMethodHandle.InvokeMethod(target, (void**)pByRefFixedStorage, signature, isConstructor: false);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe object? InvokeMethodWithOneArg(object? target, RuntimeMethodHandle methodHandle, object? arg0)
+        {
+            MethodBase.StackAllocatedArguments stackStorage = new(arg0, null, null, null);
+            return InvokeMethodWithArgs(target, methodHandle, ((Span<object?>)stackStorage._args).Slice(0, 1));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe object? InvokeMethodWithTwoArgs(object? target, RuntimeMethodHandle methodHandle, object? arg0, object? arg1)
+        {
+            MethodBase.StackAllocatedArguments stackStorage = new(arg0, arg1, null, null);
+            return InvokeMethodWithArgs(target, methodHandle, ((Span<object?>)stackStorage._args).Slice(0, 2));
+        }
+
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
-        private static unsafe void InvokeComObjectCreationCallback(Delegate* pDelegate, IntPtr pOuter, IntPtr* pResult, Exception* pException)
+        private static unsafe void InvokeConnectionPointProviderMethod(
+            object* pProvider,
+            IntPtr pProviderMethodDesc,
+            object* pDelegate,
+            IntPtr pDelegateCtorMethodDesc,
+            object* pSubscriber,
+            IntPtr pEventMethodCodePtr,
+            bool useUIntPtrCtor,
+            Exception* pException)
         {
             try
             {
-                object? callbackResult = (*pDelegate).DynamicInvoke([pOuter]);
-                *pResult = callbackResult is null ? IntPtr.Zero : (IntPtr)callbackResult;
+                RuntimeMethodHandle delegateCtorMethodHandle = RuntimeMethodHandle.FromIntPtr(pDelegateCtorMethodDesc);
+                object eventMethodCodeArg = useUIntPtrCtor ? unchecked((UIntPtr)(nuint)pEventMethodCodePtr) : pEventMethodCodePtr;
+
+                // Construct the delegate before invoking the provider method.
+                InvokeMethodWithTwoArgs(*pDelegate, delegateCtorMethodHandle, *pSubscriber, eventMethodCodeArg);
+
+                RuntimeMethodHandle providerMethodHandle = RuntimeMethodHandle.FromIntPtr(pProviderMethodDesc);
+                InvokeMethodWithOneArg(*pProvider, providerMethodHandle, *pDelegate);
             }
             catch (Exception ex)
             {
@@ -1548,35 +1599,20 @@ namespace System.StubHelpers
         }
 
         [SupportedOSPlatform("windows")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
         [UnmanagedCallersOnly]
-        private static unsafe void InvokeConnectionPointProviderMethod(object* pProvider, IntPtr pMethodDesc, Delegate* pDelegate, Exception* pException)
+        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, IntPtr* pResult, Exception* pException)
         {
             try
             {
+                object eventProvider = pComObject->GetEventProvider(*pProviderType);
                 RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
-                MethodBase method = MethodBase.GetMethodFromHandle(methodHandle)!;
-                method.Invoke(*pProvider, [*pDelegate]);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex is TargetInvocationException { InnerException: Exception inner } ? inner : ex;
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        [UnmanagedCallersOnly]
-        private static unsafe void InvokeClrToComEventProviderMethod(object* pEventProvider, IntPtr pMethodDesc, Delegate* pEventHandler, IntPtr* pResult, Exception* pException)
-        {
-            try
-            {
-                RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
-                MethodBase method = MethodBase.GetMethodFromHandle(methodHandle)!;
-                object? result = method.Invoke(*pEventProvider, [*pEventHandler]);
+                object? result = InvokeMethodWithOneArg(eventProvider, methodHandle, *pEventHandler);
                 *pResult = ConvertToArgSlot(result);
             }
             catch (Exception ex)
             {
-                *pException = ex is TargetInvocationException { InnerException: Exception inner } ? inner : ex;
+                *pException = ex;
             }
         }
 

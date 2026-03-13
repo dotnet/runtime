@@ -297,11 +297,9 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
 
     struct {
         OBJECTREF EventProviderTypeObj;
-        OBJECTREF EventProviderObj;
         OBJECTREF ThisObj;
     } gc;
     gc.EventProviderTypeObj = NULL;
-    gc.EventProviderObj = NULL;
     gc.ThisObj = NULL;
 
     LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
@@ -316,11 +314,6 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         gc.EventProviderTypeObj = pEvProvMT->GetManagedClassObject();
         gc.ThisObj = pFrame->GetThis();
 
-        UnmanagedCallersOnlyCaller getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER);
-
-        // Retrieve the event provider for the event interface type.
-        getEventProvider.InvokeThrowing(&gc.ThisObj, &gc.EventProviderTypeObj, &gc.EventProviderObj);
-
         // Set up an arg iterator to retrieve the arguments from the frame.
         MetaSig mSig(pMD);
         ArgIterator ArgItr(&mSig);
@@ -330,7 +323,12 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
 
         INT_PTR eventProviderResult = NULL;
         UnmanagedCallersOnlyCaller invokeClrToComEventProviderMethod(METHOD__STUBHELPERS__INVOKE_CLR_TO_COM_EVENT_PROVIDER_METHOD);
-        invokeClrToComEventProviderMethod.InvokeThrowing(&gc.EventProviderObj, (INT_PTR)pEvProvMD, &EventHandlerObj, &eventProviderResult);
+        invokeClrToComEventProviderMethod.InvokeThrowing(
+            &gc.ThisObj,
+            &gc.EventProviderTypeObj,
+            (INT_PTR)pEvProvMD,
+            &EventHandlerObj,
+            &eventProviderResult);
 
         //
         // If this can ever return something bigger than an INT64 byval
