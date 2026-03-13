@@ -410,8 +410,41 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             }
             else
             {
-                // TODL: If block is try start, probably need a block sig here
-                GetEmitter()->emitIns_BlockTy(INS_block);
+                assert(interval->IsBlock());
+
+                bool isTryWrapper = false;
+
+                // If this interval exactly wraps a try, it represents the branch to the
+                // catch handlers. We need to emit an exnref block sig
+                //
+                // (TODO, perhaps ... detect this earlier and make it an interval property)
+                if ((wasmCursor + 1) < m_compiler->fgWasmIntervals->size())
+                {
+                    WasmInterval* nextInterval = m_compiler->fgWasmIntervals->at(wasmCursor + 1);
+                    if (nextInterval->IsTry())
+                    {
+                        // we should always see a wrapping block because of the
+                        // control flow added by fgWasmEhFlow
+                        //
+                        if ((nextInterval->Start() == interval->Start()) && (nextInterval->End() == interval->End()))
+                        {
+                            isTryWrapper = true;
+                        }
+                        else
+                        {
+                            assert(!"Expected block to wrap the try");
+                        }
+                    }
+                }
+
+                if (isTryWrapper)
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block);
+                }
             }
 
             wasmCursor++;

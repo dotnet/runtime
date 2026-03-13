@@ -450,6 +450,7 @@ uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
         0x7D, // WasmValueType::F32 = 3,
         0x7C, // WasmValueType::F64 = 4,
         0x7B, // WasmValueType::V128 = 5,
+        0x69, // WasmValueType::ExnRef = 6;
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
@@ -535,8 +536,9 @@ unsigned emitter::instrDesc::idCodeSize() const
         {
             // no opcode, this is part of a try_table
 
-            size = 1;                                  // catch kind
-            size += PADDED_RELOC_SIZE;                 // catch type tag
+            size = 1; // catch kind
+            // TODO: tag index
+            // size += PADDED_RELOC_SIZE;                 // catch type tag
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
@@ -787,18 +789,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputOpcode(dst, ins);
             assert(id->idIsValTypeImm());
-            uint8_t        sig     = GetWasmValueTypeCode(emitGetValTypeImmType(id));
+
+            // Add void as a WasmValueType?
+            //
+            WasmValueType valType = emitGetValTypeImmType(id);
+            uint8_t       sig     = GetWasmValueTypeCode(valType);
+            if (valType == WasmValueType::Invalid)
+            {
+                sig = 0x40;
+            }
             cnsval_ssize_t caseCnt = emitGetValTypeImmImm(id);
+
             dst += emitOutputByte(dst, sig);
             dst += emitOutputULEB128(dst, (uint64_t)caseCnt);
             break;
         }
         case IF_CATCH_DECL:
         {
-            uint8_t catchKind = 1; // catch_ref with type tag
+            uint8_t catchKind = 3; // should be 1: catch_ref with type tag
             dst += emitOutputByte(dst, catchKind);
-            // TODO: figure out how to get proper type index here
-            dst += emitOutputPaddedReloc(dst);
+            // TODO: figure out how to get proper tag index here
+            // dst += emitOutputPaddedReloc(dst);
             dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;
         }
