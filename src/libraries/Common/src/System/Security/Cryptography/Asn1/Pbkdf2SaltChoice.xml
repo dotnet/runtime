@@ -21,6 +21,5 @@
   <asn:OctetString name="Specified" />
   <asn:AsnType
     name="OtherSource"
-    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
 </asn:Choice>

@@ -16,7 +16,6 @@
   -->
   <asn:AsnType
     name="Specified"
-    typeName="System.Security.Cryptography.Asn1.SpecifiedECDomain"
     valueTypeName="System.Security.Cryptography.Asn1.ValueSpecifiedECDomain" />
   <asn:ObjectIdentifier name="Named" />
 </asn:Choice>

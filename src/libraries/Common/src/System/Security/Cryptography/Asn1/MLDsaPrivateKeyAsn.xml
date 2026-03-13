@@ -39,6 +39,5 @@ ML-DSA-87-PrivateKey ::= CHOICE {
   <asn:OctetString name="ExpandedKey" />
   <asn:AsnType
     name="Both"
-    typeName="System.Security.Cryptography.Asn1.MLDsaPrivateKeyBothAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn"/>
 </asn:Choice>

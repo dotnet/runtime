@@ -15,10 +15,8 @@
   -->
   <asn:AsnType
     name="KeyDerivationFunc"
-    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
   <asn:AsnType
     name="EncryptionScheme"
-    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
 </asn:Sequence>

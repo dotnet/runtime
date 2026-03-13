@@ -39,6 +39,5 @@
   <asn:OctetString name="ExpandedKey" />
   <asn:AsnType
     name="Both"
-    typeName="System.Security.Cryptography.Asn1.MLKemPrivateKeyBothAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueMLKemPrivateKeyBothAsn" />
 </asn:Choice>
