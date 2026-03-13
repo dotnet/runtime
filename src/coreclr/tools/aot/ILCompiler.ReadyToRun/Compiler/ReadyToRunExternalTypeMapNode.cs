@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
