@@ -110,8 +110,18 @@ namespace System.Security.Cryptography.Asn1
     internal ref partial struct ValueAlgorithmIdentifierAsn
     {
         internal string Algorithm;
-        internal ReadOnlySpan<byte> Parameters;
-        internal bool HasParameters;
+
+        internal ReadOnlySpan<byte> Parameters
+        {
+            get;
+            set
+            {
+                HasParameters = true;
+                field = value;
+            }
+        }
+
+        internal bool HasParameters { get; private set; }
 
         internal readonly void Encode(AsnWriter writer)
         {

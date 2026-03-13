@@ -39,12 +39,42 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValueMLDsaPrivateKeyAsn
     {
-        internal ReadOnlySpan<byte> Seed;
-        internal bool HasSeed;
-        internal ReadOnlySpan<byte> ExpandedKey;
-        internal bool HasExpandedKey;
-        internal System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn Both;
-        internal bool HasBoth;
+
+        internal ReadOnlySpan<byte> Seed
+        {
+            get;
+            set
+            {
+                HasSeed = true;
+                field = value;
+            }
+        }
+
+        internal bool HasSeed { get; private set; }
+
+        internal ReadOnlySpan<byte> ExpandedKey
+        {
+            get;
+            set
+            {
+                HasExpandedKey = true;
+                field = value;
+            }
+        }
+
+        internal bool HasExpandedKey { get; private set; }
+
+        internal System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn Both
+        {
+            get;
+            set
+            {
+                HasBoth = true;
+                field = value;
+            }
+        }
+
+        internal bool HasBoth { get; private set; }
 
 #if DEBUG
         static ValueMLDsaPrivateKeyAsn()

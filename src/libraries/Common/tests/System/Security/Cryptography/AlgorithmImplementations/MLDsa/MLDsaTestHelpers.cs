@@ -141,7 +141,6 @@ namespace System.Security.Cryptography.Tests
             ValueMLDsaPrivateKeyAsn privateKeyAsn = new ValueMLDsaPrivateKeyAsn
             {
                 ExpandedKey = privateKey,
-                HasExpandedKey = true,
             };
             privateKeyAsn.Encode(writer);
 
@@ -182,7 +181,6 @@ namespace System.Security.Cryptography.Tests
             ValueMLDsaPrivateKeyAsn privateKey = new ValueMLDsaPrivateKeyAsn
             {
                 Seed = privateSeed,
-                HasSeed = true,
             };
             privateKey.Encode(writer);
 

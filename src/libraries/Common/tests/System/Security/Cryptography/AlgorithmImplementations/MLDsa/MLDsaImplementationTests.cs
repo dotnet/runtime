@@ -273,7 +273,6 @@ namespace System.Security.Cryptography.Tests
             ValueMLDsaPrivateKeyAsn seed = new ValueMLDsaPrivateKeyAsn
             {
                 Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
-                HasSeed = true,
             };
             seed.Encode(writer);
 
@@ -306,7 +305,6 @@ namespace System.Security.Cryptography.Tests
             AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
             {
                 Both = new ValueMLDsaPrivateKeyBothAsn(),
-                HasBoth = true,
             });
 
             AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
@@ -315,7 +313,6 @@ namespace System.Security.Cryptography.Tests
                 {
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
                 },
-                HasBoth = true,
             });
 
             AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
@@ -324,7 +321,6 @@ namespace System.Security.Cryptography.Tests
                 {
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes],
                 },
-                HasBoth = true,
             });
 
             AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
@@ -334,7 +330,6 @@ namespace System.Security.Cryptography.Tests
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes - 1],
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes],
                 },
-                HasBoth = true,
             });
 
             AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
@@ -344,7 +339,6 @@ namespace System.Security.Cryptography.Tests
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes - 1],
                 },
-                HasBoth = true,
             });
 
             AssertInvalidAsn(new ValueMLDsaPrivateKeyAsn
@@ -355,7 +349,6 @@ namespace System.Security.Cryptography.Tests
                     Seed = new byte[MLDsaAlgorithm.MLDsa44.PrivateSeedSizeInBytes],
                     ExpandedKey = new byte[MLDsaAlgorithm.MLDsa44.PrivateKeySizeInBytes],
                 },
-                HasBoth = true,
             });
 
             static void AssertInvalidAsn(ValueMLDsaPrivateKeyAsn privateKeyAsn)

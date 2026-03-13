@@ -66,7 +66,6 @@ namespace System.Security.Cryptography.Asn1
 
             if (Parameters is ReadOnlyMemory<byte> parameters)
             {
-                val.HasParameters = true;
                 val.Parameters = parameters.Span;
             }
 

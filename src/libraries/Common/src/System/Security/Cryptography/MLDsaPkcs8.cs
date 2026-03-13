@@ -18,7 +18,6 @@ namespace System.Security.Cryptography
             ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
             {
                 Algorithm = dsa.Algorithm.Oid,
-                HasParameters = false,
             };
 
             ValueMLDsaPrivateKeyAsn privateKeyAsn = default;

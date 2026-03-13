@@ -13,8 +13,18 @@ namespace System.Security.Cryptography.Asn1
     {
         internal ReadOnlySpan<byte> A;
         internal ReadOnlySpan<byte> B;
-        internal ReadOnlySpan<byte> Seed;
-        internal bool HasSeed;
+
+        internal ReadOnlySpan<byte> Seed
+        {
+            get;
+            set
+            {
+                HasSeed = true;
+                field = value;
+            }
+        }
+
+        internal bool HasSeed { get; private set; }
 
         internal readonly void Encode(AsnWriter writer)
         {

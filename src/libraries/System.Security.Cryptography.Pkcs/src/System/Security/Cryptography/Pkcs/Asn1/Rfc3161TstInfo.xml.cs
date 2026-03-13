@@ -244,12 +244,42 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal DateTimeOffset GenTime;
         internal System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy? Accuracy;
         internal bool Ordering;
-        internal ReadOnlySpan<byte> Nonce;
-        internal bool HasNonce;
-        internal ReadOnlySpan<byte> Tsa;
-        internal bool HasTsa;
-        internal ReadOnlySpan<byte> Extensions;
-        internal bool HasExtensions;
+
+        internal ReadOnlySpan<byte> Nonce
+        {
+            get;
+            set
+            {
+                HasNonce = true;
+                field = value;
+            }
+        }
+
+        internal bool HasNonce { get; private set; }
+
+        internal ReadOnlySpan<byte> Tsa
+        {
+            get;
+            set
+            {
+                HasTsa = true;
+                field = value;
+            }
+        }
+
+        internal bool HasTsa { get; private set; }
+
+        internal ReadOnlySpan<byte> Extensions
+        {
+            get;
+            set
+            {
+                HasExtensions = true;
+                field = value;
+            }
+        }
+
+        internal bool HasExtensions { get; private set; }
 
         internal readonly void Encode(AsnWriter writer)
         {

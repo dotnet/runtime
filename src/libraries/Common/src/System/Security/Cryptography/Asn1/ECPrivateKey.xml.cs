@@ -13,10 +13,30 @@ namespace System.Security.Cryptography.Asn1
     {
         internal int Version;
         internal ReadOnlySpan<byte> PrivateKey;
-        internal System.Security.Cryptography.Asn1.ValueECDomainParameters Parameters;
-        internal bool HasParameters;
-        internal ReadOnlySpan<byte> PublicKey;
-        internal bool HasPublicKey;
+
+        internal System.Security.Cryptography.Asn1.ValueECDomainParameters Parameters
+        {
+            get;
+            set
+            {
+                HasParameters = true;
+                field = value;
+            }
+        }
+
+        internal bool HasParameters { get; private set; }
+
+        internal ReadOnlySpan<byte> PublicKey
+        {
+            get;
+            set
+            {
+                HasPublicKey = true;
+                field = value;
+            }
+        }
+
+        internal bool HasPublicKey { get; private set; }
 
         internal readonly void Encode(AsnWriter writer)
         {

@@ -38,8 +38,18 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValueECDomainParameters
     {
-        internal System.Security.Cryptography.Asn1.ValueSpecifiedECDomain Specified;
-        internal bool HasSpecified;
+
+        internal System.Security.Cryptography.Asn1.ValueSpecifiedECDomain Specified
+        {
+            get;
+            set
+            {
+                HasSpecified = true;
+                field = value;
+            }
+        }
+
+        internal bool HasSpecified { get; private set; }
         internal string? Named;
 
 #if DEBUG

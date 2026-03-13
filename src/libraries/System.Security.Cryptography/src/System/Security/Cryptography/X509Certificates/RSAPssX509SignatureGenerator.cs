@@ -86,7 +86,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             parameters.MaskGenAlgorithm.Parameters = writer.Encode();
-            parameters.MaskGenAlgorithm.HasParameters = true;
             writer.Reset();
 
             parameters.Encode(writer);
@@ -95,7 +94,6 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 Algorithm = Oids.RsaPss,
                 Parameters = writer.Encode(),
-                HasParameters = true,
             };
 
             writer.Reset();

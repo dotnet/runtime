@@ -38,10 +38,30 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal ref partial struct ValuePbkdf2SaltChoice
     {
-        internal ReadOnlySpan<byte> Specified;
-        internal bool HasSpecified;
-        internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn OtherSource;
-        internal bool HasOtherSource;
+
+        internal ReadOnlySpan<byte> Specified
+        {
+            get;
+            set
+            {
+                HasSpecified = true;
+                field = value;
+            }
+        }
+
+        internal bool HasSpecified { get; private set; }
+
+        internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn OtherSource
+        {
+            get;
+            set
+            {
+                HasOtherSource = true;
+                field = value;
+            }
+        }
+
+        internal bool HasOtherSource { get; private set; }
 
 #if DEBUG
         static ValuePbkdf2SaltChoice()

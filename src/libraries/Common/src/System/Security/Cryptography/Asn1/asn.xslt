@@ -1123,37 +1123,59 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <!-- ValueFieldDef: types that map to ReadOnlySpan (need companion bool if optional/choice) -->
-  <xsl:template match="asn:AnyValue" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:AnyValue" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:Integer[@backingType = 'ReadOnlyMemory']" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:BitString" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:BitString" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:OctetString" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:OctetString" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
-  <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
 
   <!-- ValueFieldDef: AsnType - uses valueTypeName if present, otherwise typeName -->
-  <xsl:template match="asn:AsnType[@valueTypeName]" mode="ValueFieldDef">
-        internal <xsl:value-of select="@valueTypeName"/> <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:AsnType[@valueTypeName]" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType"><xsl:value-of select="@valueTypeName"/></xsl:with-param></xsl:call-template>
+  </xsl:template>
 
   <xsl:template match="asn:AsnType[not(@valueTypeName) and @rebind='false']" mode="ValueFieldDef">
         internal <xsl:value-of select="@typeName"/><xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
 
-  <xsl:template match="asn:AsnType[not(@valueTypeName) and not(@rebind='false')]" mode="ValueFieldDef">
-        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>;<xsl:if test="@optional | parent::asn:Choice">
-        internal bool Has<xsl:value-of select="@name"/>;</xsl:if></xsl:template>
+  <xsl:template match="asn:AsnType[not(@valueTypeName) and not(@rebind='false')]" mode="ValueFieldDef" xml:space="default">
+    <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
+  </xsl:template>
+
+  <!-- Helper: emits a field if not optional, or a property + companion bool if optional/choice -->
+  <xsl:template name="ValueFieldOrProperty" xml:space="default">
+    <xsl:param name="fieldType" />
+    <xsl:choose>
+      <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
+
+        internal <xsl:value-of select="$fieldType" /><xsl:text> </xsl:text><xsl:value-of select="@name"/>
+        {
+            get;
+            set
+            {
+                Has<xsl:value-of select="@name"/> = true;
+                field = value;
+            }
+        }
+
+        internal bool Has<xsl:value-of select="@name"/> { get; private set; }</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+        internal <xsl:value-of select="$fieldType" /><xsl:text> </xsl:text><xsl:value-of select="@name"/>;</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 
   <!-- ValueFieldDef: types unchanged from regular (delegate to FieldDef) -->
   <xsl:template match="asn:Boolean" mode="ValueFieldDef"><xsl:apply-templates select="." mode="FieldDef"/></xsl:template>

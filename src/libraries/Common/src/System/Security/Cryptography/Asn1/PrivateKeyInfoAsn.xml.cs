@@ -141,8 +141,18 @@ namespace System.Security.Cryptography.Asn1
         internal int Version;
         internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn PrivateKeyAlgorithm;
         internal ReadOnlySpan<byte> PrivateKey;
-        internal ReadOnlySpan<byte> Attributes;
-        internal bool HasAttributes;
+
+        internal ReadOnlySpan<byte> Attributes
+        {
+            get;
+            set
+            {
+                HasAttributes = true;
+                field = value;
+            }
+        }
+
+        internal bool HasAttributes { get; private set; }
 
         internal readonly void Encode(AsnWriter writer)
         {

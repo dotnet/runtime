@@ -18,7 +18,6 @@ namespace System.Security.Cryptography
             ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
             {
                 Algorithm = kem.Algorithm.Oid,
-                HasParameters = false,
             };
 
             ValueMLKemPrivateKeyAsn privateKeyAsn = default;
@@ -35,7 +34,6 @@ namespace System.Security.Cryptography
                     kem.ExportPrivateSeed(buffer);
                     written = buffer.Length;
                     privateKeyAsn.Seed = buffer;
-                    privateKeyAsn.HasSeed = true;
                 }
                 else if (hasDecapsulationKey)
                 {
@@ -45,7 +43,6 @@ namespace System.Security.Cryptography
                     kem.ExportDecapsulationKey(buffer);
                     written = buffer.Length;
                     privateKeyAsn.ExpandedKey = buffer;
-                    privateKeyAsn.HasExpandedKey = true;
                 }
                 else
                 {

@@ -424,7 +424,6 @@ namespace System.Security.Cryptography
                     {
                         Algorithm = Oids.Rsa,
                         Parameters = AlgorithmIdentifierAsn.ExplicitDerNull.Span,
-                        HasParameters = true,
                     },
                     SubjectPublicKey = subjectPublicKey,
                 };

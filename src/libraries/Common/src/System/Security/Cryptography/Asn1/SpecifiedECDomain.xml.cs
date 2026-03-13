@@ -16,8 +16,18 @@ namespace System.Security.Cryptography.Asn1
         internal System.Security.Cryptography.Asn1.ValueCurveAsn Curve;
         internal ReadOnlySpan<byte> Base;
         internal ReadOnlySpan<byte> Order;
-        internal ReadOnlySpan<byte> Cofactor;
-        internal bool HasCofactor;
+
+        internal ReadOnlySpan<byte> Cofactor
+        {
+            get;
+            set
+            {
+                HasCofactor = true;
+                field = value;
+            }
+        }
+
+        internal bool HasCofactor { get; private set; }
         internal string? Hash;
 
         internal readonly void Encode(AsnWriter writer)
