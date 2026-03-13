@@ -17,12 +17,10 @@
     This target hooks into the dotnet CLI publish pipeline. That pipeline has
     a target called ComputeFilesToPublish which produces the ItemGroup
     ResolvedFileToPublish. We modify this item group to control what gets
-    published after NativeAOT optimizes the application. Hooks after ILLink,
-    which runs after ComputeResolvedFilesToPublishList, to ensure correct
-    ordering for scenarios that run both.
+    published after NativeAOT optimizes the application.
   -->
   <Target Name="ComputeLinkedFilesToPublish"
-          AfterTargets="ILLink"
+          AfterTargets="ComputeResolvedFilesToPublishList"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
