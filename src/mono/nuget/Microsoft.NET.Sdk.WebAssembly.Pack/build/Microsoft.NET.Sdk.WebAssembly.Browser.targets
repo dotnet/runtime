@@ -218,7 +218,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
       <!-- true = dotnet.js will have hard fingerprint; false = dotnet.js will have soft fingerprint -->
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
-      <_WasmFingerprintDotnetJs Condition="'$(WasmBundlerFriendlyBootConfig)' == ''">false</_WasmFingerprintDotnetJs>
+      <_WasmFingerprintDotnetJs Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
@@ -669,7 +669,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="EnsureProjectAssetsInOutputDirectoryForBundlerFriendlyBuild"
           BeforeTargets="ResolveBuildStaticWebAssets"
           Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(IsPublishing)' != 'true'">
-    <!-- Fix non-publishing scenarios by treating project assets the way they are treated during publish,
+    <!-- Fix non-publishing scenarios by copying project assets the way they are copied during publish,
          so bundler-friendly builds are complete for the js bundler -->
     <ItemGroup>
       <StaticWebAsset Update="@(StaticWebAsset)" Condition="'%(StaticWebAsset.CopyToPublishDirectory)' != 'Never' and '%(StaticWebAsset.CopyToPublishDirectory)' != ''">
