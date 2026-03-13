@@ -16,8 +16,8 @@ namespace System.Runtime.InteropServices
         private static readonly object s_registerLock = new();
 
         /// <summary>
-        /// Runtime can generate multiple addresses to same function. For registering and unregistering allways
-        /// the same instance, we capture it in this statics.
+        /// Runtime can generate multiple addresses to the same function. To ensure that registering and unregistering always
+        /// use the same instance, we capture it in this static field.
         /// </summary>
         private static readonly unsafe delegate* unmanaged<int, Interop.BOOL> s_handlerRoutineAddr = &HandlerRoutine;
 
