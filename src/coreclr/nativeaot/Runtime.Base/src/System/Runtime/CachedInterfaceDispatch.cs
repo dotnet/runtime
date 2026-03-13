@@ -169,10 +169,9 @@ namespace System.Runtime
             DispatchCell* pDispatchCell = (DispatchCell*)pCell;
 
             // If the dispatch cell doesn't cache anything yet, cache in the dispatch cell
-            if (Interlocked.CompareExchange(ref pDispatchCell->MethodTable, (nint)pInstanceType, 0) == 0)
+            if (Interlocked.CompareExchange(ref pDispatchCell->Code, pTargetCode, 0) == 0)
             {
-                // TODO: Michal doing lockfree code danger
-                pDispatchCell->Code = pTargetCode;
+                pDispatchCell->MethodTable = (nint)pInstanceType;
             }
             else
             {

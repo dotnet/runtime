@@ -24,6 +24,15 @@ LEAF_ENTRY DispatchName, _TEXT
         ;; to a NullReferenceException at the callsite.
         mov     r10, [rcx]
 
+        ;; r11 currently contains the indirection cell address.
+        cmp     qword ptr [r11], r10 ;; is this the monomorhpic MethodTable?
+        jne     @F
+
+        mov     rax, [r11 + 8] ;; load the cached monomorphic resolved code address into rax
+        jmp     rax
+
+      @@:
+
         ;; r11 contains indirection cell address
         lea     r10, RhpCidResolve
         jmp     TransitionTarget

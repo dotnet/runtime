@@ -15,6 +15,14 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         mov     r10, [rdi]
 
         // r11 currently contains the indirection cell address.
+        cmp     qword ptr [r11], r10 // is this the monomorphic MethodTable?
+        jne     1f
+
+        mov     rax, [r11 + 8] // load the cached monomorphic resolved code address into rax
+        jmp     rax
+
+1:
+        // r11 contains indirection cell address
         lea     r10, [C_VAR(RhpCidResolve)]
         jmp     C_FUNC(RhpUniversalTransitionTailCall)
 
