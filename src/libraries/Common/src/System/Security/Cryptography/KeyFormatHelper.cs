@@ -14,22 +14,6 @@ namespace System.Security.Cryptography
         internal delegate void KeyReader<TRet>(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out TRet ret);
         internal delegate void ValueKeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
 
-        internal static unsafe void ReadSubjectPublicKeyInfo<TRet>(
-            string[] validOids,
-            ReadOnlySpan<byte> source,
-            KeyReader<TRet> keyReader,
-            out int bytesRead,
-            out TRet ret)
-        {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    ReadSubjectPublicKeyInfo(validOids, manager.Memory, keyReader, out bytesRead, out ret);
-                }
-            }
-        }
-
         internal static void ReadSubjectPublicKeyInfo<TRet>(
             string[] validOids,
             ReadOnlySpan<byte> source,
@@ -87,37 +71,6 @@ namespace System.Security.Cryptography
 
             bytesRead = read;
             return spki.SubjectPublicKey;
-        }
-
-        private static void ReadSubjectPublicKeyInfo<TRet>(
-            string[] validOids,
-            ReadOnlyMemory<byte> source,
-            KeyReader<TRet> keyReader,
-            out int bytesRead,
-            out TRet ret)
-        {
-            SubjectPublicKeyInfoAsn spki;
-            int read;
-
-            try
-            {
-                // X.509 SubjectPublicKeyInfo is described as DER.
-                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.DER);
-                read = reader.PeekEncodedValue().Length;
-                SubjectPublicKeyInfoAsn.Decode(ref reader, source, out spki);
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-
-            if (Array.IndexOf(validOids, spki.Algorithm.Algorithm) < 0)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
-
-            keyReader(spki.SubjectPublicKey, spki.Algorithm, out ret);
-            bytesRead = read;
         }
 
         internal static unsafe void ReadPkcs8<TRet>(
