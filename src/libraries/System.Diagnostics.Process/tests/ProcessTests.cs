@@ -201,7 +201,7 @@ namespace System.Diagnostics.Tests
 
                     Console.WriteLine(PosixSignalRegistrationCreatedMessage);
 
-                    // Wait for singal which unregisters itself
+                    // Wait for signal which unregisters itself
                     Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
 
                     // Wait for second signal which should temrinate process by default system handler
