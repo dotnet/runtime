@@ -12,6 +12,17 @@ namespace System.Security.Cryptography.Asn1
     {
         internal static ReadOnlySpan<byte> DefaultPrf => [0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00];
 
+#if DEBUG
+        static SharedPbkdf2Params()
+        {
+            ValuePbkdf2Params decoded = default;
+            ValueAsnReader reader;
+
+            reader = new ValueAsnReader(SharedPbkdf2Params.DefaultPrf, AsnEncodingRules.DER);
+            System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref reader, out decoded.Prf);
+            reader.ThrowIfNotEmpty();
+        }
+#endif
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -67,16 +67,17 @@ namespace <xsl:value-of select="@namespace" />
 {<xsl:if test="*[@defaultDerInit]">
     file static class Shared<xsl:value-of select="@name" />
     {<xsl:apply-templates mode="DefaultFieldDef" />
-<xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">#if DEBUG
+#if DEBUG
         static Shared<xsl:value-of select="@name" />()
         {
-            <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
+<xsl:choose><xsl:when test="not(@emitType) or @emitType='struct' or @emitType='both'">            <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
             ReadOnlyMemory&lt;byte&gt; rebind = default;</xsl:if>
             ValueAsnReader reader;<xsl:if test="asn:SequenceOf[@defaultDerInit] | asn:SetOf[@defaultDerInit]">
-            ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
+            ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" /></xsl:when><xsl:otherwise>            Value<xsl:value-of select="@name" /> decoded = default;
+            ValueAsnReader reader;<xsl:apply-templates mode="ValueDefaultFieldVerify" /></xsl:otherwise></xsl:choose>
         }
 #endif
-</xsl:if>    }
+    }
 </xsl:if><xsl:if test="not(@emitType) or @emitType='struct' or @emitType='both'">
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct <xsl:value-of select="@name" />
@@ -387,6 +388,13 @@ namespace <xsl:value-of select="@namespace" />
 
             reader = new ValueAsnReader(<xsl:call-template name="DefaultValueFieldUsage"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
             reader.ThrowIfNotEmpty();</xsl:template>
+
+  <xsl:template match="*[@defaultDerInit]" mode="ValueDefaultFieldVerify">
+
+            reader = new ValueAsnReader(<xsl:call-template name="DefaultValueFieldUsage"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="ValueDecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
+            reader.ThrowIfNotEmpty();</xsl:template>
+
+  <xsl:template match="*" mode="ValueDefaultFieldVerify" />
 
   <xsl:template match="*" mode="EnsureUniqueTag" xml:space="default">
     <xsl:choose>
