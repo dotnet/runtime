@@ -184,6 +184,7 @@ DEFINE_DACVAR(bool, dac__g_fProcessDetach, ::g_fProcessDetach)
 DEFINE_DACVAR_VOLATILE(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
 
 DEFINE_DACVAR(ULONG, dac__g_CORDebuggerControlFlags, ::g_CORDebuggerControlFlags)
+DEFINE_DACVAR(DWORD, dac__g_EnableFastHeapDumps, ::g_EnableFastHeapDumps)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDebugger, ::g_pDebugger)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDebugInterface, ::g_pDebugInterface)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEEDbgInterfaceImpl, ::g_pEEDbgInterfaceImpl)
