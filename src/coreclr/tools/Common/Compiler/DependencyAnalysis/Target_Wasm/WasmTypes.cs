@@ -17,10 +17,10 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     // require a more complex encoding.
     public enum WasmValueType : byte
     {
-        I32 = 0x7F,
-        I64 = 0x7E,
-        F32 = 0x7D,
-        F64 = 0x7C,
+        I32  = 0x7F,
+        I64  = 0x7E,
+        F32  = 0x7D,
+        F64  = 0x7C,
         V128 = 0x7B
     }
 
