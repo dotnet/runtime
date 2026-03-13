@@ -894,7 +894,7 @@ namespace System.Security.Cryptography
                     out int localRead);
 
                 ValueAlgorithmIdentifierAsn ignored = default;
-                RSAKeyFormatHelper.ReadRsaPublicKey(source, ignored, out RSAParameters rsaParameters);
+                RSAKeyFormatHelper.ReadRsaPublicKey(source.Slice(0, localRead), ignored, out RSAParameters rsaParameters);
 
                 ImportParameters(rsaParameters);
 
