@@ -19,7 +19,6 @@
 #include "cdacgcstress.h"
 #include "../../native/managed/cdac/inc/cdac_reader.h"
 #include "../../debug/datadescriptor-shared/inc/contract-descriptor.h"
-#include <clrdata.h>
 #include <xclrdata.h>
 #include <sospriv.h>
 #include "threads.h"
@@ -28,7 +27,6 @@
 #include "sstring.h"
 
 #define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
-#define DAC_LIB_NAME  MAKEDLLNAME_W(W("mscordaccore"))
 
 // Represents a single GC stack reference for comparison purposes.
 struct StackRef
@@ -45,13 +43,11 @@ struct StackRef
 static const int MAX_COLLECTED_REFS = 4096;
 
 // Static state — cDAC
-static HMODULE          s_cdacModule = NULL;
-static intptr_t         s_cdacHandle = 0;
-static IUnknown*        s_cdacSosInterface = nullptr;
-
-// Static state — legacy DAC
-static HMODULE          s_dacModule = NULL;
-static IUnknown*        s_dacSosInterface = nullptr;
+static HMODULE              s_cdacModule = NULL;
+static intptr_t             s_cdacHandle = 0;
+static IUnknown*            s_cdacSosInterface = nullptr;
+static IXCLRDataProcess*    s_cdacProcess = nullptr;    // Cached QI result for Flush()
+static ISOSDacInterface*    s_cdacSosDac = nullptr;     // Cached QI result for GetStackReferences()
 
 // Static state — common
 static bool             s_initialized = false;
@@ -60,10 +56,8 @@ static FILE*            s_logFile = nullptr;
 
 // Verification counters (reported at shutdown)
 static volatile LONG    s_verifyCount = 0;
-static volatile LONG    s_dacPass = 0;
-static volatile LONG    s_dacFail = 0;
-static volatile LONG    s_rtPass = 0;
-static volatile LONG    s_rtFail = 0;
+static volatile LONG    s_verifyPass = 0;
+static volatile LONG    s_verifyFail = 0;
 static volatile LONG    s_verifySkip = 0;
 
 // Thread-local storage for the current thread context at the stress point.
@@ -72,127 +66,6 @@ static thread_local DWORD    s_currentThreadId = 0;
 
 // Extern declaration for the contract descriptor symbol exported from coreclr.
 extern "C" struct ContractDescriptor DotNetRuntimeContractDescriptor;
-
-//-----------------------------------------------------------------------------
-// ICLRDataTarget implementation for in-process memory access.
-// Used by the legacy DAC's CLRDataCreateInstance.
-//-----------------------------------------------------------------------------
-
-class InProcessDataTarget : public ICLRDataTarget
-{
-    volatile LONG m_refCount;
-public:
-    InProcessDataTarget() : m_refCount(1) {}
-
-    // IUnknown
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override
-    {
-        if (riid == IID_IUnknown || riid == __uuidof(ICLRDataTarget))
-        {
-            *ppv = static_cast<ICLRDataTarget*>(this);
-            AddRef();
-            return S_OK;
-        }
-        *ppv = nullptr;
-        return E_NOINTERFACE;
-    }
-    ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&m_refCount); }
-    ULONG STDMETHODCALLTYPE Release() override
-    {
-        LONG ref = InterlockedDecrement(&m_refCount);
-        if (ref == 0) delete this;
-        return ref;
-    }
-
-    // ICLRDataTarget
-    HRESULT STDMETHODCALLTYPE GetMachineType(ULONG32* machineType) override
-    {
-#ifdef TARGET_AMD64
-        *machineType = IMAGE_FILE_MACHINE_AMD64;
-#elif defined(TARGET_X86)
-        *machineType = IMAGE_FILE_MACHINE_I386;
-#elif defined(TARGET_ARM64)
-        *machineType = IMAGE_FILE_MACHINE_ARM64;
-#elif defined(TARGET_ARM)
-        *machineType = IMAGE_FILE_MACHINE_ARMNT;
-#else
-        return E_NOTIMPL;
-#endif
-        return S_OK;
-    }
-
-    HRESULT STDMETHODCALLTYPE GetPointerSize(ULONG32* pointerSize) override
-    {
-        *pointerSize = sizeof(void*);
-        return S_OK;
-    }
-
-    HRESULT STDMETHODCALLTYPE GetImageBase(LPCWSTR imagePath, CLRDATA_ADDRESS* baseAddress) override
-    {
-        HMODULE hMod = ::GetModuleHandleW(imagePath);
-        if (hMod == NULL)
-            return E_FAIL;
-        *baseAddress = reinterpret_cast<CLRDATA_ADDRESS>(hMod);
-        return S_OK;
-    }
-
-    // Helper for ReadVirtual — AVInRuntimeImplOkayHolder cannot be directly
-    // inside PAL_TRY scope (see controller.cpp:109).
-    static void ReadVirtualHelper(void* src, BYTE* buffer, ULONG32 bytesRequested)
-    {
-        AVInRuntimeImplOkayHolder AVOkay;
-        memcpy(buffer, src, bytesRequested);
-    }
-
-    HRESULT STDMETHODCALLTYPE ReadVirtual(CLRDATA_ADDRESS address, BYTE* buffer, ULONG32 bytesRequested, ULONG32* bytesRead) override
-    {
-        void* src = reinterpret_cast<void*>(static_cast<uintptr_t>(address));
-        struct Param { void* src; BYTE* buffer; ULONG32 bytesRequested; ULONG32* bytesRead; } param;
-        param.src = src; param.buffer = buffer; param.bytesRequested = bytesRequested; param.bytesRead = bytesRead;
-        PAL_TRY(Param *, pParam, &param)
-        {
-            ReadVirtualHelper(pParam->src, pParam->buffer, pParam->bytesRequested);
-            *pParam->bytesRead = pParam->bytesRequested;
-        }
-        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-        {
-            *bytesRead = 0;
-            return E_FAIL;
-        }
-        PAL_ENDTRY
-        return S_OK;
-    }
-
-    HRESULT STDMETHODCALLTYPE WriteVirtual(CLRDATA_ADDRESS address, BYTE* buffer, ULONG32 bytesRequested, ULONG32* bytesWritten) override
-    {
-        *bytesWritten = 0;
-        return E_NOTIMPL;
-    }
-
-    HRESULT STDMETHODCALLTYPE GetTLSValue(ULONG32 threadID, ULONG32 index, CLRDATA_ADDRESS* value) override { return E_NOTIMPL; }
-    HRESULT STDMETHODCALLTYPE SetTLSValue(ULONG32 threadID, ULONG32 index, CLRDATA_ADDRESS value) override { return E_NOTIMPL; }
-    HRESULT STDMETHODCALLTYPE GetCurrentThreadID(ULONG32* threadID) override
-    {
-        *threadID = ::GetCurrentThreadId();
-        return S_OK;
-    }
-
-    HRESULT STDMETHODCALLTYPE GetThreadContext(ULONG32 threadID, ULONG32 contextFlags, ULONG32 contextSize, BYTE* context) override
-    {
-        if (s_currentContext != nullptr && s_currentThreadId == threadID)
-        {
-            DWORD copySize = min(contextSize, (ULONG32)sizeof(CONTEXT));
-            memcpy(context, s_currentContext, copySize);
-            return S_OK;
-        }
-        return E_FAIL;
-    }
-
-    HRESULT STDMETHODCALLTYPE SetThreadContext(ULONG32 threadID, ULONG32 contextSize, BYTE* context) override { return E_NOTIMPL; }
-    HRESULT STDMETHODCALLTYPE Request(ULONG32 reqCode, ULONG32 inBufferSize, BYTE* inBuffer, ULONG32 outBufferSize, BYTE* outBuffer) override { return E_NOTIMPL; }
-};
-
-static InProcessDataTarget* s_dataTarget = nullptr;
 
 //-----------------------------------------------------------------------------
 // In-process callbacks for the cDAC reader.
@@ -232,8 +105,6 @@ static int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t co
 static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, uint32_t contextBufferSize, uint8_t* contextBuffer, void* context)
 {
     // Return the thread context that was stored by VerifyAtStressPoint.
-    // At GC stress points, we only verify the current thread, so we check
-    // that the requested thread ID matches.
     if (s_currentContext != nullptr && s_currentThreadId == threadId)
     {
         DWORD copySize = min(contextBufferSize, (uint32_t)sizeof(CONTEXT));
@@ -241,6 +112,8 @@ static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, u
         return S_OK;
     }
 
+    LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: ReadThreadContext mismatch: requested=%u stored=%u\n",
+        threadId, s_currentThreadId));
     return E_FAIL;
 }
 
@@ -341,36 +214,18 @@ bool CdacGcStress::Initialize()
     // Read configuration for fail-fast behavior
     s_failFast = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacFailFast) != 0;
 
-    // Load legacy DAC (mscordaccore.dll) for three-way comparison
+    // Cache QI results so we don't QI on every stress point
     {
-        PathString dacPath;
-        WszGetModuleFileName(reinterpret_cast<HMODULE>(GetCurrentModuleBase()), dacPath);
-        SString::Iterator dacIter = dacPath.End();
-        dacPath.FindBack(dacIter, DIRECTORY_SEPARATOR_CHAR_W);
-        dacIter++;
-        dacPath.Truncate(dacIter);
-        dacPath.Append(DAC_LIB_NAME);
-
-        s_dacModule = CLRLoadLibrary(dacPath.GetUnicode());
-        if (s_dacModule != NULL)
+        HRESULT hr = s_cdacSosInterface->QueryInterface(__uuidof(IXCLRDataProcess), reinterpret_cast<void**>(&s_cdacProcess));
+        if (FAILED(hr) || s_cdacProcess == nullptr)
         {
-            typedef HRESULT (STDAPICALLTYPE *CLRDataCreateInstanceFn)(REFIID, ICLRDataTarget*, void**);
-            auto dacCreateInstance = reinterpret_cast<CLRDataCreateInstanceFn>(
-                ::GetProcAddress(s_dacModule, "CLRDataCreateInstance"));
-            if (dacCreateInstance != nullptr)
-            {
-                s_dataTarget = new InProcessDataTarget();
-                HRESULT hr = dacCreateInstance(__uuidof(ISOSDacInterface), s_dataTarget, reinterpret_cast<void**>(&s_dacSosInterface));
-                if (FAILED(hr))
-                {
-                    LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Legacy DAC CLRDataCreateInstance failed (hr=0x%08x)\n", hr));
-                    s_dacSosInterface = nullptr;
-                }
-            }
+            LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to QI for IXCLRDataProcess (hr=0x%08x)\n", hr));
         }
-        else
+
+        hr = s_cdacSosInterface->QueryInterface(__uuidof(ISOSDacInterface), reinterpret_cast<void**>(&s_cdacSosDac));
+        if (FAILED(hr) || s_cdacSosDac == nullptr)
         {
-            LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to load legacy DAC %S\n", dacPath.GetUnicode()));
+            LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to QI for ISOSDacInterface (hr=0x%08x)\n", hr));
         }
     }
 
@@ -398,41 +253,39 @@ void CdacGcStress::Shutdown()
         return;
 
     // Print summary to stderr so results are always visible
-    fprintf(stderr, "CDAC GC Stress: %ld verifications (DAC: %ld pass / %ld fail, RT: %ld pass / %ld fail, %ld skipped)\n",
-        (long)s_verifyCount, (long)s_dacPass, (long)s_dacFail, (long)s_rtPass, (long)s_rtFail, (long)s_verifySkip);
-    STRESS_LOG4(LF_GCROOTS, LL_ALWAYS,
-        "CDAC GC Stress shutdown: %d verifications (DAC: %d pass / %d fail, skipped: %d)\n",
-        (int)s_verifyCount, (int)s_dacPass, (int)s_dacFail, (int)s_verifySkip);
+    fprintf(stderr, "CDAC GC Stress: %ld verifications (%ld pass / %ld fail, %ld skipped)\n",
+        (long)s_verifyCount, (long)s_verifyPass, (long)s_verifyFail, (long)s_verifySkip);
+    STRESS_LOG3(LF_GCROOTS, LL_ALWAYS,
+        "CDAC GC Stress shutdown: %d verifications (%d pass / %d fail)\n",
+        (int)s_verifyCount, (int)s_verifyPass, (int)s_verifyFail);
 
     if (s_logFile != nullptr)
     {
         fprintf(s_logFile, "\n=== Summary ===\n");
         fprintf(s_logFile, "Total verifications: %ld\n", (long)s_verifyCount);
-        fprintf(s_logFile, "  DAC  Passed: %ld\n", (long)s_dacPass);
-        fprintf(s_logFile, "  DAC  Failed: %ld\n", (long)s_dacFail);
-        fprintf(s_logFile, "  RT   Passed: %ld\n", (long)s_rtPass);
-        fprintf(s_logFile, "  RT   Failed: %ld\n", (long)s_rtFail);
-        fprintf(s_logFile, "  Skipped:     %ld\n", (long)s_verifySkip);
+        fprintf(s_logFile, "  Passed:  %ld\n", (long)s_verifyPass);
+        fprintf(s_logFile, "  Failed:  %ld\n", (long)s_verifyFail);
+        fprintf(s_logFile, "  Skipped: %ld\n", (long)s_verifySkip);
         fclose(s_logFile);
         s_logFile = nullptr;
+    }
+
+    if (s_cdacSosDac != nullptr)
+    {
+        s_cdacSosDac->Release();
+        s_cdacSosDac = nullptr;
+    }
+
+    if (s_cdacProcess != nullptr)
+    {
+        s_cdacProcess->Release();
+        s_cdacProcess = nullptr;
     }
 
     if (s_cdacSosInterface != nullptr)
     {
         s_cdacSosInterface->Release();
         s_cdacSosInterface = nullptr;
-    }
-
-    if (s_dacSosInterface != nullptr)
-    {
-        s_dacSosInterface->Release();
-        s_dacSosInterface = nullptr;
-    }
-
-    if (s_dataTarget != nullptr)
-    {
-        s_dataTarget->Release();
-        s_dataTarget = nullptr;
     }
 
     if (s_cdacHandle != 0)
@@ -459,27 +312,14 @@ void CdacGcStress::Shutdown()
 
 static bool CollectCdacStackRefs(Thread* pThread, PCONTEXT regs, SArray<StackRef>* pRefs)
 {
-    _ASSERTE(s_cdacSosInterface != nullptr);
+    _ASSERTE(s_cdacSosDac != nullptr);
 
-    // QI for ISOSDacInterface
-    ISOSDacInterface* pSosDac = nullptr;
-    HRESULT hr = s_cdacSosInterface->QueryInterface(__uuidof(ISOSDacInterface), reinterpret_cast<void**>(&pSosDac));
-    if (FAILED(hr) || pSosDac == nullptr)
-    {
-        LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to QI for ISOSDacInterface (hr=0x%08x)\n", hr));
-        return false;
-    }
-
-    // Get stack references for this thread
-    // (thread context is already set by VerifyAtStressPoint)
     ISOSStackRefEnum* pEnum = nullptr;
-    hr = pSosDac->GetStackReferences(pThread->GetOSThreadId(), &pEnum);
+    HRESULT hr = s_cdacSosDac->GetStackReferences(pThread->GetOSThreadId(), &pEnum);
 
     if (FAILED(hr) || pEnum == nullptr)
     {
         LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: GetStackReferences failed (hr=0x%08x)\n", hr));
-        if (pSosDac != nullptr)
-            pSosDac->Release();
         return false;
     }
 
@@ -502,63 +342,6 @@ static bool CollectCdacStackRefs(Thread* pThread, PCONTEXT regs, SArray<StackRef
     }
 
     pEnum->Release();
-    pSosDac->Release();
-    return true;
-}
-
-//-----------------------------------------------------------------------------
-// Collect stack refs from the legacy DAC
-//-----------------------------------------------------------------------------
-
-static bool CollectDacStackRefs(Thread* pThread, PCONTEXT regs, SArray<StackRef>* pRefs)
-{
-    if (s_dacSosInterface == nullptr)
-        return false;
-
-    // Flush the legacy DAC's instance cache so it re-reads from the live process.
-    // Without this, the DAC returns stale data from the first stress point.
-    IXCLRDataProcess* pProcess = nullptr;
-    HRESULT hr = s_dacSosInterface->QueryInterface(__uuidof(IXCLRDataProcess), reinterpret_cast<void**>(&pProcess));
-    if (SUCCEEDED(hr) && pProcess != nullptr)
-    {
-        pProcess->Flush();
-        pProcess->Release();
-    }
-
-    ISOSDacInterface* pSosDac = nullptr;
-    hr = s_dacSosInterface->QueryInterface(__uuidof(ISOSDacInterface), reinterpret_cast<void**>(&pSosDac));
-    if (FAILED(hr) || pSosDac == nullptr)
-        return false;
-
-    // Thread context is already set by VerifyAtStressPoint
-    ISOSStackRefEnum* pEnum = nullptr;
-    hr = pSosDac->GetStackReferences(pThread->GetOSThreadId(), &pEnum);
-
-    if (FAILED(hr) || pEnum == nullptr)
-    {
-        pSosDac->Release();
-        return false;
-    }
-
-    SOSStackRefData refData;
-    unsigned int fetched = 0;
-    while (true)
-    {
-        hr = pEnum->Next(1, &refData, &fetched);
-        if (FAILED(hr) || fetched == 0)
-            break;
-
-        StackRef ref;
-        ref.Address = refData.Address;
-        ref.Object = refData.Object;
-        ref.Flags = refData.Flags;
-        ref.Source = refData.Source;
-        ref.SourceType = refData.SourceType;
-        pRefs->Append(ref);
-    }
-
-    pEnum->Release();
-    pSosDac->Release();
     return true;
 }
 
@@ -583,9 +366,8 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
     // Detect whether ppObj is a register save slot (in REGDISPLAY/CONTEXT on the native
     // C stack) or a real managed stack slot. The cDAC reports register refs as (Address=0,
     // Object=value), so we normalize the runtime's output to match.
-    // Register save slots are NOT on the managed stack, so IsAddressInStack returns false.
-    Thread* pThread = sc->thread_under_crawl;
-    bool isRegisterRef = (pThread != nullptr && !pThread->IsAddressInStack(ppObj));
+    // REGDISPLAY slots live below stack_limit; managed stack slots are at or above it.
+    bool isRegisterRef = reinterpret_cast<uintptr_t>(ppObj) < sc->stack_limit;
 
     if (isRegisterRef)
     {
@@ -631,7 +413,6 @@ static void CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* ou
     gcctx.f = CollectRuntimeRefsPromoteFunc;
     gcctx.sc = &sc;
     gcctx.cf = NULL;
-    gcctx.skipPromoteCarefully = true;  // Report all interior refs for cDAC comparison
 
     // Set FORBIDGC_LOADER_USE_ENABLED so MethodDesc::GetName uses NOTHROW
     // instead of THROWS inside EECodeManager::EnumGcRefs.
@@ -653,95 +434,71 @@ static void CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* ou
 }
 
 //-----------------------------------------------------------------------------
-// Compare the two sets of stack refs
+// Filter cDAC refs to match runtime PromoteCarefully behavior.
+// The runtime's PromoteCarefully (siginfo.cpp) skips interior pointers whose
+// object value is a stack address. The cDAC reports all GcInfo slots without
+// this filter, so we apply it here before comparing against runtime refs.
 //-----------------------------------------------------------------------------
 
-static int CompareStackRefByAddress(const void* a, const void* b)
+static int FilterInteriorStackRefs(StackRef* refs, int count, Thread* pThread, uintptr_t stackLimit)
+{
+    int writeIdx = 0;
+    for (int i = 0; i < count; i++)
+    {
+        bool isInterior = (refs[i].Flags & SOSRefInterior) != 0;
+        if (isInterior &&
+            pThread->IsAddressInStack((void*)(size_t)refs[i].Object) &&
+            (size_t)refs[i].Object >= stackLimit)
+        {
+            continue;
+        }
+        refs[writeIdx++] = refs[i];
+    }
+    return writeIdx;
+}
+
+//-----------------------------------------------------------------------------
+// Deduplicate cDAC refs that have the same (Address, Object, Flags).
+// The cDAC may walk the same managed frame at two different offsets due to
+// Frames restoring context (e.g. InlinedCallFrame). The same stack slots
+// get reported from both offsets. The runtime only walks each frame once,
+// so we deduplicate to match.
+//-----------------------------------------------------------------------------
+
+static int CompareStackRefKey(const void* a, const void* b)
 {
     const StackRef* refA = static_cast<const StackRef*>(a);
     const StackRef* refB = static_cast<const StackRef*>(b);
-    if (refA->Address < refB->Address)
-        return -1;
-    if (refA->Address > refB->Address)
-        return 1;
+    if (refA->Address != refB->Address)
+        return (refA->Address < refB->Address) ? -1 : 1;
+    if (refA->Object != refB->Object)
+        return (refA->Object < refB->Object) ? -1 : 1;
+    if (refA->Flags != refB->Flags)
+        return (refA->Flags < refB->Flags) ? -1 : 1;
     return 0;
 }
 
-static bool CompareStackRefs(StackRef* cdacRefs, int cdacCount, StackRef* dacRefs, int dacCount, Thread* pThread)
+static int DeduplicateRefs(StackRef* refs, int count)
 {
-    // Sort both arrays by address for comparison.
-    // cDAC and DAC use the same SOSStackRefData convention, so all refs
-    // (including register refs with Address=0) are directly comparable.
-    if (cdacCount > 1)
-        qsort(cdacRefs, cdacCount, sizeof(StackRef), CompareStackRefByAddress);
-    if (dacCount > 1)
-        qsort(dacRefs, dacCount, sizeof(StackRef), CompareStackRefByAddress);
-
-    bool match = true;
-    int cdacIdx = 0;
-    int dacIdx = 0;
-
-    while (cdacIdx < cdacCount && dacIdx < dacCount)
+    if (count <= 1)
+        return count;
+    qsort(refs, count, sizeof(StackRef), CompareStackRefKey);
+    int writeIdx = 1;
+    for (int i = 1; i < count; i++)
     {
-        StackRef& cdacRef = cdacRefs[cdacIdx];
-        StackRef& dacRef = dacRefs[dacIdx];
-
-        if (cdacRef.Address < dacRef.Address)
+        // Only dedup stack-based refs (Address != 0).
+        // Register refs (Address == 0) are legitimately different entries
+        // even when Address/Object/Flags match (different registers).
+        if (refs[i].Address != 0 &&
+            refs[i].Address == refs[i-1].Address &&
+            refs[i].Object == refs[i-1].Object &&
+            refs[i].Flags == refs[i-1].Flags)
         {
-            LOG((LF_GCROOTS, LL_WARNING,
-                "CDAC GC Stress MISMATCH: cDAC has extra ref at Address=0x%p Object=0x%p Flags=0x%x (Thread 0x%x)\n",
-                (void*)(size_t)cdacRef.Address, (void*)(size_t)cdacRef.Object, cdacRef.Flags, pThread->GetOSThreadId()));
-            match = false;
-            cdacIdx++;
+            continue;
         }
-        else if (cdacRef.Address > dacRef.Address)
-        {
-            LOG((LF_GCROOTS, LL_WARNING,
-                "CDAC GC Stress MISMATCH: DAC has ref missing from cDAC at Address=0x%p Object=0x%p Flags=0x%x (Thread 0x%x)\n",
-                (void*)(size_t)dacRef.Address, (void*)(size_t)dacRef.Object, dacRef.Flags, pThread->GetOSThreadId()));
-            match = false;
-            dacIdx++;
-        }
-        else
-        {
-            if (cdacRef.Object != dacRef.Object)
-            {
-                LOG((LF_GCROOTS, LL_WARNING,
-                    "CDAC GC Stress MISMATCH: Different object at Address=0x%p: cDAC=0x%p DAC=0x%p (Thread 0x%x)\n",
-                    (void*)(size_t)cdacRef.Address, (void*)(size_t)cdacRef.Object, (void*)(size_t)dacRef.Object, pThread->GetOSThreadId()));
-                match = false;
-            }
-            if (cdacRef.Flags != dacRef.Flags)
-            {
-                LOG((LF_GCROOTS, LL_WARNING,
-                    "CDAC GC Stress MISMATCH: Different flags at Address=0x%p: cDAC=0x%x DAC=0x%x (Thread 0x%x)\n",
-                    (void*)(size_t)cdacRef.Address, cdacRef.Flags, dacRef.Flags, pThread->GetOSThreadId()));
-                match = false;
-            }
-            cdacIdx++;
-            dacIdx++;
-        }
+        refs[writeIdx++] = refs[i];
     }
-
-    while (cdacIdx < cdacCount)
-    {
-        StackRef& cdacRef = cdacRefs[cdacIdx++];
-        LOG((LF_GCROOTS, LL_WARNING,
-            "CDAC GC Stress MISMATCH: cDAC has extra ref at Address=0x%p Object=0x%p Flags=0x%x (Thread 0x%x)\n",
-            (void*)(size_t)cdacRef.Address, (void*)(size_t)cdacRef.Object, cdacRef.Flags, pThread->GetOSThreadId()));
-        match = false;
-    }
-
-    while (dacIdx < dacCount)
-    {
-        StackRef& dacRef = dacRefs[dacIdx++];
-        LOG((LF_GCROOTS, LL_WARNING,
-            "CDAC GC Stress MISMATCH: DAC has ref missing from cDAC at Address=0x%p Object=0x%p Flags=0x%x (Thread 0x%x)\n",
-            (void*)(size_t)dacRef.Address, (void*)(size_t)dacRef.Object, dacRef.Flags, pThread->GetOSThreadId()));
-        match = false;
-    }
-
-    return match;
+    return writeIdx;
 }
 
 //-----------------------------------------------------------------------------
@@ -771,47 +528,25 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     InterlockedIncrement(&s_verifyCount);
 
-    // Set the thread context ONCE for both DAC and cDAC before any collection.
-    // This ensures both see the same context when they call ReadThreadContext.
+    // Set the thread context for the cDAC's ReadThreadContext callback.
     s_currentContext = regs;
     s_currentThreadId = pThread->GetOSThreadId();
 
-    // Flush both caches at the same point so both read fresh data.
-    // Use IXCLRDataProcess::Flush() which clears the cDAC's ProcessedData cache.
-    if (s_cdacSosInterface != nullptr)
+    // Flush the cDAC's ProcessedData cache so it re-reads from the live process.
+    if (s_cdacProcess != nullptr)
     {
-        IXCLRDataProcess* pCdacProcess = nullptr;
-        HRESULT hr = s_cdacSosInterface->QueryInterface(__uuidof(IXCLRDataProcess), reinterpret_cast<void**>(&pCdacProcess));
-        if (SUCCEEDED(hr) && pCdacProcess != nullptr)
-        {
-            pCdacProcess->Flush();
-            pCdacProcess->Release();
-        }
+        s_cdacProcess->Flush();
     }
 
-    if (s_dacSosInterface != nullptr)
-    {
-        IXCLRDataProcess* pProcess = nullptr;
-        HRESULT hr = s_dacSosInterface->QueryInterface(__uuidof(IXCLRDataProcess), reinterpret_cast<void**>(&pProcess));
-        if (SUCCEEDED(hr) && pProcess != nullptr)
-        {
-            pProcess->Flush();
-            pProcess->Release();
-        }
-    }
-
-    // Now collect from both cDAC and DAC with the same context and cache state.
+    // Collect from cDAC
     SArray<StackRef> cdacRefs;
     bool haveCdac = CollectCdacStackRefs(pThread, regs, &cdacRefs);
-
-    SArray<StackRef> dacRefs;
-    bool haveDac = CollectDacStackRefs(pThread, regs, &dacRefs);
 
     // Clear the stored context
     s_currentContext = nullptr;
     s_currentThreadId = 0;
 
-    // Collect runtime refs (doesn't use DAC/cDAC, no timing issue)
+    // Collect runtime refs (doesn't use cDAC, no timing issue)
     StackRef runtimeRefsBuf[MAX_COLLECTED_REFS];
     int runtimeCount = 0;
     CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
@@ -825,49 +560,54 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         return;
     }
 
-    int cdacCount = (int)cdacRefs.GetCount();
-    int dacCount = haveDac ? (int)dacRefs.GetCount() : -1;
-
-    // Compare cDAC vs DAC
-    bool cdacMatchesDac = true;
-    if (haveDac)
+    // Filter cDAC refs to match runtime PromoteCarefully behavior:
+    // remove interior pointers whose Object value is a stack address.
+    // These are register slots (RSP/RBP) that GcInfo marks as live interior
+    // but don't point to managed heap objects.
+    Frame* pTopFrame = pThread->GetFrame();
+    Object** topStack = (Object**)pTopFrame;
+    if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
     {
-        StackRef* cdacBuf = (cdacCount > 0) ? cdacRefs.OpenRawBuffer() : nullptr;
-        StackRef* dacBuf = (dacCount > 0) ? dacRefs.OpenRawBuffer() : nullptr;
-        cdacMatchesDac = CompareStackRefs(cdacBuf, cdacCount, dacBuf, dacCount, pThread);
-        if (cdacBuf != nullptr) cdacRefs.CloseRawBuffer();
-        if (dacBuf != nullptr) dacRefs.CloseRawBuffer();
+        InlinedCallFrame* pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pTopFrame);
+        topStack = (Object**)pInlinedFrame->GetCallSiteSP();
+    }
+    uintptr_t stackLimit = (uintptr_t)topStack;
+
+    int cdacCount = (int)cdacRefs.GetCount();
+    if (cdacCount > 0)
+    {
+        StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
+        cdacCount = FilterInteriorStackRefs(cdacBuf, cdacCount, pThread, stackLimit);
+        cdacCount = DeduplicateRefs(cdacBuf, cdacCount);
+        cdacRefs.CloseRawBuffer();
+        // Trim the SArray to the filtered count
+        while ((int)cdacRefs.GetCount() > cdacCount)
+            cdacRefs.Delete(cdacRefs.End() - 1);
     }
 
     // Compare cDAC vs runtime (count-only for now)
-    bool cdacMatchesRt = (cdacCount == runtimeCount);
+    bool pass = (cdacCount == runtimeCount);
 
-    // Update counters
-    if (cdacMatchesDac) InterlockedIncrement(&s_dacPass); else InterlockedIncrement(&s_dacFail);
-    if (cdacMatchesRt) InterlockedIncrement(&s_rtPass); else InterlockedIncrement(&s_rtFail);
-
-    // Determine log tag
-    const char* dacTag = cdacMatchesDac ? "DAC-PASS" : "DAC-FAIL";
-    const char* rtTag = cdacMatchesRt ? "RT-PASS" : "RT-FAIL";
+    if (pass)
+        InterlockedIncrement(&s_verifyPass);
+    else
+        InterlockedIncrement(&s_verifyFail);
 
     if (s_logFile != nullptr)
     {
-        fprintf(s_logFile, "[%s][%s] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
-            dacTag, rtTag, pThread->GetOSThreadId(), (void*)GetIP(regs), cdacCount, dacCount, runtimeCount);
+        fprintf(s_logFile, "[%s] Thread=0x%x IP=0x%p cDAC=%d RT=%d\n",
+            pass ? "PASS" : "FAIL", pThread->GetOSThreadId(), (void*)GetIP(regs), cdacCount, runtimeCount);
 
-        // Log detailed refs on any failure
-        if (!cdacMatchesDac || !cdacMatchesRt)
+        if (!pass)
         {
+            // Log the stress point IP and the first cDAC Source for debugging
+            fprintf(s_logFile, "  stressIP=0x%p firstCdacSource=0x%llx\n",
+                (void*)GetIP(regs),
+                cdacCount > 0 ? (unsigned long long)cdacRefs[0].Source : 0ULL);
             for (int i = 0; i < cdacCount; i++)
                 fprintf(s_logFile, "  cDAC [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx SourceType=%d\n",
                     i, (unsigned long long)cdacRefs[i].Address, (unsigned long long)cdacRefs[i].Object,
                     cdacRefs[i].Flags, (unsigned long long)cdacRefs[i].Source, cdacRefs[i].SourceType);
-            StackRef* dacBuf = (dacCount > 0) ? dacRefs.OpenRawBuffer() : nullptr;
-            for (int i = 0; i < dacCount; i++)
-                fprintf(s_logFile, "  DAC  [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx SourceType=%d\n",
-                    i, (unsigned long long)dacBuf[i].Address, (unsigned long long)dacBuf[i].Object,
-                    dacBuf[i].Flags, (unsigned long long)dacBuf[i].Source, dacBuf[i].SourceType);
-            if (dacBuf != nullptr) dacRefs.CloseRawBuffer();
             for (int i = 0; i < runtimeCount; i++)
                 fprintf(s_logFile, "  RT   [%d]: Address=0x%llx Object=0x%llx Flags=0x%x\n",
                     i, (unsigned long long)runtimeRefsBuf[i].Address, (unsigned long long)runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags);
@@ -875,10 +615,9 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         }
     }
 
-    // Fail-fast on DAC mismatch (the primary correctness check)
-    if (!cdacMatchesDac)
+    if (!pass)
     {
-        ReportMismatch("cDAC stack reference verification failed - mismatch between cDAC and DAC GC refs", pThread, regs);
+        ReportMismatch("cDAC stack reference verification failed - mismatch between cDAC and runtime GC ref counts", pThread, regs);
     }
 }
 

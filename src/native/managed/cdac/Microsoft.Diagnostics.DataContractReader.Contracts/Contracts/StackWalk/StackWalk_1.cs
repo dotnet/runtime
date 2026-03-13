@@ -59,6 +59,12 @@ internal partial class StackWalk_1 : IStackWalk
         // set back to true when encountering a ResumableFrame (FRAME_ATTR_RESUMABLE).
         public bool IsFirst { get; set; } = true;
 
+        // When an active InlinedCallFrame is processed as SW_FRAME without advancing
+        // the FrameIterator, the same Frame would be re-encountered by
+        // CheckForSkippedFrames. This flag tells CheckForSkippedFrames to advance
+        // past it, preventing a duplicate SW_SKIPPED_FRAME -> SW_FRAMELESS yield.
+        public bool SkipCurrentFrameInCheck { get; set; }
+
         public bool IsCurrentFrameResumable()
         {
             if (State is not (StackWalkState.SW_FRAME or StackWalkState.SW_SKIPPED_FRAME))
@@ -689,6 +695,13 @@ internal partial class StackWalk_1 : IStackWalk
                 {
                     handle.FrameIter.Next();
                 }
+                else
+                {
+                    // Active InlinedCallFrame: FrameIter was NOT advanced. The next
+                    // CheckForSkippedFrames would re-encounter this same Frame and
+                    // create a spurious SW_SKIPPED_FRAME -> SW_FRAMELESS duplicate.
+                    handle.SkipCurrentFrameInCheck = true;
+                }
                 break;
             case StackWalkState.SW_ERROR:
             case StackWalkState.SW_COMPLETE:
@@ -739,6 +752,19 @@ internal partial class StackWalk_1 : IStackWalk
         if (!handle.FrameIter.IsValid())
         {
             return false;
+        }
+
+        // If the current Frame was already processed as SW_FRAME (e.g., an active
+        // InlinedCallFrame that wasn't advanced), skip it to avoid a duplicate
+        // SW_SKIPPED_FRAME -> SW_FRAMELESS yield for the same managed IP.
+        if (handle.SkipCurrentFrameInCheck)
+        {
+            handle.SkipCurrentFrameInCheck = false;
+            handle.FrameIter.Next();
+            if (!handle.FrameIter.IsValid())
+            {
+                return false;
+            }
         }
 
         // get the caller context
