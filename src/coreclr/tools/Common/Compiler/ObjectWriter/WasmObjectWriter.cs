@@ -325,11 +325,9 @@ namespace ILCompiler.ObjectWriter
         public const int WebcilSectionAlignment = 16;
         private WebcilSegment BuildWebcilDataSegment()
         {
-            WebcilSection[] webcilSections = _sections.Where(section => section is WebcilSection)
-                                                        .Select(section => section as WebcilSection).ToArray();
+            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
 
             uint sizeOfHeaders = (uint)WebcilHeader.EncodeSize() + (uint)(webcilSections.Length * WebcilSectionHeader.EncodeSize());
-
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
@@ -534,6 +532,11 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
+            if (!outputFileStream.CanSeek)
+            {
+                throw new NotSupportedException("EmitObjectFile requieres seekable output stream");
+            }
+
             EmitWasmHeader(outputFileStream);
             foreach (int index in SectionEmitOrder)
             {
@@ -800,7 +803,7 @@ namespace ILCompiler.ObjectWriter
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
             // TODO-Wasm: decide on convention here; webcil spec states this should be "webcil"
-            _defaultImports[0] = new WasmImport("env", "webcil", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            _defaultImports[0] = new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
 
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
             foreach (WasmImport import in _defaultImports)
