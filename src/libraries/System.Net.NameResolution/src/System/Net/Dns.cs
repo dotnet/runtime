@@ -419,9 +419,9 @@ namespace System.Net
         private const string Localhost = "localhost";
         private const string InvalidDomain = "invalid";
 
-        // Android's default /etc/hosts maps ::1 to "ip6-localhost" instead of "localhost",
-        // which causes getaddrinfo("localhost", AF_INET6) to fail with EAI_NONAME.
-        private const string AndroidIPv6Localhost = "ip6-localhost";
+        // Some systems (e.g. Android, some Linux distros) map ::1 to "ip6-localhost" instead of
+        // "localhost" in /etc/hosts, which causes getaddrinfo("localhost", AF_INET6) to fail with EAI_NONAME.
+        private const string IPv6Localhost = "ip6-localhost";
 
         /// <summary>
         /// Checks if the given host name matches a reserved name or is a subdomain of it.
@@ -558,11 +558,11 @@ namespace System.Net
                 {
                     return GetHostEntryOrAddressesCore(Localhost, justAddresses, addressFamily);
                 }
-                catch (SocketException ex) when (OperatingSystem.IsAndroid() && addressFamily == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
+                catch (SocketException ex) when (addressFamily == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
                 {
-                    // Android's default /etc/hosts maps ::1 to "ip6-localhost" instead of "localhost".
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost resolution with IPv6 failed on Android, retrying with '{AndroidIPv6Localhost}'");
-                    return GetHostEntryOrAddressesCore(AndroidIPv6Localhost, justAddresses, addressFamily);
+                    // Some systems map ::1 to "ip6-localhost" instead of "localhost" in /etc/hosts.
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost IPv6 resolution failed, retrying with '{IPv6Localhost}'");
+                    return GetHostEntryOrAddressesCore(IPv6Localhost, justAddresses, addressFamily);
                 }
             }
 
@@ -847,18 +847,18 @@ namespace System.Net
                 }
 
                 // Resolves "localhost" with the given address family, returning addresses.
-                // On Android, if IPv6 resolution fails with HostNotFound, retries with "ip6-localhost"
-                // because Android's default /etc/hosts maps ::1 to "ip6-localhost" instead of "localhost".
+                // If IPv6 resolution fails with HostNotFound, retries with "ip6-localhost"
+                // because some systems map ::1 to "ip6-localhost" instead of "localhost" in /etc/hosts.
                 static async Task<T> GetLocalhostAddressesAsync(AddressFamily family, CancellationToken cancellationToken)
                 {
                     try
                     {
                         return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(Localhost, family, cancellationToken)).ConfigureAwait(false);
                     }
-                    catch (SocketException ex) when (OperatingSystem.IsAndroid() && family == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
+                    catch (SocketException ex) when (family == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost resolution with IPv6 failed on Android, retrying with '{AndroidIPv6Localhost}'");
-                        return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(AndroidIPv6Localhost, family, cancellationToken)).ConfigureAwait(false);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost IPv6 resolution failed, retrying with '{IPv6Localhost}'");
+                        return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(IPv6Localhost, family, cancellationToken)).ConfigureAwait(false);
                     }
                 }
 
@@ -868,10 +868,10 @@ namespace System.Net
                     {
                         return await ((Task<T>)(Task)Dns.GetHostEntryAsync(Localhost, family, cancellationToken)).ConfigureAwait(false);
                     }
-                    catch (SocketException ex) when (OperatingSystem.IsAndroid() && family == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
+                    catch (SocketException ex) when (family == AddressFamily.InterNetworkV6 && ex.SocketErrorCode == SocketError.HostNotFound)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost resolution with IPv6 failed on Android, retrying with '{AndroidIPv6Localhost}'");
-                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync(AndroidIPv6Localhost, family, cancellationToken)).ConfigureAwait(false);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(Localhost, $"localhost IPv6 resolution failed, retrying with '{IPv6Localhost}'");
+                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync(IPv6Localhost, family, cancellationToken)).ConfigureAwait(false);
                     }
                 }
             }
