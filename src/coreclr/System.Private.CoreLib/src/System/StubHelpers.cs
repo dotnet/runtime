@@ -1492,6 +1492,7 @@ namespace System.StubHelpers
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);
         }
     }
+    #pragma warning restore IDE0060 // Remove unused parameter
 
     // Marshaller for layout classes and boxed structs.
     internal static unsafe class BoxedLayoutTypeMarshaler<T> where T : notnull
