@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using static Interop;
 
 namespace System.Runtime.InteropServices
 {
@@ -20,7 +19,7 @@ namespace System.Runtime.InteropServices
         /// Runtime can generate multiple addresses to same function. For registering and unregistering allways
         /// the same instance, we capture it in this statics.
         /// </summary>
-        private static readonly unsafe delegate* unmanaged<int, BOOL> s_HandlerRoutineAddr = &HandlerRoutine;
+        private static readonly unsafe delegate* unmanaged<int, Interop.BOOL> s_HandlerRoutineAddr = &HandlerRoutine;
 
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
