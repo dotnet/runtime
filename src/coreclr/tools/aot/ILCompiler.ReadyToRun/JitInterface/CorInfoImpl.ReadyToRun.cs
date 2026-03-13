@@ -573,6 +573,7 @@ namespace Internal.JitInterface
             var handle = ecmaMethod.Handle;
 
             List<TypeDesc> compExactlyDependsOnList = null;
+            bool hasCompHasFallback = false;
 
             foreach (var attributeHandle in metadataReader.GetMethodDefinition(handle).GetCustomAttributes())
             {
@@ -606,24 +607,40 @@ namespace Internal.JitInterface
                             compExactlyDependsOnList.Add(typeForBypass);
                         }
                     }
+                    else if (metadataReader.StringComparer.Equals(nameHandle, "CompHasFallbackAttribute"))
+                    {
+                        hasCompHasFallback = true;
+                    }
                 }
             }
 
             if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
             {
+                bool anySupported = false;
+
                 foreach (var intrinsicType in compExactlyDependsOnList)
                 {
                     InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(intrinsicType.Context.Target.Architecture, intrinsicType);
                     // If the instruction set is ILLEGAL, it means it is never supported by the current architecture so the behavior at runtime is known
                     if (instructionSet != InstructionSet.ILLEGAL)
                     {
-                        if (!instructionSetSupport.IsInstructionSetSupported(instructionSet) &&
-                                !instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                        if (instructionSetSupport.IsInstructionSetSupported(instructionSet))
+                        {
+                            anySupported = true;
+                        }
+                        else if (!instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
                         {
                             // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
                             return true;
                         }
                     }
+                }
+
+                if (!anySupported && !hasCompHasFallback)
+                {
+                    // If none of the instruction sets are supported (all are either illegal or explicitly unsupported),
+                    // skip compilation unless the method has a functional fallback path
+                    return true;
                 }
             }
 
