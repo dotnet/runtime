@@ -28,6 +28,7 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection ElementSection = new ObjectNodeSection("wasm.element", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ImportSection = new ObjectNodeSection("wasm.import", SectionType.ReadOnly, needsAlign: false);
@@ -143,6 +144,14 @@ namespace ILCompiler.ObjectWriter
         private void WriteGlobalExport(string name, int globalIndex) =>
             WriteExport(name, WasmExportKind.Global, globalIndex);
 
+        private int _numElements;
+        private void WriteFunctionElement(WasmInstructionGroup e0, ReadOnlySpan<int> functionIndices)
+        {
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ElementSection);
+            _numElements++;
+            throw new NotImplementedException();
+        }
+
         private List<WasmSection> _sections = new();
         private Dictionary<string, int> _sectionNameToIndex = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
@@ -151,6 +160,7 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
             { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
+            { WasmObjectNodeSection.ElementSection, WasmSectionType.Element },
             { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
@@ -173,10 +183,10 @@ namespace ILCompiler.ObjectWriter
 
         private WasmDataSection CreateCombinedDataSection()
         {
-            WasmInstructionGroup GetR2RStartOffset(int offset)
+            WasmInstructionGroup GetImageBaseOffset(int offset)
             {
                 return new WasmInstructionGroup([
-                    Global.Get(R2RStartGlobalIndex),
+                    Global.Get(ImageBaseGlobalIndex),
                     I32.Const(offset),
                     I32.Add,
                 ]);
@@ -189,7 +199,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Debug.Assert(wasmSection.Type == WasmSectionType.Data);
                 WasmDataSegment segment = new WasmDataSegment(wasmSection.Stream, wasmSection.Name, WasmDataSectionType.Active,
-                    GetR2RStartOffset(offset));
+                    GetImageBaseOffset(offset));
                 segments.Add(segment);
                 offset += segment.ContentSize;
             }
@@ -289,6 +299,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.FunctionSection.Name,
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
+            WasmObjectNodeSection.ElementSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
             WasmObjectNodeSection.CombinedDataSection.Name,
         ];
@@ -394,7 +405,7 @@ namespace ILCompiler.ObjectWriter
 
             Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer)
             {
-                Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type)); 
+                Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type));
                 sectionStream.Position = reloc.Offset;
                 sectionStream.ReadExactly(relocContents);
                 return relocContents;
@@ -408,13 +419,15 @@ namespace ILCompiler.ObjectWriter
         }
 
         const int StackPointerGlobalIndex = 0;
-        const int R2RStartGlobalIndex = 1;
+        const int ImageBaseGlobalIndex = 1;
+        const int ImagePointerBaseGlobalIndex = 2;
 
         private WasmImport[] _defaultImports = new[]
         {
             null, // placeholder for memory, which is set up dynamically in WriteImports()
             new WasmImport("env", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("env", "__r2r_start", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: R2RStartGlobalIndex),
+            new WasmImport("env", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+            new WasmImport("env", "__image_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImagePointerBaseGlobalIndex),
         };
 
         private void WriteImports()
@@ -468,6 +481,11 @@ namespace ILCompiler.ObjectWriter
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
             PrependCount(_sections[exportIdx], _numExports);
+
+            if (_sectionNameToIndex.TryGetValue(WasmObjectNodeSection.ElementSection.Name, out int elementIdx))
+            {
+                PrependCount(_sections[elementIdx], _numElements);
+            }
 
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
         }
