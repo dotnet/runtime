@@ -150,11 +150,17 @@ namespace System.Net
             [StructLayout(LayoutKind.Sequential)]
             private struct MessageHeader
             {
-                public InlineArray8<byte> Header;
+                public HeaderBuffer Header;
                 public MessageType MessageType;
                 private byte _unused1;
                 private byte _unused2;
                 private byte _unused3;
+
+                [InlineArray(HeaderLength)]
+                public struct HeaderBuffer
+                {
+                    private byte _element0;
+                }
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -196,16 +202,17 @@ namespace System.Net
             {
                 public MessageHeader Header;
                 public MessageField TargetName;
-                private Flags Flags;
-                public InlineArray8<byte> ServerChallenge;
+                public Flags Flags;
+                public ChallengeBuffer ServerChallenge;
+
+                [InlineArray(ChallengeLength)]
+                public struct ChallengeBuffer
+                {
+                    private byte _element0;
+                }
                 private ulong _unused;
                 public MessageField TargetInfo;
                 public Version Version;
-                public Flags Flags
-                {
-                    readonly get => BitConverter.IsLittleEndian ? _flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
-                    set => _flags = BitConverter.IsLittleEndian ? value : (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
-                }
             }
 
             // TYPE 3 message
@@ -219,13 +226,14 @@ namespace System.Net
                 public MessageField UserName;
                 public MessageField Workstation;
                 public MessageField EncryptedRandomSessionKey;
-                private Flags _flags;
+                public Flags Flags;
                 public Version Version;
-                public InlineArray16<byte> Mic;
-                public Flags Flags
+                public MicBuffer Mic;
+
+                [InlineArray(DigestLength)]
+                public struct MicBuffer
                 {
-                    readonly get => BitConverter.IsLittleEndian ? _flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
-                    set => _flags = BitConverter.IsLittleEndian ? value : (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
+                    private byte _element0;
                 }
             }
 
@@ -233,20 +241,26 @@ namespace System.Net
             [StructLayout(LayoutKind.Sequential)]
             private struct NtChallengeResponse
             {
-                public InlineArray16<byte> Hmac;
+                public DigestBuffer Hmac;
                 public byte Responserversion;
                 public byte HiResponserversion;
                 private byte _reserved1;
                 private byte _reserved2;
                 private int _reserved3;
                 private long _time;
-                public fixed byte ClientChallenge[ChallengeLength];
+                public ChallengeMessage.ChallengeBuffer ClientChallenge;
                 private int _reserved4;
-                public fixed byte ServerInfo[4]; // Has to be non-zero size, so set it to the Z(4) padding
+                public InlineArray4<byte> ServerInfo; // Has to be non-zero size, so set it to the Z(4) padding
                 public long Time
                 {
                     readonly get => BitConverter.IsLittleEndian ? _time : BinaryPrimitives.ReverseEndianness(_time);
                     set => _time = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+                }
+
+                [InlineArray(DigestLength)]
+                public struct DigestBuffer
+                {
+                    private byte _element0;
                 }
             }
 

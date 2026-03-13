@@ -148,9 +148,15 @@ internal static partial class Interop
             private IntPtr _friendlyName;
             internal string FriendlyName => Marshal.PtrToStringUni(_friendlyName)!;
 
-            private InlineArray8<byte> _address;
+            private AddrBuffer _address;
             private uint _addressLength;
             internal byte[] Address => MemoryMarshal.CreateReadOnlySpan<byte>(ref _address[0], (int)_addressLength).ToArray();
+
+            [InlineArray(MAX_ADAPTER_ADDRESS_LENGTH)]
+            private struct AddrBuffer
+            {
+                private byte _element0;
+            }
 
             internal AdapterFlags flags;
             internal uint mtu;
