@@ -169,7 +169,18 @@ namespace Microsoft.Interop
             {
                 ContainingSyntax syntax = ContainingSyntax[i];
 
-                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {SyntaxFacts.GetText(syntax.TypeKind)} {syntax.Identifier}{syntax.TypeParameters}");
+                string declarationKeyword = syntax.TypeKind switch
+                {
+                    SyntaxKind.ClassDeclaration => "class",
+                    SyntaxKind.StructDeclaration => "struct",
+                    SyntaxKind.InterfaceDeclaration => "interface",
+                    SyntaxKind.EnumDeclaration => "enum",
+                    SyntaxKind.RecordDeclaration => "record",
+                    SyntaxKind.RecordStructDeclaration => "record struct",
+                    _ => throw new UnreachableException(),
+                };
+
+                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {declarationKeyword} {syntax.Identifier}{syntax.TypeParameters}");
                 writer.WriteLine('{');
                 writer.Indent++;
             }
