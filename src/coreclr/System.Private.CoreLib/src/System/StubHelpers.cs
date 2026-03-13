@@ -1549,7 +1549,11 @@ namespace System.StubHelpers
 
             for (int i = 0; i < copyOfArgs.Length; i++)
             {
-                *(ByReference*)(pByRefFixedStorage + i) = ByReference.Create(ref copyOfArgs[i]);
+                ref object? arg = ref copyOfArgs[i];
+                *(ByReference*)(pByRefFixedStorage + i) =
+                    arg is not null && RuntimeHelpers.GetMethodTable(arg)->IsValueType
+                        ? ByReference.Create(ref arg.GetRawData())
+                        : ByReference.Create(ref arg);
             }
 
             return RuntimeMethodHandle.InvokeMethod(target, (void**)pByRefFixedStorage, signature, isConstructor: false);
