@@ -33,6 +33,7 @@
 #cmakedefine01 HAVE_STATVFS_BASETYPE
 #cmakedefine01 HAVE_GETFSSTAT_INT
 #cmakedefine01 HAVE_GETFSSTAT_SIZE_T
+#cmakedefine01 HAVE_GETFSSTAT_LONG
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
