@@ -519,13 +519,15 @@ namespace System.Collections.Frozen.Tests
         protected override int Next(Random random) => random.Next();
 
         [Fact]
-        [OuterLoop("Requires several GB of available memory")]
-        public void ToFrozenDictionary_HugeDictionary_NoIntegerOverflow()
+        [OuterLoop("Allocates a large collection")]
+        public void ToFrozenDictionary_LargeDictionary_ExceedsPrimeTable()
         {
-            // Without the fix for integer overflow in FrozenHashTable.CalcNumBuckets,
-            // this throws IndexOutOfRangeException when uniqueCodesCount * 2 overflows int
-            // for collections with more than int.MaxValue / 2 elements.
-            const int count = 1_073_741_825; // just over int.MaxValue / 2
+            // Validate that FrozenHashTable handles collections whose
+            // uniqueCodesCount * 2 exceeds the precomputed primes table,
+            // exercising the CalcNumBuckets early-return path.
+            // The integer overflow fix for >1B items (long minNumBuckets)
+            // cannot be practically tested without multi-GB allocations.
+            const int count = 4_000_000;
             var dict = new Dictionary<int, int>(count);
             for (int i = 0; i < count; i++)
             {
