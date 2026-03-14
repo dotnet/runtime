@@ -30,7 +30,7 @@ public unsafe class EnumMethodDefinitionsTests
         mdBuilder.AddModule(
             0,
             mdBuilder.GetOrAddString("TestModule"),
-            mdBuilder.GetOrAddGuid(Guid.NewGuid()),
+            mdBuilder.GetOrAddGuid(Guid.Empty),
             default, default);
 
         mdBuilder.AddAssembly(
