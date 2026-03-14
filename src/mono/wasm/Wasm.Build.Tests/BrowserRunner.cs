@@ -4,12 +4,10 @@
 #nullable enable
 
 using System;
-using System.Diagnostics;
-using System.Linq;
-using System.IO;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Wasm.Tests.Internal;
@@ -126,8 +124,6 @@ internal class BrowserRunner : IAsyncDisposable
             chromeArgs = chromeArgs.Append("--headless").ToArray();
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
-        CheckBrowserDependencies(s_chromePath.Value);
-
         Exception? lastException = null;
         int attempt = 0;
         while (attempt < maxRetries)
@@ -162,74 +158,6 @@ internal class BrowserRunner : IAsyncDisposable
         if (attempt == maxRetries)
             throw new Exception($"Failed to launch browser after {maxRetries} attempts", lastException);
         return Browser!;
-    }
-
-    private static bool s_browserDependenciesChecked;
-
-    private void CheckBrowserDependencies(string chromePath)
-    {
-        if (s_browserDependenciesChecked || !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            return;
-
-        s_browserDependenciesChecked = true;
-
-        string output;
-        try
-        {
-            var psi = new ProcessStartInfo("ldd")
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-            psi.ArgumentList.Add(chromePath);
-            using var process = Process.Start(psi);
-            if (process == null)
-                return;
-
-            // Read stdout/stderr asynchronously to avoid deadlocks
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            if (!process.WaitForExit(10_000))
-            {
-                try { process.Kill(); process.WaitForExit(1_000); } catch { }
-                // Observe the async read tasks to avoid unobserved exceptions
-                try { stdoutTask.GetAwaiter().GetResult(); } catch { }
-                try { stderrTask.GetAwaiter().GetResult(); } catch { }
-                _testOutput.WriteLine("Could not check browser dependencies: ldd timed out");
-                return;
-            }
-
-            output = stdoutTask.GetAwaiter().GetResult();
-            string stderr = stderrTask.GetAwaiter().GetResult();
-
-            if (process.ExitCode != 0)
-            {
-                _testOutput.WriteLine($"ldd exited with code {process.ExitCode}. stderr: {stderr}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _testOutput.WriteLine($"Could not check browser dependencies: {ex.Message}");
-            return;
-        }
-
-        var missingLibs = output
-            .Split('\n')
-            .Where(line => line.Contains("not found"))
-            .Select(line => line.Trim())
-            .ToList();
-
-        if (missingLibs.Count > 0)
-        {
-            string message = $"Chrome binary at '{chromePath}' is missing {missingLibs.Count} shared library dependencies:\n"
-                + string.Join("\n", missingLibs)
-                + "\nThis will cause TargetClosedException when Playwright tries to launch Chrome."
-                + "\nEnsure the Helix queue/container has Chrome's system dependencies installed (libgbm1, libnss3, libatk1.0-0, etc.).";
-            _testOutput.WriteLine($"WARNING: {message}");
-            throw new Exception(message);
-        }
     }
 
     // FIXME: options
