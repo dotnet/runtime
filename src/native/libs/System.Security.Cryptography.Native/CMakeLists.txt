@@ -15,23 +15,28 @@ add_compile_options(-Wno-used-but-marked-unused)
 
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
-# On OpenBSD, the base system provides LibreSSL in /usr, while OpenSSL 3 from packages
-# is installed under eopenssl36. In distro-agnostic mode, prefer the packaged OpenSSL.
+# On OpenBSD, the base system provides LibreSSL in /usr, while packaged OpenSSL
+# is installed under versioned eopenssl* prefixes. In distro-agnostic mode,
+# prefer the newest packaged OpenSSL discovered in the sysroot.
 if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
-    if (EXISTS "${CMAKE_SYSROOT}/lib/eopenssl36/cmake/OpenSSL/OpenSSLConfig.cmake")
-        set(OpenSSL_DIR "${CMAKE_SYSROOT}/lib/eopenssl36/cmake/OpenSSL" CACHE PATH "OpenSSL config directory" FORCE)
-    endif()
+    file(GLOB _openbsd_eopenssl_configs "${CMAKE_SYSROOT}/lib/eopenssl*/cmake/OpenSSL/OpenSSLConfig.cmake")
+    if (_openbsd_eopenssl_configs)
+        list(SORT _openbsd_eopenssl_configs)
+        list(REVERSE _openbsd_eopenssl_configs)
+        list(GET _openbsd_eopenssl_configs 0 _openbsd_eopenssl_config)
 
-    if (EXISTS "${CMAKE_SYSROOT}/include/eopenssl36")
-        set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/include/eopenssl36" CACHE PATH "OpenSSL include directory" FORCE)
-    endif()
+        get_filename_component(_openbsd_openssl_dir "${_openbsd_eopenssl_config}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_prefix "${_openbsd_openssl_dir}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_prefix "${_openbsd_openssl_prefix}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_name "${_openbsd_openssl_prefix}" NAME)
 
-    if (EXISTS "${CMAKE_SYSROOT}/lib/eopenssl36/libcrypto.so.42.0")
-        set(OPENSSL_CRYPTO_LIBRARY "${CMAKE_SYSROOT}/lib/eopenssl36/libcrypto.so.42.0" CACHE FILEPATH "OpenSSL crypto library" FORCE)
-    endif()
+        unset(OPENSSL_CRYPTO_LIBRARY CACHE)
+        unset(OPENSSL_SSL_LIBRARY CACHE)
+        set(OpenSSL_DIR "${_openbsd_openssl_dir}" CACHE PATH "OpenSSL config directory" FORCE)
 
-    if (EXISTS "${CMAKE_SYSROOT}/lib/eopenssl36/libssl.so.42.0")
-        set(OPENSSL_SSL_LIBRARY "${CMAKE_SYSROOT}/lib/eopenssl36/libssl.so.42.0" CACHE FILEPATH "OpenSSL ssl library" FORCE)
+        if (EXISTS "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}")
+            set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}" CACHE PATH "OpenSSL include directory" FORCE)
+        endif()
     endif()
 endif()
 
