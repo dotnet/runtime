@@ -57,20 +57,20 @@ namespace System.Runtime.CompilerServices
 
     [Flags]
     // Keep in sync with CORINFO_CONTINUATION_FLAGS
-    internal enum ContinuationFlags : uint
+    internal enum ContinuationFlags
     {
-        ContinueOnThreadPool = 1u << 0,
-        ContinueOnCapturedSynchronizationContext = 1u << 1,
-        ContinueOnCapturedTaskScheduler = 1u << 2,
+        ContinueOnThreadPool = 1 << 0,
+        ContinueOnCapturedSynchronizationContext = 1 << 1,
+        ContinueOnCapturedTaskScheduler = 1 << 2,
 
-        ExceptionIndexFirstBit = 3u,
-        ExceptionIndexNumBits = 2u,
+        ExceptionIndexFirstBit = 3,
+        ExceptionIndexNumBits = 2,
 
-        ContinuationContextIndexFirstBit = 5u,
-        ContinuationContextIndexNumBits = 2u,
+        ContinuationContextIndexFirstBit = 5,
+        ContinuationContextIndexNumBits = 2,
 
-        ResultIndexFirstBit = 7u,
-        ResultIndexBits = 26u,
+        ResultIndexFirstBit = 7,
+        ResultIndexBits = 26,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
