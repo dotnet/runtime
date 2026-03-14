@@ -1236,6 +1236,7 @@ namespace System
             }
 
             int shiftRight = 63 - mantissaBits;
+            Debug.Assert(shiftRight >= 11, "shiftRight is always >= 11 for all IEEE float types (double: 11, float: 40, Half: 53, BFloat16: 56)");
             long biasedExp = actualExp + TFloat.ExponentBias;
 
             if (biasedExp <= 0)
@@ -1298,10 +1299,8 @@ namespace System
                     }
                 }
             }
-            else if (shiftRight == 0)
-            {
-                mantissa = significand;
-            }
+            // shiftRight > 64 is impossible: max is 63 - 7 + denormalShift, capped by the
+            // early return when denormalShift > 64 - shiftRight.
 
             mantissa &= TFloat.DenormalMantissaMask;
 
