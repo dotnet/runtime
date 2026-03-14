@@ -1539,6 +1539,7 @@ namespace System.StubHelpers
         {
             IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
             Signature signature = new(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
+            Debug.Assert(copyOfArgs.Length <= MethodBase.MaxStackAllocArgCount);
 
             MethodBase.StackAllocatedByRefs byrefs = default;
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
