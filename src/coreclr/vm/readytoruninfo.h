@@ -347,7 +347,7 @@ private:
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, ModuleBase *pModule1, mdToken mdToken2, IMDInternalImport * pImport2, ModuleBase *pModule2);
 
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
-    void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
+    bool SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
 
     PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 
