@@ -15454,7 +15454,7 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 //
 GenTree* Compiler::fgMorphReduceAddOrSubOps(GenTree* tree)
 {
-    // ADD(_, V0) starts the pattern match.
+    // ADD(_, V0) OR SUB(_, V0) starts the pattern match.
     if (!tree->OperIs(GT_ADD, GT_SUB) || tree->gtOverflow())
     {
         return tree;
@@ -15490,7 +15490,7 @@ GenTree* Compiler::fgMorphReduceAddOrSubOps(GenTree* tree)
     // lclNum), lclNum).
     while (true)
     {
-        // ADD(lclNum, lclNum), end of tree
+        // ADD(lclNum, lclNum) OR SUB(lclNum, lclNum), end of tree
         if ((op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op2->OperIs(GT_LCL_VAR) &&
              op2->AsLclVarCommon()->GetLclNum() == lclNum) ||
             (op1->OperIs(GT_IND) && op1->AsIndir()->Base()->OperIs(GT_LCL_VAR) &&
