@@ -636,6 +636,11 @@ namespace System
                     int bitsToKeep = precision * 4;
                     int bitsToDiscard = mantissaBits - bitsToKeep;
 
+                    // bitsToDiscard is always in (0, mantissaBits) here because precision >= 1
+                    // (we're in the precision > 0 branch) and precision < defaultHexDigits
+                    // (checked above), so bitsToKeep < mantissaBits and bitsToDiscard > 0.
+                    // For all IEEE types mantissaBits <= 52, so bitsToDiscard < 64.
+                    Debug.Assert(bitsToDiscard > 0 && bitsToDiscard < 64);
                     if (bitsToDiscard > 0 && bitsToDiscard < 64)
                     {
                         ulong roundBit = 1UL << (bitsToDiscard - 1);
