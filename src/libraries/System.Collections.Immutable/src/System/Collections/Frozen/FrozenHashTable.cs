@@ -56,6 +56,15 @@ namespace System.Collections.Frozen
             // - bucketStarts: initially filled with all -1s, the ith element stores the index
             //   into hashCodes of the head element of that bucket's chain.
             // - nexts: the ith element stores the index of the next item in the chain.
+            // Use long to check for overflow before allocating - very large collections can overflow int.
+#if NET
+            if ((long)numBuckets + hashCodes.Length > Array.MaxLength)
+#else
+            if ((long)numBuckets + hashCodes.Length > 0x7FFFFFC7)
+#endif
+            {
+                throw new OutOfMemoryException();
+            }
             int[] arrayPoolBuckets = ArrayPool<int>.Shared.Rent(numBuckets + hashCodes.Length);
             Span<int> bucketStarts = arrayPoolBuckets.AsSpan(0, numBuckets);
             Span<int> nexts = arrayPoolBuckets.AsSpan(numBuckets, hashCodes.Length);
@@ -174,7 +183,8 @@ namespace System.Collections.Frozen
 
             // Based on our observations, in more than 99.5% of cases the number of buckets that meets our criteria is
             // at least twice as big as the number of unique hash codes.
-            int minNumBuckets = uniqueCodesCount * 2;
+            // Use long to avoid integer overflow when uniqueCodesCount is large (> ~1 billion).
+            long minNumBuckets = (long)uniqueCodesCount * 2;
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
             // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
