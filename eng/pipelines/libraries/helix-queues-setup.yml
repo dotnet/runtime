@@ -86,7 +86,7 @@ jobs:
 
     # Android
     # Use the Ubuntu-based Android queue for x86/x64/bionic_x64 on all projects,
-    # and also for arm/arm64/bionic_arm/bionic_arm64 on internal (no internal Windows Android queue).
+    # and also for arm/arm64/bionic_arm/bionic_arm64 on non-public projects (no internal Windows Android queue).
     - ${{ if in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64') }}:
       - Ubuntu.2204.Amd64.Android.29.Open
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm', 'linux_bionic_arm64')) }}:

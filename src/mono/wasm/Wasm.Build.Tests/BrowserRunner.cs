@@ -128,6 +128,7 @@ internal class BrowserRunner : IAsyncDisposable
 
         CheckBrowserDependencies(s_chromePath.Value);
 
+        Exception? lastException = null;
         int attempt = 0;
         while (attempt < maxRetries)
         {
@@ -147,17 +148,19 @@ internal class BrowserRunner : IAsyncDisposable
             }
             catch (System.TimeoutException ex)
             {
+                lastException = ex;
                 attempt++;
                 _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
             }
             catch (PlaywrightException ex) when (attempt + 1 < maxRetries)
             {
+                lastException = ex;
                 attempt++;
                 _testOutput.WriteLine($"Attempt {attempt} failed with PlaywrightException: {ex.Message}");
             }
         }
         if (attempt == maxRetries)
-            throw new Exception($"Failed to launch browser after {maxRetries} attempts");
+            throw new Exception($"Failed to launch browser after {maxRetries} attempts", lastException);
         return Browser!;
     }
 
@@ -179,8 +182,18 @@ internal class BrowserRunner : IAsyncDisposable
             if (process == null)
                 return;
 
-            output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(10_000);
+            // Read stdout/stderr asynchronously to avoid deadlocks
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
+            if (!process.WaitForExit(10_000))
+            {
+                try { process.Kill(); } catch { }
+                _testOutput.WriteLine("Could not check browser dependencies: ldd timed out");
+                return;
+            }
+
+            output = stdoutTask.GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
