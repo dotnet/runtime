@@ -555,6 +555,9 @@ namespace System
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
 
+            vlb.Append(TChar.CastFrom('0'));
+            vlb.Append(TChar.CastFrom(fmt));
+
             ulong fraction = ExtractFractionAndBiasedExponent(value, out int exponent);
 
             if (fraction == 0)
