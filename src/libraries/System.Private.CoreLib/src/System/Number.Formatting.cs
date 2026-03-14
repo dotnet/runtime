@@ -546,6 +546,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert((fmt | 0x20) == 'x');
+            Debug.Assert(TNumber.IsFinite(value));
 
             bool isNegative = TNumber.IsNegative(value);
 
@@ -714,6 +715,8 @@ namespace System
             }
 
             // Emit exponent: p+NNN or p-NNN
+            // The exponent sign is always ASCII '+'/'-' per IEEE 754 §5.12.3,
+            // independent of NumberFormatInfo (which only governs the leading value sign).
             vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
 
             if (actualExponent >= 0)
