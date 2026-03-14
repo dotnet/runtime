@@ -12,11 +12,12 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -441,17 +442,27 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
-                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
+
+                if (node is AssemblyStubNode && _nodeFactory.Target.IsWasm)
                 {
-                    // Record only information we can get from the MethodDesc here. The actual
-                    // body will be emitted by the call to EmitData() at the end
-                    // of this loop iteration.
-                    RecordMethodDeclaration((ISymbolDefinitionNode)node, methodNode.Method);
-                }
-                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
-                {
-                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
+                    // TODO-Wasm: Handle AssemblyStubNode.
+                    // It is the other primary IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
                     continue;
+                }
+
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
+                {
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
+                    // TODO: eventually this should check IMethodCodeNodeWithTypeSignature
+                    // Once we have signatures implemented for all code-carrying nodes
+                    if (node is IMethodBodyNode methodNode)
+                    {
+                        // Record only information we can get from the MethodDesc here. The actual
+                        // body will be emitted by the call to EmitData() at the end
+                        // of this loop iteration.
+                        RecordMethodDeclaration(codeNode, methodNode.Method);
+                    }
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -654,7 +665,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(ISymbolDefinitionNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }

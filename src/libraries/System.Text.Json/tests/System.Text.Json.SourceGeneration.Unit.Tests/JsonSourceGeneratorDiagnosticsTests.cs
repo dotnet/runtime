@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -755,5 +756,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 #endif
+
+        [Fact]
+        public void Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            // SYSLIB1038: JsonInclude attribute on inaccessible member (Warning, configurable).
+            string source = """
+                #pragma warning disable SYSLIB1038
+                using System.Text.Json.Serialization;
+
+                namespace Test
+                {
+                    public class MyClass
+                    {
+                        [JsonInclude]
+                        private int PrivateField;
+                    }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class JsonContext : JsonSerializerContext { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1038");
+            Assert.True(diagnostic.IsSuppressed);
+        }
     }
 }
