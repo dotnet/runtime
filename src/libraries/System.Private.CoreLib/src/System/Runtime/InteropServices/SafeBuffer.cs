@@ -64,7 +64,6 @@
 // static variable (perhaps using Interlocked.CompareExchange).  Of course,
 // assignments in a static class constructor are under a lock implicitly.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 

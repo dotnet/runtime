@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -31,7 +30,6 @@ namespace System
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
             public Span<byte> Digits;
-
             public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))

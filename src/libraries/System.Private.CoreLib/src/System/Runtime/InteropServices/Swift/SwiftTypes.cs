@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Swift
@@ -33,7 +32,6 @@ namespace System.Runtime.InteropServices.Swift
         {
             Value = value;
         }
-
         /// <summary>
         /// Gets the pointer of the self context.
         /// </summary>
@@ -104,7 +102,6 @@ namespace System.Runtime.InteropServices.Swift
         {
             Value = value;
         }
-
         /// <summary>
         /// Gets the pointer of the error context.
         /// </summary>

@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
