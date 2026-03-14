@@ -142,7 +142,7 @@ namespace ILCompiler
                 _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: false, exception);
             }
 
-            public void MergePendingMap(Map pendingMap)
+            public void MergePendingMap(ModuleDesc stubModule, Map pendingMap)
             {
                 // Don't waste time adding entries from the pending map if we already have an exception stub,
                 // as the exception stub means the map is invalid and the entries won't be used anyway.
@@ -154,9 +154,16 @@ namespace ILCompiler
                     }
                     else
                     {
-                        foreach (KeyValuePair<TypeDesc, TypeDesc> kvp in pendingMap._associatedTypeMap)
+                        try
                         {
-                            AddAssociatedTypeMapEntry(kvp.Key, kvp.Value);
+                            foreach (KeyValuePair<TypeDesc, TypeDesc> kvp in pendingMap._associatedTypeMap)
+                            {
+                                AddAssociatedTypeMapEntry(kvp.Key, kvp.Value);
+                            }
+                        }
+                        catch (TypeSystemException ex)
+                        {
+                            SetAssociatedTypeMapException(stubModule, ex);
                         }
                     }
                 }
@@ -177,9 +184,16 @@ namespace ILCompiler
                     }
                     else
                     {
-                        foreach (KeyValuePair<string, (TypeDesc type, TypeDesc trimmingTarget)> kvp in pendingMap._externalTypeMap)
+                        try
                         {
-                            AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
+                            foreach (KeyValuePair<string, (TypeDesc type, TypeDesc trimmingTarget)> kvp in pendingMap._externalTypeMap)
+                            {
+                                AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
+                            }
+                        }
+                        catch (TypeSystemException ex)
+                        {
+                            SetExternalTypeMapException(stubModule, ex);
                         }
                     }
                 }
@@ -259,7 +273,7 @@ namespace ILCompiler
                             {
                                 typeMapStates[currentTypeMapGroup] = typeMapState = new Map(currentTypeMapGroup);
                             }
-                            typeMapState.MergePendingMap(pendingMap.map);
+                            typeMapState.MergePendingMap(throwHelperEmitModule, pendingMap.map);
                             foreach (ModuleDesc targetModule in pendingMap.map.TargetModules)
                             {
                                 Debug.Assert(assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse, "We should only have pending maps with target modules when we're traversing for type map groups, as opposed to just recording targets.");
