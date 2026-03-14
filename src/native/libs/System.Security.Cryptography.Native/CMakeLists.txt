@@ -15,6 +15,26 @@ add_compile_options(-Wno-used-but-marked-unused)
 
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
+# On OpenBSD, the base system provides LibreSSL in /usr, while OpenSSL 3 from packages
+# is installed under eopenssl36. In distro-agnostic mode, prefer the packaged OpenSSL.
+if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
+    if (EXISTS "${CMAKE_SYSROOT}/lib/eopenssl36/cmake/OpenSSL/OpenSSLConfig.cmake")
+        set(OpenSSL_DIR "${CMAKE_SYSROOT}/lib/eopenssl36/cmake/OpenSSL" CACHE PATH "OpenSSL config directory" FORCE)
+    endif()
+
+    if (EXISTS "${CMAKE_SYSROOT}/include/eopenssl36")
+        set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/include/eopenssl36" CACHE PATH "OpenSSL include directory" FORCE)
+    endif()
+
+    if (EXISTS "${CMAKE_SYSROOT}/lib/eopenssl36/libcrypto.so.42.0")
+        set(OPENSSL_CRYPTO_LIBRARY "${CMAKE_SYSROOT}/lib/eopenssl36/libcrypto.so.42.0" CACHE FILEPATH "OpenSSL crypto library" FORCE)
+    endif()
+
+    if (EXISTS "${CMAKE_SYSROOT}/lib/eopenssl36/libssl.so.42.0")
+        set(OPENSSL_SSL_LIBRARY "${CMAKE_SYSROOT}/lib/eopenssl36/libssl.so.42.0" CACHE FILEPATH "OpenSSL ssl library" FORCE)
+    endif()
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
