@@ -230,9 +230,41 @@ internal class BrowserRunner : IAsyncDisposable
         Func<string, string>? modifyBrowserUrl = null)
     {
         var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
-        var browser = await SpawnBrowserAsync(urlString, headless, locale: locale);
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = locale });
-        return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+
+        // Retry the full browser session (launch + navigate) to handle
+        // intermittent Chrome crashes in Docker containers under memory pressure.
+        // Chrome can silently die (OOM killed) during navigation when concurrent
+        // test classes run wasm-opt builds alongside browser tests.
+        const int maxSessionRetries = 3;
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                var browser = await SpawnBrowserAsync(urlString, headless, locale: locale);
+                var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = locale });
+                return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+            }
+            catch (Exception ex) when (attempt + 1 < maxSessionRetries &&
+                ex is PlaywrightException)
+            {
+                _testOutput.WriteLine($"Browser session attempt {attempt + 1} failed with {ex.GetType().Name}: {ex.Message}");
+                _testOutput.WriteLine("Retrying with a fresh browser instance...");
+                try
+                {
+                    if (Browser is not null)
+                    {
+                        await Browser.DisposeAsync();
+                        Browser = null;
+                    }
+                    Playwright?.Dispose();
+                    Playwright = null;
+                }
+                catch (Exception disposeEx)
+                {
+                    _testOutput.WriteLine($"Browser cleanup failed: {disposeEx.Message}");
+                }
+            }
+        }
     }
 
     public async Task<IPage> RunAsync(
