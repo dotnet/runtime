@@ -42,3 +42,14 @@ namespace System.Numerics
     }
 #endif
 }
+
+namespace System.Collections.Frozen
+{
+#if !NET
+    internal readonly partial struct FrozenHashTable
+    {
+        // Polyfill for Array.MaxLength (0x7FFFFFC7), which was added as a property in .NET 6.
+        private const int ArrayMaxLength = 0x7FFFFFC7;
+    }
+#endif
+}

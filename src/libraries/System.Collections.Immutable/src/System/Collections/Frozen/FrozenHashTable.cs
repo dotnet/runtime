@@ -13,10 +13,15 @@ namespace System.Collections.Frozen
     /// This hash table doesn't track any of the collection state. It merely keeps track
     /// of hash codes and of mapping these hash codes to spans of entries within the collection.
     /// </remarks>
-    internal readonly struct FrozenHashTable
+    internal readonly partial struct FrozenHashTable
     {
         private readonly Bucket[] _buckets;
         private readonly ulong _fastModMultiplier;
+
+#if NET
+        // On .NET 6+, Array.MaxLength is a property; the !NET polyfill is in Polyfills.cs.
+        private static int ArrayMaxLength => Array.MaxLength;
+#endif
 
         /// <summary>Initializes the hashtable with the computed hashcodes and bucket information.</summary>
         /// <param name="hashCodes">The array of hashcodes grouped into contiguous regions by bucket. Each bucket is one and only one region of the array.</param>
@@ -57,11 +62,7 @@ namespace System.Collections.Frozen
             //   into hashCodes of the head element of that bucket's chain.
             // - nexts: the ith element stores the index of the next item in the chain.
             // Use long to check for overflow before allocating - very large collections can overflow int.
-#if NET
-            if ((long)numBuckets + hashCodes.Length > Array.MaxLength)
-#else
-            if ((long)numBuckets + hashCodes.Length > 0x7FFFFFC7)
-#endif
+            if ((long)numBuckets + hashCodes.Length > ArrayMaxLength)
             {
                 throw new OutOfMemoryException();
             }
