@@ -195,6 +195,7 @@ class AsyncTransformation
     jitstd::vector<AsyncState> m_states;
     unsigned                   m_returnedContinuationVar = BAD_VAR_NUM;
     unsigned                   m_newContinuationVar      = BAD_VAR_NUM;
+    unsigned                   m_reuseContinuationVar    = BAD_VAR_NUM;
     unsigned                   m_dataArrayVar            = BAD_VAR_NUM;
     unsigned                   m_gcDataArrayVar          = BAD_VAR_NUM;
     unsigned                   m_resultBaseVar           = BAD_VAR_NUM;

@@ -1237,6 +1237,23 @@ PhaseStatus AsyncTransformation::Run()
         } while (any);
     }
 
+    if (ReuseContinuations())
+    {
+        // Set up the local containing the continuation we can reuse. For OSR
+        // things are special: we can transition to the OSR method after having
+        // resumed in the tier0 method. In that case we end up with the tier0
+        // continuation in the OSR method, but we cannot reuse it.
+        if (m_compiler->opts.IsOSR())
+        {
+            m_reuseContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("OSR reusable continuation"));
+            m_compiler->lvaGetDesc(m_reuseContinuationVar)->lvType = TYP_REF;
+        }
+        else
+        {
+            m_reuseContinuationVar = m_compiler->lvaAsyncContinuationArg;
+        }
+    }
+
     CreateResumptionsAndSuspensions();
 
     // After transforming all async calls we have created resumption blocks;
@@ -2179,10 +2196,10 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         JITDUMP("Continuation reuse is active. Split suspendBB into suspendBB " FMT_BB " -> reuseContinuationBlock " FMT_BB " -> allocNewBlock " FMT_BB " -> suspendBBTail " FMT_BB "\n",
             suspendBB->bbNum, reuseContinuationBB->bbNum, allocNewBB->bbNum, suspendTailBB->bbNum);
 
-        // Store newContinuationVar = asyncContinuationArg in suspendBB
-        GenTree* continuationParam = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-        GenTree* storeContinuationParam = m_compiler->gtNewStoreLclVarNode(newContinuationVar, continuationParam);
-        LIR::AsRange(suspendBB).InsertAtEnd(continuationParam, storeContinuationParam);
+        // Store newContinuationVar = reusableContinuation in suspendBB
+        GenTree* reusableContinuation = m_compiler->gtNewLclvNode(m_reuseContinuationVar, TYP_REF);
+        GenTree* storeContinuationParam = m_compiler->gtNewStoreLclVarNode(newContinuationVar, reusableContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusableContinuation, storeContinuationParam);
 
         // Check if newContinuationVar != null, jump to reuseContinuationBlock
         GenTree* reusedContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
@@ -3471,5 +3488,13 @@ void AsyncTransformation::CreateResumptionSwitch()
         GenTree* ltZero           = m_compiler->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
         GenTree* jtrue            = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+
+        if (ReuseContinuations())
+        {
+            // Also, save the fact that we have a reusable continuation
+            continuationArg = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+            GenTree* storeReusable = m_compiler->gtNewStoreLclVarNode(m_reuseContinuationVar, continuationArg);
+            LIR::AsRange(onContinuationBB).InsertAtBeginning(continuationArg, storeReusable);
+        }
     }
 }
