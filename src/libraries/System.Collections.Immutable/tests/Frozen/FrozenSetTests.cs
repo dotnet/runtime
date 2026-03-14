@@ -441,6 +441,27 @@ namespace System.Collections.Frozen.Tests
         protected override bool DefaultValueAllowed => true;
 
         protected override int CreateT(int seed) => new Random(seed).Next();
+
+        [Fact]
+        [OuterLoop("Requires several GB of available memory")]
+        public void ToFrozenSet_HugeSet_NoIntegerOverflow()
+        {
+            // Without the fix for integer overflow in FrozenHashTable.CalcNumBuckets,
+            // this throws IndexOutOfRangeException when uniqueCodesCount * 2 overflows int
+            // for collections with more than int.MaxValue / 2 elements.
+            const int count = 1_073_741_825; // just over int.MaxValue / 2
+            var set = new HashSet<int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                set.Add(i);
+            }
+
+            FrozenSet<int> frozen = set.ToFrozenSet();
+            Assert.Equal(count, frozen.Count);
+            Assert.True(frozen.Contains(0));
+            Assert.True(frozen.Contains(count - 1));
+            Assert.False(frozen.Contains(count));
+        }
     }
 
     public class FrozenSet_Generic_Tests_SimpleClass : FrozenSet_Generic_Tests<SimpleClass>

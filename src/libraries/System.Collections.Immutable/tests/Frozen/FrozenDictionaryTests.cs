@@ -516,7 +516,28 @@ namespace System.Collections.Frozen.Tests
 
     public class FrozenDictionary_Generic_Tests_int_int : FrozenDictionary_Generic_Tests_base_for_numbers<int>
     {
-        protected override int Next(Random random) => random.Next(); 
+        protected override int Next(Random random) => random.Next();
+
+        [Fact]
+        [OuterLoop("Requires several GB of available memory")]
+        public void ToFrozenDictionary_HugeDictionary_NoIntegerOverflow()
+        {
+            // Without the fix for integer overflow in FrozenHashTable.CalcNumBuckets,
+            // this throws IndexOutOfRangeException when uniqueCodesCount * 2 overflows int
+            // for collections with more than int.MaxValue / 2 elements.
+            const int count = 1_073_741_825; // just over int.MaxValue / 2
+            var dict = new Dictionary<int, int>(count);
+            for (int i = 0; i < count; i++)
+            {
+                dict.Add(i, i);
+            }
+
+            FrozenDictionary<int, int> frozen = dict.ToFrozenDictionary();
+            Assert.Equal(count, frozen.Count);
+            Assert.True(frozen.ContainsKey(0));
+            Assert.True(frozen.ContainsKey(count - 1));
+            Assert.False(frozen.ContainsKey(count));
+        }
     }
 
     public class FrozenDictionary_Generic_Tests_uint_uint : FrozenDictionary_Generic_Tests_base_for_numbers<uint>
