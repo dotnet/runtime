@@ -82,6 +82,11 @@ namespace System.Globalization
         /// exponent introduced by 'p' or 'P'. For compatibility, forms without the "0x"/"0X" prefix are also
         /// accepted, and integer-only hexadecimal values may omit the 'p'/'P' exponent.
         /// </summary>
+        /// <remarks>
+        /// Note that unlike <see cref="HexNumber"/> for integer types (which rejects a "0x"/"0X" prefix),
+        /// <see cref="HexFloat"/> accepts and ignores the prefix. This difference exists because the
+        /// IEEE 754 hex float grammar (e.g., <c>0x1.921fb54442d18p+1</c>) naturally includes the prefix.
+        /// </remarks>
         HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowHexSpecifier | AllowDecimalPoint,
 
         Currency = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
