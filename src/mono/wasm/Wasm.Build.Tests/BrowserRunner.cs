@@ -164,9 +164,11 @@ internal class BrowserRunner : IAsyncDisposable
         return Browser!;
     }
 
+    private static bool s_browserDependenciesChecked;
+
     private void CheckBrowserDependencies(string chromePath)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (s_browserDependenciesChecked || !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             return;
 
         string output;
@@ -188,7 +190,10 @@ internal class BrowserRunner : IAsyncDisposable
 
             if (!process.WaitForExit(10_000))
             {
-                try { process.Kill(); } catch { }
+                try { process.Kill(); process.WaitForExit(1_000); } catch { }
+                // Observe the async read tasks to avoid unobserved exceptions
+                try { stdoutTask.GetAwaiter().GetResult(); } catch { }
+                try { stderrTask.GetAwaiter().GetResult(); } catch { }
                 _testOutput.WriteLine("Could not check browser dependencies: ldd timed out");
                 return;
             }
@@ -222,6 +227,8 @@ internal class BrowserRunner : IAsyncDisposable
             _testOutput.WriteLine($"WARNING: {message}");
             throw new Exception(message);
         }
+
+        s_browserDependenciesChecked = true;
     }
 
     // FIXME: options
@@ -241,12 +248,14 @@ internal class BrowserRunner : IAsyncDisposable
         // intermittent Chrome crashes in Docker containers under memory pressure.
         // Chrome can silently die (OOM killed) during navigation when concurrent
         // test classes run wasm-opt builds alongside browser tests.
-        const int maxSessionRetries = 3;
+        const int maxSessionRetries = 2;
         for (int attempt = 0; ; attempt++)
         {
             try
             {
-                var browser = await SpawnBrowserAsync(urlString, headless, locale: locale);
+                // On retries, only try launching once since SpawnBrowserAsync has its own retry loop
+                int launchRetries = attempt == 0 ? 3 : 1;
+                var browser = await SpawnBrowserAsync(urlString, headless, maxRetries: launchRetries, locale: locale);
                 var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = locale });
                 return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
             }
