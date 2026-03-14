@@ -486,6 +486,13 @@ namespace System.Tests
             // HexFloat without AllowDecimalPoint should parse integers only
             yield return new object[] { "0xFF", NumberStyles.AllowHexSpecifier | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, invariantFormat, 255.0 };
             yield return new object[] { "A", NumberStyles.AllowHexSpecifier, invariantFormat, 10.0 };
+
+            // Zero with absurd exponent (still zero)
+            yield return new object[] { "0x0p99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
+            yield return new object[] { "0x0p-99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
+
+            // Trailing decimal point with no fractional digits
+            yield return new object[] { "0x1.p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
         }
 
         [Theory]
@@ -635,6 +642,8 @@ namespace System.Tests
             yield return new object[] { "0x1pa", NumberStyles.HexFloat, null, typeof(FormatException) }; // non-digit in exponent
             yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
             yield return new object[] { "0x1.0.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double decimal point
+            yield return new object[] { "0x 1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // embedded whitespace after prefix
+            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
         }
 
         [Theory]
@@ -1086,6 +1095,9 @@ namespace System.Tests
         [InlineData(0.0, "x20", "0.00000000000000000000p+0")]
         [InlineData(-0.0, "x0", "-0p+0")]
         [InlineData(-0.0, "x3", "-0.000p+0")]
+        // Precision rounding at MaxValue boundary (non-round-trippable: result exceeds double range)
+        [InlineData(double.MaxValue, "x0", "2p+1023")]
+        [InlineData(double.MaxValue, "x1", "1.0p+1024")]
         public static void ToStringHexFloat(double d, string format, string expected)
         {
             Assert.Equal(expected, d.ToString(format, NumberFormatInfo.InvariantInfo));
@@ -1129,12 +1141,21 @@ namespace System.Tests
             var tildeMinus = new NumberFormatInfo { NegativeSign = "~" };
             Assert.Equal("~1p+0", (-1.0).ToString("x", tildeMinus));
             NumberFormatTestHelper.TryFormatNumberTest(-1.0, "x", tildeMinus, "~1p+0", formatCasingMatchesOutput: false);
+
+            // Multi-character decimal separator
+            var multiSep = new NumberFormatInfo { NumberDecimalSeparator = "::" };
+            Assert.Equal(1.5, double.Parse("0x1::8p0", NumberStyles.HexFloat, multiSep));
+            Assert.False(double.TryParse("0x1.8p0", NumberStyles.HexFloat, multiSep, out _));
+            Assert.Equal("1::8p+0", 1.5.ToString("x", multiSep));
+            NumberFormatTestHelper.TryFormatNumberTest(1.5, "x", multiSep, "1::8p+0", formatCasingMatchesOutput: false);
         }
 
         [Theory]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowExponent)]
+        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowTrailingSign)]
+        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowParentheses)]
         [InlineData(NumberStyles.AllowBinarySpecifier)]
         public static void HexFloat_StyleValidation(NumberStyles style)
         {
