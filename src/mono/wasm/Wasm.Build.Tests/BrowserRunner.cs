@@ -156,7 +156,7 @@ internal class BrowserRunner : IAsyncDisposable
             }
         }
         if (attempt == maxRetries)
-            throw new Exception($"Failed to launch browser after {maxRetries} attempts", lastException);
+            throw new InvalidOperationException($"Failed to launch browser after {maxRetries} attempts", lastException);
         return Browser!;
     }
 
