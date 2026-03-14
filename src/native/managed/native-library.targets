@@ -100,8 +100,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <CopyFinalFiles Include="$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)" />
-      <CopyFinalFilesPDB Include="$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName).pdb" />
+      <CopyFinalFiles Include="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" />
+      <CopyFinalFilesPDB Include="$(NativeOutputPath)$(TargetName).pdb" />
     </ItemGroup>
 
     <Message Importance="Normal" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
