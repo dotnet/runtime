@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 // Check if we should use getfsstat or /proc/mounts
-#if HAVE_MNTINFO
+#if HAVE_MNTINFO || defined(TARGET_OPENBSD)
 #include <sys/mount.h>
 #else
 #if HAVE_SYS_STATFS_H
@@ -196,6 +196,48 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 
     return 0;
 }
+#elif defined(TARGET_OPENBSD)
+    struct statfs* mounts = NULL;
+    int count = getfsstat(NULL, 0, MNT_NOWAIT);
+    if (count < 0)
+    {
+        return -1;
+    }
+
+    if (count == 0)
+    {
+        return 0;
+    }
+
+    size_t bufferSize = 0;
+    if (!multiply_s((size_t)count, sizeof(*mounts), &bufferSize) || bufferSize > INT_MAX)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    mounts = (struct statfs*)malloc(bufferSize);
+    if (mounts == NULL)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
+    if (count < 0)
+    {
+        free(mounts);
+        return -1;
+    }
+
+    for (int32_t i = 0; i < count; i++)
+    {
+        onFound(context, mounts[i].f_mntonname);
+    }
+
+    free(mounts);
+    return 0;
+}
 #else
 #error "Don't know how to enumerate mount points on this platform"
 #endif
@@ -205,7 +247,7 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
     assert(name != NULL);
     assert(mpi != NULL);
 
-#if HAVE_NON_LEGACY_STATFS
+#if HAVE_NON_LEGACY_STATFS || defined(TARGET_OPENBSD)
     struct statfs stats;
     memset(&stats, 0, sizeof(struct statfs));
 
@@ -244,7 +286,7 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
 
-#if HAVE_NON_LEGACY_STATFS
+#if HAVE_NON_LEGACY_STATFS || defined(TARGET_OPENBSD)
     struct statfs stats;
     int result = statfs(name, &stats);
 #elif defined(__HAIKU__)
