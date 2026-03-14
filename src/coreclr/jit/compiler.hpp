@@ -5284,8 +5284,8 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
 
 //------------------------------------------------------------------------
 // fgVisitBlocksInTryAwareLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
-// but ensure try and loop bodies are visited before their successors. Where these conflict,
-// give priority to try regions.
+// but ensure try regions (for try/catch) and loop bodies are visited before their successors.
+// Where these conflict, give priority to try regions.
 //
 // Type parameters:
 //   TFunc - Callback functor type
@@ -5342,7 +5342,7 @@ void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTre
                 func(block);
 
                 FlowGraphTryRegion* const tryRegion = tryRegions->GetTryRegionByHeader(block);
-                if (tryRegion != nullptr)
+                if ((tryRegion != nullptr) && tryRegion->HasCatchHandler())
                 {
                     tryRegion->VisitTryRegionBlocksReversePostOrder([&](BasicBlock* block) {
                         VisitBlock(block);
@@ -5362,7 +5362,7 @@ void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTre
         }
     };
 
-    if (tryRegions->NumTryRegions() == 0)
+    if (tryRegions->NumTryCatchRegions() == 0)
     {
         fgVisitBlocksInLoopAwareRPO(dfsTree, loops, func);
         return;

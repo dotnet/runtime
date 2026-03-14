@@ -3591,10 +3591,22 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     // Create the target basic block in the region indicated by the acd info
     //
     assert(add->acdKind != SCK_NONE);
-    bool const        putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
-    BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
-                                                    /* nearBlk */ nullptr, putInFilter,
-                                                    /* runRarely */ true, /* insertAtEnd */ true);
+    bool const putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
+
+    unsigned tryIndex = add->acdTryIndex;
+    unsigned hndIndex = add->acdHndIndex;
+
+#if defined(TARGET_WASM)
+    // For wasm we put throw helpers in the main method region, or in a non-try
+    // region of a handler.
+    //
+    assert(add->acdKeyDsg != AcdKeyDesignator::KD_TRY);
+    tryIndex = 0;
+#endif
+
+    BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], tryIndex, hndIndex,
+                                               /* nearBlk */ nullptr, putInFilter,
+                                               /* runRarely */ true, /* insertAtEnd */ true);
 
     newBlk->SetFlags(BBF_THROW_HELPER);
 
@@ -7542,6 +7554,8 @@ void BlockReachabilitySets::Dump()
 FlowGraphTryRegions::FlowGraphTryRegions(FlowGraphDfsTree* dfsTree, unsigned numRegions)
     : m_dfsTree(dfsTree)
     , m_tryRegions(numRegions, nullptr, dfsTree->GetCompiler()->getAllocator(CMK_BasicBlock))
+    , m_numRegions(0)
+    , m_numTryCatchRegions(0)
 {
 }
 
@@ -7601,9 +7615,12 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 //
 FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree)
 {
+    // We use EHID here for stable indexing. So there may be some empty slots in the
+    // collection if we've deleted some EH regions.
+    //
     unsigned const       numTryRegions = comp->compEHID;
     FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(dfsTree, numTryRegions);
-    assert(numTryRegions <= comp->compHndBBtabCount);
+    assert(numTryRegions >= comp->compHndBBtabCount);
 
     for (EHblkDsc* ehDsc : EHClauses(comp))
     {
@@ -7617,6 +7634,13 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             EHblkDsc* parentTryDsc = &comp->compHndBBtab[parentTryIndex];
             region->m_parent       = regions->m_tryRegions[parentTryDsc->ebdID];
+        }
+
+        regions->m_numRegions++;
+
+        if (ehDsc->HasCatchHandler())
+        {
+            regions->m_numTryCatchRegions++;
         }
     }
 

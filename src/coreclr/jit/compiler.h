@@ -2279,6 +2279,9 @@ private:
 
     FlowGraphTryRegions(FlowGraphDfsTree* dfs, unsigned numRegions);
 
+    unsigned m_numRegions;
+    unsigned m_numTryCatchRegions;
+
 public:
 
     static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs);
@@ -2297,7 +2300,8 @@ public:
 
     FlowGraphTryRegion* GetTryRegionByHeader(BasicBlock* block);
 
-    size_t NumTryRegions() const { return m_tryRegions.size(); }
+    unsigned NumTryRegions() const { return m_numRegions; }
+    unsigned NumTryCatchRegions() const { return m_numTryCatchRegions; }
 
     FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
 

@@ -1150,7 +1150,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 // Loop bodies are contiguous in the LaRPO, so the end position
                 // is the header position plus the number of blocks in the loop.
                 //
-                unsigned endCursor = cursor + loop->NumLoopBlocks();
+                endCursor = cursor + loop->NumLoopBlocks();
 
 #ifdef DEBUG
                 unsigned endCursorCheck = cursor;
@@ -1260,6 +1260,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Remember an interval end here
             //
             scratch[succNum] = branch;
+
+            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", block->bbNum, cursor, succ->bbNum,
+                    succNum);
         }
     }
 
