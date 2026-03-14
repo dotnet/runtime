@@ -4899,7 +4899,7 @@ GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
 
     GenTree* shiftConst = m_compiler->gtNewIconNode(31, TYP_INT);
     GenTree* sar        = m_compiler->gtNewOperNode(GT_RSH, select->TypeGet(), relopOp1, shiftConst);
-    CheckImmedAndMakeContained(sar, shiftConst);
+    ContainCheckNode(sar);
 
     BlockRange().InsertAfter(relopOp1, shiftConst);
     BlockRange().InsertAfter(shiftConst, sar);
@@ -4910,7 +4910,7 @@ GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
     {
         GenTree* addConst = m_compiler->gtNewIconNode(falseValConst, select->TypeGet());
         GenTree* add      = m_compiler->gtNewOperNode(GT_ADD, select->TypeGet(), sar, addConst);
-        CheckImmedAndMakeContained(add, addConst);
+        ContainCheckNode(add);
 
         BlockRange().InsertAfter(sar, addConst);
         BlockRange().InsertAfter(addConst, add);
