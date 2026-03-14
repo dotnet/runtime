@@ -604,7 +604,7 @@ public sealed unsafe partial class SOSDacImpl
             if (ccw == 0 || (interfaces == null && pNeeded == null))
                 throw new ArgumentException();
 
-            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM; // E_NOTIMPL if contract is not present
             // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
             // GetCCWInterfaces navigates to the start of the chain in both cases.
             TargetPointer startCCW = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
@@ -3389,8 +3389,63 @@ public sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetRCWData(ClrDataAddress addr, DacpRCWData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (addr == 0 || data is null)
+                throw new ArgumentException();
+
+            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
+            *data = default;
+            TargetPointer rcwPtr = addr.ToTargetPointer(_target);
+            Contracts.RCWData rcwData = builtInCom.GetRCWData(rcwPtr);
+
+            data->identityPointer = rcwData.IdentityPointer.ToClrDataAddress(_target);
+            data->unknownPointer = rcwData.UnknownPointer.ToClrDataAddress(_target);
+            data->managedObject = rcwData.ManagedObject.ToClrDataAddress(_target);
+            data->vtablePtr = rcwData.VTablePtr.ToClrDataAddress(_target);
+            data->creatorThread = rcwData.CreatorThread.ToClrDataAddress(_target);
+            data->ctxCookie = rcwData.CtxCookie.ToClrDataAddress(_target);
+            data->refCount = (int)rcwData.RefCount;
+            data->interfaceCount = builtInCom.GetRCWInterfaces(rcwPtr).Count();
+            data->isAggregated = rcwData.IsAggregated ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isContained = rcwData.IsContained ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isFreeThreaded = rcwData.IsFreeThreaded ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isDisconnected = rcwData.IsDisconnected ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpRCWData dataLocal;
+            int hrLocal = _legacyImpl.GetRCWData(addr, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->identityPointer == dataLocal.identityPointer, $"cDAC: {data->identityPointer:x}, DAC: {dataLocal.identityPointer:x}");
+                Debug.Assert(data->unknownPointer == dataLocal.unknownPointer, $"cDAC: {data->unknownPointer:x}, DAC: {dataLocal.unknownPointer:x}");
+                Debug.Assert(data->managedObject == dataLocal.managedObject, $"cDAC: {data->managedObject:x}, DAC: {dataLocal.managedObject:x}");
+                Debug.Assert(data->vtablePtr == dataLocal.vtablePtr, $"cDAC: {data->vtablePtr:x}, DAC: {dataLocal.vtablePtr:x}");
+                Debug.Assert(data->creatorThread == dataLocal.creatorThread, $"cDAC: {data->creatorThread:x}, DAC: {dataLocal.creatorThread:x}");
+                Debug.Assert(data->ctxCookie == dataLocal.ctxCookie, $"cDAC: {data->ctxCookie:x}, DAC: {dataLocal.ctxCookie:x}");
+                Debug.Assert(data->refCount == dataLocal.refCount, $"cDAC: {data->refCount}, DAC: {dataLocal.refCount}");
+                Debug.Assert(data->interfaceCount == dataLocal.interfaceCount, $"cDAC: {data->interfaceCount}, DAC: {dataLocal.interfaceCount}");
+                Debug.Assert(data->isAggregated == dataLocal.isAggregated, $"cDAC: {data->isAggregated}, DAC: {dataLocal.isAggregated}");
+                Debug.Assert(data->isContained == dataLocal.isContained, $"cDAC: {data->isContained}, DAC: {dataLocal.isContained}");
+                Debug.Assert(data->isFreeThreaded == dataLocal.isFreeThreaded, $"cDAC: {data->isFreeThreaded}, DAC: {dataLocal.isFreeThreaded}");
+                Debug.Assert(data->isDisconnected == dataLocal.isDisconnected, $"cDAC: {data->isDisconnected}, DAC: {dataLocal.isDisconnected}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
