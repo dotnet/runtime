@@ -1027,9 +1027,6 @@ public:
     CorIfaceAttr    GetComInterfaceType();
     void SetComInterfaceType(CorIfaceAttr ItfType);
 
-    OBJECTHANDLE GetOHDelegate();
-    void SetOHDelegate (OBJECTHANDLE _ohDelegate);
-
     CorClassIfaceAttr GetComClassInterfaceType();
     TypeHandle GetDefItfForComClassItf();
 

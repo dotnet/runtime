@@ -1468,16 +1468,6 @@ public:
         GetOptionalFields()->m_pCoClassForIntf = th;
     }
 
-    OBJECTHANDLE GetOHDelegate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ohDelegate;
-    }
-    void SetOHDelegate (OBJECTHANDLE _ohDelegate)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_ohDelegate = _ohDelegate;
-    }
     // Set the COM interface type.
     CorIfaceAttr GetComInterfaceType()
     {

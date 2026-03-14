@@ -4865,22 +4865,6 @@ BOOL MethodTable::IsExtensibleRCW()
 }
 
 //==========================================================================================
-OBJECTHANDLE MethodTable::GetOHDelegate()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->GetOHDelegate();
-}
-
-//==========================================================================================
-void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetClass());
-    GetClass()->SetOHDelegate(_ohDelegate);
-}
-
-//==========================================================================================
 // Helper to skip over COM class in the hierarchy
 MethodTable* MethodTable::GetComPlusParentMethodTable()
 {
