@@ -3933,7 +3933,7 @@ static void CreateLayoutClassStub(MethodTable* pMT,
     }
     CONTRACTL_END;
 
-    int marshalFlags = 0;
+    DWORD marshalFlags = 0;
 
     switch (op)
     {

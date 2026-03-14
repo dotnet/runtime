@@ -1407,50 +1407,100 @@ namespace System.StubHelpers
     }
     #pragma warning restore IDE0060 // Remove unused parameter
 
-    #pragma warning disable IDE0060 // Remove unused parameter
     internal static unsafe class LayoutClassMarshaler<T> where T : notnull
     {
-        private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToUnmanaged;
-        private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
-        private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _free;
+        // We use a nested Methods class with properties that unwrap the TypeInitializationException
+        // to ensure that users see a TypeLoadException if the type has a recursive native layout.
+        // This also ensures that we don't leak internal implementation details about how we generate marshalling stubs.
+        private static class Methods
+        {
+            private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToUnmanaged;
+            private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
+            private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _free;
 
 #pragma warning disable CA1810 // Static constructor is required to initialize with the out parameters
-        static LayoutClassMarshaler()
-        {
-            RuntimeTypeHandle th = typeof(T).TypeHandle;
-            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int _);
-            Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
-            if (isBlittable)
+            static Methods()
             {
-                _convertToUnmanaged = &BlittableConvertToUnmanaged;
-                _convertToManaged = &BlittableConvertToManaged;
-                _free = &BlittableFree;
+                RuntimeTypeHandle th = typeof(T).TypeHandle;
+                bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int _);
+                Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
+                if (isBlittable)
+                {
+                    _convertToUnmanaged = &BlittableConvertToUnmanaged;
+                    _convertToManaged = &BlittableConvertToManaged;
+                    _free = &BlittableFree;
+                }
+                else
+                {
+                    StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
+                }
             }
-            else
-            {
-                StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
-            }
-        }
 #pragma warning restore CA1810
 
-        private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-        {
-            SpanHelpers.Memmove(ref *unmanaged, ref managed, (nuint)sizeof(T));
-        }
+            private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                SpanHelpers.Memmove(ref *unmanaged, ref managed, (nuint)sizeof(T));
+            }
 
-        private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-        {
-            SpanHelpers.Memmove(ref managed, ref *unmanaged, (nuint)sizeof(T));
-        }
+            private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                SpanHelpers.Memmove(ref managed, ref *unmanaged, (nuint)sizeof(T));
+            }
 
-        private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
-        {
-            // Nothing to do for blittable types.
+            private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                // Nothing to do for blittable types.
+            }
+
+            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToUnmanaged
+            {
+                get
+                {
+                    try
+                    {
+                        return _convertToUnmanaged;
+                    }
+                    catch (TypeInitializationException ex)
+                    {
+                        throw ex.InnerException!;
+                    }
+                }
+            }
+
+            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged
+            {
+                get
+                {
+                    try
+                    {
+                        return _convertToManaged;
+                    }
+                    catch (TypeInitializationException ex)
+                    {
+                        throw ex.InnerException!;
+                    }
+                }
+            }
+
+            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free
+            {
+                get
+                {
+                    try
+                    {
+                        return _free;
+                    }
+                    catch (TypeInitializationException ex)
+                    {
+                        throw ex.InnerException!;
+                    }
+                }
+            }
         }
 
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            _convertToUnmanaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+            Methods.ConvertToUnmanaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
         public static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
@@ -1471,18 +1521,18 @@ namespace System.StubHelpers
 
         public static void ConvertToManaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            _convertToManaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+            Methods.ConvertToManaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
         private static void FreeCore(T? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (managed is null)
             {
-                _free(ref Unsafe.NullRef<byte>(), unmanaged, ref cleanupWorkList);
+                Methods.Free(ref Unsafe.NullRef<byte>(), unmanaged, ref cleanupWorkList);
             }
             else
             {
-                _free(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+                Methods.Free(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
             }
         }
 
@@ -1492,7 +1542,6 @@ namespace System.StubHelpers
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);
         }
     }
-    #pragma warning restore IDE0060 // Remove unused parameter
 
     // Marshaller for layout classes and boxed structs.
     internal static unsafe class BoxedLayoutTypeMarshaler<T> where T : notnull
