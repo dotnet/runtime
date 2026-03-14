@@ -1949,7 +1949,6 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
-#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 {
 #if defined(IOV_MAX)
@@ -1994,7 +1993,6 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 
     return allowedCount;
 }
-#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 
 int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
 {
@@ -2002,11 +2000,12 @@ int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
     assert(vectorCount >= 0);
 
     int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
 
     while (1)
     {
         int64_t count;
-        while ((count = readv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount)) < 0 && errno == EINTR);
+        while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
 
         if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
         {
@@ -2081,11 +2080,12 @@ int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
     assert(vectorCount >= 0);
 
     int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
 
     while (1)
     {
         int64_t count;
-        while ((count = writev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount)) < 0 && errno == EINTR);
+        while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
 
         if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
         {
