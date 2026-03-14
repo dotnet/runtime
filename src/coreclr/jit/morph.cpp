@@ -15483,8 +15483,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     int      foldCount = 0;
     unsigned lclNum    = op2->AsLclVarCommon()->GetLclNum();
 
-    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum) OR SUB(SUB(SUB(lclNum, lclNum),
-    // lclNum), lclNum).
+    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum).
     while (true)
     {
         // ADD(lclNum, lclNum), end of tree
@@ -15494,7 +15493,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
             foldCount += 2;
             break;
         }
-        // ADD(ADD(X, Y), lclNum) OR SUB(SUB(X, Y), lclNum), keep descending
+        // ADD(ADD(X, Y), lclNum), keep descending
         else if (op1->OperIs(GT_ADD) && !op1->gtOverflow() && op2->OperIs(GT_LCL_VAR) &&
                  op2->AsLclVarCommon()->GetLclNum() == lclNum)
         {
@@ -15564,13 +15563,13 @@ GenTree* Compiler::fgMorphReduceSubOps(GenTree* tree)
     // Search for pattern of shape SUB(SUB(SUB(lclNum, lclNum), lclNum), lclNum).
     while (true)
     {
-        // ADD(lclNum, lclNum), end of tree
+        // SUB(lclNum, lclNum), end of tree
         if (op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op2->OperIs(GT_LCL_VAR) &&
             op2->AsLclVarCommon()->GetLclNum() == lclNum)
         {
             break;
         }
-        // ADD(ADD(X, Y), lclNum) OR SUB(SUB(X, Y), lclNum), keep descending
+        // SUB(SUB(X, Y), lclNum), keep descending
         else if (op1->OperIs(targetOp) && !op1->gtOverflow() && op2->OperIs(GT_LCL_VAR) &&
                  op2->AsLclVarCommon()->GetLclNum() == lclNum)
         {
