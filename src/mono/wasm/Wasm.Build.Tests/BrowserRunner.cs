@@ -152,7 +152,7 @@ internal class BrowserRunner : IAsyncDisposable
                 attempt++;
                 _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
             }
-            catch (PlaywrightException ex) when (attempt + 1 < maxRetries)
+            catch (PlaywrightException ex)
             {
                 lastException = ex;
                 attempt++;
@@ -194,6 +194,12 @@ internal class BrowserRunner : IAsyncDisposable
             }
 
             output = stdoutTask.GetAwaiter().GetResult();
+            string stderr = stderrTask.GetAwaiter().GetResult();
+
+            if (process.ExitCode != 0)
+            {
+                _testOutput.WriteLine($"ldd exited with code {process.ExitCode}. stderr: {stderr}");
+            }
         }
         catch (Exception ex)
         {
