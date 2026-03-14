@@ -1096,41 +1096,41 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1.0f, "x", "1p+0")]
-        [InlineData(1.5f, "x", "1.8p+0")]
-        [InlineData(2.0f, "x", "1p+1")]
-        [InlineData(0.5f, "x", "1p-1")]
-        [InlineData(-1.0f, "x", "-1p+0")]
-        [InlineData(0.0f, "x", "0p+0")]
-        [InlineData(-0.0f, "x", "-0p+0")]
-        [InlineData(10.0f, "x", "1.4p+3")]
-        [InlineData(0.25f, "x", "1p-2")]
-        [InlineData(0.1f, "x", "1.998p-4")]
+        [InlineData(1.0f, "x", "0x1p+0")]
+        [InlineData(1.5f, "x", "0x1.8p+0")]
+        [InlineData(2.0f, "x", "0x1p+1")]
+        [InlineData(0.5f, "x", "0x1p-1")]
+        [InlineData(-1.0f, "x", "-0x1p+0")]
+        [InlineData(0.0f, "x", "0x0p+0")]
+        [InlineData(-0.0f, "x", "-0x0p+0")]
+        [InlineData(10.0f, "x", "0x1.4p+3")]
+        [InlineData(0.25f, "x", "0x1p-2")]
+        [InlineData(0.1f, "x", "0x1.998p-4")]
         // Special values
         [InlineData(float.NaN, "x", "NaN")]
         [InlineData(float.PositiveInfinity, "x", "Infinity")]
         [InlineData(float.NegativeInfinity, "x", "-Infinity")]
         // Edge case values
-        [InlineData(65504.0f, "x", "1.ffcp+15")]             // Half.MaxValue
-        [InlineData(-65504.0f, "x", "-1.ffcp+15")]           // Half.MinValue
-        [InlineData(5.9604645E-08f, "x", "1p-24")]           // Half.Epsilon
-        [InlineData(-5.9604645E-08f, "x", "-1p-24")]         // -Half.Epsilon
-        [InlineData(6.1035156E-05f, "x", "1p-14")]           // Min normal
+        [InlineData(65504.0f, "x", "0x1.ffcp+15")]             // Half.MaxValue
+        [InlineData(-65504.0f, "x", "-0x1.ffcp+15")]           // Half.MinValue
+        [InlineData(5.9604645E-08f, "x", "0x1p-24")]           // Half.Epsilon
+        [InlineData(-5.9604645E-08f, "x", "-0x1p-24")]         // -Half.Epsilon
+        [InlineData(6.1035156E-05f, "x", "0x1p-14")]           // Min normal
         // Uppercase
-        [InlineData(3.25f, "X", "1.AP+1")]
+        [InlineData(3.25f, "X", "0X1.AP+1")]
         // Precision
-        [InlineData(1.0f, "x0", "1p+0")]
-        [InlineData(1.5f, "x2", "1.80p+0")]
+        [InlineData(1.0f, "x0", "0x1p+0")]
+        [InlineData(1.5f, "x2", "0x1.80p+0")]
         // Precision with uppercase
-        [InlineData(3.25f, "X4", "1.A000P+1")]
+        [InlineData(3.25f, "X4", "0X1.A000P+1")]
         // Precision rounding: carry into leading digit
-        [InlineData(1.998f, "x0", "2p+0")]                // (Half)1.998f ~ 1.ffcp+0, rounds up to 2
+        [InlineData(1.998f, "x0", "0x2p+0")]                // (Half)1.998f ~ 1.ffcp+0, rounds up to 2
         // Large precision
-        [InlineData(1.0f, "x5", "1.00000p+0")]
+        [InlineData(1.0f, "x5", "0x1.00000p+0")]
         // Zero precision
-        [InlineData(0.0f, "x0", "0p+0")]
-        [InlineData(0.0f, "x3", "0.000p+0")]
-        [InlineData(-0.0f, "x0", "-0p+0")]
+        [InlineData(0.0f, "x0", "0x0p+0")]
+        [InlineData(0.0f, "x3", "0x0.000p+0")]
+        [InlineData(-0.0f, "x0", "-0x0p+0")]
         public static void ToStringHexFloat(float f, string format, string expected)
         {
             Half h = (Half)f;
@@ -1169,12 +1169,12 @@ namespace System.Tests
             var commaSep = new NumberFormatInfo { NumberDecimalSeparator = "," };
             Assert.Equal((Half)1.5f, Half.Parse("0x1,8p0", NumberStyles.HexFloat, commaSep));
             Assert.False(Half.TryParse("0x1.8p0", NumberStyles.HexFloat, commaSep, out _));
-            Assert.Equal("1,8p+0", ((Half)1.5f).ToString("x", commaSep));
-            NumberFormatTestHelper.TryFormatNumberTest((Half)1.5f, "x", commaSep, "1,8p+0", formatCasingMatchesOutput: false);
+            Assert.Equal("0x1,8p+0", ((Half)1.5f).ToString("x", commaSep));
+            NumberFormatTestHelper.TryFormatNumberTest((Half)1.5f, "x", commaSep, "0x1,8p+0", formatCasingMatchesOutput: false);
 
             var tildeMinus = new NumberFormatInfo { NegativeSign = "~" };
-            Assert.Equal("~1p+0", ((Half)(-1.0f)).ToString("x", tildeMinus));
-            NumberFormatTestHelper.TryFormatNumberTest((Half)(-1.0f), "x", tildeMinus, "~1p+0", formatCasingMatchesOutput: false);
+            Assert.Equal("~0x1p+0", ((Half)(-1.0f)).ToString("x", tildeMinus));
+            NumberFormatTestHelper.TryFormatNumberTest((Half)(-1.0f), "x", tildeMinus, "~0x1p+0", formatCasingMatchesOutput: false);
         }
 
         [Theory]

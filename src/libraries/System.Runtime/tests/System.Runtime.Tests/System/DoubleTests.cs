@@ -1032,72 +1032,72 @@ namespace System.Tests
 
         [Theory]
         // Basic values
-        [InlineData(1.0, "x", "1p+0")]
-        [InlineData(1.5, "x", "1.8p+0")]
-        [InlineData(2.0, "x", "1p+1")]
-        [InlineData(0.5, "x", "1p-1")]
-        [InlineData(-1.0, "x", "-1p+0")]
-        [InlineData(10.0, "x", "1.4p+3")]
-        [InlineData(0.25, "x", "1p-2")]
-        [InlineData(0.75, "x", "1.8p-1")]
-        [InlineData(100.0, "x", "1.9p+6")]
-        [InlineData(0.1, "x", "1.999999999999ap-4")]
-        [InlineData(0.3, "x", "1.3333333333333p-2")]
-        [InlineData(Math.PI, "x", "1.921fb54442d18p+1")]
-        [InlineData(Math.E, "x", "1.5bf0a8b145769p+1")]
-        [InlineData(1234567890.123456, "x", "1.26580b487e6b4p+30")]
-        [InlineData(-2.2250738585072014E-308, "x", "-1p-1022")]
+        [InlineData(1.0, "x", "0x1p+0")]
+        [InlineData(1.5, "x", "0x1.8p+0")]
+        [InlineData(2.0, "x", "0x1p+1")]
+        [InlineData(0.5, "x", "0x1p-1")]
+        [InlineData(-1.0, "x", "-0x1p+0")]
+        [InlineData(10.0, "x", "0x1.4p+3")]
+        [InlineData(0.25, "x", "0x1p-2")]
+        [InlineData(0.75, "x", "0x1.8p-1")]
+        [InlineData(100.0, "x", "0x1.9p+6")]
+        [InlineData(0.1, "x", "0x1.999999999999ap-4")]
+        [InlineData(0.3, "x", "0x1.3333333333333p-2")]
+        [InlineData(Math.PI, "x", "0x1.921fb54442d18p+1")]
+        [InlineData(Math.E, "x", "0x1.5bf0a8b145769p+1")]
+        [InlineData(1234567890.123456, "x", "0x1.26580b487e6b4p+30")]
+        [InlineData(-2.2250738585072014E-308, "x", "-0x1p-1022")]
         // Zero
-        [InlineData(0.0, "x", "0p+0")]
-        [InlineData(-0.0, "x", "-0p+0")]
+        [InlineData(0.0, "x", "0x0p+0")]
+        [InlineData(-0.0, "x", "-0x0p+0")]
         // Special values
         [InlineData(double.NaN, "x", "NaN")]
         [InlineData(double.PositiveInfinity, "x", "Infinity")]
         [InlineData(double.NegativeInfinity, "x", "-Infinity")]
         // Edge case values
-        [InlineData(double.MaxValue, "x", "1.fffffffffffffp+1023")]
-        [InlineData(double.MinValue, "x", "-1.fffffffffffffp+1023")]
-        [InlineData(double.Epsilon, "x", "1p-1074")]
-        [InlineData(-double.Epsilon, "x", "-1p-1074")]
-        [InlineData(2.2250738585072009E-308, "x", "1.ffffffffffffep-1023")] // Max subnormal
-        [InlineData(1.48219693752374E-323, "x", "1.8p-1073")]              // 3 * Epsilon
-        [InlineData(2.2250738585072014E-308, "x", "1p-1022")] // Min normal
+        [InlineData(double.MaxValue, "x", "0x1.fffffffffffffp+1023")]
+        [InlineData(double.MinValue, "x", "-0x1.fffffffffffffp+1023")]
+        [InlineData(double.Epsilon, "x", "0x1p-1074")]
+        [InlineData(-double.Epsilon, "x", "-0x1p-1074")]
+        [InlineData(2.2250738585072009E-308, "x", "0x1.ffffffffffffep-1023")] // Max subnormal
+        [InlineData(1.48219693752374E-323, "x", "0x1.8p-1073")]              // 3 * Epsilon
+        [InlineData(2.2250738585072014E-308, "x", "0x1p-1022")] // Min normal
         // Uppercase
-        [InlineData(3.25, "X", "1.AP+1")]
-        [InlineData(10.0, "X", "1.4P+3")]
-        [InlineData(255.5, "X", "1.FFP+7")]
+        [InlineData(3.25, "X", "0X1.AP+1")]
+        [InlineData(10.0, "X", "0X1.4P+3")]
+        [InlineData(255.5, "X", "0X1.FFP+7")]
         // Explicit precision
-        [InlineData(1.0, "x0", "1p+0")]
-        [InlineData(1.0, "x2", "1.00p+0")]
-        [InlineData(1.5, "x4", "1.8000p+0")]
-        [InlineData(1.5, "x13", "1.8000000000000p+0")]
-        [InlineData(1.5, "x1", "1.8p+0")]
-        [InlineData(0.1, "x1", "1.ap-4")] // 0.1 = 1.999999999999a, round at 1 digit: 0x19... > 0x10, round up
-        [InlineData(1.0, "x15", "1.000000000000000p+0")] // precision > default (13)
+        [InlineData(1.0, "x0", "0x1p+0")]
+        [InlineData(1.0, "x2", "0x1.00p+0")]
+        [InlineData(1.5, "x4", "0x1.8000p+0")]
+        [InlineData(1.5, "x13", "0x1.8000000000000p+0")]
+        [InlineData(1.5, "x1", "0x1.8p+0")]
+        [InlineData(0.1, "x1", "0x1.ap-4")] // 0.1 = 1.999999999999a, round at 1 digit: 0x19... > 0x10, round up
+        [InlineData(1.0, "x15", "0x1.000000000000000p+0")] // precision > default (13)
         // Precision with uppercase
-        [InlineData(3.25, "X4", "1.A000P+1")]
-        [InlineData(1.5, "X0", "2P+0")]
+        [InlineData(3.25, "X4", "0X1.A000P+1")]
+        [InlineData(1.5, "X0", "0X2P+0")]
         // Precision rounding: tie-to-even
-        [InlineData(1.53125, "x1", "1.8p+0")]              // 1.8800...p+0 x1: halfway, 8 is even => stays 8
-        [InlineData(1.59375, "x1", "1.ap+0")]              // 1.9800...p+0 x1: halfway, 9 is odd => rounds to a
-        [InlineData(1.5937499999999998, "x1", "1.9p+0")]   // just below halfway => truncate
-        [InlineData(1.5937500000000002, "x1", "1.ap+0")]   // just above halfway => round up
+        [InlineData(1.53125, "x1", "0x1.8p+0")]              // 1.8800...p+0 x1: halfway, 8 is even => stays 8
+        [InlineData(1.59375, "x1", "0x1.ap+0")]              // 1.9800...p+0 x1: halfway, 9 is odd => rounds to a
+        [InlineData(1.5937499999999998, "x1", "0x1.9p+0")]   // just below halfway => truncate
+        [InlineData(1.5937500000000002, "x1", "0x1.ap+0")]   // just above halfway => round up
         // Precision rounding: carry into leading digit
-        [InlineData(1.9999999999999998, "x0", "2p+0")]     // 1.fffff...p+0 x0: rounds up to 2
+        [InlineData(1.9999999999999998, "x0", "0x2p+0")]     // 1.fffff...p+0 x0: rounds up to 2
         // Precision rounding: carry through all fractional nibbles bumps exponent
-        [InlineData(1.9999999999999998, "x1", "1.0p+1")]   // 1.fffff...p+0 x1: round up overflows => exponent bumps
+        [InlineData(1.9999999999999998, "x1", "0x1.0p+1")]   // 1.fffff...p+0 x1: round up overflows => exponent bumps
         // Large precision (beyond mantissa bits)
-        [InlineData(1.0, "x20", "1.00000000000000000000p+0")]
-        [InlineData(double.Epsilon, "x20", "1.00000000000000000000p-1074")]
+        [InlineData(1.0, "x20", "0x1.00000000000000000000p+0")]
+        [InlineData(double.Epsilon, "x20", "0x1.00000000000000000000p-1074")]
         // Zero with precision
-        [InlineData(0.0, "x3", "0.000p+0")]
-        [InlineData(0.0, "x0", "0p+0")]
-        [InlineData(0.0, "x20", "0.00000000000000000000p+0")]
-        [InlineData(-0.0, "x0", "-0p+0")]
-        [InlineData(-0.0, "x3", "-0.000p+0")]
+        [InlineData(0.0, "x3", "0x0.000p+0")]
+        [InlineData(0.0, "x0", "0x0p+0")]
+        [InlineData(0.0, "x20", "0x0.00000000000000000000p+0")]
+        [InlineData(-0.0, "x0", "-0x0p+0")]
+        [InlineData(-0.0, "x3", "-0x0.000p+0")]
         // Precision rounding at MaxValue boundary (non-round-trippable: result exceeds double range)
-        [InlineData(double.MaxValue, "x0", "2p+1023")]
-        [InlineData(double.MaxValue, "x1", "1.0p+1024")]
+        [InlineData(double.MaxValue, "x0", "0x2p+1023")]
+        [InlineData(double.MaxValue, "x1", "0x1.0p+1024")]
         public static void ToStringHexFloat(double d, string format, string expected)
         {
             Assert.Equal(expected, d.ToString(format, NumberFormatInfo.InvariantInfo));
@@ -1135,19 +1135,19 @@ namespace System.Tests
             var commaSep = new NumberFormatInfo { NumberDecimalSeparator = "," };
             Assert.Equal(1.5, double.Parse("0x1,8p0", NumberStyles.HexFloat, commaSep));
             Assert.False(double.TryParse("0x1.8p0", NumberStyles.HexFloat, commaSep, out _));
-            Assert.Equal("1,8p+0", 1.5.ToString("x", commaSep));
-            NumberFormatTestHelper.TryFormatNumberTest(1.5, "x", commaSep, "1,8p+0", formatCasingMatchesOutput: false);
+            Assert.Equal("0x1,8p+0", 1.5.ToString("x", commaSep));
+            NumberFormatTestHelper.TryFormatNumberTest(1.5, "x", commaSep, "0x1,8p+0", formatCasingMatchesOutput: false);
 
             var tildeMinus = new NumberFormatInfo { NegativeSign = "~" };
-            Assert.Equal("~1p+0", (-1.0).ToString("x", tildeMinus));
-            NumberFormatTestHelper.TryFormatNumberTest(-1.0, "x", tildeMinus, "~1p+0", formatCasingMatchesOutput: false);
+            Assert.Equal("~0x1p+0", (-1.0).ToString("x", tildeMinus));
+            NumberFormatTestHelper.TryFormatNumberTest(-1.0, "x", tildeMinus, "~0x1p+0", formatCasingMatchesOutput: false);
 
             // Multi-character decimal separator
             var multiSep = new NumberFormatInfo { NumberDecimalSeparator = "::" };
             Assert.Equal(1.5, double.Parse("0x1::8p0", NumberStyles.HexFloat, multiSep));
             Assert.False(double.TryParse("0x1.8p0", NumberStyles.HexFloat, multiSep, out _));
-            Assert.Equal("1::8p+0", 1.5.ToString("x", multiSep));
-            NumberFormatTestHelper.TryFormatNumberTest(1.5, "x", multiSep, "1::8p+0", formatCasingMatchesOutput: false);
+            Assert.Equal("0x1::8p+0", 1.5.ToString("x", multiSep));
+            NumberFormatTestHelper.TryFormatNumberTest(1.5, "x", multiSep, "0x1::8p+0", formatCasingMatchesOutput: false);
         }
 
         [Theory]
