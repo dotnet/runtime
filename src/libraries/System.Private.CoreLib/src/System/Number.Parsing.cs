@@ -1065,6 +1065,9 @@ namespace System
                     break;
                 }
 
+                // Accumulate up to 16 significant hex digits. The '|| significand == 0' is
+                // a defensive check: significandDigits only increments when a nonzero digit is
+                // accumulated, so significandDigits >= 16 implies significand != 0 in practice.
                 if (significandDigits < 16 || significand == 0)
                 {
                     if (significand != 0 || digit != 0)
@@ -1104,6 +1107,9 @@ namespace System
                             break;
                         }
 
+                        // Accumulate significant digits (see integer loop comment for '|| significand == 0').
+                        // Discarded fractional digits intentionally do NOT increment fractionalDigitsConsumed:
+                        // they are beyond significand precision and only contribute sticky bits for rounding.
                         if (significandDigits < 16 || significand == 0)
                         {
                             if (significand != 0 || digit != 0)
