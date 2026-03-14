@@ -17,6 +17,8 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 #include "dn-stdio.h"
+#include "ilstubcache.h"
+#include "sigbuilder.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -382,7 +384,7 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
 
 #ifndef DACCESS_COMPILE
 
-void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
+bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
 {
     CONTRACTL
     {
@@ -395,7 +397,9 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
+        return true;
     }
+    return false;
 }
 
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
@@ -848,6 +852,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         }
 
         m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pamTracker);
+        m_pLoadedImageBase = m_pComposite->GetLayout()->GetBase();
     }
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
@@ -1004,8 +1009,6 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!pMD->IsAsyncVariantMethod());
-
     ModuleBase *pOrigModule = pModule;
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
@@ -1013,11 +1016,15 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
+    bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
+    if (sigIsAsync != pMD->IsAsyncVariantMethod())
+        return false;
+
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
     _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
              ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
 
-    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
+    if (methodFlags & ENCODE_METHOD_SIG_UpdateContext)
     {
         uint32_t updatedModuleIndex;
         IfFailThrow(sig.GetData(&updatedModuleIndex));
@@ -1167,6 +1174,49 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
+void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    ILStubCache* pStubCache = m_pModule->GetILStubCache();
+    MethodTable* pStubMT = pStubCache->GetOrCreateStubMethodTable(m_pModule);
+    LoaderAllocator* pLoaderAllocator = m_pModule->GetLoaderAllocator();
+
+    // Resumption stub signature: object(object, ref byte)
+    // This matches BuildResumptionStubSignature in jitinterface.cpp
+    static const BYTE s_resumptionStubSig[] = {
+        IMAGE_CEE_CS_CALLCONV_DEFAULT,   // regular calling convention - continuations are explicitly passed and returned
+        2,                               // 2 arguments
+        ELEMENT_TYPE_OBJECT,             // return type: object (continuation)
+        ELEMENT_TYPE_OBJECT,             // arg0: object (continuation)
+        ELEMENT_TYPE_BYREF,              // arg1: ref byte (result location)
+        ELEMENT_TYPE_U1
+    };
+
+    // Use the entry point hashtable to check if another thread already registered a MethodDesc
+    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+        return;
+
+    MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
+        pLoaderAllocator,
+        pStubMT,
+        stubEntryPoint,
+        DynamicMethodDesc::StubAsyncResume,
+        (PCCOR_SIGNATURE)s_resumptionStubSig,
+        sizeof(s_resumptionStubSig),
+        &amTracker);
+
+    // Register the stub's entry point so GC can find it during stack walks.
+    // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
+    // already registered a MethodDesc for this entry point, ours is simply discarded
+    // and the AllocMemTracker will back out the allocation on destruction.
+    if (m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD))
+    {
+        amTracker.SuppressRelease();
+    }
+}
+
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
@@ -1190,14 +1240,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
-    // TODO: (async) R2R support for async variants (https://github.com/dotnet/runtime/issues/121559)
-    if (pMD->IsAsyncVariantMethod())
-        goto done;
-
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
-    if (pMD->HasClassOrMethodInstantiation())
+    // Async variants are stored in the instance methods table
+    if (pMD->HasClassOrMethodInstantiation()
+        || pMD->IsAsyncVariantMethod())
     {
         if (m_instMethodEntryPoints.IsNull())
             goto done;
@@ -1300,6 +1348,7 @@ done:
     {
         ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
     }
+
     return pEntryPoint;
 }
 
