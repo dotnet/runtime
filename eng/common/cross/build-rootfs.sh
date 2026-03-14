@@ -645,6 +645,19 @@ elif [[ "$__CodeName" == "openbsd" ]]; then
             curl -SL "$PKG_MIRROR/$PKG_FILE" | tar -C "$__RootfsDir" -xzpf -
         fi
     done
+
+    echo "Creating versionless symlinks for shared libraries..."
+    # Find all versioned .so files and create the base .so symlink
+    for lib in "$__RootfsDir/usr/lib/libc++.so."* "$__RootfsDir/usr/lib/libc++abi.so."* "$__RootfsDir/usr/lib/libpthread.so."*; do
+        if [ -f "$lib" ]; then
+            # Extract the filename (e.g., libc++.so.12.0)
+            VERSIONED_NAME=$(basename "$lib")
+            # Remove the trailing version numbers (e.g., libc++.so)
+            BASE_NAME=${VERSIONED_NAME%.so.*}.so
+            # Create the symlink in the same directory
+            ln -sf "$VERSIONED_NAME" "$__RootfsDir/usr/lib/$BASE_NAME"
+        fi
+    done
 elif [[ "$__CodeName" == "illumos" ]]; then
     mkdir "$__RootfsDir/tmp"
     pushd "$__RootfsDir/tmp"
