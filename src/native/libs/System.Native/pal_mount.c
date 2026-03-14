@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 // Check if we should use getfsstat or /proc/mounts
-#if HAVE_MNTINFO || defined(TARGET_OPENBSD)
+#if HAVE_MNTINFO
 #include <sys/mount.h>
 #else
 #if HAVE_SYS_STATFS_H
@@ -41,7 +41,7 @@
 
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
-#if HAVE_MNTINFO
+#if HAVE_MNTINFO && HAVE_STATFS_MOUNT
     // Use getfsstat which is thread-safe (unlike getmntinfo which uses internal static buffers)
 #if HAVE_STATFS
     struct statfs* mounts = NULL;
@@ -98,7 +98,13 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
         }
 
         // Get actual mount point information
+    #if HAVE_GETFSSTAT_SIZE_T
+        count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
+    #elif HAVE_GETFSSTAT_INT
         count = getfsstat(mounts, (int)bufferSize, MNT_NOWAIT);
+    #else
+        count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
+    #endif
         if (count < 0)
         {
             free(mounts);
@@ -247,7 +253,7 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
     assert(name != NULL);
     assert(mpi != NULL);
 
-#if HAVE_NON_LEGACY_STATFS || defined(TARGET_OPENBSD)
+#if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     memset(&stats, 0, sizeof(struct statfs));
 
@@ -286,7 +292,7 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
 
-#if HAVE_NON_LEGACY_STATFS || defined(TARGET_OPENBSD)
+#if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     int result = statfs(name, &stats);
 #elif defined(__HAIKU__)
