@@ -6690,10 +6690,7 @@ private:
 
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
 
-    GenTree* fgMorphReduceAddOps(GenTree* tree);
-    GenTree* fgMorphReduceIndirAddOps(GenTree* tree);
-    GenTree* fgMorphReduceSubOps(GenTree* tree);
-    GenTree* fgMorphReduceIndirSubOps(GenTree* tree);
+    GenTree* fgMorphReduceAddOrSubOps(GenTree* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
