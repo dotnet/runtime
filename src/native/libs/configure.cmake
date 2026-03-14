@@ -757,6 +757,13 @@ check_prototype_definition(
     HAVE_GETFSSTAT_INT)
 
 check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, long bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_LONG)
+
+check_prototype_definition(
     ioctl
     "int ioctl(int fd, int request, ...)"
     0
