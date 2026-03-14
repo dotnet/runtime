@@ -30,7 +30,7 @@ namespace System.IO.Tests
 
                 CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(250));
                 CancellationToken token = cts.Token;
-                byte[] buffer = new byte[1];
+                byte[] buffer = new byte[1024 * 1024]; // use a large buffer to ensure the async pipe write is pending
 
                 OperationCanceledException ex = await Assert.ThrowsAsync<OperationCanceledException>(
                     () => access == FileAccess.Write
