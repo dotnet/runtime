@@ -17,16 +17,7 @@
 #include "gcinterface.dac.h"
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
-// storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
-
-#define DAC_HASHTABLE
-
-#ifndef DAC_HASHTABLE
-#pragma push_macro("return")
-#undef return
-#include <unordered_map>
-#pragma pop_macro("return")
-#endif //DAC_HASHTABLE
+// storing code:DAC_INSTANCE .  Otherwise, the DAC uses SHash.
 extern minipal_mutex g_dacMutex;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
@@ -728,54 +719,28 @@ private:
     HashInstanceKeyBlock* m_hash[DAC_INSTANCE_HASH_SIZE];
 #else //DAC_HASHTABLE
 
-    // We're going to use the STL unordered_map for our instance hash.
-    // This has the benefit of scaling to different workloads appropriately (as opposed to having a
-    // fixed number of buckets).
-
-    class DacHashCompare : public std::hash_compare<TADDR>
+    // SHash-based hash table for DAC instances, keyed by target address.
+    // The custom hash function avoids pseudo-randomizing in favor of a simple
+    // shift that clusters nearby addresses together.  This improves access
+    // locality and has a significant positive impact on minidump library
+    // performance when enumerating entries during dump generation (as dbghelp
+    // has to coalesce adjacent memory regions).
+    class DacInstanceSHashTraits : public NonDacAwareSHashTraits<MapSHashTraits<TADDR, DAC_INSTANCE*>>
     {
     public:
-        // Custom hash function
-        // The default hash function uses a pseudo-randomizing function to get a random
-        // distribution.  In our case, we'd actually like a more even distribution to get
-        // better access locality (see comments for DAC_INSTANCE_HASH_BITS).
-        //
-        // Also, when enumerating the hash during dump generation, clustering nearby addresses
-        // together can have a significant positive impact on the performance of the minidump
-        // library (at least the un-optimized version 6.5 linked into our dw20.exe - on Vista+
-        // we use the OS's version 6.7+ with radically improved perf characteristics).  Having
-        // a random distribution is actually the worst-case because it means most blocks won't
-        // be merged until near the end, and a large number of intermediate blocks will have to
-        // be searched with each call.
-        //
-        // The default pseudo-randomizing function also requires a call to ldiv which shows up as
-        // a 3%-5% perf hit in most perf-sensitive scenarios, so this should also always be
-        // faster.
-        inline size_t operator()(const TADDR& keyval) const
+        typedef MapSHashTraits<TADDR, DAC_INSTANCE*> PARENT;
+        typedef PARENT::element_t element_t;
+        typedef PARENT::count_t count_t;
+        typedef PARENT::key_t key_t;
+
+        static count_t Hash(key_t k)
         {
-            return (unsigned)(keyval >>DAC_INSTANCE_HASH_SHIFT);
+            return (count_t)(k >> DAC_INSTANCE_HASH_SHIFT);
         }
-
-        // Explicitly bring in the two-argument comparison function from the base class (just less-than)
-        // This is necessary because once we override one form of operator() above, we don't automatically
-        // get the others by C++ inheritance rules.
-    using std::hash_compare<TADDR>::operator();
-
-#ifdef NIDUMP_CUSTOMIZED_DAC_HASH   // not set
-        //this particular number is supposed to be roughly the same amount of
-        //memory as the old code (buckets * number of entries in the old
-        //blocks.)
-        //disabled for now.  May tweak implementation later.  It turns out that
-        //having a large number of initial buckets is excellent for nidump, but it
-        // is terrible for most other scenarios due to the cost of clearing them at
-        // every Flush.  Once there is a better perf suite, we can tweak these values more.
-        static const size_t min_buckets = DAC_INSTANCE_HASH_SIZE * 256;
-#endif
-
     };
-    typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
-    typedef DacInstanceHash::value_type DacInstanceHashValue;
-    typedef DacInstanceHash::iterator DacInstanceHashIterator;
+
+    typedef SHash<DacInstanceSHashTraits> DacInstanceHash;
+    typedef DacInstanceHash::Iterator DacInstanceHashIterator;
     DacInstanceHash m_hash;
 #endif //DAC_HASHTABLE
 
