@@ -143,7 +143,7 @@ struct ContinuationLayout
     {
     }
 
-    const ReturnInfo* FindReturn(GenTreeCall* call) const;
+    const ReturnInfo* FindReturn(Compiler* comp, GenTreeCall* call) const;
 #ifdef DEBUG
     void Dump(int indent = 0);
 #endif

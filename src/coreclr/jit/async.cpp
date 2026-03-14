@@ -459,11 +459,18 @@ void ContinuationLayoutBuilder::AddReturn(const ReturnTypeInfo& info)
 {
     for (const ReturnTypeInfo& ret : m_returns)
     {
-        if ((ret.ReturnType == info.ReturnType) && (ret.ReturnLayout == info.ReturnLayout))
+        if (ret.ReturnType != info.ReturnType)
         {
-            // This return type is already in the layout, no need to add another slot for it.
-            return;
+            continue;
         }
+
+        if ((ret.ReturnType == TYP_STRUCT) && !ClassLayout::AreCompatible(ret.ReturnLayout, info.ReturnLayout))
+        {
+            continue;
+        }
+
+        // This return type is already in the layout, no need to add another slot for it.
+        return;
     }
 
     m_returns.push_back(info);
@@ -1762,17 +1769,19 @@ void ContinuationLayout::Dump(int indent)
 //   Find the return info entry matching the specified call's return type.
 //
 // Parameters:
+//   comp - Compiler instance to use for looking up struct return layouts.
 //   call - The async call whose return type to look up.
 //
 // Returns:
 //   Pointer to the matching ReturnInfo entry.
 //
-const ReturnInfo* ContinuationLayout::FindReturn(GenTreeCall* call) const
+const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* call) const
 {
+    ClassLayout* layout = call->gtReturnType == TYP_STRUCT ? comp->typGetObjLayout(call->gtRetClsHnd) : nullptr;
     for (const ReturnInfo& ret : Returns)
     {
         if ((ret.Type.ReturnType == call->gtReturnType) &&
-            ((call->gtReturnType != TYP_STRUCT) || (ret.Type.ReturnLayout->GetClassHandle() == call->gtRetClsHnd)))
+            ((call->gtReturnType != TYP_STRUCT) || ClassLayout::AreCompatible(ret.Type.ReturnLayout, layout)))
         {
             return &ret;
         }
@@ -2260,7 +2269,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
                     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
     if (call->gtReturnType != TYP_VOID)
     {
-        const ReturnInfo* returnInfo = layout.FindReturn(call);
+        const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
         assert(returnInfo != nullptr);
         encodeIndex(returnInfo->Offset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT,
                     CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
@@ -2905,7 +2914,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
                                                       const ContinuationLayout& layout,
                                                       BasicBlock*               storeResultBB)
 {
-    const ReturnInfo* retInfo = layout.FindReturn(call);
+    const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
     assert(retInfo != nullptr);
     GenTree* resultBase   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + retInfo->Offset;
