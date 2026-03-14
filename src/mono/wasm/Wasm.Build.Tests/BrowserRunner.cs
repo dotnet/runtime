@@ -171,15 +171,18 @@ internal class BrowserRunner : IAsyncDisposable
         if (s_browserDependenciesChecked || !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             return;
 
+        s_browserDependenciesChecked = true;
+
         string output;
         try
         {
-            var psi = new ProcessStartInfo("ldd", chromePath)
+            var psi = new ProcessStartInfo("ldd")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
+            psi.ArgumentList.Add(chromePath);
             using var process = Process.Start(psi);
             if (process == null)
                 return;
@@ -227,8 +230,6 @@ internal class BrowserRunner : IAsyncDisposable
             _testOutput.WriteLine($"WARNING: {message}");
             throw new Exception(message);
         }
-
-        s_browserDependenciesChecked = true;
     }
 
     // FIXME: options
