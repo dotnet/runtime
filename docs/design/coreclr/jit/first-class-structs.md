@@ -1,6 +1,9 @@
 First Class Structs
 ===================
 
+Key source file: struct promotion logic is in `src/coreclr/jit/promotion.cpp`.
+Related files: `src/coreclr/jit/morph.cpp` (struct morphing), `src/coreclr/jit/gentree.h` (GenTree struct nodes).
+
 Objectives
 ----------
 Primary Objectives

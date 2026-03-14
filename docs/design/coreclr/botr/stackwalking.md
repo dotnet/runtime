@@ -83,3 +83,19 @@ For instance the CrawlFrame indicates the MethodDesc* for managed frames and the
 # Stackwalk Implementation Details
 
 Further low-level details of the stack walk implementation are currently outside the scope of this document. If you have knowledge of these and would care to share that knowledge please feel free to update this document.
+
+# Key Source Files
+
+All paths relative to repository root:
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| Stack walker | `src/coreclr/vm/stackwalk.h` | `src/coreclr/vm/stackwalk.cpp` |
+| CrawlFrame | `src/coreclr/vm/stackwalk.h` | — |
+| Frame types | `src/coreclr/vm/frames.h` | `src/coreclr/vm/frames.cpp` |
+| Thread (StackWalkFramesEx) | `src/coreclr/vm/threads.h` | `src/coreclr/vm/stackwalk.cpp` |
+
+Key entry points:
+
+- `Thread::StackWalkFramesEx()` — main API to walk a thread's stack (`src/coreclr/vm/stackwalk.cpp`)
+- `CrawlFrame` — context passed to stack walk callbacks (`src/coreclr/vm/stackwalk.h`)

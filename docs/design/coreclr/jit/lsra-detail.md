@@ -55,6 +55,19 @@ Table of Contents
 Overview
 --------
 
+Key source files (all paths relative to repository root):
+
+| Component | File |
+|-----------|------|
+| LSRA implementation | `src/coreclr/jit/lsra.h`, `src/coreclr/jit/lsra.cpp` |
+| Building RefPositions | `src/coreclr/jit/lsrabuild.cpp` |
+| ARM64 LSRA specifics | `src/coreclr/jit/lsraarm64.cpp` |
+| x86/x64 LSRA specifics | `src/coreclr/jit/lsraxarch.cpp` |
+
+Key entry point: `LinearScan::doLinearScan()` in `src/coreclr/jit/lsra.cpp`
+
+---
+
 This document provides additional detail on the linear scan register
 allocator (LSRA) in RyuJIT. It is expected that the reader has already
 read the [RyuJIT Overview document](ryujit-overview.md).

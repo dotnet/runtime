@@ -281,3 +281,15 @@ PInvokeImportPrecode looks like this on x86:
 	mov eax,pMethodDesc
 	mov eax,eax // dummy instruction that marks the type of the precode
 	jmp PInvokeImportThunk // loads P/Invoke target for pMethodDesc lazily
+
+Key Source Files
+================
+
+All paths relative to repository root:
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| MethodDesc | `src/coreclr/vm/method.hpp` | `src/coreclr/vm/method.cpp` |
+| Precodes | `src/coreclr/vm/precode.h` | `src/coreclr/vm/precode.cpp` |
+| Method iteration | `src/coreclr/vm/method.hpp` | — |
+| Stub generation | `src/coreclr/vm/stubmgr.h` | `src/coreclr/vm/stubmgr.cpp` |

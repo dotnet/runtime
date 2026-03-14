@@ -25,9 +25,9 @@ Depending upon the configuration, the EE and JIT may reside in the same or diffe
 implements the JIT side of the JIT/EE interfaces:
 
 * `ICorJitCompiler` – this is the interface that the JIT compiler implements. This interface is defined in
-[src/inc/corjit.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corjit.h)
+[src/coreclr/inc/corjit.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corjit.h)
 and its implementation is in
-[src/jit/ee_il_dll.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/ee_il_dll.cpp).
+[src/coreclr/jit/ee_il_dll.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/ee_il_dll.cpp).
 The following are the key methods on this interface:
   * `compileMethod` is the main entry point for the JIT. The EE passes it a `ICorJitInfo` object,
   and the "info" containing the IL, the method header, and various other useful tidbits.
@@ -37,9 +37,9 @@ The following are the key methods on this interface:
   * `ICorJitInfo` – this is the interface that the EE implements. It has many methods defined on it that allow the JIT to
 look up metadata tokens, traverse type signatures, compute field and vtable offsets, find method entry points,
 construct string literals, etc. This bulk of this interface is inherited from `ICorDynamicInfo` which is defined in
-[src/inc/corinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corinfo.h). The implementation
+[src/coreclr/inc/corinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corinfo.h). The implementation
 is defined in
-[src/vm/jitinterface.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/jitinterface.cpp).
+[src/coreclr/vm/jitinterface.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/jitinterface.cpp).
 
 # Internal Representation (IR)
 
@@ -752,10 +752,10 @@ Reporting of live GC references is done in two ways:
 * For lclVars with tracked lifetimes, or for expression involving GC references, we report the range over which the reference is live. This is done by the emitter, which adds this information to the instruction group, and which terminates instruction groups when the GC info changes.
 
 The tracking of GC reference lifetimes is done via the `GCInfo` class in the JIT. It is declared in
-[src/jit/jitgcinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jitgcinfo.h) (to
+[src/coreclr/jit/jitgcinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jitgcinfo.h) (to
 differentiate it from
-[src/inc/gcinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfo.h)), and implemented in
-[src/jit/gcinfo.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/gcinfo.cpp).
+[src/coreclr/inc/gcinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfo.h)), and implemented in
+[src/coreclr/jit/gcinfo.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/gcinfo.cpp).
 
 In a JitDump, the generated GC info can be seen following the "In gcInfoBlockHdrSave()" line.
 
@@ -868,7 +868,7 @@ STMT00000 (IL 0x010...  ???)
 
 Tree nodes are identified by their `gtTreeID`. This field only exists in DEBUG builds, but is quite useful for
 debugging, since all tree nodes are created via the `GenTree::GenTree` constructor (in
-[src/jit/compiler.hpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/compiler.hpp)). If you find a
+[src/coreclr/jit/compiler.hpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/compiler.hpp)). If you find a
 bad tree and wish to understand how it got corrupted, you can place a conditional breakpoint at the end of
 `GenTree::GenTree` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 
@@ -893,3 +893,29 @@ a 'T'.
 
 <a name="[2]"></a>
 [2] Wimmer, C. and Mössenböck, D. "Optimized Interval Splitting in a Linear Scan Register Allocator," ACM VEE 2005, pp. 132-141. [http://portal.acm.org/citation.cfm?id=1064998&dl=ACM&coll=ACM&CFID=105967773&CFTOKEN=80545349](http://portal.acm.org/citation.cfm?id=1064998&dl=ACM&coll=ACM&CFID=105967773&CFTOKEN=80545349)
+
+## Key Source Files
+
+All paths relative to repository root:
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| JIT/EE interface (JIT side) | `src/coreclr/inc/corjit.h` | `src/coreclr/jit/ee_il_dll.cpp` |
+| JIT/EE interface (EE side) | `src/coreclr/inc/corinfo.h` | `src/coreclr/vm/jitinterface.cpp` |
+| Compiler object | `src/coreclr/jit/compiler.h`, `compiler.hpp` | `src/coreclr/jit/compiler.cpp` |
+| GenTree nodes | `src/coreclr/jit/gentree.h` | `src/coreclr/jit/gentree.cpp` |
+| BasicBlock | `src/coreclr/jit/block.h` | `src/coreclr/jit/block.cpp` |
+| Statement | `src/coreclr/jit/gentree.h` | — |
+| IL import | — | `src/coreclr/jit/importer.cpp` |
+| Morph (tree transforms) | — | `src/coreclr/jit/morph.cpp` |
+| Flowgraph analysis | — | `src/coreclr/jit/flowgraph.cpp` |
+| SSA builder | `src/coreclr/jit/ssabuilder.h` | `src/coreclr/jit/ssabuilder.cpp` |
+| Value numbering | `src/coreclr/jit/valuenum.h` | `src/coreclr/jit/valuenum.cpp` |
+| Optimizer | — | `src/coreclr/jit/optimizer.cpp` |
+| Register allocation (LSRA) | `src/coreclr/jit/lsra.h` | `src/coreclr/jit/lsra.cpp` |
+| Lowering | — | `src/coreclr/jit/lower.cpp` |
+| Code generation | — | `src/coreclr/jit/codegencommon.cpp` |
+| GC info | `src/coreclr/jit/jitgcinfo.h` | `src/coreclr/jit/gcinfo.cpp` |
+| Inlining policy | `src/coreclr/jit/inlinepolicy.h` | `src/coreclr/jit/inlinepolicy.cpp` |
+
+Key entry point: `CILJit::compileMethod()` in `src/coreclr/jit/ee_il_dll.cpp`

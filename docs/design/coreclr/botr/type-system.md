@@ -334,20 +334,34 @@ On thread destroy, for each collectible slot in the tls array, we will explicitl
 Physical Architecture
 =====================
 
-Major parts of the type system are found in:
+Key source files (all paths relative to repository root):
 
-- Class.cpp/inl/h – EEClass functions, and BuildMethodTable
-- MethodTable.cpp/inl/h – Functions for manipulating methodtables.
-- TypeDesc.cpp/inl/h – Functions for examining TypeDesc
-- MetaSig.cpp SigParser – Signature code
-- FieldDesc /MethodDesc – Functions for examining these data structures
-- Generics – Generics specific logic.
-- Array – Code for handling the special cases required for array processing
-- VirtualStubDispatch.cpp/h/inl – Code for virtual stub dispatch
-- VirtualCallStubCpu.hpp – Processor specific code for virtual stub dispatch.
-- threadstatics.cpp/h - Handling for thread static variables.
+| Component | Header | Implementation | Notes |
+|-----------|--------|----------------|-------|
+| EEClass | `src/coreclr/vm/class.h` | `src/coreclr/vm/class.cpp`, `class.inl` | EEClass functions, `BuildMethodTable` |
+| MethodTable | `src/coreclr/vm/methodtable.h` | `src/coreclr/vm/methodtable.cpp`, `methodtable.inl` | Core type representation |
+| TypeDesc | `src/coreclr/vm/typedesc.h` | `src/coreclr/vm/typedesc.cpp`, `typedesc.inl` | Parameterized types (pointers, byrefs, etc.) |
+| TypeHandle | `src/coreclr/vm/typehandle.h` | `src/coreclr/vm/typehandle.cpp` | Unified handle wrapping MethodTable or TypeDesc |
+| MethodDesc | `src/coreclr/vm/method.hpp` | `src/coreclr/vm/method.cpp` | Method descriptors |
+| FieldDesc | `src/coreclr/vm/field.h` | `src/coreclr/vm/field.cpp` | Field descriptors |
+| Signatures | `src/coreclr/vm/siginfo.hpp` | `src/coreclr/vm/siginfo.cpp` | MetaSig, SigParser |
+| Generics | `src/coreclr/vm/generics.h` | `src/coreclr/vm/generics.cpp` | Generics-specific logic |
+| Arrays | `src/coreclr/vm/array.h` | `src/coreclr/vm/array.cpp` | Special-case array handling |
+| Virtual Stub Dispatch | `src/coreclr/vm/virtualcallstub.h` | `src/coreclr/vm/virtualcallstub.cpp` | Virtual stub dispatch |
+| Thread Statics | `src/coreclr/vm/threadstatics.h` | `src/coreclr/vm/threadstatics.cpp` | Thread-static variable handling |
+| Type Loading | `src/coreclr/vm/clsload.hpp` | `src/coreclr/vm/clsload.cpp` | ClassLoader |
 
-Major entry points are BuildMethodTable, LoadTypeHandleThrowing, CanCastTo\*, GetMethodDescFromMemberDefOrRefOrSpecThrowing, GetFieldDescFromMemberRefThrowing, CompareSigs, and VirtualCallStubManager::ResolveWorkerStatic.
+Major entry points:
+
+| Entry Point | Location |
+|-------------|----------|
+| `MethodTableBuilder::BuildMethodTable()` | `src/coreclr/vm/methodtablebuilder.cpp` |
+| `ClassLoader::LoadTypeHandleThrowing()` | `src/coreclr/vm/clsload.cpp` |
+| `CanCastTo*` (various) | `src/coreclr/vm/castcache.h`, `src/coreclr/vm/methodtable.cpp` |
+| `GetMethodDescFromMemberDefOrRefOrSpecThrowing()` | `src/coreclr/vm/memberload.cpp` |
+| `GetFieldDescFromMemberRefThrowing()` | `src/coreclr/vm/memberload.cpp` |
+| `CompareSigs()` | `src/coreclr/vm/siginfo.cpp` |
+| `VirtualCallStubManager::ResolveWorkerStatic()` | `src/coreclr/vm/virtualcallstub.cpp` |
 
 Related Reading
 ===============

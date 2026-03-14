@@ -327,6 +327,28 @@ Given WKS GC with concurrent GC on (default case), the code flow for a backgroun
 Resources
 =========
 
+Key Source Files
+----------------
+
+All paths relative to repository root:
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| GC implementation | `src/coreclr/gc/gc.h` | `src/coreclr/gc/gc.cpp` |
+| GC/EE interface | `src/coreclr/gc/gcinterface.h` | — |
+| GC heap utilities | `src/coreclr/vm/gcheaputilities.h` | — |
+| Allocation helpers | `src/coreclr/vm/gchelpers.h` | `src/coreclr/vm/gchelpers.cpp` |
+| Frozen object heap | `src/coreclr/vm/frozenobjectheap.h` | `src/coreclr/vm/frozenobjectheap.cpp` |
+
+Key entry points:
+
+- `GCHeapUtilities::GetGCHeap()` — access the GC heap singleton (`src/coreclr/vm/gcheaputilities.h`)
+- Managed allocations go through helpers in `src/coreclr/vm/gchelpers.cpp`
+- The GC's internal allocation and collection logic is in `src/coreclr/gc/gc.cpp`
+
+References
+----------
+
 - [.NET CLR GC Implementation](https://raw.githubusercontent.com/dotnet/runtime/main/src/coreclr/gc/gc.cpp)
 - [The Garbage Collection Handbook: The Art of Automatic Memory Management](http://www.amazon.com/Garbage-Collection-Handbook-Management-Algorithms/dp/1420082795)
 - [Garbage collection (Wikipedia)](http://en.wikipedia.org/wiki/Garbage_collection_(computer_science))

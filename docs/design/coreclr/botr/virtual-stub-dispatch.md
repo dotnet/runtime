@@ -183,6 +183,10 @@ As a result of disabling VSD for virtual instance method calls, every type has a
 Physical Architecture
 =====================
 
-For dispatch token and map implementation details, please see [clr/src/vm/contractImpl.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.h) and [clr/src/vm/contractImpl.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.cpp).
+Key source files (all paths relative to repository root):
 
-For virtual stub dispatch implementation details, please see [clr/src/vm/virtualcallstub.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.h) and [clr/src/vm/virtualcallstub.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.cpp).
+| Component | Files |
+|-----------|-------|
+| Dispatch tokens and maps | [`src/coreclr/vm/contractimpl.h`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.h), [`src/coreclr/vm/contractimpl.cpp`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.cpp) |
+| Virtual stub dispatch | [`src/coreclr/vm/virtualcallstub.h`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.h), [`src/coreclr/vm/virtualcallstub.cpp`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.cpp) |
+| VSD manager entry point | `VirtualCallStubManager::ResolveWorkerStatic()` in `src/coreclr/vm/virtualcallstub.cpp` |
