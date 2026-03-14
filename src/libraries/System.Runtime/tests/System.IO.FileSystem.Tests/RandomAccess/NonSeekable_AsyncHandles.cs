@@ -28,6 +28,25 @@ namespace System.IO.Tests
 
                 Assert.True(handle.IsAsync);
 
+                // For writes, fill the pipe buffer first so the next write will block
+                // (a small write to a fresh pipe can complete synchronously).
+                if (access == FileAccess.Write)
+                {
+                    byte[] filler = new byte[1024 * 1024]; // 1 MB should exceed any pipe buffer
+                    try
+                    {
+                        while (true)
+                        {
+                            using CancellationTokenSource fillCts = new(TimeSpan.FromMilliseconds(500));
+                            await RandomAccess.WriteAsync(handle, filler, 0, fillCts.Token);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Pipe buffer is now full; next write will reliably block.
+                    }
+                }
+
                 CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(250));
                 CancellationToken token = cts.Token;
                 byte[] buffer = new byte[1];
