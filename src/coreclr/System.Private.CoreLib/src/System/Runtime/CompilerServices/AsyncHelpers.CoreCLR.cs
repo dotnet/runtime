@@ -63,6 +63,11 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
 
+        // The flags encode where in the continuation various members are stored.
+        // If the encoded index is 0, it means no such member is present.
+        // Otherwise the exact offset of the member is computed as
+        //   DataOffset + (index - 1) * PointerSize
+        //
         ExceptionIndexFirstBit = 3,
         ExceptionIndexNumBits = 2,
 
@@ -105,39 +110,40 @@ namespace System.Runtime.CompilerServices
 
         private const int DataOffset = PointerSize /* Next */ + PointerSize /* Resume */ + 8 /* Flags + State */;
 
+        // See note in ContinuationFlags above for the computation of these offsets.
+
         public unsafe object GetContinuationContext()
         {
             const uint mask = (1u << (int)ContinuationFlags.ContinuationContextIndexNumBits) - 1;
             uint index = ((uint)Flags >> (int)ContinuationFlags.ContinuationContextIndexFirstBit) & mask;
-            Debug.Assert(index != mask);
+            Debug.Assert(index != 0);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, DataOffset + index * PointerSize));
+            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
         }
 
         public bool HasException()
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
-            uint index = ((uint)Flags >> (int)ContinuationFlags.ExceptionIndexFirstBit) & mask;
-            return index != mask;
+            return ((uint)Flags & (mask << (int)ContinuationFlags.ExceptionIndexFirstBit)) != 0;
         }
 
         public void SetException(Exception ex)
         {
             const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
             uint index = ((uint)Flags >> (int)ContinuationFlags.ExceptionIndexFirstBit) & mask;
-            Debug.Assert(index != mask);
+            Debug.Assert(index != 0);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, DataOffset + index * PointerSize)) = ex;
+            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize)) = ex;
         }
 
         public ref byte GetResultStorageOrNull()
         {
             const uint mask = (1u << (int)ContinuationFlags.ResultIndexBits) - 1;
             uint index = ((uint)Flags >> (int)ContinuationFlags.ResultIndexFirstBit) & mask;
-            if (index == mask)
+            if (index == 0)
                 return ref Unsafe.NullRef<byte>();
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return ref Unsafe.Add(ref data, DataOffset + index * PointerSize);
+            return ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize);
         }
     }
 

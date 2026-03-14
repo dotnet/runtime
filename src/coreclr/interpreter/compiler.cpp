@@ -5817,6 +5817,18 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     // Fill in the GC reference map
     int32_t currentOffset = 0;
     int32_t returnValueDataStartOffset = 0;
+
+    uint32_t flags = 0;
+    auto encodeIndex = [&flags](unsigned offset, unsigned firstBit, unsigned numBits) {
+        assert(numBits < 32);
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        unsigned index = 1 + offset / TARGET_POINTER_SIZE;
+        unsigned mask  = (1u << numBits) - 1;
+
+        assert((index & mask) == index);
+        flags |= index << firstBit;
+    };
+
     for (int32_t i = -3; i < liveVars.GetSize(); i++)
     {
         int32_t var;
@@ -5827,6 +5839,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
                 continue;
             INTERP_DUMP("Allocate EH at offset %d\n", currentOffset);
             SetSlotToTrue(objRefSlots, currentOffset);
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -5836,12 +5849,14 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
                 continue;
             INTERP_DUMP("Allocate ContinuationContext at offset %d\n", currentOffset);
             SetSlotToTrue(objRefSlots, currentOffset);
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
         if (i == -1)
         {
             returnValueDataStartOffset = currentOffset;
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
             // Handle return value first
             if (returnValueVar == -1)
                 continue;
@@ -5931,25 +5946,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     AllocateIntervalMapData_ForVars(&suspendData->liveLocalsIntervals, liveVars);
     AllocateIntervalMapData_ForVars(&suspendData->zeroedLocalsIntervals, varsToZero);
 
-    int32_t flags = 0;
-    if (returnValueVar != -1)
-    {
-        //flags |= CORINFO_CONTINUATION_HAS_RESULT;
-    }
-
-    if (captureContinuationContext)
-    {
-        //flags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
-    }
-
     if (continuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
     {
         flags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
-    }
-
-    if (needsEHHandling)
-    {
-        //flags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
     }
 
     suspendData->flags = (CorInfoContinuationFlags)flags;

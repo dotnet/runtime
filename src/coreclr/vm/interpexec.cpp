@@ -4248,16 +4248,14 @@ do                                                                      \
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
-                    if (pAsyncSuspendData->flags & /*CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT*/ 123)
+                    uint32_t continuationContextMask = (1u << CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS) - 1;
+                    uint32_t continuationContextIndex = ((uint32_t)pAsyncSuspendData->flags >> CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT) & continuationContextMask;
+                    if (continuationContextIndex != 0)
                     {
                         MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
-                        size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
+                        size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data + (continuationContextIndex - 1) * TARGET_POINTER_SIZE;
                         uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
-                        if (pAsyncSuspendData->flags & /*CORINFO_CONTINUATION_HAS_EXCEPTION */ 456)
-                        {
-                            pContinuationData += sizeof(OBJECTREF);
-                        }
 
                         returnOffset = ip[1];
                         callArgsOffset = pMethod->allocaSize;
@@ -4421,10 +4419,11 @@ do                                                                      \
                         pCopyEntry++;
                     }
 
-                    if (pAsyncSuspendData->flags & /*CORINFO_CONTINUATION_HAS_EXCEPTION */ 567)
+                    PTR_OBJECTREF pException = continuation->GetExceptionObjectStorageOrNull();
+                    if (pException != NULL)
                     {
                         // Throw exception if needed
-                        OBJECTREF exception = *continuation->GetExceptionObjectStorage();
+                        OBJECTREF exception = *pException;
 
                         if (exception != NULL)
                         {

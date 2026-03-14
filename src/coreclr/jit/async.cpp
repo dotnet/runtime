@@ -2241,7 +2241,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     auto                 encodeIndex = [&continuationFlags](unsigned offset, unsigned firstBit, unsigned numBits) {
         assert(numBits < 32);
         assert((offset % TARGET_POINTER_SIZE) == 0);
-        unsigned index = offset / TARGET_POINTER_SIZE;
+        unsigned index = 1 + offset / TARGET_POINTER_SIZE;
         unsigned mask  = (1u << numBits) - 1;
 
         if ((index & mask) != index)
