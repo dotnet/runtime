@@ -4,9 +4,11 @@
 #nullable enable
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
@@ -124,6 +126,8 @@ internal class BrowserRunner : IAsyncDisposable
             chromeArgs = chromeArgs.Append("--headless").ToArray();
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
+        CheckBrowserDependencies(s_chromePath.Value);
+
         int attempt = 0;
         while (attempt < maxRetries)
         {
@@ -146,10 +150,59 @@ internal class BrowserRunner : IAsyncDisposable
                 attempt++;
                 _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
             }
+            catch (PlaywrightException ex) when (attempt + 1 < maxRetries)
+            {
+                attempt++;
+                _testOutput.WriteLine($"Attempt {attempt} failed with PlaywrightException: {ex.Message}");
+            }
         }
         if (attempt == maxRetries)
             throw new Exception($"Failed to launch browser after {maxRetries} attempts");
         return Browser!;
+    }
+
+    private void CheckBrowserDependencies(string chromePath)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            return;
+
+        string output;
+        try
+        {
+            var psi = new ProcessStartInfo("ldd", chromePath)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            using var process = Process.Start(psi);
+            if (process == null)
+                return;
+
+            output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(10_000);
+        }
+        catch (Exception ex)
+        {
+            _testOutput.WriteLine($"Could not check browser dependencies: {ex.Message}");
+            return;
+        }
+
+        var missingLibs = output
+            .Split('\n')
+            .Where(line => line.Contains("not found"))
+            .Select(line => line.Trim())
+            .ToList();
+
+        if (missingLibs.Count > 0)
+        {
+            string message = $"Chrome binary at '{chromePath}' is missing {missingLibs.Count} shared library dependencies:\n"
+                + string.Join("\n", missingLibs)
+                + "\nThis will cause TargetClosedException when Playwright tries to launch Chrome."
+                + "\nEnsure the Helix queue/container has Chrome's system dependencies installed (libgbm1, libnss3, libatk1.0-0, etc.).";
+            _testOutput.WriteLine($"WARNING: {message}");
+            throw new Exception(message);
+        }
     }
 
     // FIXME: options
