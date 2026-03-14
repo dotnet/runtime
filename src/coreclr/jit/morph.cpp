@@ -15444,7 +15444,6 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 //------------------------------------------------------------------------
 // fgMorphReduceAddOps: reduce successive variable adds into a single multiply,
 // e.g., i + i + i + i => i * 4.
-// e.g., i - i - i - i => - i * 2.
 //
 // Arguments:
 //    tree - tree for reduction
