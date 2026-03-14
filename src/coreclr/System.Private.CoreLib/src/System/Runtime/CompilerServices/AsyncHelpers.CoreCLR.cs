@@ -70,7 +70,7 @@ namespace System.Runtime.CompilerServices
         ContinuationContextIndexNumBits = 2,
 
         ResultIndexFirstBit = 7,
-        ResultIndexBits = 26,
+        ResultIndexBits = 25,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
