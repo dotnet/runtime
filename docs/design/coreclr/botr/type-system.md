@@ -338,9 +338,9 @@ Key source files (all paths relative to repository root):
 
 | Component | Header | Implementation | Notes |
 |-----------|--------|----------------|-------|
-| EEClass | `src/coreclr/vm/class.h` | `src/coreclr/vm/class.cpp`, `class.inl` | EEClass functions, `BuildMethodTable` |
-| MethodTable | `src/coreclr/vm/methodtable.h` | `src/coreclr/vm/methodtable.cpp`, `methodtable.inl` | Core type representation |
-| TypeDesc | `src/coreclr/vm/typedesc.h` | `src/coreclr/vm/typedesc.cpp`, `typedesc.inl` | Parameterized types (pointers, byrefs, etc.) |
+| EEClass | `src/coreclr/vm/class.h` | `src/coreclr/vm/class.cpp`, `src/coreclr/vm/class.inl` | EEClass functions, `BuildMethodTableThrowing` |
+| MethodTable | `src/coreclr/vm/methodtable.h` | `src/coreclr/vm/methodtable.cpp`, `src/coreclr/vm/methodtable.inl` | Core type representation |
+| TypeDesc | `src/coreclr/vm/typedesc.h` | `src/coreclr/vm/typedesc.cpp`, `src/coreclr/vm/typedesc.inl` | Parameterized types (pointers, byrefs, etc.) |
 | TypeHandle | `src/coreclr/vm/typehandle.h` | `src/coreclr/vm/typehandle.cpp` | Unified handle wrapping MethodTable or TypeDesc |
 | MethodDesc | `src/coreclr/vm/method.hpp` | `src/coreclr/vm/method.cpp` | Method descriptors |
 | FieldDesc | `src/coreclr/vm/field.h` | `src/coreclr/vm/field.cpp` | Field descriptors |
@@ -355,13 +355,13 @@ Major entry points:
 
 | Entry Point | Location |
 |-------------|----------|
-| `MethodTableBuilder::BuildMethodTable()` | `src/coreclr/vm/methodtablebuilder.cpp` |
+| `MethodTableBuilder::BuildMethodTableThrowing()` | `src/coreclr/vm/methodtablebuilder.cpp` |
 | `ClassLoader::LoadTypeHandleThrowing()` | `src/coreclr/vm/clsload.cpp` |
 | `CanCastTo*` (various) | `src/coreclr/vm/castcache.h`, `src/coreclr/vm/methodtable.cpp` |
 | `GetMethodDescFromMemberDefOrRefOrSpecThrowing()` | `src/coreclr/vm/memberload.cpp` |
 | `GetFieldDescFromMemberRefThrowing()` | `src/coreclr/vm/memberload.cpp` |
 | `CompareSigs()` | `src/coreclr/vm/siginfo.cpp` |
-| `VirtualCallStubManager::ResolveWorkerStatic()` | `src/coreclr/vm/virtualcallstub.cpp` |
+| `VirtualCallStubManager::ResolveWorker()` | `src/coreclr/vm/virtualcallstub.cpp` |
 
 Related Reading
 ===============

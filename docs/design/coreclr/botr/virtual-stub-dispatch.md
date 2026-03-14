@@ -189,4 +189,4 @@ Key source files (all paths relative to repository root):
 |-----------|-------|
 | Dispatch tokens and maps | [`src/coreclr/vm/contractimpl.h`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.h), [`src/coreclr/vm/contractimpl.cpp`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/contractimpl.cpp) |
 | Virtual stub dispatch | [`src/coreclr/vm/virtualcallstub.h`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.h), [`src/coreclr/vm/virtualcallstub.cpp`](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/virtualcallstub.cpp) |
-| VSD manager entry point | `VirtualCallStubManager::ResolveWorkerStatic()` in `src/coreclr/vm/virtualcallstub.cpp` |
+| VSD manager entry point | `VirtualCallStubManager::ResolveWorker()` in `src/coreclr/vm/virtualcallstub.cpp` |

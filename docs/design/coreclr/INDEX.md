@@ -19,14 +19,14 @@ repository root.
 | Topic | Document | Primary Source Files |
 |-------|----------|---------------------|
 | CLR overview | [intro-to-clr.md](botr/intro-to-clr.md) | `src/coreclr/vm/ceemain.cpp` (startup) |
-| Type system | [type-system.md](botr/type-system.md) | `src/coreclr/vm/methodtable.h`, `class.h`, `typedesc.h`, `typehandle.h` |
-| Type loading | [type-loader.md](botr/type-loader.md) | `src/coreclr/vm/clsload.hpp`, `methodtablebuilder.cpp` |
-| Method descriptors | [method-descriptor.md](botr/method-descriptor.md) | `src/coreclr/vm/method.hpp`, `precode.h` |
+| Type system | [type-system.md](botr/type-system.md) | `src/coreclr/vm/methodtable.h`, `src/coreclr/vm/class.h`, `src/coreclr/vm/typedesc.h`, `src/coreclr/vm/typehandle.h` |
+| Type loading | [type-loader.md](botr/type-loader.md) | `src/coreclr/vm/clsload.hpp`, `src/coreclr/vm/methodtablebuilder.cpp` |
+| Method descriptors | [method-descriptor.md](botr/method-descriptor.md) | `src/coreclr/vm/method.hpp`, `src/coreclr/vm/precode.h` |
 | Virtual stub dispatch | [virtual-stub-dispatch.md](botr/virtual-stub-dispatch.md) | `src/coreclr/vm/virtualcallstub.h` |
-| Garbage collection | [garbage-collection.md](botr/garbage-collection.md) | `src/coreclr/gc/gc.cpp`, `gcinterface.h`; `src/coreclr/vm/gchelpers.cpp` |
-| Threading | [threading.md](botr/threading.md) | `src/coreclr/vm/threads.h`, `threadsuspend.h` |
-| Exceptions (CLR internal) | [exceptions.md](botr/exceptions.md) | `src/coreclr/inc/ex.h`; `src/coreclr/vm/excep.h`, `exceptionhandling.h` |
-| Stack walking | [stackwalking.md](botr/stackwalking.md) | `src/coreclr/vm/stackwalk.h`, `frames.h` |
+| Garbage collection | [garbage-collection.md](botr/garbage-collection.md) | `src/coreclr/gc/gc.cpp`, `src/coreclr/gc/gcinterface.h`; `src/coreclr/vm/gchelpers.cpp` |
+| Threading | [threading.md](botr/threading.md) | `src/coreclr/vm/threads.h`, `src/coreclr/vm/threadsuspend.h` |
+| Exceptions (CLR internal) | [exceptions.md](botr/exceptions.md) | `src/coreclr/inc/ex.h`; `src/coreclr/vm/excep.h`, `src/coreclr/vm/exceptionhandling.h` |
+| Stack walking | [stackwalking.md](botr/stackwalking.md) | `src/coreclr/vm/stackwalk.h`, `src/coreclr/vm/frames.h` |
 | System.Private.CoreLib | [corelib.md](botr/corelib.md) | `src/coreclr/System.Private.CoreLib/` |
 | DAC (diagnostics) | [dac-notes.md](botr/dac-notes.md) | `src/coreclr/debug/daccess/` |
 | Profiling | [profiling.md](botr/profiling.md) | `src/coreclr/vm/proftoeeinterfaceimpl.h` |
@@ -46,14 +46,14 @@ repository root.
 
 | Topic | Document | Primary Source Files |
 |-------|----------|---------------------|
-| **JIT overview (start here)** | [ryujit-overview.md](jit/ryujit-overview.md) | `src/coreclr/jit/compiler.h`, `ee_il_dll.cpp` |
+| **JIT overview (start here)** | [ryujit-overview.md](jit/ryujit-overview.md) | `src/coreclr/jit/compiler.h`, `src/coreclr/jit/ee_il_dll.cpp` |
 | JIT tutorial | [ryujit-tutorial.md](jit/ryujit-tutorial.md) | `src/coreclr/jit/` |
-| Register allocation (LSRA) | [lsra-detail.md](jit/lsra-detail.md) | `src/coreclr/jit/lsra.h`, `lsra.cpp` |
+| Register allocation (LSRA) | [lsra-detail.md](jit/lsra-detail.md) | `src/coreclr/jit/lsra.h`, `src/coreclr/jit/lsra.cpp` |
 | LSRA heuristic tuning | [lsra-heuristic-tuning.md](jit/lsra-heuristic-tuning.md) | `src/coreclr/jit/lsra.cpp` |
 | LSRA throughput | [lsra-throughput.md](jit/lsra-throughput.md) | `src/coreclr/jit/lsra.cpp` |
-| Struct handling | [first-class-structs.md](jit/first-class-structs.md) | `src/coreclr/jit/promotion.cpp`, `morph.cpp` |
+| Struct handling | [first-class-structs.md](jit/first-class-structs.md) | `src/coreclr/jit/promotion.cpp`, `src/coreclr/jit/morph.cpp` |
 | Struct ABI | [struct-abi.md](jit/struct-abi.md) | `src/coreclr/jit/compiler.h` |
-| Inlining | [inlining-plans.md](jit/inlining-plans.md) | `src/coreclr/jit/inlinepolicy.h`, `inline.h` |
+| Inlining | [inlining-plans.md](jit/inlining-plans.md) | `src/coreclr/jit/inlinepolicy.h`, `src/coreclr/jit/inline.h` |
 | Inline size estimates | [inline-size-estimates.md](jit/inline-size-estimates.md) | `src/coreclr/jit/inlinepolicy.cpp` |
 | GC write barriers | [GC-write-barriers.md](jit/GC-write-barriers.md) | `src/coreclr/jit/gcinfo.cpp` |
 | GC info (x86) | [jit-gc-info-x86.md](jit/jit-gc-info-x86.md) | `src/coreclr/jit/gcinfo.cpp` |
@@ -68,7 +68,7 @@ repository root.
 | Escape analysis | [DeabstractionAndConditionalEscapeAnalysis.md](jit/DeabstractionAndConditionalEscapeAnalysis.md) | `src/coreclr/jit/objectalloc.cpp` |
 | Value numbering | [Optimization of Heap Access in Value Numbering.md](jit/Optimization%20of%20Heap%20Access%20in%20Value%20Numbering.md) | `src/coreclr/jit/valuenum.h` |
 | Profile count reconstruction | [profile-count-reconstruction.md](jit/profile-count-reconstruction.md) | `src/coreclr/jit/flowgraph.cpp` |
-| Perf score | [Perf-Score.md](jit/Perf-Score.md) | `src/coreclr/jit/emitarm64.cpp`, `emitxarch.cpp` |
+| Perf score | [Perf-Score.md](jit/Perf-Score.md) | `src/coreclr/jit/emitarm64.cpp`, `src/coreclr/jit/emitxarch.cpp` |
 | Porting RyuJIT | [porting-ryujit.md](jit/porting-ryujit.md) | `src/coreclr/jit/target.h` |
 | ARM64 frame layout | [arm64-jit-frame-layout.md](jit/arm64-jit-frame-layout.md) | `src/coreclr/jit/codegenarm64.cpp` |
 | Longs on 32-bit | [longs-on-32bit-arch.md](jit/longs-on-32bit-arch.md) | `src/coreclr/jit/decomposelongs.cpp` |
@@ -120,10 +120,10 @@ These are the most important functions to start from when tracing a subsystem:
 | JIT compilation | `CILJit::compileMethod()` | `src/coreclr/jit/ee_il_dll.cpp` |
 | Runtime startup | `EEStartup()` | `src/coreclr/vm/ceemain.cpp` |
 | Type loading | `ClassLoader::LoadTypeHandleThrowing()` | `src/coreclr/vm/clsload.cpp` |
-| Method table building | `MethodTableBuilder::BuildMethodTable()` | `src/coreclr/vm/methodtablebuilder.cpp` |
+| Method table building | `MethodTableBuilder::BuildMethodTableThrowing()` | `src/coreclr/vm/methodtablebuilder.cpp` |
 | GC allocation | `GCHeapUtilities::GetGCHeap()` | `src/coreclr/vm/gcheaputilities.h` |
 | GC collection | `GCHeap::GarbageCollect()` | `src/coreclr/gc/gc.cpp` |
 | Thread creation | `SetupThread()` | `src/coreclr/vm/threads.cpp` |
 | Exception throw | `COMPlusThrow()` | `src/coreclr/vm/excep.h` |
 | Stack walk | `Thread::StackWalkFramesEx()` | `src/coreclr/vm/stackwalk.cpp` |
-| Virtual dispatch | `VirtualCallStubManager::ResolveWorkerStatic()` | `src/coreclr/vm/virtualcallstub.cpp` |
+| Virtual dispatch | `VirtualCallStubManager::ResolveWorker()` | `src/coreclr/vm/virtualcallstub.cpp` |

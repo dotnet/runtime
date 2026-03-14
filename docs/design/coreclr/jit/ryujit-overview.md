@@ -902,7 +902,7 @@ All paths relative to repository root:
 |-----------|--------|----------------|
 | JIT/EE interface (JIT side) | `src/coreclr/inc/corjit.h` | `src/coreclr/jit/ee_il_dll.cpp` |
 | JIT/EE interface (EE side) | `src/coreclr/inc/corinfo.h` | `src/coreclr/vm/jitinterface.cpp` |
-| Compiler object | `src/coreclr/jit/compiler.h`, `compiler.hpp` | `src/coreclr/jit/compiler.cpp` |
+| Compiler object | `src/coreclr/jit/compiler.h`, `src/coreclr/jit/compiler.hpp` | `src/coreclr/jit/compiler.cpp` |
 | GenTree nodes | `src/coreclr/jit/gentree.h` | `src/coreclr/jit/gentree.cpp` |
 | BasicBlock | `src/coreclr/jit/block.h` | `src/coreclr/jit/block.cpp` |
 | Statement | `src/coreclr/jit/gentree.h` | — |

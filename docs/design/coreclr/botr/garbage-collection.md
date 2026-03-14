@@ -336,7 +336,7 @@ All paths relative to repository root:
 |-----------|--------|----------------|
 | GC implementation | `src/coreclr/gc/gc.h` | `src/coreclr/gc/gc.cpp` |
 | GC/EE interface | `src/coreclr/gc/gcinterface.h` | — |
-| GC heap utilities | `src/coreclr/vm/gcheaputilities.h` | — |
+| GC heap utilities | `src/coreclr/vm/gcheaputilities.h` | `src/coreclr/vm/gcheaputilities.cpp` |
 | Allocation helpers | `src/coreclr/vm/gchelpers.h` | `src/coreclr/vm/gchelpers.cpp` |
 | Frozen object heap | `src/coreclr/vm/frozenobjectheap.h` | `src/coreclr/vm/frozenobjectheap.cpp` |
 
