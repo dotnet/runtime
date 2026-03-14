@@ -204,48 +204,6 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 
     return 0;
 }
-#elif defined(TARGET_OPENBSD)
-    struct statfs* mounts = NULL;
-    int count = getfsstat(NULL, 0, MNT_NOWAIT);
-    if (count < 0)
-    {
-        return -1;
-    }
-
-    if (count == 0)
-    {
-        return 0;
-    }
-
-    size_t bufferSize = 0;
-    if (!multiply_s((size_t)count, sizeof(*mounts), &bufferSize) || bufferSize > INT_MAX)
-    {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    mounts = (struct statfs*)malloc(bufferSize);
-    if (mounts == NULL)
-    {
-        errno = ENOMEM;
-        return -1;
-    }
-
-    count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
-    if (count < 0)
-    {
-        free(mounts);
-        return -1;
-    }
-
-    for (int32_t i = 0; i < count; i++)
-    {
-        onFound(context, mounts[i].f_mntonname);
-    }
-
-    free(mounts);
-    return 0;
-}
 #else
 #error "Don't know how to enumerate mount points on this platform"
 #endif
