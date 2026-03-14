@@ -1307,6 +1307,8 @@ namespace System
             }
             // shiftRight > 64 is impossible: max is 63 - 7 + denormalShift, capped by the
             // early return when denormalShift > 64 - shiftRight.
+            // shiftRight == 0 is impossible: minimum is 63 - 52 = 11 (for double), see assert above.
+            Debug.Assert(shiftRight > 0 && shiftRight <= 64);
 
             mantissa &= TFloat.DenormalMantissaMask;
 
