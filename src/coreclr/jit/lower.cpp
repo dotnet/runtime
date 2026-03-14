@@ -4815,6 +4815,113 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------------------
+// TryLowerSelectToSarAdd: Try to optimize:
+// SELECT(x < 0, C - 1, C) -> SAR(x, 31) + C
+// SAR(x, 31) gives us either -1 or 0 dependig on if x was negative or not.
+// The +C then just shifts to the wanted range.
+//
+// Arguments:
+//     select   - The SELECT node
+//     cond     - The condition
+//     trueVal  - Value when condition is true
+//     falseVal - Value when condition is false
+//
+// Return Value:
+//     Next node if the optimization was applied, nullptr otherwise.
+//
+GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
+                                          GenTree*            cond,
+                                          GenTree*            trueVal,
+                                          GenTree*            falseVal)
+{
+    if (!select->TypeIs(TYP_INT))
+    {
+        return nullptr;
+    }
+
+    if (!trueVal->IsIntegralConst() || !falseVal->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    if (!cond->OperIsCompare())
+    {
+        return nullptr;
+    }
+
+    GenTree* relopOp1 = cond->gtGetOp1();
+    GenTree* relopOp2 = cond->gtGetOp2();
+
+    if (!relopOp2->IsIntegralConst(0))
+    {
+        return nullptr;
+    }
+
+    int32_t trueValConst  = static_cast<int32_t>(trueVal->AsIntConCommon()->IntegralValue());
+    int32_t falseValConst = static_cast<int32_t>(falseVal->AsIntConCommon()->IntegralValue());
+
+    if (trueValConst - falseValConst == -1)
+    {
+        // x < 0 ? C-1 : C
+        if (!cond->OperIs(GT_LT))
+        {
+            return nullptr;
+        }
+    }
+    else if (trueValConst - falseValConst == 1)
+    {
+        // x >= 0 ? C : C-1
+        if (!cond->OperIs(GT_GE))
+        {
+            return nullptr;
+        }
+
+        std::swap(trueValConst, falseValConst);
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(select, &use))
+    {
+        return nullptr;
+    }
+
+    BlockRange().Remove(relopOp2);
+    BlockRange().Remove(cond);
+    BlockRange().Remove(trueVal);
+    BlockRange().Remove(falseVal);
+    BlockRange().Remove(select);
+
+    relopOp1->ClearContained();
+
+    GenTree* shiftConst = m_compiler->gtNewIconNode(31, TYP_INT);
+    GenTree* sar        = m_compiler->gtNewOperNode(GT_RSH, select->TypeGet(), relopOp1, shiftConst);
+    shiftConst->SetContained();
+
+    BlockRange().InsertAfter(relopOp1, shiftConst);
+    BlockRange().InsertAfter(shiftConst, sar);
+
+    GenTree* replacement = sar;
+    bool     addRequired = falseValConst != 0;
+    if (addRequired)
+    {
+        GenTree* addConst = m_compiler->gtNewIconNode(falseValConst, select->TypeGet());
+        GenTree* add      = m_compiler->gtNewOperNode(GT_ADD, select->TypeGet(), sar, addConst);
+        addConst->SetContained();
+
+        BlockRange().InsertAfter(sar, addConst);
+        BlockRange().InsertAfter(addConst, add);
+        replacement = add;
+    }
+
+    use.ReplaceWith(replacement);
+    return replacement->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
 // LowerSelect: Lower a GT_SELECT node.
 //
 // Arguments:
@@ -4828,6 +4935,11 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     GenTree* cond     = select->gtCond;
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
+
+    if (GenTree* next = TryLowerSelectToSarAdd(select, cond, trueVal, falseVal); next != nullptr)
+    {
+        return next;
+    }
 
     // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
     if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
