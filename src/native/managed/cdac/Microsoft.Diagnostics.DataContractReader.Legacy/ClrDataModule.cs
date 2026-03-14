@@ -64,7 +64,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         return CustomQueryInterfaceResult.NotHandled;
     }
 
-    internal sealed class EnumMethodDefinitions
+    public sealed class EnumMethodDefinitions
     {
         private readonly uint _flags;
         private readonly MetadataReader _reader;
@@ -305,17 +305,12 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 hr = HResults.S_FALSE;
             }
         }
-        catch (System.Exception ex)
+        catch (System.Exception)
         {
             // Fall back to the legacy DAC result when available, otherwise propagate the error.
             if (_legacyModule is not null)
             {
-                hr = hrLocal;
                 method.Interface = legacyMethod;
-            }
-            else
-            {
-                hr = ex.HResult;
             }
         }
 
