@@ -73,10 +73,11 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         public IEnumerator<uint> MethodEnumerator = Enumerable.Empty<uint>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
-        public EnumMethodDefinitions(MetadataReader reader, uint flags)
+        public EnumMethodDefinitions(MetadataReader reader, uint flags, TargetPointer legacyHandle)
         {
             _reader = reader;
             _flags = flags;
+            LegacyHandle = legacyHandle;
         }
 
         public void Start(string fullName)
@@ -227,6 +228,10 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         int hrLocal = default;
         try
         {
+            if (_legacyModule is not null)
+            {
+                hrLocal = _legacyModule.StartEnumMethodDefinitionsByName(name, flags, &handleLocal);
+            }
             if (name == null || *name == '\0')
                 throw new ArgumentException();
             if ((flags & ~((uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_SENSITIVE | (uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_INSENSITIVE)) != 0)
@@ -238,13 +243,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
             MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
 
-            EnumMethodDefinitions emd = new(reader, flags);
+            EnumMethodDefinitions emd = new(reader, flags, handleLocal);
             emd.Start(fullName);
-            if (_legacyModule is not null)
-            {
-                hrLocal = _legacyModule.StartEnumMethodDefinitionsByName(name, flags, &handleLocal);
-            }
-            emd.LegacyHandle = handleLocal;
             GCHandle gcHandle = GCHandle.Alloc(emd);
             *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
         }
