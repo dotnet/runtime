@@ -845,6 +845,33 @@ namespace System.Tests
 
             yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Negative hex value
             yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
+
+            // Invalid hex float inputs
+            yield return new object[] { "", NumberStyles.HexFloat, null, typeof(FormatException) }; // Empty
+            yield return new object[] { " ", NumberStyles.HexFloat, null, typeof(FormatException) }; // Whitespace only
+            yield return new object[] { "0x", NumberStyles.HexFloat, null, typeof(FormatException) }; // Prefix only
+            yield return new object[] { "0x.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // No significand digits
+            yield return new object[] { "0x1.0e5", NumberStyles.HexFloat, null, typeof(FormatException) }; // 'e' exponent instead of 'p'
+            yield return new object[] { "0x1.0p", NumberStyles.HexFloat, null, typeof(FormatException) }; // Exponent marker without digits
+            yield return new object[] { "0x1.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional part without exponent
+            yield return new object[] { "0x.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional-only without exponent
+            yield return new object[] { "0xGp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char
+            yield return new object[] { "0x1.Gp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char in fraction
+            yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
+            yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
+            yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
+            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
+            yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
+            yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
+            yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "0x1.0p 0", NumberStyles.HexFloat, null, typeof(FormatException) }; // internal whitespace in exponent
+            yield return new object[] { "0x1pa", NumberStyles.HexFloat, null, typeof(FormatException) }; // non-digit in exponent
+            yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
+            yield return new object[] { "0x1.0.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double decimal point
+            yield return new object[] { "0x 1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // embedded whitespace after prefix
+            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
         }
 
         [Theory]
