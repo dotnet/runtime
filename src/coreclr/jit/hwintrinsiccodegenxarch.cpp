@@ -2498,13 +2498,11 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             assert(!node->Op(1)->isContained());
 
             // SIMD base type is from signature and can distinguish signed and unsigned
-            var_types   targetType = node->GetSimdBaseType();
-            GenTree*    regOp      = node->Op(1);
-            GenTree*    rmOp       = node->Op(2);
-            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, m_compiler);
+            GenTree*    regOp = node->Op(1);
+            GenTree*    rmOp  = node->Op(2);
+            instruction ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
-            emitAttr attr = emitTypeSize(targetType);
-            emitter* emit = GetEmitter();
+            emitAttr attr = emitTypeSize(baseType);
 
             // If rmOp is already in EAX, use that as implicit operand
             if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
