@@ -446,11 +446,8 @@ namespace System.Collections.Frozen.Tests
         [OuterLoop("Allocates a large collection")]
         public void ToFrozenSet_LargeSet_ExceedsPrimeTable()
         {
-            // Validate that FrozenHashTable handles collections whose
-            // uniqueCodesCount * 2 exceeds the precomputed primes table,
-            // exercising the CalcNumBuckets early-return path.
-            // The integer overflow fix for >1B items (long minNumBuckets)
-            // cannot be practically tested without multi-GB allocations.
+            // Exercise the CalcNumBuckets early-return path for collections whose
+            // uniqueCodesCount * 2 exceeds the precomputed primes table.
             const int count = 4_000_000;
             var set = new HashSet<int>(count);
             for (int i = 0; i < count; i++)
