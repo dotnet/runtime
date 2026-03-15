@@ -65,6 +65,7 @@ namespace System.Collections.Frozen
             {
                 throw new OutOfMemoryException();
             }
+
             int[] arrayPoolBuckets = ArrayPool<int>.Shared.Rent(numBuckets + hashCodes.Length);
             Span<int> bucketStarts = arrayPoolBuckets.AsSpan(0, numBuckets);
             Span<int> nexts = arrayPoolBuckets.AsSpan(numBuckets, hashCodes.Length);
@@ -185,6 +186,18 @@ namespace System.Collections.Frozen
             // at least twice as big as the number of unique hash codes.
             // Use long to avoid integer overflow when uniqueCodesCount is large (> ~1 billion).
             long minNumBuckets = (long)uniqueCodesCount * 2;
+
+            // If the minimum bucket count combined with hash codes exceeds array length limits,
+            // skip the expensive collision-counting loop below — any bucket count it finds
+            // would cause Create to fail. Fall back to the next prime above uniqueCodesCount.
+#if NET
+            if (minNumBuckets + hashCodes.Length > Array.MaxLength)
+#else
+            if (minNumBuckets + hashCodes.Length > 0x7FFFFFC7)
+#endif
+            {
+                return HashHelpers.GetPrime(uniqueCodesCount);
+            }
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
             // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
