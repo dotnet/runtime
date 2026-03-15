@@ -553,7 +553,9 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         // The loader is responsible for only accepting well-formed delegate classes.
         _ASSERTE(pDlgCtorMD);
 
-        // Make sure we activate the assembly containing the target method desc
+        // Make sure we activate assemblies containing target method descs.
+        pProvMethodDesc->EnsureActive();
+        pDlgCtorMD->EnsureActive();
         pEventMethodDesc->EnsureActive();
 
         // Allocate an object based on the method table of the delegate class.
@@ -566,9 +568,9 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
             // Construct the delegate and invoke the provider method in one helper.
             invokeConnectionPointProviderMethod.InvokeThrowing(
                 &pProvider,
-                (INT_PTR)pProvMethodDesc,
+                (INT_PTR)pProvMethodDesc->GetMultiCallableAddrOfCode(),
                 &pDelegate,
-                (INT_PTR)pDlgCtorMD,
+                (INT_PTR)pDlgCtorMD->GetMultiCallableAddrOfCode(),
                 &pSubscriber,
                 (INT_PTR)pEventMethodDesc->GetMultiCallableAddrOfCode(),
                 CLR_BOOL_ARG(useUIntPtrCtor));

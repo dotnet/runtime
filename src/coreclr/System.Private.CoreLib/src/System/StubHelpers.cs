@@ -1535,44 +1535,11 @@ namespace System.StubHelpers
             }
         }
 
-        [SupportedOSPlatform("windows")]
-        private static Signature GetMethodSignature(RuntimeMethodHandle methodHandle)
+        private static unsafe ulong InvokeArgSlotMethodWithOneArg(object target, RuntimeMethodHandle methodHandle, nint methodEntryPoint, object? arg0)
         {
             IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
-            return new Signature(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
-        }
-
-        [SupportedOSPlatform("windows")]
-        private static unsafe void InvokeDelegateConstructor(object delegateInstance, RuntimeMethodHandle methodHandle, object? target, nuint methodCode, bool useUIntPtrCtor)
-        {
-            nint methodEntryPoint = (nint)methodHandle.GetFunctionPointer();
-            Debug.Assert(methodEntryPoint != 0);
-
-            if (useUIntPtrCtor)
-            {
-                ((delegate*<object, object?, nuint, void>)methodEntryPoint)(delegateInstance, target, methodCode);
-            }
-            else
-            {
-                ((delegate*<object, object?, nint, void>)methodEntryPoint)(delegateInstance, target, (nint)methodCode);
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        private static unsafe void InvokeVoidMethodWithOneArg(object target, RuntimeMethodHandle methodHandle, object? arg0)
-        {
-            nint methodEntryPoint = (nint)methodHandle.GetFunctionPointer();
-            Debug.Assert(methodEntryPoint != 0);
-
-            ((delegate*<object, object?, void>)methodEntryPoint)(target, arg0);
-        }
-
-        [SupportedOSPlatform("windows")]
-        private static unsafe ulong InvokeArgSlotMethodWithOneArg(object target, RuntimeMethodHandle methodHandle, object? arg0)
-        {
-            Signature signature = GetMethodSignature(methodHandle);
+            Signature signature = new(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
             RuntimeType returnType = signature.ReturnType;
-            nint methodEntryPoint = (nint)methodHandle.GetFunctionPointer();
             Debug.Assert(methodEntryPoint != 0);
 
             if (returnType == typeof(void))
@@ -1623,9 +1590,9 @@ namespace System.StubHelpers
         [UnmanagedCallersOnly]
         private static unsafe void InvokeConnectionPointProviderMethod(
             object* pProvider,
-            IntPtr pProviderMethodDesc,
+            IntPtr pProviderMethodPtr,
             object* pDelegate,
-            IntPtr pDelegateCtorMethodDesc,
+            IntPtr pDelegateCtorMethodPtr,
             object* pSubscriber,
             IntPtr pEventMethodCodePtr,
             bool useUIntPtrCtor,
@@ -1633,12 +1600,22 @@ namespace System.StubHelpers
         {
             try
             {
-                RuntimeMethodHandle delegateCtorMethodHandle = RuntimeMethodHandle.FromIntPtr(pDelegateCtorMethodDesc);
-                // Construct the delegate before invoking the provider method.
-                InvokeDelegateConstructor(*pDelegate, delegateCtorMethodHandle, *pSubscriber, (nuint)pEventMethodCodePtr, useUIntPtrCtor);
+                nint delegateCtorMethodEntryPoint = (nint)pDelegateCtorMethodPtr;
+                Debug.Assert(delegateCtorMethodEntryPoint != 0);
 
-                RuntimeMethodHandle providerMethodHandle = RuntimeMethodHandle.FromIntPtr(pProviderMethodDesc);
-                InvokeVoidMethodWithOneArg(*pProvider, providerMethodHandle, *pDelegate);
+                // Construct the delegate before invoking the provider method.
+                if (useUIntPtrCtor)
+                {
+                    ((delegate*<object, object?, nuint, void>)delegateCtorMethodEntryPoint)(*pDelegate, *pSubscriber, (nuint)pEventMethodCodePtr);
+                }
+                else
+                {
+                    ((delegate*<object, object?, nint, void>)delegateCtorMethodEntryPoint)(*pDelegate, *pSubscriber, (nint)pEventMethodCodePtr);
+                }
+
+                nint providerMethodEntryPoint = (nint)pProviderMethodPtr;
+                Debug.Assert(providerMethodEntryPoint != 0);
+                ((delegate*<object, object?, void>)providerMethodEntryPoint)(*pProvider, *pDelegate);
             }
             catch (Exception ex)
             {
@@ -1651,13 +1628,13 @@ namespace System.StubHelpers
         [UnmanagedCallersOnly]
         // pResult is an unmanaged ARG_SLOT* (see vm/callhelpers.h). ARG_SLOT is always 8 bytes,
         // so we use ulong purely as a fixed-width bit container, not for numeric semantics.
-        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
+        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, IntPtr pMethodEntryPoint, Delegate* pEventHandler, ulong* pResult, Exception* pException)
         {
             try
             {
                 object eventProvider = pComObject->GetEventProvider(*pProviderType);
                 RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
-                *pResult = InvokeArgSlotMethodWithOneArg(eventProvider, methodHandle, *pEventHandler);
+                *pResult = InvokeArgSlotMethodWithOneArg(eventProvider, methodHandle, (nint)pMethodEntryPoint, *pEventHandler);
             }
             catch (Exception ex)
             {

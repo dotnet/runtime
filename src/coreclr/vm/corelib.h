@@ -1050,7 +1050,7 @@ DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, G
 DEFINE_METHOD(STUBHELPERS,          GET_DISPATCH_EX_PROPERTY_FLAGS, GetDispatchExPropertyFlags, SM_PtrPropertyInfo_PtrInt_PtrException_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CALL_ICUSTOM_QUERY_INTERFACE, CallICustomQueryInterface, SM_PtrICustomQueryInterface_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          INVOKE_CONNECTION_POINT_PROVIDER_METHOD, InvokeConnectionPointProviderMethod, SM_PtrObj_IntPtr_PtrObj_IntPtr_PtrObj_IntPtr_Bool_PtrException_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          INVOKE_CLR_TO_COM_EVENT_PROVIDER_METHOD, InvokeClrToComEventProviderMethod, SM_PtrComObject_PtrClass_IntPtr_PtrDelegate_PtrULong_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          INVOKE_CLR_TO_COM_EVENT_PROVIDER_METHOD, InvokeClrToComEventProviderMethod, SM_PtrComObject_PtrClass_IntPtr_IntPtr_PtrDelegate_PtrULong_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)

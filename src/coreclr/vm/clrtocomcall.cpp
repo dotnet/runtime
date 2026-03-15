@@ -327,6 +327,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
             &gc.ThisObj,
             &gc.EventProviderTypeObj,
             (INT_PTR)pEvProvMD,
+            (INT_PTR)pEvProvMD->GetMultiCallableAddrOfCode(),
             &EventHandlerObj,
             &eventProviderResult);
 
