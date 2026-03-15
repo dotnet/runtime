@@ -19,7 +19,7 @@ namespace System.Net.NetworkInformation
             _index = networkInterfaceInfo->InterfaceIndex;
             if (networkInterfaceInfo->NumAddressBytes > 0)
             {
-                _physicalAddress = new PhysicalAddress(((ReadOnlySpan<byte>)networkInterfaceInfo->AddressBytes).Slice(0, networkInterfaceInfo->NumAddressBytes).ToArray());
+                _physicalAddress = new PhysicalAddress(((ReadOnlySpan<byte>)networkInterfaceInfo->AddressBytes)[..networkInterfaceInfo->NumAddressBytes].ToArray());
             }
 
             _mtu = networkInterfaceInfo->Mtu;
@@ -33,7 +33,7 @@ namespace System.Net.NetworkInformation
 
         internal unsafe void AddAddress(Interop.Sys.IpAddressInfo *addressInfo)
         {
-            var address = new IPAddress(((ReadOnlySpan<byte>)addressInfo->AddressBytes).Slice(0, addressInfo->NumAddressBytes));
+            var address = new IPAddress(((ReadOnlySpan<byte>)addressInfo->AddressBytes)[..addressInfo->NumAddressBytes]);
             if (address.IsIPv6LinkLocal)
             {
                 address.ScopeId = addressInfo->InterfaceIndex;

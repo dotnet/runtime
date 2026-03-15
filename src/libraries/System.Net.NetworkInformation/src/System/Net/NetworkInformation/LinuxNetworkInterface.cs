@@ -104,7 +104,7 @@ namespace System.Net.NetworkInformation
 
                     if (nii->NumAddressBytes > 0)
                     {
-                        lni._physicalAddress = new PhysicalAddress(((ReadOnlySpan<byte>)nii->AddressBytes).Slice(0, nii->NumAddressBytes).ToArray());
+                        lni._physicalAddress = new PhysicalAddress(((ReadOnlySpan<byte>)nii->AddressBytes)[..nii->NumAddressBytes].ToArray());
                     }
 
                     interfaces[i] = lni;
@@ -114,7 +114,7 @@ namespace System.Net.NetworkInformation
 
                 while (addressCount != 0)
                 {
-                    var address = new IPAddress(((ReadOnlySpan<byte>)ai->AddressBytes).Slice(0, ai->NumAddressBytes));
+                    var address = new IPAddress(((ReadOnlySpan<byte>)ai->AddressBytes)[..ai->NumAddressBytes]);
                     if (address.IsIPv6LinkLocal)
                     {
                         address.ScopeId = ai->InterfaceIndex;

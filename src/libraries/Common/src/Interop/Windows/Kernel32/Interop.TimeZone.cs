@@ -60,7 +60,7 @@ internal static partial class Interop
             {
                 ReadOnlySpan<char> span = TimeZoneKeyName;
                 int idx = span.IndexOf('\0');
-                return new string(idx >= 0 ? span.Slice(0, idx) : span);
+                return new string(idx >= 0 ? span[..idx] : span);
             }
         }
 
@@ -93,14 +93,14 @@ internal static partial class Interop
             {
                 ReadOnlySpan<char> span = StandardName;
                 int idx = span.IndexOf('\0');
-                return new string(idx >= 0 ? span.Slice(0, idx) : span);
+                return new string(idx >= 0 ? span[..idx] : span);
             }
 
             internal string GetDaylightName()
             {
                 ReadOnlySpan<char> span = DaylightName;
                 int idx = span.IndexOf('\0');
-                return new string(idx >= 0 ? span.Slice(0, idx) : span);
+                return new string(idx >= 0 ? span[..idx] : span);
             }
         }
 

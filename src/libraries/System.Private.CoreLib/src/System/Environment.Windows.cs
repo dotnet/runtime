@@ -154,7 +154,7 @@ namespace System
             {
                 ReadOnlySpan<char> csd = osvi.szCSDVersion;
                 int idx = csd.IndexOf('\0');
-                return new OperatingSystem(PlatformID.Win32NT, version, new string(idx >= 0 ? csd.Slice(0, idx) : csd));
+                return new OperatingSystem(PlatformID.Win32NT, version, new string(idx >= 0 ? csd[..idx] : csd));
             }
 
             return new OperatingSystem(PlatformID.Win32NT, version);
