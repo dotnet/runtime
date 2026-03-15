@@ -4352,24 +4352,26 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if ((lvaMonAcquired != BAD_VAR_NUM) && !opts.IsOSR())
         {
-            int offset = lvaTable[lvaMonAcquired].GetStackOffset() + delta;
+            int offset = lvaTable[lvaMonAcquired].GetStackOffset() + (compCalleeRegsPushed << 3);
             lvaTable[lvaMonAcquired].SetStackOffset(offset);
             delta += lvaLclStackHomeSize(lvaMonAcquired);
         }
 
+#ifndef TARGET_LOONGARCH64
         if ((lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !opts.IsOSR())
         {
-            int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + delta;
+            int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + (compCalleeRegsPushed << 3);
             lvaTable[lvaAsyncExecutionContextVar].SetStackOffset(offset);
             delta += lvaLclStackHomeSize(lvaAsyncExecutionContextVar);
         }
 
         if ((lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !opts.IsOSR())
         {
-            int offset = lvaTable[lvaAsyncSynchronizationContextVar].GetStackOffset() + delta;
+            int offset = lvaTable[lvaAsyncSynchronizationContextVar].GetStackOffset() + (compCalleeRegsPushed << 3);
             lvaTable[lvaAsyncSynchronizationContextVar].SetStackOffset(offset);
             delta += lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar);
         }
+#endif
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }

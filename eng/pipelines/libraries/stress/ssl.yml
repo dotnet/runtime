@@ -96,7 +96,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = $env:SSLSTRESS_CLIENT_ARGS
             $env:STRESS_SERVER_ARGS = $env:SSLSTRESS_SERVER_ARGS
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
         - publish: $(Build.ArtifactStagingDirectory)/dumps

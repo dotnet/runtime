@@ -619,6 +619,77 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorCreateSingleElementTests()
+        {
+            // Tensor.Create with a single-element array should have stride 0
+            Tensor<double> src = Tensor.Create([1.0]);
+            Assert.Equal(1, src.Rank);
+            Assert.Equal(1, src.Lengths[0]);
+            Assert.Equal(0, src.Strides[0]);
+            Assert.Equal(1, src.FlattenedLength);
+            Assert.Equal(1.0, src[0]);
+
+            // CreateFromShapeUninitialized without strides should work
+            Tensor<double> dst = Tensor.CreateFromShapeUninitialized<double>(src.Lengths);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            // CopyTo should succeed
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShapeUninitialized with explicit strides should work
+            dst = Tensor.CreateFromShapeUninitialized<double>(src.Lengths, src.Strides);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShape without strides should also work
+            dst = Tensor.CreateFromShape<double>(src.Lengths);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShape with explicit strides should also work
+            dst = Tensor.CreateFromShape<double>(src.Lengths, src.Strides);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // TensorSpan from single-element span should also have stride 0
+            Span<double> span = [42.0];
+            TensorSpan<double> tensorSpan = new TensorSpan<double>(span);
+            Assert.Equal(1, tensorSpan.Rank);
+            Assert.Equal(1, tensorSpan.Lengths[0]);
+            Assert.Equal(0, tensorSpan.Strides[0]);
+            Assert.Equal(1, tensorSpan.FlattenedLength);
+            Assert.Equal(42.0, tensorSpan[0]);
+
+            // ReadOnlyTensorSpan from single-element span should also have stride 0
+            ReadOnlySpan<double> roSpan = [42.0];
+            ReadOnlyTensorSpan<double> roTensorSpan = new ReadOnlyTensorSpan<double>(roSpan);
+            Assert.Equal(1, roTensorSpan.Rank);
+            Assert.Equal(1, roTensorSpan.Lengths[0]);
+            Assert.Equal(0, roTensorSpan.Strides[0]);
+            Assert.Equal(1, roTensorSpan.FlattenedLength);
+            Assert.Equal(42.0, roTensorSpan[0]);
+        }
+
+        [Fact]
         public static void TensorCosineSimilarityTests()
         {
             float[] a = [0, 0, 0, 1, 1, 1];
