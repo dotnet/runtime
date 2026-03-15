@@ -12908,6 +12908,47 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
 
     pJitInfo->m_encBreakpointsApplied = true;
 
+    // For runtime-async methods, also plant EnC remap breakpoints on the async variant.
+    // The JIT creates two MethodDescs: an entry variant (runs pre-await code) and an
+    // async variant (runs on resumption after await). Each has its own JIT info with
+    // different sequence points. Without planting breakpoints on both, remap during
+    // async resumption won't fire because the breakpoints only cover the entry variant.
+    if (pMD->HasAsyncOtherVariant())
+    {
+        MethodDesc* pAsyncOther = pMD->GetAsyncOtherVariantNoCreate();
+        if (pAsyncOther != NULL)
+        {
+            DebuggerJitInfo *pAsyncJitInfo = GetLatestJitInfoFromMethodDesc(pAsyncOther);
+            if (pAsyncJitInfo != NULL && !pAsyncJitInfo->m_encBreakpointsApplied)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "D::UF: Also applying breakpoints to async variant\n"));
+
+                EnCSequencePointHelper asyncSeqHelper(pAsyncJitInfo);
+                PTR_DebuggerILToNativeMap asyncSeqMap = pAsyncJitInfo->GetSequenceMap();
+                for (unsigned int j = 0; j < pAsyncJitInfo->GetSequenceMapCount(); j++)
+                {
+                    if (!asyncSeqHelper.ShouldSetRemapBreakpoint(j))
+                    {
+                        continue;
+                    }
+
+                    SIZE_T asyncOffset = asyncSeqMap[j].ilOffset;
+                    LOG((LF_CORDB, LL_INFO10000, "D::UF: placing async variant EnC breakpoint at offset 0x%x (IL: 0x%x)\n",
+                        asyncSeqMap[j].nativeStartOffset, asyncSeqMap[j].ilOffset));
+
+                    DebuggerEnCBreakpoint *asyncBp;
+                    asyncBp = new (interopsafe) DebuggerEnCBreakpoint(asyncOffset,
+                                                                      pAsyncJitInfo,
+                                                                      DebuggerEnCBreakpoint::REMAP_PENDING,
+                                                                      AppDomain::GetCurrentDomain());
+                    _ASSERTE(asyncBp != NULL);
+                }
+
+                pAsyncJitInfo->m_encBreakpointsApplied = true;
+            }
+        }
+    }
+
     return S_OK;
 }
 
