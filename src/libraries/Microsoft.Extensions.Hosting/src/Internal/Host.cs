@@ -127,7 +127,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                         if (service is BackgroundService backgroundService)
                         {
-                            (_backgroundServiceTasks ??= new()).Add(TryExecuteBackgroundServiceAsync(backgroundService));
+                            Task monitorTask = TryExecuteBackgroundServiceAsync(backgroundService);
+                            List<Task> bgTasks = LazyInitializer.EnsureInitialized(ref _backgroundServiceTasks);
+                            lock (bgTasks)
+                            {
+                                bgTasks.Add(monitorTask);
+                            }
                         }
                     }).ConfigureAwait(false);
 
