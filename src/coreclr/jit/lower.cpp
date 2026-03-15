@@ -4895,20 +4895,16 @@ GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
         return nullptr;
     }
 
-    BlockRange().Remove(relopOp2);
-    BlockRange().Remove(cond);
-    BlockRange().Remove(trueVal);
-    BlockRange().Remove(falseVal);
-    BlockRange().Remove(select);
+    // Remove select and its nodes except relopOp1
+    BlockRange().Remove(relopOp2, select);
 
     relopOp1->ClearContained();
 
     GenTree* shiftConst = m_compiler->gtNewIconNode(31, TYP_INT);
     GenTree* sar        = m_compiler->gtNewOperNode(GT_RSH, select->TypeGet(), relopOp1, shiftConst);
-    ContainCheckNode(sar);
-
     BlockRange().InsertAfter(relopOp1, shiftConst);
     BlockRange().InsertAfter(shiftConst, sar);
+    ContainCheckNode(sar);
 
     GenTree* replacement = sar;
     bool     addRequired = falseValConst != 0;
@@ -4916,10 +4912,10 @@ GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
     {
         GenTree* addConst = m_compiler->gtNewIconNode(falseValConst, select->TypeGet());
         GenTree* add      = m_compiler->gtNewOperNode(GT_ADD, select->TypeGet(), sar, addConst);
-        ContainCheckNode(add);
-
         BlockRange().InsertAfter(sar, addConst);
         BlockRange().InsertAfter(addConst, add);
+        ContainCheckNode(add);
+
         replacement = add;
     }
 
