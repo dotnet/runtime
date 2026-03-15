@@ -510,6 +510,7 @@ public:
 
         struct
         {
+            // [cDAC] [BuiltInCOM] : Contract depends on the encoding of m_fURTAggregated, m_fURTContained, and m_MarshalingType.
             static_assert((1 << 4) > INTERFACE_ENTRY_CACHE_SIZE, "m_iEntryToRelease needs a bigger data type");
             DWORD       m_iEntryToRelease:4;
 
@@ -542,7 +543,6 @@ private :
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
-    // cdac_data<RCW> needs access to m_UnkEntry
     friend struct ::cdac_data<RCW>;
 
 private :
@@ -591,6 +591,13 @@ struct cdac_data<RCW>
     static constexpr size_t Flags = offsetof(RCW, m_Flags);
     static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
     static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
+    static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
+    static constexpr size_t IdentityPointer = offsetof(RCW, m_pIdentity);
+    static constexpr size_t SyncBlockIndex = offsetof(RCW, m_SyncBlockIndex);
+    static constexpr size_t VTablePtr = offsetof(RCW, m_vtablePtr);
+    static constexpr size_t CreatorThread = offsetof(RCW, m_pCreatorThread);
+    static constexpr size_t RefCount = offsetof(RCW, m_cbRefCount);
+    static constexpr size_t UnknownPointer = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pUnknown);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)

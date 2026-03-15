@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -53,6 +53,37 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
     }
     onDownloadedAsset(assetInternal);
     return mod;
+}
+
+export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
+    const module = await loadJSModule(asset);
+    const name = asset.name || asset.resolvedUrl || "unknown";
+    try {
+        if (typeof module.onRuntimeConfigLoaded === "function") {
+            await module.onRuntimeConfigLoaded(loaderConfig);
+        } else if (typeof module.onRuntimeReady !== "function") {
+            dotnetLogger.warn(`Module '${name}' does not export 'onRuntimeConfigLoaded' function. Make sure the module initializer is correctly defined and exported.`);
+        }
+        return module;
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to invoke 'onRuntimeConfigLoaded' on library initializer '${name}': ${message}`, { cause: err });
+    }
+}
+
+export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise]: [JsAsset, Promise<any>]): Promise<void> {
+    const module = await modulePromise;
+    const name = asset.name || asset.resolvedUrl || "unknown";
+    try {
+        if (typeof module.onRuntimeReady === "function") {
+            await module.onRuntimeReady(dotnetApi);
+        } else if (typeof module.onRuntimeConfigLoaded !== "function") {
+            dotnetLogger.warn(`Module '${name}' does not export 'onRuntimeReady' function. Make sure the module initializer is correctly defined and exported.`);
+        }
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to invoke 'onRuntimeReady' on library initializer '${name}': ${message}`, { cause: err });
+    }
 }
 
 export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
@@ -115,9 +146,10 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
         asset.resolvedUrl = locateFile(assetNameForUrl);
     }
 
+    const isWebcilInWasm = assetInternal.virtualPath?.endsWith(".wasm") ?? false;
     normalizeVirtualPath(assetInternal);
 
-    if (assetInternal.virtualPath.endsWith(".wasm")) {
+    if (isWebcilInWasm) {
         await fetchWebcil(assetInternal);
     } else {
         await fetchDll(assetInternal);
@@ -127,8 +159,6 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
 async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
     try {
         assetInternal.behavior = "webcil";
-
-        normalizeVirtualPath(assetInternal);
 
         const webcilPromise = loadResource(assetInternal);
 

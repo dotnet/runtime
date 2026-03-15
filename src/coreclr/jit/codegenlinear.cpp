@@ -410,6 +410,16 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
+#ifdef TARGET_WASM
+        // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
+        // we have moved it out of the prolog to the first basic block in order to
+        // work around the restriction that the prolog can only be one insGroup.
+        if (block->IsFirst())
+        {
+            genHomeRegisterParamsOutsideProlog();
+        }
+#endif
+
 #ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
         // Emit poisoning into the init BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
