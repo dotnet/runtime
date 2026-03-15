@@ -36,6 +36,8 @@ struct HandleTableBucket
 {
     PTR_HHANDLETABLE pTable;
     uint32_t         HandleTableIndex;
+
+    bool Contains(OBJECTHANDLE handle);
 };
 
 

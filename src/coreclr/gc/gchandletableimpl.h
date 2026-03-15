@@ -12,6 +12,8 @@ class GCHandleStore : public IGCHandleStore
 public:
     virtual void Uproot();
 
+    virtual bool ContainsHandle(OBJECTHANDLE handle);
+
     virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type);
 
     virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo);

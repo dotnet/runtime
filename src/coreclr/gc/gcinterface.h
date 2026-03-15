@@ -6,12 +6,12 @@
 
 // The major version of the IGCHeap interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 6
+#define GC_INTERFACE_MAJOR_VERSION 5
 
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 0
+#define GC_INTERFACE_MINOR_VERSION 6
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -579,6 +579,8 @@ class IGCHandleStore {
 public:
 
     virtual void Uproot() PURE_VIRTUAL
+
+    virtual bool ContainsHandle(OBJECTHANDLE handle) PURE_VIRTUAL
 
     virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type) PURE_VIRTUAL
 
