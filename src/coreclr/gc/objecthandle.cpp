@@ -2089,7 +2089,8 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
     }
 
     HHANDLETABLE hTable = HndGetHandleTable(handle);
-    for (int uCPUindex=0; uCPUindex < g_theGCHeap->GetNumberOfHeaps(); uCPUindex++)
+    int n_slots = getNumberOfSlots();
+    for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++)
     {
         if (hTable == this->pTable[uCPUindex])
         {
