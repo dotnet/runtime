@@ -366,7 +366,6 @@ namespace System.Tests
             yield return new object[] { "0x00p0", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "0x000.000p0", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "0x0", NumberStyles.HexFloat, invariantFormat, 0.0 };
-            yield return new object[] { "0", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "-0x0", NumberStyles.HexFloat, invariantFormat, -0.0 };
 
             // Fractional-only significand (no integer part before decimal)
@@ -638,6 +637,8 @@ namespace System.Tests
             yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
+            yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
             yield return new object[] { "0x1.0p 0", NumberStyles.HexFloat, null, typeof(FormatException) }; // internal whitespace in exponent
             yield return new object[] { "0x1pa", NumberStyles.HexFloat, null, typeof(FormatException) }; // non-digit in exponent
             yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits

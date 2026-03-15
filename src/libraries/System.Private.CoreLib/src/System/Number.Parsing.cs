@@ -1031,13 +1031,14 @@ namespace System
                 return false;
             }
 
-            // Skip optional "0x" or "0X" prefix to accept both prefixed and non-prefixed forms for round-tripping
-            if (TChar.CastToUInt32(value[index]) == '0' &&
-                index + 1 < value.Length &&
-                (TChar.CastToUInt32(value[index + 1]) | 0x20) == 'x')
+            // Require "0x" or "0X" prefix (consistent with IEEE 754 conventions)
+            if (TChar.CastToUInt32(value[index]) != '0' ||
+                index + 1 >= value.Length ||
+                (TChar.CastToUInt32(value[index + 1]) | 0x20) != 'x')
             {
-                index += 2;
+                return false;
             }
+            index += 2;
 
             if (index >= value.Length)
             {
