@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -118,7 +118,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
                         internal static readonly Valid_0 Instance = new();
-
+                    
                         /// <summary>Initializes the instance.</summary>
                         private Valid_0()
                         {
@@ -131,13 +131,13 @@ namespace System.Text.RegularExpressions.Tests
                             base.capslist = new string[] {"0", "proto", "port" };
                             base.capsize = 3;
                         }
-
+                            
                         /// <summary>Provides a factory for creating <see cref="RegexRunner"/> instances to be used by methods on <see cref="Regex"/>.</summary>
                         private sealed class RunnerFactory : RegexRunnerFactory
                         {
                             /// <summary>Creates an instance of a <see cref="RegexRunner"/> used by methods on <see cref="Regex"/>.</summary>
                             protected override RegexRunner CreateInstance() => new Runner();
-
+                        
                             /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
                             private sealed class Runner : RegexRunner
                             {
@@ -151,14 +151,14 @@ namespace System.Text.RegularExpressions.Tests
                                         base.runtextpos = inputSpan.Length;
                                     }
                                 }
-
+                        
                                 /// <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if a possible match was found; false if no more matches are possible.</returns>
                                 private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)
                                 {
                                     int pos = base.runtextpos;
-
+                                    
                                     // Any possible match is at least 6 characters.
                                     if (pos <= inputSpan.Length - 6)
                                     {
@@ -168,12 +168,12 @@ namespace System.Text.RegularExpressions.Tests
                                             return true;
                                         }
                                     }
-
+                                    
                                     // No match found.
                                     base.runtextpos = inputSpan.Length;
                                     return false;
                                 }
-
+                        
                                 /// <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
@@ -187,46 +187,46 @@ namespace System.Text.RegularExpressions.Tests
                                     int loop_iteration = 0;
                                     int stackpos = 0;
                                     ReadOnlySpan<char> slice = inputSpan.Slice(pos);
-
+                                    
                                     // Match if at the beginning of the string.
                                     if (pos != 0)
                                     {
                                         UncaptureUntil(0);
                                         return false; // The input didn't match.
                                     }
-
+                                    
                                     // "proto" capture group.
                                     {
                                         capture_starting_pos = pos;
-
+                                        
                                         // Match a word character atomically at least once.
                                         {
-                                            int iteration = 0;
-                                            while ((uint)iteration < (uint)slice.Length && Utilities.IsWordChar(slice[iteration]))
+                                            int iteration = slice.IndexOfAnyExceptWordChar();
+                                            if (iteration < 0)
                                             {
-                                                iteration++;
+                                                iteration = slice.Length;
                                             }
-
+                                            
                                             if (iteration == 0)
                                             {
                                                 UncaptureUntil(0);
                                                 return false; // The input didn't match.
                                             }
-
+                                            
                                             slice = slice.Slice(iteration);
                                             pos += iteration;
                                         }
-
+                                        
                                         base.Capture(1, capture_starting_pos, pos);
                                     }
-
+                                    
                                     // Match the string "://".
                                     if (!slice.StartsWith("://"))
                                     {
                                         UncaptureUntil(0);
                                         return false; // The input didn't match.
                                     }
-
+                                    
                                     // Match a character other than '/' lazily at least once.
                                     //{
                                         if ((uint)slice.Length < 4 || slice[3] == '/')
@@ -234,19 +234,19 @@ namespace System.Text.RegularExpressions.Tests
                                             UncaptureUntil(0);
                                             return false; // The input didn't match.
                                         }
-
+                                        
                                         pos += 4;
                                         slice = inputSpan.Slice(pos);
                                         lazyloop_pos = pos;
                                         goto LazyLoopEnd;
-
+                                        
                                         LazyLoopBacktrack:
                                         UncaptureUntil(lazyloop_capturepos);
                                         if (Utilities.s_hasTimeout)
                                         {
                                             base.CheckTimeout();
                                         }
-
+                                        
                                         pos = lazyloop_pos;
                                         slice = inputSpan.Slice(pos);
                                         if (slice.IsEmpty || slice[0] == '/')
@@ -257,61 +257,61 @@ namespace System.Text.RegularExpressions.Tests
                                         pos++;
                                         slice = inputSpan.Slice(pos);
                                         lazyloop_pos = pos;
-
+                                        
                                         LazyLoopEnd:
                                         lazyloop_capturepos = base.Crawlpos();
                                     //}
-
+                                    
                                     // Optional (greedy).
                                     //{
                                         loop_iteration = 0;
-
+                                        
                                         LoopBody:
                                         Utilities.StackPush(ref base.runstack!, ref stackpos, 143337952);
                                         Utilities.StackPush(ref base.runstack!, ref stackpos, base.Crawlpos(), pos);
-
+                                        
                                         loop_iteration++;
-
+                                        
                                         // "port" capture group.
                                         {
                                             int capture_starting_pos1 = pos;
-
+                                            
                                             // Match ':'.
                                             if (slice.IsEmpty || slice[0] != ':')
                                             {
                                                 goto LoopIterationNoMatch;
                                             }
-
+                                            
                                             // Match a Unicode digit atomically at least once.
                                             {
-                                                pos++;
-                                                slice = inputSpan.Slice(pos);
-                                                int iteration1 = 0;
-                                                while ((uint)iteration1 < (uint)slice.Length && char.IsDigit(slice[iteration1]))
+                                                int iteration1 = slice.Slice(1).IndexOfAnyExceptDigit();
+                                                if (iteration1 < 0)
                                                 {
-                                                    iteration1++;
+                                                    iteration1 = slice.Length - 1;
                                                 }
-
+                                                
                                                 if (iteration1 == 0)
                                                 {
                                                     goto LoopIterationNoMatch;
                                                 }
-
+                                                
                                                 slice = slice.Slice(iteration1);
                                                 pos += iteration1;
                                             }
-
+                                            
+                                            pos++;
+                                            slice = inputSpan.Slice(pos);
                                             base.Capture(2, capture_starting_pos1, pos);
                                         }
-
-
+                                        
+                                        
                                         // The loop has an upper bound of 1. Continue iterating greedily if it hasn't yet been reached.
                                         if (loop_iteration == 0)
                                         {
                                             goto LoopBody;
                                         }
                                         goto LoopEnd;
-
+                                        
                                         // The loop iteration failed. Put state back to the way it was before the iteration.
                                         LoopIterationNoMatch:
                                         if (--loop_iteration < 0)
@@ -325,19 +325,19 @@ namespace System.Text.RegularExpressions.Tests
                                         slice = inputSpan.Slice(pos);
                                         LoopEnd:;
                                     //}
-
+                                    
                                     // Match '/'.
                                     if (slice.IsEmpty || slice[0] != '/')
                                     {
                                         goto LoopIterationNoMatch;
                                     }
-
+                                    
                                     // The input matched.
                                     pos++;
                                     base.runtextpos = pos;
                                     base.Capture(0, matchStart, pos);
                                     return true;
-
+                                    
                                     // <summary>Undo captures until it reaches the specified capture position.</summary>
                                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                                     void UncaptureUntil(int capturePosition)
@@ -352,17 +352,69 @@ namespace System.Text.RegularExpressions.Tests
                         }
 
                     }
-
+                    
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
                         internal static readonly TimeSpan s_defaultTimeout = AppContext.GetData("REGEX_DEFAULT_MATCH_TIMEOUT") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;
-
+                        
                         /// <summary>Whether <see cref="s_defaultTimeout"/> is non-infinite.</summary>
                         internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
-
+                        
+                        /// <summary>Finds the next index of any character that does not match a Unicode digit.</summary>
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        internal static int IndexOfAnyExceptDigit(this ReadOnlySpan<char> span)
+                        {
+                            int i = span.IndexOfAnyExcept(Utilities.s_asciiDigits);
+                            if ((uint)i < (uint)span.Length)
+                            {
+                                if (char.IsAscii(span[i]))
+                                {
+                                    return i;
+                                }
+                        
+                                do
+                                {
+                                    if (!char.IsDigit(span[i]))
+                                    {
+                                        return i;
+                                    }
+                                    i++;
+                                }
+                                while ((uint)i < (uint)span.Length);
+                            }
+                        
+                            return -1;
+                        }
+                        
+                        /// <summary>Finds the next index of any character that does not match a word character.</summary>
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        internal static int IndexOfAnyExceptWordChar(this ReadOnlySpan<char> span)
+                        {
+                            int i = span.IndexOfAnyExcept(Utilities.s_asciiWordChars);
+                            if ((uint)i < (uint)span.Length)
+                            {
+                                if (char.IsAscii(span[i]))
+                                {
+                                    return i;
+                                }
+                        
+                                do
+                                {
+                                    if (!Utilities.IsWordChar(span[i]))
+                                    {
+                                        return i;
+                                    }
+                                    i++;
+                                }
+                                while ((uint)i < (uint)span.Length);
+                            }
+                        
+                            return -1;
+                        }
+                        
                         /// <summary>Determines whether the character is part of the [\w] set.</summary>
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static bool IsWordChar(char ch)
@@ -374,7 +426,7 @@ namespace System.Text.RegularExpressions.Tests
                                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
                                 (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
                         }
-
+                        
                         /// <summary>Pushes 1 value onto the backtracking stack.</summary>
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static void StackPush(ref int[] stack, ref int pos, int arg0)
@@ -388,10 +440,10 @@ namespace System.Text.RegularExpressions.Tests
                                 pos++;
                                 return;
                             }
-
+                        
                             // Otherwise, resize the stack to make room and try again.
                             WithResize(ref stack, ref pos, arg0);
-
+                        
                             // <summary>Resize the backtracking stack array and push 1 value onto the stack.</summary>
                             [MethodImpl(MethodImplOptions.NoInlining)]
                             static void WithResize(ref int[] stack, ref int pos, int arg0)
@@ -400,7 +452,7 @@ namespace System.Text.RegularExpressions.Tests
                                 StackPush(ref stack, ref pos, arg0);
                             }
                         }
-
+                        
                         /// <summary>Pushes 2 values onto the backtracking stack.</summary>
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static void StackPush(ref int[] stack, ref int pos, int arg0, int arg1)
@@ -415,10 +467,10 @@ namespace System.Text.RegularExpressions.Tests
                                 pos += 2;
                                 return;
                             }
-
+                        
                             // Otherwise, resize the stack to make room and try again.
                             WithResize(ref stack, ref pos, arg0, arg1);
-
+                        
                             // <summary>Resize the backtracking stack array and push 2 values onto the stack.</summary>
                             [MethodImpl(MethodImplOptions.NoInlining)]
                             static void WithResize(ref int[] stack, ref int pos, int arg0, int arg1)
@@ -427,7 +479,7 @@ namespace System.Text.RegularExpressions.Tests
                                 StackPush(ref stack, ref pos, arg0, arg1);
                             }
                         }
-
+                        
                         /// <summary>Validates that a stack cookie popped off the backtracking stack holds the expected value. Debug only.</summary>
                         internal static int ValidateStackCookie(int expected, int actual)
                         {
@@ -437,7 +489,7 @@ namespace System.Text.RegularExpressions.Tests
                             }
                             return actual;
                         }
-
+                        
                         /// <summary>Provides a mask of Unicode categories that combine to form [\w].</summary>
                         private const int WordCategoriesMask =
                             1 << (int)UnicodeCategory.UppercaseLetter |
@@ -448,15 +500,22 @@ namespace System.Text.RegularExpressions.Tests
                             1 << (int)UnicodeCategory.NonSpacingMark |
                             1 << (int)UnicodeCategory.DecimalDigitNumber |
                             1 << (int)UnicodeCategory.ConnectorPunctuation;
-
+                        
                         /// <summary>Gets a bitmap for whether each character 0 through 127 is in [\w]</summary>
                         private static ReadOnlySpan<byte> WordCharBitmap => new byte[]
                         {
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
                             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
                         };
+                        
+                        /// <summary>Supports searching for characters in or not in "0123456789".</summary>
+                        internal static readonly SearchValues<char> s_asciiDigits = SearchValues.Create("0123456789");
+                        
+                        /// <summary>Supports searching for characters in or not in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".</summary>
+                        internal static readonly SearchValues<char> s_asciiWordChars = SearchValues.Create("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
                     }
                 }
+
                 """
             };
 
@@ -522,7 +581,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         /// <summary>Cached, thread-safe singleton instance.</summary>
                         internal static readonly Valid_0 Instance = new();
-
+                    
                         /// <summary>Initializes the instance.</summary>
                         private Valid_0()
                         {
@@ -532,13 +591,13 @@ namespace System.Text.RegularExpressions.Tests
                             base.factory = new RunnerFactory();
                             base.capsize = 2;
                         }
-
+                            
                         /// <summary>Provides a factory for creating <see cref="RegexRunner"/> instances to be used by methods on <see cref="Regex"/>.</summary>
                         private sealed class RunnerFactory : RegexRunnerFactory
                         {
                             /// <summary>Creates an instance of a <see cref="RegexRunner"/> used by methods on <see cref="Regex"/>.</summary>
                             protected override RegexRunner CreateInstance() => new Runner();
-
+                        
                             /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
                             private sealed class Runner : RegexRunner
                             {
@@ -554,14 +613,14 @@ namespace System.Text.RegularExpressions.Tests
                                         base.runtextpos++;
                                     }
                                 }
-
+                        
                                 /// <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if a possible match was found; false if no more matches are possible.</returns>
                                 private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)
                                 {
                                     int pos = base.runtextpos;
-
+                                    
                                     // Any possible match is at least 6 characters.
                                     if (pos <= inputSpan.Length - 6)
                                     {
@@ -574,12 +633,12 @@ namespace System.Text.RegularExpressions.Tests
                                             return true;
                                         }
                                     }
-
+                                    
                                     // No match found.
                                     base.runtextpos = inputSpan.Length;
                                     return false;
                                 }
-
+                        
                                 /// <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
                                 /// <param name="inputSpan">The text being scanned by the regular expression.</param>
                                 /// <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
@@ -593,54 +652,54 @@ namespace System.Text.RegularExpressions.Tests
                                     int charloop_capture_pos = 0;
                                     int charloop_starting_pos = 0, charloop_ending_pos = 0;
                                     ReadOnlySpan<char> slice = inputSpan.Slice(pos);
-
+                                    
                                     // Match the string "href".
                                     if (!slice.StartsWith("href"))
                                     {
                                         UncaptureUntil(0);
                                         return false; // The input didn't match.
                                     }
-
+                                    
                                     // Match a whitespace character atomically any number of times.
                                     {
-                                        int iteration = 4;
-                                        while ((uint)iteration < (uint)slice.Length && char.IsWhiteSpace(slice[iteration]))
+                                        int iteration = slice.Slice(4).IndexOfAnyExceptWhiteSpace();
+                                        if (iteration < 0)
                                         {
-                                            iteration++;
+                                            iteration = slice.Length - 4;
                                         }
-
+                                        
                                         slice = slice.Slice(iteration);
                                         pos += iteration;
                                     }
-
+                                    
                                     // Match '='.
-                                    if (slice.IsEmpty || slice[0] != '=')
+                                    if ((uint)slice.Length < 5 || slice[4] != '=')
                                     {
                                         UncaptureUntil(0);
                                         return false; // The input didn't match.
                                     }
-
+                                    
                                     // Match a whitespace character greedily any number of times.
                                     //{
-                                        pos++;
+                                        pos += 5;
                                         slice = inputSpan.Slice(pos);
                                         charloop_starting_pos = pos;
-
-                                        int iteration1 = 0;
-                                        while ((uint)iteration1 < (uint)slice.Length && char.IsWhiteSpace(slice[iteration1]))
+                                        
+                                        int iteration1 = slice.IndexOfAnyExceptWhiteSpace();
+                                        if (iteration1 < 0)
                                         {
-                                            iteration1++;
+                                            iteration1 = slice.Length;
                                         }
-
+                                        
                                         slice = slice.Slice(iteration1);
                                         pos += iteration1;
-
+                                        
                                         charloop_ending_pos = pos;
                                         goto CharLoopEnd;
-
+                                        
                                         CharLoopBacktrack:
                                         UncaptureUntil(charloop_capture_pos);
-
+                                        
                                         if (charloop_starting_pos >= charloop_ending_pos)
                                         {
                                             UncaptureUntil(0);
@@ -648,16 +707,16 @@ namespace System.Text.RegularExpressions.Tests
                                         }
                                         pos = --charloop_ending_pos;
                                         slice = inputSpan.Slice(pos);
-
+                                        
                                         CharLoopEnd:
                                         charloop_capture_pos = base.Crawlpos();
                                     //}
-
+                                    
                                     // Match with 2 alternative expressions, atomically.
                                     {
                                         int alternation_starting_pos = pos;
                                         int alternation_starting_capturepos = base.Crawlpos();
-
+                                        
                                         // Branch 0
                                         {
                                             // Match a character in the set ["'].
@@ -665,13 +724,13 @@ namespace System.Text.RegularExpressions.Tests
                                             {
                                                 goto AlternationBranch;
                                             }
-
+                                            
                                             // 1st capture group.
                                             {
                                                 pos++;
                                                 slice = inputSpan.Slice(pos);
                                                 capture_starting_pos = pos;
-
+                                                
                                                 // Match a character in the set [^"'] atomically any number of times.
                                                 {
                                                     int iteration2 = slice.IndexOfAny('"', '\'');
@@ -679,66 +738,66 @@ namespace System.Text.RegularExpressions.Tests
                                                     {
                                                         iteration2 = slice.Length;
                                                     }
-
+                                                    
                                                     slice = slice.Slice(iteration2);
                                                     pos += iteration2;
                                                 }
-
+                                                
                                                 base.Capture(1, capture_starting_pos, pos);
                                             }
-
+                                            
                                             // Match a character in the set ["'].
                                             if (slice.IsEmpty || (((ch = slice[0]) != '"') & (ch != '\'')))
                                             {
                                                 goto AlternationBranch;
                                             }
-
+                                            
                                             pos++;
                                             slice = inputSpan.Slice(pos);
                                             goto AlternationMatch;
-
+                                            
                                             AlternationBranch:
                                             pos = alternation_starting_pos;
                                             slice = inputSpan.Slice(pos);
                                             UncaptureUntil(alternation_starting_capturepos);
                                         }
-
+                                        
                                         // Branch 1
                                         {
                                             // 1st capture group.
                                             {
                                                 capture_starting_pos1 = pos;
-
+                                                
                                                 // Match a character in the set [^>\s] atomically at least once.
                                                 {
-                                                    int iteration3 = 0;
-                                                    while ((uint)iteration3 < (uint)slice.Length && ((ch = slice[iteration3]) < 128 ? ("쇿\uffff\ufffe뿿\uffff\uffff\uffff\uffff"[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, "\u0001\u0002\u0001>?d")))
+                                                    int iteration3 = slice.IndexOfAnyExcept_92ADA2AB68AD19F57A1E78FA973AF4ED3FB64C5AB5DF24C6A8EE0B8823EC27CF();
+                                                    if (iteration3 < 0)
                                                     {
-                                                        iteration3++;
+                                                        iteration3 = slice.Length;
                                                     }
-
+                                                    
                                                     if (iteration3 == 0)
                                                     {
                                                         goto CharLoopBacktrack;
                                                     }
-
+                                                    
                                                     slice = slice.Slice(iteration3);
                                                     pos += iteration3;
                                                 }
-
+                                                
                                                 base.Capture(1, capture_starting_pos1, pos);
                                             }
-
+                                            
                                         }
-
+                                        
                                         AlternationMatch:;
                                     }
-
+                                    
                                     // The input matched.
                                     base.runtextpos = pos;
                                     base.Capture(0, matchStart, pos);
                                     return true;
-
+                                    
                                     // <summary>Undo captures until it reaches the specified capture position.</summary>
                                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
                                     void UncaptureUntil(int capturePosition)
@@ -753,15 +812,75 @@ namespace System.Text.RegularExpressions.Tests
                         }
 
                     }
-
+                    
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
                     [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
+                        /// <summary>Finds the next index of any character that does not match a whitespace character.</summary>
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        internal static int IndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span)
+                        {
+                            int i = span.IndexOfAnyExcept(Utilities.s_asciiWhiteSpace);
+                            if ((uint)i < (uint)span.Length)
+                            {
+                                if (char.IsAscii(span[i]))
+                                {
+                                    return i;
+                                }
+                        
+                                do
+                                {
+                                    if (!char.IsWhiteSpace(span[i]))
+                                    {
+                                        return i;
+                                    }
+                                    i++;
+                                }
+                                while ((uint)i < (uint)span.Length);
+                            }
+                        
+                            return -1;
+                        }
+                        
+                        /// <summary>Finds the next index of any character that does not match a character in the set [^&gt;\s].</summary>
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        internal static int IndexOfAnyExcept_92ADA2AB68AD19F57A1E78FA973AF4ED3FB64C5AB5DF24C6A8EE0B8823EC27CF(this ReadOnlySpan<char> span)
+                        {
+                            int i = span.IndexOfAnyExcept(Utilities.s_ascii_FFC1FFFFFEFFFFBFFFFFFFFFFFFFFFFF);
+                            if ((uint)i < (uint)span.Length)
+                            {
+                                if (char.IsAscii(span[i]))
+                                {
+                                    return i;
+                                }
+                        
+                                char ch;
+                                do
+                                {
+                                    if (((ch = span[i]) < 128 ? ("쇿\uffff\ufffe뿿\uffff\uffff\uffff\uffff"[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, "\u0001\u0002\u0001>?d")))
+                                    {
+                                        return i;
+                                    }
+                                    i++;
+                                }
+                                while ((uint)i < (uint)span.Length);
+                            }
+                        
+                            return -1;
+                        }
+                        
+                        /// <summary>Supports searching for characters in or not in "\t\n\v\f\r ".</summary>
+                        internal static readonly SearchValues<char> s_asciiWhiteSpace = SearchValues.Create("\t\n\v\f\r ");
+                        
+                        /// <summary>Supports searching for characters in or not in "\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f!\"#$%&amp;'()*+,-./0123456789:;&lt;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007f".</summary>
+                        internal static readonly SearchValues<char> s_ascii_FFC1FFFFFEFFFFBFFFFFFFFFFFFFFFFF = SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f!\"#$%&'()*+,-./0123456789:;<=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007f");
+                        
                         /// <summary>Supports searching for the string "href".</summary>
                         internal static readonly SearchValues<string> s_indexOfString_href_Ordinal = SearchValues.Create(["href"], StringComparison.Ordinal);
                     }
                 }
+
                 """
             };
 

@@ -997,89 +997,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
-                        // In order to optimize the search for ASCII characters, we use SearchValues to vectorize a search
-                        // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
-                        // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
-                        // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
-                        // all of the target ASCII characters and all of non-ASCII.
-                        using var asciiChars = new ValueListBuilder<char>(stackalloc char[128]);
-                        for (int i = 0; i < 128; i++)
-                        {
-                            if (!RegexCharClass.CharInClass((char)i, primarySet.Set))
-                            {
-                                asciiChars.Append((char)i);
-                            }
-                        }
-
-                        using (RentedLocalBuilder span = RentReadOnlySpanCharLocal())
-                        using (RentedLocalBuilder i = RentInt32Local())
-                        {
-                            // ReadOnlySpan<char> span = inputSpan...;
-                            Stloc(span);
-
-                            // int i = span.
-                            Ldloc(span);
-                            if (asciiChars.Length == 128)
-                            {
-                                // IndexOfAnyExceptInRange('\0', '\u007f');
-                                Ldc(0);
-                                Ldc(127);
-                                Call(SpanIndexOfAnyExceptInRangeMethod);
-                            }
-                            else
-                            {
-                                // IndexOfAnyExcept(searchValuesArray[...]);
-                                LoadSearchValues(asciiChars.AsSpan().ToArray());
-                                Call(SpanIndexOfAnyExceptSearchValuesMethod);
-                            }
-                            Stloc(i);
-
-                            // if ((uint)i >= span.Length) goto doneSearch;
-                            Label doneSearch = DefineLabel();
-                            Ldloc(i);
-                            Ldloca(span);
-                            Call(SpanGetLengthMethod);
-                            BgeUnFar(doneSearch);
-
-                            // if (span[i] <= 0x7f) goto doneSearch;
-                            Ldc(0x7f);
-                            Ldloca(span);
-                            Ldloc(i);
-                            Call(SpanGetItemMethod);
-                            LdindU2();
-                            BgeUnFar(doneSearch);
-
-                            Label loop = DefineLabel();
-                            MarkLabel(loop);
-                            // do { ...
-
-                            // if (CharInClass(span[i])) goto doneSearch;
-                            Ldloca(span);
-                            Ldloc(i);
-                            Call(SpanGetItemMethod);
-                            LdindU2();
-                            EmitMatchCharacterClass(primarySet.Set);
-                            Brtrue(doneSearch);
-
-                            // i++;
-                            Ldloc(i);
-                            Ldc(1);
-                            Add();
-                            Stloc(i);
-
-                            // } while ((uint)i < span.Length);
-                            Ldloc(i);
-                            Ldloca(span);
-                            Call(SpanGetLengthMethod);
-                            BltUnFar(loop);
-
-                            // i = -1;
-                            Ldc(-1);
-                            Stloc(i);
-
-                            MarkLabel(doneSearch);
-                            Ldloc(i);
-                        }
+                        EmitIndexOfWithCharClassFallback(primarySet.Set, negate: false, useLast: false);
                     }
 
                     if (needLoop)
@@ -4543,62 +4461,20 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
+                    // Vectorize the search: look for the first thing that _doesn't_ match the target node,
+                    // and thus validate that everything does.
+                    Debug.Assert(CanEmitIndexOf(node, out _));
+
                     // ReadOnlySpan<char> tmp = slice.Slice(sliceStaticPos, iterations);
                     Ldloca(slice);
                     Ldc(sliceStaticPos);
                     Ldc(iterations);
                     Call(SpanSliceIntIntMethod);
 
-                    // If we're able to vectorize the search, do so. Otherwise, fall back to a loop.
-                    // For the loop, we're validating that each char matches the target node.
-                    // For IndexOf, we're looking for the first thing that _doesn't_ match the target node,
-                    // and thus similarly validating that everything does.
-                    if (CanEmitIndexOf(node, out _))
-                    {
-                        // if (tmp.IndexOf(...) >= 0) goto doneLabel;
-                        EmitIndexOf(node, useLast: false, negate: true);
-                        Ldc(0);
-                        BgeFar(doneLabel);
-                    }
-                    else
-                    {
-                        using RentedLocalBuilder spanLocal = RentReadOnlySpanCharLocal();
-                        Stloc(spanLocal);
-
-                        // for (int i = 0; i < tmp.Length; i++)
-                        // {
-                        //     if (tmp[i] != ch) goto Done;
-                        // }
-
-                        Label conditionLabel = DefineLabel();
-                        Label bodyLabel = DefineLabel();
-
-                        using RentedLocalBuilder iterationLocal = RentInt32Local();
-                        Ldc(0);
-                        Stloc(iterationLocal);
-                        BrFar(conditionLabel);
-
-                        MarkLabel(bodyLabel);
-
-                        LocalBuilder tmpTextSpanLocal = slice; // we want EmitSingleChar to refer to this temporary
-                        int tmpTextSpanPos = sliceStaticPos;
-                        slice = spanLocal;
-                        sliceStaticPos = 0;
-                        EmitSingleChar(node, emitLengthCheck: false, offset: iterationLocal);
-                        slice = tmpTextSpanLocal;
-                        sliceStaticPos = tmpTextSpanPos;
-
-                        Ldloc(iterationLocal);
-                        Ldc(1);
-                        Add();
-                        Stloc(iterationLocal);
-
-                        MarkLabel(conditionLabel);
-                        Ldloc(iterationLocal);
-                        Ldloca(spanLocal);
-                        Call(SpanGetLengthMethod);
-                        BltFar(bodyLabel);
-                    }
+                    // if (tmp.IndexOf(...) >= 0) goto doneLabel;
+                    EmitIndexOf(node, useLast: false, negate: true);
+                    Ldc(0);
+                    BgeFar(doneLabel);
 
                     sliceStaticPos += iterations;
                 }
@@ -5385,21 +5261,10 @@ namespace System.Text.RegularExpressions
                     return true;
                 }
 
-                if (node.IsOneFamily || node.IsNotoneFamily)
+                if (node.IsOneFamily || node.IsNotoneFamily || node.IsSetFamily)
                 {
                     literalLength = 1;
                     return true;
-                }
-
-                if (node.IsSetFamily)
-                {
-                    Span<char> setChars = stackalloc char[128];
-                    if (RegexCharClass.TryGetSingleRange(node.Str, out _, out _) ||
-                        RegexCharClass.GetSetChars(node.Str, setChars) > 0)
-                    {
-                        literalLength = 1;
-                        return true;
-                    }
                 }
 
                 literalLength = 0;
@@ -5512,9 +5377,16 @@ namespace System.Text.RegularExpressions
                                 return;
                         }
                     }
+
+                    // For complex character classes (e.g. Unicode categories like \w, \d, \s, or sets with subtraction)
+                    // that can't be handled by simple IndexOf calls, use a vectorized ASCII search with
+                    // EmitMatchCharacterClass fallback for non-ASCII.
+                    // The span to search is already on the evaluation stack.
+                    EmitIndexOfWithCharClassFallback(node.Str!, negate, useLast);
+                    return;
                 }
 
-                Debug.Fail("We should never get here. This method should only be called if CanEmitIndexOf returned true, and all of the same cases should be covered.");
+                Debug.Fail("Expected Multi, One, Notone, or Set node.");
             }
 
             // <summary>
@@ -6434,6 +6306,125 @@ namespace System.Text.RegularExpressions
                     (true, true) => SpanLastIndexOfAnyExceptSearchValuesMethod,
                 });
             }
+        }
+
+        /// <summary>
+        /// Emits a vectorized character class search using ASCII-optimized SearchValues with a
+        /// non-ASCII fallback loop. Expects the span to search on the evaluation stack, and
+        /// leaves the found index (or -1) on the evaluation stack.
+        /// </summary>
+        private void EmitIndexOfWithCharClassFallback(string charClass, bool negate, bool useLast)
+        {
+            // Compute the ASCII chars to exclude from the vectorized search.
+            // When negate is false (find IN set): exclude ASCII chars NOT in the set.
+            // When negate is true (find NOT in set): exclude ASCII chars IN the set.
+            using var asciiChars = new ValueListBuilder<char>(stackalloc char[128]);
+            for (int i = 0; i < 128; i++)
+            {
+                if (RegexCharClass.CharInClass((char)i, charClass) == negate)
+                {
+                    asciiChars.Append((char)i);
+                }
+            }
+
+            using RentedLocalBuilder span = RentReadOnlySpanCharLocal();
+            using RentedLocalBuilder iLocal = RentInt32Local();
+
+            // ReadOnlySpan<char> span = /* from stack */;
+            Stloc(span);
+
+            // int i = span.{Last}IndexOfAnyExcept(searchValues);
+            Ldloc(span);
+            if (asciiChars.Length == 128)
+            {
+                Ldc(0);
+                Ldc(127);
+                Call(useLast ? SpanLastIndexOfAnyExceptInRangeMethod : SpanIndexOfAnyExceptInRangeMethod);
+            }
+            else
+            {
+                LoadSearchValues(asciiChars.AsSpan().ToArray());
+                Call(useLast ? SpanLastIndexOfAnyExceptSearchValuesMethod : SpanIndexOfAnyExceptSearchValuesMethod);
+            }
+            Stloc(iLocal);
+
+            Label doneSearch = DefineLabel();
+
+            // Bounds check
+            Ldloc(iLocal);
+            if (useLast)
+            {
+                // if (i < 0) goto doneSearch;
+                Ldc(0);
+                BltFar(doneSearch);
+            }
+            else
+            {
+                // if ((uint)i >= span.Length) goto doneSearch;
+                Ldloca(span);
+                Call(SpanGetLengthMethod);
+                BgeUnFar(doneSearch);
+            }
+
+            // ASCII chars are definitive matches for the search — if the char found is ASCII, we're done.
+            if (asciiChars.Length != 128)
+            {
+                // if (span[i] <= 0x7f) goto doneSearch;
+                Ldc(0x7f);
+                Ldloca(span);
+                Ldloc(iLocal);
+                Call(SpanGetItemMethod);
+                LdindU2();
+                BgeUnFar(doneSearch);
+            }
+
+            // Non-ASCII fallback loop
+            Label loop = DefineLabel();
+            MarkLabel(loop);
+
+            // if (MatchCharacterClass(span[i]) != negate) goto doneSearch;
+            Ldloca(span);
+            Ldloc(iLocal);
+            Call(SpanGetItemMethod);
+            LdindU2();
+            EmitMatchCharacterClass(charClass);
+            if (negate)
+            {
+                Brfalse(doneSearch);
+            }
+            else
+            {
+                Brtrue(doneSearch);
+            }
+
+            // i += direction;
+            Ldloc(iLocal);
+            Ldc(1);
+            if (useLast) { Sub(); } else { Add(); }
+            Stloc(iLocal);
+
+            // Loop condition
+            Ldloc(iLocal);
+            if (useLast)
+            {
+                // while (i >= 0)
+                Ldc(0);
+                BgeFar(loop);
+            }
+            else
+            {
+                // while ((uint)i < span.Length)
+                Ldloca(span);
+                Call(SpanGetLengthMethod);
+                BltUnFar(loop);
+            }
+
+            // i = -1;
+            Ldc(-1);
+            Stloc(iLocal);
+
+            MarkLabel(doneSearch);
+            Ldloc(iLocal);
         }
 
         /// <summary>
