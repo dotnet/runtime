@@ -56,10 +56,11 @@ internal static partial class Interop
             internal TimeZoneKeyNameBuffer TimeZoneKeyName;
             internal byte DynamicDaylightTimeDisabled;
 
-            internal unsafe string GetTimeZoneKeyName()
+            internal string GetTimeZoneKeyName()
             {
-                fixed (TimeZoneKeyNameBuffer* p = &TimeZoneKeyName)
-                    return new string((char*)p);
+                ReadOnlySpan<char> span = TimeZoneKeyName;
+                int idx = span.IndexOf('\0');
+                return new string(idx >= 0 ? span.Slice(0, idx) : span);
             }
         }
 
@@ -88,16 +89,18 @@ internal static partial class Interop
                     *pTo = *(TIME_ZONE_INFORMATION*)pFrom;
             }
 
-            internal unsafe string GetStandardName()
+            internal string GetStandardName()
             {
-                fixed (NameBuffer* p = &StandardName)
-                    return new string((char*)p);
+                ReadOnlySpan<char> span = StandardName;
+                int idx = span.IndexOf('\0');
+                return new string(idx >= 0 ? span.Slice(0, idx) : span);
             }
 
-            internal unsafe string GetDaylightName()
+            internal string GetDaylightName()
             {
-                fixed (NameBuffer* p = &DaylightName)
-                    return new string((char*)p);
+                ReadOnlySpan<char> span = DaylightName;
+                int idx = span.IndexOf('\0');
+                return new string(idx >= 0 ? span.Slice(0, idx) : span);
             }
         }
 
