@@ -20,11 +20,6 @@ void GCHandleStore::Uproot()
     Ref_RemoveHandleTableBucket(&_underlyingBucket);
 }
 
-bool GCHandleStore::ContainsHandle(OBJECTHANDLE handle)
-{
-    return _underlyingBucket.Contains(handle);
-}
-
 // this is the number of handles we allocate in a handle table before we switch to the next table.
 #define HANDLE_THRESHOLD (15)
 static int s_numTableSlots = 0;

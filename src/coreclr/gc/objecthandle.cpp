@@ -2079,26 +2079,6 @@ gc_alloc_context* GetCurrentThreadAllocContext()
     return GCToEEInterface::GetAllocContext();
 }
 
-bool HandleTableBucket::Contains(OBJECTHANDLE handle)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (NULL == handle)
-    {
-        return FALSE;
-    }
-
-    HHANDLETABLE hTable = HndGetHandleTable(handle);
-    for (int uCPUindex=0; uCPUindex < g_theGCHeap->GetNumberOfHeaps(); uCPUindex++)
-    {
-        if (hTable == this->pTable[uCPUindex])
-        {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
 #endif // !DACCESS_COMPILE
 
 GC_DAC_VISIBLE
