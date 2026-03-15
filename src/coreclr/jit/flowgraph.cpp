@@ -7609,11 +7609,12 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 // Arguments:
 //    comp    -- Compiler instance
 //    dfsTree -- DFS tree for the flow graph
+//    includeHandlerBlocks -- include blocks in handlers inside the try
 //
 // Returns:
 //    Collection object describing all the try regions
 //
-FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree)
+FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree, bool includeHandlerBlocks)
 {
     // We use EHID here for stable indexing. So there may be some empty slots in the
     // collection if we've deleted some EH regions.
@@ -7666,16 +7667,23 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         unsigned  tryIndex = block->getTryIndex();
         EHblkDsc* dsc      = &comp->compHndBBtab[tryIndex];
 
-        FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
-        assert(region != nullptr);
-
-        // A block may be in more than one region, so walk up the ancestor chain
-        // adding the postorder number to each.
-        do
+        if (includeHandlerBlocks || BasicBlock::sameHndRegion(block, dsc->ebdTryBeg))
         {
-            BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
-            region = region->m_parent;
-        } while (region != nullptr);
+            FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
+            assert(region != nullptr);
+
+            // A block may be in more than one region, so walk up the ancestor chain
+            // adding the postorder number to each.
+            do
+            {
+                BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
+                region = region->m_parent;
+            } while (region != nullptr);
+        }
+        else
+        {
+            // This is a handler block inside a try.
+        }
     }
 
     // Todo: verify that all try blocks that start at the same block have the same blocks?

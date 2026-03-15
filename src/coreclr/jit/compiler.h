@@ -2284,7 +2284,7 @@ private:
 
 public:
 
-    static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs);
+    static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs, bool includeHandlerBlocks = false);
 
     FlowGraphTryRegion* GetRegionForBlock(BasicBlock* block);
 
