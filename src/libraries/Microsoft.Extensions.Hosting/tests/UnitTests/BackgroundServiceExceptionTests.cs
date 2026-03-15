@@ -78,8 +78,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the host to react to the background service failure
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var stoppingTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            lifetime.ApplicationStopping.Register(() => stoppingTcs.TrySetResult());
+            await stoppingTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -107,8 +110,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the host to react to the background service failure
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var stoppingTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            lifetime.ApplicationStopping.Register(() => stoppingTcs.TrySetResult());
+            await stoppingTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -208,6 +214,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public async Task BackgroundService_IgnoreException_StopAsync_DoesNotThrow()
         {
+            var signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var builder = new HostBuilder()
                 .ConfigureServices(services =>
                 {
@@ -216,14 +223,15 @@ namespace Microsoft.Extensions.Hosting.Tests
                         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
                         options.ShutdownTimeout = TimeSpan.FromSeconds(1);
                     });
-                    services.AddHostedService<AsynchronousFailureService>();
+                    services.AddSingleton(signal);
+                    services.AddHostedService<SignalingFailureService>();
                 });
 
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait a bit for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the background service to signal it has thrown
+            await signal.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             await host.StopAsync();
         }
@@ -292,6 +300,23 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             public Task StopAsync(CancellationToken cancellationToken) => throw new InvalidOperationException("Stop failure");
+        }
+
+        private class SignalingFailureService : BackgroundService
+        {
+            private readonly TaskCompletionSource _signal;
+
+            public SignalingFailureService(TaskCompletionSource signal)
+            {
+                _signal = signal;
+            }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                _signal.TrySetResult();
+                throw new InvalidOperationException("Signaling asynchronous failure");
+            }
         }
 
         private class SuccessfulService : BackgroundService
