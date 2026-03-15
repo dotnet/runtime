@@ -2060,9 +2060,9 @@ PhaseStatus Compiler::fgWasmEhFlow()
         // These blocks need to go in the enclosing region for the try.
         //
         const unsigned enclosingTryIndex =
-            (dsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingTryIndex - 1;
+            (dsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingTryIndex + 1;
         const unsigned enclosingHndIndex =
-            (dsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingHndIndex - 1;
+            (dsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingHndIndex + 1;
 
         BasicBlock* const switchBlock =
             fgNewBBinRegion(BBJ_SWITCH, enclosingTryIndex, enclosingHndIndex, regionLastBlock);
