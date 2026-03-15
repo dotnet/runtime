@@ -203,7 +203,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     getmntinfo
-    sys/mount.h
+    "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)
 
 check_symbol_exists(
@@ -974,7 +974,7 @@ check_include_files(
 
 check_symbol_exists(
     getpeereid
-    unistd.h
+    "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
 check_symbol_exists(
