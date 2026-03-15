@@ -19,7 +19,7 @@ namespace System.Text.Encodings.Web
         /// 0x30_00_00_00_00_30_34_25. Iterate over the least significant bytes one-by-one
         /// to reconstruct the escaped representation, stopping when you hit a null byte.
         /// </summary>
-        private struct AsciiPreescapedData
+        private unsafe struct AsciiPreescapedData
         {
 #if NET
             [InlineArray(128)]
