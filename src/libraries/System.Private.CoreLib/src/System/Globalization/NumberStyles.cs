@@ -77,14 +77,13 @@ namespace System.Globalization
         /// Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
         /// <see cref="AllowLeadingSign"/>, <see cref="AllowHexSpecifier"/>, and <see cref="AllowDecimalPoint"/>
         /// styles are used. This is a composite number style used for parsing hexadecimal floating-point values
-        /// based on the syntax defined in IEEE 754:2008 §5.12.3. The parsed string can include an optional "0x"
-        /// or "0X" prefix, a hexadecimal significand with an optional decimal point, and an optional binary
-        /// exponent introduced by 'p' or 'P'. For compatibility, forms without the "0x"/"0X" prefix are also
-        /// accepted, and integer-only hexadecimal values may omit the 'p'/'P' exponent.
+        /// based on the syntax defined in IEEE 754:2008 §5.12.3. The parsed string must include a "0x" or "0X"
+        /// prefix, followed by a hexadecimal significand with an optional decimal point, and an optional binary
+        /// exponent introduced by 'p' or 'P'. Integer-only hexadecimal values may omit the 'p'/'P' exponent.
         /// </summary>
         /// <remarks>
         /// Note that unlike <see cref="HexNumber"/> for integer types (which rejects a "0x"/"0X" prefix),
-        /// <see cref="HexFloat"/> accepts and ignores the prefix. This difference exists because the
+        /// <see cref="HexFloat"/> requires the prefix. This difference exists because the
         /// IEEE 754 hex float grammar (e.g., <c>0x1.921fb54442d18p+1</c>) naturally includes the prefix.
         /// </remarks>
         HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowHexSpecifier | AllowDecimalPoint,
