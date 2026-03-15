@@ -305,6 +305,7 @@ CDAC_TYPE_BEGIN(PEImageLayout)
 CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_data<PEImageLayout>::Base)
 CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_data<PEImageLayout>::Size)
 CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Flags, cdac_data<PEImageLayout>::Flags)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Format, cdac_data<PEImageLayout>::Format)
 CDAC_TYPE_END(PEImageLayout)
 
 CDAC_TYPE_BEGIN(CGrowableSymbolStream)
@@ -1167,11 +1168,18 @@ CDAC_TYPE_FIELD(RCW, /*uint32*/, Flags, cdac_data<RCW>::Flags)
 CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxCookie, cdac_data<RCW>::CtxCookie)
 CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxEntry, cdac_data<RCW>::CtxEntry)
 CDAC_TYPE_FIELD(RCW, /*inline array*/, InterfaceEntries, cdac_data<RCW>::InterfaceEntries)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, IdentityPointer, cdac_data<RCW>::IdentityPointer)
+CDAC_TYPE_FIELD(RCW, /*uint32*/, SyncBlockIndex, cdac_data<RCW>::SyncBlockIndex)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, VTablePtr, cdac_data<RCW>::VTablePtr)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CreatorThread, cdac_data<RCW>::CreatorThread)
+CDAC_TYPE_FIELD(RCW, /*uint32*/, RefCount, cdac_data<RCW>::RefCount)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, UnknownPointer, cdac_data<RCW>::UnknownPointer)
 CDAC_TYPE_END(RCW)
 
 CDAC_TYPE_BEGIN(CtxEntry)
 CDAC_TYPE_INDETERMINATE(CtxEntry)
 CDAC_TYPE_FIELD(CtxEntry, /*pointer*/, STAThread, cdac_data<CtxEntry>::STAThread)
+CDAC_TYPE_FIELD(CtxEntry, /*pointer*/, CtxCookie, cdac_data<CtxEntry>::CtxCookie)
 CDAC_TYPE_END(CtxEntry)
 
 CDAC_TYPE_BEGIN(InterfaceEntry)
@@ -1192,6 +1200,21 @@ CDAC_TYPE_INDETERMINATE(SyncBlockCache)
 CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
 CDAC_TYPE_FIELD(SyncBlockCache, /*pointer*/, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
+
+#ifdef FEATURE_WEBCIL
+CDAC_TYPE_BEGIN(WebcilHeader)
+CDAC_TYPE_SIZE(sizeof(WebcilHeader))
+CDAC_TYPE_FIELD(WebcilHeader, /*uint16*/, CoffSections, offsetof(WebcilHeader, CoffSections))
+CDAC_TYPE_END(WebcilHeader)
+
+CDAC_TYPE_BEGIN(WebcilSectionHeader)
+CDAC_TYPE_SIZE(sizeof(WebcilSectionHeader))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, VirtualSize, offsetof(WebcilSectionHeader, VirtualSize))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, VirtualAddress, offsetof(WebcilSectionHeader, VirtualAddress))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, SizeOfRawData, offsetof(WebcilSectionHeader, SizeOfRawData))
+CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, PointerToRawData, offsetof(WebcilSectionHeader, PointerToRawData))
+CDAC_TYPE_END(WebcilSectionHeader)
+#endif
 
 CDAC_TYPES_END()
 
@@ -1277,6 +1300,11 @@ CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 0)
 #endif // FEATURE_ON_STACK_REPLACEMENT
+#ifdef FEATURE_WEBCIL
+CDAC_GLOBAL(FeatureWebcil, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureWebcil, uint8, 0)
+#endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
