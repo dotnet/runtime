@@ -52,27 +52,27 @@ internal sealed class MsQuicTlsSecret : IDisposable
     public unsafe void WriteSecret()
     {
         ReadOnlySpan<byte> clientRandom = _tlsSecrets->IsSet.ClientRandom != 0
-            ? ((ReadOnlySpan<byte>)_tlsSecrets->ClientRandom)[..32]
+            ? new ReadOnlySpan<byte>(_tlsSecrets->ClientRandom, 32)
             : ReadOnlySpan<byte>.Empty;
 
         Span<byte> clientHandshakeTrafficSecret = _tlsSecrets->IsSet.ClientHandshakeTrafficSecret != 0
-            ? ((Span<byte>)_tlsSecrets->ClientHandshakeTrafficSecret)[.._tlsSecrets->SecretLength]
+            ? new Span<byte>(_tlsSecrets->ClientHandshakeTrafficSecret, _tlsSecrets->SecretLength)
             : Span<byte>.Empty;
 
         Span<byte> serverHandshakeTrafficSecret = _tlsSecrets->IsSet.ServerHandshakeTrafficSecret != 0
-            ? ((Span<byte>)_tlsSecrets->ServerHandshakeTrafficSecret)[.._tlsSecrets->SecretLength]
+            ? new Span<byte>(_tlsSecrets->ServerHandshakeTrafficSecret, _tlsSecrets->SecretLength)
             : Span<byte>.Empty;
 
         Span<byte> clientTrafficSecret0 = _tlsSecrets->IsSet.ClientTrafficSecret0 != 0
-            ? ((Span<byte>)_tlsSecrets->ClientTrafficSecret0)[.._tlsSecrets->SecretLength]
+            ? new Span<byte>(_tlsSecrets->ClientTrafficSecret0, _tlsSecrets->SecretLength)
             : Span<byte>.Empty;
 
         Span<byte> serverTrafficSecret0 = _tlsSecrets->IsSet.ServerTrafficSecret0 != 0
-            ? ((Span<byte>)_tlsSecrets->ServerTrafficSecret0)[.._tlsSecrets->SecretLength]
+            ? new Span<byte>(_tlsSecrets->ServerTrafficSecret0, _tlsSecrets->SecretLength)
             : Span<byte>.Empty;
 
         Span<byte> clientEarlyTrafficSecret = _tlsSecrets->IsSet.ClientEarlyTrafficSecret != 0
-            ? ((Span<byte>)_tlsSecrets->ClientEarlyTrafficSecret)[.._tlsSecrets->SecretLength]
+            ? new Span<byte>(_tlsSecrets->ClientEarlyTrafficSecret, _tlsSecrets->SecretLength)
             : Span<byte>.Empty;
 
         SslKeyLogger.WriteSecrets(
