@@ -1535,37 +1535,88 @@ namespace System.StubHelpers
             }
         }
 
-        private static unsafe object? InvokeMethodWithArgs(object? target, RuntimeMethodHandle methodHandle, Span<object?> copyOfArgs)
+        [SupportedOSPlatform("windows")]
+        private static Signature GetMethodSignature(RuntimeMethodHandle methodHandle)
         {
             IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
-            Signature signature = new(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
-            Debug.Assert(copyOfArgs.Length <= MethodBase.MaxStackAllocArgCount);
+            return new Signature(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
+        }
 
-            MethodBase.StackAllocatedByRefs byrefs = default;
-            IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
+        [SupportedOSPlatform("windows")]
+        private static unsafe void InvokeDelegateConstructor(object delegateInstance, RuntimeMethodHandle methodHandle, object? target, nuint methodCode, bool useUIntPtrCtor)
+        {
+            nint methodEntryPoint = (nint)methodHandle.GetFunctionPointer();
+            Debug.Assert(methodEntryPoint != 0);
 
-            for (int i = 0; i < copyOfArgs.Length; i++)
+            if (useUIntPtrCtor)
             {
-                ref object? arg = ref copyOfArgs[i];
-                *(ByReference*)(pByRefFixedStorage + i) =
-                    arg is not null && RuntimeHelpers.GetMethodTable(arg)->IsValueType
-                        ? ByReference.Create(ref arg.GetRawData())
-                        : ByReference.Create(ref arg);
+                ((delegate*<object, object?, nuint, void>)methodEntryPoint)(delegateInstance, target, methodCode);
+            }
+            else
+            {
+                ((delegate*<object, object?, nint, void>)methodEntryPoint)(delegateInstance, target, (nint)methodCode);
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static unsafe void InvokeVoidMethodWithOneArg(object target, RuntimeMethodHandle methodHandle, object? arg0)
+        {
+            nint methodEntryPoint = (nint)methodHandle.GetFunctionPointer();
+            Debug.Assert(methodEntryPoint != 0);
+
+            ((delegate*<object, object?, void>)methodEntryPoint)(target, arg0);
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static unsafe ulong InvokeArgSlotMethodWithOneArg(object target, RuntimeMethodHandle methodHandle, object? arg0)
+        {
+            Signature signature = GetMethodSignature(methodHandle);
+            RuntimeType returnType = signature.ReturnType;
+            nint methodEntryPoint = (nint)methodHandle.GetFunctionPointer();
+            Debug.Assert(methodEntryPoint != 0);
+
+            if (returnType == typeof(void))
+            {
+                ((delegate*<object, object?, void>)methodEntryPoint)(target, arg0);
+                return 0;
             }
 
-            return RuntimeMethodHandle.InvokeMethod(target, (void**)pByRefFixedStorage, signature, isConstructor: false);
-        }
+            if (returnType == typeof(bool))
+            {
+                return ((delegate*<object, object?, bool>)methodEntryPoint)(target, arg0) ? 1UL : 0UL;
+            }
 
-        private static unsafe object? InvokeMethodWithOneArg(object? target, RuntimeMethodHandle methodHandle, object? arg0)
-        {
-            MethodBase.StackAllocatedArguments stackStorage = new(arg0, null, null, null);
-            return InvokeMethodWithArgs(target, methodHandle, ((Span<object?>)stackStorage._args).Slice(0, 1));
-        }
+            if (returnType == typeof(int))
+            {
+                return unchecked((ulong)((delegate*<object, object?, int>)methodEntryPoint)(target, arg0));
+            }
 
-        private static unsafe object? InvokeMethodWithTwoArgs(object? target, RuntimeMethodHandle methodHandle, object? arg0, object? arg1)
-        {
-            MethodBase.StackAllocatedArguments stackStorage = new(arg0, arg1, null, null);
-            return InvokeMethodWithArgs(target, methodHandle, ((Span<object?>)stackStorage._args).Slice(0, 2));
+            if (returnType == typeof(uint))
+            {
+                return ((delegate*<object, object?, uint>)methodEntryPoint)(target, arg0);
+            }
+
+            if (returnType == typeof(long))
+            {
+                return unchecked((ulong)((delegate*<object, object?, long>)methodEntryPoint)(target, arg0));
+            }
+
+            if (returnType == typeof(ulong))
+            {
+                return ((delegate*<object, object?, ulong>)methodEntryPoint)(target, arg0);
+            }
+
+            if (returnType == typeof(IntPtr))
+            {
+                return (ulong)(nuint)((delegate*<object, object?, nint>)methodEntryPoint)(target, arg0);
+            }
+
+            if (returnType == typeof(UIntPtr))
+            {
+                return (ulong)((delegate*<object, object?, nuint>)methodEntryPoint)(target, arg0);
+            }
+
+            throw new NotSupportedException();
         }
 
         [SupportedOSPlatform("windows")]
@@ -1583,14 +1634,11 @@ namespace System.StubHelpers
             try
             {
                 RuntimeMethodHandle delegateCtorMethodHandle = RuntimeMethodHandle.FromIntPtr(pDelegateCtorMethodDesc);
-                nuint eventMethodCodeValue = (nuint)pEventMethodCodePtr;
-                object eventMethodCodeArg = useUIntPtrCtor ? (UIntPtr)eventMethodCodeValue : unchecked((IntPtr)eventMethodCodeValue);
-
                 // Construct the delegate before invoking the provider method.
-                InvokeMethodWithTwoArgs(*pDelegate, delegateCtorMethodHandle, *pSubscriber, eventMethodCodeArg);
+                InvokeDelegateConstructor(*pDelegate, delegateCtorMethodHandle, *pSubscriber, (nuint)pEventMethodCodePtr, useUIntPtrCtor);
 
                 RuntimeMethodHandle providerMethodHandle = RuntimeMethodHandle.FromIntPtr(pProviderMethodDesc);
-                InvokeMethodWithOneArg(*pProvider, providerMethodHandle, *pDelegate);
+                InvokeVoidMethodWithOneArg(*pProvider, providerMethodHandle, *pDelegate);
             }
             catch (Exception ex)
             {
@@ -1609,37 +1657,12 @@ namespace System.StubHelpers
             {
                 object eventProvider = pComObject->GetEventProvider(*pProviderType);
                 RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
-                object? result = InvokeMethodWithOneArg(eventProvider, methodHandle, *pEventHandler);
-                *pResult = ConvertToArgSlot(result);
+                *pResult = InvokeArgSlotMethodWithOneArg(eventProvider, methodHandle, *pEventHandler);
             }
             catch (Exception ex)
             {
                 *pException = ex;
             }
-        }
-
-        [SupportedOSPlatform("windows")]
-        // Convert a managed primitive return value into raw ARG_SLOT bits.
-        // For signed integral inputs, unchecked casts preserve the original two's-complement bit pattern.
-        private static ulong ConvertToArgSlot(object? value)
-        {
-            return value switch
-            {
-                null => 0,
-                IntPtr pointer => (ulong)(nuint)pointer,
-                UIntPtr pointer => (ulong)(nuint)pointer,
-                bool boolean => boolean ? 1UL : 0UL,
-                char character => character,
-                byte number => number,
-                sbyte number => unchecked((ulong)number),
-                short number => unchecked((ulong)number),
-                ushort number => number,
-                int number => unchecked((ulong)number),
-                uint number => number,
-                long number => unchecked((ulong)number),
-                ulong number => number,
-                _ => throw new NotSupportedException()
-            };
         }
 
         [SupportedOSPlatform("windows")]
