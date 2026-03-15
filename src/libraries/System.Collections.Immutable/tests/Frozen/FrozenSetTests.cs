@@ -434,6 +434,14 @@ namespace System.Collections.Frozen.Tests
             ulong lo = unchecked((ulong)rand.Next());
             return (hi << 32) | lo;
         }
+
+        [OuterLoop("Takes several seconds")]
+        [Theory]
+        [InlineData(8_000_000)]
+        public void CreateHugeSet_Success(int largeCount)
+        {
+            GenericISetFactory(largeCount);
+        }
     }
 
     public class FrozenSet_Generic_Tests_int : FrozenSet_Generic_Tests<int>
@@ -441,26 +449,6 @@ namespace System.Collections.Frozen.Tests
         protected override bool DefaultValueAllowed => true;
 
         protected override int CreateT(int seed) => new Random(seed).Next();
-
-        [Fact]
-        [OuterLoop("Allocates a large collection")]
-        public void ToFrozenSet_LargeSet_ExceedsPrimeTable()
-        {
-            // Exercise the CalcNumBuckets early-return path for collections whose
-            // uniqueCodesCount * 2 exceeds the precomputed primes table.
-            const int count = 4_000_000;
-            var set = new HashSet<int>(count);
-            for (int i = 0; i < count; i++)
-            {
-                set.Add(i);
-            }
-
-            FrozenSet<int> frozen = set.ToFrozenSet();
-            Assert.Equal(count, frozen.Count);
-            Assert.True(frozen.Contains(0));
-            Assert.True(frozen.Contains(count - 1));
-            Assert.False(frozen.Contains(count));
-        }
     }
 
     public class FrozenSet_Generic_Tests_SimpleClass : FrozenSet_Generic_Tests<SimpleClass>

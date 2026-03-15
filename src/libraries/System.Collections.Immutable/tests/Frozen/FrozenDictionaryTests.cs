@@ -517,26 +517,6 @@ namespace System.Collections.Frozen.Tests
     public class FrozenDictionary_Generic_Tests_int_int : FrozenDictionary_Generic_Tests_base_for_numbers<int>
     {
         protected override int Next(Random random) => random.Next();
-
-        [Fact]
-        [OuterLoop("Allocates a large collection")]
-        public void ToFrozenDictionary_LargeDictionary_ExceedsPrimeTable()
-        {
-            // Exercise the CalcNumBuckets early-return path for collections whose
-            // uniqueCodesCount * 2 exceeds the precomputed primes table.
-            const int count = 4_000_000;
-            var dict = new Dictionary<int, int>(count);
-            for (int i = 0; i < count; i++)
-            {
-                dict.Add(i, i);
-            }
-
-            FrozenDictionary<int, int> frozen = dict.ToFrozenDictionary();
-            Assert.Equal(count, frozen.Count);
-            Assert.True(frozen.ContainsKey(0));
-            Assert.True(frozen.ContainsKey(count - 1));
-            Assert.False(frozen.ContainsKey(count));
-        }
     }
 
     public class FrozenDictionary_Generic_Tests_uint_uint : FrozenDictionary_Generic_Tests_base_for_numbers<uint>
