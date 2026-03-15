@@ -111,13 +111,13 @@ namespace System.Threading
             return WaitSlow(timeoutMs, activeThreadCount);
         }
 
-        private bool WaitSlow(int timeoutMs, short activeThreadCount)
+        private bool WaitSlow(int timeoutMs, short tpThreadCount)
         {
             // Now spin briefly with exponential backoff.
             // We estimate availability of CPU resources and limit spin count accordingly.
             // See comments on DefaultSemaphoreSpinCountLimit for more details.
             // Count current thread as active for the duration of spinning.
-            int active = activeThreadCount + 1;
+            int active = tpThreadCount - _separated._counts.WaiterCount;
             int available = _procCount - active;
             int spinStep = _maxSpinCount * 2 / _procCount;
             // With activeThreadCount arbitrarily large and _procCount arbitrarily small

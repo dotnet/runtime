@@ -105,7 +105,7 @@ namespace System.Threading
 
                 while (true)
                 {
-                    while (semaphore.Wait(timeoutMs, threadPoolInstance._separated.counts.NumProcessingWork))
+                    while (semaphore.Wait(timeoutMs, threadPoolInstance._separated.counts.NumExistingThreads))
                     {
                         WorkerDoWork(threadPoolInstance);
                     }
