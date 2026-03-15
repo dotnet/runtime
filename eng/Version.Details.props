@@ -48,7 +48,7 @@ This file should be imported by eng/Versions.props
     <!-- dotnet-hotreload-utils dependencies -->
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>11.0.0-alpha.0.25625.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
     <!-- dotnet-icu dependencies -->
-    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26128.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
+    <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26163.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>19.1.0-alpha.1.26152.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsPackageVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>19.1.0-alpha.1.26152.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMLibclangPackageVersion>
