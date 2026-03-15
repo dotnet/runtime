@@ -100,34 +100,9 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
     }
 
     _ASSERT(!pMethodDesc->RequestedAggressiveOptimization());
-
-    if (!pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
-    {
-        // Tier 0 call counting may have been disabled for several reasons, the intention is to start with and stay at an
-        // optimized tier
-        return NativeCodeVersion::OptimizationTierOptimized;
-    }
-
-#ifdef FEATURE_PGO
-    if (g_pConfig->TieredPGO())
-    {
-        // Initial tier for R2R is always just OptimizationTier0
-        // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
-        // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
-        // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
-        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() ||
-            ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
-        {
-            return NativeCodeVersion::OptimizationTier0;
-        }
-        return NativeCodeVersion::OptimizationTier0Instrumented;
-    }
 #endif
 
-    return NativeCodeVersion::OptimizationTier0;
-#else
-    return NativeCodeVersion::OptimizationTierOptimized;
-#endif
+    return (NativeCodeVersion::OptimizationTier)g_pConfig->TieredCompilation_DefaultTier();
 }
 
 bool TieredCompilationManager::IsTieringDelayActive()
@@ -1052,61 +1027,10 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(config != nullptr);
-    _ASSERTE(
-        !config->WasTieringDisabledBeforeJitting() ||
-        config->GetCodeVersion().IsFinalTier());
 
     CORJIT_FLAGS flags;
 
-    // Determine the optimization tier for the default code version (slightly faster common path during startup compared to
-    // below), and disable call counting and set the optimization tier if it's not going to be tier 0 (this is used in other
-    // places for the default code version where necessary to avoid the extra expense of GetOptimizationTier()).
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
-    if (nativeCodeVersion.IsDefaultVersion() && !config->WasTieringDisabledBeforeJitting())
-    {
-        MethodDesc *methodDesc = nativeCodeVersion.GetMethodDesc();
-        if (!methodDesc->IsEligibleForTieredCompilation())
-        {
-            _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
-            return flags;
-        }
-
-        _ASSERT(!methodDesc->RequestedAggressiveOptimization());
-
-        if (g_pConfig->TieredCompilation_QuickJit())
-        {
-            NativeCodeVersion::OptimizationTier currentTier = nativeCodeVersion.GetOptimizationTier();
-            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                return flags;
-            }
-
-            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier1Instrumented)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                return flags;
-            }
-
-            _ASSERTE(!nativeCodeVersion.IsFinalTier());
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-            if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
-            {
-                // If we plan to only instrument hot code we have to make an exception
-                // for cold methods with loops so if those self promote to OSR they need
-                // some profile to optimize, so here we allow JIT to enable instrumentation
-                // if current method has loops and is eligible for OSR.
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
-            }
-            return flags;
-        }
-
-        methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
-        nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-        return flags;
-    }
 
     switch (nativeCodeVersion.GetOptimizationTier())
     {

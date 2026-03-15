@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        [ConditionalFact(nameof(LongPathsEnabled))]
+        [ConditionalFact(typeof(WindowsSpecificBehavior), nameof(LongPathsEnabled))]
         public void DotNet_LongPath_Succeeds()
         {
             HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "long_path", sharedTestState.App.Location)

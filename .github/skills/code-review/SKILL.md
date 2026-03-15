@@ -29,6 +29,10 @@ Before analyzing anything, collect as much relevant **code** context as you can.
 4. **Sibling types and related code**: If the change fixes a bug or adds a pattern in one type, check whether sibling types (e.g., other abstraction implementations, other collection types, platform-specific variants) have the same issue or need the same fix. Fetch and read those files too.
 5. **Key utility/helper files**: If the diff calls into shared utilities, read those to understand the contracts (thread-safety, idempotency, etc.).
 6. **Git history**: Check recent commits to the changed files (`git log --oneline -20 -- <file>`). Look for related recent changes, reverts, or prior attempts to fix the same problem. This reveals whether the area is actively churning, whether a similar fix was tried and reverted, or whether the current change conflicts with recent work.
+7. **Detect new public API surface**: Check whether the PR introduces new public API surface. Look for:
+   - Changes to `ref/` assembly source files (the strongest signal — these define the public API contract)
+   - New `public` members (methods, properties, types, enum values) in `src/` files
+   - Note whether new public API was detected. If it was, the [API Approval Verification](#api-approval-verification) procedure is required during Step 2.
 
 ### Step 1: Form an Independent Assessment
 
@@ -50,6 +54,7 @@ Now read the PR description, labels, linked issues (in full), author information
 3. **Existing review comments**: Check if there are already review comments on the PR to avoid duplicating feedback.
 4. **Reconcile your assessment with the author's claims.** Where your independent reading of the code disagrees with the PR description or issue, investigate further — but do not simply defer to the author's framing. If the PR claims a bug fix, a performance improvement, or a behavioral correction, verify those claims against the code and any provided evidence. If your independent assessment found problems the PR narrative doesn't acknowledge, those problems are more likely to be real, not less.
 5. **Update your holistic assessment** if the additional context reveals information that genuinely changes your evaluation (e.g., a linked issue proves the bug is real, or an existing review comment already identified the same concern). But do not soften findings just because the PR description sounds reasonable.
+6. **API Approval Verification.** If Step 0 detected new public API surface, execute the [API Approval Verification](#api-approval-verification) procedure now. This is a blocking step — if it fails, the review verdict must be ❌ Reject or ❌ Needs Changes regardless of other findings.
 
 ### Step 3: Detailed Analysis
 
@@ -217,6 +222,45 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 
 - **Check whether a similar approach has been tried and rejected before.** If a prior attempt didn't work, require a clear explanation of what's different this time.
   > "If it's not worthwhile, especially if it was previously tried and it wasn't obviously beneficial, then we should close the issue."
+
+---
+
+## API Approval Verification
+
+When Step 0 detects that a PR introduces new public API surface (changes to `ref/` assembly source files or new `public` members in `src/` files), execute this procedure during Step 2. This is a **blocking** procedure — if any step fails, the review verdict must reflect it as ❌.
+
+### 1. Locate the `api-approved` Issue
+
+Parse the PR description for issue references (`Fixes #N`, `Closes #N`, `Resolves #N`, or bare `#N` references). Use the GitHub API (via `gh` CLI or GitHub MCP tools) to check whether any linked issue has the `api-approved` label.
+
+- **If no `api-approved` issue is found**: Report as ❌ error — "This PR adds new public API surface but has no linked issue with the `api-approved` label. New public APIs require an approved proposal before PR submission. Either link the approved issue or mark the new APIs as `internal` pending API review."
+
+### 2. Extract the Approved API Shape
+
+The final approved API shape is posted as a **comment** by the **same user who applied the `api-approved` label**, at the time the label was applied. This comment is the single source of truth for the approved API.
+
+1. Fetch the issue's timeline or events to identify which user applied the `api-approved` label.
+2. Fetch the issue comments and find the comment posted by that same user at approximately the same time as the label was applied.
+3. The approved API will be in a fenced code block (` ```csharp ` or ` ```diff `) within that comment.
+
+- **If the approved API comment cannot be found**: Report as ❌ error — "Cannot locate the approved API shape from the `api-approved` issue. The approved API must be posted as a comment by the reviewer who applied the `api-approved` label."
+
+### 3. Compare Implementation Against Approved Shape
+
+Compare the PR's `ref/` assembly source changes against the approved API shape. Check:
+
+- **Namespaces and type names** — must match exactly.
+- **Method signatures** — name, return type, and parameter types must match.
+- **Parameter names** — a mismatch is a source breaking change (affects named arguments and late-bound scenarios).
+- **Property names and types** — must match.
+- **Extra public surface** — any public API in the implementation that is not in the approved shape is unapproved and must be flagged.
+- **Missing approved surface** — any API in the approved shape that is not in the implementation should be flagged (it may be intentionally deferred, but the reviewer must be made aware).
+
+Flag discrepancies with the following severity:
+
+- ❌ **error**: Extra unapproved public API, wrong parameter names, wrong method signatures, wrong type names.
+- ❌ **error**: Missing approved API (unless the PR description explicitly states partial implementation with a tracking issue for the remainder).
+- ⚠️ **warning**: Minor differences that may be intentional but warrant confirmation (e.g., additional `[EditorBrowsable(Never)]` attributes, extra `#if` guards for TFM compatibility).
 
 ---
 
@@ -397,7 +441,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 
 ## API Design & Contracts
 
-- **New public APIs require approved proposals before PR submission.** All new API surface must go through API review. PRs adding unapproved APIs will be closed. The implementation must match exactly what was approved.
+- **New public APIs require approved proposals before PR submission.** All new API surface must go through API review. PRs adding unapproved APIs will be closed. The implementation must match exactly what was approved. When new public API surface is detected, the [API Approval Verification](#api-approval-verification) procedure is executed to enforce this rule.
   > "We do not accept PRs for unapproved APIs." — jkotas
 
 - **Use `internal` for new APIs pending API review.** If the API is needed immediately for implementation, mark it `internal` and file a review request separately.
