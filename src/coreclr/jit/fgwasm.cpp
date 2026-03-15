@@ -2116,9 +2116,8 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         JITDUMP("Switch block is " FMT_BB "; %u cases\n", switchBlock->bbNum, caseCount);
 
-        // Start building switch info
+        // Fill in the case info
         //
-        FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
         FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
 
         for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
@@ -2127,7 +2126,6 @@ PhaseStatus Compiler::fgWasmEhFlow()
             JITDUMP("  case %u: " FMT_BB "\n", caseNumber, continuation->bbNum);
             FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
 
-            succs[caseNumber] = caseEdge;
             cases[caseNumber] = caseEdge;
 
             // We only get here on exception
@@ -2135,19 +2133,68 @@ PhaseStatus Compiler::fgWasmEhFlow()
             caseNumber++;
         }
 
-        // The "default" case ... likelihoods here are arbitrary, so we just
-        // set this case to be 1.0
+        // The "default" case of the switch goes to the rethrow block.
+        // Likelihoods here are unclear since all this code is only reachable via
+        // exception, so we just set this case to be 1.0.
         //
-        FlowEdge* const defaultCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
+        FlowEdge* const rethrowCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
+        rethrowCaseEdge->setLikelihood(0);
 
         JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, switchBlock->bbNum);
-        succs[caseNumber] = defaultCaseEdge;
-        cases[caseNumber] = defaultCaseEdge;
-        defaultCaseEdge->setLikelihood(1.0);
+        cases[caseNumber++] = rethrowCaseEdge;
+
+        assert(caseNumber == caseCount);
+
+        // Determine the number of unqiue successsors.
+        //
+        unsigned succCount = 0;
+
+        BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+        BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+        {
+            BasicBlock* const succ = catchRetBlock->GetTarget();
+
+            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+            {
+                succCount++;
+            }
+        }
+
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
+        {
+            succCount++;
+        }
+
+        unsigned succNumber = 0;
+
+        // Fill in unique successor info
+        //
+        FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[succCount];
+        BitVecOps::ClearD(&bitVecTraits, succBlocks);
+
+        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+        {
+            BasicBlock* const succ = catchRetBlock->GetTarget();
+
+            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+            {
+                succs[succNumber] = fgGetPredForBlock(succ, switchBlock);
+                succNumber++;
+            }
+        }
+
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
+        {
+            succs[succNumber] = rethrowCaseEdge;
+            succNumber++;
+        }
+
+        assert(succNumber == succCount);
 
         // Install the switch info on the switch block.
         //
-        BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, caseCount, cases, caseCount, true);
+        BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
         switchBlock->SetSwitch(swtDesc);
 
         // Build the IR for the switch
