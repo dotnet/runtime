@@ -35,10 +35,16 @@ internal static partial class Interop
         internal struct TIME_DYNAMIC_ZONE_INFORMATION
         {
             [InlineArray(32)]
-            internal struct NameBuffer { private char _element0; }
+            internal struct NameBuffer
+            {
+                private char _element0;
+            }
 
             [InlineArray(128)]
-            internal struct TimeZoneKeyNameBuffer { private char _element0; }
+            internal struct TimeZoneKeyNameBuffer
+            {
+                private char _element0;
+            }
 
             internal int Bias;
             internal NameBuffer StandardName;
@@ -61,7 +67,10 @@ internal static partial class Interop
         internal struct TIME_ZONE_INFORMATION
         {
             [InlineArray(32)]
-            internal struct NameBuffer { private char _element0; }
+            internal struct NameBuffer
+            {
+                private char _element0;
+            }
 
             internal int Bias;
             internal NameBuffer StandardName;

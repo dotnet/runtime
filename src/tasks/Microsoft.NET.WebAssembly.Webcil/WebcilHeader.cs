@@ -14,15 +14,12 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 /// The header is a subset of the PE, COFF and CLI headers that are needed by the mono runtime to load managed assemblies.
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public
-#if NET
-struct WebcilHeader
+public struct WebcilHeader
 {
+#if NET
     public InlineArray4<byte> Id;
 #else
-unsafe struct WebcilHeader
-{
-    public fixed byte Id[4];
+    public unsafe fixed byte Id[4];
 #endif
     // 4 bytes
     public ushort VersionMajor;

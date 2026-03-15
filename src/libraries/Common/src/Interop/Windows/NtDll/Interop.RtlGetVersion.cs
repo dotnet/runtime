@@ -20,12 +20,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal
-#if NET
-        struct RTL_OSVERSIONINFOEX
-#else
-        unsafe struct RTL_OSVERSIONINFOEX
-#endif
+        internal struct RTL_OSVERSIONINFOEX
         {
             internal uint dwOSVersionInfoSize;
             internal uint dwMajorVersion;
@@ -41,7 +36,7 @@ internal static partial class Interop
                 private char _element0;
             }
 #else
-            internal fixed char szCSDVersion[128];
+            internal unsafe fixed char szCSDVersion[128];
 #endif
         }
     }

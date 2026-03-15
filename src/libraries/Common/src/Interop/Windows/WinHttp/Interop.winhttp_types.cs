@@ -338,12 +338,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public
-#if NET
-        struct WINHTTP_CONNECTION_INFO
-#else
-        unsafe struct WINHTTP_CONNECTION_INFO
-#endif
+        public struct WINHTTP_CONNECTION_INFO
         {
             // This field is actually 4 bytes, but we use nuint to avoid alignment issues for x64.
             // If we want to read this field in the future, we need to change type and make sure
@@ -359,8 +354,8 @@ internal static partial class Interop
                 private byte _element0;
             }
 #else
-            public fixed byte LocalAddress[128];
-            public fixed byte RemoteAddress[128];
+            public unsafe fixed byte LocalAddress[128];
+            public unsafe fixed byte RemoteAddress[128];
 #endif
         }
 
