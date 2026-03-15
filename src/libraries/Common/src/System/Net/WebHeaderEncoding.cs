@@ -13,7 +13,7 @@ namespace System.Net
     // It doesn't work for string -> byte[] because of best-fit-mapping problems.
     internal static class WebHeaderEncoding
     {
-        internal static unsafe string GetString(byte[] bytes, int byteIndex, int byteCount)
+        internal static string GetString(byte[] bytes, int byteIndex, int byteCount)
         {
             if (byteCount < 1)
             {
@@ -22,56 +22,49 @@ namespace System.Net
 
             Debug.Assert(bytes != null && (uint)byteIndex <= (uint)bytes.Length && (uint)(byteIndex + byteCount) <= (uint)bytes.Length);
 
-            return string.Create(byteCount, (bytes, byteIndex), (buffer, state) =>
+            return string.Create(byteCount, (bytes, byteIndex), static (buffer, state) =>
             {
-                fixed (byte* pByt = &state.bytes[state.byteIndex])
-                fixed (char* pStr = buffer)
-                {
-                    byte* pBytes = pByt;
-                    char* pString = pStr;
-                    int byteCount = buffer.Length;
+                ReadOnlySpan<byte> source = state.bytes.AsSpan(state.byteIndex, buffer.Length);
+                int lastBlockStart = source.Length - 7;
+                int i = 0;
 
-                    while (byteCount >= 8)
-                    {
-                        pString[0] = (char)pBytes[0];
-                        pString[1] = (char)pBytes[1];
-                        pString[2] = (char)pBytes[2];
-                        pString[3] = (char)pBytes[3];
-                        pString[4] = (char)pBytes[4];
-                        pString[5] = (char)pBytes[5];
-                        pString[6] = (char)pBytes[6];
-                        pString[7] = (char)pBytes[7];
-                        pString += 8;
-                        pBytes += 8;
-                        byteCount -= 8;
-                    }
-                    for (int i = 0; i < byteCount; i++)
-                    {
-                        pString[i] = (char)pBytes[i];
-                    }
+                for (; i < lastBlockStart; i += 8)
+                {
+                    buffer[i] = (char)source[i];
+                    buffer[i + 1] = (char)source[i + 1];
+                    buffer[i + 2] = (char)source[i + 2];
+                    buffer[i + 3] = (char)source[i + 3];
+                    buffer[i + 4] = (char)source[i + 4];
+                    buffer[i + 5] = (char)source[i + 5];
+                    buffer[i + 6] = (char)source[i + 6];
+                    buffer[i + 7] = (char)source[i + 7];
+                }
+
+                for (; i < source.Length; i++)
+                {
+                    buffer[i] = (char)source[i];
                 }
             });
         }
 
         internal static int GetByteCount(string myString) => myString.Length;
 
-        internal static unsafe void GetBytes(string myString, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        internal static void GetBytes(string myString, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (myString.Length == 0)
             {
                 return;
             }
 
-            fixed (byte* bufferPointer = bytes)
+            ReadOnlySpan<char> source = myString.AsSpan(charIndex, charCount);
+            Span<byte> destination = bytes.AsSpan(byteIndex, charCount);
+
+            for (int i = 0; i < source.Length; i++)
             {
-                byte* newBufferPointer = bufferPointer + byteIndex;
-                int finalIndex = charIndex + charCount;
-                while (charIndex < finalIndex)
-                {
-                    *newBufferPointer++ = (byte)myString[charIndex++];
-                }
+                destination[i] = (byte)source[i];
             }
         }
+
         internal static byte[] GetBytes(string myString)
         {
             byte[] bytes = new byte[myString.Length];
