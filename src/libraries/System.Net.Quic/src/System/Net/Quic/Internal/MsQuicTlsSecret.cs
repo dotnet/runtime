@@ -52,7 +52,7 @@ internal sealed class MsQuicTlsSecret : IDisposable
     public unsafe void WriteSecret()
     {
         ReadOnlySpan<byte> clientRandom = _tlsSecrets->IsSet.ClientRandom != 0
-            ? ((ReadOnlySpan<byte>)_tlsSecrets->ClientRandom)[..32]
+            ? _tlsSecrets->ClientRandom
             : ReadOnlySpan<byte>.Empty;
 
         Span<byte> clientHandshakeTrafficSecret = _tlsSecrets->IsSet.ClientHandshakeTrafficSecret != 0
