@@ -12,6 +12,20 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ValidatePropertyNameAndDepth(ReadOnlySpan<char> propertyName)
+        {
+            ValidateDepth();
+            JsonWriterHelper.ValidateProperty(propertyName);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ValidatePropertyNameAndDepth(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            ValidateDepth();
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateDepth()
         {
             if (CurrentDepth >= _options.MaxDepth)

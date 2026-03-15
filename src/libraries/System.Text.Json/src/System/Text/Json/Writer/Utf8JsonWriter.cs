@@ -752,8 +752,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ValidateDepth();
-            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            ValidatePropertyNameAndDepth(utf8PropertyName);
 
             WriteStartEscape(utf8PropertyName, JsonConstants.OpenBracket);
 
@@ -778,8 +777,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ValidateDepth();
-            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            ValidatePropertyNameAndDepth(utf8PropertyName);
 
             WriteStartEscape(utf8PropertyName, JsonConstants.OpenBrace);
 
@@ -903,8 +901,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<char> propertyName)
         {
-            ValidateDepth();
-            JsonWriterHelper.ValidateProperty(propertyName);
+            ValidatePropertyNameAndDepth(propertyName);
 
             WriteStartEscape(propertyName, JsonConstants.OpenBracket);
 
@@ -929,8 +926,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<char> propertyName)
         {
-            ValidateDepth();
-            JsonWriterHelper.ValidateProperty(propertyName);
+            ValidatePropertyNameAndDepth(propertyName);
 
             WriteStartEscape(propertyName, JsonConstants.OpenBrace);
 
