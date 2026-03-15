@@ -4821,6 +4821,52 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------------------
+// TryLowerSelectToCond: Try to optimize:
+// SELECT(relop, 1/0, 0/1) -> (reversed) relop
+//
+// Arguments:
+//     select   - The SELECT node
+//
+// Return Value:
+//     Next node if the optimization was applied, nullptr otherwise.
+//
+GenTree* Lowering::TryLowerSelectToCond(GenTreeConditional* select)
+{
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
+                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
+    {
+        assert(select->TypeIs(TYP_INT, TYP_LONG));
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(select, &use))
+        {
+            if (trueVal->IsIntegralConst(0))
+            {
+                GenTree* reversed = m_compiler->gtReverseCond(cond);
+                assert(reversed == cond);
+            }
+
+            // Codegen supports also TYP_LONG typed compares so we can just
+            // retype the compare instead of inserting a cast.
+            cond->gtType = select->TypeGet();
+
+            BlockRange().Remove(trueVal);
+            BlockRange().Remove(falseVal);
+            BlockRange().Remove(select);
+            use.ReplaceWith(cond);
+
+            return cond->gtNext;
+        }
+    }
+
+    return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------
 // TryLowerSelectToSarAdd: Try to optimize:
 // SELECT(x < 0, C - 1, C) -> SAR(x, 31) + C
 // SAR(x, 31) gives us either -1 or 0 dependig on if x was negative or not.
@@ -4828,29 +4874,23 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 // Arguments:
 //     select   - The SELECT node
-//     cond     - The condition
-//     trueVal  - Value when condition is true
-//     falseVal - Value when condition is false
 //
 // Return Value:
 //     Next node if the optimization was applied, nullptr otherwise.
 //
-GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
-                                          GenTree*            cond,
-                                          GenTree*            trueVal,
-                                          GenTree*            falseVal)
+GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select)
 {
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    if (!cond->OperIsCompare() || !trueVal->IsIntegralConst() || !falseVal->IsIntegralConst())
+    {
+        return nullptr;
+    }
+
+    // TODO-CQ: Handle TYP_LONG and then remove this check
     if (!select->TypeIs(TYP_INT))
-    {
-        return nullptr;
-    }
-
-    if (!trueVal->IsIntegralConst() || !falseVal->IsIntegralConst())
-    {
-        return nullptr;
-    }
-
-    if (!cond->OperIsCompare())
     {
         return nullptr;
     }
@@ -4934,43 +4974,20 @@ GenTree* Lowering::TryLowerSelectToSarAdd(GenTreeConditional* select,
 //
 GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 {
-    GenTree* cond     = select->gtCond;
-    GenTree* trueVal  = select->gtOp1;
-    GenTree* falseVal = select->gtOp2;
-
-    if (GenTree* next = TryLowerSelectToSarAdd(select, cond, trueVal, falseVal); next != nullptr)
+    if (GenTree* next = TryLowerSelectToCond(select); next != nullptr)
+    {
+        return next;
+    }
+    
+    if (GenTree* next = TryLowerSelectToSarAdd(select); next != nullptr)
     {
         return next;
     }
 
-    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
-    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
-                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
-    {
-        assert(select->TypeIs(TYP_INT, TYP_LONG));
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(select, &use))
-        {
-            if (trueVal->IsIntegralConst(0))
-            {
-                GenTree* reversed = m_compiler->gtReverseCond(cond);
-                assert(reversed == cond);
-            }
-
-            // Codegen supports also TYP_LONG typed compares so we can just
-            // retype the compare instead of inserting a cast.
-            cond->gtType = select->TypeGet();
-
-            BlockRange().Remove(trueVal);
-            BlockRange().Remove(falseVal);
-            BlockRange().Remove(select);
-            use.ReplaceWith(cond);
-
-            return cond->gtNext;
-        }
-    }
-
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+    
     JITDUMP("Lowering select:\n");
     DISPTREERANGE(BlockRange(), select);
     JITDUMP("\n");

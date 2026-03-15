@@ -164,7 +164,8 @@ private:
     GenTree* LowerSavedIntegerCompare(GenTree* cmp);
     void     SignExtendIfNecessary(GenTree** arg);
 #endif
-    GenTree*   TryLowerSelectToSarAdd(GenTreeConditional* select, GenTree* cond, GenTree* trueVal, GenTree* falseVal);
+    GenTree*   TryLowerSelectToCond(GenTreeConditional* select);
+    GenTree*   TryLowerSelectToSarAdd(GenTreeConditional* select);
     GenTree*   LowerSelect(GenTreeConditional* cond);
     bool       TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenTree*      condition,
