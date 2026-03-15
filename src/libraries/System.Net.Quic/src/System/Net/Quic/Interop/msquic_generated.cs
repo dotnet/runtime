@@ -14,6 +14,7 @@ using MemoryMarshal = Microsoft.Quic.Polyfill.MemoryMarshal;
 using MemoryMarshal = System.Runtime.InteropServices.MemoryMarshal;
 #endif
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Quic
@@ -236,21 +237,30 @@ namespace Microsoft.Quic
         internal QUIC_EXECUTION_PROFILE ExecutionProfile;
     }
 
-    internal unsafe partial struct QUIC_CERTIFICATE_HASH
+    internal partial struct QUIC_CERTIFICATE_HASH
     {
+        [InlineArray(20)]
+        internal struct ShaHashBuffer { private byte _element0; }
+
         [NativeTypeName("uint8_t [20]")]
-        internal fixed byte ShaHash[20];
+        internal ShaHashBuffer ShaHash;
     }
 
-    internal unsafe partial struct QUIC_CERTIFICATE_HASH_STORE
+    internal partial struct QUIC_CERTIFICATE_HASH_STORE
     {
+        [InlineArray(20)]
+        internal struct ShaHashBuffer { private byte _element0; }
+
+        [InlineArray(128)]
+        internal struct StoreNameBuffer { private sbyte _element0; }
+
         internal QUIC_CERTIFICATE_HASH_STORE_FLAGS Flags;
 
         [NativeTypeName("uint8_t [20]")]
-        internal fixed byte ShaHash[20];
+        internal ShaHashBuffer ShaHash;
 
         [NativeTypeName("char [128]")]
-        internal fixed sbyte StoreName[128];
+        internal StoreNameBuffer StoreName;
     }
 
     internal unsafe partial struct QUIC_CERTIFICATE_FILE
@@ -380,13 +390,16 @@ namespace Microsoft.Quic
         }
     }
 
-    internal unsafe partial struct QUIC_TICKET_KEY_CONFIG
+    internal partial struct QUIC_TICKET_KEY_CONFIG
     {
+        [InlineArray(64)]
+        internal struct MaterialBuffer { private byte _element0; }
+
         [NativeTypeName("uint8_t [16]")]
-        internal fixed byte Id[16];
+        internal InlineArray16<byte> Id;
 
         [NativeTypeName("uint8_t [64]")]
-        internal fixed byte Material[64];
+        internal MaterialBuffer Material;
 
         [NativeTypeName("uint8_t")]
         internal byte MaterialLength;
@@ -2038,8 +2051,14 @@ namespace Microsoft.Quic
         }
     }
 
-    internal unsafe partial struct QUIC_TLS_SECRETS
+    internal partial struct QUIC_TLS_SECRETS
     {
+        [InlineArray(32)]
+        internal struct ClientRandomBuffer { private byte _element0; }
+
+        [InlineArray(64)]
+        internal struct SecretBuffer { private byte _element0; }
+
         [NativeTypeName("uint8_t")]
         internal byte SecretLength;
 
@@ -2047,22 +2066,22 @@ namespace Microsoft.Quic
         internal _IsSet_e__Struct IsSet;
 
         [NativeTypeName("uint8_t [32]")]
-        internal fixed byte ClientRandom[32];
+        internal ClientRandomBuffer ClientRandom;
 
         [NativeTypeName("uint8_t [64]")]
-        internal fixed byte ClientEarlyTrafficSecret[64];
+        internal SecretBuffer ClientEarlyTrafficSecret;
 
         [NativeTypeName("uint8_t [64]")]
-        internal fixed byte ClientHandshakeTrafficSecret[64];
+        internal SecretBuffer ClientHandshakeTrafficSecret;
 
         [NativeTypeName("uint8_t [64]")]
-        internal fixed byte ServerHandshakeTrafficSecret[64];
+        internal SecretBuffer ServerHandshakeTrafficSecret;
 
         [NativeTypeName("uint8_t [64]")]
-        internal fixed byte ClientTrafficSecret0[64];
+        internal SecretBuffer ClientTrafficSecret0;
 
         [NativeTypeName("uint8_t [64]")]
-        internal fixed byte ServerTrafficSecret0[64];
+        internal SecretBuffer ServerTrafficSecret0;
 
         internal partial struct _IsSet_e__Struct
         {
