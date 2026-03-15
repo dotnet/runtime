@@ -970,6 +970,64 @@ namespace System.Tests
         }
 
         private static void GenericMethod<M>() { }
+
+        [Theory]
+        [MemberData(nameof(GenericTypeParameterPropertiesData))]
+        public static void GenericTypeParameter_Properties(Type typeParam, string expectedName, Type expectedDeclaringType)
+        {
+            Assert.True(typeParam.IsGenericParameter);
+            Assert.False(typeParam.IsGenericType);
+            Assert.False(typeParam.IsGenericTypeDefinition);
+            Assert.Equal(expectedName, typeParam.Name);
+            Assert.Null(typeParam.FullName);
+            Assert.Equal(expectedName, typeParam.ToString());
+            Assert.Equal(expectedDeclaringType, typeParam.DeclaringType);
+        }
+
+        public static IEnumerable<object[]> GenericTypeParameterPropertiesData
+        {
+            get
+            {
+                yield return new object[] { typeof(List<>).GetGenericArguments()[0], "T", typeof(List<>) };
+                yield return new object[] { typeof(Dictionary<,>).GetGenericArguments()[0], "TKey", typeof(Dictionary<,>) };
+                yield return new object[] { typeof(Dictionary<,>).GetGenericArguments()[1], "TValue", typeof(Dictionary<,>) };
+                yield return new object[] { typeof(Outside<>).GetGenericArguments()[0], "T", typeof(Outside<>) };
+                yield return new object[] { typeof(Outside<>.Inside<>).GetGenericArguments()[0], "T", typeof(Outside<>.Inside<>) };
+                yield return new object[] { typeof(Outside<>.Inside<>).GetGenericArguments()[1], "U", typeof(Outside<>.Inside<>) };
+            }
+        }
+
+        [Fact]
+        public static void GenericTypeDefinition_GetGenericArguments_DeclaringTypeCycle()
+        {
+            // typeof(List<>).GetGenericArguments() returns type parameters whose DeclaringType
+            // points back to typeof(List<>). This circular reference is by design.
+            // Code that recursively walks both DeclaringType and GetGenericArguments() must
+            // check IsGenericParameter to avoid infinite recursion.
+            Type listDef = typeof(List<>);
+            Type[] typeParams = listDef.GetGenericArguments();
+
+            Assert.Single(typeParams);
+            Type t = typeParams[0];
+
+            Assert.True(t.IsGenericParameter);
+            Assert.False(t.IsGenericType);
+            Assert.Same(listDef, t.DeclaringType);
+            Assert.Same(t, t.DeclaringType.GetGenericArguments()[0]);
+
+            // Multi-parameter generic: Dictionary<TKey, TValue>
+            Type dictDef = typeof(Dictionary<,>);
+            Type[] dictParams = dictDef.GetGenericArguments();
+
+            Assert.Equal(2, dictParams.Length);
+            for (int i = 0; i < dictParams.Length; i++)
+            {
+                Assert.True(dictParams[i].IsGenericParameter);
+                Assert.False(dictParams[i].IsGenericType);
+                Assert.Same(dictDef, dictParams[i].DeclaringType);
+                Assert.Same(dictParams[i], dictParams[i].DeclaringType.GetGenericArguments()[i]);
+            }
+        }
     }
 
     public class TypeTestsExtended    {
