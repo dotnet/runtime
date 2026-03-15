@@ -93,7 +93,7 @@ namespace System.Net.NetworkInformation
         {
             Context* context = (Context*)pContext;
 
-            IPAddress ipAddress = new IPAddress(new ReadOnlySpan<byte>(gatewayAddressInfo->AddressBytes, gatewayAddressInfo->NumAddressBytes));
+            IPAddress ipAddress = new IPAddress(((ReadOnlySpan<byte>)gatewayAddressInfo->AddressBytes).Slice(0, gatewayAddressInfo->NumAddressBytes));
             if (ipAddress.IsIPv6LinkLocal)
             {
                 // For Link-Local addresses add ScopeId as that is not part of the route entry.

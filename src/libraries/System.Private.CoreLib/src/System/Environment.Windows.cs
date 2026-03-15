@@ -150,9 +150,12 @@ namespace System
 
             var version = new Version((int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber, 0);
 
-            return osvi.szCSDVersion[0] != '\0' ?
-                new OperatingSystem(PlatformID.Win32NT, version, new string(&osvi.szCSDVersion[0])) :
-                new OperatingSystem(PlatformID.Win32NT, version);
+            if (osvi.szCSDVersion[0] != '\0')
+            {
+                return new OperatingSystem(PlatformID.Win32NT, version, new string((char*)&osvi.szCSDVersion));
+            }
+
+            return new OperatingSystem(PlatformID.Win32NT, version);
         }
 
         private static string? s_systemDirectory;
