@@ -19,10 +19,9 @@ namespace System.Text.Encodings.Web
         /// 0x30_00_00_00_00_30_34_25. Iterate over the least significant bytes one-by-one
         /// to reconstruct the escaped representation, stopping when you hit a null byte.
         /// </summary>
-        private
-#if NET
-        struct AsciiPreescapedData
+        private struct AsciiPreescapedData
         {
+#if NET
             [InlineArray(128)]
             private struct DataBuffer
             {
@@ -31,9 +30,7 @@ namespace System.Text.Encodings.Web
 
             private DataBuffer Data;
 #else
-        unsafe struct AsciiPreescapedData
-        {
-            private fixed ulong Data[128];
+            private unsafe fixed ulong Data[128];
 #endif
 
             internal void PopulatePreescapedData(in AllowedBmpCodePointsBitmap allowedCodePointsBmp, ScalarEscaperBase innerEncoder)
