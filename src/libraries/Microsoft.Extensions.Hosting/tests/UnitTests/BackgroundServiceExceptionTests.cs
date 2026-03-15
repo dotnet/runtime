@@ -230,7 +230,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to signal it has thrown
+            // Wait for the background service to reach its failure point
             await signal.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             await host.StopAsync();
