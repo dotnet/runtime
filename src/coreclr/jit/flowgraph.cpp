@@ -7626,18 +7626,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     {
         FlowGraphTryRegion* region          = new (comp, CMK_BasicBlock) FlowGraphTryRegion(ehDsc, regions);
         regions->m_tryRegions[ehDsc->ebdID] = region;
-
-        // add parent links for nested try regions
-
-        unsigned const parentTryIndex = ehDsc->ebdEnclosingTryIndex;
-        if (parentTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            EHblkDsc* parentTryDsc = &comp->compHndBBtab[parentTryIndex];
-            region->m_parent       = regions->m_tryRegions[parentTryDsc->ebdID];
-        }
-
         regions->m_numRegions++;
-
         if (ehDsc->HasCatchHandler())
         {
             regions->m_numTryCatchRegions++;
@@ -7649,7 +7638,21 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         return regions; // No EH regions, nothing else to do.
     }
 
-    // Else collect up the postorder numbers of each block in each region
+    // Add parent links
+    //
+    for (EHblkDsc* ehDsc : EHClauses(comp))
+    {
+        FlowGraphTryRegion* region = regions->m_tryRegions[ehDsc->ebdID];
+
+        unsigned const parentTryIndex = ehDsc->ebdEnclosingTryIndex;
+        if (parentTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            EHblkDsc* parentTryDsc = &comp->compHndBBtab[parentTryIndex];
+            region->m_parent       = regions->m_tryRegions[parentTryDsc->ebdID];
+        }
+    }
+
+    // Collect the postorder numbers of each block in each region
     //
     BitVecTraits traits = regions->m_dfsTree->PostOrderTraits();
 
@@ -7670,12 +7673,9 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         // adding the postorder number to each.
         do
         {
-            BasicBlock* tryBeg = region->m_ehDsc->ebdTryBeg;
             BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
             region = region->m_parent;
-        }
-
-        while (region != nullptr);
+        } while (region != nullptr);
     }
 
     // Todo: verify that all try blocks that start at the same block have the same blocks?
@@ -7706,10 +7706,25 @@ unsigned FlowGraphTryRegion::NumBlocks() const
 //
 void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
 {
-    unsigned const regionNum = region->m_regions->GetCompiler()->ehGetIndex(region->m_ehDsc);
+    FlowGraphTryRegions* const regions   = region->m_regions;
+    Compiler* const            comp      = regions->GetCompiler();
+    unsigned const             regionNum = comp->ehGetIndex(region->m_ehDsc);
     printf("EH#%02u: %u blocks", regionNum, region->NumBlocks());
 
-    // TODO: print block ranges like loops do?
+    if (region->m_parent != nullptr)
+    {
+        unsigned const parentRegionNum = comp->ehGetIndex(region->m_parent->m_ehDsc);
+        printf(" [within EH#%02u]:", parentRegionNum);
+    }
+    else
+    {
+        printf(" [outermost]:");
+    }
+
+    region->VisitTryRegionBlocksReversePostOrder([](BasicBlock* block) {
+        printf(" " FMT_BB, block->bbNum);
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------
