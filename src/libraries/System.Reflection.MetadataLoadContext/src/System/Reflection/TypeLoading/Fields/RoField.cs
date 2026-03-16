@@ -123,8 +123,8 @@ namespace System.Reflection.TypeLoading
         }
 
         protected abstract Type ComputeFieldType();
-        private volatile Type? _lazyFieldType;
-        protected volatile RoModifiedType? _modifiedType;
+        private Type? _lazyFieldType;
+        protected RoModifiedType? _modifiedType;
 
         public sealed override object? GetRawConstantValue() => IsLiteral ? ComputeRawConstantValue() : throw new InvalidOperationException();
         protected abstract object? ComputeRawConstantValue();
