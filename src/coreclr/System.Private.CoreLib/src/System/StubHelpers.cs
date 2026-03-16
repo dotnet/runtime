@@ -1456,55 +1456,29 @@ namespace System.StubHelpers
                 // Nothing to do for blittable types.
             }
 
-            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToUnmanaged
-            {
-                get
-                {
-                    try
-                    {
-                        return _convertToUnmanaged;
-                    }
-                    catch (TypeInitializationException ex)
-                    {
-                        throw ex.InnerException!;
-                    }
-                }
-            }
+            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToUnmanaged => _convertToUnmanaged;
 
-            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged
-            {
-                get
-                {
-                    try
-                    {
-                        return _convertToManaged;
-                    }
-                    catch (TypeInitializationException ex)
-                    {
-                        throw ex.InnerException!;
-                    }
-                }
-            }
+            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged => _convertToManaged;
 
-            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free
-            {
-                get
-                {
-                    try
-                    {
-                        return _free;
-                    }
-                    catch (TypeInitializationException ex)
-                    {
-                        throw ex.InnerException!;
-                    }
-                }
-            }
+            internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free => _free;
         }
 
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            Methods.ConvertToUnmanaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+            try
+            {
+                CallConvertToUnmanaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);;
+            }
+            catch (TypeInitializationException ex)
+            {
+                throw ex.InnerException!;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CallConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                Methods.ConvertToUnmanaged(ref managed, unmanaged, ref cleanupWorkList);
+            }
         }
 
         public static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
@@ -1525,18 +1499,44 @@ namespace System.StubHelpers
 
         public static void ConvertToManaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            Methods.ConvertToManaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+            try
+            {
+                CallConvertToManaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);;
+            }
+            catch (TypeInitializationException ex)
+            {
+                throw ex.InnerException!;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CallConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                Methods.ConvertToManaged(ref managed, unmanaged, ref cleanupWorkList);
+            }
         }
 
         private static void FreeCore(T? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            if (managed is null)
+            try
             {
-                Methods.Free(ref Unsafe.NullRef<byte>(), unmanaged, ref cleanupWorkList);
+                CallFree(managed, unmanaged, ref cleanupWorkList);;
             }
-            else
+            catch (TypeInitializationException ex)
             {
-                Methods.Free(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+                throw ex.InnerException!;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void CallFree(T? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+            {
+                if (managed is null)
+                {
+                    Methods.Free(ref Unsafe.NullRef<byte>(), unmanaged, ref cleanupWorkList);
+                }
+                else
+                {
+                    Methods.Free(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+                }
             }
         }
 
