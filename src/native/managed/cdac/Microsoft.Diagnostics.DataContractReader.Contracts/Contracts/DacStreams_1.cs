@@ -29,6 +29,8 @@ internal sealed class DacStreams_1 : IDacStreams
         _target = target;
     }
 
+    public void Flush() { }
+
     public string? StringFromEEAddress(TargetPointer address)
     {
         // We use the data subsystem to handle caching results from processing this data

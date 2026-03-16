@@ -20,6 +20,8 @@ internal readonly struct StackWalk_1 : IStackWalk
         _target = target;
     }
 
+    public void Flush() { }
+
     public enum StackWalkState
     {
         SW_COMPLETE,

@@ -14,6 +14,8 @@ internal readonly struct Notifications_1 : INotifications
         _target = target;
     }
 
+    public void Flush() { }
+
     void INotifications.SetGcNotification(int condemnedGeneration)
     {
         TargetPointer pGcNotificationFlags = _target.ReadGlobalPointer(Constants.Globals.GcNotificationFlags);

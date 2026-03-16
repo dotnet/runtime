@@ -42,6 +42,8 @@ internal readonly struct Loader_1 : ILoader
         _target = target;
     }
 
+    public void Flush() { }
+
     ModuleHandle ILoader.GetModuleHandleFromModulePtr(TargetPointer modulePointer)
     {
         if (modulePointer == TargetPointer.Null)

@@ -15,6 +15,8 @@ internal readonly partial struct SHash_1 : ISHash
         _target = target;
     }
 
+    public void Flush() { }
+
     private class SHash<TKey, TEntry> : ISHash<TKey, TEntry> where TEntry : IData<TEntry>
     {
         public TargetPointer Table { get; set; }

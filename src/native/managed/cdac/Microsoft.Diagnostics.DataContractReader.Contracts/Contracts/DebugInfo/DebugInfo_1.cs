@@ -12,6 +12,8 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
 {
     private const uint DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS = 0xFFFFFFFF;
 
+    public void Flush() { }
+
     [Flags]
     internal enum ExtraDebugInfoFlags_1 : byte
     {

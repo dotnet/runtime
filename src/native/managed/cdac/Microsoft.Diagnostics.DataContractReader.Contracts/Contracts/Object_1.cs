@@ -24,6 +24,8 @@ internal readonly struct Object_1 : IObject
         _syncTableEntries = syncTableEntries;
     }
 
+    public void Flush() { }
+
     public TargetPointer GetMethodTableAddress(TargetPointer address)
     {
         TargetPointer mt = _target.ReadPointer(address + _methodTableOffset);

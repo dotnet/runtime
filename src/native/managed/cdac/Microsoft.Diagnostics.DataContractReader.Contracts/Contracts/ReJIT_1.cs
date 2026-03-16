@@ -36,6 +36,8 @@ internal readonly partial struct ReJIT_1 : IReJIT
         _profControlBlock = profControlBlock;
     }
 
+    public void Flush() { }
+
     bool IReJIT.IsEnabled()
     {
         bool profEnabledReJIT = (_profControlBlock.GlobalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
