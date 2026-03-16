@@ -61,6 +61,32 @@ extern "C" void SystemInteropJS_BindAssemblyExports(void * arg0)
     Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid(arg0);
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
+{
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.CompilerServices.InitHelpers, System.Private.CoreLib", "CallClassConstructor", &MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
+{
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.CompilerServices.RuntimeHelpers, System.Private.CoreLib", "CallDefaultConstructor", &MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid(void * arg0)
 {
@@ -771,6 +797,8 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 3863938719, "<RegisterNoGCRegionCallback>g__Callback|72_0#1:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid } },
     { 1336557534, "BackgroundJobHandler#0:System.Private.CoreLib:System.Threading:ThreadPool", { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid } },
     { 2901966433, "BindAssemblyExports#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid } },
+    { 1361004804, "CallClassConstructor#3:System.Private.CoreLib:System.Runtime.CompilerServices:InitHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid } },
+    { 3858976135, "CallDefaultConstructor#3:System.Private.CoreLib:System.Runtime.CompilerServices:RuntimeHelpers", { &MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid } },
     { 2601830388, "CallDelegate#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid } },
     { 433365813, "CallJSExport#2:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid } },
     { 1821934012, "CallStartupHook#2:System.Private.CoreLib:System:StartupHookProvider", { &MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid } },

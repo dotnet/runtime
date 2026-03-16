@@ -584,6 +584,25 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
 }
 
+public struct DacpRCWData
+{
+    public ClrDataAddress identityPointer;
+    public ClrDataAddress unknownPointer;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress jupiterObject;
+    public ClrDataAddress vtablePtr;
+    public ClrDataAddress creatorThread;
+    public ClrDataAddress ctxCookie;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isJupiterObject;
+    public Interop.BOOL supportsIInspectable;
+    public Interop.BOOL isAggregated;
+    public Interop.BOOL isContained;
+    public Interop.BOOL isFreeThreaded;
+    public Interop.BOOL isDisconnected;
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 public unsafe partial interface ISOSDacInterface
@@ -781,7 +800,7 @@ public unsafe partial interface ISOSDacInterface
 
     // COM
     [PreserveSig]
-    int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
+    int GetRCWData(ClrDataAddress addr, DacpRCWData* data);
     [PreserveSig]
     int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]

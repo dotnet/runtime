@@ -222,6 +222,12 @@ inline BOOL PEImage::IsReferenceAssembly()
 }
 
 
+inline BOOL PEImage::HasHeaders()
+{
+    WRAPPER_NO_CONTRACT;
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasHeaders();
+}
+
 inline BOOL PEImage::HasNTHeaders()
 {
     WRAPPER_NO_CONTRACT;

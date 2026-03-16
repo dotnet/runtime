@@ -1421,10 +1421,17 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	pair.is_virtual = is_virtual;
 
 	if (method) {
-		mm_class = m_class_get_mem_manager (klass);
-		mm_method = m_method_get_mem_manager (method);
-		mm = mono_mem_manager_merge (mm_class, mm_method);
-		jit_mm = (MonoJitMemoryManager*)mm->runtime_info;
+		if (method->dynamic) {
+			/* For dynamic methods, use jit_mm_for_method consistently so that
+			 * mono_jit_free_method (which also uses jit_mm_for_method) cleans up
+			 * from the same delegate_info_hash where we insert. */
+			jit_mm = jit_mm_for_method (method);
+		} else {
+			mm_class = m_class_get_mem_manager (klass);
+			mm_method = m_method_get_mem_manager (method);
+			mm = mono_mem_manager_merge (mm_class, mm_method);
+			jit_mm = (MonoJitMemoryManager*)mm->runtime_info;
+		}
 	} else {
 		jit_mm = jit_mm_for_class (klass);
 	}
@@ -1482,18 +1489,18 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	/* store trampoline address */
 	jit_mm_lock (jit_mm);
 	g_hash_table_insert (jit_mm->delegate_info_hash, dpair, tramp_info);
-	jit_mm_unlock (jit_mm);
 
 	if (method && method->dynamic) {
-		jit_mm = jit_mm_for_method (method);
-		jit_mm_lock (jit_mm);
+		/* Insert into dyn_delegate_info_hash under the same lock to avoid a
+		 * window where the dpair is in delegate_info_hash but not yet tracked
+		 * in dyn_delegate_info_hash (which mono_jit_free_method iterates). */
 		if (!jit_mm->dyn_delegate_info_hash)
 			jit_mm->dyn_delegate_info_hash = g_hash_table_new (NULL, NULL);
 		GSList *l = g_hash_table_lookup (jit_mm->dyn_delegate_info_hash, method);
 		l = g_slist_prepend (l, dpair);
 		g_hash_table_insert (jit_mm->dyn_delegate_info_hash, method, l);
-		jit_mm_unlock (jit_mm);
 	}
+	jit_mm_unlock (jit_mm);
 
 	return tramp_info;
 }
