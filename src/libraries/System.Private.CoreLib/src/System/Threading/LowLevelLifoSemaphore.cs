@@ -17,7 +17,7 @@ namespace System.Threading
     {
         // Spinning in the threadpool semaphore is not always useful and benefits vary greatly by scenario.
         //
-        // Example1: An app periodically with rough time span T runs a task and waits for task`s completion.
+        // Example1: An app periodically with rough time span T runs a task and waits for task's completion.
         //           The app would benefit if a threadpool worker spins for longer than T as worker would not need to be woken up.
         //
         // Example2: The new workitems may be produced by non-pool threads and could only arrive if pool threads start blocking.
