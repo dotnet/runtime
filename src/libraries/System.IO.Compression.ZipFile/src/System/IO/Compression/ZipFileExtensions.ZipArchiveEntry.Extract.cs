@@ -113,6 +113,8 @@ namespace System.IO.Compression
             long preallocationSize = 0;
             try
             {
+                // .Length can throw if the entry stream has been opened for write.
+                // In that case, we fallback to 0 (no preallocation)
                 preallocationSize = source.Length;
             }
             catch (InvalidOperationException) { }
