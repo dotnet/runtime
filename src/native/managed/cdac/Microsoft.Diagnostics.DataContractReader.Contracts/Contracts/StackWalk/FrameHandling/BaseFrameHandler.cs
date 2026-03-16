@@ -86,7 +86,7 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     {
         foreach ((string name, TargetNUInt value) in registers)
         {
-            if (!_context.TrySetRegister(_target, name, value))
+            if (!_context.TrySetRegister(name, value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} found when trying to update context");
             }
@@ -97,11 +97,11 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
     {
         foreach (string name in _target.GetTypeInfo(DataType.CalleeSavedRegisters).Fields.Keys)
         {
-            if (!otherContext.TryReadRegister(_target, name, out TargetNUInt value))
+            if (!otherContext.TryReadRegister(name, out TargetNUInt value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
-            if (!_context.TrySetRegister(_target, name, value))
+            if (!_context.TrySetRegister(name, value))
             {
                 throw new InvalidOperationException($"Unexpected register {name} in callee saved registers");
             }
