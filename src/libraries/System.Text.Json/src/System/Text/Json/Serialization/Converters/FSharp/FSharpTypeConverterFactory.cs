@@ -89,6 +89,16 @@ namespace System.Text.Json.Serialization.Converters
                 .GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false)?.TypeDiscriminatorPropertyName
                 ?? JsonSerializer.TypePropertyName;
 
+            // Validate the discriminator property name doesn't conflict with reserved metadata properties ($id, $ref, $values).
+            if (!typeDiscriminatorPropertyName.Equals(JsonSerializer.TypePropertyName, StringComparison.Ordinal))
+            {
+                byte[] utf8EncodedName = System.Text.Encoding.UTF8.GetBytes(typeDiscriminatorPropertyName);
+                if ((JsonSerializer.GetMetadataPropertyName(utf8EncodedName, resolver: null) & ~MetadataPropertyName.Type) != 0)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName();
+                }
+            }
+
 #pragma warning disable IL2055 // MakeGenericType - the ctor is marked RequiresUnreferencedCode.
             Type converterType = typeof(FSharpUnionConverter<>).MakeGenericType(typeToConvert);
 #pragma warning restore IL2055

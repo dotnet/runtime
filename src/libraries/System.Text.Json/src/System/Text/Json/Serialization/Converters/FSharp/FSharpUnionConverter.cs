@@ -78,10 +78,21 @@ namespace System.Text.Json.Serialization.Converters
                     for (int i = 0; i < uc.Fields.Length; i++)
                     {
                         PropertyInfo prop = uc.Fields[i];
-                        string fieldName = namingPolicy?.ConvertName(prop.Name) ?? prop.Name;
+                        string fieldName = prop.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name
+                            ?? namingPolicy?.ConvertName(prop.Name)
+                            ?? prop.Name;
                         JsonEncodedText encodedFieldName = JsonEncodedText.Encode(fieldName, options.Encoder);
 
                         fields[i] = new CaseFieldInfo(fieldName, encodedFieldName, prop.PropertyType, options);
+                    }
+
+                    // Validate that no field name conflicts with the discriminator property name.
+                    for (int i = 0; i < fields.Length; i++)
+                    {
+                        if (fields[i].FieldName.Equals(typeDiscriminatorPropertyName, StringComparison.Ordinal))
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.FSharpUnionFieldConflictsWithDiscriminator, typeof(T), fields[i].FieldName, typeDiscriminatorPropertyName));
+                        }
                     }
                 }
 
@@ -110,8 +121,8 @@ namespace System.Text.Json.Serialization.Converters
                     uc.IsFieldless,
                     fields,
                     defaultFieldValues,
-                    fields is not null ? BuildFieldIndexMap(fields, StringComparer.Ordinal) : null,
-                    fields is not null && options.PropertyNameCaseInsensitive ? BuildFieldIndexMap(fields, StringComparer.OrdinalIgnoreCase) : null,
+                    fields is not null ? BuildFieldIndexMap(fields, StringComparer.Ordinal, typeof(T), discriminatorName) : null,
+                    fields is not null && options.PropertyNameCaseInsensitive ? BuildFieldIndexMap(fields, StringComparer.OrdinalIgnoreCase, typeof(T), discriminatorName) : null,
                     uc.FieldReader,
                     uc.Constructor,
                     typeof(T));
@@ -123,7 +134,10 @@ namespace System.Text.Json.Serialization.Converters
                     throw new InvalidOperationException(SR.Format(SR.FSharpUnionDuplicateCaseName, typeof(T), discriminatorName));
                 }
 
-                caseInsensitiveMap?.TryAdd(discriminatorName, caseInfo);
+                if (caseInsensitiveMap is not null && !caseInsensitiveMap.TryAdd(discriminatorName, caseInfo))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.FSharpUnionDuplicateCaseName, typeof(T), discriminatorName));
+                }
             }
 
             _casesByNameCaseInsensitive = caseInsensitiveMap;
@@ -195,6 +209,11 @@ namespace System.Text.Json.Serialization.Converters
             {
                 // Fast path: discriminator is the first property.
                 reader.Read();
+                if (reader.TokenType != JsonTokenType.String)
+                {
+                    ThrowHelper.ThrowJsonException();
+                }
+
                 string? caseName = reader.GetString();
                 if (caseName is null)
                 {
@@ -230,6 +249,11 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (isDiscriminator)
                     {
+                        if (reader.TokenType != JsonTokenType.String)
+                        {
+                            ThrowHelper.ThrowJsonException();
+                        }
+
                         caseName = reader.GetString();
                         break;
                     }
@@ -420,12 +444,15 @@ namespace System.Text.Json.Serialization.Converters
             return false;
         }
 
-        private static Dictionary<string, int> BuildFieldIndexMap(CaseFieldInfo[] fields, StringComparer comparer)
+        private static Dictionary<string, int> BuildFieldIndexMap(CaseFieldInfo[] fields, StringComparer comparer, Type declaringType, string caseName)
         {
             var map = new Dictionary<string, int>(fields.Length, comparer);
             for (int i = 0; i < fields.Length; i++)
             {
-                map.TryAdd(fields[i].FieldName, i);
+                if (!map.TryAdd(fields[i].FieldName, i))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.FSharpUnionDuplicateFieldName, declaringType, caseName, fields[i].FieldName));
+                }
             }
 
             return map;

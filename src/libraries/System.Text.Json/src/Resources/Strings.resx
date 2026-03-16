@@ -641,6 +641,12 @@
   <data name="FSharpUnionDuplicateCaseName" xml:space="preserve">
     <value>The F# discriminated union type '{0}' has duplicate case discriminator name '{1}'.</value>
   </data>
+  <data name="FSharpUnionDuplicateFieldName" xml:space="preserve">
+    <value>The F# discriminated union type '{0}' case '{1}' has duplicate field name '{2}'.</value>
+  </data>
+  <data name="FSharpUnionFieldConflictsWithDiscriminator" xml:space="preserve">
+    <value>The F# discriminated union type '{0}' has a case field name '{1}' that conflicts with the type discriminator property name '{2}'.</value>
+  </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
   </data>
