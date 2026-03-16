@@ -1419,19 +1419,23 @@ namespace System.StubHelpers
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _free;
 
 #pragma warning disable CA1810 // Static constructor is required to initialize with the out parameters
+            private static readonly nuint s_nativeSize;
+
             static Methods()
             {
                 RuntimeTypeHandle th = typeof(T).TypeHandle;
-                bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int _);
+                bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int nativeSize);
                 Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
                 if (isBlittable)
                 {
+                    s_nativeSize = (nuint)nativeSize;
                     _convertToUnmanaged = &BlittableConvertToUnmanaged;
                     _convertToManaged = &BlittableConvertToManaged;
                     _free = &BlittableFree;
                 }
                 else
                 {
+                    s_nativeSize = 0;
                     StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
                 }
             }
@@ -1439,12 +1443,12 @@ namespace System.StubHelpers
 
             private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref *unmanaged, ref managed, (nuint)sizeof(T));
+                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_nativeSize);
             }
 
             private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref managed, ref *unmanaged, (nuint)sizeof(T));
+                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_nativeSize);
             }
 
             private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
