@@ -239,51 +239,53 @@ signature that contains the information required to fill the corresponding slot.
 builds upon the encoding used for signatures in ECMA-335. The first element of the signature describes the
 fixup kind, the rest of the signature varies based on the fixup kind.
 
-| ReadyToRunFixupKind                      | Value | Description
-|:-----------------------------------------|------:|:-----------
-| READYTORUN_FIXUP_ThisObjDictionaryLookup |  0x07 | Generic lookup using `this`; followed by the type signature and by the method signature
-| READYTORUN_FIXUP_TypeDictionaryLookup    |  0x08 | Type-based generic lookup for methods on instantiated types; followed by the typespec signature
-| READYTORUN_FIXUP_MethodDictionaryLookup  |  0x09 | Generic method lookup; followed by the method spec signature
-| READYTORUN_FIXUP_TypeHandle              |  0x10 | Pointer uniquely identifying the type to the runtime, followed by typespec signature (see ECMA-335)
-| READYTORUN_FIXUP_MethodHandle            |  0x11 | Pointer uniquely identifying the method to the runtime, followed by method signature (see below)
-| READYTORUN_FIXUP_FieldHandle             |  0x12 | Pointer uniquely identifying the field to the runtime, followed by field signature (see below)
-| READYTORUN_FIXUP_MethodEntry             |  0x13 | Method entrypoint or call, followed by method signature
-| READYTORUN_FIXUP_MethodEntry_DefToken    |  0x14 | Method entrypoint or call, followed by methoddef token (shortcut)
-| READYTORUN_FIXUP_MethodEntry_RefToken    |  0x15 | Method entrypoint or call, followed by methodref token (shortcut)
-| READYTORUN_FIXUP_VirtualEntry            |  0x16 | Virtual method entrypoint or call, followed by method signature
-| READYTORUN_FIXUP_VirtualEntry_DefToken   |  0x17 | Virtual method entrypoint or call, followed by methoddef token (shortcut)
-| READYTORUN_FIXUP_VirtualEntry_RefToken   |  0x18 | Virtual method entrypoint or call, followed by methodref token (shortcut)
-| READYTORUN_FIXUP_VirtualEntry_Slot       |  0x19 | Virtual method entrypoint or call, followed by typespec signature and slot
-| READYTORUN_FIXUP_Helper                  |  0x1A | Helper call, followed by helper call id (see chapter 4 Helper calls)
-| READYTORUN_FIXUP_StringHandle            |  0x1B | String handle, followed by metadata string token
-| READYTORUN_FIXUP_NewObject               |  0x1C | New object helper, followed by typespec  signature
-| READYTORUN_FIXUP_NewArray                |  0x1D | New array helper, followed by typespec signature
-| READYTORUN_FIXUP_IsInstanceOf            |  0x1E | isinst helper, followed by typespec signature
-| READYTORUN_FIXUP_ChkCast                 |  0x1F | chkcast helper, followed by typespec signature
-| READYTORUN_FIXUP_FieldAddress            |  0x20 | Field address, followed by field signature
-| READYTORUN_FIXUP_CctorTrigger            |  0x21 | Static constructor trigger, followed by typespec signature
-| READYTORUN_FIXUP_StaticBaseNonGC         |  0x22 | Non-GC static base, followed by typespec signature
-| READYTORUN_FIXUP_StaticBaseGC            |  0x23 | GC static base, followed by typespec signature
-| READYTORUN_FIXUP_ThreadStaticBaseNonGC   |  0x24 | Non-GC thread-local static base, followed by typespec signature
-| READYTORUN_FIXUP_ThreadStaticBaseGC      |  0x25 | GC thread-local static base, followed by typespec signature
-| READYTORUN_FIXUP_FieldBaseOffset         |  0x26 | Starting offset of fields for given type, followed by typespec signature. Used to address base class fragility.
-| READYTORUN_FIXUP_FieldOffset             |  0x27 | Field offset, followed by field signature
-| READYTORUN_FIXUP_TypeDictionary          |  0x28 | Hidden dictionary argument for generic code, followed by typespec signature
-| READYTORUN_FIXUP_MethodDictionary        |  0x29 | Hidden dictionary argument for generic code, followed by method signature
-| READYTORUN_FIXUP_Check_TypeLayout        |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
-| READYTORUN_FIXUP_Check_FieldOffset       |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
-| READYTORUN_FIXUP_DelegateCtor            |  0x2C | Delegate constructor, followed by method signature
-| READYTORUN_FIXUP_DeclaringTypeHandle     |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
-| READYTORUN_FIXUP_IndirectPInvokeTarget   |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
-| READYTORUN_FIXUP_PInvokeTarget           |  0x2F | Target of an inlined PInvoke. Followed by method signature.
-| READYTORUN_FIXUP_Check_InstructionSetSupport | 0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
-| READYTORUN_FIXUP_Verify_FieldOffset      | 0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
-| READYTORUN_FIXUP_Verify_TypeLayout       | 0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
-| READYTORUN_FIXUP_Check_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
-| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x34 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
-| READYTORUN_FIXUP_Check_IL_Body           |  0x35 | Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. See[IL Body signatures](il-body-signatures) for details.
-| READYTORUN_FIXUP_Verify_IL_Body          |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
-| READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
+| ReadyToRunFixupKind                             | Value | Description
+|:------------------------------------------------|------:|:-----------
+| READYTORUN_FIXUP_ThisObjDictionaryLookup        |  0x07 | Generic lookup using `this`; followed by the type signature and by the method signature
+| READYTORUN_FIXUP_TypeDictionaryLookup           |  0x08 | Type-based generic lookup for methods on instantiated types; followed by the typespec signature
+| READYTORUN_FIXUP_MethodDictionaryLookup         |  0x09 | Generic method lookup; followed by the method spec signature
+| READYTORUN_FIXUP_TypeHandle                     |  0x10 | Pointer uniquely identifying the type to the runtime, followed by typespec signature (see ECMA-335)
+| READYTORUN_FIXUP_MethodHandle                   |  0x11 | Pointer uniquely identifying the method to the runtime, followed by method signature (see below)
+| READYTORUN_FIXUP_FieldHandle                    |  0x12 | Pointer uniquely identifying the field to the runtime, followed by field signature (see below)
+| READYTORUN_FIXUP_MethodEntry                    |  0x13 | Method entrypoint or call, followed by method signature
+| READYTORUN_FIXUP_MethodEntry_DefToken           |  0x14 | Method entrypoint or call, followed by methoddef token (shortcut)
+| READYTORUN_FIXUP_MethodEntry_RefToken           |  0x15 | Method entrypoint or call, followed by methodref token (shortcut)
+| READYTORUN_FIXUP_VirtualEntry                   |  0x16 | Virtual method entrypoint or call, followed by method signature
+| READYTORUN_FIXUP_VirtualEntry_DefToken          |  0x17 | Virtual method entrypoint or call, followed by methoddef token (shortcut)
+| READYTORUN_FIXUP_VirtualEntry_RefToken          |  0x18 | Virtual method entrypoint or call, followed by methodref token (shortcut)
+| READYTORUN_FIXUP_VirtualEntry_Slot              |  0x19 | Virtual method entrypoint or call, followed by typespec signature and slot
+| READYTORUN_FIXUP_Helper                         |  0x1A | Helper call, followed by helper call id (see chapter 4 Helper calls)
+| READYTORUN_FIXUP_StringHandle                   |  0x1B | String handle, followed by metadata string token
+| READYTORUN_FIXUP_NewObject                      |  0x1C | New object helper, followed by typespec  signature
+| READYTORUN_FIXUP_NewArray                       |  0x1D | New array helper, followed by typespec signature
+| READYTORUN_FIXUP_IsInstanceOf                   |  0x1E | isinst helper, followed by typespec signature
+| READYTORUN_FIXUP_ChkCast                        |  0x1F | chkcast helper, followed by typespec signature
+| READYTORUN_FIXUP_FieldAddress                   |  0x20 | Field address, followed by field signature
+| READYTORUN_FIXUP_CctorTrigger                   |  0x21 | Static constructor trigger, followed by typespec signature
+| READYTORUN_FIXUP_StaticBaseNonGC                |  0x22 | Non-GC static base, followed by typespec signature
+| READYTORUN_FIXUP_StaticBaseGC                   |  0x23 | GC static base, followed by typespec signature
+| READYTORUN_FIXUP_ThreadStaticBaseNonGC          |  0x24 | Non-GC thread-local static base, followed by typespec signature
+| READYTORUN_FIXUP_ThreadStaticBaseGC             |  0x25 | GC thread-local static base, followed by typespec signature
+| READYTORUN_FIXUP_FieldBaseOffset                |  0x26 | Starting offset of fields for given type, followed by typespec signature. Used to address base class fragility.
+| READYTORUN_FIXUP_FieldOffset                    |  0x27 | Field offset, followed by field signature
+| READYTORUN_FIXUP_TypeDictionary                 |  0x28 | Hidden dictionary argument for generic code, followed by typespec signature
+| READYTORUN_FIXUP_MethodDictionary               |  0x29 | Hidden dictionary argument for generic code, followed by method signature
+| READYTORUN_FIXUP_Check_TypeLayout               |  0x2A | Verification of type layout, followed by typespec and expected type layout descriptor
+| READYTORUN_FIXUP_Check_FieldOffset              |  0x2B | Verification of field offset, followed by field signature and expected field layout descriptor
+| READYTORUN_FIXUP_DelegateCtor                   |  0x2C | Delegate constructor, followed by method signature
+| READYTORUN_FIXUP_DeclaringTypeHandle            |  0x2D | Dictionary lookup for method declaring type. Followed by the type signature.
+| READYTORUN_FIXUP_IndirectPInvokeTarget          |  0x2E | Target (indirect) of an inlined PInvoke. Followed by method signature.
+| READYTORUN_FIXUP_PInvokeTarget                  |  0x2F | Target of an inlined PInvoke. Followed by method signature.
+| READYTORUN_FIXUP_Check_InstructionSetSupport    |  0x30 | Specify the instruction sets that must be supported/unsupported to use the R2R code associated with the fixup.
+| READYTORUN_FIXUP_Verify_FieldOffset             |  0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Verify_TypeLayout              |  0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
+| READYTORUN_FIXUP_Check_VirtualFunctionOverride  |  0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Verify_VirtualFunctionOverride |  0x34 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Check_IL_Body                  |  0x35 | Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. See[IL Body signatures](il-body-signatures) for details.
+| READYTORUN_FIXUP_Verify_IL_Body                 |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
+| READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
+| READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
+| READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
 
@@ -301,6 +303,7 @@ token, and additional data determined by the flags.
 | READYTORUN_METHOD_SIG_Constrained         |  0x20 | Constrained type for method resolution. Typespec appended as additional data.
 | READYTORUN_METHOD_SIG_OwnerType           |  0x40 | Method type. Typespec appended as additional data.
 | READYTORUN_METHOD_SIG_UpdateContext       |  0x80 | If set, update the module which is used to parse tokens before performing any token processing. A uint index into the modules table immediately follows the flags
+| READYTORUN_METHOD_SIG_AsyncVariant        | 0x100 | If set, the method signature refers to the runtime-async variant of the method.
 
 #### Field Signatures
 

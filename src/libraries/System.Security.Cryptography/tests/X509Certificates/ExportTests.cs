@@ -939,8 +939,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(Pkcs7Data, pfxAsn.AuthSafe.ContentType);
             byte[] safeContents = AsnDecoder.ReadOctetString(pfxAsn.AuthSafe.Content.Span, AsnEncodingRules.BER, out _);
 
-            AsnValueReader authSafeReader = new AsnValueReader(safeContents, AsnEncodingRules.BER);
-            AsnValueReader sequenceReader = authSafeReader.ReadSequence();
+            ValueAsnReader authSafeReader = new ValueAsnReader(safeContents, AsnEncodingRules.BER);
+            ValueAsnReader sequenceReader = authSafeReader.ReadSequence();
             authSafeReader.ThrowIfNotEmpty();
 
             int certs = 0;

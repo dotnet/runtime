@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -16,17 +17,84 @@ namespace Microsoft.Win32.SafeHandles
         private long _length = -1; // negative means that hasn't been fetched.
         private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
         private volatile FileOptions _fileOptions = (FileOptions)(-1);
-        private volatile int _fileType = -1;
 
         public SafeFileHandle() : base(true)
         {
+        }
+
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        {
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            SafeFileHandle? tempReadHandle;
+            SafeFileHandle? tempWriteHandle;
+
+            // When neither end is async, use the simple CreatePipe API
+            if (!asyncRead && !asyncWrite)
+            {
+                bool ret = Interop.Kernel32.CreatePipe(out tempReadHandle, out tempWriteHandle, ref securityAttributes, 0);
+                if (!ret)
+                {
+                    throw new Win32Exception();
+                }
+
+                Debug.Assert(!tempReadHandle.IsInvalid);
+                Debug.Assert(!tempWriteHandle.IsInvalid);
+
+                tempReadHandle._fileOptions = FileOptions.None;
+                tempWriteHandle._fileOptions = FileOptions.None;
+            }
+            else
+            {
+                // When one or both ends are async, use named pipes to support async I/O.
+                string pipeName = $@"\\.\pipe\dotnet_{Guid.NewGuid():N}";
+
+                // Security: we don't need to specify a security descriptor, because
+                // we allow only for 1 instance of the pipe and immediately open the write end,
+                // so there is no time window for another process to open the pipe with different permissions.
+                // Even if that happens, we are going to fail to open the write end and throw an exception, so there is no security risk.
+
+                // Determine the open mode for the read end
+                int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_INBOUND |
+                               Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE; // Only one can be created with this name
+
+                if (asyncRead)
+                {
+                    openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED; // Asynchronous I/O
+                }
+
+                const int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
+
+                // We could consider specifying a larger buffer size.
+                tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(pipeName, openMode, pipeMode, 1, 0, 0, 0, ref securityAttributes);
+
+                try
+                {
+                    if (tempReadHandle.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    tempReadHandle._fileOptions = asyncRead ? FileOptions.Asynchronous : FileOptions.None;
+                    FileOptions writeOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
+                    tempWriteHandle = Open(pipeName, FileMode.Open, FileAccess.Write, FileShare.Read, writeOptions, preallocationSize: 0);
+                }
+                catch
+                {
+                    tempReadHandle.Dispose();
+
+                    throw;
+                }
+            }
+
+            readHandle = tempReadHandle;
+            writeHandle = tempWriteHandle;
         }
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
         internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+        internal bool CanSeek => !IsClosed && Type == FileHandleType.RegularFile;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -254,20 +322,66 @@ namespace Microsoft.Win32.SafeHandles
             return _fileOptions = result;
         }
 
-        internal int GetFileType()
+        internal FileHandleType GetFileTypeCore()
         {
-            int fileType = _fileType;
-            if (fileType == -1)
+            int kernelFileType = Interop.Kernel32.GetFileType(this);
+            return kernelFileType switch
             {
-                _fileType = fileType = Interop.Kernel32.GetFileType(this);
+                Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => FileHandleType.CharacterDevice,
+                Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
+                Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
+                _ => FileHandleType.Unknown
+            };
+        }
 
-                Debug.Assert(fileType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
-                    || fileType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
-                    || fileType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
-                    $"Unknown file type: {fileType}");
+        private unsafe FileHandleType GetPipeOrSocketType()
+        {
+            // When GetFileType returns FILE_TYPE_PIPE, the handle can be either a pipe or a socket.
+            // Use GetNamedPipeInfo to determine if it's a pipe.
+            uint flags;
+            if (Interop.Kernel32.GetNamedPipeInfo(this, &flags, null, null, null))
+            {
+                return FileHandleType.Pipe;
             }
 
-            return fileType;
+            int error = Marshal.GetLastPInvokeError();
+            return error switch
+            {
+                Interop.Errors.ERROR_PIPE_NOT_CONNECTED => FileHandleType.Pipe,
+                Interop.Errors.ERROR_INVALID_FUNCTION => FileHandleType.Socket,
+                _ => throw Win32Marshal.GetExceptionForWin32Error(error, Path)
+            };
+        }
+
+        private unsafe FileHandleType GetDiskBasedType()
+        {
+            // First check if it's a directory using GetFileInformationByHandle
+            if (Interop.Kernel32.GetFileInformationByHandle(this, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo))
+            {
+                if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0)
+                {
+                    return FileHandleType.Directory;
+                }
+
+                // Check if it's a reparse point - only symlinks should return SymbolicLink
+                if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                {
+                    // Check the reparse tag to distinguish symlinks from other reparse points (junctions, mount points, etc.)
+                    Interop.Kernel32.FILE_ATTRIBUTE_TAG_INFO tagInfo;
+                    if (Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileAttributeTagInfo, &tagInfo, (uint)sizeof(Interop.Kernel32.FILE_ATTRIBUTE_TAG_INFO)))
+                    {
+                        if (tagInfo.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
+                        {
+                            return FileHandleType.SymbolicLink;
+                        }
+                    }
+
+                    // Other reparse points (junctions, mount points, etc.) are not recognized as of now
+                    return FileHandleType.Unknown;
+                }
+            }
+
+            return FileHandleType.RegularFile;
         }
 
         internal long GetFileLength()

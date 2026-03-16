@@ -59,24 +59,24 @@ namespace System.IO.Hashing
             return table;
         }
 
-        private sealed class ReflectedTableBasedCrc64 : Crc64ParameterSet
+        private sealed class ReflectedTableBasedCrc64 : ReflectedCrc64
         {
             private readonly ulong[] _lookupTable;
 
             internal ReflectedTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
-                : base(polynomial, initialValue, finalXorValue, reflectValues: true)
+                : base(polynomial, initialValue, finalXorValue)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
             }
 
-            internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
+            protected override ulong UpdateScalar(ulong value, ReadOnlySpan<byte> source)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
 
                 Debug.Assert(lookupTable.Length == 256);
 
-                foreach (byte dataByte in data)
+                foreach (byte dataByte in source)
                 {
                     byte idx = (byte)(crc ^ dataByte);
                     crc = lookupTable[idx] ^ (crc >> 8);
@@ -86,17 +86,17 @@ namespace System.IO.Hashing
             }
         }
 
-        private sealed class ForwardTableBasedCrc64 : Crc64ParameterSet
+        private sealed class ForwardTableBasedCrc64 : ForwardCrc64
         {
             private readonly ulong[] _lookupTable;
 
             internal ForwardTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
-                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
+                : base(polynomial, initialValue, finalXorValue)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
             }
 
-            internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
+            protected override ulong UpdateScalar(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
