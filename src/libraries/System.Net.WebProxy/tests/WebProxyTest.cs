@@ -264,6 +264,122 @@ namespace System.Net.Tests
             Assert.False(new WebProxy("microsoft", BypassOnLocal: false).IsBypassed(new Uri($"http://{IPAddress.Loopback}")));
         }
 
+        [Theory]
+        [InlineData("http://user:pass@host", "user", "pass")]
+        [InlineData("http://user:pass@host:8080", "user", "pass")]
+        [InlineData("socks5://user:pass@host:1080", "user", "pass")]
+        [InlineData("socks5h://user:pass@host:1080", "user", "pass")]
+        [InlineData("http://user@host", "user", "")]
+        [InlineData("http://user%40name:p%40ss@host", "user@name", "p@ss")]
+        [InlineData("http://user%3Aname:p%3Ass@host", "user:name", "p:ss")]
+        [InlineData("http://user:p%25ss@host", "user", "p%ss")]
+        public static void WebProxy_Ctor_CredentialsExtractedFromStringUri(string address, string expectedUser, string expectedPassword)
+        {
+            var proxy = new WebProxy(address);
+
+            Assert.NotNull(proxy.Credentials);
+            NetworkCredential credential = Assert.IsType<NetworkCredential>(proxy.Credentials);
+            Assert.Equal(expectedUser, credential.UserName);
+            Assert.Equal(expectedPassword, credential.Password);
+        }
+
+        [Theory]
+        [InlineData("http://user:pass@host", "user", "pass")]
+        [InlineData("socks5://user:pass@host:1080", "user", "pass")]
+        [InlineData("http://user@host", "user", "")]
+        public static void WebProxy_Ctor_CredentialsExtractedFromUriObject(string address, string expectedUser, string expectedPassword)
+        {
+            var proxy = new WebProxy(new Uri(address));
+
+            Assert.NotNull(proxy.Credentials);
+            NetworkCredential credential = Assert.IsType<NetworkCredential>(proxy.Credentials);
+            Assert.Equal(expectedUser, credential.UserName);
+            Assert.Equal(expectedPassword, credential.Password);
+        }
+
+        [Theory]
+        [InlineData("http://host")]
+        [InlineData("http://host:8080")]
+        [InlineData("socks5://host:1080")]
+        public static void WebProxy_Ctor_NoCredentialsInUri_CredentialsNull(string address)
+        {
+            var proxy = new WebProxy(address);
+            Assert.Null(proxy.Credentials);
+        }
+
+        [Fact]
+        public static void WebProxy_Ctor_ExplicitCredentialsTakePrecedence()
+        {
+            var explicitCreds = new NetworkCredential("explicit", "creds");
+            var proxy = new WebProxy(new Uri("http://user:pass@host"), false, null, explicitCreds);
+
+            Assert.Same(explicitCreds, proxy.Credentials);
+        }
+
+        [Fact]
+        public static void WebProxy_Ctor_NullUri_CredentialsNull()
+        {
+            var proxy = new WebProxy((Uri?)null);
+            Assert.Null(proxy.Credentials);
+        }
+
+        [Theory]
+        [InlineData("http://user:pass@host", "user", "pass")]
+        [InlineData("socks5://user:pass@host:1080", "user", "pass")]
+        [InlineData("http://user@host", "user", "")]
+        public static void WebProxy_AddressSetter_CredentialsExtractedFromUri(string address, string expectedUser, string expectedPassword)
+        {
+            var proxy = new WebProxy();
+            proxy.Address = new Uri(address);
+
+            Assert.NotNull(proxy.Credentials);
+            NetworkCredential credential = Assert.IsType<NetworkCredential>(proxy.Credentials);
+            Assert.Equal(expectedUser, credential.UserName);
+            Assert.Equal(expectedPassword, credential.Password);
+        }
+
+        [Fact]
+        public static void WebProxy_AddressSetter_NoCredentialsInUri_CredentialsUnchanged()
+        {
+            var proxy = new WebProxy();
+            proxy.Address = new Uri("http://host:8080");
+            Assert.Null(proxy.Credentials);
+        }
+
+        [Fact]
+        public static void WebProxy_AddressSetter_OverridesExistingCredentialsWhenUriHasUserInfo()
+        {
+            var proxy = new WebProxy();
+            proxy.Credentials = new NetworkCredential("old", "creds");
+            proxy.Address = new Uri("http://new:creds@host");
+
+            NetworkCredential credential = Assert.IsType<NetworkCredential>(proxy.Credentials);
+            Assert.Equal("new", credential.UserName);
+            Assert.Equal("creds", credential.Password);
+        }
+
+        [Fact]
+        public static void WebProxy_AddressSetter_PreservesExistingCredentialsWhenUriHasNoUserInfo()
+        {
+            var existingCreds = new NetworkCredential("existing", "creds");
+            var proxy = new WebProxy();
+            proxy.Credentials = existingCreds;
+            proxy.Address = new Uri("http://host:8080");
+
+            Assert.Same(existingCreds, proxy.Credentials);
+        }
+
+        [Fact]
+        public static void WebProxy_AddressSetter_NullClearsAddressButNotCredentials()
+        {
+            var proxy = new WebProxy("http://user:pass@host");
+            Assert.NotNull(proxy.Credentials);
+
+            proxy.Address = null;
+            Assert.Null(proxy.Address);
+            Assert.NotNull(proxy.Credentials);
+        }
+
         [Fact]
         public static void WebProxy_GetDefaultProxy_NotSupported()
         {
