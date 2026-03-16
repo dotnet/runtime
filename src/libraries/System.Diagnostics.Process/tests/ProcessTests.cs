@@ -267,7 +267,10 @@ namespace System.Diagnostics.Tests
             {
                 // If sending the signal fails, we want to kill the process ASAP
                 // to prevent RemoteExecutor's timeout from hiding it.
-                remoteHandle.Process.Kill();
+                if (!remoteHandle.Process.HasExited)
+                {
+                    remoteHandle.Process.Kill();
+                }
             }
         }
 
