@@ -28,6 +28,7 @@ jobs:
           nameSuffix: coreclr
           buildArgs: -s clr+libs+host+packs -c $(_BuildConfig)
           isOfficialBuild: false
+          linuxPoolImage: build.azurelinux.3.amd64
           postBuildSteps:
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:
@@ -52,6 +53,7 @@ jobs:
           buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs -c $(_BuildConfig)
           nameSuffix: AndroidCoreCLR
           isOfficialBuild: false
+          linuxPoolImage: build.azurelinux.3.amd64
           postBuildSteps:
             - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
               parameters:

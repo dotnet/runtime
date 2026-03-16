@@ -167,12 +167,18 @@ jobs:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
           name:  $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
+          ${{ if ne(parameters.jobParameters.linuxPoolImage, '') }}:
+            demands: ImageOverride -equals ${{ parameters.jobParameters.linuxPoolImage }}.open
+          ${{ else }}:
+            demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals 1es-ubuntu-2204
+          ${{ if ne(parameters.jobParameters.linuxPoolImage, '') }}:
+            demands: ImageOverride -equals ${{ parameters.jobParameters.linuxPoolImage }}
+          ${{ else }}:
+            demands: ImageOverride -equals 1es-ubuntu-2204
           os: linux
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).

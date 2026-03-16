@@ -11,6 +11,7 @@ jobs:
       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       nameSuffix: wasm
       isOfficialBuild: false
+      linuxPoolImage: build.azurelinux.3.amd64
       postBuildSteps:
         - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
           parameters:
@@ -28,6 +29,7 @@ jobs:
       buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       nameSuffix: wasm_coreclr
       isOfficialBuild: false
+      linuxPoolImage: build.azurelinux.3.amd64
       postBuildSteps:
         - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
           parameters:
