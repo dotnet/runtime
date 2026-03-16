@@ -16,11 +16,9 @@ import android.app.Activity;
 import android.os.Environment;
 import android.net.Uri;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,8 +29,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-
-import android.app.ActivityManager;
 
 public class MonoRunner extends Instrumentation
 {
@@ -91,10 +87,7 @@ public class MonoRunner extends Instrumentation
         }
 
         // unzip libs and test files to filesDir
-        long beforeUnzip = System.currentTimeMillis();
         unzipAssets(context, filesDir, "assets.zip");
-        long afterUnzip = System.currentTimeMillis();
-        Log.i("DOTNET", "MonoRunner.initializeRuntime() - asset unzip took " + (afterUnzip - beforeUnzip) + "ms");
 
         // set environment variables
         setEnv("HOME", filesDir);
@@ -103,10 +96,7 @@ public class MonoRunner extends Instrumentation
 
         Log.i("DOTNET", "MonoRunner initializeRuntime, entryPointLibName=" + entryPointLibName);
         int localDateTimeOffset = getLocalDateTimeOffset();
-        long beforeInit = System.currentTimeMillis();
         int rv = initRuntime(filesDir, entryPointLibName, localDateTimeOffset);
-        long afterInit = System.currentTimeMillis();
-        Log.i("DOTNET", "MonoRunner.initializeRuntime() - native initRuntime() took " + (afterInit - beforeInit) + "ms");
         if (rv != 0) {
             Log.e("DOTNET", "Failed to initialize runtime, return-code=" + rv);
             freeNativeResources();
@@ -129,15 +119,8 @@ public class MonoRunner extends Instrumentation
             return;
         }
 
-        long startTime = System.currentTimeMillis();
-        Log.i("DOTNET", "MonoRunner.onStart() - initializing runtime...");
-        logSystemInfo(getContext());
         initializeRuntime(entryPointLibName, getContext());
-        long afterInit = System.currentTimeMillis();
-        Log.i("DOTNET", "MonoRunner.onStart() - runtime initialized in " + (afterInit - startTime) + "ms, executing entry point...");
         int retcode = executeEntryPoint(entryPointLibName, argsToForward);
-        long afterExec = System.currentTimeMillis();
-        Log.i("DOTNET", "MonoRunner.onStart() - entry point executed in " + (afterExec - afterInit) + "ms (total: " + (afterExec - startTime) + "ms)");
 
         Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
         result.putInt("return-code", retcode);
@@ -201,44 +184,6 @@ public class MonoRunner extends Instrumentation
         } else {
             int offsetInMillis = Calendar.getInstance().getTimeZone().getRawOffset();
             return offsetInMillis / 1000;
-        }
-    }
-
-    static void logSystemInfo(Context context) {
-        Log.i("DOTNET", "[DIAG] Build.HARDWARE=" + android.os.Build.HARDWARE);
-        Log.i("DOTNET", "[DIAG] Build.MODEL=" + android.os.Build.MODEL);
-        Log.i("DOTNET", "[DIAG] Build.PRODUCT=" + android.os.Build.PRODUCT);
-        Log.i("DOTNET", "[DIAG] Build.VERSION.SDK_INT=" + android.os.Build.VERSION.SDK_INT);
-        Log.i("DOTNET", "[DIAG] Runtime.availableProcessors=" + Runtime.getRuntime().availableProcessors());
-        Log.i("DOTNET", "[DIAG] Runtime.maxMemory=" + (Runtime.getRuntime().maxMemory() / (1024 * 1024)) + "MB");
-        Log.i("DOTNET", "[DIAG] Runtime.totalMemory=" + (Runtime.getRuntime().totalMemory() / (1024 * 1024)) + "MB");
-
-        try {
-            ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-            if (am != null) {
-                ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
-                am.getMemoryInfo(memInfo);
-                Log.i("DOTNET", "[DIAG] System.totalMem=" + (memInfo.totalMem / (1024 * 1024)) + "MB");
-                Log.i("DOTNET", "[DIAG] System.availMem=" + (memInfo.availMem / (1024 * 1024)) + "MB");
-                Log.i("DOTNET", "[DIAG] System.lowMemory=" + memInfo.lowMemory);
-                Log.i("DOTNET", "[DIAG] System.threshold=" + (memInfo.threshold / (1024 * 1024)) + "MB");
-            }
-        } catch (Exception e) {
-            Log.w("DOTNET", "Failed to get ActivityManager memory info: " + e);
-        }
-
-        // Read /proc/meminfo for host-visible RAM
-        try {
-            BufferedReader br = new BufferedReader(new FileReader("/proc/meminfo"));
-            for (int i = 0; i < 5; i++) {
-                String line = br.readLine();
-                if (line != null) {
-                    Log.i("DOTNET", "[DIAG] " + line.trim());
-                }
-            }
-            br.close();
-        } catch (Exception e) {
-            Log.w("DOTNET", "Failed to read /proc/meminfo: " + e);
         }
     }
 
