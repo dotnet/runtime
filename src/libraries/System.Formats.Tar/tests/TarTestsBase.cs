@@ -932,60 +932,52 @@ namespace System.Formats.Tar.Tests
         // Raw PAX archive building helpers for constructing archives
         // where header fields intentionally disagree with extended attributes.
 
-        protected static byte[] BuildRawPaxArchiveWithEAPathOverride(string headerName, string eaPath, byte[] fileContent)
+        protected static byte[] BuildRawPaxArchive(
+            string headerName, string eaPath,
+            Dictionary<string, string> extraEAs = null,
+            byte[] fileContent = null,
+            int mode = 0b110_100_100, // 0644
+            int uid = 0, int gid = 0,
+            long headerSizeField = -1,
+            long mtime = 1700000000,
+            char typeflag = '0',
+            string linkname = "")
         {
             using var ms = new MemoryStream();
-            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, null);
+            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, extraEAs);
 
             WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
             ms.Write(eaData);
             PadToTarBlockBoundary(ms);
 
-            WriteRawTarHeader(ms, headerName, Convert.ToInt32("644", 8), 0, 0, fileContent.Length, 1700000000, '0', "");
-            ms.Write(fileContent);
+            long size = headerSizeField >= 0 ? headerSizeField : (fileContent?.Length ?? 0);
+            WriteRawTarHeader(ms, headerName, mode, uid, gid, size, mtime, typeflag, linkname);
+            if (fileContent is not null)
+            {
+                ms.Write(fileContent);
+            }
             PadToTarBlockBoundary(ms);
 
             ms.Write(new byte[1024]);
             return ms.ToArray();
         }
+
+        protected static byte[] BuildRawPaxArchiveWithEAPathOverride(string headerName, string eaPath, byte[] fileContent)
+            => BuildRawPaxArchive(headerName, eaPath, fileContent: fileContent);
 
         protected static byte[] BuildRawPaxArchiveWithSizeOverride(
             string headerName, string eaPath, byte[] fileContent,
             long headerSizeField, long eaSizeOverride)
-        {
-            using var ms = new MemoryStream();
-            var extraEAs = new Dictionary<string, string> { ["size"] = eaSizeOverride.ToString() };
-            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, extraEAs);
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
-            WriteRawTarHeader(ms, headerName, Convert.ToInt32("644", 8), 0, 0, headerSizeField, 1700000000, '0', "");
-            ms.Write(fileContent);
-            PadToTarBlockBoundary(ms);
-
-            ms.Write(new byte[1024]);
-            return ms.ToArray();
-        }
+            => BuildRawPaxArchive(headerName, eaPath,
+                extraEAs: new Dictionary<string, string> { ["size"] = eaSizeOverride.ToString() },
+                fileContent: fileContent, headerSizeField: headerSizeField);
 
         protected static byte[] BuildRawPaxArchiveSymlink(
             string headerName, string eaPath,
             string headerLinkName, string eaLinkPath)
-        {
-            using var ms = new MemoryStream();
-            var extraEAs = new Dictionary<string, string> { ["linkpath"] = eaLinkPath };
-            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, extraEAs);
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
-            WriteRawTarHeader(ms, headerName, Convert.ToInt32("777", 8), 0, 0, 0, 1700000000, '2', headerLinkName);
-
-            ms.Write(new byte[1024]);
-            return ms.ToArray();
-        }
+            => BuildRawPaxArchive(headerName, eaPath,
+                extraEAs: new Dictionary<string, string> { ["linkpath"] = eaLinkPath },
+                mode: Convert.ToInt32("777", 8), typeflag: '2', linkname: headerLinkName);
 
         protected static byte[] BuildRawPaxExtendedAttributeData(string eaPath, Dictionary<string, string> extraEAs)
         {
@@ -1046,7 +1038,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private static void AppendRawPaxExtendedAttributeRecord(StringBuilder sb, string key, string value)
+        protected static void AppendRawPaxExtendedAttributeRecord(StringBuilder sb, string key, string value)
         {
             string content = $" {key}={value}\n";
             int totalLen = content.Length + 1;

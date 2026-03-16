@@ -155,6 +155,8 @@ namespace System.Formats.Tar
 
         // Synchronizes the extended attributes dictionary with the value of a property.
         // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        // When maxUtf8ByteLength is 0 (default), the value is always added to EA if non-empty.
+        // This is intentional for "path" and "linkpath" which always belong in extended attributes.
         internal void SyncStringExtendedAttribute(string key, string? value, int maxUtf8ByteLength = 0)
         {
             if (_format == TarEntryFormat.Pax && _ea is not null)
@@ -207,8 +209,9 @@ namespace System.Formats.Tar
 
         // Ensures standard fields are present in the extended attributes dictionary
         // without removing any existing entries. Used for populating the EA dictionary
-        // for read access (as opposed to CollectExtendedAttributesFromStandardFieldsIfNeeded
-        // which may remove entries during write).
+        // for read access. Unlike CollectExtendedAttributesFromStandardFieldsIfNeeded
+        // (which adds or removes entries at write time), this method only adds entries
+        // that exceed standard field capacity — it never removes keys.
         private void PopulateExtendedAttributesFromStandardFields(Dictionary<string, string> ea)
         {
             ea[PaxEaName] = _name;

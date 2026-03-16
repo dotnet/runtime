@@ -274,7 +274,7 @@ namespace System.Formats.Tar.Tests
             using var ms = new MemoryStream();
             // Build EA data without a "path" key, only mtime
             var sb = new System.Text.StringBuilder();
-            AppendPaxExtendedAttributeRecord(sb, "mtime", "1700000000");
+            AppendRawPaxExtendedAttributeRecord(sb, "mtime", "1700000000");
             byte[] eaData = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
 
             WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
@@ -313,17 +313,6 @@ namespace System.Formats.Tar.Tests
             ms.Position = 0;
             using TarReader reader = new(ms);
             Assert.Throws<FormatException>(() => reader.GetNextEntry());
-        }
-
-        private static void AppendPaxExtendedAttributeRecord(System.Text.StringBuilder sb, string key, string value)
-        {
-            string content = $" {key}={value}\n";
-            int totalLen = content.Length + 1;
-            while (totalLen.ToString().Length + content.Length != totalLen)
-            {
-                totalLen = totalLen.ToString().Length + content.Length;
-            }
-            sb.Append($"{totalLen}{content}");
         }
     }
 }
