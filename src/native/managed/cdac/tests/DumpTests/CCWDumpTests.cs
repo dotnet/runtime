@@ -63,10 +63,11 @@ public class CCWDumpTests : DumpTestBase
         {
             List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
             if (interfaces.Count == 1)
+            {
                 ccwsWithOneInterface++;
-
-            // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
-            Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
+                // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
+                Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
+            }
         }
 
         Assert.True(ccwsWithOneInterface >= 3,
