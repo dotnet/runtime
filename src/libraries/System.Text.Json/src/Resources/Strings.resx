@@ -638,8 +638,8 @@
   <data name="MissingFSharpCoreMember" xml:space="preserve">
     <value>Could not locate required member '{0}' from FSharp.Core. This might happen because your application has enabled member-level trimming.</value>
   </data>
-  <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
-    <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
+  <data name="FSharpUnionDuplicateCaseName" xml:space="preserve">
+    <value>The F# discriminated union type '{0}' has duplicate case discriminator name '{1}'.</value>
   </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
