@@ -660,6 +660,19 @@ namespace System.Runtime.CompilerServices
         // uses the MethodDesc to derive the call cookie; the method itself is never executed.
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object NewobjHelperDummy(IntPtr methodTable);
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
+        {
+            try
+            {
+                pCtor(*pObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

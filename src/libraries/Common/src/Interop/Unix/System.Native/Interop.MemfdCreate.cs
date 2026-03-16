@@ -15,7 +15,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsMemfdSupported", SetLastError = true)]
         private static partial int MemfdSupportedImpl();
 
-        private static volatile NullableBool s_memfdSupported;
+        private static NullableBool s_memfdSupported;
 
         internal static bool IsMemfdSupported
         {
