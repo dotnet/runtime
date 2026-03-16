@@ -10,7 +10,6 @@ using Microsoft.CodeAnalysis.Text;
 #if !ROSLYN4_4_OR_GREATER
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 #endif
-using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -29,59 +28,76 @@ namespace System.Text.Json.SourceGeneration
 #if LAUNCH_DEBUGGER
             System.Diagnostics.Debugger.Launch();
 #endif
-            IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>)> contextGenerationSpecs = context.SyntaxProvider
+            IncrementalValueProvider<KnownTypeSymbols> knownTypeSymbols = context.CompilationProvider
+                .Select((compilation, _) => new KnownTypeSymbols(compilation));
+
+            IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableArray<Diagnostic>)> contextGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
 #endif
                     Parser.JsonSerializableAttributeFullName,
                     (node, _) => node is ClassDeclarationSyntax,
-                    (context, cancellationToken) =>
-                    {
-                        // Ensure the source generator parses using invariant culture.
-                        // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
-                        // from being written to generated source files.
+                    (context, _) => (ContextClass: (ClassDeclarationSyntax)context.TargetNode, context.SemanticModel))
+                .Combine(knownTypeSymbols)
+                .Select(static (tuple, cancellationToken) =>
+                {
+                    // Ensure the source generator parses using invariant culture.
+                    // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
+                    // from being written to generated source files.
 #pragma warning disable RS1035 // CultureInfo.CurrentCulture is banned in analyzers
-                        CultureInfo originalCulture = CultureInfo.CurrentCulture;
-                        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-                        try
-                        {
+                    CultureInfo originalCulture = CultureInfo.CurrentCulture;
+                    CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+                    try
+                    {
 #pragma warning restore RS1035
-                            var knownTypeSymbols = new KnownTypeSymbols(context.SemanticModel.Compilation);
-                            Parser parser = new(knownTypeSymbols);
-                            ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec((ClassDeclarationSyntax)context.TargetNode, context.SemanticModel, cancellationToken);
-                            ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
-                            return (contextGenerationSpec, diagnostics);
+                        Parser parser = new(tuple.Right);
+                        ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.Left.ContextClass, tuple.Left.SemanticModel, cancellationToken);
+                        ImmutableArray<Diagnostic> diagnostics = parser.Diagnostics.ToImmutableArray();
+                        return (contextGenerationSpec, diagnostics);
 #pragma warning disable RS1035
-                        }
-                        finally
-                        {
-                            CultureInfo.CurrentCulture = originalCulture;
-                        }
+                    }
+                    finally
+                    {
+                        CultureInfo.CurrentCulture = originalCulture;
+                    }
 #pragma warning restore RS1035
-                    })
+                })
 #if ROSLYN4_4_OR_GREATER
                 .WithTrackingName(SourceGenerationSpecTrackingName)
 #endif
                 ;
 
-            context.RegisterSourceOutput(contextGenerationSpecs, ReportDiagnosticsAndEmitSource);
+            // Project the combined pipeline result to just the equatable model, discarding diagnostics.
+            // ContextGenerationSpec implements value equality, so Roslyn's Select operator will compare
+            // successive model snapshots and only propagate changes downstream when the model structurally
+            // differs. This ensures source generation is fully incremental: re-emitting code only when
+            // the serialization spec actually changes, not on every keystroke or positional shift.
+            IncrementalValuesProvider<ContextGenerationSpec?> sourceGenerationSpecs =
+                contextGenerationSpecs.Select(static (t, _) => t.Item1);
+
+            context.RegisterSourceOutput(sourceGenerationSpecs, EmitSource);
+
+            // Project to just the diagnostics, discarding the model. ImmutableArray<Diagnostic> does not
+            // implement value equality, so Roslyn's incremental pipeline uses reference equality for these
+            // values — the callback fires on every compilation change. This is by design: diagnostic
+            // emission is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
+            // (cf. https://github.com/dotnet/runtime/issues/92509).
+            // No source code is generated from this pipeline — it exists solely to report diagnostics.
+            IncrementalValuesProvider<ImmutableArray<Diagnostic>> diagnostics =
+                contextGenerationSpecs.Select(static (t, _) => t.Item2);
+
+            context.RegisterSourceOutput(diagnostics, EmitDiagnostics);
         }
 
-        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (ContextGenerationSpec? ContextGenerationSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics) input)
+        private void EmitSource(SourceProductionContext sourceProductionContext, ContextGenerationSpec? contextGenerationSpec)
         {
-            // Report any diagnostics ahead of emitting.
-            foreach (DiagnosticInfo diagnostic in input.Diagnostics)
-            {
-                sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
-            }
-
-            if (input.ContextGenerationSpec is null)
+            if (contextGenerationSpec is null)
             {
                 return;
             }
 
-            OnSourceEmitting?.Invoke(ImmutableArray.Create(input.ContextGenerationSpec));
+            OnSourceEmitting?.Invoke(ImmutableArray.Create(contextGenerationSpec));
 
             // Ensure the source generator emits number literals using invariant culture.
             // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
@@ -92,13 +108,21 @@ namespace System.Text.Json.SourceGeneration
             try
             {
                 Emitter emitter = new(sourceProductionContext);
-                emitter.Emit(input.ContextGenerationSpec);
+                emitter.Emit(contextGenerationSpec);
             }
             finally
             {
                 CultureInfo.CurrentCulture = originalCulture;
             }
 #pragma warning restore RS1035
+        }
+
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<Diagnostic> diagnostics)
+        {
+            foreach (Diagnostic diagnostic in diagnostics)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
         }
 
         /// <summary>

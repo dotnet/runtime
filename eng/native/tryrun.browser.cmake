@@ -21,6 +21,10 @@
 #   Automatically applied when building for browser-wasm. No special flags needed:
 #     ./build.sh -subset clr.runtime -os browser -arch wasm -c Debug
 #
+# OVERRIDES:
+#   We don't want to use all emulators which are available in Emscripten.
+#   - HAVE_SYS_SOCKET_H
+#
 # VERSION TRACKING:
 #   The TRYRUN_BROWSER_EMSCRIPTEN_VERSION variable at the top of this file tracks
 #   which Emscripten version this cache was generated for. The build system
@@ -326,7 +330,7 @@ set(HAVE_SYS_POLL_H "" CACHE INTERNAL "")
 set(HAVE_SYS_PROCINFO_H "" CACHE INTERNAL "")
 set(HAVE_SYS_PTRACE_H "" CACHE INTERNAL "")
 set(HAVE_SYS_SDT_H "" CACHE INTERNAL "")
-set(HAVE_SYS_SOCKET_H 1 CACHE INTERNAL "")
+set(HAVE_SYS_SOCKET_H "" CACHE INTERNAL "")
 set(HAVE_SYS_SOCKIO_H "" CACHE INTERNAL "")
 set(HAVE_SYS_STATFS_H 1 CACHE INTERNAL "")
 set(HAVE_SYS_STATVFS_H 1 CACHE INTERNAL "")

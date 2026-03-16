@@ -514,6 +514,7 @@ typedef enum
     // NOTE: ReJIT is now supported again.  The profiler must set this flag on
     // startup in order to use RequestReJIT or RequestRevert.  If the profiler specifies
     // this flag, then the profiler must also specify COR_PRF_DISABLE_ALL_NGEN_IMAGES
+    // [cDAC] [ReJIT]: Contract depends on this enum value.
     COR_PRF_ENABLE_REJIT                = 0x00040000,
 
     // V2 MIGRATION WARNING: DEPRECATED

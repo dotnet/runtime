@@ -21,8 +21,8 @@
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
@@ -30,7 +30,6 @@
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\CSharpSyntaxUtilities.cs" Link="Common\SourceGenerators\CSharpSyntaxUtilities.cs" />
-    <Compile Include="$(CommonPath)\SourceGenerators\DiagnosticInfo.cs" Link="Common\SourceGenerators\DiagnosticInfo.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />

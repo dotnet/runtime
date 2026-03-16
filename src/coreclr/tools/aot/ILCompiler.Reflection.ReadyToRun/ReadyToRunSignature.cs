@@ -1366,6 +1366,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                     });
                     break;
 
+                case ReadyToRunFixupKind.ResumptionStubEntryPoint:
+                    uint stubRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    builder.Append($" (RESUMPTION_STUB RVA[0x{stubRVA:X}])");
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
@@ -2037,8 +2043,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("ALLOC_CONTINUATION_CLASS");
                     break;
 
+                case ReadyToRunHelper.InitClass:
+                    builder.Append("INIT_CLASS");
+                    break;
+                case ReadyToRunHelper.InitInstClass:
+                    builder.Append("INIT_INST_CLASS");
+                    break;
+
                 default:
-                    throw new BadImageFormatException();
+                    throw new BadImageFormatException(helperType.ToString());
             }
         }
 
