@@ -223,13 +223,13 @@ namespace System.Net.Sockets.Tests
             if (completedAsync)
             {
                 // Async path: a follow-up SendToAsync may be in-flight, so
-                // RestoreBlocking is skipped to avoid racing with the send.
+                // SetBlocking is skipped to avoid racing with the send.
                 Assert.True(IsSocketNonBlocking(client));
             }
             else
             {
                 // Sync path: connect and send both completed synchronously,
-                // so RestoreBlocking was called and the socket is blocking.
+                // so SetBlocking was called and the socket is blocking.
                 Assert.False(IsSocketNonBlocking(client));
             }
         }

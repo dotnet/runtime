@@ -678,7 +678,7 @@ namespace System.Net.Sockets
 
                 if (buffer.Length == 0)
                 {
-                    AssociatedContext._socket.RestoreBlocking();
+                    AssociatedContext._socket.SetBlocking();
 
                     // Invoke callback only when we are completely done.
                     // In case data were provided for Connect we may or may not send them all.
@@ -1586,7 +1586,7 @@ namespace System.Net.Sockets
 
                 if (buffer.Length == 0 || errorCode != SocketError.IOPending)
                 {
-                    _socket.RestoreBlocking();
+                    _socket.SetBlocking();
                 }
                 return errorCode;
             }
@@ -1608,7 +1608,7 @@ namespace System.Net.Sockets
 
                 if (buffer.Length == 0 || operation.ErrorCode != SocketError.Success)
                 {
-                    _socket.RestoreBlocking();
+                    _socket.SetBlocking();
                 }
 
                 return operation.ErrorCode;

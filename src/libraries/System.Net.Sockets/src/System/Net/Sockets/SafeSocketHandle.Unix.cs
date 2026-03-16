@@ -131,7 +131,7 @@ namespace System.Net.Sockets
                 // blocking operations within SocketAsyncContext on top of epoll/kqueue.
                 // This avoids problems with switching to native blocking while there are pending operations.
                 // Note: After ConnectAsync completes, we may restore the native socket to blocking mode
-                // to optimize subsequent synchronous operations (see RestoreBlocking/SetHandleBlocking).
+                // to optimize subsequent synchronous operations (see SetBlocking/SetHandleBlocking).
                 if (value)
                 {
                     AsyncContext.SetHandleNonBlocking();
@@ -142,12 +142,12 @@ namespace System.Net.Sockets
         internal bool IsUnderlyingHandleBlocking => !AsyncContext.IsHandleNonBlocking;
 
         /// <summary>
-        /// Restores the underlying socket to blocking mode after ConnectAsync completes.
-        /// Only restores blocking if the user hasn't explicitly set Blocking = false (i.e., IsNonBlocking is false).
+        /// Sets the underlying socket to blocking mode.
+        /// Only sets blocking if the user hasn't explicitly set Blocking = false (i.e., IsNonBlocking is false).
         /// This is only safe to call when the socket is guaranteed by construction to not be used concurrently
         /// with any other operation, such as at the completion of ConnectAsync.
         /// </summary>
-        internal void RestoreBlocking()
+        internal void SetBlocking()
         {
             if (!IsNonBlocking && !IsClosed)
             {
