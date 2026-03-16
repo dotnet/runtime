@@ -1717,6 +1717,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         }
         bool hasPrecachedExternal = false;
         bool hasPrecachedProxy = false;
+        bool hasPrecachedTargets = false;
 
 #ifdef FEATURE_READYTORUN
         // Only process the external type map if requested.
@@ -1745,7 +1746,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         }
 
         COUNT_T assemblyTargetCount = 0;
-        bool hasPrecachedTargets = ProcessPrecachedTypeMapInfo(
+        hasPrecachedTargets = ProcessPrecachedTypeMapInfo(
             [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
             [&](PTR_ReadyToRunInfo pR2RInfo)
              {

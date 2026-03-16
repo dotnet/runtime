@@ -8,7 +8,6 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.ReadyToRun
 {

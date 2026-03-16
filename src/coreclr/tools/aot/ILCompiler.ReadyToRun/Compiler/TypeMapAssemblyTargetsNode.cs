@@ -5,7 +5,6 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
 using Internal.Text;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.ReadyToRun
 {
