@@ -111,7 +111,7 @@ namespace System.IO.Tests
                         {
                             if (Directory.Exists(mountedDirName))
                             {
-                                MountHelper.Unmount(mountedDirName);
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
                                 DeleteDir(mountedDirName, true);
                             }
                         }
@@ -191,7 +191,7 @@ namespace System.IO.Tests
                         {
                             if (Directory.Exists(mountedDirName))
                             {
-                                MountHelper.Unmount(mountedDirName);
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
                                 DeleteDir(mountedDirName, true);
                             }
                         }
@@ -269,7 +269,7 @@ namespace System.IO.Tests
                         {
                             if (Directory.Exists(mountedDirName))
                             {
-                                MountHelper.Unmount(mountedDirName);
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
                                 DeleteDir(mountedDirName, true);
                             }
                         }
@@ -347,7 +347,7 @@ namespace System.IO.Tests
                         {
                             if (Directory.Exists(mountedDirName))
                             {
-                                MountHelper.Unmount(mountedDirName);
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
                                 DeleteDir(mountedDirName, true);
                             }
                         }
