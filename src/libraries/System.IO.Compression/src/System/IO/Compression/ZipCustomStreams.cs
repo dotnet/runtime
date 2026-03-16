@@ -727,11 +727,10 @@ namespace System.IO.Compression
         public CrcValidatingReadStream(Stream baseStream, uint expectedCrc, long expectedLength)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
-            _baseStream = baseStream;
-
-            _expectedCrc = expectedCrc;
-
             ArgumentOutOfRangeException.ThrowIfNegative(expectedLength);
+
+            _baseStream = baseStream;
+            _expectedCrc = expectedCrc;
             _expectedLength = expectedLength;
             _runningCrc = 0;
         }
@@ -768,10 +767,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
 
-            int bytesRead = _baseStream.Read(buffer, offset, count);
-            ProcessBytesRead(buffer.AsSpan(offset, bytesRead));
-
-            return bytesRead;
+            return Read(new Span<byte>(buffer, offset, count));
         }
 
         public override int Read(Span<byte> buffer)
@@ -790,15 +786,12 @@ namespace System.IO.Compression
             return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
 
-            int bytesRead = await _baseStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
-            ProcessBytesRead(buffer.AsSpan(offset, bytesRead));
-
-            return bytesRead;
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -814,18 +807,22 @@ namespace System.IO.Compression
         private void ProcessBytesRead(ReadOnlySpan<byte> data)
         {
             if (_crcAbandoned)
+            {
                 return;
+            }
 
             if (data.Length == 0)
             {
                 // EOF reached. Only validate CRC if we've read exactly the expected number of bytes.
                 // If _totalBytesRead < _expectedLength the declared size was larger than the actual
-                // data (e.g. a tampered-but-not-truncated entry); we don't throw here because the
-                // caller (decompressor) is responsible for surfacing that as an error.
+                // data (e.g. a tampered-but-not-truncated entry);
+                // We don't throw here because the caller (decompressor) will surface that as an error!
                 // If _totalBytesRead == _expectedLength we can validate the CRC now, which covers
                 // zero-length entries and the final EOF read after all expected bytes were consumed.
                 if (_totalBytesRead == _expectedLength)
+                {
                     ValidateCrc();
+                }
 
                 return;
             }
@@ -846,11 +843,14 @@ namespace System.IO.Compression
         private void ValidateCrc()
         {
             if (_crcValidated || _crcAbandoned)
+            {
                 return;
+            }
 
             if (_runningCrc != _expectedCrc)
+            {
                 throw new InvalidDataException(SR.CrcMismatch);
-
+            }
             _crcValidated = true;  // only mark validated on success
         }
 
@@ -896,6 +896,8 @@ namespace System.IO.Compression
             }
             else
             {
+                // we should always start from the beginning of the stream
+                // so any seek that doesn't put us back at the start means we can't reliably validate CRC anymore
                 _crcAbandoned = true;
             }
 
@@ -916,7 +918,9 @@ namespace System.IO.Compression
         private void ThrowIfCantSeek()
         {
             if (!CanSeek)
+            {
                 throw new NotSupportedException(SR.SeekingNotSupported);
+            }
         }
 
         protected override void Dispose(bool disposing)

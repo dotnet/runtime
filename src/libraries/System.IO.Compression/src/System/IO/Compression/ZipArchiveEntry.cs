@@ -831,14 +831,14 @@ namespace System.IO.Compression
             return uncompressedStream;
         }
 
-        private CrcValidatingReadStream OpenInReadMode(bool checkOpenable)
+        private Stream OpenInReadMode(bool checkOpenable)
         {
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData());
         }
 
-        private CrcValidatingReadStream OpenInReadModeGetDataCompressor(long offsetOfCompressedData)
+        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
             Stream decompressedStream = GetDataDecompressor(compressedStream);
