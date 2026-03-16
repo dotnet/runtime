@@ -24,7 +24,7 @@ public static class ValidateNoTypeMapEntries
         string[] r2rDumpLines = System.IO.File.ReadAllLines(r2rDumpFile);
         foreach (string line in r2rDumpLines)
         {
-            if (line.StartsWith("ExternalTypeMap") || line.StartsWith("ProxyTypeMap") || line.StartsWith("TypeMapAssemblyTargets"))
+            if (line.StartsWith("ExternalTypeMap", StringComparison.Ordinal) || line.StartsWith("ProxyTypeMap", StringComparison.Ordinal) || line.StartsWith("TypeMapAssemblyTargets", StringComparison.Ordinal))
             {
                 throw new InvalidOperationException($"Unexpected TypeMap section found in R2R dump for file with no type maps: {line}");
             }
