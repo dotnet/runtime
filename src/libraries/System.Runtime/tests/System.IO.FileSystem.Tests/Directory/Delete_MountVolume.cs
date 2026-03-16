@@ -251,10 +251,11 @@ namespace System.IO.Tests
 
                             Directory.Delete(mountedDirName, true);
                             Task.Delay(300).Wait();
+                            Eval(!Directory.Exists(mountedDirName), "Err_001yph! Directory {0} still exist: {1}", mountedDirName, Directory.Exists(mountedDirName));
                         }
                         finally
                         {
-                            if (!Eval(!Directory.Exists(mountedDirName), "Err_001yph! Directory {0} still exist: {1}", mountedDirName, Directory.Exists(mountedDirName)))
+                            if (Directory.Exists(mountedDirName))
                             {
                                 MountHelper.Unmount(mountedDirName);
                                 DeleteDir(mountedDirName, true);
@@ -307,7 +308,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            if (!Eval(!Directory.Exists(mountedDirName), "Err_625ckx! Directory {0} still exist: {1}", mountedDirName, Directory.Exists(mountedDirName)))
+                            if (Directory.Exists(mountedDirName))
                             {
                                 MountHelper.Unmount(mountedDirName);
                                 DeleteDir(mountedDirName, true);
@@ -363,7 +364,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            if (!Eval(!Directory.Exists(mountedDirName), "Err_462xtc! Directory {0} still exist: {1}", mountedDirName, Directory.Exists(mountedDirName)))
+                            if (Directory.Exists(mountedDirName))
                             {
                                 MountHelper.Unmount(mountedDirName);
                                 DeleteDir(mountedDirName, true);
