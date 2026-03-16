@@ -2331,10 +2331,12 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Determines whether a greedy single-character loop's backtracking can be reduced to checking
-        /// only the last consumed position. This is possible when <paramref name="subsequent"/> is itself
-        /// a single-character literal (One or Set) whose character class is a subset of the loop's class,
-        /// and whatever follows that literal is disjoint from the loop's class — meaning no earlier
-        /// backtrack position can succeed, since every interior position has a loop-set character after it.
+        /// only the last consumed position. This is possible when <paramref name="subsequent"/> starts with
+        /// a literal whose first character is subsumed by the loop's class, and whatever follows is disjoint
+        /// from the loop's class — meaning no earlier backtrack position can succeed, since every interior
+        /// position has a loop-set character after it. For One/Set literals, the character(s) must be subsumed
+        /// and the next node in sequence must be disjoint. For Multi literals, the first character must be
+        /// subsumed and the second character must be disjoint.
         /// </summary>
         internal static bool CanReduceLoopBacktrackingToSinglePosition(RegexNode loopNode, RegexNode subsequent)
         {
@@ -2344,10 +2346,9 @@ namespace System.Text.RegularExpressions
             // like Concatenate, Capture, and Atomic.
             if (subsequent.FindStartingLiteralNode() is RegexNode literal)
             {
-                // Only handle single-character literals (One, Set). Multi-character literals
-                // would require backing off by more than one position, and Notone matches
-                // almost everything so it's rarely subsumed. Every character the literal could
-                // match must also be matched by the loop's character class.
+                // Handle One, Set, and Multi literals. Notone matches almost everything so it's
+                // rarely subsumed. Every character the literal could match at the first position
+                // must also be matched by the loop's character class.
                 switch (literal.Kind)
                 {
                     case RegexNodeKind.One when CharInLoopSet(loopNode, literal.Ch):

@@ -888,13 +888,13 @@ namespace System.Text.RegularExpressions
                 return true;
             }
 
-            // If set2 is the universal set, everything is a subset.
+            // If superset is the universal set, everything is a subset.
             if (superset == AnyClass)
             {
                 return true;
             }
 
-            // If set1 can be easily enumerated, check that every character in it is also in set2.
+            // If subset can be easily enumerated, check that every character in it is also in superset.
             if (!IsNegated(subset) && CanEasilyEnumerateSetContents(subset))
             {
                 for (int i = SetStartIndex; i < SetStartIndex + subset[SetLengthIndex]; i += 2)
@@ -913,7 +913,7 @@ namespace System.Text.RegularExpressions
             }
 
             // If both sets are composed entirely of Unicode categories, check that all
-            // categories in set1 are also present in set2.
+            // categories in subset are also present in superset.
             Span<UnicodeCategory> categories1 = stackalloc UnicodeCategory[16], categories2 = stackalloc UnicodeCategory[16];
             if (TryGetOnlyCategories(subset, categories1, out int numCategories1, out bool negated1) && !negated1 &&
                 TryGetOnlyCategories(superset, categories2, out int numCategories2, out bool negated2) && !negated2)
