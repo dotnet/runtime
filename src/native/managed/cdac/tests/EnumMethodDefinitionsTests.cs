@@ -179,7 +179,7 @@ public unsafe class EnumMethodDefinitionsTests
             emd.Start(fullName);
 
             int count = 0;
-            while (emd.MethodEnumerator.MoveNext())
+            while (emd.Enumerator.MoveNext())
                 count++;
 
             Assert.Equal(expectedCount, count);

@@ -117,7 +117,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
             if (_typeHandle == null)
                 throw new ArgumentException();
-            Enumerator = IterateMethodInstances().GetEnumerator();
+            Enumerator = IterateMethodDefinitions().GetEnumerator();
         }
 
         private bool StringEquals(string a, string b)
@@ -126,7 +126,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return string.Equals(a, b, comparison);
         }
 
-        private IEnumerable<uint> IterateMethodInstances()
+        private IEnumerable<uint> IterateMethodDefinitions()
         {
             foreach (MethodDefinitionHandle mh in _reader.GetTypeDefinition(_typeHandle!.Value).GetMethods())
             {
