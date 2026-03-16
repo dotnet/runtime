@@ -12,6 +12,7 @@ set(MDRUNTIMERW_SOURCES
 )
 
 set(MDRUNTIMERW_HEADERS
+  ../../inc/cordecoderhelpers.h
   ../../inc/corhdr.h
   ../../inc/metadata.h
   ../../inc/mdfileformat.h

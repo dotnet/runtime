@@ -1,7 +1,6 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO;
 using ILLink.Shared;
 using Mono.Cecil;
 
@@ -9,18 +8,18 @@ namespace Mono.Linker.Steps
 {
     public class RootAssemblyInput : BaseStep
     {
-        readonly string fileName;
+        readonly string assemblyName;
         readonly AssemblyRootMode rootMode;
 
-        public RootAssemblyInput(string fileName, AssemblyRootMode rootMode)
+        public RootAssemblyInput(string assemblyName, AssemblyRootMode rootMode)
         {
-            this.fileName = fileName;
+            this.assemblyName = assemblyName;
             this.rootMode = rootMode;
         }
 
         protected override void Process()
         {
-            AssemblyDefinition? assembly = LoadAssemblyFile();
+            AssemblyDefinition? assembly = LoadAssemblyByName();
             if (assembly == null)
                 return;
 
@@ -105,23 +104,11 @@ namespace Mono.Linker.Steps
             }
         }
 
-        AssemblyDefinition? LoadAssemblyFile()
+        AssemblyDefinition? LoadAssemblyByName()
         {
-            AssemblyDefinition? assembly;
-
-            if (File.Exists(fileName))
-            {
-                assembly = Context.Resolver.GetAssembly(fileName);
-                Context.Resolver.CacheAssembly(assembly);
-                return assembly;
-            }
-
-            //
-            // Quirks mode for netcore to support passing ambiguous assembly name
-            //
-            assembly = Context.TryResolve(fileName);
+            var assembly = Context.TryResolve(assemblyName);
             if (assembly == null)
-                Context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, fileName);
+                Context.LogError(null, DiagnosticId.RootAssemblyCouldNotBeFound, assemblyName);
 
             return assembly;
         }
