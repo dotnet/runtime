@@ -917,7 +917,19 @@ struct cdac_data<LoaderAllocator>
     static constexpr size_t ReferenceCount = offsetof(LoaderAllocator, m_cReferences);
     static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
+    static constexpr size_t StaticsHeap = offsetof(LoaderAllocator, m_pStaticsHeap);
     static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
+    static constexpr size_t ExecutableHeap = offsetof(LoaderAllocator, m_pExecutableHeap);
+#ifdef HAS_FIXUP_PRECODE
+    static constexpr size_t FixupPrecodeHeap = offsetof(LoaderAllocator, m_pFixupPrecodeHeap);
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    static constexpr size_t NewStubPrecodeHeap = offsetof(LoaderAllocator, m_pNewStubPrecodeHeap);
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    static constexpr size_t DynamicHelpersStubHeap = offsetof(LoaderAllocator, m_pDynamicHelpersStubHeap);
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    static constexpr size_t VirtualCallStubManager = offsetof(LoaderAllocator, m_pVirtualCallStubManager);
     static constexpr size_t ObjectHandle = offsetof(LoaderAllocator, m_hLoaderAllocatorObjectHandle);
 };
 

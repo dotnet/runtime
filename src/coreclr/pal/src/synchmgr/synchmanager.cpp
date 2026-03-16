@@ -404,6 +404,19 @@ namespace CorUnix
             goto TNW_exit;
         }
 
+#ifndef FEATURE_MULTITHREADING
+        // In single-threaded WASM, if the object is not already signaled (iPred == FALSE),
+        // we cannot wait because there is no other thread to signal us - this would deadlock.
+        // This is a programming error in single-threaded WASM.
+        _ASSERT_MSG(FALSE != ptnwdNativeWaitData->iPred, "Cannot wait in single-threaded mode\n");
+        if (FALSE == ptnwdNativeWaitData->iPred)
+        {
+            iRet = pthread_mutex_unlock(&ptnwdNativeWaitData->mutex);
+            palErr = ERROR_NOT_SUPPORTED;
+            *ptwrWakeupReason = WaitFailed;
+        }
+#else // !FEATURE_MULTITHREADING
+
         while (FALSE == ptnwdNativeWaitData->iPred)
         {
             if (INFINITE == dwTimeout)
@@ -475,6 +488,7 @@ namespace CorUnix
             *ptwrWakeupReason = WaitTimeout;
         }
 
+#endif // !FEATURE_MULTITHREADING
     TNW_exit:
         TRACE("ThreadNativeWait: returning %u [WakeupReason=%u]\n", palErr, *ptwrWakeupReason);
         return palErr;

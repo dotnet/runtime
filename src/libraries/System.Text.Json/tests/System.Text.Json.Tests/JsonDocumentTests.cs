@@ -2429,33 +2429,35 @@ namespace System.Text.Json.Tests
             const string json =
 // Don't let there be a newline before the first embedded quote,
 // because the index would change across CRLF vs LF compile environments.
-@"{  ""  weird  property  name""
-                  :
-       {
-         ""nested"":
-         [ 1, 2, 3
-,
-4, 5, 6 ],
-        ""also"" : 3
-  },
-  ""number"": 1.02e+4,
-  ""bool"": false,
-  ""n\u0075ll"": null,
-  ""multiLineArray"":
+"""
+    {  "  weird  property  name"
+                      :
+           {
+             "nested":
+             [ 1, 2, 3
+    ,
+    4, 5, 6 ],
+            "also" : 3
+      },
+      "number": 1.02e+4,
+      "bool": false,
+      "n\u0075ll": null,
+      "multiLineArray":
 
-[
+    [
 
-0,
-1,
-2,
+    0,
+    1,
+    2,
 
-    3
+        3
 
-],
-  ""string"":
+    ],
+      "string":
 
-""Aren't string just the greatest?\r\nNot a terminating quote: \""     \r   \n   \t  \\   ""
-}";
+    "Aren't string just the greatest?\r\nNot a terminating quote: \"     \r   \n   \t  \\   "
+    }
+    """;
 
             using (JsonDocument doc = JsonDocument.Parse(json))
             {
@@ -2689,15 +2691,17 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ObjectEnumeratorIndependentWalk()
         {
-            const string json = @"
-{
-  ""name0"": 0,
-  ""name1"": 1,
-  ""name2"": 2,
-  ""name3"": 3,
-  ""name4"": 4,
-  ""name5"": 5
-}";
+            const string json = """
+
+                {
+                  "name0": 0,
+                  "name1": 1,
+                  "name2": 2,
+                  "name3": 3,
+                  "name4": 4,
+                  "name5": 5
+                }
+                """;
             using (JsonDocument doc = JsonDocument.Parse(json))
             {
                 JsonElement root = doc.RootElement;
@@ -2878,23 +2882,25 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadNestedObject()
         {
-            const string json = @"
-{
-  ""first"":
-  {
-    ""true"": true,
-    ""false"": false,
-    ""null"": null,
-    ""int"": 3,
-    ""nearlyPi"": 3.14159,
-    ""text"": ""This is some text that does not end... <EOT>""
-  },
-  ""second"":
-  {
-    ""blub"": { ""bool"": true },
-    ""glub"": { ""bool"": false }
-  }
-}";
+            const string json = """
+
+                {
+                  "first":
+                  {
+                    "true": true,
+                    "false": false,
+                    "null": null,
+                    "int": 3,
+                    "nearlyPi": 3.14159,
+                    "text": "This is some text that does not end... <EOT>"
+                  },
+                  "second":
+                  {
+                    "blub": { "bool": true },
+                    "glub": { "bool": false }
+                  }
+                }
+                """;
             using (JsonDocument doc = JsonDocument.Parse(json))
             {
                 JsonElement root = doc.RootElement;
@@ -3459,7 +3465,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData("""{ "foo" : [1], "test": false, "bar" : { "nested": 3 } }""", 3)]
         [InlineData("""{ "foo" : [1,2,3,4] }""", 1)]
-        [InlineData("""{}""", 0)]
+        [InlineData("{}", 0)]
         [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
         public static void TestGetPropertyCount(string json, int expectedCount)
         {
@@ -3696,7 +3702,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // thread-safety / stress test
         public static async Task GetString_ConcurrentUse_ThreadSafe()
         {

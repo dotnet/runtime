@@ -21,6 +21,9 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND CLR_CMAKE_TARGET_BROWSER)
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+elseif (CLR_CMAKE_TARGET_OPENBSD)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -113,6 +116,7 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/types.h>
     #include <sys/mount.h>
     int main(void)
     {
@@ -147,11 +151,6 @@ check_symbol_exists(
     F_DUPFD
     fcntl.h
     HAVE_F_DUPFD)
-
-check_symbol_exists(
-    F_FULLFSYNC
-    fcntl.h
-    HAVE_F_FULLFSYNC)
 
 check_function_exists(
     getifaddrs
@@ -204,7 +203,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     getmntinfo
-    sys/mount.h
+    "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)
 
 check_symbol_exists(
@@ -336,7 +335,7 @@ check_struct_has_member(
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
@@ -975,7 +974,7 @@ check_include_files(
 
 check_symbol_exists(
     getpeereid
-    unistd.h
+    "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
 check_symbol_exists(
@@ -1003,7 +1002,7 @@ check_c_source_compiles(
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
+if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))
     set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
 endif()
 
@@ -1031,6 +1030,9 @@ elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAK
 endif()
 
 option(HeimdalGssApi "use heimdal implementation of GssApi" OFF)
+if (CLR_CMAKE_TARGET_OPENBSD)
+    set(HeimdalGssApi ON)
+endif()
 
 if (HeimdalGssApi)
    check_include_files(

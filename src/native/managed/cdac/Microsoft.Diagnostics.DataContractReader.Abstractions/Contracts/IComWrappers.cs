@@ -9,6 +9,10 @@ public interface IComWrappers : IContract
 {
     static string IContract.Name { get; } = nameof(ComWrappers);
     TargetPointer GetComWrappersIdentity(TargetPointer address) => throw new NotImplementedException();
+    TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw) => throw new NotImplementedException();
+    TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow) => throw new NotImplementedException();
+    long GetMOWReferenceCount(TargetPointer mow) => throw new NotImplementedException();
+    bool IsComWrappersRCW(TargetPointer rcw) => throw new NotImplementedException();
 }
 
 public readonly struct ComWrappers : IComWrappers

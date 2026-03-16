@@ -12,10 +12,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-#if FEATURE_SINGLE_THREADED
-using WorkQueue = System.Collections.Generic.Queue<object>;
-#else
+#if FEATURE_MULTITHREADING
 using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
+#else
+using WorkQueue = System.Collections.Generic.Queue<object>;
 #endif
 #if TARGET_WINDOWS
 using IOCompletionPollerEvent = System.Threading.PortableThreadPool.IOCompletionPoller.Event;
@@ -715,10 +715,10 @@ namespace System.Threading
 
                 tl.isProcessingHighPriorityWorkItems = false;
             }
-#if FEATURE_SINGLE_THREADED
-            else if (highPriorityWorkItems.Count == 0 &&
-#else
+#if FEATURE_MULTITHREADING
             else if (!highPriorityWorkItems.IsEmpty &&
+#else
+            else if (highPriorityWorkItems.Count == 0 &&
 #endif
                 TryStartProcessingHighPriorityWorkItemsAndDequeue(tl, out workItem))
             {
@@ -1445,7 +1445,7 @@ namespace System.Threading
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
@@ -1465,7 +1465,7 @@ namespace System.Threading
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
@@ -1498,7 +1498,7 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
@@ -1517,7 +1517,7 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
@@ -1536,7 +1536,7 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
@@ -1557,7 +1557,7 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, int.MaxValue, nameof(timeout));
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
@@ -1578,7 +1578,7 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, int.MaxValue, nameof(timeout));
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
         }

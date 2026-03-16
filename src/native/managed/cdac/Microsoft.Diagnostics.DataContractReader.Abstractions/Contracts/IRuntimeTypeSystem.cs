@@ -105,6 +105,8 @@ public interface IRuntimeTypeSystem : IContract
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable represents a continuation type used by the async continuation feature
+    bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 
@@ -143,6 +145,7 @@ public interface IRuntimeTypeSystem : IContract
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
     TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments) => throw new NotImplementedException();
     TypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
+    TypeHandle GetTypeByNameAndModule(string name, string nameSpace, ModuleHandle moduleHandle) => throw new NotImplementedException();
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -209,6 +212,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescStatic(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
+    TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
 }
 
