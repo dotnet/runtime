@@ -26,6 +26,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.Target.IsWasm)
             {
+                // TODO-Wasm: Change section placement here once we have adapted these nodes
+                // to emit the proper wasm structure (including per-call type signatures)
                 return ObjectNodeSection.ReadOnlyDataSection;
             }
 

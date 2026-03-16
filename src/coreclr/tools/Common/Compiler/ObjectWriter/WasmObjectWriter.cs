@@ -223,6 +223,7 @@ namespace ILCompiler.ObjectWriter
             section.MinAlignment = Math.Max(section.MinAlignment, alignment);
         }
 
+#if READYTORUN
         private class WebcilSegment
         {
             public WebcilHeader Header;
@@ -368,6 +369,7 @@ namespace ILCompiler.ObjectWriter
 
             return new WebcilSegment(header, webcilSections.ToArray());
         }
+#endif
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
@@ -401,8 +403,12 @@ namespace ILCompiler.ObjectWriter
             WasmSection wasmSection = null;
             if (sectionType == WasmSectionType.Data)
             {
+#if READYTORUN
                 // This is a section which is internally wrapping a Webcil section
                 wasmSection = new WebcilSection(new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
+#else
+                wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name));
+#endif
             }
             else
             {
@@ -558,9 +564,11 @@ namespace ILCompiler.ObjectWriter
                 section.Emit(outputFileStream);
             }
 
-            /********************************
-            Emit Webcil segment at end of file
-            *********************************/
+#if READYTORUN
+
+            /*****************************************************************
+            Emit Webcil segment at end of file to support ReadyToRun
+            *****************************************************************/
 
             Debug.Assert(_webcilSegment != null); // This should have been built in EmitSectionsAndLayout()
 
@@ -635,6 +643,7 @@ namespace ILCompiler.ObjectWriter
             // Create combined data section and emit 
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.Emit(outputFileStream);
+#endif
         }
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
@@ -1156,6 +1165,7 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
+#if READYTORUN
     class WebcilSection : WasmSection
     {
         public readonly int Index;
@@ -1190,4 +1200,5 @@ namespace ILCompiler.ObjectWriter
             return (int)_stream.Length + (int)Padding;
         }
     }
+#endif
 }
