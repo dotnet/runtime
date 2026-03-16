@@ -3227,6 +3227,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         if (fIntercepted)
         {
             EECodeInfo codeInfo(GetIP(pvRegDisplay->pCurrentContext));
+            _ASSERTE(codeInfo.IsValid());
             codeInfo.GetCodeManager()->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, /* fIntercepted */ true);
         }
 #ifdef HOST_UNIX

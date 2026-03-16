@@ -319,7 +319,7 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
-    if ((m_pLastNewIns != nullptr) && (m_pLastNewIns->ilOffset != m_currentILOffset))
+    if ((m_pLastNewIns == nullptr) || (m_pLastNewIns->ilOffset != m_currentILOffset))
     {
         // This is the first instruction we have emitted for this IL offset, so set the flag.
         ins->flags |= INTERP_INST_FLAG_FIRST_FOR_IL_OP;
