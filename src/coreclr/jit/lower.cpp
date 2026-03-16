@@ -2867,6 +2867,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 #endif
 
+    call->gtDirectCallAddress = nullptr; // Clear out any stale data from the union.
     call->ClearOtherRegs();
 
 #if HAS_FIXED_REGISTER_SET
@@ -3974,7 +3975,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //
 void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
-    assert(node->OperIsPutArg() || node->OperIsFieldList());
+    assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
 
     if (node->OperIsFieldList())
     {
@@ -3985,7 +3986,7 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
             MovePutArgUpToCall(call, operand.GetNode());
         }
     }
-    else
+    else if (node->OperIsPutArg())
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
@@ -4000,6 +4001,12 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
         {
             JITDUMP("...no, operand has side effects or is not invariant\n");
         }
+    }
+    else
+    {
+        assert(!HAS_FIXED_REGISTER_SET);
+        // No moving necessary
+        return;
     }
 
     JITDUMP("Moving\n");
@@ -4024,14 +4031,14 @@ void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 }
@@ -4607,6 +4614,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
           op1->SupportsSettingFlagsAsCompareToZero())) &&
         BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
+        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
+        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
+        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
+        // If we'd need to bail, do it before touching the LIR.
+        const bool isUnsignedZeroCompare = cmp->IsUnsigned() && op2->IsIntegralConst(0);
+        if (isUnsignedZeroCompare && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        {
+            if (cmp->OperIs(GT_GE, GT_LT))
+            {
+                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
+                return cmp;
+            }
+        }
+
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();
 
@@ -4616,11 +4637,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         GenCondition cmpCondition = GenCondition::FromRelop(cmp);
 
-        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
-        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
-        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
-        // Rewrite the condition to use Z/N where possible, or bail out.
-        if (cmp->IsUnsigned() && op2->IsIntegralConst(0) && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        // Use Z/N where possible.
+        if (isUnsignedZeroCompare)
         {
             if (cmp->OperIs(GT_GT))
             {
@@ -4631,11 +4649,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 // x <= 0U <=> x == 0
                 cmpCondition = GenCondition::EQ;
-            }
-            else
-            {
-                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
-                return cmp;
             }
         }
         GenTreeCC* setcc = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
@@ -5698,7 +5711,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             {
                 if (slotCount > 1)
                 {
-#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_WASM)
                     assert(call->HasMultiRegRetVal());
 #endif
                 }
@@ -6374,12 +6387,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
+#ifndef TARGET_WASM
             // If we are using an indirection cell for a direct call then apply
             // an optimization that loads the call target directly from the
             // indirection cell, instead of duplicating the tree.
             bool hasIndirectionCell = call->GetIndirectionCellArgKind() != WellKnownArg::None;
 
             if (!hasIndirectionCell)
+#endif // !TARGET_WASM
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
@@ -8034,6 +8049,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             return next;
         }
+    }
+#endif
+
+#if defined(TARGET_WASM)
+    if (node->OperIs(GT_ADD))
+    {
+        LowerBinaryArithmetic(node);
     }
 #endif
 
@@ -10880,7 +10902,11 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#if defined(TARGET_WASM)
+        return LowerStoreIndir(ind);
+#else
         return ind->gtNext;
+#endif
     }
 
 #ifndef TARGET_XARCH
@@ -11683,7 +11709,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // LowerLclHeap: a common logic to lower LCLHEAP.
 //
 // Arguments:
-//    blkNode - the LCLHEAP node we are lowering.
+//    node - the LCLHEAP node we are lowering.
 //
 void Lowering::LowerLclHeap(GenTree* node)
 {

@@ -56,7 +56,7 @@ namespace System.Xml.Xsl.IlGen
         private XmlILConstructInfo? _parentInfo;
         private bool _isReadOnly;
 
-        private static volatile XmlILConstructInfo? s_default;
+        private static XmlILConstructInfo? s_default;
 
         /// <summary>
         /// Get ConstructInfo annotation for the specified node.  Lazily create if necessary.

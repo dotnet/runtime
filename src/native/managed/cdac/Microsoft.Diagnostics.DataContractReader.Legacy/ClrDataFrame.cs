@@ -8,6 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -38,10 +39,95 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint contextBufSize,
         uint* contextSize,
         [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf)
-        => _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuf) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IStackWalk stackWalk = _target.Contracts.StackWalk;
+            byte[] context = stackWalk.GetRawContext(_dataFrame);
 
-    int IXCLRDataFrame.GetAppDomain(/*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomain(appDomain) : HResults.E_NOTIMPL;
+            if (contextSize is not null)
+                *contextSize = (uint)context.Length;
+
+            // Match native DAC behavior: fail when the buffer is too small,
+            // and on success copy the full context.
+            if (contextBufSize < (uint)context.Length)
+                throw new ArgumentException();
+
+            if (contextBufSize > 0 && context.Length > 0)
+                Array.Copy(context, 0, contextBuf, 0, context.Length);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            byte[] localContextBuf = new byte[contextBufSize];
+            int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK)
+            {
+                IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                contextStruct.FillFromBuffer(contextBuf);
+                localContextStruct.FillFromBuffer(localContextBuf);
+
+                Debug.Assert(contextStruct.Equals(localContextStruct));
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataFrame.GetAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
+    {
+        int hr = HResults.S_OK;
+
+        int hrLegacy = HResults.S_OK;
+        IXCLRDataAppDomain? legacyAppDomain = null;
+        if (_legacyImpl is not null)
+        {
+            DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: false);
+            hrLegacy = _legacyImpl.GetAppDomain(legacyAppDomainOut);
+            if (hrLegacy >= 0)
+            {
+                legacyAppDomain = legacyAppDomainOut.Interface;
+            }
+        }
+
+        try
+        {
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomainAddr = _target.ReadPointer(appDomainPointer);
+
+            if (appDomainAddr != TargetPointer.Null)
+            {
+                appDomain.Interface = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLegacy);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataFrame.GetNumArguments(uint* numArgs)
     {
@@ -91,7 +177,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             uint numArgsLocal;
             int hrLocal = _legacyImpl.GetNumArguments(&numArgsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*numArgs == numArgsLocal, $"cDAC: {*numArgs}, DAC: {numArgsLocal}");
         }
@@ -101,7 +187,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetArgumentByIndex(
         uint index,
-        void** arg,
+        DacComNullableByRef<IXCLRDataValue> arg,
         uint bufLen,
         uint* nameLen,
         char* name)
@@ -162,7 +248,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             uint numLocalsLocal;
             int hrLocal = _legacyImpl.GetNumLocalVariables(&numLocalsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*numLocals == numLocalsLocal, $"cDAC: {*numLocals}, DAC: {numLocalsLocal}");
         }
@@ -172,7 +258,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     int IXCLRDataFrame.GetLocalVariableByIndex(
         uint index,
-        void** localVariable,
+        DacComNullableByRef<IXCLRDataValue> localVariable,
         uint bufLen,
         uint* nameLen,
         char* name)
@@ -185,16 +271,17 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         char* nameBuf)
         => _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
 
-    int IXCLRDataFrame.GetMethodInstance(out IXCLRDataMethodInstance? method)
+    int IXCLRDataFrame.GetMethodInstance(DacComNullableByRef<IXCLRDataMethodInstance> method)
     {
         int hr = HResults.S_OK;
-        method = null;
 
         int hrLocal = HResults.S_OK;
         IXCLRDataMethodInstance? legacyMethod = null;
         if (_legacyImpl is not null)
         {
-            hrLocal = _legacyImpl.GetMethodInstance(out legacyMethod);
+            DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetMethodInstance(legacyMethodOut);
+            legacyMethod = legacyMethodOut.Interface;
         }
 
         try
@@ -211,7 +298,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             TargetPointer appDomain = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.AppDomain));
 
-            method = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
+            method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
         }
         catch (System.Exception ex)
         {
@@ -221,7 +308,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
 
@@ -239,10 +326,10 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)
         => _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
 
-    int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, void** typeArg)
+    int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
         => _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
 
     // IXCLRDataFrame2 implementation
-    int IXCLRDataFrame2.GetExactGenericArgsToken(void** genericToken)
+    int IXCLRDataFrame2.GetExactGenericArgsToken(DacComNullableByRef<IXCLRDataValue> genericToken)
         => _legacyImpl2 is not null ? _legacyImpl2.GetExactGenericArgsToken(genericToken) : HResults.E_NOTIMPL;
 }
