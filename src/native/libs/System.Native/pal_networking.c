@@ -204,6 +204,11 @@ static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFami
             *palAddressFamily = AddressFamily_AF_PACKET;
             return true;
 #endif
+#ifdef AF_LINK
+        case AF_LINK:
+            *palAddressFamily = AddressFamily_AF_LINK;
+            return true;
+#endif
 #ifdef AF_CAN
         case AF_CAN:
             *palAddressFamily = AddressFamily_AF_CAN;
@@ -239,6 +244,11 @@ static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_fa
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             *platformAddressFamily = AF_PACKET;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformAddressFamily = AF_LINK;
             return true;
 #endif
 #ifdef AF_CAN
@@ -2546,6 +2556,11 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
             *platformProtocolType = palProtocolType;
             return true;
 #endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformProtocolType = palProtocolType;
+            return true;
+#endif
 #if HAVE_LINUX_CAN_H
         case AddressFamily_AF_CAN:
             switch (palProtocolType)
@@ -2682,6 +2697,11 @@ static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int pl
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
             *palProtocolType = platformProtocolType;
             return true;
 #endif
