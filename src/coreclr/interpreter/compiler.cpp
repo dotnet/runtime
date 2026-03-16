@@ -5856,10 +5856,10 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         if (i == -1)
         {
             returnValueDataStartOffset = currentOffset;
-            encodeIndex(currentOffset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
             // Handle return value first
             if (returnValueVar == -1)
                 continue;
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
             var = returnValueVar;
             INTERP_DUMP("returnValueVar is  %d\n", returnValueVar);
         }
