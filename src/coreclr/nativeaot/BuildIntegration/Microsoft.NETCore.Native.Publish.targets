@@ -21,10 +21,11 @@
     NativeAOT compilation pipeline: ILC compilation, native linking, and updating
     ResolvedFileToPublish to replace managed assemblies with the native binary.
 
-    The SDK sequences this target in the publish pipeline as:
-      ComputeResolvedFilesToPublishList -> ILLink -> NativeCompile -> ...
+    The SDK typically sequences this target in the publish pipeline as:
+      ComputeResolvedFilesToPublishList -> ILLink (when RunILLink is true) -> NativeCompile -> ...
 
-    This gives us a clean, explicit position after ILLink (trim configuration).
+    This gives us a clean, explicit position after trim configuration (_PrepareTrimConfiguration),
+    regardless of whether ILLink itself runs.
     ============================================================
   -->
   <Target Name="NativeCompile"
