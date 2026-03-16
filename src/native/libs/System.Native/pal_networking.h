@@ -66,6 +66,7 @@ typedef enum
     AddressFamily_AF_UNIX = 1,     // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,     // System.Net.AddressFamily.InterNetwork
     AddressFamily_AF_INET6 = 23,   // System.Net.AddressFamily.InterNetworkV6
+    AddressFamily_AF_LINK = 13,       // System.Net.AddressFamily.DataLink
     AddressFamily_AF_PACKET = 65536,  // System.Net.AddressFamily.Packet
     AddressFamily_AF_CAN = 65537,     // System.Net.AddressFamily.ControllerAreaNetwork
 } AddressFamily;
