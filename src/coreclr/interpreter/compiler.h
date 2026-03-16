@@ -234,8 +234,8 @@ enum InterpInstFlags
     INTERP_INST_FLAG_CALL               = 0x01,
     // Flag used internally by the var offset allocator
     INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
-    // First interpreter instruction for an IL opcode
-    INTERP_INST_FLAG_FIRST_FOR_IL_OP    = 0x04
+    // The IL stack is empty at this instruction
+    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04
 };
 
 struct InterpInst
