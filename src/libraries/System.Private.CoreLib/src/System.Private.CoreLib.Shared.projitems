@@ -26,6 +26,7 @@
     <UseMinimalGlobalizationData Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <FeatureCrossProcessMutex Condition="'$(IsMobileLike)' != 'true'">true</FeatureCrossProcessMutex>
+    <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(IsBigEndian)' == 'true'">$(DefineConstants);BIGENDIAN</DefineConstants>
@@ -54,6 +55,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeatureCrossProcessMutex)' == 'true'">$(DefineConstants);FEATURE_CROSS_PROCESS_MUTEX</DefineConstants>
+    <DefineConstants Condition="'$(FeatureMultithreading)' == 'true'">$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.xml" />
@@ -1603,8 +1606,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipe.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipe.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.Threads.cs" Condition="'$(FeaturePerfTracing)' == 'true' and (('$(TargetsWasi)' != 'true' and '$(TargetsBrowser)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true')" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.Wasm.cs" Condition="'$(FeaturePerfTracing)' == 'true' and (('$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(FeatureWasmManagedThreads)' != 'true')" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.Threads.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventDispatcher.Wasm.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeEventProvider.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeMetadataGenerator.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipePayloadDecoder.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
@@ -1808,6 +1811,15 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PipeOptions.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.PipeOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateNamedPipe_SafeFileHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreateNamedPipe_SafeFileHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.EventWaitHandle.cs</Link>
@@ -2410,6 +2422,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.CopyFile.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.CopyFile.cs</Link>
     </Compile>
@@ -2433,6 +2448,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCpuUtilization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Pipe.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
@@ -2847,14 +2865,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WaitThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerTracking.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true') or '$(TargetsWasi)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' != 'true') or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'"  />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true')" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' == 'true')" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
@@ -2865,19 +2883,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeatureWasmManagedThreads)' != 'true'">
+  <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Browser.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Wasi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Wasi.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.Threads.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Browser.Threads.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.Threads.cs" />

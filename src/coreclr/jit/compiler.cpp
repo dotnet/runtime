@@ -10808,6 +10808,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_externallyVisibleImplicitly++;
                     break;
 
+                case AddressExposedReason::SMALL_TYPE_PARTIAL_DEF:
+                    m_smallTypePartialDef++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10904,5 +10908,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
     PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
     PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
+    PRINT_STATS(m_smallTypePartialDef, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

@@ -142,7 +142,6 @@
   </Target>
 
   <!-- Generate the runtime pack's RuntimeList.xml -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)" Condition="'$(DotNetSharedFrameworkTaskFile)' != ''" />
   <Target Name="GenerateRuntimeListFile"
           DependsOnTargets="GetRuntimePackFiles"
           AfterTargets="BuildExternalsProject"

@@ -3096,7 +3096,6 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     }
     else
     {
-#if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
             EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
@@ -3107,7 +3106,6 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type1 = StackTypeI8;
         }
-#endif
         if (type1 == StackTypeR8 && type2 == StackTypeR4)
         {
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);

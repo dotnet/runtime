@@ -382,7 +382,7 @@ public unsafe partial interface IXCLRDataFrame
         [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf);
 
     [PreserveSig]
-    int GetAppDomain(/*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain);
 
     [PreserveSig]
     int GetNumArguments(uint* numArgs);
@@ -480,7 +480,7 @@ public unsafe partial interface IXCLRDataTask
     int SetContext(uint contextSize, byte* context);
 
     [PreserveSig]
-    int GetCurrentExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
@@ -489,7 +489,7 @@ public unsafe partial interface IXCLRDataTask
     int GetName(uint bufLen, uint* nameLen, char* nameBuffer);
 
     [PreserveSig]
-    int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 }
 
 public enum ClrDataSourceType : uint
@@ -587,7 +587,7 @@ public unsafe partial interface IXCLRDataMethodInstance
 public unsafe partial interface IXCLRDataAppDomain
 {
     [PreserveSig]
-    int GetProcess(/*IXCLRDataProcess*/ void** process);
+    int GetProcess(DacComNullableByRef<IXCLRDataProcess> process);
     [PreserveSig]
     int GetName(uint bufLen, uint* nameLen, char* name);
     [PreserveSig]
@@ -916,6 +916,19 @@ public unsafe partial interface IXCLRDataMethodDefinition
     int HasClassOrMethodInstantiation(int* bGeneric);
 }
 
+public enum CLRDataGeneralRequest : uint
+{
+    CLRDATA_REQUEST_REVISION = 0xe0000000,
+}
+
+[Flags]
+public enum CLRDataExceptionStateFlag : uint
+{
+    CLRDATA_EXCEPTION_DEFAULT = 0,
+    CLRDATA_EXCEPTION_NESTED = 0x1,
+    CLRDATA_EXCEPTION_PARTIAL = 0x2,
+}
+
 [GeneratedComInterface]
 [Guid("75DA9E4C-BD33-43C8-8F5C-96E8A5241F57")]
 public unsafe partial interface IXCLRDataExceptionState
@@ -923,7 +936,7 @@ public unsafe partial interface IXCLRDataExceptionState
     [PreserveSig]
     int GetFlags(uint* flags);
     [PreserveSig]
-    int GetPrevious(/*IXCLRDataExceptionState*/ void** exState);
+    int GetPrevious(DacComNullableByRef<IXCLRDataExceptionState> exState);
     [PreserveSig]
     int GetManagedObject(DacComNullableByRef<IXCLRDataValue> value);
     [PreserveSig]

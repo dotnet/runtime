@@ -482,15 +482,6 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
-                // Async methods are not emitted in composite mode.
-                // The mutable module tokens emission is not well tested for composite mode
-                // and we should find a real solution for that problem.
-                // https://github.com/dotnet/runtime/issues/125337
-                if (CompilationModuleGroup.IsCompositeBuildMode &&
-                    (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
-                {
-                    continue;
-                }
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
@@ -1093,6 +1084,14 @@ namespace ILCompiler.DependencyAnalysis
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
             WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
+            return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
+        public WasmTypeNode WasmTypeNode(MethodDesc method)
+        {
+            WasmFuncType funcType = WasmLowering.GetSignature(method);
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
