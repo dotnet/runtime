@@ -2031,13 +2031,16 @@ PhaseStatus Compiler::fgWasmEhFlow()
     // Start numbering at 1
     //
     // We hijack the bbPreorderNum to record this info on the blocks.
-
+    //
     unsigned catchRetIndex = 1;
-    for (int i = 0; i < catchRetBlocksByTryRegion.size(); i++)
+    for (ArrayStack<BasicBlock*>* catchRetBlocks : catchRetBlocksByTryRegion)
     {
-        ArrayStack<BasicBlock*>* catchRetContinuationBlocks = catchRetBlocksByTryRegion[i];
+        if (catchRetBlocks == nullptr)
+        {
+            continue;
+        }
 
-        for (BasicBlock* const catchRetBlock : catchRetBlocksByTryRegion[i]->TopDownOrder())
+        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
         {
             JITDUMP("Assigning catchret block " FMT_BB " index number %u\n", catchRetBlock->bbNum, catchRetIndex);
             catchRetBlock->bbPreorderNum = catchRetIndex;
@@ -2045,9 +2048,19 @@ PhaseStatus Compiler::fgWasmEhFlow()
         }
     }
 
+    // It's possible that ther are no catchrets, if every catch unconditinally throws.
+    // If so there is nothing to do, as control cannot resume in this method after a catch.
+    //
+    if (catchRetIndex == 1)
+    {
+        JITDUMP("No CATCHRETS in this method, so no EH processing needed.");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     // Allocate an exposed int local to hold the catchret number.
     // TODO-WASM: possibly share this with the "virtual IP"
-    // TODO-WASM: this will need to be at a known offset from $fp
+    // TODO-WASM: this will need to be at a known offset from $fp so runtime can set it
+    //   when control will not resume in this method.
     // We do not wany any opts acting on this local (eg jump threading)
     //
     unsigned const catchRetIndexLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH catchret index"));
@@ -2057,16 +2070,15 @@ PhaseStatus Compiler::fgWasmEhFlow()
     // Now for each region with continuations, add a branch at region entry that
     // branches to a switch to transfer control to the continuations.
     //
-    for (int i = 0; i < catchRetBlocksByTryRegion.size(); i++)
+    unsigned regionIndex = 0;
+    for (ArrayStack<BasicBlock*>* catchRetBlocks : catchRetBlocksByTryRegion)
     {
-        ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByTryRegion[i];
-
         if (catchRetBlocks == nullptr)
         {
             continue;
         }
 
-        EHblkDsc* const   dsc              = ehGetDsc(i);
+        EHblkDsc* const   dsc              = ehGetDsc(regionIndex++);
         BasicBlock* const regionEntryBlock = dsc->ebdTryBeg;
         BasicBlock* const regionLastBlock  = dsc->ebdTryLast;
 
@@ -2251,10 +2263,8 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
     // At the end of each catchret block, set the control variable to the appropriate value.
     //
-    for (int i = 0; i < catchRetBlocksByTryRegion.size(); i++)
+    for (ArrayStack<BasicBlock*>* catchRetBlocks : catchRetBlocksByTryRegion)
     {
-        ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByTryRegion[i];
-
         if (catchRetBlocks == nullptr)
         {
             continue;

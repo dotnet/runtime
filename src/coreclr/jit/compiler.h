@@ -2242,6 +2242,8 @@ public:
 #endif // DEBUG
 };
 
+class FlowGraphTryRegions;
+
 // Represents a try region in a method. Currently fairly lightweight.
 class FlowGraphTryRegion
 {

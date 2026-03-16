@@ -5399,10 +5399,9 @@ void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTre
 template <typename TFunc>
 BasicBlockVisit FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder(TFunc func)
 {
-    BitVecTraits            traits   = m_regions->GetBlockBitVecTraits();
-    BasicBlock* const       tryEntry = m_ehDsc->ebdTryBeg;
-    FlowGraphDfsTree* const dfsTree  = m_regions->GetDfsTree();
-    bool                    result   = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
+    BitVecTraits            traits  = m_regions->GetBlockBitVecTraits();
+    FlowGraphDfsTree* const dfsTree = m_regions->GetDfsTree();
+    bool                    result  = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
         assert(index < dfsTree->GetPostOrderCount());
         return func(dfsTree->GetPostOrder(index)) == BasicBlockVisit::Continue;
     });

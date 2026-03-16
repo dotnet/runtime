@@ -934,11 +934,11 @@ unsigned Compiler::ehOutermostMutualProtectTryIndex(unsigned regionIndex)
         if (!EHblkDsc::ebdIsSameTry(ehDscRoot, HBtab))
         {
             // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
-            // original region). Return it.
+            // original region). Return the current region.
             break;
         }
 
-        // Encloding region is a mutual-protect 'try', keep searching
+        // Enclosing region is a mutual-protect 'try', keep searching
         regionIndex = enclosingRegionIndex;
     }
 

@@ -1044,7 +1044,6 @@ void emitter::emitDispIns(
 
         case IF_TRY_TABLE:
         {
-            unsigned int  caseCnt = emitGetValTypeImmImm(id);
             WasmValueType valType = emitGetValTypeImmType(id);
 
             if (valType != WasmValueType::Invalid)
