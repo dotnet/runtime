@@ -7,10 +7,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 {
     private readonly Target _target;
-    // Mirrors SimpleComCallWrapper::CLEANUP_SENTINEL in src/coreclr/vm/comcallablewrapper.h
-    private const ulong CleanupSentinel = 0x80000000UL;
-    // Mirrors SimpleComCallWrapper::COM_REFCOUNT_MASK in src/coreclr/vm/comcallablewrapper.h
-    private const ulong ComRefCountMask = 0x000000007FFFFFFFUL;
     // Mirrors enum SimpleComCallWrapperFlags in src/coreclr/vm/comcallablewrapper.h
     private enum SimpleComCallWrapperFlags : uint
     {
