@@ -88,6 +88,7 @@ extern "C" {
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
+    uint32_t SystemNative_GetEUid ();
     int32_t SystemNative_GetErrNo ();
     void * SystemNative_GetLoadLibraryError ();
     int64_t SystemNative_GetLowResolutionTimestamp ();
@@ -115,6 +116,7 @@ extern "C" {
     void SystemNative_LowLevelMonitor_Wait (void *);
     int32_t SystemNative_MAdvise (void *, uint64_t, int32_t);
     void * SystemNative_MMap (void *, uint64_t, int32_t, int32_t, void *, int64_t);
+    int32_t SystemNative_MProtect (void *, uint64_t, int32_t);
     int32_t SystemNative_MSync (void *, uint64_t, int32_t);
     int32_t SystemNative_MUnmap (void *, uint64_t);
     void * SystemNative_Malloc (void *);
@@ -226,6 +228,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetEUid) // TestUtilities
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
@@ -252,9 +255,10 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_LowLevelMonitor_TimedWait) // System.Private.CoreLib
     DllImportEntry(SystemNative_LowLevelMonitor_Wait) // System.Private.CoreLib
     DllImportEntry(SystemNative_MAdvise) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_MMap) // System.IO.MemoryMappedFiles
+    DllImportEntry(SystemNative_MMap) // System.IO.MemoryMappedFiles, TestUtilities
+    DllImportEntry(SystemNative_MProtect) // TestUtilities
     DllImportEntry(SystemNative_MSync) // System.IO.MemoryMappedFiles
-    DllImportEntry(SystemNative_MUnmap) // System.IO.MemoryMappedFiles
+    DllImportEntry(SystemNative_MUnmap) // System.IO.MemoryMappedFiles, TestUtilities
     DllImportEntry(SystemNative_Malloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_MemfdCreate) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_MkDir) // System.Private.CoreLib

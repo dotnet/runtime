@@ -191,6 +191,7 @@ namespace System.Collections.Frozen.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -216,6 +217,7 @@ namespace System.Collections.Frozen.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(5000)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ComparingWithOtherSets(int size)
         {
             if (size > 10 && !TestLargeSizes)

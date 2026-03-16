@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>

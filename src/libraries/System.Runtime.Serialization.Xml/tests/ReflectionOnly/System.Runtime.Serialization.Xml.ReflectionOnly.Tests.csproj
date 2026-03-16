@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>

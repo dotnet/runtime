@@ -177,6 +177,7 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => Enumerable.Empty<DateTime>().OrderByDescending(keySelector));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void SortsLargeAscendingEnumerableCorrectly()
         {
@@ -213,6 +214,11 @@ namespace System.Linq.Tests
         [InlineData(1_000_000)]
         public void SortsRandomizedEnumerableCorrectly(int items)
         {
+            if (PlatformDetection.IsBrowser && PlatformDetection.IsCoreCLR && items > 1024)
+            {
+                // TODO-WASM too slow https://github.com/dotnet/runtime/issues/123011
+                return;
+            }
             var r = new Random(42);
 
             int[] randomized = Enumerable.Range(0, items).Select(i => r.Next()).ToArray();

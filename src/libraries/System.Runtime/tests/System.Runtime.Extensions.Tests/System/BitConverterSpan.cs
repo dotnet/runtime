@@ -88,6 +88,7 @@ namespace System.Tests
             Assert.Equal(expected, span.ToArray());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public override void ConvertFromInt128(Int128 num, byte[] expected)
         {
             expected = RangeToLittleEndian(expected, 0, 16);
@@ -120,6 +121,7 @@ namespace System.Tests
             Assert.Equal(expected, span.ToArray());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public override void ConvertFromUInt128(UInt128 num, byte[] expected)
         {
             expected = RangeToLittleEndian(expected, 0, 16);

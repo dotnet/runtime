@@ -214,6 +214,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(Values_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // SLOW
         public static void SearchValues_Contains(string needle, byte[] byteNeedle)
         {
             Test(needle, SearchValues.Create(needle));
@@ -234,6 +235,7 @@ namespace System.SpanTests
         [Theory]
         [MemberData(nameof(Values_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80875", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void SearchValues_GetValues(string needle, byte[] byteNeedle)
         {
             char[] charValuesActual = s_getValuesCharMethod(SearchValues.Create(needle));

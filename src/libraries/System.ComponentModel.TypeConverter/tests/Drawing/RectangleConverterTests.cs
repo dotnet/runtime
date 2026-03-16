@@ -177,6 +177,7 @@ namespace System.ComponentModel.TypeConverterTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TestGetProperties()
         {
             var rect = new Rectangle(10, 20, 30, 40);
