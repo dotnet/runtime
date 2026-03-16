@@ -113,7 +113,7 @@ namespace System.IO.Compression
         /// <param name="source">The zip archive entry to extract a file from.</param>
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.</param>
         /// <param name="password">The password used to decrypt the encrypted entry.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, string password) =>
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, ReadOnlySpan<char> password) =>
             ExtractToFile(source, destinationFileName, overwrite: false, password: password);
 
         /// <summary>
@@ -125,9 +125,12 @@ namespace System.IO.Compression
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.</param>
         /// <param name="overwrite">True to indicate overwrite.</param>
         /// <param name="password">The password used to decrypt the encrypted entry.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password)
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlySpan<char> password)
         {
-            ArgumentException.ThrowIfNullOrEmpty(password);
+            if (password.IsEmpty)
+            {
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
+            }
 
             ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
 
@@ -234,14 +237,14 @@ namespace System.IO.Compression
             return true; // It is a file
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, string? password = null)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, ReadOnlySpan<char> password = default)
         {
             if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
             {
                 // If it is a file:
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                if (password is not null)
+                if (!password.IsEmpty)
                     source.ExtractToFile(fileDestinationPath, overwrite: overwrite, password: password);
                 else
                     source.ExtractToFile(fileDestinationPath, overwrite: overwrite);

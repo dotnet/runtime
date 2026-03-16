@@ -77,7 +77,7 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
-        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, string password, EncryptionMethod encryption) =>
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, ReadOnlySpan<char> password, EncryptionMethod encryption) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, null, password, encryption);
 
 
@@ -113,7 +113,7 @@ namespace System.IO.Compression
         /// <returns>A wrapper for the newly created entry.</returns>
         public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination,
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel,
-                                                          string password, EncryptionMethod encryption) =>
+                                                          ReadOnlySpan<char> password, EncryptionMethod encryption) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, password, encryption);
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
@@ -134,7 +134,7 @@ namespace System.IO.Compression
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel,
-                                                              string password, EncryptionMethod encryption)
+                                                              ReadOnlySpan<char> password, EncryptionMethod encryption)
         {
 
             (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: false);

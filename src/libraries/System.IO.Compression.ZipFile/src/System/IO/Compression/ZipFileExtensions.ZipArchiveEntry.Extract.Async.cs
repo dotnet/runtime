@@ -118,12 +118,15 @@ public static partial class ZipFileExtensions
         }
     }
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, string password, CancellationToken cancellationToken = default) =>
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         await ExtractToFileAsync(source, destinationFileName, false, password, cancellationToken).ConfigureAwait(false);
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password, CancellationToken cancellationToken = default)
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrEmpty(password);
+        if (password.IsEmpty)
+        {
+            throw new ArgumentException(SR.EmptyPassword, nameof(password));
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -184,7 +187,7 @@ public static partial class ZipFileExtensions
         }
     }
 
-    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, string password, CancellationToken cancellationToken = default)
+    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

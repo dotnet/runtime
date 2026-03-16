@@ -321,7 +321,7 @@ namespace System.IO.Compression.Tests
             using var archive = ZipFile.OpenRead(zipPath);
             var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
 
-            await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "123456789");
+            await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "123456789".AsMemory());
 
             Assert.True(File.Exists(tempFile), "Extracted file was not created.");
             string content = await File.ReadAllTextAsync(tempFile);
@@ -345,7 +345,7 @@ namespace System.IO.Compression.Tests
 
             await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
-                await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "wrongpass");
+                await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "wrongpass".AsMemory());
             });
         }
 

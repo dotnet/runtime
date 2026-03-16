@@ -112,4 +112,7 @@
   <data name="UnwritableStream" xml:space="preserve">
     <value>The stream is unwritable.</value>
   </data>
+  <data name="EmptyPassword" xml:space="preserve">
+    <value>The password cannot be empty.</value>
+  </data>
 </root>

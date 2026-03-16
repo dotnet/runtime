@@ -218,7 +218,7 @@ namespace System.IO.Compression
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, string password) =>
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, ReadOnlySpan<char> password) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, password: password);
 
         /// <summary>
@@ -252,7 +252,7 @@ namespace System.IO.Compression
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, string password) =>
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, ReadOnlySpan<char> password) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, password: password);
 
         /// <summary>
@@ -307,7 +307,7 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, string password) =>
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, ReadOnlySpan<char> password) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, password: password);
 
         /// <summary>
@@ -363,7 +363,7 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, string password)
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, ReadOnlySpan<char> password)
         {
             ArgumentNullException.ThrowIfNull(sourceArchiveFileName);
 
@@ -538,7 +538,7 @@ namespace System.IO.Compression
         /// An archive entry was not found or was corrupt.
         /// -or-
         /// An archive entry was compressed by using a compression method that is not supported.</exception>
-        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, string password) =>
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, ReadOnlySpan<char> password) =>
             ExtractToDirectory(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, password: password);
 
         /// <summary>
@@ -568,7 +568,7 @@ namespace System.IO.Compression
         /// An archive entry was not found or was corrupt.
         /// -or-
         /// An archive entry was compressed by using a compression method that is not supported.</exception>
-        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles, string password) =>
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles, ReadOnlySpan<char> password) =>
             ExtractToDirectory(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, password: password);
 
         /// <summary>
@@ -606,7 +606,7 @@ namespace System.IO.Compression
         /// An archive entry was not found or was corrupt.
         /// -or-
         /// An archive entry was compressed by using a compression method that is not supported.</exception>
-        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, string password) =>
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, ReadOnlySpan<char> password) =>
             ExtractToDirectory(source, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, password: password);
 
         /// <summary>
@@ -645,7 +645,7 @@ namespace System.IO.Compression
         /// An archive entry was not found or was corrupt.
         /// -or-
         /// An archive entry was compressed by using a compression method that is not supported.</exception>
-        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, string password)
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, ReadOnlySpan<char> password)
         {
             ArgumentNullException.ThrowIfNull(source);
             if (!source.CanRead)

@@ -113,7 +113,7 @@ public static partial class ZipFileExtensions
     /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, overwriteFiles: false, password, cancellationToken);
 
     /// <summary>
@@ -147,7 +147,7 @@ public static partial class ZipFileExtensions
     /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, string password, CancellationToken cancellationToken = default)
+    public static async Task ExtractToDirectoryAsync(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

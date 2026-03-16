@@ -102,7 +102,7 @@ namespace System.IO.Compression
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
-        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, string password) =>
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, ReadOnlySpan<char> password) =>
             ExtractToDirectory(source, destinationDirectoryName, overwriteFiles: false, password: password);
 
         /// <summary>
@@ -134,11 +134,14 @@ namespace System.IO.Compression
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
-        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, string password)
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles, ReadOnlySpan<char> password)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
-            ArgumentException.ThrowIfNullOrEmpty(password);
+            if (password.IsEmpty)
+            {
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
+            }
 
             foreach (ZipArchiveEntry entry in source.Entries)
             {

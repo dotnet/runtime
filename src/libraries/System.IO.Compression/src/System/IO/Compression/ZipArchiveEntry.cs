@@ -420,10 +420,10 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
         /// <exception cref="ArgumentException">The password provided is empty.</exception>
-        public Stream Open(string password)
+        public Stream Open(ReadOnlySpan<char> password)
         {
             ThrowIfInvalidArchive();
-            if (string.IsNullOrEmpty(password))
+            if (password.IsEmpty)
             {
                 throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
@@ -434,7 +434,7 @@ namespace System.IO.Compression
                     {
                         throw new InvalidDataException(SR.EntryNotEncrypted);
                     }
-                    return OpenInReadMode(checkOpenable: true, password.AsMemory());
+                    return OpenInReadMode(checkOpenable: true, password);
                 case ZipArchiveMode.Create:
                     throw new InvalidOperationException(SR.EntriesInCreateMode);
                 case ZipArchiveMode.Update:
@@ -455,10 +455,10 @@ namespace System.IO.Compression
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-        public Stream Open(string password, EncryptionMethod encryptionMethod)
+        public Stream Open(ReadOnlySpan<char> password, EncryptionMethod encryptionMethod)
         {
             ThrowIfInvalidArchive();
-            if (string.IsNullOrEmpty(password))
+            if (password.IsEmpty)
             {
                 throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
@@ -528,10 +528,10 @@ namespace System.IO.Compression
             }
         }
 
-        public Stream Open(FileAccess access, string password)
+        public Stream Open(FileAccess access, ReadOnlySpan<char> password)
         {
             ThrowIfInvalidArchive();
-            if (password.Length == 0)
+            if (password.IsEmpty)
             {
                 throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
@@ -545,7 +545,7 @@ namespace System.IO.Compression
                         throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
                     if (!IsEncrypted)
                         throw new InvalidDataException(SR.EntryNotEncrypted);
-                    return OpenInReadMode(checkOpenable: true, password.AsMemory());
+                    return OpenInReadMode(checkOpenable: true, password);
 
                 case ZipArchiveMode.Create:
                     throw new InvalidOperationException(SR.EntriesInCreateMode);
@@ -558,7 +558,7 @@ namespace System.IO.Compression
                     switch (access)
                     {
                         case FileAccess.Read:
-                            return OpenInReadMode(checkOpenable: true, password.AsMemory());
+                            return OpenInReadMode(checkOpenable: true, password);
                         case FileAccess.Write:
                             return OpenInUpdateMode(loadExistingContent: false, password);
                         case FileAccess.ReadWrite:
@@ -568,10 +568,10 @@ namespace System.IO.Compression
             }
         }
 
-        public Stream Open(FileAccess access, string password, EncryptionMethod encryptionMethod)
+        public Stream Open(FileAccess access, ReadOnlySpan<char> password, EncryptionMethod encryptionMethod)
         {
             ThrowIfInvalidArchive();
-            if (password.Length == 0)
+            if (password.IsEmpty)
             {
                 throw new ArgumentException(SR.EmptyPassword, nameof(password));
             }
@@ -644,7 +644,7 @@ namespace System.IO.Compression
             return _storedOffsetOfCompressedData.Value;
         }
 
-        private MemoryStream GetUncompressedData(string? password = null)
+        private MemoryStream GetUncompressedData(ReadOnlySpan<char> password = default)
         {
             if (_storedUncompressedData == null)
             {
@@ -660,8 +660,8 @@ namespace System.IO.Compression
 
                 if (_originallyInArchive)
                 {
-                    Stream decompressor = password != null
-                        ? OpenInReadMode(checkOpenable: false, password.AsMemory())
+                    Stream decompressor = !password.IsEmpty
+                        ? OpenInReadMode(checkOpenable: false, password)
                         : OpenInReadMode(checkOpenable: false);
 
                     using (decompressor)
@@ -1051,7 +1051,7 @@ namespace System.IO.Compression
         }
 
         // Creates the appropriate decryption stream for an encrypted entry.
-        private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlyMemory<char> password)
+        private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlySpan<char> password)
         {
             if (password.IsEmpty)
                 throw new InvalidDataException(SR.PasswordRequired);
@@ -1082,7 +1082,7 @@ namespace System.IO.Compression
                 compressedStream.Seek(-saltSize, SeekOrigin.Current);
 
                 // Derive key material from the provided password
-                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.Span, salt, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
 
                 return WinZipAesStream.Create(
                     baseStream: compressedStream,
@@ -1123,14 +1123,14 @@ namespace System.IO.Compression
             return uncompressedStream;
         }
 
-        private Stream OpenInReadMode(bool checkOpenable, ReadOnlyMemory<char> password = default)
+        private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
         {
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
         }
 
-        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlyMemory<char> password = default)
+        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
             Stream streamToDecompress;
@@ -1150,7 +1150,7 @@ namespace System.IO.Compression
 
             return decompressedStream;
         }
-        private WrappedStream OpenInWriteMode(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.None)
+        private WrappedStream OpenInWriteMode(ReadOnlySpan<char> password = default, EncryptionMethod encryptionMethod = EncryptionMethod.None)
         {
             if (_everOpenedForWrite)
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
@@ -1161,7 +1161,7 @@ namespace System.IO.Compression
             return OpenInWriteModeCore(password, encryptionMethod);
         }
 
-        private WrappedStream OpenInWriteModeCore(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.None)
+        private WrappedStream OpenInWriteModeCore(ReadOnlySpan<char> password = default, EncryptionMethod encryptionMethod = EncryptionMethod.None)
         {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
@@ -1172,14 +1172,14 @@ namespace System.IO.Compression
 
             if (encryptionMethod == EncryptionMethod.ZipCrypto)
             {
-                if (string.IsNullOrEmpty(password))
+                if (password.IsEmpty)
                 {
                     throw new ArgumentException(SR.EmptyPassword, nameof(password));
                 }
 
                 Encryption = encryptionMethod;
 
-                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
+                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
                 ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
                 targetStream = ZipCryptoStream.Create(
@@ -1198,7 +1198,7 @@ namespace System.IO.Compression
                     throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
                 }
 
-                if (string.IsNullOrEmpty(password))
+                if (password.IsEmpty)
                     throw new ArgumentException(SR.EmptyPassword, nameof(password));
 
                 Encryption = encryptionMethod;
@@ -1206,7 +1206,7 @@ namespace System.IO.Compression
                 int keySizeBits = GetAesKeySizeBits(encryptionMethod);
 
                 // Derive key material from password with new random salt
-                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.AsSpan(), salt: null, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
 
                 targetStream = WinZipAesStream.Create(
                     baseStream: _archive.ArchiveStream,
@@ -1236,13 +1236,13 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true, string? password = null)
+        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true, ReadOnlySpan<char> password = default)
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);
 
             // Validate password requirement for encrypted entries
-            if (loadExistingContent && IsEncrypted && string.IsNullOrEmpty(password))
+            if (loadExistingContent && IsEncrypted && password.IsEmpty)
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
 
             if (loadExistingContent)
@@ -1259,7 +1259,7 @@ namespace System.IO.Compression
                 // For encrypted entries, set up key material for re-encryption
                 if (IsEncrypted)
                 {
-                    SetupEncryptionKeyMaterial(password!);
+                    SetupEncryptionKeyMaterial(password);
                 }
             }
             else
@@ -1296,12 +1296,12 @@ namespace System.IO.Compression
         /// <summary>
         /// Sets up encryption key material for re-encryption when writing back to the archive.
         /// </summary>
-        private void SetupEncryptionKeyMaterial(string password)
+        private void SetupEncryptionKeyMaterial(ReadOnlySpan<char> password)
         {
             // Derive and save key material for re-encryption
             if (IsZipCryptoEncrypted())
             {
-                _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
+                _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password);
                 Encryption = EncryptionMethod.ZipCrypto;
             }
             else if (UseAesEncryption())
@@ -1313,7 +1313,7 @@ namespace System.IO.Compression
                 // Generate new salt and derive key material for AES
                 // This ensures each write uses a fresh random salt for security
                 int keySizeBits = GetAesKeySizeBits(Encryption);
-                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password.AsSpan(), salt: null, keySizeBits);
+                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
                 // Encryption is already set from constructor (parsed from central directory AES extra field)
             }
 

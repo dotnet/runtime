@@ -136,15 +136,15 @@ namespace System.IO.Compression
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
         public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
-        public System.IO.Stream Open(System.IO.FileAccess access, string password) { throw null; }
-        public System.IO.Stream Open(System.IO.FileAccess access, string password, System.IO.Compression.EncryptionMethod encryptionMethod) { throw null; }
-        public System.IO.Stream Open(string password) { throw null; }
-        public System.IO.Stream Open(string password, System.IO.Compression.EncryptionMethod encryptionMethod) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, string password, System.IO.Compression.EncryptionMethod encryptionMethod, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access, System.ReadOnlySpan<char> password) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access, System.ReadOnlySpan<char> password, System.IO.Compression.EncryptionMethod encryptionMethod) { throw null; }
+        public System.IO.Stream Open(System.ReadOnlySpan<char> password) { throw null; }
+        public System.IO.Stream Open(System.ReadOnlySpan<char> password, System.IO.Compression.EncryptionMethod encryptionMethod) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.ReadOnlyMemory<char> password, System.IO.Compression.EncryptionMethod encryptionMethod, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.ReadOnlyMemory<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string password, System.IO.Compression.EncryptionMethod encryptionMethod, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.ReadOnlyMemory<char> password, System.IO.Compression.EncryptionMethod encryptionMethod, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.ReadOnlyMemory<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }

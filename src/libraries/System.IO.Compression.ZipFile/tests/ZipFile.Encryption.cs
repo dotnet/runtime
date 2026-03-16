@@ -237,7 +237,7 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password);
+                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password.AsMemory());
                     Assert.Equal("content", await File.ReadAllTextAsync(destFile));
                 }
                 else
@@ -1121,7 +1121,7 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await entry.ExtractToFileAsync(destFile, overwrite: false, password: password);
+                    await entry.ExtractToFileAsync(destFile, overwrite: false, password: password.AsMemory());
                     Assert.Equal(content, await File.ReadAllTextAsync(destFile));
                 }
                 else
@@ -1154,7 +1154,7 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password);
+                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password.AsMemory());
                     Assert.Equal(content, await File.ReadAllTextAsync(destFile));
                 }
                 else
@@ -1183,7 +1183,7 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await Assert.ThrowsAsync<InvalidDataException>(() => entry.ExtractToFileAsync(destFile, overwrite: false, password: "WrongPassword"));
+                    await Assert.ThrowsAsync<InvalidDataException>(() => entry.ExtractToFileAsync(destFile, overwrite: false, password: "WrongPassword".AsMemory()));
                 }
                 else
                 {
@@ -1218,7 +1218,7 @@ namespace System.IO.Compression.Tests
             {
                 if (async)
                 {
-                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password);
+                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password.AsMemory());
                 }
                 else
                 {
@@ -1258,7 +1258,7 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     await Assert.ThrowsAsync<InvalidDataException>(() =>
-                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, "Password1"));
+                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, "Password1".AsMemory()));
                 }
                 else
                 {
@@ -1292,7 +1292,7 @@ namespace System.IO.Compression.Tests
             {
                 if (async)
                 {
-                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: true, password);
+                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: true, password.AsMemory());
                 }
                 else
                 {
@@ -1328,7 +1328,7 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     await Assert.ThrowsAsync<IOException>(() =>
-                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password));
+                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password.AsMemory()));
                 }
                 else
                 {
@@ -1361,8 +1361,8 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Write, password));
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.ReadWrite, password));
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Write, password.AsMemory()));
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.ReadWrite, password.AsMemory()));
                 }
                 else
                 {
@@ -1386,10 +1386,10 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     // Read access in create mode throws
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read, "password"));
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read, "password".AsMemory()));
                     // Encryption without password throws
                     await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, null!, EncryptionMethod.Aes256));
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, "", EncryptionMethod.Aes256));
+                    await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, "".AsMemory(), EncryptionMethod.Aes256));
                 }
                 else
                 {
@@ -1419,9 +1419,9 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, null!));
-                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, ""));
+                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, "".AsMemory()));
                     await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, null!));
-                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, ""));
+                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, "".AsMemory()));
                 }
                 else
                 {
@@ -1470,9 +1470,9 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     if (useCompression)
-                        await archive.CreateEntryFromFileAsync(sourcePath, entryName, CompressionLevel.Optimal, password, encryptionMethod);
+                        await archive.CreateEntryFromFileAsync(sourcePath, entryName, CompressionLevel.Optimal, password.AsMemory(), encryptionMethod);
                     else
-                        await archive.CreateEntryFromFileAsync(sourcePath, entryName, password, encryptionMethod);
+                        await archive.CreateEntryFromFileAsync(sourcePath, entryName, password.AsMemory(), encryptionMethod);
                 }
                 else
                 {

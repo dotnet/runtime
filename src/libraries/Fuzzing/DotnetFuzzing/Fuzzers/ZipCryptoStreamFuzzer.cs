@@ -33,10 +33,14 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
     private static readonly Type _zipCryptoKeysType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipCryptoKeys", throwOnError: true)!;
 #pragma warning restore IL2026
 
+    // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
+    // so we use a strongly-typed delegate instead.
+    private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
+
 #pragma warning disable IL2077 // dynamic access to non-public members
-    private static readonly MethodInfo _createKeyMethod = _zipCryptoStreamType.GetMethod(
+    private static readonly CreateKeyDelegate _createKey = _zipCryptoStreamType.GetMethod(
         "CreateKey",
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.CreateDelegate<CreateKeyDelegate>();
 
     private static readonly MethodInfo _createMethod = _zipCryptoStreamType.GetMethod(
         "Create",
@@ -47,9 +51,7 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
 #pragma warning restore IL2077
 
     // Derive keys from a fixed password so the key state is realistic.
-    private static readonly object s_keys = _createKeyMethod.Invoke(
-        obj: null,
-        parameters: ["fuzz".AsMemory()])!;
+    private static readonly object s_keys = _createKey("fuzz");
 
     private static Stream CreateStream(byte[] bytes, int length)
     {

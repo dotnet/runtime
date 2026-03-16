@@ -238,7 +238,7 @@ public static partial class ZipFile
     /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, password: password, cancellationToken);
 
     /// <summary>
@@ -275,7 +275,7 @@ public static partial class ZipFile
     /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, password: password, cancellationToken);
 
     /// <summary>
@@ -333,7 +333,7 @@ public static partial class ZipFile
     /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, password: password, cancellationToken);
 
     /// <summary>
@@ -392,7 +392,7 @@ public static partial class ZipFile
     /// <param name="password">The password used to decrypt the encrypted entries in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static async Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, string password, CancellationToken cancellationToken = default)
+    public static async Task ExtractToDirectoryAsync(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -592,7 +592,7 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false, password: password, cancellationToken);
 
     /// <summary>
@@ -625,7 +625,7 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles, password: password, cancellationToken);
 
     /// <summary>
@@ -666,7 +666,7 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, string password, CancellationToken cancellationToken = default) =>
+    public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
         ExtractToDirectoryAsync(source, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false, password: password, cancellationToken);
 
     /// <summary>
@@ -708,7 +708,7 @@ public static partial class ZipFile
     /// An archive entry was compressed by using a compression method that is not supported.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
     /// <returns>A task that represents the asynchronous extract operation. The task completes when all entries have been extracted or an error occurs.</returns>
-    public static async Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, string password, CancellationToken cancellationToken = default)
+    public static async Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
