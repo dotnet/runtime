@@ -3327,7 +3327,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
-    PCODE pStartAddress = pInterceptMD->GetNativeCode();
+    PCODE pStartAddress = pInterceptMD->GetCodeForInterpreterOrJitted();
 
     EECodeInfo codeInfo(pStartAddress);
     _ASSERTE(codeInfo.IsValid());
