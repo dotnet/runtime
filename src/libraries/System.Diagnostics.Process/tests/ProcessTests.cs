@@ -267,10 +267,18 @@ namespace System.Diagnostics.Tests
             {
                 // If sending the signal fails, we want to kill the process ASAP
                 // to prevent RemoteExecutor's timeout from hiding it.
-                if (!remoteHandle.Process.HasExited)
+#if NETCOREAPP3_1_OR_GREATER
+                remoteHandle.Process.Kill();
+#else
+                try
                 {
                     remoteHandle.Process.Kill();
                 }
+                catch (InvalidOperationException)
+                {
+                    // Process already exited
+                }
+#endif
             }
         }
 
