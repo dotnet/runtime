@@ -6090,7 +6090,7 @@ HRESULT DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pCon
 #ifdef FEATURE_INTERPRETER
                     if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
                     {
-                        PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(pThread->GetFrame());
+                        PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(frame);
                         pInterpreterFrame->SetContextToInterpMethodContextFrame(&tmpContext);
                         CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
                         return S_OK;
