@@ -456,7 +456,7 @@ namespace System.Formats.Tar
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && !_isDisposed)
             {
                 _rawStream.Dispose();
             }
