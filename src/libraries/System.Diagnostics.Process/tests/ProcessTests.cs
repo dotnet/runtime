@@ -81,6 +81,33 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        private static void AssertRemoteProcessStandardOutputLine(RemoteInvokeHandle remoteHandle, string expectedMessage, int timeout)
+        {
+            using CancellationTokenSource cts = new();
+
+            Task<string?> readTask = remoteHandle.Process.StandardOutput.ReadLineAsync(cts.Token).AsTask();
+            Task timeoutTask = Task.Delay(timeout, cts.Token);
+
+            Task finishedTask = Task.WhenAny(readTask, timeoutTask).ConfigureAwait(false).GetAwaiter().GetResult();
+            cts.Cancel(); // cancel the slower one
+
+            if (finishedTask == readTask)
+            {
+                if (readTask.Result != null)
+                {
+                    Assert.Equal(expectedMessage, readTask.Result);
+                }
+                else
+                {
+                    throw new XunitException($"StandardOutput was closed before observing expected message '{expectedMessage}'");
+                }
+            }
+            else
+            {
+                throw new XunitException($"Expected message '{expectedMessage}' was not observed on remote process within specified time.");
+            }
+        }
+
         public static IEnumerable<object[]> SignalTestData()
         {
             if (OperatingSystem.IsWindows())
@@ -141,10 +168,7 @@ namespace System.Diagnostics.Tests
                 arg: $"{signal}",
                 remoteInvokeOptions);
 
-            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
-            {
-                Thread.Sleep(20);
-            }
+            AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
 
             try
             {
@@ -162,7 +186,9 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(SignalTestData))]
+        // Limited only to signals which terminates process by default, and are supported on all platfroms by SendSignal
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData(PosixSignal.SIGQUIT)]
         public void SignalHandler_CanDisposeInHandler(PosixSignal signal)
         {
             const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created.";
@@ -205,7 +231,7 @@ namespace System.Diagnostics.Tests
                     Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
 
                     // Wait for second signal which should terminate process by default system handler
-                    Thread.Sleep(1000);
+                    Thread.Sleep(WaitInMS);
 
                     // If we did not terminated yet, return failure exit code
                     return -1;
@@ -213,24 +239,15 @@ namespace System.Diagnostics.Tests
                 arg: $"{signal}",
                 remoteInvokeOptions);
 
-            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
-            {
-                Thread.Sleep(20);
-            }
 
             try
             {
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
+
                 SendSignal(signal, remoteHandle.Process.Id);
 
-                while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalHandlerStartedMessage))
-                {
-                    Thread.Sleep(20);
-                }
-
-                while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalHandlerDisposedMessage))
-                {
-                    Thread.Sleep(20);
-                }
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
 
                 SendSignal(signal, remoteHandle.Process.Id);
 
@@ -242,7 +259,7 @@ namespace System.Diagnostics.Tests
                 }
                 else
                 {
-                    Assert.Equal(0, remoteHandle.Process.ExitCode);
+                    Assert.Equal(128 + (int)signal, remoteHandle.Process.ExitCode);
                 }
             }
             finally
