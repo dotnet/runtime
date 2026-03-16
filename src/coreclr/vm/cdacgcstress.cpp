@@ -53,6 +53,7 @@ static ISOSDacInterface*    s_cdacSosDac = nullptr;     // Cached QI result for 
 static bool             s_initialized = false;
 static bool             s_failFast = true;
 static FILE*            s_logFile = nullptr;
+static CrstStatic       s_cdacLock;       // Serializes cDAC access from concurrent GC stress threads
 
 // Verification counters (reported at shutdown)
 static volatile LONG    s_verifyCount = 0;
@@ -241,6 +242,7 @@ bool CdacGcStress::Initialize()
         }
     }
 
+    s_cdacLock.Init(CrstGCCover, CRST_DEFAULT);
     s_initialized = true;
     LOG((LF_GCROOTS, LL_INFO10, "CDAC GC Stress: Initialized successfully (failFast=%d, logFile=%s)\n",
         s_failFast, s_logFile != nullptr ? "yes" : "no"));
@@ -353,13 +355,19 @@ struct RuntimeRefCollectionContext
 {
     StackRef refs[MAX_COLLECTED_REFS];
     int count;
+    bool overflow;
 };
 
 static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc, uint32_t flags)
 {
     RuntimeRefCollectionContext* ctx = reinterpret_cast<RuntimeRefCollectionContext*>(sc->_unused1);
-    if (ctx == nullptr || ctx->count >= MAX_COLLECTED_REFS)
+    if (ctx == nullptr)
         return;
+    if (ctx->count >= MAX_COLLECTED_REFS)
+    {
+        ctx->overflow = true;
+        return;
+    }
 
     StackRef& ref = ctx->refs[ctx->count++];
 
@@ -387,10 +395,11 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
         ref.Flags |= SOSRefPinned;
 }
 
-static void CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* outRefs, int* outCount)
+static bool CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* outRefs, int* outCount)
 {
     RuntimeRefCollectionContext collectCtx;
     collectCtx.count = 0;
+    collectCtx.overflow = false;
 
     GCCONTEXT gcctx = {};
 
@@ -431,6 +440,7 @@ static void CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* ou
     // Copy results out
     *outCount = collectCtx.count;
     memcpy(outRefs, collectCtx.refs, collectCtx.count * sizeof(StackRef));
+    return !collectCtx.overflow;
 }
 
 //-----------------------------------------------------------------------------
@@ -528,6 +538,10 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     InterlockedIncrement(&s_verifyCount);
 
+    // Serialize cDAC access — the cDAC's ProcessedData cache and COM interfaces
+    // are not thread-safe, and GC stress can fire on multiple threads.
+    CrstHolder cdacLock(&s_cdacLock);
+
     // Set the thread context for the cDAC's ReadThreadContext callback.
     s_currentContext = regs;
     s_currentThreadId = pThread->GetOSThreadId();
@@ -549,7 +563,7 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     // Collect runtime refs (doesn't use cDAC, no timing issue)
     StackRef runtimeRefsBuf[MAX_COLLECTED_REFS];
     int runtimeCount = 0;
-    CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
+    bool runtimeComplete = CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
 
     if (!haveCdac)
     {
@@ -557,6 +571,15 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         if (s_logFile != nullptr)
             fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - cDAC GetStackReferences failed\n",
                 pThread->GetOSThreadId(), (void*)GetIP(regs));
+        return;
+    }
+
+    if (!runtimeComplete)
+    {
+        InterlockedIncrement(&s_verifySkip);
+        if (s_logFile != nullptr)
+            fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - runtime ref buffer overflow (>%d refs)\n",
+                pThread->GetOSThreadId(), (void*)GetIP(regs), MAX_COLLECTED_REFS);
         return;
     }
 
