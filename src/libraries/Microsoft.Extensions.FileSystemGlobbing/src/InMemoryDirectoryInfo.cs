@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         private readonly StringComparison _comparisonType;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InMemoryDirectoryInfo" /> class with the root directory and files given using case-sensitive matching.
+        /// Initializes a new instance of the <see cref="InMemoryDirectoryInfo" /> class with the root directory and files given.
         /// </summary>
         /// <param name="rootDir">The root directory that this FileSystem will use.</param>
         /// <param name="files">Collection of file names. If relative paths <paramref name="rootDir"/> will be prepended to the paths.</param>
