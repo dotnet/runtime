@@ -575,7 +575,12 @@
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+  <!-- Import ILC targets after the SDK targets so that the NativeCompile target redefinition
+       in Microsoft.NETCore.Native.Publish.targets comes AFTER the SDK's empty placeholder
+       in Microsoft.NET.Publish.targets (MSBuild last-definition-wins). -->
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
   <Import Project="$(RepoRoot)eng/liveILLink.targets" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
