@@ -676,7 +676,7 @@ namespace System.Net.Sockets
                 SocketError ec = ErrorCode;
                 Memory<byte> buffer = Buffer;
 
-                if (buffer.Length == 0)
+                if (buffer.Length == 0 || ec != SocketError.Success)
                 {
                     AssociatedContext._socket.SetBlocking();
 
