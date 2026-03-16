@@ -398,6 +398,48 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"\w+(\(\w+!\))?,", "Foo(abc!),", RegexOptions.None, 0, 10, true, "Foo(abc!),");
 
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+
+            // Greedy set loop followed by literal in loop's set followed by word boundary.
+            // The backtracking short-circuit optimization should apply: only the last consumed
+            // position needs to be checked, avoiding repeated LastIndexOf calls.
+            yield return (@"\b\w+n\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\b\w+n\b", "bark door", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@"\b\w+n\b", "inn keeper", RegexOptions.None, 0, 10, true, "inn");
+            yield return (@"\b\w+n\b", "can of worms", RegexOptions.None, 0, 12, true, "can");
+            yield return (@"\b\w+n\b", "frozen chicken", RegexOptions.None, 0, 14, true, "frozen");
+            yield return (@"\b\w+n\b", "nope barn", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\b\d+0\b", "abc 120 def", RegexOptions.None, 0, 11, true, "120");
+            yield return (@"\b\d+0\b", "abc 123 def", RegexOptions.None, 0, 11, false, string.Empty);
+            yield return (@"\b[a-z]+x\b", "the fox jumps", RegexOptions.None, 0, 13, true, "fox");
+            yield return (@"\b\w+\d\b", "abc test9 def", RegexOptions.None, 0, 13, true, "test9");
+            yield return (@"\b\w+\d\b", "abc test def", RegexOptions.None, 0, 12, false, string.Empty);
+            yield return (@"\b\w+[aeiou]\b", "by the tube", RegexOptions.None, 0, 11, true, "the");
+            // Literal inside a capture group — FindStartingLiteralNode must descend through Capture.
+            yield return (@"\b\w+(n)\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            // Literal inside a non-capturing group.
+            yield return (@"\b\w+(?:n\b)", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            // Subsequent is a disjoint set, not a boundary — \d loop, '5' in \d, [a-z] disjoint from \d.
+            yield return (@"\d+5[a-z]", "xx12345abc", RegexOptions.None, 0, 10, true, "12345a");
+            yield return (@"\d+5[a-z]", "xx12346abc", RegexOptions.None, 0, 10, false, string.Empty);
+            // End-of-line anchor as the disjoint constraint.
+            yield return (@"\w+n$", "barn", RegexOptions.None, 0, 4, true, "barn");
+            yield return (@"\w+n$", "bark", RegexOptions.None, 0, 4, false, string.Empty);
+            // Optimization should NOT apply: subsequent overlaps with loop set.
+            yield return (@"\w+n\w+", "canopy", RegexOptions.None, 0, 6, true, "canopy");
+            // Second backtrack forced — \b succeeds but subsequent literal fails, must not re-enter.
+            yield return (@"\b\w+n\b!", "barn door", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@"\b\w+n\b ", "barn door", RegexOptions.None, 0, 9, true, "barn ");
+            // Inside an outer loop — tests stack save/restore with the zeroed endingPos.
+            yield return (@"(?:\b\w+n\b\s*)+", "barn can ", RegexOptions.None, 0, 9, true, "barn can ");
+            // Minimum > 1.
+            yield return (@"\b\w{2,}n\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\b\w{2,}n\b", "n door", RegexOptions.None, 0, 6, false, string.Empty);
+            // Multi literal after greedy loop — first char in loop's set, second char NOT.
+            // The single-position backtrack optimization should apply to the Multi case.
+            yield return (@"\d+0x", "abc1230x99", RegexOptions.None, 0, 10, true, "1230x");
+            yield return (@"\d+0x", "abc12399", RegexOptions.None, 0, 8, false, string.Empty);
+            yield return (@"[a-f]+a9", "xbca93", RegexOptions.None, 0, 6, true, "bca9");
+            yield return (@"[a-f]+a9", "xbcb93", RegexOptions.None, 0, 6, false, string.Empty);
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
