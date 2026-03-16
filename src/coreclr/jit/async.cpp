@@ -2368,7 +2368,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         layout->ContinuationContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    // Now allocate all  returns
+    // Now allocate all returns
     for (ReturnInfo& ret : layout->Returns)
     {
         // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.

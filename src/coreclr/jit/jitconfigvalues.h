@@ -594,7 +594,7 @@ OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimizat
 // Enable async default value analysis based on method hash range. This
 // optimization skips saving locals in continuations when they are known to
 // have their default value.
-OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange, "JitAsyncDefaultValueAnalysisRange") 
+OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange, "JitAsyncDefaultValueAnalysisRange")
 // Save and reuse continuation instances in runtime async functions. Also
 // implies use of shared continuation layouts for all suspension points.
 RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)

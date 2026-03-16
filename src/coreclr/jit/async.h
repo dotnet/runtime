@@ -176,6 +176,7 @@ struct AsyncState
         , CallDefInfo(callDefInfo)
         , SuspensionBB(suspensionBB)
         , ResumptionBB(resumptionBB)
+        , ResumeReachable(resumeReachable)
         , MutatedSincePreviousResumption(mutatedSincePreviousResumption)
     {
     }
