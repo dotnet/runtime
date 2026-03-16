@@ -189,7 +189,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        // Limited only to signals which terminates process by default, and are supported on all platfroms by SendSignal
+        // Limited only to signals which terminates process by default, and are supported on all platforms by SendSignal
         [InlineData(PosixSignal.SIGINT)]
         [InlineData(PosixSignal.SIGQUIT)]
         public void SignalHandler_CanDisposeInHandler(PosixSignal signal)
