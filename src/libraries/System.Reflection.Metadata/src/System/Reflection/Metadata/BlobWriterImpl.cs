@@ -13,6 +13,7 @@ namespace System.Reflection.Metadata
         internal const int MaxCompressedIntegerValue = 0x1fffffff;
         internal const int MinSignedCompressedIntegerValue = unchecked((int)0xF0000000);
         internal const int MaxSignedCompressedIntegerValue = 0x0FFFFFFF;
+        internal const int MaxScalarConstantSize = sizeof(ulong);
 
         internal static int GetCompressedIntegerSize(int value)
         {
@@ -256,7 +257,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            Span<byte> bytes = stackalloc byte[sizeof(ulong)];
+            Span<byte> bytes = stackalloc byte[MaxScalarConstantSize];
             int written = WriteScalarConstant(bytes, value);
             writer.WriteBytes(bytes.Slice(0, written));
         }
@@ -269,7 +270,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            Span<byte> bytes = stackalloc byte[sizeof(ulong)];
+            Span<byte> bytes = stackalloc byte[MaxScalarConstantSize];
             int written = WriteScalarConstant(bytes, value);
             writer.WriteBytes(bytes.Slice(0, written));
         }

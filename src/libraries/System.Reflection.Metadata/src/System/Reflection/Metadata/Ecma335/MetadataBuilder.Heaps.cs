@@ -256,7 +256,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return GetOrAddBlobUTF16(str);
             }
 
-            Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+            Span<byte> buffer = stackalloc byte[BlobWriterImpl.MaxScalarConstantSize];
             int length = BlobWriterImpl.WriteScalarConstant(buffer, value);
             return GetOrAddBlob(buffer.Slice(0, length));
         }
