@@ -817,7 +817,6 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 					g_error ("Type %s which has an [ExplicitLayout] attribute cannot have a "
 						 "reference field at the same offset as another field.",
 						 type_name);
-					g_free (type_name);
 				}
 			}
 		}
