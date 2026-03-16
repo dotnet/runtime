@@ -5786,12 +5786,11 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl13 is not null ? _legacyImpl13.GetGCFreeRegions(ppEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.LockedFlush()
     {
-        _target.ProcessedData.Clear();
-        _target.Contracts.Flush();
+        _target.Flush();
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
-        if (_legacyProcess is not null)
-            return _legacyProcess.Flush();
+        if (_legacyProcess13 is not null)
+            return _legacyProcess13.LockedFlush();
 
         return HResults.S_OK;
     }
