@@ -83,31 +83,26 @@ namespace System.Diagnostics.Tests
 
         private static void AssertRemoteProcessStandardOutputLine(RemoteInvokeHandle remoteHandle, string expectedMessage, int timeout)
         {
-            using CancellationTokenSource cts = new();
+            using CancellationTokenSource cts = new(timeout);
 
             Task<string?> readTask = remoteHandle.Process.StandardOutput.ReadLineAsync(cts.Token).AsTask();
-            Task timeoutTask = Task.Delay(timeout, cts.Token);
-
-            Task finishedTask = Task.WhenAny(readTask, timeoutTask).ConfigureAwait(false).GetAwaiter().GetResult();
-            cts.Cancel(); // cancel the slower one
-
-            if (finishedTask == readTask)
+            string? line;
+            try
             {
-                if (readTask.Result != null)
-                {
-                    Assert.Equal(expectedMessage, readTask.Result);
-                }
-                else
-                {
-                    throw new XunitException($"StandardOutput was closed before observing expected message '{expectedMessage}'");
-                }
+                line = readTask.ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                throw new XunitException($"Expected message '{expectedMessage}' was not observed on remote process within specified time.");
+            }
+
+            if (line != null)
+            {
+                Assert.Equal(expectedMessage, line);
             }
             else
             {
-                // await canceled long running read task
-                readTask.ConfigureAwait(false).GetAwaiter().GetResult();
-
-                throw new XunitException($"Expected message '{expectedMessage}' was not observed on remote process within specified time.");
+                throw new XunitException($"StandardOutput was closed before observing expected message '{expectedMessage}'");
             }
         }
 
