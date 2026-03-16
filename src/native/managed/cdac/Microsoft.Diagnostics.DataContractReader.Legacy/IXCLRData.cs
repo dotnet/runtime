@@ -489,7 +489,7 @@ public unsafe partial interface IXCLRDataTask
     int GetName(uint bufLen, uint* nameLen, char* nameBuffer);
 
     [PreserveSig]
-    int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 }
 
 public enum ClrDataSourceType : uint
