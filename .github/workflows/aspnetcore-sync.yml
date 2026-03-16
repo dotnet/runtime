@@ -22,6 +22,7 @@ jobs:
         repository: 'dotnet/aspnetcore'
         path: aspnetcore
         ref: main
+        persist-credentials: false
     - name: Checkout runtime
       uses: actions/checkout@v6
       with:
@@ -29,6 +30,7 @@ jobs:
         repository: 'dotnet/runtime'
         path: runtime
         ref: main
+        persist-credentials: false
     - name: Copy
       shell: cmd
       working-directory: .\aspnetcore\src\Shared\runtime\
