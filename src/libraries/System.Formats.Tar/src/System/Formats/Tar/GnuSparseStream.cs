@@ -291,7 +291,10 @@ namespace System.Formats.Tar
         private int ReadFromPackedData(Span<byte> destination, long packedOffset)
         {
             long skipBytes = packedOffset - _nextPackedOffset;
-            Debug.Assert(_rawStream.CanSeek || skipBytes >= 0, "Non-seekable stream read went backwards in packed data.");
+            if (skipBytes < 0 && !_rawStream.CanSeek)
+            {
+                throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
+            }
             if (skipBytes != 0)
             {
                 TarHelpers.AdvanceStream(_rawStream, skipBytes);
@@ -304,7 +307,10 @@ namespace System.Formats.Tar
         private async ValueTask<int> ReadFromPackedDataAsync(Memory<byte> destination, long packedOffset, CancellationToken cancellationToken)
         {
             long skipBytes = packedOffset - _nextPackedOffset;
-            Debug.Assert(_rawStream.CanSeek || skipBytes >= 0, "Non-seekable stream read went backwards in packed data.");
+            if (skipBytes < 0 && !_rawStream.CanSeek)
+            {
+                throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
+            }
             if (skipBytes != 0)
             {
                 await TarHelpers.AdvanceStreamAsync(_rawStream, skipBytes, cancellationToken).ConfigureAwait(false);
@@ -450,6 +456,10 @@ namespace System.Formats.Tar
 
         protected override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                _rawStream.Dispose();
+            }
             _isDisposed = true;
             base.Dispose(disposing);
         }

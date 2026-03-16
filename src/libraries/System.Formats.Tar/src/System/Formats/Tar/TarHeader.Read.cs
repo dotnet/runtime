@@ -327,7 +327,7 @@ namespace System.Formats.Tar
 
                     if (_dataStream is SeekableSubReadStream)
                     {
-                        TarHelpers.AdvanceStream(archiveStream, _size);
+                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
                     }
                     else if (_dataStream is SubReadStream)
                     {
