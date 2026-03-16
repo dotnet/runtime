@@ -84,7 +84,7 @@ else()
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
-                -sEXPORTED_RUNTIME_METHODS=CORERUN,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web

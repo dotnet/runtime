@@ -6152,7 +6152,7 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                     {
                         if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
                         {
-                            if (pCurMD->IsAsyncVariantMethod() || pCurMD->ReturnsTaskOrValueTask())
+                            if (pCurMD->HasAsyncOtherVariant())
                             {
                                 pCurMD = pCurMD->GetAsyncOtherVariant();
                             }

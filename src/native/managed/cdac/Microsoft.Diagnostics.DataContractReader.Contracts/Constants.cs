@@ -20,10 +20,13 @@ public static class Constants
         public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
         public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
+        public const string FeatureWebcil = nameof(FeatureWebcil);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
+        public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
 
+        public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
@@ -86,7 +89,13 @@ public static class Constants
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
         public const string ComRefcountMask = nameof(ComRefcountMask);
+        public const string CCWNumInterfaces = nameof(CCWNumInterfaces);
+        public const string CCWThisMask = nameof(CCWThisMask);
+        public const string TearOffAddRef = nameof(TearOffAddRef);
+        public const string TearOffAddRefSimple = nameof(TearOffAddRefSimple);
+        public const string TearOffAddRefSimpleInner = nameof(TearOffAddRefSimpleInner);
         public const string RCWCleanupList = nameof(RCWCleanupList);
+        public const string RCWInterfaceCacheSize = nameof(RCWInterfaceCacheSize);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
