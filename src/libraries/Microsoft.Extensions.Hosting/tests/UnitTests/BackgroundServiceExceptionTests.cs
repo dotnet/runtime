@@ -214,7 +214,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public async Task BackgroundService_IgnoreException_StopAsync_DoesNotThrow()
         {
-            var signal = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var builder = new HostBuilder()
                 .ConfigureServices(services =>
                 {
@@ -223,15 +222,16 @@ namespace Microsoft.Extensions.Hosting.Tests
                         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
                         options.ShutdownTimeout = TimeSpan.FromSeconds(1);
                     });
-                    services.AddSingleton(signal);
-                    services.AddHostedService<SignalingFailureService>();
+                    services.AddHostedService<AsynchronousFailureService>();
                 });
 
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to reach its failure point
-            Assert.Equal(signal.Task, await Task.WhenAny(signal.Task, Task.Delay(TimeSpan.FromSeconds(10))));
+            // Wait a bit for the background service to fail.
+            // This shouldn't cause flakiness: bad order of operations could cause the test to succeed when it should fail, but it shouldn't cause the test to fail when it should succeed.
+            // Note that waiting for a signal from the service here wouldn't be enough; we also need to wait for the host to process the exception.
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
 
             await host.StopAsync();
         }
@@ -300,23 +300,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             public Task StopAsync(CancellationToken cancellationToken) => throw new InvalidOperationException("Stop failure");
-        }
-
-        private class SignalingFailureService : BackgroundService
-        {
-            private readonly TaskCompletionSource<object> _signal;
-
-            public SignalingFailureService(TaskCompletionSource<object> signal)
-            {
-                _signal = signal;
-            }
-
-            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
-                _signal.TrySetResult(null);
-                throw new InvalidOperationException("Signaling asynchronous failure");
-            }
         }
 
         private class SuccessfulService : BackgroundService
