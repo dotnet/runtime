@@ -9024,6 +9024,64 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 /*****************************************************************************
  *
+ *  Add a label instruction referencing an instruction group directly.
+ *  This is used by genFtnEntry to load the address of the function entry point
+ *  (prolog) into a register. Using the existing label mechanism is cleaner
+ *  than a pseudo field handle because adr is naturally a PC-relative label
+ *  reference.
+ */
+
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    insFormat fmt = IF_NONE;
+
+    switch (ins)
+    {
+        case INS_adr:
+            fmt = IF_LARGEADR;
+            break;
+        default:
+            unreached();
+    }
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idjShort             = false;
+    id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
+    id->idReg1(reg);
+    id->idOpSize(EA_PTRSIZE);
+    id->idjKeepLong = false;
+
+#ifdef DEBUG
+    if (m_compiler->opts.compLongAddress)
+        id->idjKeepLong = 1;
+#endif // DEBUG
+
+    /* Record the jump's IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add a data label instruction.
  */
 

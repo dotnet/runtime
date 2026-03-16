@@ -518,6 +518,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
                           ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
@@ -547,6 +551,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWITCH_TABLE:
             genTableBasedSwitch(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
+            break;
+
+        case GT_PATCHPOINT:
+            genCodeForPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genCodeForPatchpointForced(treeNode->AsOp());
             break;
 
 #ifdef TARGET_ARM
