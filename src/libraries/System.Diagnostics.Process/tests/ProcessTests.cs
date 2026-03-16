@@ -104,6 +104,9 @@ namespace System.Diagnostics.Tests
             }
             else
             {
+                // await canceled long running read task
+                readTask.ConfigureAwait(false).GetAwaiter().GetResult();
+
                 throw new XunitException($"Expected message '{expectedMessage}' was not observed on remote process within specified time.");
             }
         }
