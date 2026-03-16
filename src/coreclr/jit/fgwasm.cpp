@@ -131,6 +131,11 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
 
     for (BasicBlock* const block : comp->Blocks())
     {
+        if (comp->bbIsFuncletBeg(block))
+        {
+            continue;
+        }
+
         bool onlyHasEHPreds = true;
         bool hasPreds       = false;
         for (BasicBlock* const pred : block->PredBlocks())
@@ -1145,7 +1150,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         {
             unsigned endCursor = 0;
 
-            if (tryRegions->NumTryRegions() == 0)
+            if (tryRegions->NumTryCatchRegions() == 0)
             {
                 // Loop bodies are contiguous in the LaRPO, so the end position
                 // is the header position plus the number of blocks in the loop.
@@ -1168,6 +1173,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
                 BasicBlock* lastBlock = nullptr;
                 loop->VisitLoopBlocksPostOrder([&](BasicBlock* block) {
+                    // If the block is in a child loop it can't be the last block of the parent loop too.
+                    // (maybe)
+                    FlowGraphNaturalLoop* childLoop = loop->GetChild();
+                    while (childLoop != nullptr)
+                    {
+                        if (childLoop->ContainsBlock(block))
+                        {
+                            return BasicBlockVisit::Continue;
+                        }
+                        childLoop = childLoop->GetSibling();
+                    }
                     lastBlock = block;
                     return BasicBlockVisit::Abort;
                 });
