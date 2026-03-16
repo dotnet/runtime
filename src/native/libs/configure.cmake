@@ -991,8 +991,8 @@ else()
         HAVE_GETDOMAINNAME)
 endif()
 
-# getdomainname on OSX takes an 'int' instead of a 'size_t'
-# check if compiling with 'size_t' would cause a warning
+# Some platforms (e.g. macOS, SunOS) define getdomainname with an 'int' length parameter
+# Check whether using 'size_t' for the length parameter would cause a warning
 if (CLR_CMAKE_TARGET_SUNOS)
     # SunOS uses int, not size_t
     set (HAVE_GETDOMAINNAME_SIZET 0)
