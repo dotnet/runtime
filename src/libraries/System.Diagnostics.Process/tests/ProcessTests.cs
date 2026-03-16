@@ -262,7 +262,8 @@ namespace System.Diagnostics.Tests
                 }
                 else
                 {
-                    Assert.Equal(128 + (int)signal, remoteHandle.Process.ExitCode);
+                    int signalNo = -(int)signal;
+                    Assert.Equal(128 + signalNo, remoteHandle.Process.ExitCode);
                 }
             }
             finally
