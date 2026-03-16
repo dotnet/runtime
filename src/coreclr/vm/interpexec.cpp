@@ -3039,39 +3039,35 @@ SWITCH_OPCODE:
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // On portable entry point platforms, calli targets are portable entry points.
-                        // If the portable entry point has a MethodDesc, route through
-                        // CALL_INTERP_METHOD which derives the cookie at runtime. This covers
-                        // both interpreted methods and FCalls (which have native code set but
-                        // still carry a MethodDesc).
-                        // JIT helper portable entry points (no MethodDesc) fall through to
-                        // InvokeCalliStub — the cookie is resolved at runtime from the calli's
-                        // signature token.
+                        // If the target has the newobj helper dummy MethodDesc, derive the call
+                        // cookie from it and invoke the native code via InvokeCalliStub.
+                        // All other targets with a MethodDesc (managed methods, FCalls) are
+                        // dispatched via CALL_INTERP_METHOD.
                         targetMethod = PortableEntryPoint::TryGetMethodDesc(calliFunctionPointer);
                         if (targetMethod != nullptr)
                         {
-                            goto CALL_INTERP_METHOD;
-                        }
+                            static MethodDesc* s_pNewobjHelperDummyMD = nullptr;
+                            if (s_pNewobjHelperDummyMD == nullptr)
+                                s_pNewobjHelperDummyMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY);
 
-                        if (flags & (int32_t)CalliFlags::DeferredCookie)
-                        {
-                            // pDataItems[calliCookie] = sig token (immutable)
-                            // pDataItems[calliCookie + 1] = cached cookie (initially NULL)
-                            cookie = VolatileLoadWithoutBarrier(&pMethod->pDataItems[calliCookie + 1]);
-                            if (cookie == NULL)
+                            if (targetMethod == s_pNewobjHelperDummyMD)
                             {
-                                mdToken sigToken = (mdToken)(size_t)pMethod->pDataItems[calliCookie];
-                                MethodDesc* pCallerMD = (MethodDesc*)pMethod->methodHnd;
-                                Module* pModule = pCallerMD->GetModule();
-                                PCCOR_SIGNATURE pSig;
-                                ULONG cbSig;
-                                IfFailThrow(pModule->GetMDImport()->GetSigFromToken(sigToken, &cbSig, &pSig));
-                                // nullptr type context is safe here — this path is only reached for
-                                // JIT helper portable entry points which are non-generic.
-                                MetaSig sig(pSig, cbSig, pModule, nullptr);
-                                cookie = GetCookieForCalliSig(sig, nullptr);
-                                VolatileStoreWithoutBarrier(&pMethod->pDataItems[calliCookie + 1], cookie);
+                                // Newobj allocator helper — derive cookie from the dummy MethodDesc.
+                                static void* s_newobjHelperCookie = nullptr;
+                                cookie = VolatileLoadWithoutBarrier(&s_newobjHelperCookie);
+                                if (cookie == nullptr)
+                                {
+                                    MetaSig sig(targetMethod);
+                                    cookie = GetCookieForCalliSig(sig, nullptr);
+                                    VolatileStoreWithoutBarrier(&s_newobjHelperCookie, cookie);
+                                }
+                            }
+                            else
+                            {
+                                goto CALL_INTERP_METHOD;
                             }
                         }
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
                         InvokeCalliStub(&param);
