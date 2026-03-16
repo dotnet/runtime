@@ -24,6 +24,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysis.Wasm;
+
 using System.Text;
 using System.Runtime.CompilerServices;
 using ILCompiler.ReadyToRun.TypeSystem;
@@ -534,7 +535,7 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode)
+        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode, ReadyToRunCodegenCompilation compilation = null)
         {
             bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration;
             if (methodNeedingCode.IsAggressiveOptimization && targetAllowsRuntimeCodeGeneration)
@@ -566,6 +567,14 @@ namespace Internal.JitInterface
                 methodNeedingCode.Name.SequenceEqual("EndInvoke"u8)))
             {
                 // Special methods on delegate types
+                return true;
+            }
+            // Async resumption stubs use faux IL with synthetic tokens. When CoreLib is in the
+            // version bubble the stubs are not wrapped with ManifestModuleWrappedMethodIL, so
+            // token resolution for InstantiatedType / ParameterizedType falls through to a path
+            // that cannot handle them. Skip compilation and let the runtime JIT these stubs.
+            if (methodNeedingCode.IsCompilerGeneratedILBodyForAsync() && compilation != null && compilation.NodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
                 return true;
             }
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
@@ -769,7 +778,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled))
+                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled, _compilation))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
@@ -1484,6 +1493,8 @@ namespace Internal.JitInterface
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
                         module = ecmaType.Module;
                         return new ModuleToken(module, token);
+                    case TypeDesc typeDesc:
+                        return _compilation.NodeFactory.Resolver.GetModuleTokenForType(typeDesc, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                     default:
                         throw new NotImplementedException($"Unsupported token resolution for {resultDef.GetType()}");
                 }

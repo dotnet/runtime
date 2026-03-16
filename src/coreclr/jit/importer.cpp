@@ -9797,9 +9797,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Field's type is a byref-like struct -> address is not on the heap.
                     indirFlags |= GTF_IND_TGT_NOT_HEAP;
                 }
-                else
+                else if ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) == 0)
                 {
-                    // Field's owner is a byref-like struct -> address is not on the heap.
+                    // Field's owner is a byref-like struct and the field is not static -> address is not on the heap.
                     CORINFO_CLASS_HANDLE fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
                     if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
                     {
@@ -10077,8 +10077,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+                        // We do not model stack overflow from localloc as an exception side effect.
+                        // Obviously, we don't want locallocs to be CSE'd.
+                        op1->gtFlags |= GTF_DONT_CSE;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();

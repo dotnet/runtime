@@ -711,7 +711,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, spanInt.Rank);
             Assert.Equal(0, spanInt.Lengths[0]);
             Assert.Equal(0, spanInt.FlattenedLength);
-            Assert.Equal(1, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[0]);
             // Make sure it still throws on index 0
             Assert.Throws<IndexOutOfRangeException>(() => {
                 var spanInt = new TensorSpan<int>(b);
