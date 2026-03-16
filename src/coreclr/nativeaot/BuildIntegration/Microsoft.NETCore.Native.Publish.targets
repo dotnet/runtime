@@ -14,13 +14,20 @@
   </Target>
 
   <!--
-    This target hooks into the dotnet CLI publish pipeline. That pipeline has
-    a target called ComputeFilesToPublish which produces the ItemGroup
-    ResolvedFileToPublish. We modify this item group to control what gets
-    published after NativeAOT optimizes the application.
+    ============================================================
+                                        NativeCompile
+
+    Redefine the SDK's empty NativeCompile placeholder target to perform the full
+    NativeAOT compilation pipeline: ILC compilation, native linking, and updating
+    ResolvedFileToPublish to replace managed assemblies with the native binary.
+
+    The SDK sequences this target in the publish pipeline as:
+      ComputeResolvedFilesToPublishList -> ILLink -> NativeCompile -> ...
+
+    This gives us a clean, explicit position after ILLink (trim configuration).
+    ============================================================
   -->
-  <Target Name="ComputeLinkedFilesToPublish"
-          AfterTargets="ComputeResolvedFilesToPublishList"
+  <Target Name="NativeCompile"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
@@ -59,6 +66,10 @@
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
+
+  <!-- Back-compat: keep ComputeLinkedFilesToPublish as an empty target for anything that
+       references it via BeforeTargets/AfterTargets. The work moved to NativeCompile. -->
+  <Target Name="ComputeLinkedFilesToPublish" />
 
   <!--
     Classify ResolvedFileToPublish for NativeAOT, then replace CoreCLR runtime pack
