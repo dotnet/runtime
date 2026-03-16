@@ -68,14 +68,22 @@ public abstract class DumpTestBase : IDisposable
     /// attributes on the calling test method. Call this as the first line of every test.
     /// </summary>
     protected void InitializeDumpTest(TestConfiguration config, [CallerMemberName] string callerName = "")
+        => InitializeDumpTest(config, DebuggeeName, DumpType, callerName);
+
+    /// <summary>
+    /// Loads the dump for the given <paramref name="config"/> using an explicit
+    /// <paramref name="debuggeeName"/> and <paramref name="dumpType"/>.
+    /// Use this overload when individual test methods need different debuggees.
+    /// </summary>
+    protected void InitializeDumpTest(TestConfiguration config, string debuggeeName, string dumpType, [CallerMemberName] string callerName = "")
     {
         string dumpRoot = GetDumpRoot();
         string versionDir = Path.Combine(dumpRoot, config.RuntimeVersion);
         _dumpInfo = DumpInfo.TryLoad(versionDir);
 
-        EvaluateSkipAttributes(config, callerName);
+        EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpPath = Path.Combine(versionDir, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
 
         Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
 
@@ -103,9 +111,9 @@ public abstract class DumpTestBase : IDisposable
     /// Checks the calling test method for skip attributes and throws
     /// <see cref="SkipTestException"/> if the current configuration matches.
     /// </summary>
-    private void EvaluateSkipAttributes(TestConfiguration config, string callerName)
+    private void EvaluateSkipAttributes(TestConfiguration config, string callerName, string? dumpType = null)
     {
-        if (config.RuntimeVersion is "net10.0" && DumpType == "heap")
+        if (config.RuntimeVersion is "net10.0" && (dumpType ?? DumpType) == "heap")
         {
             throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
         }

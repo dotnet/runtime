@@ -385,6 +385,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(\(.*?\))+?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
             yield return (@"(\(.*?\))*;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
             yield return (@"(\(.*?\))*?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            // Lazy quantifier inside optional group where the lazy loop must expand for the rest of the pattern to match.
+            yield return (@"a(b.*?c)?d", "abccd", RegexOptions.None, 0, 5, true, "abccd");
+            yield return (@"a(b.*?c)?d", "abcd", RegexOptions.None, 0, 4, true, "abcd");
+            yield return (@"a(b.*?c)?d", "ad", RegexOptions.None, 0, 2, true, "ad");
+            yield return (@"a(b.*?c)?d", "abce", RegexOptions.None, 0, 4, false, string.Empty);
             // Non-backtracking body: optimization correctly applies. These verify bodies without backtracking
             // inside the outer loop are still correctly matched after the outer loop is made atomic.
             yield return (@"\w+(\(abc\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
