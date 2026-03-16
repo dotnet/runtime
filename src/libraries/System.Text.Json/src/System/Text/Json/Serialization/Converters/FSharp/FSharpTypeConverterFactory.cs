@@ -78,8 +78,6 @@ namespace System.Text.Json.Serialization.Converters
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         private static JsonConverter CreateFSharpUnionConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             FSharpCoreReflectionProxy proxy = FSharpCoreReflectionProxy.Instance;
@@ -91,7 +89,9 @@ namespace System.Text.Json.Serialization.Converters
                 .GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false)?.TypeDiscriminatorPropertyName
                 ?? JsonSerializer.TypePropertyName;
 
+#pragma warning disable IL2055 // MakeGenericType - the ctor is marked RequiresUnreferencedCode.
             Type converterType = typeof(FSharpUnionConverter<>).MakeGenericType(typeToConvert);
+#pragma warning restore IL2055
             return (JsonConverter)Activator.CreateInstance(converterType, new object[] { caseInfos, tagReader, options, typeDiscriminatorPropertyName })!;
         }
     }

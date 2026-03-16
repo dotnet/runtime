@@ -329,12 +329,12 @@ namespace System.Text.Json.Serialization.Metadata
             => (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), methodInfo, throwOnBindFailure: true)!;
 
         // Converts an FSharpFunc<TArg, TResult> (which is not statically known) into a Func<TArg, TResult>.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "FSharpFunc<TArg, TResult>.Invoke is always available. Callers are marked RequiresUnreferencedCode.")]
         private static Func<TArg, TResult> ConvertFSharpFunc<TArg, TResult>(object fsharpFunc)
         {
             // FSharpFunc<TArg, TResult> has an Invoke(TArg) method
+#pragma warning disable IL2075 // "GetType().GetMethod()" - FSharpFunc<TArg, TResult>.Invoke is always available. Callers are marked RequiresUnreferencedCode.
             MethodInfo invokeMethod = fsharpFunc.GetType().GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance)!;
+#pragma warning restore IL2075
             return (TArg arg) => (TResult)invokeMethod.Invoke(fsharpFunc, new object?[] { arg })!;
         }
 
