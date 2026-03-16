@@ -112,17 +112,22 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     }
     else if (className[0] == 'V')
     {
-        if (strncmp(className, "Vector64", 8) == 0)
+        if (strncmp(className, "Vector", 6) == 0)
         {
-            return InstructionSet_Vector64;
-        }
-        else if (strncmp(className, "Vector128", 9) == 0)
-        {
-            return InstructionSet_Vector128;
-        }
-        else if (strcmp(className, "VectorT") == 0)
-        {
-            return InstructionSet_VectorT;
+            const char* suffix = className + 7;
+
+            if ((*suffix == '\0') || (strcmp(suffix, "`1") == 0))
+            {
+                return InstructionSet_VectorT;
+            }
+            else if (strcmp(suffix, "64") == 0)
+            {
+                return InstructionSet_Vector64;
+            }
+            else if (strcmp(suffix, "128") == 0)
+            {
+                return InstructionSet_Vector128;
+            }
         }
     }
 

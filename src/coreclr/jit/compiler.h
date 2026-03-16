@@ -9584,7 +9584,7 @@ public:
         }
 #elif defined(TARGET_ARM64)
 #if defined(DEBUG)
-        if (JitConfig.JitUseScalableVectorT() && compOpportunisticallyDependsOn(InstructionSet_Sve))
+        if (JitConfig.JitUseScalableVectorT() && compExactlyDependsOn(InstructionSet_VectorT))
         {
             return SIZE_UNKNOWN;
         }

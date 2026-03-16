@@ -10750,8 +10750,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
-                        bool isVectorT = strcmp(className, "Vector`1") == 0;
-                        bool isVector  = strcmp(className, "Vector") == 0;
+                        bool isVectorT = false;
+                        bool isVector  = false;
+
+                        if (strncmp(className, "Vector", 6) == 0)
+                        {
+                            if (className[7] == '\0')
+                            {
+                                isVector = true;
+                            }
+                            else if (strcmp(className + 7, "`1") == 0)
+                            {
+                                isVectorT = true;
+                            }
+                        }
 
                         if (isVectorT || isVector)
                         {
@@ -10770,7 +10782,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             uint32_t size = getVectorTByteLength();
 #ifdef TARGET_ARM64
-                            assert((size == 16) || (size == 32) || (size == 64) || (size == SIZE_UNKNOWN));
+                            assert((size == 16) || (size == SIZE_UNKNOWN));
 #else
                             assert((size == 16) || (size == 32) || (size == 64));
 #endif
@@ -10799,8 +10811,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #ifdef TARGET_ARM64
                                 case SIZE_UNKNOWN:
                                 {
-                                    assert(isVectorT || isVector);
-                                    lookupClassName = "VectorT";
+                                    // NTD, Vector<T> is implemented directly with SVE in this case.
                                     break;
                                 }
 #endif
