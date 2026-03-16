@@ -1000,9 +1000,8 @@ namespace System
 
                 GetWindowSize(out int width, out int height);
 
-                for (int i = 0; i < buffer.Length; i++)
+                foreach (byte c in buffer)
                 {
-                    byte c = buffer[i];
                     if (c < 127 && c >= 32) // ASCII/UTF-8 characters that take up a single position
                     {
                         left++;

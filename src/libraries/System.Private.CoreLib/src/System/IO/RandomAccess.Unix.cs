@@ -38,7 +38,7 @@ namespace System.IO
                 {
                     // Try pread for seekable files.
                     result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
-                    if (result == -1 && NeedsNonOffsetFallback(handle))
+                    if (result == -1 && ShouldFallBackToNonOffsetSyscall(handle))
                     {
                         result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
                     }
@@ -58,7 +58,7 @@ namespace System.IO
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count];
 
-            long result;
+            long result = -1;
             try
             {
                 int buffersCount = buffers.Count;
@@ -75,12 +75,19 @@ namespace System.IO
                     if (handle.SupportsRandomAccess)
                     {
                         result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
-                        if (result == -1 && NeedsNonOffsetFallback(handle))
+                        if (result == -1)
                         {
-                            result = Interop.Sys.ReadV(handle, pinnedVectors, buffers.Count);
+                            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                            if (errorInfo.Error == Interop.Error.ENXIO ||
+                                errorInfo.Error == Interop.Error.ESPIPE)
+                            {
+                                handle.SupportsRandomAccess = false;
+                                // Fall through to non-offset ReadV below.
+                            }
                         }
                     }
-                    else
+
+                    if (!handle.SupportsRandomAccess)
                     {
                         result = Interop.Sys.ReadV(handle, pinnedVectors, buffers.Count);
                     }
@@ -121,7 +128,7 @@ namespace System.IO
                     else if (handle.SupportsRandomAccess)
                     {
                         bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
-                        if (bytesWritten == -1 && NeedsNonOffsetFallback(handle))
+                        if (bytesWritten == -1 && ShouldFallBackToNonOffsetSyscall(handle))
                         {
                             bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
                         }
@@ -188,19 +195,26 @@ namespace System.IO
                 int buffersOffset = 0;
                 while (totalBytesToWrite > 0)
                 {
-                    long bytesWritten;
+                    long bytesWritten = -1;
                     Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset);
                     fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(left))
                     {
                         if (handle.SupportsRandomAccess)
                         {
                             bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
-                            if (bytesWritten == -1 && NeedsNonOffsetFallback(handle))
+                            if (bytesWritten == -1)
                             {
-                                bytesWritten = Interop.Sys.WriteV(handle, pinnedVectors, left.Length);
+                                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                                if (errorInfo.Error == Interop.Error.ENXIO ||
+                                    errorInfo.Error == Interop.Error.ESPIPE)
+                                {
+                                    handle.SupportsRandomAccess = false;
+                                    // Fall through to non-offset WriteV below.
+                                }
                             }
                         }
-                        else
+
+                        if (!handle.SupportsRandomAccess)
                         {
                             bytesWritten = Interop.Sys.WriteV(handle, pinnedVectors, left.Length);
                         }
@@ -258,7 +272,12 @@ namespace System.IO
         private static ValueTask WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
             => handle.GetThreadPoolValueTaskSource().QueueWriteGather(buffers, fileOffset, cancellationToken);
 
-        private static bool NeedsNonOffsetFallback(SafeFileHandle handle)
+        /// <summary>
+        /// Checks the last error after a failed pread/pwrite/preadv/pwritev call
+        /// and returns true if the error indicates a non-seekable file type (ENXIO or ESPIPE),
+        /// updating <see cref="SafeFileHandle.SupportsRandomAccess"/> to false.
+        /// </summary>
+        private static bool ShouldFallBackToNonOffsetSyscall(SafeFileHandle handle)
         {
             // We need to fallback to the non-offset version for certain file types
             // e.g: character devices (such as /dev/tty), pipes, and sockets.
