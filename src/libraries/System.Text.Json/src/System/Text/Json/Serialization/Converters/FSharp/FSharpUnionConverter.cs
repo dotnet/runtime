@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if !NET
+using System.Runtime.Serialization;
+#endif
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -90,7 +93,13 @@ namespace System.Text.Json.Serialization.Converters
                     for (int i = 0; i < fields.Length; i++)
                     {
                         Type fieldType = fields[i].FieldType;
-                        defaultFieldValues[i] = fieldType.IsValueType ? RuntimeHelpers.GetUninitializedObject(fieldType) : null!;
+                        defaultFieldValues[i] = fieldType.IsValueType ?
+#if NET
+                            RuntimeHelpers.GetUninitializedObject(fieldType) :
+#else
+                            FormatterServices.GetUninitializedObject(fieldType) :
+#endif
+                            null!;
                     }
                 }
 
