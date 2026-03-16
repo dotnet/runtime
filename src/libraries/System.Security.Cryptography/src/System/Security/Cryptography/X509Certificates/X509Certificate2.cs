@@ -18,13 +18,13 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Certificate2 : X509Certificate
     {
-        private volatile Oid? _lazySignatureAlgorithm;
-        private volatile int _lazyVersion;
-        private volatile X500DistinguishedName? _lazySubjectName;
-        private volatile X500DistinguishedName? _lazyIssuerName;
-        private volatile PublicKey? _lazyPublicKey;
-        private volatile AsymmetricAlgorithm? _lazyPrivateKey;
-        private volatile X509ExtensionCollection? _lazyExtensions;
+        private Oid? _lazySignatureAlgorithm;
+        private int _lazyVersion;
+        private X500DistinguishedName? _lazySubjectName;
+        private X500DistinguishedName? _lazyIssuerName;
+        private PublicKey? _lazyPublicKey;
+        private AsymmetricAlgorithm? _lazyPrivateKey;
+        private X509ExtensionCollection? _lazyExtensions;
         private static readonly string[] s_RsaPublicKeyPrivateKeyLabels = [PemLabels.RsaPrivateKey, PemLabels.Pkcs8PrivateKey];
         private static readonly string[] s_DsaPublicKeyPrivateKeyLabels = [PemLabels.Pkcs8PrivateKey];
 
