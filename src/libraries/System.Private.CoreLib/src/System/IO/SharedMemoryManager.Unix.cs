@@ -418,75 +418,87 @@ namespace System.IO
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
         {
-            SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
-            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-            if (!fd.IsInvalid)
+            // Retry loop to handle the TOCTOU race between open(O_RDWR) returning ENOENT
+            // and open(O_CREAT|O_EXCL) returning EEXIST when another process creates the
+            // file in between.
+            for (int retries = 0; ; retries++)
             {
-                if (id.IsUserScope)
+                SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                if (!fd.IsInvalid)
                 {
-                    if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
+                    if (id.IsUserScope)
                     {
-                        error = Interop.Sys.GetLastErrorInfo();
-                        fd.Dispose();
-                        throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-                    }
+                        if (Interop.Sys.FStat(fd, out Interop.Sys.FileStatus fileStatus) != 0)
+                        {
+                            error = Interop.Sys.GetLastErrorInfo();
+                            fd.Dispose();
+                            throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                        }
 
-                    if (fileStatus.Uid != id.Uid)
-                    {
-                        fd.Dispose();
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, sharedMemoryFilePath, id.Uid));
-                    }
+                        if (fileStatus.Uid != id.Uid)
+                        {
+                            fd.Dispose();
+                            throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, sharedMemoryFilePath, id.Uid));
+                        }
 
-                    if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
-                    {
-                        fd.Dispose();
-                        throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
+                        if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
+                        {
+                            fd.Dispose();
+                            throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
+                        }
                     }
+                    createdFile = false;
+                    return fd;
                 }
-                createdFile = false;
-                return fd;
-            }
 
-            if (error.Error != Interop.Error.ENOENT)
-            {
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
+                if (error.Error != Interop.Error.ENOENT)
+                {
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
 
-            if (!createIfNotExist)
-            {
-                createdFile = false;
-                return fd;
-            }
+                if (!createIfNotExist)
+                {
+                    createdFile = false;
+                    return fd;
+                }
 
-            fd.Dispose();
-
-            UnixFileMode permissionsMask = id.IsUserScope
-                ? PermissionsMask_OwnerUser_ReadWrite
-                : PermissionsMask_AllUsers_ReadWrite;
-
-            fd = Interop.Sys.Open(
-                sharedMemoryFilePath,
-                Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
-                (int)permissionsMask);
-
-            if (fd.IsInvalid)
-            {
-                error = Interop.Sys.GetLastErrorInfo();
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
-
-            int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
-
-            if (result != 0)
-            {
-                error = Interop.Sys.GetLastErrorInfo();
                 fd.Dispose();
-                Interop.Sys.Unlink(sharedMemoryFilePath);
-                throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
-            }
 
-            createdFile = true;
-            return fd;
+                UnixFileMode permissionsMask = id.IsUserScope
+                    ? PermissionsMask_OwnerUser_ReadWrite
+                    : PermissionsMask_AllUsers_ReadWrite;
+
+                fd = Interop.Sys.Open(
+                    sharedMemoryFilePath,
+                    Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC | Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL,
+                    (int)permissionsMask);
+
+                if (fd.IsInvalid)
+                {
+                    error = Interop.Sys.GetLastErrorInfo();
+                    if (error.Error == Interop.Error.EEXIST && retries < 1)
+                    {
+                        // Another process created the file between our open and create attempts.
+                        // Retry the open to use the existing file.
+                        continue;
+                    }
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
+
+                int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
+
+                if (result != 0)
+                {
+                    error = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+                    Interop.Sys.Unlink(sharedMemoryFilePath);
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
+
+                createdFile = true;
+                return fd;
+            }
         }
 
         internal static bool EnsureDirectoryExists(string directoryPath, SharedMemoryId id, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false)
