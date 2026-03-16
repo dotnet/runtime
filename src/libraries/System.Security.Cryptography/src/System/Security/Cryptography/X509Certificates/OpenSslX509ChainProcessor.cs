@@ -1413,13 +1413,13 @@ namespace System.Security.Cryptography.X509Certificates
             return new CryptographicException(SR.Format(SR.Cryptography_UnmappedOpenSslCode, functionName, code));
         }
 
-        private unsafe struct ErrorCollection
+        private struct ErrorCollection
         {
             // As of OpenSSL 1.1.1 there are 75 defined X509_V_ERR values,
             // therefore it fits in a bitvector backed by 3 ints (96 bits available).
             private const int BucketCount = 3;
             private const int OverflowValue = BucketCount * sizeof(int) * 8 - 1;
-            private fixed int _codes[BucketCount];
+            private InlineArray3<int> _codes;
 
             internal bool HasOverflow => _codes[2] < 0;
 

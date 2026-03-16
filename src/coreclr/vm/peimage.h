@@ -157,6 +157,7 @@ public:
     BOOL HasContents() ;
     BOOL IsPtrInImage(PTR_CVOID data);
 
+    BOOL HasHeaders();
     BOOL HasNTHeaders();
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
