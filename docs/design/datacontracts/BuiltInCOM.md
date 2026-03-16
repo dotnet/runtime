@@ -140,8 +140,8 @@ private enum ComMethodTableFlags : ulong
 [Flags]
 private enum ComRefCount : long
 {
-    CleanupSentinel          = 0x80000000L,
     ComRefCountMask           = 0x000000007FFFFFFFL,
+    CleanupSentinel          = 0x80000000L,
 }
 
 [Flags]

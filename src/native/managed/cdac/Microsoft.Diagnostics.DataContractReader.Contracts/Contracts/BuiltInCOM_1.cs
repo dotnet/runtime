@@ -30,6 +30,13 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         Slot_Basic = 0,
     }
+
+    [Flags]
+    private enum ComRefCount : long
+    {
+        RefCountMask = 0x7FFFFFFF,
+        CleanupSentinel = 0x80000000,
+    }
     // Mirrors RCW::RCWFlags bits in src/coreclr/vm/runtimecallablewrapper.h.
     [Flags]
     private enum RCWFlags : uint
@@ -168,8 +175,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.SimpleComCallWrapper data = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccw);
         return new SimpleComCallWrapperData
         {
-            RefCount = data.RefCount & ComRefCountMask,
-            IsNeutered = (data.RefCount & CleanupSentinel) != 0,
+            RefCount = data.RefCount & (ulong)ComRefCount.RefCountMask,
+            IsNeutered = (data.RefCount & (ulong)ComRefCount.CleanupSentinel) != 0,
             IsAggregated = (data.Flags & (uint)SimpleComCallWrapperFlags.IsAggregated) != 0,
             IsExtendsCOMObject = (data.Flags & (uint)SimpleComCallWrapperFlags.IsExtendsCom) != 0,
             IsHandleWeak = (data.Flags & (uint)SimpleComCallWrapperFlags.IsHandleWeak) != 0,
