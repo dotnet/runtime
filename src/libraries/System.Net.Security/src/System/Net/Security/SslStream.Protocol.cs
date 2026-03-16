@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Security.Authentication;
@@ -84,7 +83,7 @@ namespace System.Net.Security
 
 #if TARGET_APPLE
         // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
-        internal SafeDeleteContext? _securityContext;
+        private SafeDeleteContext? _securityContext;
 #else
         internal SafeDeleteSslContext? _securityContext;
 #endif
@@ -102,8 +101,8 @@ namespace System.Net.Security
         private int _trailerSize = 16;
         private int _maxDataSize = 16354;
 
-        internal static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
-        internal static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
+        private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
         //
         // Protocol properties

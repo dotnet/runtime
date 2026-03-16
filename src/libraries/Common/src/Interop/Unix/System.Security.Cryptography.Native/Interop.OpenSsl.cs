@@ -254,7 +254,7 @@ internal static partial class Interop
                 // If you find yourself wanting to remove this line to enable bidirectional
                 // close-notify, you'll probably need to rewrite SafeSslHandle.Disconnect().
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
-                // Ssl.SslCtxSetQuietShutdown(sslCtx);
+                Ssl.SslCtxSetQuietShutdown(sslCtx);
 
                 if (enableResume)
                 {
@@ -708,6 +708,7 @@ internal static partial class Interop
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_SSL && context.CertificateValidationException is Exception ex)
                 {
                     handshakeException = ex;
+                    context.CertificateValidationException = null;
                 }
                 else if ((retVal != -1) || (errorCode != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
@@ -885,6 +886,10 @@ internal static partial class Interop
 
             // the chain will get properly disposed inside the VerifyRemoteCertificate call
             X509Chain chain = new X509Chain();
+            if (options.CertificateChainPolicy is not null)
+            {
+                chain.ChainPolicy = options.CertificateChainPolicy;
+            }
             X509Certificate2? certificate = null;
             SafeSslHandle sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
 
@@ -902,10 +907,16 @@ internal static partial class Interop
                         {
                             // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
                             X509Certificate2 chainCert = new X509Certificate2(certPtr);
-                            chain.ChainPolicy.ExtraStore.Add(chainCert);
 
-                            // first cert in the stack is the leaf cert
-                            certificate ??= chainCert;
+                            if (certificate is null)
+                            {
+                                // First cert in the stack is the leaf cert.
+                                certificate = chainCert;
+                            }
+                            else
+                            {
+                                chain.ChainPolicy.ExtraStore.Add(chainCert);
+                            }
                         }
                     }
                 }
@@ -1047,7 +1058,10 @@ internal static partial class Interop
             IntPtr ctx = Ssl.SslGetSslCtx(ssl);
             IntPtr ptr = Ssl.SslCtxGetData(ctx);
             // while SSL_CTX is kept alive by reference from SSL, the same is not true
-            // for the stored GCHandle pointing to SafeSslContextHandle, which
+            // for the stored GCHandle pointing to SafeSslContextHandle. The managed
+            // SafeSslContextHandle may have been disposed and its GCHandle freed, in
+            // which case SslCtxGetData returns IntPtr.Zero and no GCHandle should be
+            // reconstructed.
             if (ptr != IntPtr.Zero)
             {
                 GCHandle gch = GCHandle.FromIntPtr(ptr);

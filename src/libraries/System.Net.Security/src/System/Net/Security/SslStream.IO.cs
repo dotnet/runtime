@@ -642,6 +642,13 @@ namespace System.Net.Security
             {
                 SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(CreateCertificateValidationException(sslAuthenticationOptions, sslPolicyErrors, chainStatus)));
             }
+
+#if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
+            // Release the SslStream reference that was needed during the handshake
+            // for the CertVerifyCallback. Clearing it avoids retaining the SslStream
+            // through the SslAuthenticationOptions -> GCHandle -> SSL chain.
+            _sslAuthenticationOptions.SslStream = null;
+#endif
         }
 
         internal static Exception CreateCertificateValidationException(SslAuthenticationOptions options, SslPolicyErrors sslPolicyErrors, X509ChainStatusFlags chainStatus)
