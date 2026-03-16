@@ -5487,9 +5487,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             break;
 #endif
         case INS_ark:
-#if 0
-        case INS_sub:
-#endif
+        case INS_srk:
             if (isVectorRegister(reg1))
             {
                 // ASIMD instruction
@@ -6350,9 +6348,7 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             break;
 #endif
         case INS_ark:
-#if 0
-        case INS_sub:
-#endif
+        case INS_srk:
             setFlags = false;
             isAddSub = true;
             break;
@@ -10563,9 +10559,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             op = emitInsCode(ins, fmt);
        	    S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
-        case INS_nop:
+
+    case INS_nop:
             op = emitInsCode(ins, fmt);
-	    S390_RR(dst, op, 0, 0); 
+            S390_RR(dst, op, 0, 0);
+            break;
+
+    case INS_srk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
 	   
 	default:
