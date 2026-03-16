@@ -114,8 +114,13 @@ namespace System.IO.Compression
             try
             {
                 // .Length can throw if the entry stream has been opened for write.
-                // In that case, we fallback to 0 (no preallocation)
-                preallocationSize = source.Length;
+                // For archives in Update mode, we have no way to check if the entry
+                // was opened for write, so we attempt to get the length and if it fails
+                // we just skip preallocation.
+                if (source.Archive.Mode != ZipArchiveMode.Create)
+                {
+                    preallocationSize = source.Length;
+                }
             }
             catch (InvalidOperationException) { }
 
