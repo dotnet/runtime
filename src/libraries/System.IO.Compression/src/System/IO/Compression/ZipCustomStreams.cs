@@ -775,7 +775,12 @@ namespace System.IO.Compression
             ThrowIfDisposed();
 
             int bytesRead = _baseStream.Read(buffer);
-            ProcessBytesRead(buffer.Slice(0, bytesRead));
+            // Only process when a real read occurred or EOF was signaled
+            // (EOF = requested > 0 but got 0 back). Skip zero-length requests.
+            if (buffer.Length > 0)
+            {
+                ProcessBytesRead(buffer.Slice(0, bytesRead));
+            }
 
             return bytesRead;
         }
@@ -799,7 +804,12 @@ namespace System.IO.Compression
             ThrowIfDisposed();
 
             int bytesRead = await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            ProcessBytesRead(buffer.Span.Slice(0, bytesRead));
+            // Only process when a real read occurred or EOF was signaled
+            // (EOF = requested > 0 but got 0 back). Skip zero-length requests.
+            if (buffer.Length > 0)
+            {
+                ProcessBytesRead(buffer.Span.Slice(0, bytesRead));
+            }
 
             return bytesRead;
         }
