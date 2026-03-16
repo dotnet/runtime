@@ -48,11 +48,8 @@ public class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<ContextHold
     public void Unwind(Target target) => Context.Unwind(target);
 
     public bool TrySetRegister(string fieldName, TargetNUInt value) => Context.TrySetRegister(fieldName, value);
-
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);
-
     public bool TrySetRegister(int number, TargetNUInt value) => Context.TrySetRegister(number, value);
-
     public bool TryReadRegister(int number, out TargetNUInt value) => Context.TryReadRegister(number, out value);
 
 
