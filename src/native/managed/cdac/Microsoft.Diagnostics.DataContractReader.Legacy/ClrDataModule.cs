@@ -64,13 +64,13 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         return CustomQueryInterfaceResult.NotHandled;
     }
 
-    internal sealed class EnumMethodDefinitions
+    internal sealed class EnumMethodDefinitions : IEnum<uint>
     {
         private readonly uint _flags;
         private readonly MetadataReader _reader;
         private TypeDefinitionHandle? _typeHandle;
         private string? _methodName;
-        public IEnumerator<uint> MethodEnumerator = Enumerable.Empty<uint>().GetEnumerator();
+        public IEnumerator<uint> Enumerator { get; set; } = Enumerable.Empty<uint>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
         public EnumMethodDefinitions(MetadataReader reader, uint flags, TargetPointer legacyHandle)
@@ -117,7 +117,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
             if (_typeHandle == null)
                 throw new ArgumentException();
-            MethodEnumerator = IterateMethodInstances().GetEnumerator();
+            Enumerator = IterateMethodInstances().GetEnumerator();
         }
 
         private bool StringEquals(string a, string b)
@@ -295,9 +295,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
         try
         {
-            if (emd.MethodEnumerator.MoveNext())
+            if (emd.Enumerator.MoveNext())
             {
-                uint token = emd.MethodEnumerator.Current;
+                uint token = emd.Enumerator.Current;
                 method.Interface = new ClrDataMethodDefinition(_target, _address, token, legacyMethod);
             }
             else
@@ -334,7 +334,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             if (gcHandle.Target is not EnumMethodDefinitions emdLocal)
                 throw new ArgumentException();
             emd = emdLocal;
-            emd.MethodEnumerator.Dispose();
+            emd.Enumerator.Dispose();
             gcHandle.Free();
         }
         catch (System.Exception ex)

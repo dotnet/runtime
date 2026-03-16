@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices.Marshalling;
+using System.Diagnostics;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -41,7 +42,55 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         => _legacyImpl is not null ? _legacyImpl.GetName(flags, bufLen, nameLen, name) : HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
-        => _legacyImpl is not null ? _legacyImpl.GetTokenAndScope(token, mod) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (token is not null)
+            {
+                *token = _token;
+            }
+            if (!mod.IsNullRef)
+            {
+                IXCLRDataModule? legacyMod = null;
+                if (_legacyImpl is not null)
+                {
+                    DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
+                    int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
+                    if (hrLegacy < 0)
+                        return hrLegacy;
+                    legacyMod = legacyModOut.Interface;
+                }
+
+                mod.Interface = new ClrDataModule(_module, _target, legacyMod);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            bool validateToken = token is not null;
+            bool validateMod = !mod.IsNullRef;
+
+            uint tokenLocal = 0;
+            DacComNullableByRef<IXCLRDataModule> legacyModOutLocal = new(isNullRef: !validateMod);
+            int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOutLocal);
+
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (validateToken)
+            {
+                Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodDefinition.GetFlags(uint* flags)
         => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
