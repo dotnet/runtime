@@ -6,7 +6,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
     [SkipUnresolved(true)]
     [Define("OTHER_INCLUDED")]
 #if NET
-    [SetupLinkerArgument("-a", "other.dll", "visible")]
+    [SetupLinkerArgument("-a", "other", "visible")]
 #else
     [SetupLinkerArgument("-r", "other")]
 #endif
