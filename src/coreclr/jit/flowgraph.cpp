@@ -7556,6 +7556,7 @@ FlowGraphTryRegions::FlowGraphTryRegions(FlowGraphDfsTree* dfsTree, unsigned num
     , m_tryRegions(numRegions, nullptr, dfsTree->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_numRegions(0)
     , m_numTryCatchRegions(0)
+    , m_tryRegionsIncludeHandlerBlocks(false)
 {
 }
 
@@ -7598,6 +7599,8 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_parent(nullptr)
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
+    , m_catchCanResumeInMethod(false)
+    , m_catchCanResumeInDifferentHandler(false)
 {
     BitVecTraits traits = regions->GetBlockBitVecTraits();
     m_blocks            = BitVecOps::MakeEmpty(&traits);
@@ -7616,6 +7619,8 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 //
 FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree, bool includeHandlerBlocks)
 {
+    bool m_tryRegionsIncludeHandlerBlocks = includeHandlerBlocks;
+
     // We use EHID here for stable indexing. So there may be some empty slots in the
     // collection if we've deleted some EH regions.
     //
@@ -7674,15 +7679,54 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
             // A block may be in more than one region, so walk up the ancestor chain
             // adding the postorder number to each.
-            do
+            //
+            while (region != nullptr)
             {
                 BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
                 region = region->m_parent;
-            } while (region != nullptr);
+            }
         }
         else
         {
             // This is a handler block inside a try.
+            // For flow purposes we may consider it to be outside the try.
+        }
+
+        // If this is a BBJ_CATCHRET, note that this try and any enclosing mutual-protect
+        // try can resume control in the method. Also note if the continuation is in a different
+        // handler region than the try.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            const unsigned    ehRegionIndex = block->getHndIndex();
+            EHblkDsc* const   ehDsc         = &comp->compHndBBtab[ehRegionIndex];
+            BasicBlock* const continuation  = block->GetTarget();
+            unsigned const    continuationHandlerRegion =
+                continuation->hasHndIndex() ? continuation->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+            bool const resumesInDiffereentHandler = (continuationHandlerRegion != ehDsc->ebdEnclosingHndIndex);
+
+            FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
+            assert(region != nullptr);
+
+            while (region != nullptr)
+            {
+                assert(region->HasCatchHandler());
+                region->SetCatchCanResumeInMethod(true);
+                region->SetCatchCanResumeInDifferentHandler(resumesInDiffereentHandler);
+
+                if (region->m_parent == nullptr)
+                {
+                    break;
+                }
+
+                if (!EHblkDsc::ebdIsSameTry(region->m_ehDsc, region->m_parent->m_ehDsc))
+                {
+                    break;
+                }
+                region = region->m_parent;
+            }
         }
     }
 
@@ -7719,10 +7763,15 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
     unsigned const             regionNum = comp->ehGetIndex(region->m_ehDsc);
     printf("EH#%02u: %u blocks", regionNum, region->NumBlocks());
 
+    if (!regions->TryRegionsIncludeHandlerBlocks())
+    {
+        printf(" [excluding handler blocks]");
+    }
+
     if (region->m_parent != nullptr)
     {
         unsigned const parentRegionNum = comp->ehGetIndex(region->m_parent->m_ehDsc);
-        printf(" [within EH#%02u]:", parentRegionNum);
+        printf(" [ in EH#%02u]:", parentRegionNum);
     }
     else
     {

@@ -2253,7 +2253,13 @@ class FlowGraphTryRegion
     EHblkDsc* m_ehDsc;
     BitVec m_blocks;
 
+    bool m_catchCanResumeInMethod;
+    bool m_catchCanResumeInDifferentHandler;
+
     FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
+
+    void SetCatchCanResumeInMethod(bool canResume) { m_catchCanResumeInMethod = canResume; }
+    void SetCatchCanResumeInDifferentHandler(bool canResume) { m_catchCanResumeInDifferentHandler = canResume; }
 
 public:
 
@@ -2265,6 +2271,9 @@ public:
     bool HasCatchHandler() const {
         return m_ehDsc->HasCatchHandler();
     }
+
+    bool CatchCanResumeInMethod() const { return m_catchCanResumeInMethod; }
+    bool CatchCanResumeInDifferentHandler() const { return m_catchCanResumeInDifferentHandler; }
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegion* region);
@@ -2283,6 +2292,7 @@ private:
 
     unsigned m_numRegions;
     unsigned m_numTryCatchRegions;
+    bool m_tryRegionsIncludeHandlerBlocks;
 
 public:
 
@@ -2306,6 +2316,8 @@ public:
     unsigned NumTryCatchRegions() const { return m_numTryCatchRegions; }
 
     FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
+
+    bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);

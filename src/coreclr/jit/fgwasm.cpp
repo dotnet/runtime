@@ -1209,9 +1209,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
             fgWasmIntervals->push_back(loopInterval);
         }
 
-        if ((tryRegion != nullptr) && (tryRegion->HasCatchHandler()))
+        if ((tryRegion != nullptr) && tryRegion->HasCatchHandler() && tryRegion->CatchCanResumeInMethod())
         {
-            // This will become a try_table later on...
+            // This will inspire a try_table in codegen to handle the resumption.
+            //
             unsigned            endCursor   = cursor + tryRegion->NumBlocks();
             WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
             fgWasmIntervals->push_back(tryInterval);
