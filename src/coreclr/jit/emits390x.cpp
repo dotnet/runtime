@@ -3834,18 +3834,17 @@ void emitter::emitIns_R_R(instruction     ins,
                           insOpts         opt /* = INS_OPTS_NONE */,
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
-#if 0
-    if (IsMovInstruction(ins))
-    {
-        assert(!"Please use emitIns_Mov() to correctly handle move elision");
-        emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false, opt);
-    }
+//    if (IsMovInstruction(ins))
+//    {
+//        assert(!"Please use emitIns_Mov() to correctly handle move elision");
+//        emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false, opt);
+//    }
 
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
 
+#if 0
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -4485,7 +4484,7 @@ void emitter::emitIns_R_R(instruction     ins,
 
     } // end switch (ins)
 
-    assert(fmt != IF_NONE);
+#endif
 
     instrDesc* id = emitNewInstrSmall(attr);
 
@@ -4498,7 +4497,6 @@ void emitter::emitIns_R_R(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -4625,8 +4623,6 @@ void emitter::emitIns_R_R_I(instruction     ins,
                             insOpts         opt /* = INS_OPTS_NONE */,
                             insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     emitAttr  size       = EA_SIZE(attr);
     emitAttr  elemsize   = EA_UNKNOWN;
     insFormat fmt        = IF_NONE;
@@ -4638,6 +4634,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
     unsigned  scale      = 0;
     bool      unscaledOp = false;
 
+#if 0
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -5325,8 +5322,8 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(!"Instruction cannot be encoded: IF_DI_2A");
         }
     }
+#endif
 
-    assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrSC(attr, imm);
 
@@ -5337,14 +5334,13 @@ void emitter::emitIns_R_R_I(instruction     ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    if (EA_IS_CNS_TLSGD_RELOC(attr))
-    {
-        assert(imm != 0);
-        id->idSetTlsGD();
-    }
+//    if (EA_IS_CNS_TLSGD_RELOC(attr))
+//    {
+//        assert(imm != 0);
+//        id->idSetTlsGD();
+//    }
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -6673,7 +6669,6 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
         }
     }
 
-    assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrCns(attr, imm);
 
@@ -7507,50 +7502,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     } // end switch (ins)
 
-    assert((scale >= 0) && (scale <= 4));
-
-    if (isSimple)
-    {
-        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-        if (imm == 0)
-        {
-            fmt = IF_LS_2A;
-        }
-        else if ((imm < 0) || ((imm & mask) != 0))
-        {
-            if (isValidSimm<9>(imm))
-            {
-                fmt = IF_LS_2C;
-            }
-            else
-            {
-                useRegForImm = true;
-            }
-        }
-        else if (imm > 0)
-        {
-            if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-
-                fmt = IF_LS_2B;
-            }
-            else
-            {
-                useRegForImm = true;
-            }
-        }
-
-        if (useRegForImm)
-        {
-            regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            fmt = IF_LS_3A;
-        }
-    }
-
-    assert(fmt != IF_NONE);
 #if 0
     // Try to optimize a load/store with an alternative instruction.
     if (isLdrStr && emitComp->opts.OptimizationEnabled() &&
@@ -7787,58 +7738,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     } // end switch (ins)
 
-    if (isVectorStore || !isSimple)
-    {
-        assert(scale <= 4);
-    }
-    else
-    {
-        assert(scale <= 3);
-    }
-
-    if (isSimple)
-    {
-        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-        if (imm == 0)
-        {
-            fmt = IF_LS_2A;
-        }
-        else if ((imm < 0) || ((imm & mask) != 0))
-        {
-            if (isValidSimm<9>(imm))
-            {
-                fmt = IF_LS_2C;
-            }
-            else
-            {
-                useRegForImm = true;
-            }
-        }
-        else if (imm > 0)
-        {
-            if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-                fmt = IF_LS_2B;
-            }
-            else
-            {
-                useRegForImm = true;
-            }
-        }
-
-        if (useRegForImm)
-        {
-            // The reserved register is not stored in idReg3() since that field overlaps with iiaLclVar.
-            // It is instead implicit when idSetIsLclVar() is set, with this encoding format.
-            regNumber rsvdReg = codeGen->rsGetRsvdReg();
-            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-            fmt = IF_LS_3A;
-        }
-    }
-
-    assert(fmt != IF_NONE);
 #if 0
     // Try to optimize a store with an alternative instruction.
     if (isStr && emitComp->opts.OptimizationEnabled() &&
@@ -10572,6 +10471,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     BYTE*       dst  = *dp;
     BYTE*       odst = dst;
     code_t      code = 0;
+    code_t	op = 0;
     size_t      sz   = emitGetInstrDescSize(id); // TODO-ARM64-Cleanup: on ARM, this is set in each case. why?
     instruction ins  = id->idIns();
     insFormat   fmt  = id->idInsFmt();
@@ -10786,6 +10686,38 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 #endif
             break;
+	    case INS_stg:
+	    op = emitInsCode(ins, fmt);
+	    imm = emitGetInsSC(id);
+	    code = ((op & 0xff00) | ((id->idReg1()) << 4) | 0 );
+	    dst += emitOutputWord(dst, (ssize_t)code);
+	    code  = (((id->idReg2()) << 28) | ((imm & 0xfff) << 16) | (((imm & 0xff000) >> 12) << 8) | (op & 0xff));
+	    dst += emitOutputLong(dst, (ssize_t)code);
+	    break;
+	    case INS_stmg:
+	    op = emitInsCode(ins, fmt);
+	    imm = emitGetInsSC(id);
+	    code = ((op & 0xff00) | (id->idReg1() << 4) | (id->idReg2()));
+	    dst += emitOutputWord(dst, (ssize_t)code);
+	    code = ((id->idReg3() << 28) | ((imm & 0xfff) << 16) | (((imm & 0xff00) >> 12) << 8) | (op & 0xff));
+	    dst += emitOutputLong(dst, (ssize_t)code);
+	    break;
+	    case INS_lmg:
+	    op = emitInsCode(ins, fmt);
+	    imm = emitGetInsSC(id);
+	    code = ((op & 0xff00) | (id->idReg1() << 4) | (id->idReg2()));
+	    dst += emitOutputWord(dst, (ssize_t)code);
+	    code = ((id->idReg3() << 28) | ((imm & 0xfff) << 16) | (((imm & 0xff00) >> 12) << 8) | (op & 0xff));
+	    dst += emitOutputLong(dst, (ssize_t)code);
+	    break;
+	    case INS_lay:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            code = ((op & 0xff00) | ((id->idReg1()) << 4) | 0 );
+            dst += emitOutputWord(dst, (ssize_t)code);
+            code  = (((id->idReg2()) << 28) | ((imm & 0xfff) << 16) | (((imm & 0xff000) >> 12) << 8) | (op & 0xff));
+            dst += emitOutputLong(dst, (ssize_t)code);
+            break;
 	    case INS_l: // LS_2C   .X.......X.iiiii iiiiPPnnnnnttttt      Rt Rn    imm(-256..+255) no/pre/post inc
             assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
             imm = emitGetInsSC(id); //get instruction's constant value
@@ -10795,6 +10727,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 	       code = ((code << 24) | ((id->idReg1()) << 20) | (0 << 16) | ((id->idReg2()) << 12) | ((imm) & 0xfff)); //x is always 0 in other compilers 0 << 16 is kept for the sake of visualizing fmt RX
             dst += emitOutput_Instr(dst, code);
 	    break; 
+	    case INS_lgr:
+	    op = emitInsCode(ins, fmt);
+	    code  = ((op << 16) | (id->idReg1() << 4) | (id->idReg2()));
+	    dst += emitOutputLong(dst, (ssize_t)code);
+	    break;
 #if 0
         case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
         case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn

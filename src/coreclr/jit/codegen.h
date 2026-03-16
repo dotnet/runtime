@@ -286,6 +286,8 @@ protected:
                               ssize_t     imm,
                               regNumber   tmpReg,
                               bool        inUnwindRegion = false);
+    //void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
     //void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
     //void genPushCalleeSavedRegisters();
 #endif

@@ -57,8 +57,10 @@
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
   #define CODE_ALIGN               1       // code alignment requirement
-  #define STACK_ALIGN              16      // stack alignment requirement
-
+  #define STACK_ALIGN              8      // stack alignment requirement
+	
+  #define FIRST_FLT_CALLEE_SAVED  REG_F0
+  #define FIRST_INT_CALLEE_SAVED  REG_R0
   #define RBM_INT_CALLEE_SAVED    (RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R12|RBM_R13)
   #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5)
   #define RBM_FLT_CALLEE_SAVED    (RBM_F8|RBM_F9|RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15)
