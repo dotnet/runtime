@@ -19,6 +19,19 @@ public record struct RCWCleanupInfo(
     TargetPointer STAThread,
     bool IsFreeThreaded);
 
+public record struct RCWData(
+    TargetPointer IdentityPointer,
+    TargetPointer UnknownPointer,
+    TargetPointer ManagedObject,
+    TargetPointer VTablePtr,
+    TargetPointer CreatorThread,
+    TargetPointer CtxCookie,
+    uint RefCount,
+    bool IsAggregated,
+    bool IsContained,
+    bool IsFreeThreaded,
+    bool IsDisconnected);
+
 public ulong GetRefCount(TargetPointer ccw);
 // Check whether the COM wrappers handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
@@ -35,6 +48,8 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
 public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw);
 // Get the COM context cookie for an RCW.
 public TargetPointer GetRCWContext(TargetPointer rcw);
+// Get detailed data about an RCW, including flags and the managed object reference.
+public RCWData GetRCWData(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -54,11 +69,18 @@ Data descriptors used:
 | `RCWCleanupList` | `FirstBucket` | Head of the bucket linked list |
 | `RCW` | `NextCleanupBucket` | Next bucket in the cleanup list |
 | `RCW` | `NextRCW` | Next RCW in the same bucket |
-| `RCW` | `Flags` | Combined flags DWORD (contains `MarshalingType` bits) |
+| `RCW` | `Flags` | Combined flags DWORD (contains marshaling type, aggregation, and containment bits) |
 | `RCW` | `CtxCookie` | COM context cookie for the RCW |
 | `RCW` | `CtxEntry` | Pointer to `CtxEntry` (bit 0 is a synchronization flag; must be masked off before use) |
-| `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
+| `RCW` | `IdentityPointer` | Identity `IUnknown*` used to identify the underlying COM object |
+| `RCW` | `SyncBlockIndex` | Index into the sync block table; used to resolve the managed object (0 = no managed object) |
+| `RCW` | `VTablePtr` | Vtable pointer of the COM object |
+| `RCW` | `CreatorThread` | Pointer to the thread that created this RCW |
+| `RCW` | `RefCount` | Reference count of the RCW wrapper |
+| `RCW` | `UnknownPointer` | Primary `IUnknown*` pointer for the RCW; a sentinel value indicates disconnection |
 | `RCW` | `InterfaceEntries` | Offset of the inline interface entry cache array within the RCW struct |
+| `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
+| `CtxEntry` | `CtxCookie` | Context cookie stored in the context entry; compared against the RCW's cookie to detect disconnection |
 | `InterfaceEntry` | `MethodTable` | MethodTable pointer for the cached COM interface |
 | `InterfaceEntry` | `Unknown` | `IUnknown*` pointer for the cached COM interface |
 
@@ -77,13 +99,12 @@ Global variables used:
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
-| `MarshalingTypeShift` | `int` | Bit position of `m_MarshalingType` within `RCW::RCWFlags::m_dwFlags` | `7` |
-| `MarshalingTypeFreeThreaded` | `int` | Enum value for marshaling type within `RCW::RCWFlags::m_dwFlags` | `2` |
+| `DisconnectedSentinel` | `ulong` | Sentinel value written to the unknown pointer when an RCW is disconnected | `0xBADF00D` |
 
 Contracts used:
 | Contract Name |
 | --- |
-`None`
+| `SyncBlock` |
 
 ``` csharp
 
@@ -92,15 +113,19 @@ private enum CCWFlags
     IsHandleWeak = 0x4,
 }
 
-// Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
 private enum ComMethodTableFlags : ulong
 {
     LayoutComplete = 0x10,
 }
-// MarshalingTypeShift = 7 matches the bit position of m_MarshalingType in RCW::RCWFlags::m_dwFlags
-private const int MarshalingTypeShift = 7;
-private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
-private const uint MarshalingTypeFreeThreaded = 2u; // matches RCW::MarshalingType_FreeThreaded
+
+[Flags]
+private enum RCWFlags : uint
+{
+    URTAggregated          = 0x010u,
+    URTContained           = 0x020u,
+    MarshalingTypeMask     = 0x180u,
+    MarshalingTypeFreeThreaded = 0x100u,
+}
 
 public ulong GetRefCount(TargetPointer address)
 {
@@ -148,7 +173,7 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
     while (bucketPtr != TargetPointer.Null)
     {
         uint flags = _target.Read<uint>(bucketPtr + /* RCW::Flags offset */);
-        bool isFreeThreaded = (flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
+        bool isFreeThreaded = ((RCWFlags)flags & RCWFlags.MarshalingTypeMask) == RCWFlags.MarshalingTypeFreeThreaded;
         TargetPointer ctxCookie = _target.ReadPointer(bucketPtr + /* RCW::CtxCookie offset */);
 
         // CtxEntry uses bit 0 for synchronization; strip it before dereferencing.
@@ -189,6 +214,48 @@ public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInt
 public TargetPointer GetRCWContext(TargetPointer rcw)
 {
     return _target.ReadPointer(rcw + /* RCW::CtxCookie offset */);
+}
+
+public RCWData GetRCWData(TargetPointer rcw)
+{
+    TargetPointer managedObject = TargetPointer.Null;
+    uint syncBlockIndex = _target.Read<uint>(rcw + /* RCW::SyncBlockIndex offset */);
+    if (syncBlockIndex != 0)
+    {
+        managedObject = _target.Contracts.SyncBlock.GetSyncBlockObject(syncBlockIndex);
+    }
+
+    uint flags = _target.Read<uint>(rcw + /* RCW::Flags offset */);
+
+    return new RCWData(
+        IdentityPointer: _target.ReadPointer(rcw + /* RCW::IdentityPointer offset */),
+        UnknownPointer: _target.ReadPointer(rcw + /* RCW::UnknownPointer offset */),
+        ManagedObject: managedObject,
+        VTablePtr: _target.ReadPointer(rcw + /* RCW::VTablePtr offset */),
+        CreatorThread: _target.ReadPointer(rcw + /* RCW::CreatorThread offset */),
+        CtxCookie: _target.ReadPointer(rcw + /* RCW::CtxCookie offset */),
+        RefCount: _target.Read<uint>(rcw + /* RCW::RefCount offset */),
+        IsAggregated: ((RCWFlags)flags).HasFlag(RCWFlags.URTAggregated),
+        IsContained: ((RCWFlags)flags).HasFlag(RCWFlags.URTContained),
+        IsFreeThreaded: ((RCWFlags)flags & RCWFlags.MarshalingTypeMask) == RCWFlags.MarshalingTypeFreeThreaded,
+        IsDisconnected: IsRCWDisconnected(rcw));
+}
+
+// An RCW is disconnected if its unknown pointer holds the sentinel value,
+// or if its context cookie no longer matches the cookie stored in its context entry.
+private bool IsRCWDisconnected(TargetPointer rcw)
+{
+    TargetPointer unknownPointer = _target.ReadPointer(rcw + /* RCW::UnknownPointer offset */);
+    if (unknownPointer == DisconnectedSentinel)
+        return true;
+
+    TargetPointer ctxEntryPtr = _target.ReadPointer(rcw + /* RCW::CtxEntry offset */) & ~(ulong)1;
+    if (ctxEntryPtr == TargetPointer.Null)
+        return false;
+
+    TargetPointer rcwCookie = _target.ReadPointer(rcw + /* RCW::CtxCookie offset */);
+    TargetPointer entryCookie = _target.ReadPointer(ctxEntryPtr + /* CtxEntry::CtxCookie offset */);
+    return rcwCookie != entryCookie;
 }
 ```
 
