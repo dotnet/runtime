@@ -544,6 +544,12 @@
 
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
 
+    <!-- NativeAOT always enables trimming. Set this early so liveILLink.targets (imported below)
+         computes _RequiresLiveILLink=true and loads the ILLink targets that define
+         _PrepareTrimConfiguration. Previously this was set by Microsoft.NETCore.Native.targets
+         during direct import, but now that import is deferred via AfterMicrosoftNETSdkTargets. -->
+    <PublishTrimmed>true</PublishTrimmed>
+
     <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>

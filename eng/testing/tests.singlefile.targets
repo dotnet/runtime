@@ -30,6 +30,12 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
+    <!-- NativeAOT always enables trimming. Set this early so liveILLink.targets
+         computes _RequiresLiveILLink=true and loads ILLink targets that define
+         _PrepareTrimConfiguration. Previously set by the directly-imported
+         Microsoft.NETCore.Native.targets, now deferred via AfterMicrosoftNETSdkTargets. -->
+    <PublishTrimmed>true</PublishTrimmed>
+
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
   </PropertyGroup>
