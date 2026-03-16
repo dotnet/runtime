@@ -11,6 +11,51 @@ typedef unsigned int code_t;
 
 static bool strictArmAsm;
 
+//emit routines
+
+#define S390_RX_a(dst, opc, r1, x2, b2, d2)					\
+{										\
+	dst += emitOutputLong(dst, ((opc << 24) | ((r1) << 20) |		\
+			     (x2 << 16) | ((b2) << 12) | ((d2) & 0xfff)));	\
+}										\
+
+#define S390_RR(dst, opc, r1, r2)						\
+{										\
+	 dst += emitOutputWord(dst, ((opc << 8) | (r1 << 4) | (r2)));		\
+}										\
+
+#define S390_RRE(dst, opc, r1, r2)						\
+{										\
+	dst += emitOutputLong (dst, ((opc << 16) | (r1 << 4) | r2));		\
+}										\
+
+#define S390_RSY_a(dst, opc, r1, r3, b2, d2)					\
+{										\
+	dst += emitOutputWord (dst, ((opc & 0xff00) | (r1) << 4 | (r3)));	\
+	dst += emitOutputLong (dst, ((b2 << 28) | ((d2 & 0xfff) << 16)|		\
+			      (((d2 & 0xff000) >> 12) << 8) | (opc &0xff)));	\
+}										\
+	
+#define S390_RXY_a(dst, opc, r1, x2, b2, d2)					\
+{										\
+	dst += emitOutputWord (dst, ((opc & 0xff00) | (r1 << 4) | x2));		\
+	dst += emitOutputLong (dst, ((b2 << 28) | ((d2 & 0xfff) << 16) |	\
+			      (((d2 & 0xff000) >> 12) << 8) | (opc & 0xff)));	\
+}										\
+
+#define S390_RRF_a(dst, opc, r3, r1, r2)					\
+{										\
+	dst += emitOutputLong (dst, ((opc << 16) | (r3 << 12) |			\
+			      (r1 << 4) | r2));					\
+}										\
+
+#define S390_RIL_a(dst, opc, r1, i2)						\
+{										\
+	dst += emitOutputWord (dst, (((opc >> 4) << 8) | (r1 << 4) |		\
+			      (opc & 0xf)));					\
+	dst += emitOutputLong (dst, i2);					\
+}										\
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/

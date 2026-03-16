@@ -4743,7 +4743,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
     switch (oper)
     {
         case GT_ADD:
-            ins = INS_add;
+            ins = INS_ark;
             break;
 #if 0
         case GT_AND:
@@ -6730,7 +6730,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     {
         if (/*emitter::emitIns_valid_imm_for_mov(imm, size)*/ 1)
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
+            GetEmitter()->emitIns_R_I(INS_lgfi, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
 #if 0
