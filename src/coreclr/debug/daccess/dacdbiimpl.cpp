@@ -6087,6 +6087,7 @@ HRESULT DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pCon
 
                 while (frame != NULL && frame != FRAME_TOP)
                 {
+#ifdef FEATURE_INTERPRETER
                     if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
                     {
                         PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(pThread->GetFrame());
@@ -6094,7 +6095,7 @@ HRESULT DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pCon
                         CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
                         return S_OK;
                     }
-
+#endif // FEATURE_INTERPRETER
                     frame->UpdateRegDisplay(&tmpRd);
                     if (GetRegdisplaySP(&tmpRd) != 0 && GetControlPC(&tmpRd) != 0)
                     {

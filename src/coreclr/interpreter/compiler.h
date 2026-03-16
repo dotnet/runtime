@@ -233,7 +233,9 @@ enum InterpInstFlags
 {
     INTERP_INST_FLAG_CALL               = 0x01,
     // Flag used internally by the var offset allocator
-    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02
+    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
+    // First interpreter instruction for an IL opcode
+    INTERP_INST_FLAG_FIRST_FOR_IL_OP    = 0x04
 };
 
 struct InterpInst
@@ -252,7 +254,6 @@ struct InterpInst
     uint32_t flags;
     int32_t dVar;
     int32_t sVars[3]; // Currently all instructions have at most 3 sregs
-    int32_t stackDepth;
 
     int32_t data[];
 
@@ -820,7 +821,7 @@ public:
 private:
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
-    InterpInst* m_pLastNewIns;
+    InterpInst* m_pLastNewIns = nullptr;
 
     int32_t     GetInsLength(InterpInst *pIns);
     bool        InsIsNop(InterpInst *pIns);

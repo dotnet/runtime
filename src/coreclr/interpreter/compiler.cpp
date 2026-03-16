@@ -319,7 +319,11 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
-    ins->stackDepth = m_pStackPointer - m_pStackBase;
+    if ((m_pLastNewIns != nullptr) && (m_pLastNewIns->ilOffset != m_currentILOffset))
+    {
+        // This is the first instruction we have emitted for this IL offset, so set the flag.
+        ins->flags |= INTERP_INST_FLAG_FIRST_FOR_IL_OP;
+    }
     m_pLastNewIns = ins;
     return ins;
 }
@@ -1070,7 +1074,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = ins->stackDepth == 0 ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_FIRST_FOR_IL_OP) ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
                 m_ILToNativeMapSize++;
             }
         }

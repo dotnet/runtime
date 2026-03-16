@@ -519,12 +519,14 @@ HRESULT DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT
                 }
             }
 
+#ifdef FEATURE_INTERPRETER
             if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
                 // Skip InterpreterFrame
                 pFrame = pFrame->Next();
                 continue;
             }
+#endif // FEATURE_INTERPRETER
 
             CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
             if (ift != STUBFRAME_NONE)
@@ -583,12 +585,14 @@ HRESULT DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_I
                 }
             }
 
+#ifdef FEATURE_INTERPRETER
             if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
                 // Skip InterpreterFrame
                 pFrame = pFrame->Next();
                 continue;
             }
+#endif // FEATURE_INTERPRETER
 
             // check if the internal frame is interesting
             frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
