@@ -609,7 +609,7 @@ public sealed unsafe partial class SOSDacImpl
             // Navigate to the start wrapper, mirroring DACGetCCWFromAddress.
             ccwPtr = contract.GetStartWrapper(ccwPtr);
 
-            SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(contract.GetSimpleComCallWrapper(ccwPtr));
+            SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(ccwPtr);
             int refCount = (int)sccwData.RefCount;
 
             data->outerIUnknown = sccwData.OuterIUnknown.ToClrDataAddress(_target);

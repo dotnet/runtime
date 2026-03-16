@@ -42,11 +42,8 @@ public interface IBuiltInCOM : IContract
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
     // Returns the GC object handle (m_ppThis) from the given ComCallWrapper.
     TargetPointer GetObjectHandle(TargetPointer ccw) => throw new NotImplementedException();
-    // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
-    TargetPointer GetSimpleComCallWrapper(TargetPointer ccw) => throw new NotImplementedException();
-    // Returns the data stored in a SimpleComCallWrapper.
-    // sccw must be a SimpleComCallWrapper address (obtain via GetSimpleComCallWrapper).
-    SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw) => throw new NotImplementedException();
+    // Returns the data stored in the SimpleComCallWrapper associated with the given ComCallWrapper.
+    SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw) => throw new NotImplementedException();
     // Navigates to the start ComCallWrapper in a linked chain.
     // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
     TargetPointer GetStartWrapper(TargetPointer ccw) => throw new NotImplementedException();

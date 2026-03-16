@@ -38,11 +38,8 @@ public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
 // Returns the GC object handle from the given ComCallWrapper.
 public TargetPointer GetObjectHandle(TargetPointer ccw);
-// Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
-public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw);
-// Returns the data stored in a SimpleComCallWrapper.
-// sccw must be a SimpleComCallWrapper address (obtain via GetSimpleComCallWrapper).
-public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw);
+// Returns the data stored in the SimpleComCallWrapper associated with the given ComCallWrapper.
+public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw);
 // Navigates to the start ComCallWrapper in a linked chain.
 // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
 public TargetPointer GetStartWrapper(TargetPointer ccw);
@@ -149,14 +146,11 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
 public TargetPointer GetObjectHandle(TargetPointer ccw)
     => _target.ReadPointer(ccw + /* ComCallWrapper::Handle offset */);
 
-// Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
-public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
-    => _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
-
-// Returns data from the SimpleComCallWrapper at sccw.
+// Returns data from the SimpleComCallWrapper associated with the given ComCallWrapper.
 // Applies ComRefCountMask to produce the visible RefCount and checks CLEANUP_SENTINEL for IsNeutered.
-public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
+public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw)
 {
+    TargetPointer sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
     ulong rawRefCount = _target.Read<ulong>(sccw + /* SimpleComCallWrapper::RefCount offset */);
     uint flags = _target.Read<uint>(sccw + /* SimpleComCallWrapper::Flags offset */);
     return new SimpleComCallWrapperData

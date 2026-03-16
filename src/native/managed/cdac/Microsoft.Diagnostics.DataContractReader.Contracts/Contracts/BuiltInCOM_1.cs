@@ -146,14 +146,15 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     }
 
     // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
-    public TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
+    private TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
     {
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
         return wrapper.SimpleWrapper;
     }
 
-    public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer sccw)
+    public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw)
     {
+        TargetPointer sccw = GetSimpleComCallWrapper(ccw);
         Data.SimpleComCallWrapper data = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccw);
         return new SimpleComCallWrapperData
         {

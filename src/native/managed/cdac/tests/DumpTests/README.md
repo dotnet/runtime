@@ -60,7 +60,7 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | PInvokeStubDumpTests | StackWalk + RTS | PInvokeStub |
 | VarargPInvokeDumpTests | StackWalk + RTS | VarargPInvoke |
 | SyncBlockDumpTests | SyncBlock | SyncBlock |
-| BuiltInCOMDumpTests | BuiltInCOM | CCW |
+| CCWDumpTests | BuiltInCOM | CCW |
 | RCWCleanupListDumpTests | BuiltInCOM | RCWCleanupList |
 
 ### Runtime Versions
