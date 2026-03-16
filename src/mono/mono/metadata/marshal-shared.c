@@ -812,12 +812,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 
 			if (mono_class_is_explicit_layout (klass) && (usize == 0)) {
 				if (MONO_TYPE_IS_REFERENCE (info->fields [i].field->type) ||
-				    ((!last_field && MONO_TYPE_IS_REFERENCE (info->fields [i + 1].field->type)))) {
-					char *type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+				    ((!last_field && MONO_TYPE_IS_REFERENCE (info->fields [i + 1].field->type))))
 					g_error ("Type %s which has an [ExplicitLayout] attribute cannot have a "
 						 "reference field at the same offset as another field.",
-						 type_name);
-				}
+						 mono_type_full_name (m_class_get_byval_arg (klass)));
 			}
 		}
 
