@@ -30,8 +30,6 @@ internal readonly struct Thread_1 : IThread
         _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
     }
 
-    public void Flush() { }
-
     ThreadStoreData IThread.GetThreadStoreData()
     {
         Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);

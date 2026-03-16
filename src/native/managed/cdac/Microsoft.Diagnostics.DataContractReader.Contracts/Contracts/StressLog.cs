@@ -348,8 +348,6 @@ file sealed class StressLog_1(Target target) : IStressLog
 {
     private readonly StressLogTraversal traversal = new(target, new SmallStressMessageReader(target));
 
-    public void Flush() { }
-
     public bool HasStressLog() => traversal.HasStressLog();
     public StressLogData GetStressLogData() => traversal.GetStressLogData();
     public StressLogData GetStressLogData(TargetPointer stressLog) => traversal.GetStressLogData(stressLog);
@@ -362,8 +360,6 @@ file sealed class StressLog_1(Target target) : IStressLog
 file sealed class StressLog_2(Target target) : IStressLog
 {
     private readonly StressLogTraversal traversal = new(target, new LargeStressMessageReader(target));
-
-    public void Flush() { }
 
     public bool HasStressLog() => traversal.HasStressLog();
     public StressLogData GetStressLogData() => traversal.GetStressLogData();

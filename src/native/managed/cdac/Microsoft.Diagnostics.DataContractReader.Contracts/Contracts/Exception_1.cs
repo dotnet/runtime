@@ -14,8 +14,6 @@ internal readonly struct Exception_1 : IException
         _target = target;
     }
 
-    public void Flush() { }
-
     TargetPointer IException.GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle)
     {
         Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionInfoAddr);

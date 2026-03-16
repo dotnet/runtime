@@ -16,8 +16,6 @@ internal readonly partial struct PlatformMetadata_1 : IPlatformMetadata
         _cdacMetadata = cdacMetadata;
     }
 
-    public void Flush() { }
-
     TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor()
     {
         return _cdacMetadata.PrecodeMachineDescriptor;

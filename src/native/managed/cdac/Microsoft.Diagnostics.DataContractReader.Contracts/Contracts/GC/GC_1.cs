@@ -47,8 +47,6 @@ internal readonly struct GC_1 : IGC
         _handleMaxInternalTypes = handleMaxInternalTypes;
     }
 
-    public void Flush() { }
-
     string[] IGC.GetGCIdentifiers()
     {
         string gcIdentifiers = _target.ReadGlobalString(Constants.Globals.GCIdentifiers);

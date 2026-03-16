@@ -51,7 +51,6 @@ internal sealed class TargetStream(Target target, ulong startPosition, long size
         }
         return _offset;
     }
-
     public override void Flush() { } // No-op for read-only stream
     public override void SetLength(long value) => throw new NotSupportedException();
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();

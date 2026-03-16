@@ -18,8 +18,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         _target = target;
     }
 
-    public void Flush() { }
-
     ILCodeVersionHandle ICodeVersions.GetActiveILCodeVersion(TargetPointer methodDesc)
     {
         // CodeVersionManager::GetActiveILCodeVersion

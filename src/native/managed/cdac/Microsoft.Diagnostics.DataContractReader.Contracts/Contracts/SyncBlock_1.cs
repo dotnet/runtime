@@ -24,8 +24,6 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         _syncBlockLinkOffset = syncBlockLinkOffset;
     }
 
-    public void Flush() { }
-
     public TargetPointer GetSyncBlock(uint index)
     {
         Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * _target.GetTypeInfo(DataType.SyncTableEntry).Size!.Value);

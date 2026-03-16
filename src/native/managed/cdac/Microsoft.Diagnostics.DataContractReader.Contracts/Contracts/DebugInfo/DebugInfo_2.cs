@@ -11,8 +11,6 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
 {
     private const uint DEBUG_INFO_FAT = 0;
 
-    public void Flush() { }
-
     private record struct DebugInfoChunks
     {
         public TargetPointer BoundsStart;

@@ -14,8 +14,6 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
         _target = target;
     }
 
-    public void Flush() { }
-
     readonly RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
     {
         if (_target.TryReadGlobalString(Constants.Globals.Architecture, out string? arch))

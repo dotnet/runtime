@@ -5789,8 +5789,8 @@ public sealed unsafe partial class SOSDacImpl
         _target.Flush();
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
-        if (_legacyProcess13 is not null)
-            return _legacyProcess13.LockedFlush();
+        if (_legacyImpl13 is not null)
+            return _legacyImpl13.LockedFlush();
 
         return HResults.S_OK;
     }

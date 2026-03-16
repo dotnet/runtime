@@ -13,5 +13,5 @@ public interface IContract
     /// Clear any cached data held by this contract.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    void Flush() => throw new NotImplementedException();
+    void Flush() { }
 }

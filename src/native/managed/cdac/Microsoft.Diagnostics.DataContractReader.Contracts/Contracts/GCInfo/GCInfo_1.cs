@@ -15,8 +15,6 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         _target = target;
     }
 
-    public void Flush() { }
-
     IGCInfoHandle IGCInfo.DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
         => new GcInfoDecoder<TTraits>(_target, gcInfoAddress, gcVersion);
 

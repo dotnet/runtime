@@ -19,8 +19,6 @@ internal readonly struct ComWrappers_1 : IComWrappers
         _target = target;
     }
 
-    public void Flush() { }
-
     public TargetPointer GetComWrappersIdentity(TargetPointer address)
     {
         Data.NativeObjectWrapperObject wrapper = _target.ProcessedData.GetOrAdd<Data.NativeObjectWrapperObject>(address);

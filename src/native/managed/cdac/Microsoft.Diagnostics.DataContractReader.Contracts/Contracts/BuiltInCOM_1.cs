@@ -43,8 +43,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         _target = target;
     }
 
-    public void Flush() { }
-
     public ulong GetRefCount(TargetPointer address)
     {
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
