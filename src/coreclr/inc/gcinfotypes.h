@@ -53,6 +53,7 @@ inline UINT32 CeilOfLog2(size_t x)
 #endif
 }
 
+// [cDAC] [StackWalk]: GCInfo decoder depends on these values.
 enum GcSlotFlags
 {
     GC_SLOT_BASE      = 0x0,
@@ -65,6 +66,7 @@ enum GcSlotFlags
     GC_SLOT_IS_DELETED  = 0x10,
 };
 
+// [cDAC] [StackWalk]: GCInfo decoder depends on these values.
 enum GcStackSlotBase
 {
     GC_CALLER_SP_REL = 0x0,
@@ -131,6 +133,7 @@ struct GcStackSlot
 //
 //--------------------------------------------------------------------------------
 
+// [cDAC] [StackWalk]: GCInfo decoder depends on these values.
 enum ReturnKind {
 
     // Cases for Return in one register
