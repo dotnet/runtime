@@ -7049,6 +7049,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assert(!compIsForInlining());
 
+                if (IsReadyToRun())
+                {
+                    // jmp is not supported on ReadyToRun
+                    // The call to the delayload method would not be properly set up to put the indirection cell address
+                    // in the correct register. See https://github.com/dotnet/runtime/issues/125252
+                    implReadyToRunUnsupported();
+                }
+
                 if ((info.compFlags & CORINFO_FLG_SYNCH) || block->hasTryIndex() || block->hasHndIndex())
                 {
                     /* CEE_JMP does not make sense in some "protected" regions. */
@@ -10069,8 +10077,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+                        // We do not model stack overflow from localloc as an exception side effect.
+                        // Obviously, we don't want locallocs to be CSE'd.
+                        op1->gtFlags |= GTF_DONT_CSE;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();

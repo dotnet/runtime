@@ -237,7 +237,7 @@ class CallStubGenerator
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
-    CallStubHeader *GenerateCallStubForSig(MetaSig &sig);
+    CallStubHeader *GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD = nullptr);
 
 private:
     static size_t ComputeTempStorageSize(const MetaSig& sig)

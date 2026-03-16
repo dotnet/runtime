@@ -126,6 +126,20 @@ namespace System
             return CreateEventProvider(t);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
+        [UnmanagedCallersOnly]
+        private static unsafe void GetEventProvider(__ComObject* pComObject, RuntimeType* pProviderType, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = pComObject->GetEventProvider(*pProviderType);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         private object CreateEventProvider(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType t)
         {
