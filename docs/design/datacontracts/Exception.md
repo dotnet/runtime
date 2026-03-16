@@ -17,7 +17,7 @@ record struct ExceptionData(
 ```
 
 ``` csharp
-TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo);
+TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle);
 ExceptionData GetExceptionData(TargetPointer exceptionAddr);
 ```
 
@@ -28,16 +28,15 @@ Data descriptors used:
 - `Exception`
 
 ``` csharp
-TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo)
+TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle)
 {
-    if (exceptionInfo == TargetPointer.Null)
-        throw new InvalidArgumentException();
-
-    nextNestedException = target.ReadPointer(exceptionInfo + /* ExceptionInfo::PreviousNestedInfo offset*/);
-    TargetPointer thrownObjHandle = target.ReadPointer(exceptionInfo + /* ExceptionInfo::ThrownObject offset */);
-    return = thrownObjHandle != TargetPointer.Null
-        ? target.ReadPointer(thrownObjHandle)
-        : TargetPointer.Null;
+    nextNestedExceptionInfo = target.ReadPointer(exceptionInfoAddr + /* ExceptionInfo::PreviousNestedInfo offset*/);
+    thrownObjectHandle = target.ReadPointer(exceptionInfoAddr + /* ExceptionInfo::ThrownObject offset */);
+    if (thrownObjectHandle == TargetPointer.Null)
+    {
+        return TargetPointer.Null;
+    }
+    return target.ReadPointer(thrownObjectHandle);
 }
 
 ExceptionData GetExceptionData(TargetPointer exceptionAddr)

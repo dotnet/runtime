@@ -283,7 +283,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Root the main assembly entry point. -->
     <ItemGroup>
-      <TrimmerRootAssembly Include="@(IntermediateAssembly)" RootMode="EntryPoint" />
+      <TrimmerRootAssembly Include="@(IntermediateAssembly->'%(Filename)')" RootMode="EntryPoint" />
     </ItemGroup>
 
     <ItemGroup>
