@@ -1584,7 +1584,7 @@ namespace System.Net.Sockets
                     errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes, callback!, default);
                 }
 
-                if (buffer.Length == 0 || errorCode != SocketError.IOPending)
+                if (remains == 0 || errorCode != SocketError.IOPending)
                 {
                     _socket.SetBlocking();
                 }
