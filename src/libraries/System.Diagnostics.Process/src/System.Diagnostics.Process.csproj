@@ -105,8 +105,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcessTimes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetThreadTimes.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TerminateProcess.cs"
@@ -189,12 +187,8 @@
              Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_PRIVILEGE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.CreatePipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ThreadOptions.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ThreadOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ProcessOptions.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.ProcessOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleOptions.cs"
@@ -399,6 +393,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.FileVersionInfo\src\System.Diagnostics.FileVersionInfo.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.DriveInfo\src\System.IO.FileSystem.DriveInfo.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />

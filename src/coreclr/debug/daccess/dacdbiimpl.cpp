@@ -5629,6 +5629,16 @@ HRESULT DacDbiInterfaceImpl::Hijack(VMPTR_Thread vmThread, ULONG32 dwThreadId, c
         ctx.X1 = (DWORD64)espRecord;
         ctx.X2 = (DWORD64)reason;
         ctx.X3 = (DWORD64)pData;
+    #elif defined(TARGET_RISCV64)
+        ctx.A0 = (DWORD64)espContext;
+        ctx.A1 = (DWORD64)espRecord;
+        ctx.A2 = (DWORD64)reason;
+        ctx.A3 = (DWORD64)pData;
+    #elif defined(TARGET_LOONGARCH64)
+        ctx.A0 = (DWORD64)espContext;
+        ctx.A1 = (DWORD64)espRecord;
+        ctx.A2 = (DWORD64)reason;
+        ctx.A3 = (DWORD64)pData;
     #else
         PORTABILITY_ASSERT("CordbThread::HijackForUnhandledException is not implemented on this platform.");
     #endif
