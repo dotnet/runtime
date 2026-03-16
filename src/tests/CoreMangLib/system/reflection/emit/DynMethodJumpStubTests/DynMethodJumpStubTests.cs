@@ -16,7 +16,7 @@ public static class DynamicMethodJumpStubTests
         && Utilities.IsNotNativeAot
         && PlatformDetection.Is64BitProcess;
 
-    [ConditionalFact(nameof(RunTests))]
+    [ConditionalFact(typeof(DynamicMethodJumpStubTests), nameof(RunTests))]
     [OuterLoop]
     public static void TestEntryPoint()
     {

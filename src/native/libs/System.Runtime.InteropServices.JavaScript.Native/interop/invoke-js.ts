@@ -3,13 +3,13 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, dotnetLogger, VoidPtrNull, Module } from "./cross-module";
+import { dotnetBrowserUtilsExports, dotnetApi, dotnetAssert, dotnetLogger, VoidPtrNull, Module, dotnetLoaderExports } from "./cross-module";
 
 import type { BindingClosureJS, BoundMarshalerToJs, JSFnHandle, JSFunctionSignature, JSHandle, JSMarshalerArguments, VoidPtr, WrappedJSFunction } from "./types";
 
 import { MarshalerType, MeasuredBlock } from "./types";
 import { getSig, getSignatureArgumentCount, getSignatureFunctionName, getSignatureHandle, getSignatureModuleName, getSignatureType, getSignatureVersion, isReceiverShouldFree, jsInteropState } from "./marshal";
-import { assertJsInterop, assertRuntimeRunning, endMeasure, fixupPointer, normalizeException, startMeasure } from "./utils";
+import { assertJsInterop, assertRuntimeRunning, endMeasure, fixupPointer, startMeasure } from "./utils";
 import { bindArgMarshalToJs } from "./marshal-to-js";
 import { boundJsFunctionSymbol, getJSObjectFromJSHandle, importedJsFunctionSymbol, jsImportWrapperByFnHandle } from "./gc-handles";
 import { bindArgMarshalToCs, marshalExceptionToCs } from "./marshal-to-cs";
@@ -29,7 +29,7 @@ export function bindJSImportST(signature: JSFunctionSignature): VoidPtr {
         bindJsImport(signature);
         return VoidPtrNull;
     } catch (ex: any) {
-        return dotnetBrowserUtilsExports.stringToUTF16Ptr(normalizeException(ex));
+        return dotnetBrowserUtilsExports.stringToUTF16Ptr(dotnetLoaderExports.normalizeException(ex));
     }
 }
 

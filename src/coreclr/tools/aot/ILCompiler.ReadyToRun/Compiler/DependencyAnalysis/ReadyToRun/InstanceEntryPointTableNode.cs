@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
-
+using ILCompiler.ReadyToRun.TypeSystem;
 using Internal;
 using Internal.JitInterface;
 using Internal.NativeFormat;
@@ -37,6 +37,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     foreach (MethodWithGCInfo method in _factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
                     {
+                        if (method.Method is AsyncResumptionStub)
+                            continue;
+
                         BuildSignatureForMethod(method, _factory);
                     }
                 }
@@ -53,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
         {
-            EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
+            EcmaMethod typicalMethod = (EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
             ModuleToken moduleToken;
             if (factory.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
@@ -63,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 MutableModule manifestMetadata = factory.ManifestMetadataTable._mutableModule;
-                var handle = manifestMetadata.TryGetExistingEntityHandle(method.GetTypicalMethodDefinition());
+                var handle = manifestMetadata.TryGetExistingEntityHandle(typicalMethod);
                 Debug.Assert(handle.HasValue);
                 moduleToken = new ModuleToken(factory.ManifestMetadataTable._mutableModule, handle.Value);
             }
@@ -102,7 +105,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
-                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation);
+                // Resumption stubs are discovered via READYTORUN_FIXUP_ResumptionStubEntryPoint fixups
+                // on their parent async variant methods, so they do not need entries in the InstanceEntryPointTable.
+                if (method.Method is AsyncResumptionStub)
+                    continue;
+
+                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation || method.Method.IsAsyncVariant());
 
                 int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 

@@ -106,14 +106,28 @@ namespace System.Buffers.Tests
             Assert.NotEqual(index1.GetHashCode(), index2.GetHashCode());
         }
 
-        [Fact]
-        public static void ToStringTest()
+        [Theory]
+        [InlineData(0, false, "0")]
+        [InlineData(100, false, "100")]
+        [InlineData(0, true, "^0")]
+        [InlineData(50, true, "^50")]
+        [InlineData(int.MaxValue, false, "2147483647")]
+        [InlineData(int.MaxValue, true, "^2147483647")]
+        public static void ToStringTest(long value, bool fromEnd, string expected)
         {
-            NIndex index1 = 100;
-            Assert.Equal(100.ToString(), index1.ToString());
+            NIndex index = new NIndex((nint)value, fromEnd);
+            Assert.Equal(expected, index.ToString());
+        }
 
-            index1 = new NIndex(50, fromEnd: true);
-            Assert.Equal("^" + 50.ToString(), index1.ToString());
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(1L + uint.MaxValue, false, "4294967296")]
+        [InlineData(1L + uint.MaxValue, true, "^4294967296")]
+        [InlineData(long.MaxValue, false, "9223372036854775807")]
+        [InlineData(long.MaxValue, true, "^9223372036854775807")]
+        public static void ToStringTest_64bit(long value, bool fromEnd, string expected)
+        {
+            NIndex index = new NIndex((nint)value, fromEnd);
+            Assert.Equal(expected, index.ToString());
         }
 
         [Fact]

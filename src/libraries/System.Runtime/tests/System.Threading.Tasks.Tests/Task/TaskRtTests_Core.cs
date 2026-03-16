@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskRtTests_Core
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTCSCompletionStateTests()
         {
             TaskCompletionSource<int> tcs = null;
@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTCSCompletionStateTests_SetCancel()
         {
             // Testing competing SetCancels
@@ -124,7 +124,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTCSCompletionStateTests_SetException()
         {
             TaskCompletionSource<int> tcs = null;
@@ -481,7 +481,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test "bare" overloads for Task<T> ctor, Task<T>.Factory.StartNew
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_bare()
         {
             for (int i = 0; i < 2; i++)
@@ -534,8 +534,8 @@ namespace System.Threading.Tasks.Tests
 
                     Assert.True(ex == null, "TestTaskTConstruction_bare: Did not expect an exception");
                     Assert.True(sideEffect, "TestTaskTConstruction_bare: The func delegate apparently did not run");
-                    Assert.True(f1.Result == 42, "TestTaskTConstruction_bare: Expected future's result to be 42");
-                    Assert.True(f1.Status == TaskStatus.RanToCompletion, "TestTaskTConstruction_bare: Expected future to be in RanToCompletion status");
+                    Assert.True(f1.Result == 42, "TestTaskTConstruction_bare: Expected Task<int> result to be 42");
+                    Assert.True(f1.Status == TaskStatus.RanToCompletion, "TestTaskTConstruction_bare: Expected Task<int> to be in RanToCompletion status");
                     Assert.True(useObj || (asyncState == null), "TestTaskTConstruction_bare: Expected non-null AsyncState only if object overload was used");
                     Assert.True((!useObj) || (asyncState == refObj), "TestTaskTConstruction_bare: Wrong AsyncState value returned");
                 }
@@ -543,7 +543,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test overloads for Task<T> ctor, Task<T>.Factory.StartNew that accept a CancellationToken
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_ct()
         {
             for (int i = 0; i < 2; i++)
@@ -607,8 +607,8 @@ namespace System.Threading.Tasks.Tests
                         object asyncState = ((IAsyncResult)f1).AsyncState;
 
                         Assert.True((ex != null) || (result == 42), "TestTaskTConstruction_ct:  Expected either a valid result or an exception");
-                        Assert.True(preCanceledToken == (f1.Status == TaskStatus.Canceled), "TestTaskTConstruction_ct:  Expected future cancellation only with pre-canceled token");
-                        Assert.True(preCanceledToken != (f1.Status == TaskStatus.RanToCompletion), "TestTaskTConstruction_ct:  Expected future to complete only with un-canceled token");
+                        Assert.True(preCanceledToken == (f1.Status == TaskStatus.Canceled), "TestTaskTConstruction_ct:  Expected Task<int> cancellation only with pre-canceled token");
+                        Assert.True(preCanceledToken != (f1.Status == TaskStatus.RanToCompletion), "TestTaskTConstruction_ct:  Expected Task<int> to complete only with un-canceled token");
                         Assert.True(preCanceledToken != (result == 42), "TestTaskTConstruction_ct:  Expected valid result only with non-canceled token");
                         Assert.True(preCanceledToken == (ex != null), "TestTaskTConstruction_ct:  Expected exception only with pre-canceled token");
                         Assert.True(
@@ -625,7 +625,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test overloads for Task<T> ctor, Task<T>.Factory.StartNew that accept a TaskCreationOptions param
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_tco()
         {
             for (int i = 0; i < 2; i++)
@@ -689,7 +689,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test overloads for Task<T> ctor, Task<T>.Factory.StartNew that accept a CancellationToken and TaskCreationOptions
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_ct_tco()
         {
             for (int i = 0; i < 2; i++)
@@ -749,12 +749,12 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        // Basic future functionality. This is also covered in scenario unit tests, here we focus on wait functionality, and promises
+        // Basic Task<TResult> functionality. This is also covered in scenario unit tests, here we focus on wait functionality, and promises
         [Fact]
-        public static void RunBasicFutureTest()
+        public static void RunBasicTaskWithResultTest()
         {
             //
-            // future basic functionality tests
+            // Task<TResult> basic functionality tests
             //
 
             //
@@ -765,53 +765,53 @@ namespace System.Threading.Tasks.Tests
             TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
             if (((IAsyncResult)tcs.Task).AsyncState != null)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:   > FAILED! non-null state when not spec'd in empty tcs ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:   > FAILED! non-null state when not spec'd in empty tcs ctor");
             }
             if (tcs.Task.CreationOptions != TaskCreationOptions.None)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in empty ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in empty ctor");
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testOptions);
             if (tcs.Task.CreationOptions != testOptions)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! TCO in tcs ctor not persistent");
             }
             if (((IAsyncResult)tcs.Task).AsyncState != null)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-null state when not spec'd in tcs ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! non-null state when not spec'd in tcs ctor");
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testState);
             if (((IAsyncResult)tcs.Task).AsyncState != testState)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! state in tcs ctor not persistent");
             }
             if (tcs.Task.CreationOptions != TaskCreationOptions.None)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in ctor");
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testState, testOptions);
             if (tcs.Task.CreationOptions != testOptions)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO with state in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! TCO with state in tcs ctor not persistent");
             }
             if (((IAsyncResult)tcs.Task).AsyncState != testState)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state with options in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! state with options in tcs ctor not persistent");
             }
             tcs.SetResult(10);
         }
 
         [Fact]
-        public static void RunBasicFutureTest_Negative()
+        public static void RunBasicTaskWithResultTest_Negative()
         {
             //
-            // future basic functionality tests
+            // Task<TResult> basic functionality tests
             //
 
             // Test exceptional conditions
@@ -829,8 +829,8 @@ namespace System.Threading.Tasks.Tests
                () => { Task<int>.Factory.StartNew((obj) => 42, new object(), CancellationToken.None, TaskCreationOptions.None, (TaskScheduler)null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void RunBasicFutureTest_PromiseTestsAndCancellation()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void RunBasicTaskWithResultTest_PromiseTestsAndCancellation()
         {
             //
             // promise tests
@@ -872,24 +872,24 @@ namespace System.Threading.Tasks.Tests
 
             if (promise2.Task.Result != 5678)
             {
-                Assert.Fail("RunBasicFutureTest - Promise Test:  > error: Promise value unblocked, but wrong value was read");
+                Assert.Fail("RunBasicTaskWithResultTest - Promise Test:  > error: Promise value unblocked, but wrong value was read");
             }
 
             if (cancellationExceptionReceived == false || someotherExceptionReceived == true)
             {
-                Assert.Fail("RunBasicFutureTest - Promise Test:  > error: Cancel()ed promise didn't throw TaskCanceledException on value accessor");
+                Assert.Fail("RunBasicTaskWithResultTest - Promise Test:  > error: Cancel()ed promise didn't throw TaskCanceledException on value accessor");
             }
 
             if (unexpectedStateObserved)
             {
-                Assert.Fail("RunBasicFutureTest - Promise Test:  > error: unexpected state observed in Promise test");
+                Assert.Fail("RunBasicTaskWithResultTest - Promise Test:  > error: unexpected state observed in Promise test");
             }
 
             // Creating a TCS with a promise-style constructor that only allows TaskCreationOptions.AttachedToParent
             try
             {
                 TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.PreferFairness);
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! illegal tcs ctor TCO did not cause exception");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! illegal tcs ctor TCO did not cause exception");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -901,7 +901,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test the Task.RunSynchronously() API on external and internal threads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSynchronouslyTest()
         {
             Task.Factory.StartNew(delegate { CoreRunSynchronouslyTest(); }).Wait();
@@ -1003,7 +1003,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CoreRunSynchronouslyTest_NegativeTests()
         {
             //Executing RunSynchronously() validations on external thread
@@ -1057,7 +1057,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Simply throws an exception from the task and ensures it is propagated.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskExceptionTest()
         {
             Task t = Task.Factory.StartNew(delegate { });
@@ -1131,7 +1131,7 @@ namespace System.Threading.Tasks.Tests
             return levels;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitAnyTests()
         {
             int numCores = Environment.ProcessorCount;
@@ -1171,7 +1171,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitAnyTests_Negative()
         {
             // test exceptions
@@ -1248,7 +1248,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // basic WaitAny validations with Cancellation token
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitAnyTests_WithCancellationTokenTests()
         {
             //Test stuck tasks + a cancellation token
@@ -1334,7 +1334,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // creates a large number of tasks and does WaitAll on them from a thread of the specified apartment state
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void RunTaskWaitAllTests()
         {
@@ -1580,7 +1580,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunLongRunningTaskTests()
         {
             TaskScheduler tm = TaskScheduler.Default;
@@ -1618,9 +1618,9 @@ namespace System.Threading.Tasks.Tests
 
 
         // Various tests to exercise the refactored Task class.
-        // Create()==>Factory.StartNew(), Task and Future ctors have been added,
+        // Create()==>Factory.StartNew(), Task and Task<TResult> ctors have been added,
         // and Task.Start() has been added.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunRefactoringTests()
         {
             int temp = 0;
@@ -1896,7 +1896,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunRefactoringTests_NegativeTests()
         {
             TaskCompletionSource<int> tr = new TaskCompletionSource<int>();
@@ -2015,7 +2015,7 @@ namespace System.Threading.Tasks.Tests
 
         // Test that TaskStatus values returned from Task.Status are what they should be.
         // TODO: Test WaitingToRun, Blocked.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskStatusTests()
         {
             Task t;
@@ -2197,7 +2197,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that TaskStatus values returned from Task.Status are what they should be.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskStatusTests_NegativeTests()
         {
             Task t;
@@ -2383,7 +2383,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTest()
         {
             // wait on non-exceptional task
@@ -2431,7 +2431,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTest_NegativeTests()
         {
             string exceptionMsg = "myexception";
@@ -2525,7 +2525,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskRecursiveWaitTest()
         {
             Task t2 = null;
@@ -2568,7 +2568,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it, using a timeout.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTimeoutTest()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -2590,7 +2590,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it, using a timeout.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskRecursiveWaitTimeoutTest()
         {
             ManualResetEvent taskStartedMRE = new ManualResetEvent(false);
@@ -2674,7 +2674,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskCanceledExceptionTests()
         {
             TaskCanceledException tce = null;
@@ -2724,7 +2724,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(tse.Message.Equals(message), "RunTaskSchedulerExceptionTests:  Expected Message = message passed to ctor(string, ex)");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunAsyncWaitHandleTests()
         {
             // Start a task, but make sure that it does not complete

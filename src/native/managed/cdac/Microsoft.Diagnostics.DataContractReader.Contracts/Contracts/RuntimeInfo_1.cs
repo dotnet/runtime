@@ -39,4 +39,12 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
 
         return RuntimeInfoOperatingSystem.Unknown;
     }
+
+    readonly uint IRuntimeInfo.GetCurrentReaderVersion() => 1;
+
+    readonly uint IRuntimeInfo.GetRecommendedReaderVersion()
+    {
+        _target.TryReadGlobal(Constants.Globals.RecommendedReaderVersion, out uint? runtimeVersion);
+        return runtimeVersion ?? 0;
+    }
 }

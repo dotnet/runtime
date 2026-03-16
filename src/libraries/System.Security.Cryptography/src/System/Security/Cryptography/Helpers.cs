@@ -277,7 +277,7 @@ namespace Internal.Cryptography
             try
             {
                 Asn1Tag tag;
-                AsnValueReader reader = new AsnValueReader(encodedValue, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(encodedValue, AsnEncodingRules.DER);
 
                 while (reader.HasData)
                 {

@@ -5588,6 +5588,17 @@ void Debugger::OnMethodEnter(void * pIP)
     DebuggerController::DispatchMethodEnter(pIP, fp);
 }
 /******************************************************************************
+ * IsMethodEnterEnabled
+ * Returns true if any stepper/controller has requested method-enter callbacks.
+ * Used by the interpreter to gate OnMethodEnter calls.
+ ******************************************************************************/
+bool Debugger::IsMethodEnterEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+    return DebuggerController::GetTotalMethodEnter() > 0;
+}
+
+/******************************************************************************
  * GetJMCFlagAddr
  * Provide an address of the flag that the JMC probes use to decide whether
  * or not to call TriggerMethodEnter.
