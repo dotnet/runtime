@@ -203,7 +203,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     getmntinfo
-    sys/mount.h
+    "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)
 
 check_symbol_exists(
@@ -359,11 +359,11 @@ else ()
     set (STATFS_INCLUDES sys/statfs.h)
 endif ()
 
-set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
+set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${STATFS_INCLUDES})
 
 check_symbol_exists(
     "statfs"
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_STATFS)
 
 check_symbol_exists(
@@ -739,8 +739,29 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, size_t bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_SIZE_T)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, int bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_INT)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, long bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_LONG)
 
 check_prototype_definition(
     ioctl
@@ -974,7 +995,7 @@ check_include_files(
 
 check_symbol_exists(
     getpeereid
-    unistd.h
+    "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
 check_symbol_exists(
