@@ -3046,26 +3046,11 @@ SWITCH_OPCODE:
                         targetMethod = PortableEntryPoint::TryGetMethodDesc(calliFunctionPointer);
                         if (targetMethod != nullptr)
                         {
-                            static MethodDesc* s_pNewobjHelperDummyMD = nullptr;
-                            if (s_pNewobjHelperDummyMD == nullptr)
-                                s_pNewobjHelperDummyMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY);
-
-                            if (targetMethod == s_pNewobjHelperDummyMD)
-                            {
-                                // Newobj allocator helper — derive cookie from the dummy MethodDesc.
-                                static void* s_newobjHelperCookie = nullptr;
-                                cookie = VolatileLoadWithoutBarrier(&s_newobjHelperCookie);
-                                if (cookie == nullptr)
-                                {
-                                    MetaSig sig(targetMethod);
-                                    cookie = GetCookieForCalliSig(sig, nullptr);
-                                    VolatileStoreWithoutBarrier(&s_newobjHelperCookie, cookie);
-                                }
-                            }
-                            else
-                            {
+                            if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
                                 goto CALL_INTERP_METHOD;
-                            }
+
+                            MetaSig sig(targetMethod);
+                            cookie = GetCookieForCalliSig(sig, NULL);
                         }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
