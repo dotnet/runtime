@@ -472,6 +472,231 @@ namespace System.Diagnostics.Tests
             VerifyProcessIsRunning(enabled, grandChildPid);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task CanRedirectOutputToPipe(bool readAsync)
+        {
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd") { Arguments = { "/c", "echo Test" } }
+                : new("sh") { Arguments = { "-c", "echo 'Test'" } };
+
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: readAsync);
+
+            using (readPipe)
+            using (writePipe)
+            using (SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: writePipe, error: null))
+            using (FileStream fileStream = new(readPipe, FileAccess.Read, bufferSize: 1, isAsync: readAsync))
+            {
+                // Close the parent copy of the child handle, so the pipe will signal EOF when the child exits
+                writePipe.Close();
+
+                using (StreamReader streamReader = new(fileStream))
+                {
+                    string output = readAsync
+                        ? await streamReader.ReadToEndAsync()
+                        : streamReader.ReadToEnd();
+
+                    Assert.Equal(OperatingSystem.IsWindows() ? "Test\r\n" : "Test\n", output);
+                }
+
+                ProcessExitStatus processExitStatus = await processHandle.WaitForExitAsync();
+
+                Assert.Equal(0, processExitStatus.ExitCode);
+                Assert.Null(processExitStatus.Signal);
+                Assert.False(processExitStatus.Canceled);
+            }
+        }
+
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task CanRedirectOutputAndErrorToDifferentPipes(bool readAsync)
+        {
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd") { Arguments = { "/c", "echo Hello from stdout && echo Error from stderr 1>&2" } }
+                : new("sh") { Arguments = { "-c", "echo 'Hello from stdout' && echo 'Error from stderr' >&2" } };
+
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite, asyncRead: readAsync);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorRead, out SafeFileHandle errorWrite, asyncRead: readAsync);
+
+            using (outputRead)
+            using (outputWrite)
+            using (errorRead)
+            using (errorWrite)
+            using (SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: outputWrite, error: errorWrite))
+            using (FileStream outputStream = new(outputRead, FileAccess.Read, bufferSize: 1, isAsync: readAsync))
+            using (FileStream errorStream = new(errorRead, FileAccess.Read, bufferSize: 1, isAsync: readAsync))
+            {
+                // Close the parent copy of the child handle, so the pipe will signal EOF when the child exits
+                outputWrite.Close();
+                errorWrite.Close();
+
+                using (StreamReader outputReader = new(outputStream))
+                using (StreamReader errorReader = new(errorStream))
+                {
+                    Task<string> outputTask = outputReader.ReadToEndAsync();
+                    Task<string> errorTask = errorReader.ReadToEndAsync();
+
+                    Assert.Equal(OperatingSystem.IsWindows() ? "Hello from stdout \r\n" : "Hello from stdout\n", await outputTask);
+                    Assert.Equal(OperatingSystem.IsWindows() ? "Error from stderr \r\n" : "Error from stderr\n", await errorTask);
+                }
+
+                ProcessExitStatus exitStatus = await processHandle.WaitForExitAsync();
+
+                Assert.Equal(0, exitStatus.ExitCode);
+                Assert.Null(exitStatus.Signal);
+                Assert.False(exitStatus.Canceled);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task CanRedirectToTheSameFileHandle(bool andStdError)
+        {
+            string tempFile = Path.GetTempFileName();
+
+            try
+            {
+                // Write test data to the file before opening the handle to avoid lock conflicts
+                File.WriteAllText(tempFile, "Test Line\n");
+
+                SafeFileHandle fileHandle = File.OpenHandle(
+                    tempFile,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite,
+                    FileShare.ReadWrite);
+
+                // Start a process that reads from stdin and writes to stdout
+                // We use 'cmd /c findstr .*' which reads stdin and outputs matching lines
+                ProcessStartOptions options = new("cmd.exe")
+                {
+                    Arguments = { "/c", "findstr", ".*" }
+                };
+
+                // Both stdin and stdout use the same file handle
+                using SafeProcessHandle processHandle = SafeProcessHandle.Start(
+                    options,
+                    input: fileHandle,
+                    output: fileHandle,
+                    error: andStdError ? fileHandle : null);
+
+                // Close the file handle after starting the process to avoid file locking issues
+                fileHandle.Dispose();
+
+                // Wait for process to complete
+                await processHandle.WaitForExitAsync();
+
+                // Read the output from the file
+                string output = File.ReadAllText(tempFile);
+
+                Assert.Equal("Test Line\nTest Line\n", output, ignoreLineEndingDifferences: true);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static async Task CanRedirectToInheritedHandles(bool useAsync)
+        {
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd") { Arguments = { "/c", "exit 42" } }
+                : new("sh") { Arguments = { "-c", "exit 42" } };
+
+            using SafeFileHandle inputHandle = Console.OpenStandardInputHandle();
+            using SafeFileHandle outputHandle = Console.OpenStandardOutputHandle();
+            using SafeFileHandle errorHandle = Console.OpenStandardErrorHandle();
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, inputHandle, outputHandle, errorHandle);
+
+            ProcessExitStatus exitStatus = useAsync
+                ? await processHandle.WaitForExitAsync()
+                : processHandle.WaitForExit();
+
+            Assert.Equal(42, exitStatus.ExitCode);
+            Assert.Null(exitStatus.Signal);
+            Assert.False(exitStatus.Canceled);
+        }
+
+        [Fact]
+        public static async Task CanImplementPiping()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
+            string? tempFile = null;
+
+            try
+            {
+                tempFile = Path.GetTempFileName();
+
+                ProcessStartOptions producer, consumer;
+                string expectedOutput;
+
+                if (OperatingSystem.IsWindows())
+                {
+                    producer = new("cmd")
+                    {
+                        Arguments = { "/c", "echo hello world & echo test line & echo another test" }
+                    };
+                    consumer = new("findstr")
+                    {
+                        Arguments = { "test" }
+                    };
+                    // findstr adds a trailing space on Windows
+                    expectedOutput = "test line \nanother test\n";
+                }
+                else
+                {
+                    // Unix: use sh with printf to avoid echo implementation differences
+                    producer = new("sh")
+                    {
+                        Arguments = { "-c", "printf 'hello world\\ntest line\\nanother test\\n'" }
+                    };
+                    consumer = new("grep")
+                    {
+                        Arguments = { "test" }
+                    };
+                    // grep doesn't add trailing spaces
+                    expectedOutput = "test line\nanother test\n";
+                }
+
+                using (SafeProcessHandle producerHandle = SafeProcessHandle.Start(producer, input: null, output: writePipe, error: null))
+                using (SafeFileHandle outputHandle = File.OpenHandle(tempFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                {
+                    writePipe.Close(); // close the parent copy of child handle
+
+                    using (SafeProcessHandle consumerHandle = SafeProcessHandle.Start(consumer, readPipe, outputHandle, error: null))
+                    {
+                        readPipe.Close(); // close the parent copy of child handle 
+
+                        await producerHandle.WaitForExitAsync();
+                        await consumerHandle.WaitForExitAsync();
+                    }
+                }
+
+                string result = File.ReadAllText(tempFile);
+                Assert.Equal(expectedOutput, result, ignoreLineEndingDifferences: true);
+            }
+            finally
+            {
+                readPipe.Dispose();
+                writePipe.Dispose();
+
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
         private static void VerifyProcessIsRunning(bool shouldExited, int processId)
         {
             try
