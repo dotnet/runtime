@@ -278,7 +278,7 @@ namespace System.IO
         {
             if (value != null)
             {
-                Write(value.ToCharArray());
+                Write(value.AsSpan());
             }
         }
 
