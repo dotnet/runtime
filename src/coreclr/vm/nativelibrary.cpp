@@ -294,14 +294,9 @@ namespace
         // Get the pointer to the managed assembly load context
         INT_PTR ptrAssemblyLoadContext = pCurrentBinder->GetAssemblyLoadContext();
 
-        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrAssemblyLoadContext);
-
-        // Make the call
-        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
+        // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
+        UnmanagedCallersOnlyCaller resolveUnmanagedDll(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
+        resolveUnmanagedDll.InvokeThrowing(&pUnmanagedDllName, ptrAssemblyLoadContext, &hmod);
 
         GCPROTECT_END();
 
@@ -341,18 +336,12 @@ namespace
         gc.DllName = StringObject::NewString(wszLibName);
         gc.AssemblyRef = pAssembly->GetExposedObject();
 
-        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
+        // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
         // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
         // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
         // as an additional argument.
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrAssemblyLoadContext);
-
-        // Make the call
-        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
+        UnmanagedCallersOnlyCaller resolveUnmanagedDllUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
+        resolveUnmanagedDllUsingEvent.InvokeThrowing(&gc.DllName, &gc.AssemblyRef, ptrAssemblyLoadContext, &hmod);
 
         GCPROTECT_END();
 
@@ -390,15 +379,8 @@ namespace
         gc.libNameRef = StringObject::NewString(wszLibName);
         gc.assemblyRef = pAssembly->GetExposedObject();
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.libNameRef);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.assemblyRef);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(hasDllImportSearchPathFlags);
-        args[ARGNUM_3] = DWORD_TO_ARGHOLDER(dllImportSearchPathFlags);
-
-         // Make the call
-        CALL_MANAGED_METHOD(handle, NATIVE_LIBRARY_HANDLE, args);
+        UnmanagedCallersOnlyCaller loadLibraryCallbackStub(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
+        loadLibraryCallbackStub.InvokeThrowing(&gc.libNameRef, &gc.assemblyRef, CLR_BOOL_ARG(hasDllImportSearchPathFlags), dllImportSearchPathFlags, (INT_PTR*)&handle);
         GCPROTECT_END();
 
         return handle;

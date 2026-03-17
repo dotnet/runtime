@@ -4197,10 +4197,10 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (bstr == NULL)
         return;
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(bstr);
-    CALL_MANAGED_METHOD_RETREF(*pStringObj, STRINGREF, args);
+    GCPROTECT_BEGIN(*pStringObj);
+    UnmanagedCallersOnlyCaller convertToManaged(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED_UCO);
+    convertToManaged.InvokeThrowing((INT_PTR)bstr, pStringObj);
+    GCPROTECT_END();
 }
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
@@ -4225,11 +4225,11 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
         RETURN NULL;
     }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(nullptr);
-    CALL_MANAGED_METHOD(bstr, BSTR, args);
+    GCPROTECT_BEGIN(*pStringObj);
+    UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
+    BSTR bstr = NULL;
+    convertToNative.InvokeThrowing(pStringObj, (INT_PTR)nullptr, (INT_PTR*)&bstr);
+    GCPROTECT_END();
     RETURN bstr;
 }
 

@@ -22,6 +22,19 @@ namespace System.Runtime.InteropServices
             return isImplemented;
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void IsInterfaceImplemented(IDynamicInterfaceCastable* pCastable, RuntimeType* pInterfaceType, byte throwIfNotImplemented, byte* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = IsInterfaceImplemented(*pCastable, *pInterfaceType, throwIfNotImplemented != 0) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         [StackTraceHidden]
         internal static RuntimeType? GetInterfaceImplementation(IDynamicInterfaceCastable castable, RuntimeType interfaceType)
         {
@@ -40,6 +53,19 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_DoesNotImplementRequested, implType, interfaceType));
 
             return implType;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void GetInterfaceImplementation(IDynamicInterfaceCastable* pCastable, RuntimeType* pInterfaceType, RuntimeType* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = GetInterfaceImplementation(*pCastable, *pInterfaceType);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }

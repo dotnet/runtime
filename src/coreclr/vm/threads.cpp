@@ -1811,9 +1811,8 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller createAutoreleasePool(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
+        createAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -1832,9 +1831,8 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller drainAutoreleasePool(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
+        drainAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -2466,10 +2464,11 @@ void Thread::CleanupDetachedThreads()
         // Instead, run that clean up here when the Thread is detached,
         // which is definitely after the thread has exited.
         PTR_Thread pThread = (PTR_Thread)iter.GetElement();
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
-        CALL_MANAGED_METHOD_NORET(args);
+        OBJECTREF exposedObj = pThread->GetExposedObject();
+        GCPROTECT_BEGIN(exposedObj);
+        UnmanagedCallersOnlyCaller onThreadExiting(METHOD__THREAD__ON_THREAD_EXITING);
+        onThreadExiting.InvokeThrowing(&exposedObj);
+        GCPROTECT_END();
 
         pThread->DecExternalCount(FALSE);
     }

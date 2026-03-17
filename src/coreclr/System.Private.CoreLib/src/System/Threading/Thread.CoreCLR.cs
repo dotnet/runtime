@@ -125,6 +125,19 @@ namespace System.Threading
             OnThreadExiting();
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void StartCallback(Thread* pThread, Exception* pException)
+        {
+            try
+            {
+                pThread->StartCallback();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // Max iterations to be done in SpinWait without switching GC modes.
         private const int SpinWaitCoopThreshold = 1024;
 
@@ -581,6 +594,19 @@ namespace System.Threading
             _waitInfo?.OnThreadExiting();
             SetJoinHandle();
 #endif
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnThreadExiting(Thread* pThread, Exception* pException)
+        {
+            try
+            {
+                pThread->OnThreadExiting();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]

@@ -138,6 +138,19 @@ namespace System.Reflection
             return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName, unsafeAccessorMethod);
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void GetTypeHelper(char* pTypeName, RuntimeAssembly* pRequestingAssembly, byte throwOnError, byte requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod, RuntimeType* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = GetTypeHelper(pTypeName, *pRequestingAssembly, throwOnError != 0, requireAssemblyQualifiedName != 0, unsafeAccessorMethod);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         internal static RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
             bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod = 0)
         {

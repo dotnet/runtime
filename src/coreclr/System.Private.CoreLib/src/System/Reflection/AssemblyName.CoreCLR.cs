@@ -167,6 +167,32 @@ namespace System.Reflection
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec, Exception* pException)
+        {
+            try
+            {
+                ParseAsAssemblySpec(pAssemblyName, pAssemblySpec);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void CreateAssemblyName(AssemblyName* pResult, NativeAssemblyNameParts* pParts, Exception* pException)
+        {
+            try
+            {
+                *pResult = new AssemblyName(pParts);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyName_InitializeAssemblySpec")]
         private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec);
     }

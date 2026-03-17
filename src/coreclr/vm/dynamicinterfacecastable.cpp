@@ -18,18 +18,18 @@ namespace
             POSTCONDITION(!throwIfNotImplemented || RETVAL);
         } CONTRACT_END;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
+        struct {
+            OBJECTREF obj;
+            OBJECTREF managedType;
+        } gc;
+        gc.obj = *objPROTECTED;
+        gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
-        OBJECTREF managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
-
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*objPROTECTED);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(throwIfNotImplemented);
-
-        BOOL isImplemented;
-        CALL_MANAGED_METHOD(isImplemented, CLR_BOOL, args);
-        INDEBUG(managedType = NULL); // managedType wasn't protected during the call
+        CLR_BOOL isImplemented = FALSE;
+        GCPROTECT_BEGIN(gc);
+        UnmanagedCallersOnlyCaller isInterfaceImplemented(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
+        isInterfaceImplemented.InvokeThrowing(&gc.obj, &gc.managedType, CLR_BOOL_ARG(throwIfNotImplemented), &isImplemented);
+        GCPROTECT_END();
 
         RETURN isImplemented;
     }
@@ -45,19 +45,21 @@ namespace
             POSTCONDITION(RETVAL != NULL);
         } CONTRACT_END;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__DYNAMICINTERFACECASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
+        struct {
+            OBJECTREF obj;
+            OBJECTREF managedType;
+            OBJECTREF result;
+        } gc;
+        gc.obj = *objPROTECTED;
+        gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
+        gc.result = NULL;
 
-        OBJECTREF managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
+        GCPROTECT_BEGIN(gc);
+        UnmanagedCallersOnlyCaller getInterfaceImplementation(METHOD__DYNAMICINTERFACECASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
+        getInterfaceImplementation.InvokeThrowing(&gc.obj, &gc.managedType, &gc.result);
+        GCPROTECT_END();
 
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*objPROTECTED);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-
-        OBJECTREF implTypeRef;
-        CALL_MANAGED_METHOD_RETREF(implTypeRef, OBJECTREF, args);
-        INDEBUG(managedType = NULL); // managedType wasn't protected during the call
-
-        RETURN implTypeRef;
+        RETURN gc.result;
     }
 }
 

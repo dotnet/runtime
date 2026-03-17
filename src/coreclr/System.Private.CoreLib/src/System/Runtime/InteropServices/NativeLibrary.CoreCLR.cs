@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -24,5 +25,18 @@ namespace System.Runtime.InteropServices
         internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
                                                  [MarshalAs(UnmanagedType.Bool)] bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
                                                  [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
+
+        [UnmanagedCallersOnly]
+        private static unsafe void LoadLibraryCallbackStub(string* pLibraryName, Assembly* pAssembly, byte hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, IntPtr* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = LoadLibraryCallbackStub(*pLibraryName, *pAssembly, hasDllImportSearchPathFlags != 0, dllImportSearchPathFlags);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

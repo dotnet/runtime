@@ -319,6 +319,19 @@ namespace System.StubHelpers
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void ConvertToNative(string* pStr, IntPtr pNativeBuffer, IntPtr* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToNative(*pStr, pNativeBuffer);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
@@ -359,6 +372,19 @@ namespace System.StubHelpers
                 }
 
                 return ret;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ConvertToManaged(IntPtr bstr, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToManaged(bstr);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 

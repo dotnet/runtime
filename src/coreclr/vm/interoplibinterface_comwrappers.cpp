@@ -36,14 +36,10 @@ namespace
         }
         CONTRACTL_END;
 
-        int result;
+        int result = 0;
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(&iid);
-        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(ppObject);
-        CALL_MANAGED_METHOD(result, int, args);
+        UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
+        callICustomQueryInterface.InvokeThrowing(implPROTECTED, &iid, ppObject, &result);
 
         return result;
     }
@@ -95,14 +91,12 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateComInterfaceForObject(
     }
     CONTRACTL_END;
 
-    void* wrapper;
+    void* wrapper = nullptr;
 
     GCPROTECT_BEGIN(instance);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(instance);
-    CALL_MANAGED_METHOD(wrapper, void*, args);
+    UnmanagedCallersOnlyCaller getOrCreateComInterface(METHOD__COMWRAPPERS__GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE);
+    getOrCreateComInterface.InvokeThrowing(&instance, &wrapper);
 
     GCPROTECT_END();
 
@@ -131,11 +125,8 @@ bool GlobalComWrappersForMarshalling::TryGetOrCreateObjectForComInstance(
     OBJECTREF obj = NULL;
     GCPROTECT_BEGIN(obj);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(externalComObject);
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(flags);
-    CALL_MANAGED_METHOD_RETREF(obj, OBJECTREF, args);
+    UnmanagedCallersOnlyCaller getOrCreateObjectForComInstance(METHOD__COMWRAPPERS__GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE);
+    getOrCreateObjectForComInstance.InvokeThrowing(externalComObject, flags, &obj);
 
     GCPROTECT_END();
 

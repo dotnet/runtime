@@ -159,11 +159,8 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLY_NAME__PARSE_AS_ASSEMBLYSPEC);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pAssemblyDisplayName);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(this);
-    CALL_MANAGED_METHOD_NORET(args);
+    UnmanagedCallersOnlyCaller parseAsAssemblySpec(METHOD__ASSEMBLY_NAME__PARSE_AS_ASSEMBLYSPEC);
+    parseAsAssemblySpec.InvokeThrowing(pAssemblyDisplayName, (void*)this);
 }
 
 extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec)

@@ -974,8 +974,8 @@ DEFINE_METHOD(THREAD,               CTOR,                   .ctor,           IM_
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
-DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePool,  SM_RetVoid)
-DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool,   SM_RetVoid)
+DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePool,  SM_PtrException_RetVoid)
+DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool,   SM_PtrException_RetVoid)
 #endif // FEATURE_OBJCMARSHAL
 
 DEFINE_CLASS(TYPE,                  System,                 Type)
@@ -1092,6 +1092,8 @@ DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,    
 DEFINE_CLASS(BSTRMARSHALER,         StubHelpers,            BSTRMarshaler)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
+DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE_UCO,  ConvertToNative,            SM_PtrStr_IntPtr_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED_UCO, ConvertToManaged,           SM_IntPtr_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(BSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
 DEFINE_CLASS(ANSIBSTRMARSHALER,     StubHelpers,            AnsiBSTRMarshaler)

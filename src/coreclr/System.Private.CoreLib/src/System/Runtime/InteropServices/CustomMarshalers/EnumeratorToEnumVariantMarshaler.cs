@@ -50,6 +50,19 @@ namespace System.Runtime.InteropServices.CustomMarshalers
         internal static object InternalMarshalNativeToManaged(IntPtr pNativeData)
             => GetInstance(null).MarshalNativeToManaged(pNativeData);
 
+        [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        private static unsafe void InternalMarshalNativeToManaged(IntPtr pNativeData, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = InternalMarshalNativeToManaged(pNativeData);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         public object MarshalNativeToManaged(IntPtr pNativeData)
         {
             ArgumentNullException.ThrowIfNull(pNativeData);

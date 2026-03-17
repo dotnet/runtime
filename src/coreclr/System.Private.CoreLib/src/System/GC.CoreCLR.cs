@@ -337,6 +337,20 @@ namespace System
             return count;
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe uint RunFinalizers(Exception* pException)
+        {
+            try
+            {
+                return RunFinalizers();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 0;
+            }
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
 

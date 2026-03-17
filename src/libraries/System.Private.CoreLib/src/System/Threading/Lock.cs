@@ -876,6 +876,21 @@ namespace System.Threading
             Debug.Assert(!new State(this).UseTrivialWaits);
         }
 
+#if CORECLR
+        [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        private static unsafe void InitializeForMonitor(Lock* pLock, int managedThreadId, uint recursionCount, Exception* pException)
+        {
+            try
+            {
+                pLock->InitializeForMonitor(managedThreadId, recursionCount);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
+
         private static short DetermineMaxSpinCount()
         {
             if (IsSingleProcessor)
