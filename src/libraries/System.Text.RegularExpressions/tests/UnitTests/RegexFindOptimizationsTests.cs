@@ -185,24 +185,27 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [OuterLoop("Stress test for deep nesting")]
-        [InlineData(5)]
-        [InlineData(5_000)]
-        public void LeadingPrefix_InterleavedCaptureNesting_DoesNotStackOverflow(int depth)
+        [InlineData(5, "(", ")")]
+        [InlineData(5_000, "(", ")")]
+        [InlineData(5, "(?>", ")")]
+        [InlineData(5_000, "(?>", ")")]
+        public void LeadingPrefix_InterleavedNesting_DoesNotStackOverflow(int depth, string open, string close)
         {
-            // Build a pattern that interleaves Capture and Concatenate nodes: (…(ab)ab…)ab
-            // This exercises the recursive Capture-unwrapping and inner-Concatenate recursion
-            // in TryGetOrdinalCaseInsensitiveString. Verify it doesn't SO and extracts the prefix.
+            // Build a pattern that interleaves group and Concatenate nodes, e.g.: (…(ab)ab…)ab
+            // or (?>…(?>ab)ab…)ab. This exercises the recursive unwrapping and inner-Concatenate
+            // recursion in TryGetOrdinalCaseInsensitiveString for both Capture and Atomic groups.
             // At small depths, extraction should succeed. At very large depths, the stack guard
-            // in TryGetOrdinalCaseInsensitiveString may bail out, which is fine — the important
-            // thing is no crash.
-            // The pattern "ab" wrapped depth times as "(…(ab)ab…)ab" is equivalent to:
-            //   "(" repeated depth times + "ab" + ")ab" repeated depth times.
-            var sb = new StringBuilder(depth * 4 + 2);
-            sb.Append('(', depth);
+            // may bail out, which is fine — the important thing is no crash.
+            var sb = new StringBuilder(depth * (open.Length + close.Length + 2) + 2);
+            for (int i = 0; i < depth; i++)
+            {
+                sb.Append(open);
+            }
             sb.Append("ab");
             for (int i = 0; i < depth; i++)
             {
-                sb.Append(")ab");
+                sb.Append(close);
+                sb.Append("ab");
             }
 
             string pattern = sb.ToString();
