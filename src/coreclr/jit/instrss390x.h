@@ -37,7 +37,7 @@ INST(nop,		"nop",			0,		0x00000013)
 INST(br,		"br",			0,		0x07)
 INST(ret,		"br",			0,		0x07)
 //// R_R
-INST(mov,		"lgfi",			0,		0xc01)
+INST(lgfi,		"lgfi",			0,		0xc01)
 INST(break,		"break",		0,		0x00)
 
 ////R_I
@@ -55,7 +55,7 @@ INST(std,		"std",			0,		0x60)
 INST(lay,		"lay",			0,		0xe371)
 
 //// R_R_R
-INST(add,		"ark",			0,		0xb9f8)
+INST(ark,		"ark",			0,		0xb9f8)
 
 //// R_R_R_I
 INST(stmg,		"stmg",			0,		0xeb24)

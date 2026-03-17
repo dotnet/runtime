@@ -2686,7 +2686,7 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #elif defined(TARGET_ARM64)
     GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_S390X)
-    GetEmitter()->emitIns_Mov(INS_mov, size, reg, reg, /* canSkip */ true);
+    GetEmitter()->emitIns_Mov(INS_lgfi, size, reg, reg, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)

@@ -1175,7 +1175,7 @@ protected:
 		case INS_br:
 			size = 2;
 			break;
-		case INS_mov:
+		case INS_lgfi:
 		case INS_stg:
 		case INS_lay:
 		case INS_stmg:
