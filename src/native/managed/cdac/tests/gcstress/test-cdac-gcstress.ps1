@@ -9,6 +9,8 @@
       3. Compiles a small managed test app
       4. Runs the test with DOTNET_GCStress=0x24 (instruction-level JIT stress + cDAC verification)
 
+    Supports Windows, Linux, and macOS.
+
 .PARAMETER Configuration
     Runtime configuration: Checked (default) or Debug.
 
@@ -19,9 +21,9 @@
     Skip the build step (use existing artifacts).
 
 .EXAMPLE
-    .\test-cdac-gcstress.ps1
-    .\test-cdac-gcstress.ps1 -Configuration Debug -FailFast
-    .\test-cdac-gcstress.ps1 -SkipBuild
+    ./test-cdac-gcstress.ps1
+    ./test-cdac-gcstress.ps1 -Configuration Debug -FailFast
+    ./test-cdac-gcstress.ps1 -SkipBuild
 #>
 param(
     [ValidateSet("Checked", "Debug")]
@@ -35,20 +37,42 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = $PSScriptRoot
 
-# Resolve repo root — walk up from script location to find build.cmd
-while ($repoRoot -and !(Test-Path "$repoRoot\build.cmd")) {
+# Resolve repo root — walk up from script location to find build script
+$buildScript = if ($IsWindows -or $env:OS -eq "Windows_NT") { "build.cmd" } else { "build.sh" }
+while ($repoRoot -and !(Test-Path (Join-Path $repoRoot $buildScript))) {
     $repoRoot = Split-Path $repoRoot -Parent
 }
 if (-not $repoRoot) {
-    Write-Error "Could not find repo root (build.cmd). Place this script inside the runtime repo."
+    Write-Error "Could not find repo root ($buildScript). Place this script inside the runtime repo."
     exit 1
 }
 
-$coreRoot = "$repoRoot\artifacts\tests\coreclr\windows.x64.$Configuration\Tests\Core_Root"
-$testDir  = "$repoRoot\artifacts\tests\coreclr\windows.x64.$Configuration\Tests\cdacgcstresstest"
+# Detect platform
+$isWin = ($IsWindows -or $env:OS -eq "Windows_NT")
+$osName = if ($isWin) { "windows" } elseif ($IsMacOS) { "osx" } else { "linux" }
+$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
+# Map .NET arch names to runtime conventions
+$arch = switch ($arch) {
+    "x64"   { "x64" }
+    "arm64" { "arm64" }
+    "arm"   { "arm" }
+    "x86"   { "x86" }
+    default { "x64" }
+}
+
+$platformId = "$osName.$arch"
+$coreRoot = Join-Path $repoRoot "artifacts" "tests" "coreclr" "$platformId.$Configuration" "Tests" "Core_Root"
+$testDir  = Join-Path $repoRoot "artifacts" "tests" "coreclr" "$platformId.$Configuration" "Tests" "cdacgcstresstest"
+$buildCmd = Join-Path $repoRoot $buildScript
+$dotnetName = if ($isWin) { "dotnet.exe" } else { "dotnet" }
+$corerunName = if ($isWin) { "corerun.exe" } else { "corerun" }
+$dotnetExe = Join-Path $repoRoot ".dotnet" $dotnetName
+$corerunExe = Join-Path $coreRoot $corerunName
+$cdacDll = if ($isWin) { "mscordaccore_universal.dll" } elseif ($IsMacOS) { "libmscordaccore_universal.dylib" } else { "libmscordaccore_universal.so" }
 
 Write-Host "=== cDAC GC Stress Test ===" -ForegroundColor Cyan
 Write-Host "  Repo root:     $repoRoot"
+Write-Host "  Platform:      $platformId"
 Write-Host "  Configuration: $Configuration"
 Write-Host "  FailFast:      $FailFast"
 Write-Host ""
@@ -61,26 +85,31 @@ if (-not $SkipBuild) {
     Push-Location $repoRoot
     try {
         $buildArgs = @("-subset", "clr.native+tools.cdac", "-c", $Configuration, "-rc", $Configuration, "-lc", "Release", "-bl")
-        & "$repoRoot\build.cmd" @buildArgs
+        & $buildCmd @buildArgs
         if ($LASTEXITCODE -ne 0) { Write-Error "Build failed with exit code $LASTEXITCODE"; exit 1 }
     } finally {
         Pop-Location
     }
 
     Write-Host ">>> Step 1b: Generating core_root layout..." -ForegroundColor Yellow
-    & "$repoRoot\src\tests\build.cmd" $Configuration generatelayoutonly -SkipRestorePackages /p:LibrariesConfiguration=Release
+    $testBuildScript = if ($isWin) {
+        Join-Path $repoRoot "src" "tests" "build.cmd"
+    } else {
+        Join-Path $repoRoot "src" "tests" "build.sh"
+    }
+    & $testBuildScript $Configuration generatelayoutonly -SkipRestorePackages /p:LibrariesConfiguration=Release
     if ($LASTEXITCODE -ne 0) { Write-Error "Core_root generation failed"; exit 1 }
 } else {
     Write-Host ">>> Step 1: Skipping build (--SkipBuild)" -ForegroundColor DarkGray
-    if (!(Test-Path "$coreRoot\corerun.exe")) {
+    if (!(Test-Path $corerunExe)) {
         Write-Error "Core_root not found at $coreRoot. Run without -SkipBuild first."
         exit 1
     }
 }
 
-# Verify cDAC DLL exists
-if (!(Test-Path "$coreRoot\mscordaccore_universal.dll")) {
-    Write-Error "mscordaccore_universal.dll not found in core_root. Ensure cDAC was built."
+# Verify cDAC library exists
+if (!(Test-Path (Join-Path $coreRoot $cdacDll))) {
+    Write-Error "$cdacDll not found in core_root. Ensure cDAC was built."
     exit 1
 }
 
@@ -130,17 +159,24 @@ class CdacGcStressTest
     }
 }
 "@
-Set-Content "$testDir\test.cs" $testSource
+$testCs  = Join-Path $testDir "test.cs"
+$testDll = Join-Path $testDir "test.dll"
 
-$cscPath = Get-ChildItem "$repoRoot\.dotnet\sdk" -Recurse -Filter "csc.dll" | Select-Object -First 1
+Set-Content $testCs $testSource
+
+$cscPath = Get-ChildItem (Join-Path $repoRoot ".dotnet" "sdk") -Recurse -Filter "csc.dll" | Select-Object -First 1
 if (-not $cscPath) { Write-Error "Could not find csc.dll in .dotnet SDK"; exit 1 }
 
-& "$repoRoot\.dotnet\dotnet.exe" exec $cscPath.FullName `
-    /out:"$testDir\test.dll" /target:exe /nologo `
-    /r:"$coreRoot\System.Runtime.dll" `
-    /r:"$coreRoot\System.Console.dll" `
-    /r:"$coreRoot\System.Private.CoreLib.dll" `
-    "$testDir\test.cs"
+$sysRuntime  = Join-Path $coreRoot "System.Runtime.dll"
+$sysConsole  = Join-Path $coreRoot "System.Console.dll"
+$sysCoreLib  = Join-Path $coreRoot "System.Private.CoreLib.dll"
+
+& $dotnetExe exec $cscPath.FullName `
+    "/out:$testDll" /target:exe /nologo `
+    "/r:$sysRuntime" `
+    "/r:$sysConsole" `
+    "/r:$sysCoreLib" `
+    $testCs
 if ($LASTEXITCODE -ne 0) { Write-Error "Test compilation failed"; exit 1 }
 
 # ---------------------------------------------------------------------------
@@ -154,7 +190,7 @@ Remove-Item Env:\DOTNET_GCStress -ErrorAction SilentlyContinue
 Remove-Item Env:\DOTNET_GCStressCdacFailFast -ErrorAction SilentlyContinue
 Remove-Item Env:\DOTNET_ContinueOnAssert -ErrorAction SilentlyContinue
 
-& "$coreRoot\corerun.exe" "$testDir\test.dll"
+& $corerunExe (Join-Path $testDir "test.dll")
 if ($LASTEXITCODE -ne 100) {
     Write-Error "Baseline test failed with exit code $LASTEXITCODE (expected 100)"
     exit 1
@@ -168,7 +204,7 @@ Write-Host ">>> Step 4: Running with GCStress=0x4 (baseline, no cDAC)..." -Foreg
 $env:DOTNET_GCStress = "0x4"
 $env:DOTNET_ContinueOnAssert = "1"
 
-& "$coreRoot\corerun.exe" "$testDir\test.dll"
+& $corerunExe (Join-Path $testDir "test.dll")
 if ($LASTEXITCODE -ne 100) {
     Write-Error "GCStress=0x4 baseline failed with exit code $LASTEXITCODE (expected 100)"
     exit 1
@@ -179,13 +215,13 @@ Write-Host "  GCStress=0x4 baseline passed." -ForegroundColor Green
 # Step 5: Run with GCStress=0x24 (instruction JIT + cDAC verification)
 # ---------------------------------------------------------------------------
 Write-Host ">>> Step 5: Running with GCStress=0x24 (cDAC verification)..." -ForegroundColor Yellow
-$logFile = "$testDir\cdac-gcstress-results.txt"
+$logFile = Join-Path $testDir "cdac-gcstress-results.txt"
 $env:DOTNET_GCStress = "0x24"
 $env:DOTNET_GCStressCdacFailFast = if ($FailFast) { "1" } else { "0" }
 $env:DOTNET_GCStressCdacLogFile = $logFile
 $env:DOTNET_ContinueOnAssert = "1"
 
-& "$coreRoot\corerun.exe" "$testDir\test.dll"
+& $corerunExe (Join-Path $testDir "test.dll")
 $testExitCode = $LASTEXITCODE
 
 # ---------------------------------------------------------------------------

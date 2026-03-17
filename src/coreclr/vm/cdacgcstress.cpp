@@ -608,7 +608,10 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
             cdacRefs.Delete(cdacRefs.End() - 1);
     }
 
-    // Compare cDAC vs runtime (count-only).
+    // Sort and deduplicate runtime refs to match cDAC ordering for element-wise comparison.
+    runtimeCount = DeduplicateRefs(runtimeRefsBuf, runtimeCount);
+
+    // Compare cDAC vs runtime.
     // If the stress IP is in a RangeList section (dynamic method / IL Stub),
     // the cDAC can't decode GcInfo for it (known gap matching DAC behavior).
     // Skip comparison for these — the runtime reports refs from the Frame chain
@@ -632,6 +635,48 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     }
 
     bool pass = (cdacCount == runtimeCount);
+    if (pass && cdacCount > 0)
+    {
+        // Counts match — verify that the same (Object, Flags) pairs are reported.
+        // We compare by (Object, Flags) rather than (Address, Object, Flags) because
+        // cDAC register refs have Address=0 while the runtime reports the actual
+        // stack spill address. The meaningful check is that the same GC objects
+        // are found with the same flags.
+        StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
+
+        // Build sorted (Object, Flags) arrays for both sets
+        struct ObjFlags { CLRDATA_ADDRESS Object; unsigned int Flags; };
+        auto compareObjFlags = [](const void* a, const void* b) -> int {
+            const ObjFlags* oa = static_cast<const ObjFlags*>(a);
+            const ObjFlags* ob = static_cast<const ObjFlags*>(b);
+            if (oa->Object != ob->Object)
+                return (oa->Object < ob->Object) ? -1 : 1;
+            if (oa->Flags != ob->Flags)
+                return (oa->Flags < ob->Flags) ? -1 : 1;
+            return 0;
+        };
+
+        // Use stack buffers — counts are bounded by MAX_COLLECTED_REFS
+        ObjFlags cdacOF[MAX_COLLECTED_REFS];
+        ObjFlags rtOF[MAX_COLLECTED_REFS];
+        for (int i = 0; i < cdacCount; i++)
+        {
+            cdacOF[i] = { cdacBuf[i].Object, cdacBuf[i].Flags };
+            rtOF[i] = { runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags };
+        }
+        qsort(cdacOF, cdacCount, sizeof(ObjFlags), compareObjFlags);
+        qsort(rtOF, cdacCount, sizeof(ObjFlags), compareObjFlags);
+
+        for (int i = 0; i < cdacCount; i++)
+        {
+            if (cdacOF[i].Object != rtOF[i].Object || cdacOF[i].Flags != rtOF[i].Flags)
+            {
+                pass = false;
+                break;
+            }
+        }
+        cdacRefs.CloseRawBuffer();
+    }
     if (!pass && isDynamicMethod)
     {
         // Known gap: dynamic method refs not in cDAC. Treat as pass but log.
@@ -734,7 +779,7 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     if (!pass)
     {
-        ReportMismatch("cDAC stack reference verification failed - mismatch between cDAC and runtime GC ref counts", pThread, regs);
+        ReportMismatch("cDAC stack reference verification failed - mismatch between cDAC and runtime GC refs", pThread, regs);
     }
 }
 

@@ -130,7 +130,9 @@ internal partial class StackWalk_1 : IStackWalk
     private TargetPointer GetCurrentExceptionTracker(StackDataFrameHandle handle)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(handle.ThreadData.ThreadAddress);
-        return thread.ExceptionTracker;
+        // ExceptionTracker is the address of the field on the Thread object.
+        // Dereference to get the actual ExInfo pointer.
+        return _target.ReadPointer(thread.ExceptionTracker);
     }
 
     private bool HasFrameBeenUnwoundByAnyActiveException(IStackDataFrameHandle stackDataFrameHandle)
