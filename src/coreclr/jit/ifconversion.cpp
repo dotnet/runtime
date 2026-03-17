@@ -48,6 +48,7 @@ private:
     genTreeOps m_mainOper         = GT_COUNT; // The main oper of the if conversion.
     bool       m_doElseConversion = false;    // Does the If conversion have an else statement.
 
+    bool IfConvertCheck();
     bool IfConvertCheckFlow();
     bool IfConvertCheckStmts(BasicBlock* block, IfConvertOperation* foundOperation);
 
@@ -63,12 +64,61 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+// IfConvertCheck
+//
+// Check whether the JTRUE block and its successors can be expressed as a SELECT.
+// In the process, get the data required to perform the transformation.
+// Notes:
+//   Sets m_finalBlock, m_doElseConversion, m_thenOperation, m_elseOperation and m_mainOper
+//
+bool OptIfConversionDsc::IfConvertCheck()
+{
+    if (!IfConvertCheckFlow())
+    {
+        return false;
+    }
+
+    if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
+    {        
+        return false;
+    }
+    
+    m_mainOper = m_thenOperation.node->OperGet();
+    assert(m_mainOper == GT_RETURN || m_mainOper == GT_STORE_LCL_VAR);
+
+    if (m_doElseConversion)
+    {
+        if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
+        {
+            return false;
+        }
+
+        // Both operations are the same node type.
+        assert(m_thenOperation.node->OperGet() == m_elseOperation.node->OperGet());
+
+        // Currently can only support Else Store Blocks that have the same destination as the Then block.
+        if (m_mainOper == GT_STORE_LCL_VAR)
+        {
+            unsigned lclNumThen = m_thenOperation.node->AsLclVarCommon()->GetLclNum();
+            unsigned lclNumElse = m_elseOperation.node->AsLclVarCommon()->GetLclNum();
+
+            if (lclNumThen != lclNumElse)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
 // IfConvertCheckFlow
 //
 // Check if there is a valid flow from m_startBlock to a final block.
 //
 // Notes:
-//   Sets m_finalBlock, m_doElseConversion and m_mainOper.
+//   Sets m_finalBlock and m_doElseConversion.
 //
 bool OptIfConversionDsc::IfConvertCheckFlow()
 {
@@ -82,19 +132,12 @@ bool OptIfConversionDsc::IfConvertCheckFlow()
 
     m_doElseConversion = trueBb->GetUniquePred(m_compiler) != nullptr;
     m_finalBlock       = m_doElseConversion ? trueBb->GetUniqueSucc() : trueBb;
-    m_mainOper         = GT_STORE_LCL_VAR;
 
-    if (m_finalBlock == nullptr)
+    // m_finalBlock is only allowed to be null if both return.
+    // E.g: Then block exits by throwing an exception => we bail here.
+    if (m_finalBlock == nullptr && (!falseBb->KindIs(BBJ_RETURN) || !trueBb->KindIs(BBJ_RETURN)))
     {
-        assert(m_doElseConversion);
-        if (falseBb->KindIs(BBJ_RETURN) && trueBb->KindIs(BBJ_RETURN))
-        {
-            m_mainOper = GT_RETURN;
-        }
-        else
-        {
-            return false;
-        }
+        return false;
     }
 
     return falseBb->GetUniqueSucc() == m_finalBlock;
@@ -250,9 +293,6 @@ void OptIfConversionDsc::IfConvertDump()
 // the existing value of local var 0 is used:
 //
 // ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
 // STMT00005
 //   *  STORE_LCL_VAR   int    V00 arg0
 //   \--*  SELECT    int
@@ -261,9 +301,6 @@ void OptIfConversionDsc::IfConvertDump()
 //      |  \--*  CNS_INT   int    7 $46
 //      +--*  CNS_INT   int    5 $47
 //      \--*  LCL_VAR   int    V00
-//
-// ------------ BB04 [00D..010), preds={} succs={BB05}
-//
 //
 // Example of simple if conversion with an else condition
 //
@@ -291,9 +328,6 @@ void OptIfConversionDsc::IfConvertDump()
 // Again this is squashed into a single block, with the SELECT node handling both cases.
 //
 // ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
 // STMT00005
 //   *  STORE_LCL_VAR   int    V00 arg0
 //   \--*  SELECT    int
@@ -302,12 +336,6 @@ void OptIfConversionDsc::IfConvertDump()
 //      |  \--*  CNS_INT   int    7 $46
 //      +--*  CNS_INT   int    5 $47
 //      +--*  CNS_INT   int    9 $48
-//
-// STMT00006
-//   *  NOP       void
-//
-// ------------ BB04 [00D..010), preds={} succs={BB06}
-// ------------ BB05 [00D..010), preds={} succs={BB06}
 //
 // Alternatively, an if conversion with an else condition may use RETURNs.
 // return (x < 7) ? 5 : 9;
@@ -319,22 +347,19 @@ void OptIfConversionDsc::IfConvertDump()
 //      +--*  LCL_VAR   int    V02
 //      \--*  CNS_INT   int    7 $46
 //
-// ------------ BB04 [00D..010), preds={BB03} succs={BB06}
+// ------------ BB04 [00D..010) (return), preds={BB03} succs={}
 // STMT00005
 //   *  RETURN    int    $VN.Void
 // +--*  CNS_INT   int    5 $41
 //
-// ------------ BB05 [00D..010), preds={BB03} succs={BB06}
+// ------------ BB05 [00D..010) (return), preds={BB03} succs={}
 // STMT00006
 //   *  RETURN    int    $VN.Void
 // +--*  CNS_INT   int    9 $43
 //
 // becomes:
 //
-// ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
+// ------------ BB03 [009..00D) (return), preds={BB02} succs={}
 // STMT00005
 //   *  RETURN    int    $VN.Void
 //   \--*  SELECT    int
@@ -343,12 +368,6 @@ void OptIfConversionDsc::IfConvertDump()
 //      |  \--*  CNS_INT   int    7 $46
 //      +--*  CNS_INT   int    5 $41
 //      +--*  CNS_INT   int    9 $43
-//
-// STMT00006
-//   *  NOP       void
-//
-// ------------ BB04 [00D..010), preds={} succs={BB06}
-// ------------ BB05 [00D..010), preds={} succs={BB06}
 //
 bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 {
@@ -363,49 +382,17 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
 
     GenTree* last = m_startBlock->lastStmt()->GetRootNode();
-    if (!(last->OperIs(GT_JTRUE)))
+    if (!last->OperIs(GT_JTRUE))
     {
         return false;
     }
-
-    // Look for valid flow of Then and Else blocks.
-    if (!IfConvertCheckFlow())
-    {
-        return false;
-    }
-
+    
     m_cond = last->gtGetOp1();
+    assert(m_cond->OperIsCompare());
 
-    // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
+    if (!IfConvertCheck())
     {
         return false;
-    }
-    assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
-
-    if (m_doElseConversion)
-    {
-        if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
-        {
-            return false;
-        }
-
-        // Both operations must be the same node type.
-        if (m_thenOperation.node->OperGet() != m_elseOperation.node->OperGet())
-        {
-            return false;
-        }
-
-        // Currently can only support Else Store Blocks that have the same destination as the Then block.
-        if (m_thenOperation.node->OperIs(GT_STORE_LCL_VAR))
-        {
-            unsigned lclNumThen = m_thenOperation.node->AsLclVarCommon()->GetLclNum();
-            unsigned lclNumElse = m_elseOperation.node->AsLclVarCommon()->GetLclNum();
-            if (lclNumThen != lclNumElse)
-            {
-                return false;
-            }
-        }
     }
 
 #ifdef DEBUG
