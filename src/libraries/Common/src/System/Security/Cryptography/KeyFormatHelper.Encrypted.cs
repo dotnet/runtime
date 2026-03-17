@@ -234,7 +234,7 @@ namespace System.Security.Cryptography
                 out bytesRead);
         }
 
-        internal static unsafe T DecryptPkcs8<T>(
+        internal static T DecryptPkcs8<T>(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> source,
             ReadOnlySpanFunc<byte, T> keyReader,
@@ -266,11 +266,11 @@ namespace System.Security.Cryptography
             out int bytesRead)
         {
             ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(passwordBytes, source, out bytesRead);
-            ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
-            reader.ReadEncodedValue();
 
             try
             {
+                ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
+                reader.ReadEncodedValue();
                 reader.ThrowIfNotEmpty();
                 return keyReader(decrypted);
             }
