@@ -440,6 +440,25 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"\d+0x", "abc12399", RegexOptions.None, 0, 8, false, string.Empty);
             yield return (@"[a-f]+a9", "xbca93", RegexOptions.None, 0, 6, true, "bca9");
             yield return (@"[a-f]+a9", "xbcb93", RegexOptions.None, 0, 6, false, string.Empty);
+            // Longer Multi literal — first char subsumed, second disjoint, rest doesn't matter.
+            yield return (@"\d+0abc", "x1230abcx", RegexOptions.None, 0, 9, true, "1230abc");
+            yield return (@"\d+0abc", "x123xabc", RegexOptions.None, 0, 8, false, string.Empty);
+            // Set literal subsumed by loop's class, followed by disjoint constraint.
+            yield return (@"\d+[0-9]\s", "abc123 ", RegexOptions.None, 0, 7, true, "123 ");
+            yield return (@"\d+[0-9]\s", "abc123x", RegexOptions.None, 0, 7, false, string.Empty);
+            yield return (@"\d+[0-9][a-z]", "abc123a", RegexOptions.None, 0, 7, true, "123a");
+            yield return (@"\d+[0-9][a-z]", "abc1234", RegexOptions.None, 0, 7, false, string.Empty);
+            // Nothing after literal — optimization should NOT fire (earlier positions could succeed).
+            yield return (@"\w+n", "canyon", RegexOptions.None, 0, 6, true, "canyon");
+            yield return (@"\w+n", "can opener", RegexOptions.None, 0, 10, true, "can");
+            yield return (@"\d+5", "12345", RegexOptions.None, 0, 5, true, "12345");
+            // Notoneloop — [^x]+ is a Notoneloop, 'a' != 'x' so it's in the loop's set.
+            yield return (@"[^x]+a\b", "banana boat", RegexOptions.None, 0, 11, true, "banana");
+            yield return (@"[^x]+a\b", "xyz", RegexOptions.None, 0, 3, false, string.Empty);
+            // Minimum 0 (star not plus) — greedy loop still consumes maximally.
+            yield return (@"\w*n\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\w*n\b", "n door", RegexOptions.None, 0, 6, true, "n");
+            yield return (@"\w*n\b", "bark door", RegexOptions.None, 0, 9, false, string.Empty);
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
