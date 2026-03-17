@@ -313,6 +313,13 @@ namespace System.Numerics
                 }
 
                 _sign = ((bits[3] & signMask) != 0) ? -1 : +1;
+
+                // Canonicalize: single-limb values that fit in nint should be stored inline
+                if (_bits is { Length: 1 } && (nint)_bits[0] >= 0)
+                {
+                    _sign = _sign < 0 ? -(nint)_bits[0] : (nint)_bits[0];
+                    _bits = null;
+                }
             }
             AssertValid();
         }
@@ -1029,7 +1036,7 @@ namespace System.Numerics
                 nuint temp = BigIntegerCalculator.Remainder(leftBits, rightBits[0]);
                 result = BigIntegerCalculator.Gcd(rightBits[0], temp);
             }
-            else if (rightBits.Length == 2)
+            else if (nint.Size == 4 && rightBits.Length == 2)
             {
                 Span<nuint> bits = (leftBits.Length <= BigIntegerCalculator.StackAllocThreshold
                                 ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
@@ -1997,7 +2004,11 @@ namespace System.Numerics
                     lo = (int)(uint)value._bits[0];
                     mi = (int)(uint)(value._bits[0] >> 32);
                     if (length > 1)
+                    {
+                        if (value._bits[1] > uint.MaxValue)
+                            throw new OverflowException(SR.Overflow_Decimal);
                         hi = (int)(uint)value._bits[1];
+                    }
                 }
             }
             else
@@ -2050,7 +2061,7 @@ namespace System.Numerics
                 m = length > 1 ? (ulong)bits[length - 2] : 0;
 
                 z = BitOperations.LeadingZeroCount(h);
-                exp = (length - 2) * 64 - z;
+                exp = (length - 1) * 64 - z;
                 man = z == 0 ? h : (h << z) | (m >> (64 - z));
             }
             else

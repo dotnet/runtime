@@ -1105,13 +1105,11 @@ namespace System
                         nuint hi = base1E9[iuDst];
                         uCarry = BigIntegerCalculator.DivRem(hi, uCarry, PowersOf1e9.TenPowMaxPartial, out base1E9[iuDst]);
                     }
-                    if (uCarry != 0)
+                    while (uCarry != 0)
                     {
                         (nuint quo, nuint rem) = Math.DivRem(uCarry, PowersOf1e9.TenPowMaxPartial);
                         base1E9Buffer[base1E9Written++] = rem;
                         uCarry = quo;
-                        if (uCarry != 0)
-                            base1E9Buffer[base1E9Written++] = uCarry;
                     }
                 }
             }
@@ -1329,6 +1327,18 @@ namespace System
                         break;
                     Span<nuint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
                     BigIntegerCalculator.Square(src, dst);
+
+                    // When 9*(1<<(i-1)) is not evenly divisible by kcbitNuint, the stored
+                    // power at index i-1 carries a residual factor of 2^r. Squaring doubles
+                    // that residual; if 2r >= kcbitNuint the result has extra trailing zero
+                    // limbs that must be stripped to yield the correct stored representation.
+                    int shift = OmittedLength(i) - 2 * OmittedLength(i - 1);
+                    if (shift > 0)
+                    {
+                        dst.Slice(shift).CopyTo(dst);
+                        dst.Slice(dst.Length - shift).Clear();
+                    }
+
                     int from = toExclusive;
                     toExclusive = Indexes[i + 1];
                     src = pow1E9.Slice(from, toExclusive - from);

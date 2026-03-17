@@ -8,7 +8,7 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint Gcd(uint left, uint right)
+        public static nuint Gcd(nuint left, nuint right)
         {
             // Executes the classic Euclidean algorithm.
 
@@ -16,7 +16,7 @@ namespace System.Numerics
 
             while (right != 0)
             {
-                uint temp = left % right;
+                nuint temp = left % right;
                 left = right;
                 right = temp;
             }
@@ -41,7 +41,7 @@ namespace System.Numerics
             return left;
         }
 
-        public static uint Gcd(ReadOnlySpan<uint> left, uint right)
+        public static nuint Gcd(ReadOnlySpan<nuint> left, nuint right)
         {
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right != 0);
@@ -49,12 +49,12 @@ namespace System.Numerics
             // A common divisor cannot be greater than right;
             // we compute the remainder and continue above...
 
-            uint temp = Remainder(left, right);
+            nuint temp = Remainder(left, right);
 
             return Gcd(right, temp);
         }
 
-        public static void Gcd(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> result)
+        public static void Gcd(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> result)
         {
             Debug.Assert(left.Length >= 2);
             Debug.Assert(right.Length >= 2);
@@ -63,25 +63,25 @@ namespace System.Numerics
 
             left.CopyTo(result);
 
-            uint[]? rightCopyFromPool = null;
-            Span<uint> rightCopy = (right.Length <= StackAllocThreshold ?
-                                  stackalloc uint[StackAllocThreshold]
-                                  : rightCopyFromPool = ArrayPool<uint>.Shared.Rent(right.Length)).Slice(0, right.Length);
+            nuint[]? rightCopyFromPool = null;
+            Span<nuint> rightCopy = (right.Length <= StackAllocThreshold ?
+                                  stackalloc nuint[StackAllocThreshold]
+                                  : rightCopyFromPool = ArrayPool<nuint>.Shared.Rent(right.Length)).Slice(0, right.Length);
             right.CopyTo(rightCopy);
 
             Gcd(result, rightCopy);
 
             if (rightCopyFromPool != null)
-                ArrayPool<uint>.Shared.Return(rightCopyFromPool);
+                ArrayPool<nuint>.Shared.Return(rightCopyFromPool);
         }
 
-        private static void Gcd(Span<uint> left, Span<uint> right)
+        private static void Gcd(Span<nuint> left, Span<nuint> right)
         {
             Debug.Assert(left.Length >= 2);
             Debug.Assert(right.Length >= 2);
             Debug.Assert(left.Length >= right.Length);
 
-            Span<uint> result = left;   //keep result buffer untouched during computation
+            Span<nuint> result = left;   //keep result buffer untouched during computation
 
             // Executes Lehmer's gcd algorithm, but uses the most
             // significant bits to work with 64-bit (not 32-bit) values.
@@ -90,7 +90,7 @@ namespace System.Numerics
             // http://cacr.uwaterloo.ca/hac/about/chap14.pdf (see 14.4.2)
             // ftp://ftp.risc.uni-linz.ac.at/pub/techreports/1992/92-69.ps.gz
 
-            while (right.Length > 2)
+            while (right.Length > (nint.Size == 4 ? 2 : 1))
             {
                 ulong x, y;
 
@@ -158,7 +158,7 @@ namespace System.Numerics
                     // Euclid's step
                     left = left.Slice(0, Reduce(left, right));
 
-                    Span<uint> temp = left;
+                    Span<nuint> temp = left;
                     left = right;
                     right = temp;
                 }
@@ -172,7 +172,7 @@ namespace System.Numerics
                     if (iteration % 2 == 1)
                     {
                         // Ensure left is larger than right
-                        Span<uint> temp = left;
+                        Span<nuint> temp = left;
                         left = right;
                         right = temp;
                     }
@@ -184,13 +184,23 @@ namespace System.Numerics
                 // Euclid's step
                 Reduce(left, right);
 
-                ulong x = right[0];
-                ulong y = left[0];
+                ulong x, y;
 
-                if (right.Length > 1)
+                if (nint.Size == 4)
                 {
-                    x |= (ulong)right[1] << 32;
-                    y |= (ulong)left[1] << 32;
+                    x = (ulong)right[0];
+                    y = (ulong)left[0];
+
+                    if (right.Length > 1)
+                    {
+                        x |= (ulong)right[1] << 32;
+                        y |= (ulong)left[1] << 32;
+                    }
+                }
+                else
+                {
+                    x = (ulong)right[0];
+                    y = (ulong)left[0];
                 }
 
                 left = left.Slice(0, Overwrite(left, Gcd(x, y)));
@@ -200,80 +210,143 @@ namespace System.Numerics
             left.CopyTo(result);
         }
 
-        private static int Overwrite(Span<uint> buffer, ulong value)
+        private static int Overwrite(Span<nuint> buffer, ulong value)
         {
-            Debug.Assert(buffer.Length >= 2);
-
-            if (buffer.Length > 2)
+            if (nint.Size == 4)
             {
-                // Ensure leading zeros in little-endian
-                buffer.Slice(2).Clear();
+                Debug.Assert(buffer.Length >= 2);
+
+                if (buffer.Length > 2)
+                {
+                    // Ensure leading zeros in little-endian
+                    buffer.Slice(2).Clear();
+                }
+
+                nuint lo = unchecked((nuint)value);
+                nuint hi = (nuint)(value >> 32);
+
+                buffer[1] = hi;
+                buffer[0] = lo;
+                return hi != 0 ? 2 : lo != 0 ? 1 : 0;
             }
+            else
+            {
+                Debug.Assert(buffer.Length >= 1);
 
-            uint lo = unchecked((uint)value);
-            uint hi = (uint)(value >> 32);
+                if (buffer.Length > 1)
+                {
+                    // Ensure leading zeros in little-endian
+                    buffer.Slice(1).Clear();
+                }
 
-            buffer[1] = hi;
-            buffer[0] = lo;
-            return hi != 0 ? 2 : lo != 0 ? 1 : 0;
+                buffer[0] = (nuint)value;
+                return value != 0 ? 1 : 0;
+            }
         }
 
-        private static void ExtractDigits(ReadOnlySpan<uint> xBuffer,
-                                          ReadOnlySpan<uint> yBuffer,
+        private static void ExtractDigits(ReadOnlySpan<nuint> xBuffer,
+                                          ReadOnlySpan<nuint> yBuffer,
                                           out ulong x, out ulong y)
         {
-            Debug.Assert(xBuffer.Length >= 3);
-            Debug.Assert(yBuffer.Length >= 3);
-            Debug.Assert(xBuffer.Length >= yBuffer.Length);
-
             // Extracts the most significant bits of x and y,
             // but ensures the quotient x / y does not change!
 
-            ulong xh = xBuffer[xBuffer.Length - 1];
-            ulong xm = xBuffer[xBuffer.Length - 2];
-            ulong xl = xBuffer[xBuffer.Length - 3];
-
-            ulong yh, ym, yl;
-
-            // arrange the bits
-            switch (xBuffer.Length - yBuffer.Length)
+            if (nint.Size == 4)
             {
-                case 0:
-                    yh = yBuffer[yBuffer.Length - 1];
-                    ym = yBuffer[yBuffer.Length - 2];
-                    yl = yBuffer[yBuffer.Length - 3];
-                    break;
+                Debug.Assert(xBuffer.Length >= 3);
+                Debug.Assert(yBuffer.Length >= 3);
+                Debug.Assert(xBuffer.Length >= yBuffer.Length);
 
-                case 1:
-                    yh = 0UL;
-                    ym = yBuffer[yBuffer.Length - 1];
-                    yl = yBuffer[yBuffer.Length - 2];
-                    break;
+                ulong xh = xBuffer[xBuffer.Length - 1];
+                ulong xm = xBuffer[xBuffer.Length - 2];
+                ulong xl = xBuffer[xBuffer.Length - 3];
 
-                case 2:
-                    yh = 0UL;
-                    ym = 0UL;
-                    yl = yBuffer[yBuffer.Length - 1];
-                    break;
+                ulong yh, ym, yl;
 
-                default:
-                    yh = 0UL;
-                    ym = 0UL;
-                    yl = 0UL;
-                    break;
+                // arrange the bits
+                switch (xBuffer.Length - yBuffer.Length)
+                {
+                    case 0:
+                        yh = yBuffer[yBuffer.Length - 1];
+                        ym = yBuffer[yBuffer.Length - 2];
+                        yl = yBuffer[yBuffer.Length - 3];
+                        break;
+
+                    case 1:
+                        yh = 0UL;
+                        ym = yBuffer[yBuffer.Length - 1];
+                        yl = yBuffer[yBuffer.Length - 2];
+                        break;
+
+                    case 2:
+                        yh = 0UL;
+                        ym = 0UL;
+                        yl = yBuffer[yBuffer.Length - 1];
+                        break;
+
+                    default:
+                        yh = 0UL;
+                        ym = 0UL;
+                        yl = 0UL;
+                        break;
+                }
+
+                // Use all the bits but one, see [hac] 14.58 (ii)
+                int z = BitOperations.LeadingZeroCount((uint)xh);
+
+                x = ((xh << 32 + z) | (xm << z) | (xl >> 32 - z)) >> 1;
+                y = ((yh << 32 + z) | (ym << z) | (yl >> 32 - z)) >> 1;
             }
+            else
+            {
+                Debug.Assert(xBuffer.Length >= 2);
+                Debug.Assert(yBuffer.Length >= 2);
+                Debug.Assert(xBuffer.Length >= yBuffer.Length);
 
-            // Use all the bits but one, see [hac] 14.58 (ii)
-            int z = BitOperations.LeadingZeroCount((uint)xh);
+                ulong xh = (ulong)xBuffer[xBuffer.Length - 1];
+                ulong xl = (ulong)xBuffer[xBuffer.Length - 2];
 
-            x = ((xh << 32 + z) | (xm << z) | (xl >> 32 - z)) >> 1;
-            y = ((yh << 32 + z) | (ym << z) | (yl >> 32 - z)) >> 1;
+                ulong yh, yl;
+
+                // arrange the bits
+                switch (xBuffer.Length - yBuffer.Length)
+                {
+                    case 0:
+                        yh = (ulong)yBuffer[yBuffer.Length - 1];
+                        yl = (ulong)yBuffer[yBuffer.Length - 2];
+                        break;
+
+                    case 1:
+                        yh = 0UL;
+                        yl = (ulong)yBuffer[yBuffer.Length - 1];
+                        break;
+
+                    default:
+                        yh = 0UL;
+                        yl = 0UL;
+                        break;
+                }
+
+                // Use all the bits but one, see [hac] 14.58 (ii)
+                int z = BitOperations.LeadingZeroCount(xh);
+
+                if (z == 0)
+                {
+                    x = xh >> 1;
+                    y = yh >> 1;
+                }
+                else
+                {
+                    x = ((xh << z) | (xl >> (64 - z))) >> 1;
+                    y = ((yh << z) | (yl >> (64 - z))) >> 1;
+                }
+            }
 
             Debug.Assert(x >= y);
         }
 
-        private static int LehmerCore(Span<uint> x,
-                                      Span<uint> y,
+        private static int LehmerCore(Span<nuint> x,
+                                      Span<nuint> y,
                                       long a, long b,
                                       long c, long d)
         {
@@ -287,21 +360,37 @@ namespace System.Numerics
 
             int length = y.Length;
 
-            long xCarry = 0L, yCarry = 0L;
-            for (int i = 0; i < length; i++)
+            if (nint.Size == 4)
             {
-                long xDigit = a * x[i] - b * y[i] + xCarry;
-                long yDigit = d * y[i] - c * x[i] + yCarry;
-                xCarry = xDigit >> 32;
-                yCarry = yDigit >> 32;
-                x[i] = unchecked((uint)xDigit);
-                y[i] = unchecked((uint)yDigit);
+                long xCarry = 0L, yCarry = 0L;
+                for (int i = 0; i < length; i++)
+                {
+                    long xDigit = a * (long)x[i] - b * (long)y[i] + xCarry;
+                    long yDigit = d * (long)y[i] - c * (long)x[i] + yCarry;
+                    xCarry = xDigit >> 32;
+                    yCarry = yDigit >> 32;
+                    x[i] = unchecked((nuint)xDigit);
+                    y[i] = unchecked((nuint)yDigit);
+                }
+            }
+            else
+            {
+                Int128 xCarry = 0, yCarry = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    Int128 xDigit = a * (Int128)(ulong)x[i] - b * (Int128)(ulong)y[i] + xCarry;
+                    Int128 yDigit = d * (Int128)(ulong)y[i] - c * (Int128)(ulong)x[i] + yCarry;
+                    xCarry = xDigit >> 64;
+                    yCarry = yDigit >> 64;
+                    x[i] = unchecked((nuint)(ulong)xDigit);
+                    y[i] = unchecked((nuint)(ulong)yDigit);
+                }
             }
 
             return length;
         }
 
-        private static int Refresh(Span<uint> bits, int maxLength)
+        private static int Refresh(Span<nuint> bits, int maxLength)
         {
             Debug.Assert(bits.Length >= maxLength);
 
