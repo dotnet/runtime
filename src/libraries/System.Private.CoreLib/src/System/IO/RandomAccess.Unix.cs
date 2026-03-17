@@ -38,12 +38,14 @@ namespace System.IO
                 {
                     // Try pread for seekable files.
                     result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
-                    if (result == -1 && ShouldFallBackToNonOffsetSyscall(handle))
+
+                    if (result == -1 && ShouldFallBackToNonOffsetSyscall(Interop.Sys.GetLastErrorInfo()))
                     {
-                        result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                        handle.SupportsRandomAccess = false; // Fall through to non-offset Read below.
                     }
                 }
-                else
+
+                if (!handle.IsAsync && !handle.SupportsRandomAccess)
                 {
                     result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
                 }
@@ -75,15 +77,10 @@ namespace System.IO
                     if (handle.SupportsRandomAccess)
                     {
                         result = Interop.Sys.PReadV(handle, pinnedVectors, buffers.Count, fileOffset);
-                        if (result == -1)
+
+                        if (result == -1 && ShouldFallBackToNonOffsetSyscall(Interop.Sys.GetLastErrorInfo()))
                         {
-                            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                            if (errorInfo.Error == Interop.Error.ENXIO ||
-                                errorInfo.Error == Interop.Error.ESPIPE)
-                            {
-                                handle.SupportsRandomAccess = false;
-                                // Fall through to non-offset ReadV below.
-                            }
+                            handle.SupportsRandomAccess = false; // Fall through to non-offset ReadV below.
                         }
                     }
 
@@ -128,12 +125,14 @@ namespace System.IO
                     else if (handle.SupportsRandomAccess)
                     {
                         bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
-                        if (bytesWritten == -1 && ShouldFallBackToNonOffsetSyscall(handle))
+
+                        if (bytesWritten == -1 && ShouldFallBackToNonOffsetSyscall(Interop.Sys.GetLastErrorInfo()))
                         {
-                            bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
+                            handle.SupportsRandomAccess = false; // Fall through to non-offset Write below.
                         }
                     }
-                    else
+
+                    if (!handle.IsAsync && !handle.SupportsRandomAccess)
                     {
                         bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
                     }
@@ -202,15 +201,10 @@ namespace System.IO
                         if (handle.SupportsRandomAccess)
                         {
                             bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
-                            if (bytesWritten == -1)
+
+                            if (bytesWritten == -1 && ShouldFallBackToNonOffsetSyscall(Interop.Sys.GetLastErrorInfo()))
                             {
-                                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                                if (errorInfo.Error == Interop.Error.ENXIO ||
-                                    errorInfo.Error == Interop.Error.ESPIPE)
-                                {
-                                    handle.SupportsRandomAccess = false;
-                                    // Fall through to non-offset WriteV below.
-                                }
+                                handle.SupportsRandomAccess = false; // Fall through to non-offset WriteV below.
                             }
                         }
 
@@ -274,23 +268,9 @@ namespace System.IO
 
         /// <summary>
         /// Checks the last error after a failed pread/pwrite/preadv/pwritev call
-        /// and returns true if the error indicates a non-seekable file type (ENXIO or ESPIPE),
-        /// updating <see cref="SafeFileHandle.SupportsRandomAccess"/> to false.
+        /// and returns true if the error indicates a non-seekable file type (ENXIO or ESPIPE).
         /// </summary>
-        private static bool ShouldFallBackToNonOffsetSyscall(SafeFileHandle handle)
-        {
-            // We need to fallback to the non-offset version for certain file types
-            // e.g: character devices (such as /dev/tty), pipes, and sockets.
-            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-
-            if (errorInfo.Error == Interop.Error.ENXIO ||
-                errorInfo.Error == Interop.Error.ESPIPE)
-            {
-                handle.SupportsRandomAccess = false;
-                return true;
-            }
-
-            return false;
-        }
+        private static bool ShouldFallBackToNonOffsetSyscall(Interop.ErrorInfo lastError)
+            => lastError.Error == Interop.Error.ENXIO || lastError.Error == Interop.Error.ESPIPE;
     }
 }
