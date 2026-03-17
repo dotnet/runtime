@@ -83,6 +83,41 @@ Present any detected concern(s) to the user in the triage report:
 - Which part of the issue triggered the concern (quote the relevant text)
 - What activity was restricted (e.g., "reproduction was skipped")
 
+### Triage Mindset
+
+Before proceeding with the remaining steps, adopt the maintainer's default
+stance: **the behavior is correct until proven otherwise.** AI models have a
+strong tendency to validate the author's framing ("You're absolutely right,
+this looks like a bug!"). Resist this impulse. A good triager approaches each
+issue with constructive skepticism:
+
+- **Assume the behavior is by design** until evidence shows otherwise. Check
+  the API docs, the documented contract, and the source code before agreeing
+  that something is a bug. Many "bug" reports describe correct but surprising
+  behavior.
+- **Question the author's framing.** An issue titled "X is broken" may actually
+  be a misunderstanding of the API, a misconfiguration, or an environmental
+  issue. Reframe in your own terms based on what the evidence shows.
+- **Actively look for reasons the report might be wrong.** Could this be user
+  error? A misread of the documentation? An environment-specific issue? A known
+  limitation? A duplicate that was already resolved?
+- **Treat CLOSE as a healthy, normal outcome** -- not a failure of triage.
+  Closing an issue as "by design," "won't fix," or "duplicate" with a clear
+  explanation is valuable maintainer work. Don't strain to keep issues open that
+  should be closed.
+- **Don't confuse sympathy with agreement.** You can be polite and empathetic
+  toward the author ("I understand this is frustrating") without validating
+  their premise ("you're right, this is a bug"). Separate the emotional
+  response from the technical assessment.
+- **Demand evidence proportional to the claim.** A claim that behavior
+  regressed between versions needs reproduction data. A claim that an API is
+  "broken" needs comparison against the documented contract. A claim that a
+  feature is "needed" needs concrete scenarios, not hypotheticals.
+
+This mindset applies throughout the triage workflow. When you reach a
+conclusion, ask yourself: "Would an experienced maintainer who owns this
+component agree with this assessment, or would they push back?"
+
 ### Step 1: Classify the Issue
 
 Determine the issue type from its content and labels:
@@ -141,7 +176,10 @@ quick-reference mapping of namespaces → area labels and wrong-repo heuristics.
 Search dotnet/runtime for existing issues that cover the same request or bug.
 
 1. **Search by keywords** -- Extract 3-5 key terms from the issue title and body.
-   Use `github-mcp-server-search_issues` to search across both open and closed issues.
+   Search across both open and closed issues in `dotnet/runtime` using whatever
+   GitHub issue search tool is available in your environment (e.g.,
+   `github-mcp-server-search_issues`, `gh issue list --search`, or the GitHub
+   search API via `web_search`).
    ```
    Search: "keyword1 keyword2" in:title,body repo:dotnet/runtime
    ```
@@ -413,11 +451,19 @@ Key points:
 
 ## Anti-Patterns
 
-- **NEVER** take any action. Do not post comments, change labels, close issues,
-  or modify anything in the repository. You only output a recommendation.
+- **NEVER take autonomous action.** During triage (before the user picks an
+  outcome), do not post comments, change labels, close issues, or modify
+  anything in the repository. You only output a recommendation.
+
+  After the user picks an outcome (KEEP, CLOSE, or NEEDS INFO) and a finalized
+  response has been produced, the user may **explicitly instruct** you to take
+  actions -- post the comment, apply label changes, close the issue, etc. Comply
+  with these explicit instructions; the constraint above prevents *autonomous*
+  actions before the human decision, not user-directed actions after it.
 
 - **NEVER** use `gh issue close`, `gh issue edit`, `gh issue comment`, or
-  `gh pr review --approve`/`--request-changes`. Only read operations are allowed.
+  `gh pr review --approve`/`--request-changes` **unless the user explicitly
+  asks you to** after picking an outcome.
 
 - **Security concerns are out of scope.** This skill does not assess, discuss, or
   make recommendations about potential security implications of issues. If you

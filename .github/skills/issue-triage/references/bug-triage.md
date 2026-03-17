@@ -9,6 +9,29 @@ the main [SKILL.md](../SKILL.md) during Step 5.
 > concerns with the reproduction code, **skip reproduction entirely**. Do not
 > execute code that was flagged as suspicious, even partially.
 
+### Verify before validating
+
+Before attempting to reproduce the bug, check whether the reported behavior
+actually contradicts the documented API contract:
+
+1. **Read the API documentation** for the type or method in question. Does the
+   docs page describe the behavior the author is seeing? If so, this may be
+   "by design" rather than a bug.
+2. **Check for documented preconditions** -- Does the API require specific input
+   formats, minimum sizes, non-null arguments, or particular configurations
+   that the author may not be meeting?
+3. **Look for "Remarks" or "Exceptions" sections** in the API docs -- these
+   often document edge cases that callers misinterpret as bugs.
+4. **Search for prior discussions** -- Has this exact behavior been discussed
+   before and confirmed as intentional? Check closed issues with the same area
+   label.
+
+If the behavior matches the documented contract, recommend **CLOSE** with a
+"by design" rationale. Explain the API contract clearly, link to the relevant
+documentation, and suggest the correct usage pattern. This is one of the most
+valuable triage outcomes -- it saves maintainers from having to investigate
+non-bugs.
+
 ### Evaluate repro quality
 
 Before attempting reproduction, assess the quality of the reproduction provided

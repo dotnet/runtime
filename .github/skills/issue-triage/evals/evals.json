@@ -192,6 +192,54 @@
         }
       ],
       "files": []
+    },
+    {
+      "id": 9,
+      "name": "bug-by-design-filesystemwatcher",
+      "prompt": "Triage issue https://github.com/dotnet/runtime/issues/121256",
+      "expected_output": "Bug report about FileSystemWatcher watching from root directory on macOS when launched via launchd. The behavior follows from documented defaults (CreateDefaultBuilder uses current directory as content root, launchd sets CWD to /). Should identify documented workarounds (UseContentRoot, SetCurrentDirectory, reloadConfigOnChange=false) and lean toward CLOSE as by-design or recommend as enhancement rather than bug.",
+      "assertions": [
+        {
+          "name": "workarounds-identified",
+          "description": "Report identifies available workarounds (UseContentRoot, SetCurrentDirectory, or reloadConfigOnChange)",
+          "type": "contains_any",
+          "check": ["UseContentRoot", "ContentRootPath", "SetCurrentDirectory", "reloadConfigOnChange", "workaround"]
+        },
+        {
+          "name": "by-design-or-enhancement",
+          "description": "Report recognizes this follows from documented default behavior rather than blindly confirming it as a bug",
+          "type": "contains_any",
+          "check": ["by design", "documented", "expected behavior", "default behavior", "enhancement", "intended behavior", "working as designed"]
+        },
+        {
+          "name": "not-uncritical-keep",
+          "description": "Report considers CLOSE or frames the issue as enhancement/improvement rather than a straightforward bug",
+          "type": "contains_any",
+          "check": ["CLOSE", "enhancement", "improvement", "by design", "documented default", "NEEDS INFO"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "api-proposal-rejected-existing-workaround",
+      "prompt": "Should we close this? https://github.com/dotnet/runtime/issues/69163",
+      "expected_output": "API proposal for ConfigurationBinder.GetRequiredValue. While the proposal has community support (34 upvotes), there is a trivial inline workaround (null-coalescing with throw). The skill should identify the existing workaround, evaluate it honestly, and consider whether the proposal clears the BCL inclusion bar. Should lean toward CLOSE or NEEDS INFO given the trivial workaround, not blindly recommend KEEP based on upvotes alone.",
+      "assertions": [
+        {
+          "name": "workaround-identified",
+          "description": "Report identifies the existing inline workaround",
+          "type": "contains_any",
+          "check": ["workaround", "throw", "null", "existing", "one-liner", "extension method"]
+        },
+        {
+          "name": "has-merit-evaluation",
+          "description": "Report includes merit evaluation weighing the proposal against existing solutions",
+          "type": "contains_any",
+          "check": ["merit", "bar", "existing", "workaround", "triviality", "Complexity"]
+        }
+      ],
+      "files": []
     }
   ]
 }
