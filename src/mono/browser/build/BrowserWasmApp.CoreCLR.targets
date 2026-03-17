@@ -71,11 +71,10 @@
                      '$(IsCrossTargetingBuild)' != 'true'"
           DependsOnTargets="_CoreCLRWasmBuildAppCore" />
 
-  <!-- Publish entry point: triggers nested publish when WasmBuildNative is true -->
+  <!-- Publish entry point: triggers nested publish for browser-wasm projects -->
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
-                     '$(WasmBuildNative)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'">
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -96,7 +95,7 @@
   <!-- Nested publish invocation -->
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
-          DependsOnTargets="ResolveRuntimePackAssets;ComputeFilesToPublish;_CoreCLRWasmBuildAppCore"
+          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRWasmBuildAppCore"
           Returns="@(WasmAssembliesFinal);@(WasmNativeAsset)" />
 
   <!-- ======================== Core Orchestrator ======================== -->
@@ -117,6 +116,7 @@
   </PropertyGroup>
 
   <Target Name="_CoreCLRWasmBuildAppCore"
+          Condition="'$(WasmBuildNative)' == 'true'"
           DependsOnTargets="$(_CoreCLRWasmBuildAppCoreDependsOn)" />
 
   <!-- ======================== Initialize ======================== -->
