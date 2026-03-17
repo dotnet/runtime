@@ -4561,10 +4561,9 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 #ifdef TARGET_ARM64
         case GT_BFX:
         {
-            GenTree* op1 = gtGetOp1();
-            if (op1 != nullptr)
+            if (AsOp()->gtOp1 != nullptr)
             {
-                return visitor(op1);
+                RETURN_IF_ABORT(visitor(&AsOp()->gtOp1));
             }
             return VisitResult::Continue;
         }
