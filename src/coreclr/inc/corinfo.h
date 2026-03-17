@@ -1802,12 +1802,20 @@ enum CorInfoContinuationFlags
     // we should continue on.
     CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 1 << 2,
 
+    // The flags encode where in the continuation various members are stored.
+    // If the encoded index is 0, it means no such member is present.
+    // Otherwise the exact offset of the member is computed as
+    //   OFFSETOF__CORINFO_Continuation__data + (index - 1) * PointerSize
+    //
     CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT = 3,
     CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS = 2,
 
     CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT = 5,
     CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS = 2,
 
+    // For JIT, the continuation stores space for every possible type of
+    // async callee's result. We need to represent the offset to each of
+    // these, so we allocate the rest of the bits for this.
     CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT = 7,
     CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS = 25,
 };
