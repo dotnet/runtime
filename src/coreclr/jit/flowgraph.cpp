@@ -7599,8 +7599,7 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_parent(nullptr)
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
-    , m_catchCanResumeInMethod(false)
-    , m_catchCanResumeInDifferentHandler(false)
+    , m_requiresRuntimeResumption(false)
 {
     BitVecTraits traits = regions->GetBlockBitVecTraits();
     m_blocks            = BitVecOps::MakeEmpty(&traits);
@@ -7692,9 +7691,14 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             // For flow purposes we may consider it to be outside the try.
         }
 
-        // If this is a BBJ_CATCHRET, note that this try and any enclosing mutual-protect
-        // try can resume control in the method. Also note if the continuation is in a different
-        // handler region than the try.
+        // If this is a BBJ_CATCHRET, find the handler region of the continuation.
+        //
+        // Walk up through enclosing trys until we reach the outermost try that
+        // is enclosed by the same handler as the continuation.
+        //
+        // Mark each try/catch we walk through as needing to support runtime resumption.
+        //
+        // TODO: find a way to share similar logic from fgWasmEhFlow
         //
         if (block->KindIs(BBJ_EHCATCHRET))
         {
@@ -7702,36 +7706,42 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             const unsigned    ehRegionIndex = block->getHndIndex();
             EHblkDsc* const   ehDsc         = &comp->compHndBBtab[ehRegionIndex];
             BasicBlock* const continuation  = block->GetTarget();
-            unsigned const    continuationHandlerRegion =
+            unsigned const    continuationHandlerIndex =
                 continuation->hasHndIndex() ? continuation->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
 
-            bool const resumesInDiffereentHandler = (continuationHandlerRegion != ehDsc->ebdEnclosingHndIndex);
-
-            FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
+            FlowGraphTryRegion* region = regions->m_tryRegions[ehDsc->ebdID];
             assert(region != nullptr);
 
             while (region != nullptr)
             {
-                assert(region->HasCatchHandler());
-                region->SetCatchCanResumeInMethod(true);
-                region->SetCatchCanResumeInDifferentHandler(resumesInDiffereentHandler);
+                if (region->HasCatchHandler())
+                {
+                    region->SetRequiresRuntimeResumption();
+                }
 
-                if (region->m_parent == nullptr)
+                FlowGraphTryRegion* const parent = region->m_parent;
+
+                if (parent == nullptr)
                 {
                     break;
                 }
 
-                if (!EHblkDsc::ebdIsSameTry(region->m_ehDsc, region->m_parent->m_ehDsc))
+                if (region->IsMutualProtectWith(parent))
                 {
-                    break;
+                    region = parent;
+                    continue;
                 }
-                region = region->m_parent;
+
+                if (region->m_ehDsc->ebdEnclosingHndIndex != continuationHandlerIndex)
+                {
+                    region = parent;
+                    continue;
+                }
+
+                break;
             }
         }
     }
-
-    // Todo: verify that all try blocks that start at the same block have the same blocks?
-    // (only mutual-protect regions exactly overlap)
 
     return regions;
 }

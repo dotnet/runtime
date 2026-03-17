@@ -2253,13 +2253,19 @@ class FlowGraphTryRegion
     EHblkDsc* m_ehDsc;
     BitVec m_blocks;
 
-    bool m_catchCanResumeInMethod;
-    bool m_catchCanResumeInDifferentHandler;
+    bool m_requiresRuntimeResumption;
 
     FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
 
-    void SetCatchCanResumeInMethod(bool canResume) { m_catchCanResumeInMethod = canResume; }
-    void SetCatchCanResumeInDifferentHandler(bool canResume) { m_catchCanResumeInDifferentHandler = canResume; }
+    void SetRequiresRuntimeResumption()
+    {
+        m_requiresRuntimeResumption = true;
+    }
+
+    bool IsMutualProtectWith(FlowGraphTryRegion* other)
+    {
+        return EHblkDsc::ebdIsSameTry(this->m_ehDsc, other->m_ehDsc);
+    }
 
 public:
 
@@ -2268,12 +2274,18 @@ public:
 
     unsigned NumBlocks() const;
 
-    bool HasCatchHandler() const {
+    bool HasCatchHandler() const
+    {
         return m_ehDsc->HasCatchHandler();
     }
 
-    bool CatchCanResumeInMethod() const { return m_catchCanResumeInMethod; }
-    bool CatchCanResumeInDifferentHandler() const { return m_catchCanResumeInDifferentHandler; }
+    // True if resumption from a catch in this or in an enclosed
+    // try region requires runtime support.
+    //
+    bool RequiresRuntimeResumption() const
+    {
+        return m_requiresRuntimeResumption;
+    }
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegion* region);
@@ -2888,9 +2900,6 @@ public:
 
     // Find the true enclosing try index, ignoring 'mutual protect' try. Uses blocks to check.
     unsigned ehTrueEnclosingTryIndex(unsigned regionIndex);
-
-    // Find the outermost mutually protecting try index. Uses blocks to check.
-    unsigned ehOutermostMutualProtectTryIndex(unsigned regionIndex);
 
     // Return the index of the most nested enclosing region for a particular EH region. Returns NO_ENCLOSING_INDEX
     // if there is no enclosing region. If the returned index is not NO_ENCLOSING_INDEX, then '*inTryRegion'

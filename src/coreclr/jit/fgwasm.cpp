@@ -1209,9 +1209,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
             fgWasmIntervals->push_back(loopInterval);
         }
 
-        if ((tryRegion != nullptr) && tryRegion->HasCatchHandler() && tryRegion->CatchCanResumeInMethod())
+        if ((tryRegion != nullptr) && tryRegion->RequiresRuntimeResumption())
         {
-            // This will inspire a try_table in codegen to handle the resumption.
+            // This interval will inspire a try_table in codegen to handle the resumption
+            // request from the runtime.
             //
             unsigned            endCursor   = cursor + tryRegion->NumBlocks();
             WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
@@ -1923,45 +1924,53 @@ void Compiler::fgDumpWasmControlFlowDot()
 //
 //    So, for methods with catch clauses, we enumerate the sets of catch continuation
 //    blocks (blocks with a BBJ_EHCATCHRET pred) per try/catch region, and at the start
-//    of each outermost mutual protect try/catch, add a conditionally branch to a post-try
-//    switch that dispatches control to the appropriate continuation block based on a control variable.
+//    of each enclosing try region between the try associated with the catch and the try that
+//    is in the same handler region as the continuation (considering mutual protect trys as
+//    one region) add a conditionally branch to a post-try switch that dispatches control
+//    to the appropriate continuation block based on a control variable.
 //
-//    We then must set this control variable appropriately in all BBJ_EHCATCHRET blocks and
-//    before entering the try normally.
+//    For example, if we have a code like the following
 //
-//    Later, during Wasm codegen, we will replace the initial contditional branch with
-//    a Wasm try_table that branches to the switch on exception. Thus after invoking a catch funclet,
-//    the runtime can cause resumption of control at the switch with the control variable set
-//    (by the just-executed catch funclet) to then steer execution to the proper continuation.
+//    try { ... }
+//    catch {
+//       try { ... }
+//       catch { ... ;  goto K: }
+//    }
+//    K:
 //
-//    Nere we need to make the control flow explicit in the IR so that the switch and the
+//    where the runtime determines that the inner catch will handle an exception.
+//
+//    Both try blocks will inspire Wasm `try_tables`s at entry. These will transfer control to post
+//    try dispatch blocks when the runtime resumes execution after running the catch funclet
+//    by throwing a native exception.
+//
+//    The inner try's dispatch will need to rethrow the exception; it cannot branch directly to K because
+//    that control flow crosses a funclet boundary. The outer try's dispatch will branch to K.
+//
+//    So after this phase, the above will look something like:
+//
+//    try { if (except) goto D0;  ... }
+//    catch {
+//       try { if (except) goto D1; ... }
+//       catch { ... ;  cv = K: }
+//       D1: rethrow
+//    }
+//    D0: if (cv == K) goto K; else rethrow;
+//    K;
+//
+//    We set the control variable appropriately in all BBJ_EHCATCHRET blocks. To do this we give
+//    each cathcret a method-wide unique index that is dense for the try that will ultimately
+//    branch to the continuation.
+//
+//    Later, during Wasm codegen, we will replace the `if (except)` contditional branch with
+//    a Wasm `try_table` that branches to the dispatch block on exception. Thus after invoking
+//    a catch funclet, the runtime can cause resumption of control at the dispatch with the control
+//    variable set (by the just-executed catch funclet) to steer execution to the proper continuation
+//    (possibly involving some number of rethrows).
+//
+//    In this phase we make the above control flow explicit in the IR so that the switch and the
 //    continuations are placed properly in the reverse postorder we will use to generate proper
 //    nested Wasm control flow.
-//
-//    Before:
-//
-//       BBTryFirst: try entry
-//         ...
-//       BBTryLast: lexical last block of try
-//
-//    After:
-//
-//         { controlVar = 0 }
-//      BBTryFirst:
-//         if (controlVar == 0) goto BBTryFirst* else goto Switch
-//      BBTryFirst*
-//         (code that was in BBTryFirst)
-//      ...
-//      BBTryLast:
-//         (unaltered; control does not got to Switch)
-//      Switch:
-//        switch (controlVar - 1)
-//         case 0: goto continuation 0
-//          ...
-//         case n-1: goto continuation n-1
-//         default: goto SwitchNext
-//      SwitchNext (BBJ_THROW)
-//         "rethrow wasm exception"
 //
 PhaseStatus Compiler::fgWasmEhFlow()
 {
@@ -1984,49 +1993,96 @@ PhaseStatus Compiler::fgWasmEhFlow()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Walk the blocks and collect up the BBJ_CATCHRET blocks per associated try region.
-    // Note for mutual protect trys we associate all catchrets with the outermost try.
+    // Walk the blocks and collect up the BBJ_EHCATCHRET blocks per "dispatching" region.
+    // The dispatching region is the innermost try/catch region that is in the same handler
+    // region as the continuation -- it is the nearest ancstor try region that can branch directly
+    // to the continuation.
     //
     // Index into this vector via an "unbiased EH index" (0 is EH#00). Note some vector
     // slots will be null after this, as not all EH regions are try/catch, and not all try/catch
-    // are outermost mutual protect.
+    // are innermost mutual protect.
     //
     jitstd::vector<ArrayStack<BasicBlock*>*> catchRetBlocksByTryRegion(compHndBBtabCount, nullptr,
                                                                        getAllocator(CMK_WasmCfgLowering));
+
+    auto getCatchRetBlocksForTryRegion = [&](unsigned tryIndex) -> ArrayStack<BasicBlock*>* {
+        ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByTryRegion[tryIndex];
+
+        if (catchRetBlocks == nullptr)
+        {
+            catchRetBlocks = new (this, CMK_WasmCfgLowering) ArrayStack<BasicBlock*>(getAllocator(CMK_WasmCfgLowering));
+            catchRetBlocksByTryRegion[tryIndex] = catchRetBlocks;
+        }
+
+        return catchRetBlocks;
+    };
+
+    bool foundCatchRetBlocks = false;
 
     for (BasicBlock* const block : Blocks())
     {
         if (block->KindIs(BBJ_EHCATCHRET))
         {
-            // Find the enclosing try region associated with the catch
-            // (note CATDCHRET is in the handler for the try...)
+            // Find the try region associated with the catch
+            // (note BBJ_EHCATCHRET is in the handler for the try...)
             //
             assert(block->hasHndIndex());
-            unsigned const initialTryIndex = block->getHndIndex();
+            unsigned const catchingTryIndex = block->getHndIndex();
 
-            // Now walk up through any enclosing mutual protect trys.
+            // Find the handler region for the continuation.
             //
-            unsigned tryIndex = ehOutermostMutualProtectTryIndex(initialTryIndex);
+            BasicBlock* const continuationBlock = block->GetTarget();
 
-            JITDUMP("Associating catchret block " FMT_BB " with outermost try region EH#%02u\n", block->bbNum,
-                    tryIndex);
+            unsigned const continuationHndIndex =
+                continuationBlock->hasHndIndex() ? continuationBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
 
-            // Add it to the catchret collection for this try
+            // Now find the dispatching try index by walking through the enclosing handler regions.
+            // Also skip past any inner mutual protect trys.
             //
-            ArrayStack<BasicBlock*>* catchRetBlocks = catchRetBlocksByTryRegion[tryIndex];
+            unsigned dispatchingTryIndex = catchingTryIndex;
+            unsigned enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
 
-            if (catchRetBlocks == nullptr)
+            while (enclosingHndIndex != continuationHndIndex)
             {
-                catchRetBlocks =
-                    new (this, CMK_WasmCfgLowering) ArrayStack<BasicBlock*>(getAllocator(CMK_WasmCfgLowering));
-                catchRetBlocksByTryRegion[tryIndex] = catchRetBlocks;
+                // Note this should not walk through any non try/catch regions as those will change handler region
+                //
+                dispatchingTryIndex = ehGetEnclosingTryIndex(enclosingHndIndex);
+                enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
+
+                // Create a catchret collection for each region so we know which regions will require try-tables.
+                //
+                getCatchRetBlocksForTryRegion(dispatchingTryIndex);
             }
 
+            // If this try region is part of a mutual protect set,
+            // we want to use the EH region of the innermost try.
+            //
+            BasicBlock* const dispatchingTryBlock          = ehGetDsc(dispatchingTryIndex)->ebdTryBeg;
+            unsigned const    innermostDispatchingTryIndex = dispatchingTryBlock->getTryIndex();
+
+            JITDUMP("Catchret block " FMT_BB " has continuation " FMT_BB
+                    "; associated try EH#%02u; dispatching try EH#%02u\n",
+                    block->bbNum, continuationBlock->bbNum, catchingTryIndex, innermostDispatchingTryIndex);
+
+            // Add it to the catchret collection for the innermost dispatching try.
+            //
+            ArrayStack<BasicBlock*>* catchRetBlocks = getCatchRetBlocksForTryRegion(innermostDispatchingTryIndex);
+
             catchRetBlocks->Push(block);
+            foundCatchRetBlocks = true;
         }
     }
 
-    // Now give each catchret block a unique number, making sure that each try's associated catchrets
+    // It's possible that there are no catchrets, if every catch unconditinally throws.
+    // If so there is nothing to do, as control cannot resume in this method after a catch.
+    //
+    if (!foundCatchRetBlocks)
+    {
+        JITDUMP("No CATCHRETS in this method, so no EH processing needed.");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Now give each catchret block a unique number, making sure that each dispatching try's catchrets
     // have consecutive numbers.
     //
     // Start numbering at 1
@@ -2049,15 +2105,6 @@ PhaseStatus Compiler::fgWasmEhFlow()
         }
     }
 
-    // It's possible that ther are no catchrets, if every catch unconditinally throws.
-    // If so there is nothing to do, as control cannot resume in this method after a catch.
-    //
-    if (catchRetIndex == 1)
-    {
-        JITDUMP("No CATCHRETS in this method, so no EH processing needed.");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     // Allocate an exposed int local to hold the catchret number.
     // TODO-WASM: possibly share this with the "virtual IP"
     // TODO-WASM: this will need to be at a known offset from $fp so runtime can set it
@@ -2076,29 +2123,52 @@ PhaseStatus Compiler::fgWasmEhFlow()
     {
         if (catchRetBlocks == nullptr)
         {
+            regionIndex++;
             continue;
         }
 
-        EHblkDsc* const   dsc              = ehGetDsc(regionIndex++);
+        EHblkDsc* const   dsc              = ehGetDsc(regionIndex);
         BasicBlock* const regionEntryBlock = dsc->ebdTryBeg;
         BasicBlock* const regionLastBlock  = dsc->ebdTryLast;
+        bool const        hasContinuations = catchRetBlocks->Height() > 0;
 
-        // Create a block for the switch, and another for the "default case" from
-        // the switch (where control will go if the control var is out of range)
+        // If there are any associated continuations, create a block for the switch.
         //
-        // These blocks need to go in the enclosing region for the try.
+        // Create another for the "rethrow case" (where control will go if the control
+        // var is out of range or there are no continuations).
         //
-        const unsigned enclosingTryIndex =
-            (dsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingTryIndex + 1;
-        const unsigned enclosingHndIndex =
-            (dsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : dsc->ebdEnclosingHndIndex + 1;
+        // These blocks need to go in the enclosing region for the try, so we need
+        // to skip over any mutual protect trys.
+        //
+        unsigned const enclosingTryIndex = ehTrueEnclosingTryIndex(regionIndex);
+        unsigned const enclosingHndIndex = ehGetEnclosingHndIndex(regionIndex);
 
-        BasicBlock* const switchBlock =
-            fgNewBBinRegion(BBJ_SWITCH, enclosingTryIndex, enclosingHndIndex, regionLastBlock);
+        // Translate these to the "biased form" for insertion point finding
+        //
+        unsigned const biasedEnclosingTryIndex =
+            enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX ? 0 : (enclosingTryIndex + 1);
+        unsigned const biasedEnclosingHndIndex =
+            enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX ? 0 : (enclosingHndIndex + 1);
 
-        BasicBlock* const rethrowBlock = fgNewBBinRegion(BBJ_THROW, enclosingTryIndex, enclosingHndIndex, switchBlock);
+        regionIndex++;
 
-        // Split the try entry block so we can create a branch to the switch block.
+        BasicBlock* switchBlock = nullptr;
+
+        if (hasContinuations)
+        {
+            switchBlock =
+                fgNewBBinRegion(BBJ_SWITCH, biasedEnclosingTryIndex, biasedEnclosingHndIndex, regionLastBlock);
+        }
+
+        BasicBlock* const rethrowBlock = fgNewBBinRegion(BBJ_THROW, biasedEnclosingTryIndex, biasedEnclosingHndIndex,
+                                                         hasContinuations ? switchBlock : regionLastBlock);
+
+        // Resumption block is where control goes if there is a native exception.
+        //
+        BasicBlock* const resumptionBlock = hasContinuations ? switchBlock : rethrowBlock;
+
+        // Split the try entry block so we can create a branch to the resumption block.
+        // Note this is inside the try so it can handle resumptions inside the try.
         //
         fgSplitBlockAtBeginning(regionEntryBlock);
 
@@ -2109,11 +2179,11 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         // Insert a branch to the switch block.
         //
-        FlowEdge* const switchEdge = fgAddRefPred(switchBlock, regionEntryBlock);
-        switchEdge->setLikelihood(0);
+        FlowEdge* const resumptionEdge = fgAddRefPred(resumptionBlock, regionEntryBlock);
+        resumptionEdge->setLikelihood(0);
 
         regionEntryBlock->SetKind(BBJ_COND);
-        regionEntryBlock->SetTrueEdge(switchEdge);
+        regionEntryBlock->SetTrueEdge(resumptionEdge);
         regionEntryBlock->SetFalseEdge(defaultEdge);
 
         // Create the IR for the branch block.
@@ -2137,112 +2207,125 @@ PhaseStatus Compiler::fgWasmEhFlow()
             fgSetStmtSeq(jtrueStmt);
         }
 
-        // Create the IR for the switch block.
-        //
-        unsigned const caseCount  = catchRetBlocks->Height() + 1;
-        unsigned const caseBias   = catchRetBlocks->Top()->bbPreorderNum;
-        unsigned       caseNumber = 0;
-
-        JITDUMP("Switch block is " FMT_BB "; %u cases\n", switchBlock->bbNum, caseCount);
-
-        // Fill in the case info
-        //
-        FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
-
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+        if (hasContinuations)
         {
-            BasicBlock* const continuation = catchRetBlock->GetTarget();
-            JITDUMP("  case %u: " FMT_BB "\n", caseNumber, continuation->bbNum);
-            FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
+            // Create the IR for the switch block.
+            //
+            unsigned const caseCount  = catchRetBlocks->Height() + 1;
+            unsigned const caseBias   = catchRetBlocks->Top()->bbPreorderNum;
+            unsigned       caseNumber = 0;
 
-            cases[caseNumber] = caseEdge;
+            JITDUMP("Dispatch switch block is " FMT_BB "; %u cases\n", switchBlock->bbNum, caseCount);
 
-            // We only get here on exception
-            caseEdge->setLikelihood(0);
-            caseNumber++;
-        }
+            // Fill in the case info
+            //
+            FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
+            for (unsigned i = 0; i < caseCount; i++)
+            {
+                cases[i] = nullptr;
+            }
 
-        // The "default" case of the switch goes to the rethrow block.
-        // Likelihoods here are unclear since all this code is only reachable via
-        // exception, so we just set this case to be 1.0.
-        //
-        FlowEdge* const rethrowCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
-        rethrowCaseEdge->setLikelihood(0);
+            for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+            {
+                BasicBlock* const continuation = catchRetBlock->GetTarget();
+                unsigned const    caseIndex    = catchRetBlock->bbPreorderNum;
+                assert(caseIndex >= caseBias);
+                unsigned const biasedCaseIndex = caseIndex - caseBias;
+                assert(biasedCaseIndex < caseCount);
 
-        JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, switchBlock->bbNum);
-        cases[caseNumber++] = rethrowCaseEdge;
+                JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
+                FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
 
-        assert(caseNumber == caseCount);
+                assert(cases[biasedCaseIndex] == nullptr);
+                cases[biasedCaseIndex] = caseEdge;
 
-        // Determine the number of unqiue successsors.
-        //
-        unsigned succCount = 0;
+                // We only get here on exception
+                caseEdge->setLikelihood(0);
+                caseNumber++;
+            }
 
-        BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
-        BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
-        {
-            BasicBlock* const succ = catchRetBlock->GetTarget();
+            // The "default" case of the switch goes to the rethrow block.
+            // Likelihoods here are unclear since all this code is only reachable via
+            // exception, so we just set this case to be 1.0.
+            //
+            FlowEdge* const rethrowCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
+            rethrowCaseEdge->setLikelihood(0);
 
-            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+            JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, switchBlock->bbNum);
+            cases[caseNumber++] = rethrowCaseEdge;
+
+            assert(caseNumber == caseCount);
+
+            // Determine the number of unqiue successsors.
+            //
+            unsigned succCount = 0;
+
+            BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+            BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+            for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+            {
+                BasicBlock* const succ = catchRetBlock->GetTarget();
+
+                if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+                {
+                    succCount++;
+                }
+            }
+
+            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
             {
                 succCount++;
             }
-        }
 
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
-        {
-            succCount++;
-        }
+            unsigned succNumber = 0;
 
-        unsigned succNumber = 0;
+            // Fill in unique successor info
+            //
+            FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[succCount];
+            BitVecOps::ClearD(&bitVecTraits, succBlocks);
 
-        // Fill in unique successor info
-        //
-        FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[succCount];
-        BitVecOps::ClearD(&bitVecTraits, succBlocks);
-
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
-        {
-            BasicBlock* const succ = catchRetBlock->GetTarget();
-
-            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+            for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                succs[succNumber] = fgGetPredForBlock(succ, switchBlock);
+                BasicBlock* const succ = catchRetBlock->GetTarget();
+
+                if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+                {
+                    succs[succNumber] = fgGetPredForBlock(succ, switchBlock);
+                    succNumber++;
+                }
+            }
+
+            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
+            {
+                succs[succNumber] = rethrowCaseEdge;
                 succNumber++;
             }
-        }
 
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
-        {
-            succs[succNumber] = rethrowCaseEdge;
-            succNumber++;
-        }
+            assert(succNumber == succCount);
 
-        assert(succNumber == succCount);
+            // Install the switch info on the switch block.
+            //
+            BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
+            switchBlock->SetSwitch(swtDesc);
 
-        // Install the switch info on the switch block.
-        //
-        BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
-        switchBlock->SetSwitch(swtDesc);
+            // Build the IR for the switch
+            //
+            GenTree* const biasValue          = gtNewIconNode(caseBias);
+            GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
+            GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
+            GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
 
-        // Build the IR for the switch
-        //
-        GenTree* const biasValue          = gtNewIconNode(caseBias);
-        GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
-        GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
-        GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
-
-        if (regionEntryBlock->IsLIR())
-        {
-            LIR::Range range = LIR::SeqTree(this, switchNode);
-            LIR::AsRange(switchBlock).InsertAtEnd(std::move(range));
-        }
-        else
-        {
-            Statement* const switchStmt = fgNewStmtAtEnd(switchBlock, switchNode);
-            gtSetStmtInfo(switchStmt);
-            fgSetStmtSeq(switchStmt);
+            if (regionEntryBlock->IsLIR())
+            {
+                LIR::Range range = LIR::SeqTree(this, switchNode);
+                LIR::AsRange(switchBlock).InsertAtEnd(std::move(range));
+            }
+            else
+            {
+                Statement* const switchStmt = fgNewStmtAtEnd(switchBlock, switchNode);
+                gtSetStmtInfo(switchStmt);
+                fgSetStmtSeq(switchStmt);
+            }
         }
 
         // Build the IR for the rethrow block.

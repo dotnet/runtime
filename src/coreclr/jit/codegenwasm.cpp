@@ -390,8 +390,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             }
             else if (interval->IsTry())
             {
-                // We have to handle try_table emission here, since there may be blocks nested inside.
-                // (that is, we can't wait until we do codegen for JTRUE or WASM_IF_EXCEPT
+                // Handle try_table emission here, since there may be blocks nested inside.
+                // (that is, we can't wait until we do codegen the block IR)
                 //
                 LIR::Range&    blockRange = LIR::AsRange(block);
                 GenTree* const jTrue      = blockRange.LastNode();
