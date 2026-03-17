@@ -147,7 +147,9 @@ namespace Internal.IL.Stubs
 
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL) : base(methodIL)
         {
-            IsMarshallingRequired = Marshaller.IsMarshallingRequired(methodIL.OwningMethod);
+            MethodDesc method = methodIL.OwningMethod;
+            IsMarshallingRequired = Marshaller.IsMarshallingRequired(method)
+                || MarshalHelpers.ShouldCheckForPendingException(method.Context.Target, method.GetPInvokeMethodMetadata());
         }
     }
 }
