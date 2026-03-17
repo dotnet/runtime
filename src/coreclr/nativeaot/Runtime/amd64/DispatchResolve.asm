@@ -10,10 +10,12 @@ EXTERN RhpUniversalTransitionGuardedTailCall : PROC
 
 EXTERN g_pDispatchCache : QWORD
 
+EXTERN __guard_dispatch_icall_fptr : QWORD
+
 ;; Macro that generates an interface dispatch stub.
 ;; DispatchName: the name of the dispatch entry point
-;; TransitionTarget: the UniversalTransition variant to jump to
-INTERFACE_DISPATCH macro DispatchName, TransitionTarget
+;; Guarded: if non-zero, validate indirect call targets using Control Flow Guard
+INTERFACE_DISPATCH macro DispatchName, Guarded
 
 LEAF_ENTRY DispatchName, _TEXT
 
@@ -29,19 +31,27 @@ LEAF_ENTRY DispatchName, _TEXT
         jne     @F
 
         mov     rax, [r11 + 8] ;; load the cached monomorphic resolved code address into rax
+if Guarded ne 0
+        jmp     [__guard_dispatch_icall_fptr]
+else
         jmp     rax
+endif
 
       @@:
 
         ;; r11 contains indirection cell address
         lea     r10, RhpCidResolve
-        jmp     TransitionTarget
+if Guarded ne 0
+        jmp     RhpUniversalTransitionGuardedTailCall
+else
+        jmp     RhpUniversalTransitionTailCall
+endif
 
 LEAF_END DispatchName, _TEXT
 
         endm
 
-        INTERFACE_DISPATCH RhpInterfaceDispatch, RhpUniversalTransitionTailCall
-        INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, RhpUniversalTransitionGuardedTailCall
+        INTERFACE_DISPATCH RhpInterfaceDispatch, 0
+        INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, 1
 
 end

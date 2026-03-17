@@ -20,8 +20,8 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         cmp     x13, x12                // is this the monomorphic MethodTable?
         bne     LOCAL_LABEL(SlowPath)
 
-        ldr     x13, [x11, #8]          // load the cached monomorphic resolved code address
-        br      x13
+        ldr     x9, [x11, #8]           // load the cached monomorphic resolved code address
+        br      x9
 
 LOCAL_LABEL(SlowPath):
         PREPARE_EXTERNAL_VAR RhpCidResolve, xip0

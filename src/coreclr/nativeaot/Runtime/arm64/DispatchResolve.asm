@@ -9,11 +9,13 @@
     EXTERN RhpUniversalTransitionTailCall
     EXTERN RhpUniversalTransitionGuardedTailCall
 
+    EXTERN __guard_dispatch_icall_fptr
+
 ;; Macro that generates an interface dispatch stub.
 ;; DispatchName: the name of the dispatch entry point
-;; TransitionTarget: the UniversalTransition variant to jump to
+;; Guarded: if non-empty, validate indirect call targets using Control Flow Guard
     MACRO
-        INTERFACE_DISPATCH $DispatchName, $TransitionTarget
+        INTERFACE_DISPATCH $DispatchName, $Guarded
 
     LEAF_ENTRY $DispatchName, _TEXT
 
@@ -31,19 +33,29 @@
         cmp     x13, x12                ;; is this the monomorphic MethodTable?
         bne     %ft0
 
-        ldr     x13, [x11, #8]          ;; load the cached monomorphic resolved code address
-        br      x13
+        ldr     x9, [x11, #8]           ;; load the cached monomorphic resolved code address
+    IF "$Guarded" != ""
+        adrp    x16, __guard_dispatch_icall_fptr
+        ldr     x16, [x16, __guard_dispatch_icall_fptr]
+        br      x16
+    ELSE
+        br      x9
+    ENDIF
 
 0
         ldr     xip0, =RhpCidResolve
         mov     xip1, x11
-        b       $TransitionTarget
+    IF "$Guarded" != ""
+        b       RhpUniversalTransitionGuardedTailCall
+    ELSE
+        b       RhpUniversalTransitionTailCall
+    ENDIF
 
     LEAF_END $DispatchName
 
     MEND
 
-    INTERFACE_DISPATCH RhpInterfaceDispatch, RhpUniversalTransitionTailCall
-    INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, RhpUniversalTransitionGuardedTailCall
+    INTERFACE_DISPATCH RhpInterfaceDispatch
+    INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, Guarded
 
     END
