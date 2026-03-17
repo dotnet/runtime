@@ -6,9 +6,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 /// <summary>
-/// Debuggee for cDAC dump tests — exercises the BuiltInCOM contract's GetRCWInterfaces API.
-/// Creates a real RCW for an unmanaged COM object with populated interface cache,
-/// then crashes to produce a dump for analysis.
+/// Debuggee for cDAC dump tests — exercises the BuiltInCOM contract's RCW APIs.
+/// Creates two kinds of RCW:
+/// 1. A plain RCW for the StdGlobalInterfaceTable COM object (not aggregated).
+/// 2. A contained RCW via a managed class extending a [ComImport] base class.
+///    The GIT singleton doesn't support aggregation, so the runtime falls back
+///    to containment.
+/// Both are pinned in GC handles so dump tests can find them.
 /// This debuggee is Windows-only, as RCW support requires FEATURE_COMINTEROP.
 /// </summary>
 internal static partial class Program
@@ -36,6 +40,21 @@ internal static partial class Program
         int GetInterfaceFromGlobal(int dwCookie, ref Guid riid, out IntPtr ppv);
     }
 
+    // A [ComImport] base class for the StdGlobalInterfaceTable CLSID.
+    // Managed classes that extend this produce an extensible (aggregated) RCW.
+    [ComImport]
+    [Guid("00000323-0000-0000-C000-000000000046")]
+    private class StdGlobalInterfaceTableClass
+    {
+    }
+
+    // Extending the [ComImport] class makes this an "extensible RCW".
+    // The GIT is a singleton that doesn't support aggregation, so the runtime
+    // falls back to containment (RCW::MarkURTContained is called).
+    private class ContainedGlobalInterfaceTable : StdGlobalInterfaceTableClass
+    {
+    }
+
     [LibraryImport("ole32.dll")]
     private static partial int CoInitializeEx(IntPtr pvReserved, uint dwCoInit);
 
@@ -49,7 +68,7 @@ internal static partial class Program
             CreateRcwOnWindows();
         }
 
-        Environment.FailFast("cDAC dump test: RCWInterfaces debuggee intentional crash");
+        Environment.FailFast("cDAC dump test: RCW debuggee intentional crash");
     }
 
     [SupportedOSPlatform("windows")]
@@ -69,9 +88,11 @@ internal static partial class Program
         IntPtr rcwIUnknown = IntPtr.Zero;
         IntPtr fetchedIUnknown = IntPtr.Zero;
         GCHandle rcwHandle = default;
+        GCHandle containedHandle = default;
 
         try
         {
+            // --- Plain RCW (not aggregated) ---
             Type comType = Type.GetTypeFromCLSID(CLSID_StdGlobalInterfaceTable, throwOnError: true)!;
             object rcwObject = Activator.CreateInstance(comType)!;
 
@@ -89,12 +110,20 @@ internal static partial class Program
             int revokeResult = globalInterfaceTable.RevokeInterfaceFromGlobal(cookie);
             Marshal.ThrowExceptionForHR(revokeResult);
 
-            // Pin the RCW object in a strong GC handle so the dump test can find it
-            // by walking the strong handle table (matching how GCRoots debuggee works).
             rcwHandle = GCHandle.Alloc(rcwObject, GCHandleType.Normal);
+
+            // --- Contained RCW ---
+            // ContainedGlobalInterfaceTable extends StdGlobalInterfaceTableClass ([ComImport]),
+            // but the GIT singleton doesn't support aggregation, so the runtime
+            // falls back to containment (RCW::MarkURTContained).
+            object containedObject = new ContainedGlobalInterfaceTable();
+            containedHandle = GCHandle.Alloc(containedObject, GCHandleType.Normal);
+
             GC.KeepAlive(globalInterfaceTable);
             GC.KeepAlive(rcwHandle);
             GC.KeepAlive(rcwObject);
+            GC.KeepAlive(containedHandle);
+            GC.KeepAlive(containedObject);
         }
         finally
         {
@@ -109,6 +138,7 @@ internal static partial class Program
             }
 
             GC.KeepAlive(rcwHandle);
+            GC.KeepAlive(containedHandle);
 
             if (callCoUninitialize)
             {

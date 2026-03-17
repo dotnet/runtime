@@ -122,5 +122,46 @@ namespace System.Xml.XmlReaderTests
             XmlException ex = Assert.Throws<XmlException>(() => reader.Read());
             Assert.Contains(_invalidCharMessageStart, ex.Message);
         }
+
+        [Fact]
+        public static void ReadWithInvalidUtf8ByteInXmlDeclaration()
+        {
+            // Bare 0xBF (invalid standalone UTF-8 continuation byte) in XML declaration.
+            // SafeAsciiDecoder maps 0xBF -> U+00BF (1 byte -> 1 char), but
+            // UTF8.GetByteCount(U+00BF) = 2, inflating bytePos beyond bytesUsed.
+            // Input: <?xml version="1.0[0xBF]"?><a/>
+            var bytes = new byte[] { 0x3C, 0x3F, 0x78, 0x6D, 0x6C, 0x20, 0x76, 0x65,
+                                     0x72, 0x73, 0x69, 0x6F, 0x6E, 0x3D, 0x22, 0x31,
+                                     0x2E, 0x30, 0xBF, 0x22, 0x3F, 0x3E,
+                                     0x3C, 0x61, 0x2F, 0x3E };
+            var reader = XmlReader.Create(new MemoryStream(bytes));
+
+            // Should throw XmlException, not ArgumentOutOfRangeException
+            XmlException ex = Assert.Throws<XmlException>(() =>
+            {
+                while (reader.Read()) { }
+            });
+            Assert.Contains(_invalidCharInThisEncoding, ex.Message);
+        }
+
+        [Fact]
+        public static void ReadWithMultiByteUtf8CharInXmlDeclaration()
+        {
+            // Multi-byte UTF-8 sequence 0xC2 0xBF (U+00BF) in XML declaration.
+            // SafeAsciiDecoder maps these two bytes to two chars (U+00C2, U+00BF),
+            // both >0x7F, inflating GetByteCount by 2 extra bytes.
+            // Input: <?xml version="1.0[0xC2][0xBF]"?><a/>
+            var bytes = new byte[] { 0x3C, 0x3F, 0x78, 0x6D, 0x6C, 0x20, 0x76, 0x65,
+                                     0x72, 0x73, 0x69, 0x6F, 0x6E, 0x3D, 0x22, 0x31,
+                                     0x2E, 0x30, 0xC2, 0xBF, 0x22, 0x3F, 0x3E,
+                                     0x3C, 0x61, 0x2F, 0x3E };
+            var reader = XmlReader.Create(new MemoryStream(bytes));
+
+            XmlException ex = Assert.Throws<XmlException>(() =>
+            {
+                while (reader.Read()) { }
+            });
+            Assert.Contains(_invalidCharInThisEncoding, ex.Message);
+        }
     }
 }
