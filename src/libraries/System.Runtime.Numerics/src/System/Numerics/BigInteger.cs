@@ -2627,57 +2627,12 @@ namespace System.Numerics
         public static BigInteger operator &(BigInteger left, BigInteger right)
         {
             if (left.IsZero || right.IsZero)
-            {
                 return Zero;
-            }
 
             if (left._bits is null && right._bits is null)
-            {
                 return left._sign & right._sign;
-            }
 
-            nuint xExtend = (left._sign < 0) ? nuint.MaxValue : 0;
-            nuint yExtend = (right._sign < 0) ? nuint.MaxValue : 0;
-
-            nuint[]? leftBufferFromPool = null;
-            int size = (left._bits?.Length ?? 1) + 1;
-            Span<nuint> x = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : leftBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            x = x.Slice(0, left.WriteTo(x));
-
-            nuint[]? rightBufferFromPool = null;
-            size = (right._bits?.Length ?? 1) + 1;
-            Span<nuint> y = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : rightBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            y = y.Slice(0, right.WriteTo(y));
-
-            nuint[]? resultBufferFromPool = null;
-            size = Math.Max(x.Length, y.Length);
-            Span<nuint> z = (size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-
-            for (int i = 0; i < z.Length; i++)
-            {
-                nuint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
-                nuint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                z[i] = xu & yu;
-            }
-
-            if (leftBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(leftBufferFromPool);
-
-            if (rightBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(rightBufferFromPool);
-
-            var result = new BigInteger(z);
-
-            if (resultBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(resultBufferFromPool);
-
-            return result;
+            return BitwiseAnd(ref left, ref right);
         }
 
         public static BigInteger operator |(BigInteger left, BigInteger right)
@@ -2688,103 +2643,170 @@ namespace System.Numerics
                 return left;
 
             if (left._bits is null && right._bits is null)
-            {
                 return left._sign | right._sign;
-            }
 
-            nuint xExtend = (left._sign < 0) ? nuint.MaxValue : 0;
-            nuint yExtend = (right._sign < 0) ? nuint.MaxValue : 0;
-
-            nuint[]? leftBufferFromPool = null;
-            int size = (left._bits?.Length ?? 1) + 1;
-            Span<nuint> x = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : leftBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            x = x.Slice(0, left.WriteTo(x));
-
-            nuint[]? rightBufferFromPool = null;
-            size = (right._bits?.Length ?? 1) + 1;
-            Span<nuint> y = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : rightBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            y = y.Slice(0, right.WriteTo(y));
-
-            nuint[]? resultBufferFromPool = null;
-            size = Math.Max(x.Length, y.Length);
-            Span<nuint> z = (size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-
-            for (int i = 0; i < z.Length; i++)
-            {
-                nuint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
-                nuint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                z[i] = xu | yu;
-            }
-
-            if (leftBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(leftBufferFromPool);
-
-            if (rightBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(rightBufferFromPool);
-
-            var result = new BigInteger(z);
-
-            if (resultBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(resultBufferFromPool);
-
-            return result;
+            return BitwiseOr(ref left, ref right);
         }
 
         public static BigInteger operator ^(BigInteger left, BigInteger right)
         {
             if (left._bits is null && right._bits is null)
-            {
                 return left._sign ^ right._sign;
-            }
 
-            nuint xExtend = (left._sign < 0) ? nuint.MaxValue : 0;
-            nuint yExtend = (right._sign < 0) ? nuint.MaxValue : 0;
+            return BitwiseXor(ref left, ref right);
+        }
 
-            nuint[]? leftBufferFromPool = null;
-            int size = (left._bits?.Length ?? 1) + 1;
-            Span<nuint> x = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : leftBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            x = x.Slice(0, left.WriteTo(x));
+        /// <summary>
+        /// Computes two's complement AND directly from magnitude representation,
+        /// eliminating temporary buffers for the operands.
+        /// </summary>
+        private static BigInteger BitwiseAnd(ref readonly BigInteger left, ref readonly BigInteger right)
+        {
+            bool leftNeg = left._sign < 0;
+            bool rightNeg = right._sign < 0;
 
-            nuint[]? rightBufferFromPool = null;
-            size = (right._bits?.Length ?? 1) + 1;
-            Span<nuint> y = ((uint)size <= BigIntegerCalculator.StackAllocThreshold
-                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : rightBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            y = y.Slice(0, right.WriteTo(y));
+            ReadOnlySpan<nuint> xBits = left._bits ?? default;
+            ReadOnlySpan<nuint> yBits = right._bits ?? default;
+            int xLen = left._bits?.Length ?? 1;
+            int yLen = right._bits?.Length ?? 1;
+            nuint xInline = unchecked((nuint)left._sign);
+            nuint yInline = unchecked((nuint)right._sign);
+
+            // AND result length: for positive operands, min length suffices (AND with 0 = 0).
+            // For negative operands (sign-extended with 1s), we need max length + 1 for sign.
+            int zLen = (leftNeg || rightNeg)
+                ? Math.Max(xLen, yLen) + 1
+                : Math.Min(xLen, yLen);
 
             nuint[]? resultBufferFromPool = null;
-            size = Math.Max(x.Length, y.Length);
-            Span<nuint> z = (size <= BigIntegerCalculator.StackAllocThreshold
+            Span<nuint> z = ((uint)zLen <= BigIntegerCalculator.StackAllocThreshold
                          ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                         : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+                         : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(zLen)).Slice(0, zLen);
 
-            for (int i = 0; i < z.Length; i++)
+            nuint xBorrow = 1, yBorrow = 1;
+
+            for (int i = 0; i < zLen; i++)
             {
-                nuint xu = ((uint)i < (uint)x.Length) ? x[i] : xExtend;
-                nuint yu = ((uint)i < (uint)y.Length) ? y[i] : yExtend;
-                z[i] = xu ^ yu;
+                nuint xu = GetTwosComplementLimb(xBits, xInline, i, xLen, leftNeg, ref xBorrow);
+                nuint yu = GetTwosComplementLimb(yBits, yInline, i, yLen, rightNeg, ref yBorrow);
+                z[i] = xu & yu;
             }
-
-            if (leftBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(leftBufferFromPool);
-
-            if (rightBufferFromPool != null)
-                ArrayPool<nuint>.Shared.Return(rightBufferFromPool);
 
             var result = new BigInteger(z);
 
-            if (resultBufferFromPool != null)
+            if (resultBufferFromPool is not null)
                 ArrayPool<nuint>.Shared.Return(resultBufferFromPool);
 
             return result;
+        }
+
+        /// <summary>
+        /// Computes two's complement OR directly from magnitude representation.
+        /// </summary>
+        private static BigInteger BitwiseOr(ref readonly BigInteger left, ref readonly BigInteger right)
+        {
+            bool leftNeg = left._sign < 0;
+            bool rightNeg = right._sign < 0;
+
+            ReadOnlySpan<nuint> xBits = left._bits ?? default;
+            ReadOnlySpan<nuint> yBits = right._bits ?? default;
+            int xLen = left._bits?.Length ?? 1;
+            int yLen = right._bits?.Length ?? 1;
+            nuint xInline = unchecked((nuint)left._sign);
+            nuint yInline = unchecked((nuint)right._sign);
+
+            int zLen = Math.Max(xLen, yLen) + 1;
+
+            nuint[]? resultBufferFromPool = null;
+            Span<nuint> z = ((uint)zLen <= BigIntegerCalculator.StackAllocThreshold
+                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
+                         : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(zLen)).Slice(0, zLen);
+
+            nuint xBorrow = 1, yBorrow = 1;
+
+            for (int i = 0; i < zLen; i++)
+            {
+                nuint xu = GetTwosComplementLimb(xBits, xInline, i, xLen, leftNeg, ref xBorrow);
+                nuint yu = GetTwosComplementLimb(yBits, yInline, i, yLen, rightNeg, ref yBorrow);
+                z[i] = xu | yu;
+            }
+
+            var result = new BigInteger(z);
+
+            if (resultBufferFromPool is not null)
+                ArrayPool<nuint>.Shared.Return(resultBufferFromPool);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Computes two's complement XOR directly from magnitude representation.
+        /// </summary>
+        private static BigInteger BitwiseXor(ref readonly BigInteger left, ref readonly BigInteger right)
+        {
+            bool leftNeg = left._sign < 0;
+            bool rightNeg = right._sign < 0;
+
+            ReadOnlySpan<nuint> xBits = left._bits ?? default;
+            ReadOnlySpan<nuint> yBits = right._bits ?? default;
+            int xLen = left._bits?.Length ?? 1;
+            int yLen = right._bits?.Length ?? 1;
+            nuint xInline = unchecked((nuint)left._sign);
+            nuint yInline = unchecked((nuint)right._sign);
+
+            int zLen = Math.Max(xLen, yLen) + 1;
+
+            nuint[]? resultBufferFromPool = null;
+            Span<nuint> z = ((uint)zLen <= BigIntegerCalculator.StackAllocThreshold
+                         ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
+                         : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(zLen)).Slice(0, zLen);
+
+            nuint xBorrow = 1, yBorrow = 1;
+
+            for (int i = 0; i < zLen; i++)
+            {
+                nuint xu = GetTwosComplementLimb(xBits, xInline, i, xLen, leftNeg, ref xBorrow);
+                nuint yu = GetTwosComplementLimb(yBits, yInline, i, yLen, rightNeg, ref yBorrow);
+                z[i] = xu ^ yu;
+            }
+
+            var result = new BigInteger(z);
+
+            if (resultBufferFromPool is not null)
+                ArrayPool<nuint>.Shared.Return(resultBufferFromPool);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the i-th limb of a BigInteger in two's complement representation,
+        /// computed on-the-fly from the magnitude without allocating a temp buffer.
+        /// For positive values, returns magnitude limbs with zero extension.
+        /// For negative values, computes ~magnitude + 1 with carry propagation.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint GetTwosComplementLimb(ReadOnlySpan<nuint> bits, nuint inlineValue, int i, int len, bool isNegative, ref nuint borrow)
+        {
+            // Get the magnitude limb (or sign-extension beyond the value)
+            nuint mag;
+            if (bits.Length > 0)
+            {
+                mag = (uint)i < (uint)bits.Length ? bits[i] : 0;
+            }
+            else
+            {
+                // Inline value: _sign holds the value directly.
+                // For negative inline: magnitude is Abs(_sign), stored as positive nuint.
+                mag = i == 0 ? (isNegative ? NumericsHelpers.Abs(unchecked((nint)inlineValue)) : inlineValue) : 0;
+            }
+
+            if (!isNegative)
+                return (uint)i < (uint)len ? mag : 0;
+
+            // Two's complement: ~mag + borrow (borrow starts at 1 for the +1)
+            nuint tc = ~mag + borrow;
+            borrow = (tc < ~mag || (tc == 0 && borrow != 0)) ? (nuint)1 : 0;
+            return (uint)i < (uint)len ? tc : nuint.MaxValue;
         }
 
         public static BigInteger operator <<(BigInteger value, int shift)
