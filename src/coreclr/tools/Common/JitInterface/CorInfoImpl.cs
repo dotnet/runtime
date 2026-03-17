@@ -391,6 +391,10 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException();
 #endif
             }
+            if (result == CorJitResult.CORJIT_OUTOFMEM)
+            {
+                throw new OutOfMemoryException();
+            }
             if (result != CorJitResult.CORJIT_OK)
             {
 #if SUPPORT_JIT

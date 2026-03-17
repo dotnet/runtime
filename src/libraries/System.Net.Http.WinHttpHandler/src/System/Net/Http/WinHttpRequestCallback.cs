@@ -330,7 +330,11 @@ namespace System.Net.Http
                             // See: https://learn.microsoft.com/en-us/windows/win32/api/winhttp/ns-winhttp-winhttp_connection_info
                             // SOCKADDR_STORAGE can hold either IPv4 or IPv6 address.
                             // For offset numbers: https://learn.microsoft.com/en-us/windows/win32/winsock/sockaddr-2
+#if NET
+                            ReadOnlySpan<byte> remoteAddressSpan = connectionInfo.RemoteAddress;
+#else
                             ReadOnlySpan<byte> remoteAddressSpan = new ReadOnlySpan<byte>(connectionInfo.RemoteAddress, 128);
+#endif
                             AddressFamily addressFamily = (AddressFamily)(remoteAddressSpan[0] + (remoteAddressSpan[1] << 8));
                             ipAddress = addressFamily switch
                             {
