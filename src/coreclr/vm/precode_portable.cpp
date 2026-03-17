@@ -57,14 +57,6 @@ MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
     return portableEntryPoint->_pMD;
 }
 
-MethodDesc* PortableEntryPoint::TryGetMethodDesc(PCODE addr)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    return portableEntryPoint->_pMD;
-}
-
 void* PortableEntryPoint::GetInterpreterData(PCODE addr)
 {
     STANDARD_VM_CONTRACT;

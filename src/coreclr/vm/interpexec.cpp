@@ -3038,21 +3038,18 @@ SWITCH_OPCODE:
                     else
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                        // On portable entry point platforms, calli targets are portable entry points.
-                        // If the target has the newobj helper dummy MethodDesc, derive the call
-                        // cookie from it and invoke the native code via InvokeCalliStub.
-                        // All other targets with a MethodDesc (managed methods, FCalls) are
-                        // dispatched via CALL_INTERP_METHOD.
-                        targetMethod = PortableEntryPoint::TryGetMethodDesc(calliFunctionPointer);
-                        if (targetMethod != nullptr)
-                        {
-                            if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
-                                goto CALL_INTERP_METHOD;
+                        // On portable entry point platforms, managed calli targets are portable
+                        // entry points and always have a MethodDesc. Interpreted methods and FCalls
+                        // have no native entry point in the PortableEntryPoint and are dispatched
+                        // via CALL_INTERP_METHOD. Newobj allocator helpers carry both a native entry
+                        // point and a dummy MethodDesc; the call cookie is derived from the
+                        // MethodDesc and the native code is invoked via InvokeCalliStub.
+                        targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
+                        if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
+                            goto CALL_INTERP_METHOD;
 
-                            MetaSig sig(targetMethod);
-                            cookie = GetCookieForCalliSig(sig, NULL);
-                        }
-
+                        MetaSig sig(targetMethod);
+                        cookie = GetCookieForCalliSig(sig, NULL);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
                         InvokeCalliStub(&param);
