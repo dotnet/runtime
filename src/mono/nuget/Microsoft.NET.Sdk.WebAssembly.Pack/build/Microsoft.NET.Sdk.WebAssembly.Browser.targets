@@ -307,7 +307,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
-      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
+      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" WasmNativeBuildOutput="true" />
       <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
       <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
 
@@ -357,16 +357,14 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
+      <Output TaskParameter="PassThroughCandidates" ItemName="_WasmFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
 
-    <!-- Separate pass-through files (JS, maps, ICU, native wasm, and when WebCil is disabled,
-         DLLs) from webcil-converted files. Pass-throughs still point to shared locations (e.g.
-         NuGet cache) and will be materialized per-project by UpdatePackageStaticWebAssets.
-         Webcil-converted files already live in per-project obj/webcil/ and are fine as-is. -->
+    <!-- Remove pass-throughs from webcil candidates so each file is classified exactly once:
+         webcil-converted files → Computed (per-project in obj/webcil/)
+         pass-through files → Framework (materialized per-project by UpdatePackageStaticWebAssets) -->
     <ItemGroup>
-      <_WasmFrameworkCandidates Include="@(_WebcilAssetsCandidates)"
-        Condition="!$([System.String]::new('%(Identity)').StartsWith($(_WasmBuildWebcilPath)))" />
       <_WebcilAssetsCandidates Remove="@(_WasmFrameworkCandidates)" />
     </ItemGroup>
 
@@ -425,8 +423,17 @@ Copyright (c) .NET Foundation. All rights reserved.
       ProjectPackageId="$(PackageId)"
       ProjectBasePath="$(StaticWebAssetBasePath)"
     >
-      <Output TaskParameter="UpdatedAssets" ItemName="WasmStaticWebAsset" />
+      <Output TaskParameter="UpdatedAssets" ItemName="_WasmMaterializedFrameworkAssets" />
     </UpdatePackageStaticWebAssets>
+
+    <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
+         hosted scenarios where the server project serves the client's framework files).
+         UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject, but WASM framework
+         files need to flow through project references for publish and serving. -->
+    <ItemGroup>
+      <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)" AssetMode="All" />
+      <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
+    </ItemGroup>
 
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmDiscoveredFileCandidates)"

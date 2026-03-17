@@ -27,6 +27,16 @@ public class ConvertDllsToWebcil : Task
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
 
+    /// <summary>
+    /// Non-DLL files from shared locations (runtime pack, NuGet cache) that were not
+    /// converted to webcil. These are candidates for Framework SourceType materialization.
+    /// When IsEnabled is false, all candidates (DLL and non-DLL) appear here.
+    /// Items with WasmNativeBuildOutput metadata (per-project native build outputs)
+    /// are excluded — they're already unique per project.
+    /// </summary>
+    [Output]
+    public ITaskItem[] PassThroughCandidates { get; set; }
+
     protected readonly List<string> _fileWrites = new();
 
     [Output]
@@ -35,10 +45,15 @@ public class ConvertDllsToWebcil : Task
     public override bool Execute()
     {
         var webcilCandidates = new List<ITaskItem>();
+        var passThroughCandidates = new List<ITaskItem>();
 
         if (!IsEnabled)
         {
+            // When webcil is disabled, no conversion occurs. All candidates pass
+            // through unchanged. All are also pass-through candidates since none
+            // were converted to webcil.
             WebcilCandidates = Candidates;
+            PassThroughCandidates = Candidates;
             return true;
         }
 
@@ -56,7 +71,19 @@ public class ConvertDllsToWebcil : Task
 
             if (extension != ".dll")
             {
+                // Non-DLL files always appear in WebcilCandidates (backward compat
+                // for publish and other callers that only consume WebcilCandidates).
                 webcilCandidates.Add(candidate);
+
+                // Additionally classify shared framework files as pass-throughs.
+                // Items with WasmNativeBuildOutput metadata are per-project native
+                // build outputs (e.g. dotnet.native.wasm from obj/wasm/for-build/)
+                // that don't need Framework materialization.
+                bool isNativeBuildOutput = !string.IsNullOrEmpty(candidate.GetMetadata("WasmNativeBuildOutput"));
+                if (!isNativeBuildOutput)
+                {
+                    passThroughCandidates.Add(candidate);
+                }
                 continue;
             }
 
@@ -75,6 +102,7 @@ public class ConvertDllsToWebcil : Task
         Directory.Delete(tmpDir, true);
 
         WebcilCandidates = webcilCandidates.ToArray();
+        PassThroughCandidates = passThroughCandidates.ToArray();
         return true;
     }
 
