@@ -222,9 +222,9 @@
     },
     {
       "id": 10,
-      "name": "api-proposal-rejected-existing-workaround",
+      "name": "api-proposal-workaround-tradeoff",
       "prompt": "Should we close this? https://github.com/dotnet/runtime/issues/69163",
-      "expected_output": "API proposal for ConfigurationBinder.GetRequiredValue. While the proposal has community support (34 upvotes), there is a trivial inline workaround (null-coalescing with throw). The skill should identify the existing workaround, evaluate it honestly, and consider whether the proposal clears the BCL inclusion bar. Should lean toward CLOSE or NEEDS INFO given the trivial workaround, not blindly recommend KEEP based on upvotes alone.",
+      "expected_output": "API proposal for ConfigurationBinder.GetRequiredValue. While the proposal has community support (34 upvotes), there is a trivial inline workaround (null-coalescing with throw). The skill should identify the existing workaround, evaluate it honestly, and weigh it against the proposal's merits. The recommendation may go either way, but the report must engage with both sides of the trade-off.",
       "assertions": [
         {
           "name": "workaround-identified",
@@ -237,6 +237,39 @@
           "description": "Report includes merit evaluation weighing the proposal against existing solutions",
           "type": "contains_any",
           "check": ["merit", "bar", "existing", "workaround", "triviality", "Complexity"]
+        },
+        {
+          "name": "workaround-tradeoff-evaluated",
+          "description": "Report explicitly evaluates whether the workaround is sufficient or has limitations, not just mentions it",
+          "type": "contains_any",
+          "check": ["insufficient", "inadequate", "limitation", "sufficient", "covers the scenario", "fully adequate", "discipline", "error-prone", "trivial"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "api-proposal-niche-clear-close",
+      "prompt": "Triage https://github.com/dotnet/runtime/issues/85276",
+      "expected_output": "API proposal for a Func<TOptions> overload of Configure. Zero community reactions, niche use case, and the author's own code shows a working alternative pattern. The skill should recommend CLOSE or NEEDS INFO -- the proposal does not clear the BCL inclusion bar.",
+      "assertions": [
+        {
+          "name": "close-or-needs-info",
+          "description": "Report recommends CLOSE or NEEDS INFO for this niche proposal",
+          "type": "contains_any",
+          "check": ["CLOSE", "NEEDS INFO"]
+        },
+        {
+          "name": "workaround-exists",
+          "description": "Report identifies that a workaround exists (the author showed one in the issue)",
+          "type": "contains_any",
+          "check": ["workaround", "existing", "already", "alternative", "current approach"]
+        },
+        {
+          "name": "low-demand-noted",
+          "description": "Report notes the lack of community demand",
+          "type": "contains_any",
+          "check": ["reaction", "demand", "interest", "0", "zero", "no community", "limited"]
         }
       ],
       "files": []
