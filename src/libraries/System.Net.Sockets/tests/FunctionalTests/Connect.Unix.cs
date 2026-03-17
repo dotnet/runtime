@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class ConnectAsyncBlockingModeTests
+    public class SocketBlockingModeTransitionTests
     {
         private static bool IsSocketNonBlocking(Socket socket)
         {

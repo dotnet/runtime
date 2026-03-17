@@ -1352,9 +1352,10 @@ namespace System.Net.Sockets
             //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
-            // operations. After a successful ConnectAsync, we may transition back to blocking mode to optimize
-            // subsequent synchronous operations (see SetHandleBlocking). The socket will be set back to
-            // non-blocking when another async operation is performed.
+            // operations. After ConnectAsync completes (success or failure), if there is no pending follow-up
+            // async send, we may transition back to blocking mode to optimize subsequent synchronous operations
+            // (see SetHandleBlocking). The socket will be set back to non-blocking when another async operation
+            // is performed.
             //
             // Note that there's no synchronization here, so we may set the non-blocking option multiple times
             // in a race.  This should be fine.
