@@ -79,7 +79,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124847")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124847", TestPlatforms.OSX)]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create_IncludeSubdirectories()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -97,9 +97,12 @@ namespace System.IO.Tests
                 string subDirLv2Path = Path.Combine(tempSubDir, subDirLv2);
 
                 // Act - Assert
+                // Only check for events at the specific nested path; spurious events at other paths (e.g. from
+                // directory setup) should not cause the test to fail.
                 ExpectNoEvent(watcher, WatcherChangeTypes.Created,
                     action: () => Directory.CreateDirectory(subDirLv2Path),
-                    cleanup: () => Directory.Delete(subDirLv2Path));
+                    cleanup: () => Directory.Delete(subDirLv2Path),
+                    expectedPath: Path.Combine(linkPath, subDir, subDirLv2));
 
                 // Turn include subdirectories on.
                 watcher.IncludeSubdirectories = true;
