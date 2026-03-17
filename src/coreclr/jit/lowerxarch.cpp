@@ -6121,6 +6121,28 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 idx = m_compiler->gtNewIconNode(0x33, TYP_INT);
                 BlockRange().InsertBefore(node, idx);
+
+                if (varTypeIsSIMD(node->gtType))
+                {
+                    // We're producing a vector result, so just emit DotProduct directly
+                    node->ResetHWIntrinsicId(NI_X86Base_DotProduct, m_compiler, op1, op2, idx);
+                }
+                else
+                {
+                    // We're producing a scalar result, so we only need the result in element 0
+                    //
+                    // However, doing that would break/limit CSE and requires a partial write so
+                    // it's better to just broadcast the value to the entire vector
+
+                    tmp3 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_X86Base_DotProduct,
+                                                                simdBaseType, simdSize);
+                    BlockRange().InsertAfter(idx, tmp3);
+                    LowerNode(tmp3);
+
+                    node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
+                }
+
+                return LowerNode(node);
             }
 
             default:
