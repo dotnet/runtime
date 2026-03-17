@@ -324,8 +324,8 @@ namespace Microsoft.Extensions.Configuration
             BinderOptions options,
             bool isParentCollection)
         {
-            // if binding IConfigurationSection, break early
-            if (type == typeof(IConfigurationSection))
+            // if binding IConfigurationSection or IConfiguration, break early
+            if (type == typeof(IConfigurationSection) || type == typeof(IConfiguration))
             {
                 bindingPoint.TrySetValue(config);
                 return;

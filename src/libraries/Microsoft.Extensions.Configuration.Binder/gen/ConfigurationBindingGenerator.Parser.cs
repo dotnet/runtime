@@ -203,6 +203,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     spec = new ConfigurationSectionSpec(type);
                 }
+                else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfiguration))
+                {
+                    spec = new ConfigurationSectionSpec(type) { IsIConfiguration = true };
+                }
                 else if (type is INamedTypeSymbol)
                 {
                     spec = CreateObjectSpec(typeParseInfo);

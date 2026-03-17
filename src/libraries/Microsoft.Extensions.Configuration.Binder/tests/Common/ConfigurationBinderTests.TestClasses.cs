@@ -65,9 +65,19 @@ namespace Microsoft.Extensions
             public IConfigurationSection Section { get; set; }
         }
 
+        public class ConfigurationIConfigurationOptions
+        {
+            public IConfiguration Section { get; set; }
+        }
+
         public class DerivedOptionsWithIConfigurationSection : DerivedOptions
         {
             public IConfigurationSection DerivedSection { get; set; }
+        }
+
+        public class DerivedOptionsWithIConfiguration : DerivedOptions
+        {
+            public IConfiguration DerivedSection { get; set; }
         }
 
         public record struct RecordStructTypeOptions(string Color, int Length);

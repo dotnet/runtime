@@ -13,6 +13,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal sealed record ConfigurationSectionSpec : SimpleTypeSpec
     {
         public ConfigurationSectionSpec(ITypeSymbol type) : base(type) { }
+
+        /// <summary>
+        /// Indicates whether this spec represents <see cref="IConfiguration"/> (as opposed to <see cref="IConfigurationSection"/>).
+        /// </summary>
+        public bool IsIConfiguration { get; init; }
     }
 
     public sealed record ParsableFromStringSpec : SimpleTypeSpec

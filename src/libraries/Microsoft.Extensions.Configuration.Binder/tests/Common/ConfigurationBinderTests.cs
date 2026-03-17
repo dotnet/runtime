@@ -125,6 +125,87 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanBindIConfiguration()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Section:Integer", "-2"},
+                {"Section:Boolean", "TRUe"},
+                {"Section:Nested:Integer", "11"},
+                {"Section:Virtual", "Sup"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigurationIConfigurationOptions>();
+            var childOptions = options.Section.Get<DerivedOptions>();
+            Test();
+
+            options = (ConfigurationIConfigurationOptions)config.Get(typeof(ConfigurationIConfigurationOptions));
+            childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions));
+            Test();
+
+            options = config.Get<ConfigurationIConfigurationOptions>(options => { });
+            childOptions = options.Section.Get<DerivedOptions>(options => { });
+            Test();
+
+            options = (ConfigurationIConfigurationOptions)config.Get(typeof(ConfigurationIConfigurationOptions), options => { });
+            childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions), options => { });
+            Test();
+
+            void Test()
+            {
+                Assert.True(childOptions.Boolean);
+                Assert.Equal(-2, childOptions.Integer);
+                Assert.Equal(11, childOptions.Nested.Integer);
+                Assert.Equal("Derived:Sup", childOptions.Virtual);
+
+                var section = Assert.IsAssignableFrom<IConfigurationSection>(options.Section);
+                Assert.Equal("Section", section.Key);
+                Assert.Equal("Section", section.Path);
+                Assert.Null(section.Value);
+            }
+        }
+
+        [Fact]
+        public void CanBindIConfigurationWithDerivedOptionsSection()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Section:Integer", "-2"},
+                {"Section:Boolean", "TRUe"},
+                {"Section:Nested:Integer", "11"},
+                {"Section:Virtual", "Sup"},
+                {"Section:DerivedSection:Nested:Integer", "11"},
+                {"Section:DerivedSection:Virtual", "Sup"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigurationIConfigurationOptions>();
+            var childOptions = options.Section.Get<DerivedOptionsWithIConfiguration>();
+            var childDerivedOptions = childOptions.DerivedSection.Get<DerivedOptions>();
+
+            Assert.True(childOptions.Boolean);
+            Assert.Equal(-2, childOptions.Integer);
+            Assert.Equal(11, childOptions.Nested.Integer);
+            Assert.Equal("Derived:Sup", childOptions.Virtual);
+            Assert.Equal(11, childDerivedOptions.Nested.Integer);
+            Assert.Equal("Derived:Sup", childDerivedOptions.Virtual);
+
+            var section = Assert.IsAssignableFrom<IConfigurationSection>(options.Section);
+            Assert.Equal("Section", section.Key);
+            Assert.Equal("Section", section.Path);
+
+            var derivedSection = Assert.IsAssignableFrom<IConfigurationSection>(childOptions.DerivedSection);
+            Assert.Equal("DerivedSection", derivedSection.Key);
+            Assert.Equal("Section:DerivedSection", derivedSection.Path);
+            Assert.Null(section.Value);
+        }
+
+        [Fact]
         public void CanBindWithKeyOverload()
         {
             var dic = new Dictionary<string, string>
@@ -2644,6 +2725,44 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 Assert.Equal("MyString", list[0].Value);
 
                 Assert.Equal("1", list[1].Key);
+                var nestedSection = Assert.IsAssignableFrom<IConfigurationSection>(list[1].GetSection("nested"));
+                Assert.Equal("value", nestedSection.Value);
+            }
+        }
+
+        [Fact]
+        public void GetIConfiguration()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            var obj = configuration.GetSection("value").Get<IConfiguration>();
+            var section = Assert.IsAssignableFrom<IConfigurationSection>(obj);
+            Assert.Equal("MyString", section.Value);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": [ "MyString", { "nested": "value" } ],
+                }
+                """);
+
+            var list = configuration.GetSection("value").Get<List<IConfiguration>>();
+            ValidateList(list);
+
+            var dict = configuration.Get<Dictionary<string, List<IConfiguration>>>();
+            Assert.Equal(1, dict.Count);
+            ValidateList(dict["vaLue"]);
+
+            static void ValidateList(List<IConfiguration> list)
+            {
+                Assert.Equal(2, list.Count);
+                Assert.Equal("0", Assert.IsAssignableFrom<IConfigurationSection>(list[0]).Key);
+                Assert.Equal("MyString", Assert.IsAssignableFrom<IConfigurationSection>(list[0]).Value);
+
+                Assert.Equal("1", Assert.IsAssignableFrom<IConfigurationSection>(list[1]).Key);
                 var nestedSection = Assert.IsAssignableFrom<IConfigurationSection>(list[1].GetSection("nested"));
                 Assert.Equal("value", nestedSection.Value);
             }

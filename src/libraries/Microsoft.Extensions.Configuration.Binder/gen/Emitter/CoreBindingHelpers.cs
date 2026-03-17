@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         case ParsableFromStringSpec stringParsableType:
                             {
-                                EmitCastToIConfigurationSection();
+                                EmitCastToIConfigurationSectionOrThrow();
 
                                 EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: null, out string? {Identifier.value}))");
                                 EmitBindingLogic(
@@ -126,9 +126,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 EmitEndBlock(); // End if-check for input type.
                             }
                             break;
+                        case ConfigurationSectionSpec { IsIConfiguration: true }:
+                            {
+                                _writer.WriteLine($"return {Identifier.configuration};");
+                            }
+                            break;
                         case ConfigurationSectionSpec:
                             {
-                                EmitCastToIConfigurationSection();
+                                EmitCastToIConfigurationSectionOrThrow();
                                 _writer.WriteLine($"return {Identifier.section};");
                             }
                             break;
@@ -161,7 +166,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitEndBlock();
                 _emitBlankLineBeforeNextStatement = true;
 
-                void EmitCastToIConfigurationSection() =>
+                void EmitCastToIConfigurationSectionOrThrow() =>
                     _writer.WriteLine($$"""
                         if ({{Identifier.configuration}} is not {{Identifier.IConfigurationSection}} {{Identifier.section}})
                         {
