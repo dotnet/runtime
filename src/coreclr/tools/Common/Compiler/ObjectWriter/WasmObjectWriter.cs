@@ -195,10 +195,10 @@ namespace ILCompiler.ObjectWriter
             // This is a no-op for now under Wasm
         }
 
-        WasmInstructionGroup GetImagePointerBaseOffset(int offset)
+        WasmInstructionGroup GetImageFunctionPointerBaseOffset(int offset)
         {
             return new WasmInstructionGroup([
-                Global.Get(ImagePointerBaseGlobalIndex),
+                Global.Get(ImageFunctionPointerBaseGlobalIndex),
                 I32.Const(offset),
                 I32.Add,
             ]);
@@ -443,14 +443,14 @@ namespace ILCompiler.ObjectWriter
 
         const int StackPointerGlobalIndex = 0;
         const int ImageBaseGlobalIndex = 1;
-        const int ImagePointerBaseGlobalIndex = 2;
+        const int ImageFunctionPointerBaseGlobalIndex = 2;
 
         private WasmImport[] _defaultImports = new[]
         {
             null, // placeholder for memory, which is set up dynamically in WriteImports()
             new WasmImport("env", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
             new WasmImport("env", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-            new WasmImport("env", "__image_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImagePointerBaseGlobalIndex),
+            new WasmImport("env", "__image_function_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
         };
 
         private void WriteImports()
@@ -494,11 +494,16 @@ namespace ILCompiler.ObjectWriter
         {
             // Generate the function pointer table element that contains function pointers for all of our functions
             int[] functionIndices = new int[_uniqueSymbols.Count];
+            // NOTE: This relies on items in _uniqueSymbols being assigned sequentially and that iteration over Values is order-preserving.
+            // BCL Dictionary preserves insertion order so as long as we keep using it, we would get the function indices in the order they were added.
             _uniqueSymbols.Values.CopyTo(functionIndices, 0);
-            // Enforce that the function pointers are sequential so that (image_pointer_base + 0) == ftn index 0
-            Array.Sort(functionIndices);
-            Debug.Assert(functionIndices.FirstOrDefault() == 0);
-            WriteFunctionElement(GetImagePointerBaseOffset(0), functionIndices);
+            // Enforce that the function pointers are sequential so that (image_function_pointer_base + 0) == ftn index 0
+#if DEBUG
+            for (int i = 0; i < _uniqueSymbols.Count; i++) {
+                Debug.Assert(functionIndices[i] == i);
+            }
+#endif
+            WriteFunctionElement(GetImageFunctionPointerBaseOffset(0), functionIndices);
         }
 
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
