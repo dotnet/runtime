@@ -3717,6 +3717,9 @@ public sealed unsafe partial class SOSDacImpl
                     refs[written++] = _refs[(int)_index++];
 
                 *pFetched = written;
+                // COMPAT: S_FALSE means more items remain, S_OK means enumeration is complete.
+                // This is the inverse of the standard COM IEnumXxx convention, but matches
+                // the legacy DAC behavior (see SOSHandleEnum.Next).
                 hr = _index < _refs.Length ? HResults.S_FALSE : HResults.S_OK;
             }
             catch (System.Exception ex)
@@ -3734,7 +3737,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            _index += count;
+            _index = Math.Min(_index + count, (uint)_refs.Length);
             return HResults.S_OK;
         }
 

@@ -140,10 +140,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private List<GcSlotDesc> _slots = [];
     private int _liveStateBitOffset;
 
-    /* EnumerateLiveSlots state (set per-call) */
-    private bool _reportScratchSlots;
-    private bool _reportFpBasedSlotsOnly;
-
     public GcInfoDecoder(Target target, TargetPointer gcInfoAddress, uint gcVersion)
     {
         _target = target;
@@ -567,9 +563,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         bool reportScratchSlots = flags.HasFlag(CodeManagerFlags.ActiveStackFrame);
         bool reportFpBasedSlotsOnly = flags.HasFlag(CodeManagerFlags.ReportFPBasedSlotsOnly);
 
-        _reportScratchSlots = reportScratchSlots;
-        _reportFpBasedSlotsOnly = reportFpBasedSlotsOnly;
-
         // WantsReportOnlyLeaf is always true for non-legacy formats
         if (flags.HasFlag(CodeManagerFlags.ParentOfFuncletStackFrame))
             return true;
@@ -655,7 +648,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                             if (fReport)
                             {
                                 for (uint slotIndex = readSlots; slotIndex < readSlots + cnt; slotIndex++)
-                                    ReportSlot(slotIndex, reportSlot);
+                                    ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
                             }
                             readSlots += cnt;
                             fSkip = !fSkip;
@@ -674,7 +667,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 for (uint slotIndex = 0; slotIndex < numTracked; slotIndex++)
                 {
                     if (_reader.ReadBits(1, ref bitOffset) != 0)
-                        ReportSlot(slotIndex, reportSlot);
+                        ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
                 }
                 goto ReportUntracked;
             }
@@ -816,7 +809,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 }
 
                 if (isLive != 0)
-                    ReportSlot(slotIdx, reportSlot);
+                    ReportSlot(slotIdx, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
 
                 slotIdx++;
             }
@@ -826,13 +819,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         if (_numUntrackedSlots > 0 && (flags & (CodeManagerFlags.ParentOfFuncletStackFrame | CodeManagerFlags.NoReportUntracked)) == 0)
         {
             for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
-                ReportSlot(slotIndex, reportSlot);
+                ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
         }
 
         return true;
     }
 
-    private void ReportSlot(uint slotIndex, Action<uint, GcSlotDesc, uint> reportSlot)
+    private void ReportSlot(uint slotIndex, bool reportScratchSlots, bool reportFpBasedSlotsOnly, Action<uint, GcSlotDesc, uint> reportSlot)
     {
         Debug.Assert(slotIndex < _slots.Count);
         GcSlotDesc slot = _slots[(int)slotIndex];
@@ -841,19 +834,19 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         if (slot.IsRegister)
         {
             // Skip scratch registers for non-leaf frames
-            if (!_reportScratchSlots && TTraits.IsScratchRegister(slot.RegisterNumber))
+            if (!reportScratchSlots && TTraits.IsScratchRegister(slot.RegisterNumber))
                 return;
             // FP-based-only mode skips all register slots
-            if (_reportFpBasedSlotsOnly)
+            if (reportFpBasedSlotsOnly)
                 return;
         }
         else
         {
             // Skip scratch stack slots for non-leaf frames (slots in the outgoing/scratch area)
-            if (!_reportScratchSlots && TTraits.IsScratchStackSlot(slot.SpOffset, (uint)slot.Base, _fixedStackParameterScratchArea))
+            if (!reportScratchSlots && TTraits.IsScratchStackSlot(slot.SpOffset, (uint)slot.Base, _fixedStackParameterScratchArea))
                 return;
             // FP-based-only mode: only report GC_FRAMEREG_REL slots
-            if (_reportFpBasedSlotsOnly && slot.Base != GcStackSlotBase.GC_FRAMEREG_REL)
+            if (reportFpBasedSlotsOnly && slot.Base != GcStackSlotBase.GC_FRAMEREG_REL)
                 return;
         }
 
@@ -862,7 +855,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private uint FindSafePoint(uint codeOffset)
     {
-        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
 
         uint normBreakOffset = TTraits.NormalizeCodeOffset(codeOffset);
         uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));

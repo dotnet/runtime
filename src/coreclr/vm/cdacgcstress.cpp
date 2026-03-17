@@ -651,7 +651,6 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
         if (!pass)
         {
             // Log the stress point IP and the first cDAC Source for debugging
-            PCODE stressIP = GetIP(regs);
             fprintf(s_logFile, "  stressIP=0x%p firstCdacSource=0x%llx\n",
                 (void*)stressIP,
                 cdacCount > 0 ? (unsigned long long)cdacRefs[0].Source : 0ULL);
