@@ -429,7 +429,7 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitAlignment(nodeContents.Alignment);
                 }
 
-                bool isMethod = node is IMethodBodyNode or AssemblyStubNode or ILCompiler.DependencyAnalysis.ReadyToRun.WasmImportThunk;
+                bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
 #if !READYTORUN
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 #else
@@ -442,13 +442,6 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
-
-                if (node is AssemblyStubNode && _nodeFactory.Target.IsWasm)
-                {
-                    // TODO-Wasm: Handle AssemblyStubNode.
-                    // It is the other primary IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
-                    continue;
-                }
 
                 if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {

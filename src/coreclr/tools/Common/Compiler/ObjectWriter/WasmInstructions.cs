@@ -98,23 +98,16 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return pos;
         }
 
-        public Relocation[] GetRelocations()
+        public int EncodeRelocationCount()
         {
-            Relocation[] bodyRelocations = _body.GetRelocations();
-            if (bodyRelocations.Length == 0)
-            {
-                return bodyRelocations;
-            }
-            else
-            {
-                Relocation[] functionRelocations = new Relocation[bodyRelocations.Length];
-                for (int i = 0; i < bodyRelocations.Length; i++)
-                {
-                    Relocation reloc = bodyRelocations[i];
-                    functionRelocations[i] = new Relocation(reloc.RelocType, reloc.Offset + _locals.Length, reloc.Target);
-                }
-                return functionRelocations;
-            }
+            return _body.EncodeRelocationCount();
+        }
+
+        public int EncodeRelocations(Span<Relocation> buffer)
+        {
+            int relocsEncoded = _body.EncodeRelocations(buffer);
+            WasmExpr.OffsetRelocationsByOffset(buffer.Slice(0, relocsEncoded), _locals.Length);
+            return relocsEncoded;
         }
     }
     public enum WasmExprKind
@@ -231,37 +224,29 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return size + 1;
         }
 
-        public Relocation[] GetRelocations()
+        public int EncodeRelocationCount()
         {
-            List<Relocation> relocations = null;
-            int offset = 0;
+            int count = 0;
             foreach (var expr in _wasmExprs)
             {
-                Relocation[] exprRelocations = expr.GetRelocations();
-                if (exprRelocations.Length > 0)
-                {
-                    if (relocations == null)
-                    {
-                        relocations = new List<Relocation>();
-                    }
+                count += expr.EncodeRelocationCount();
+            }
+            return count;
+        }
+        public int EncodeRelocations(Span<Relocation> buffer)
+        {
+            int offset = 0;
+            int totalRelocsEncoded = 0;
+            foreach (var expr in _wasmExprs)
+            {
+                int relocsEncoded = expr.EncodeRelocations(buffer.Slice(totalRelocsEncoded));
+                Debug.Assert(relocsEncoded == expr.EncodeRelocationCount());
+                WasmExpr.OffsetRelocationsByOffset(buffer.Slice(totalRelocsEncoded, relocsEncoded), offset);
 
-                    foreach (Relocation relocation in exprRelocations)
-                    {
-                        relocations.Add(new Relocation(relocation.RelocType, relocation.Offset + offset, relocation.Target));
-                    }
-                }
-
+                totalRelocsEncoded += relocsEncoded;
                 offset += expr.EncodeSize();
             }
-
-            if (relocations != null)
-            {
-                return relocations.ToArray();
-            }
-            else
-            {
-                return Array.Empty<Relocation>();
-            }
+            return totalRelocsEncoded;
         }
     }
 
@@ -278,7 +263,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         {
             if (_kind.IsVariableLengthInstruction())
             {
-                buffer[0] = (byte)((uint)_kind >> 8);
+                buffer[0] = (byte)((uint)_kind >> 24);
                 return 1 + DwarfHelper.WriteULEB128(buffer.Slice(1), ((uint)_kind) & 0xFFFFFF);
             }
             else
@@ -287,7 +272,21 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
                 return 1;
             }
         }
-        public virtual Relocation[] GetRelocations() => Array.Empty<Relocation>();
+        public virtual int EncodeRelocationCount() => 0;
+        public virtual int EncodeRelocations(Span<Relocation> buffer)
+        {
+            Debug.Assert(buffer.Length >= EncodeRelocationCount());
+            return 0;
+        }
+
+        public static void OffsetRelocationsByOffset(Span<Relocation> buffer, int offset)
+        {
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                Relocation r = buffer[i];
+                buffer[i] = new Relocation(r.RelocType, r.Offset + offset, r.Target);
+            }
+        }
     }
 
     class WasmMemoryArgInstruction : WasmExpr
@@ -384,9 +383,11 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return pos;
         }
 
-        public override Relocation[] GetRelocations()
+        public override int EncodeRelocationCount() => 1;
+        public override int EncodeRelocations(Span<Relocation> buffer)
         {
-            return new Relocation[] { new Relocation(RelocType.WASM_TYPE_INDEX_LEB, base.EncodeSize(), _type) };
+            buffer[0] = new Relocation(RelocType.WASM_TYPE_INDEX_LEB, base.EncodeSize(), _type);
+            return 1;
         }
     }
 
@@ -427,9 +428,11 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return pos;
         }
 
-        public override Relocation[] GetRelocations()
+        public override int EncodeRelocationCount() => 1;
+        public override int EncodeRelocations(Span<Relocation> buffer)
         {
-            return new Relocation[] { new Relocation(_relocType, base.EncodeSize(), _symbol)};
+            buffer[0] = new Relocation(_relocType, base.EncodeSize(), _symbol);
+            return 1;
         }
     }
 

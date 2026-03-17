@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class WasmImportThunk : ObjectNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmImportThunk : AssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly TypeSystemContext _context;
         private readonly Import _helperCell;
@@ -23,8 +23,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ImportThunkKind _thunkKind;
 
         private readonly ImportSectionNode _containingImportSection;
-
-        public int Offset => 0;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -44,7 +42,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (useVirtualCall)
             {
-                throw new System.Exception();
+                // In wasm we should always be using a helper to get the function pointer target, and then dispatching on that instead of using a thunk
+                throw new System.NotSupportedException();
             }
             else if (useJumpableStub)
             {
@@ -52,7 +51,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else if (helperId == ReadyToRunHelper.GetString)
             {
-                throw new System.Exception();
+                // This helper is only used for a size optimization, which will not be relevant in the WASM case, so we should fix any logic in the compiler that tries to use this sort of helper
+                throw new System.NotSupportedException();
             }
             else if (helperId == ReadyToRunHelper.DelayLoad_MethodCall ||
                 helperId == ReadyToRunHelper.DelayLoad_Helper ||
@@ -63,15 +63,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
+                // Unknown helper kind, we should not be trying to produce a thunk for it
                 throw new System.Exception();
             }
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("WasmDelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
             sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind})");
+            _typeNode.AppendMangledName(nameMangler, sb);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -105,19 +107,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
-        public override ObjectData GetData(NodeFactory factory, System.Boolean relocsOnly = false)
+        protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
             Debug.Assert(_thunkKind == ImportThunkKind.DelayLoadHelper);
+            Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
+
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 });
-            if (relocsOnly)
-            {
-                return new ObjectData(Array.Empty<byte>(), new Relocation[] {
-                    new Relocation(RelocType.WASM_TYPE_INDEX_LEB,0, _typeNode),
-                    new Relocation(RelocType.WASM_TYPE_INDEX_LEB,0, helperTypeIndex),
-                    new Relocation(RelocType.WASM_MEMORY_ADDR_SLEB,0, _helperCell)
-                }
-                , 0, new ISymbolDefinitionNode[] { this });
-            }
+
             // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
             // The general logic is...
             // Compute stack offset needed.
@@ -161,7 +157,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // local.tee 0
             expressions.Add(Local.Tee(0));
 
-            // table.set {stack pointer global}  // This is a callout from managed to native, we need to set the global stack pointer so that C++ code will work
+            // global.set {stack pointer global}  // This is a callout from managed to native, we need to set the global stack pointer so that C++ code will work
             expressions.Add(Global.Set(0));
 
             //
@@ -198,7 +194,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case WasmValueType.I64:
                     case WasmValueType.F64:
                         currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        if (type == WasmValueType.I32)
+                        if (type == WasmValueType.I64)
                         {
                             expressions.Add(I64.Store((ulong)currentOffset));
                         }
@@ -228,7 +224,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Global.Get(1)); // The module base address is passed as the third argument
 
             // Load the helper function address and dispatch
-            // table.get {module base}
+            // global.get {module base}
             expressions.Add(Global.Get(1)); // Module base?
             // i32.const (RVA of R2RHelperID)
             expressions.Add(I32.ConstRVA(_helperCell));
@@ -239,10 +235,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // call_indirect (i32, i32, i32) (returns i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
-            // local.set (PortableEntrypointThunk)  // At this point we can overwrite the incoming portable entrypoint local, since it will no longer be used
+            // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value it will no longer be used
             expressions.Add(Local.Set(portableEntrypointLocalIndex));
             //
-            // ;Setup sp arg
+             // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
             // local.get 0
             expressions.Add(Local.Get(0));
             // i32.const {sizeofstoredlocals}
@@ -281,7 +277,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case WasmValueType.I64:
                     case WasmValueType.F64:
                         currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        if (type == WasmValueType.I32)
+                        if (type == WasmValueType.I64)
                         {
                             expressions.Add(I64.Load((ulong)currentOffset));
                         }
@@ -314,10 +310,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
 
             // Encode as a complete function body
-            WasmFunctionBody funcBody = new WasmFunctionBody(_typeNode.Type, expressions.ToArray());
-            byte[] encodedThunk = new byte[funcBody.EncodeSize()];
-            funcBody.Encode(encodedThunk.AsSpan());
-            return new ObjectData(encodedThunk, funcBody.GetRelocations(), 1, new ISymbolDefinitionNode[] { this });
+            instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, expressions.ToArray());
         }
+
+        protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref X86.X86Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref ARM.ARMEmitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref LoongArch64.LoongArch64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+        protected override void EmitCode(NodeFactory factory, ref RiscV64.RiscV64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }
+
     }
 }

@@ -68,17 +68,17 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WriteSignatureIndexForFunction(node.Signature, 4, node.IsUnmanagedCallersOnly, node);
+            WriteSignatureIndexForFunction(node.Signature, node.IsUnmanagedCallersOnly, node);
 
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
         }
 
-        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, int pointerSize, bool isUnmanagedCallersOnly, ISymbolNode node)
+        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, bool isUnmanagedCallersOnly, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(managedSignature, pointerSize, isUnmanagedCallersOnly);
+            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(managedSignature, isUnmanagedCallersOnly);
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {

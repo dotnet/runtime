@@ -3,6 +3,7 @@
 
 using Internal.ReadyToRunConstants;
 using Internal.Text;
+using Internal.JitInterface;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -16,11 +17,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public WasmImportThunkPortableEntrypoint(NodeFactory factory, Import import, ReadyToRunHelper helperId, bool useVirtualCall, bool useJumpableStub)
         {
+            Debug.Assert(!useVirtualCall); // We don't currently support these for WASM, so detect them early so we can diagnose issues faster.
+            Debug.Assert(helperId != ReadyToRunHelper.GetString);
             _import = import;
             _helperId = helperId;
             _useVirtualCall = useVirtualCall;
             _useJumpableStub = useJumpableStub;
-            Debug.Assert(import.Signature is MethodFixupSignature);
+            Debug.Assert(import.Signature is MethodFixupSignature || import.Signature is GenericLookupSignature);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -49,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             WasmImportThunkPortableEntrypoint otherNode = (WasmImportThunkPortableEntrypoint)other;
-            int result = _import.CompareToImpl((Import)otherNode._import, comparer);
+            int result = comparer.Compare(_import, otherNode._import);
             if (result != 0)
                 return result;
 
@@ -60,19 +63,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return 0;
         }
 
+        private static CorInfoWasmType[] _genericLookupTypes32Bit = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
+        private static CorInfoWasmType[] _genericLookupTypes64Bit = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I64, CorInfoWasmType.CORINFO_WASM_TYPE_I64, CorInfoWasmType.CORINFO_WASM_TYPE_I64 };
+
         public override ObjectData GetData(NodeFactory factory, System.Boolean relocsOnly = false)
         {
+            // The layout of this matches READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT
+
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
-            var typeNode = factory.WasmTypeNode(((MethodFixupSignature)(_import.Signature)).Method);
+            WasmTypeNode typeNode;
+
+            if (_import.Signature is GenericLookupSignature)
+            {
+                typeNode = factory.WasmTypeNode(factory.Target.PointerSize == 4 ? _genericLookupTypes32Bit : _genericLookupTypes64Bit);
+            }
+            else
+            {
+                typeNode = factory.WasmTypeNode(((MethodFixupSignature)(_import.Signature)).Method);
+            }
             builder.EmitReloc(factory.WasmImportThunk(typeNode, _helperId, _import.Table, _useVirtualCall, _useJumpableStub), RelocType.IMAGE_REL_BASED_ADDR32NB);
             builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);
-            if (factory.Target.PointerSize == 8)
-            {
-                builder.EmitUInt(0); // Padding to make the structure the same size on 32 and 64 bit
-            }
-            builder.EmitZeroPointer();
-            builder.EmitUInt(0x12345678); // A value of 0x12345678 is kR2RImportThunk
             if (factory.Target.PointerSize == 8)
             {
                 builder.EmitUInt(0); // Padding to make the structure the same size on 32 and 64 bit

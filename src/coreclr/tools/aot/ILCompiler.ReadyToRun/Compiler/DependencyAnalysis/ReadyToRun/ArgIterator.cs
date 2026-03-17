@@ -13,7 +13,6 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal;
-using System.ComponentModel.Design;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 
@@ -869,7 +868,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
 
                     case TargetArchitecture.Wasm32:
-                        _wasmOfsStack = 0;
+                        _wasmOfsStack = numRegistersUsed * _transitionBlock.PointerSize;
                         break;
 
                     case TargetArchitecture.ARM:
@@ -1718,6 +1717,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         maxOffset = endOfs;
                     }
                 }
+
+                if (maxOffset == 0 && _transitionBlock.IsWasm32)
+                {
+                    // Wasm puts all arguments on the stack, even the unnamed ones like the param registers, this pointer and async continuation. If we didn't see any named arguments, then we need to account for the unnamed ones here.
+                    maxOffset = _wasmOfsStack;
+                }
+
                 // Clear the iterator started flag
                 _ITERATION_STARTED = false;
 

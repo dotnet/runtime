@@ -289,7 +289,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmImportThunk(this, key.TypeNode, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
             });
 
-            _WasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
+            _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
             {
                 return new WasmImportThunkPortableEntrypoint(this, key.Import, key.Helper, key.UseVirtualCall, key.UseJumpableStub);
             });
@@ -801,11 +801,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
 
-        private NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode> _WasmImportThunkPortableEntrypoints;
+        private NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode> _wasmImportThunkPortableEntrypoints ;
         public ISymbolDefinitionNode WasmImportThunkPortableEntrypoint(Import import, ReadyToRunHelper helper, bool useVirtualCall, bool useJumpableStub)
         {
             WasmImportThunkPortableEntrypointKey thunkKey = new WasmImportThunkPortableEntrypointKey(import, helper, useVirtualCall, useJumpableStub);
-            return _WasmImportThunkPortableEntrypoints.GetOrAdd(thunkKey);
+            return _wasmImportThunkPortableEntrypoints .GetOrAdd(thunkKey);
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)

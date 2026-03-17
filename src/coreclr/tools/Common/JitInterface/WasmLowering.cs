@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 using Internal.TypeSystem;
@@ -158,13 +157,13 @@ namespace Internal.JitInterface
         /// <returns></returns>
         public static WasmFuncType GetSignature(MethodDesc method)
         {
-            return GetSignature(method.Signature, method.Context.Target.PointerSize, method.IsUnmanagedCallersOnly);
+            return GetSignature(method.Signature, method.IsUnmanagedCallersOnly);
         }
 
-        public static WasmFuncType GetSignature(MethodSignature signature, int pointerSize, bool isUnmanagedCallersOnly)
+        public static WasmFuncType GetSignature(MethodSignature signature, bool isUnmanagedCallersOnly)
         {
             TypeDesc returnType = signature.ReturnType;
-            WasmValueType pointerType = (pointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+            WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
 
             // Determine if the return value is via a return buffer
             //
