@@ -78,8 +78,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the host to react to the background service failure
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var stoppingTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lifetime.ApplicationStopping.Register(() => stoppingTcs.TrySetResult(null));
+            Assert.Equal(stoppingTcs.Task, await Task.WhenAny(stoppingTcs.Task, Task.Delay(TimeSpan.FromSeconds(10))));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -107,8 +110,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            // Wait for the host to react to the background service failure
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            var stoppingTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lifetime.ApplicationStopping.Register(() => stoppingTcs.TrySetResult(null));
+            Assert.Equal(stoppingTcs.Task, await Task.WhenAny(stoppingTcs.Task, Task.Delay(TimeSpan.FromSeconds(10))));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -222,7 +228,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             using var host = builder.Build();
             await host.StartAsync();
 
-            // Wait a bit for the background service to fail
+            // Wait a bit for the background service to fail.
+            // This shouldn't cause flakiness: bad order of operations could cause the test to succeed when it should fail, but it shouldn't cause the test to fail when it should succeed.
+            // Note that waiting for a signal from the service here wouldn't be enough; we also need to wait for the host to process the exception.
             await Task.Delay(TimeSpan.FromMilliseconds(200));
 
             await host.StopAsync();
