@@ -44,6 +44,7 @@
     <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;createdump;singlefilehost;crossgen2" CertificateName="MacDeveloperHarden" />
     <!-- Sign these Mac binaries without hardening enabled, making them compatible with hardening needs more work -->
     <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="corerun;ilc;ilasm;ildasm;mono-aot-cross;Mono;llc;opt" CertificateName="MacDeveloper" />
+    <FileSignInfo Condition="'$(TargetsAppleMobile)' == 'true'" Include="Mono" CertificateName="MacDeveloper" />
     <!-- Additionally, we need to notarize any .pkg files -->
     <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
@@ -53,6 +54,7 @@
     <FileExtensionSignInfo Update=".js" CertificateName="None" />
 
     <!-- Third-party components which should be signed.  -->
+    <FileSignInfo Include="Antlr4.Runtime.Standard.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />

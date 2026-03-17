@@ -43,7 +43,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasOneSerialPort))]
         public void WriteAfterClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -59,7 +59,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasOneSerialPort))]
         public void WriteAfterSerialStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -74,7 +74,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Timeout()
         {
             var rndGen = new Random(-55);
@@ -85,7 +85,7 @@ namespace System.IO.Ports.Tests
             VerifyTimeout(writeTimeout);
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -132,7 +132,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasOneSerialPort))]
         public void Handshake_None()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -154,20 +154,20 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasNullModem))]
         public void Handshake_RequestToSend()
         {
             Verify_Handshake(Handshake.RequestToSend);
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasNullModem))]
         public void Handshake_XOnXOff()
         {
             Verify_Handshake(Handshake.XOnXOff);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginWrite_Generic), nameof(HasNullModem))]
         public void Handshake_RequestToSendXOnXOff()
         {
             Verify_Handshake(Handshake.RequestToSendXOnXOff);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -22,7 +23,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct PROCESSENTRY32
+        internal struct PROCESSENTRY32
         {
             internal int dwSize;
             internal int cntUsage;
@@ -33,7 +34,17 @@ internal static partial class Interop
             internal int th32ParentProcessID;
             internal int pcPriClassBase;
             internal int dwFlags;
-            internal fixed char szExeFile[MAX_PATH];
+#if NET
+            internal ExeFileNameBuffer szExeFile;
+
+            [InlineArray(MAX_PATH)]
+            internal struct ExeFileNameBuffer
+            {
+                private char _element0;
+            }
+#else
+            internal unsafe fixed char szExeFile[MAX_PATH];
+#endif
         }
 
         // https://learn.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-createtoolhelp32snapshot

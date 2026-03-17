@@ -2513,6 +2513,9 @@ public:
     template <typename TVisitor>
     VisitResult VisitOperands(TVisitor visitor);
 
+    template <typename TVisitor>
+    VisitResult VisitOperandUses(TVisitor visitor);
+
 public:
     bool Precedes(GenTree* other);
 
@@ -8138,6 +8141,9 @@ public:
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
+#ifdef TARGET_WASM
+        BlkOpKindNativeOpcode,
+#endif
     } gtBlkOpKind;
 
     bool gtBlkOpGcUnsafe;

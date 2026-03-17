@@ -417,8 +417,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_FIELD_ACCESS_EXCEPTION,
     CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
-    CORINFO_HELP_ENDCATCH,          // call back into the EE at the end of a catch block
-
     /* Synchronization */
 
     CORINFO_HELP_MON_ENTER,
@@ -595,6 +593,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
+    // Helpers for runtime async (see System.Runtime.CompilerServices.AsyncHelpers)
     CORINFO_HELP_ALLOC_CONTINUATION,
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
@@ -1487,7 +1486,6 @@ enum CorInfoTokenKind
 
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-    CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -2288,6 +2286,16 @@ public:
         CORINFO_METHOD_HANDLE ftn,
         CORINFO_METHOD_HANDLE* methodArg,
         CORINFO_CLASS_HANDLE* classArg
+        ) = 0;
+
+    // Get the other variant of an async method, if possible.
+    // If this is a method with async calling convention: returns the corresponding task-returning method.
+    // If this is a task-returning method: returns the corresponding method with async calling convention.
+    // Otherwise returns null.
+    // variantIsThunk is set to true if the returned method is a thunk provided by the VM.
+    virtual CORINFO_METHOD_HANDLE getAsyncOtherVariant(
+        CORINFO_METHOD_HANDLE ftn,
+        bool*                 variantIsThunk
         ) = 0;
 
     // Given T, return the type of the default Comparer<T>.

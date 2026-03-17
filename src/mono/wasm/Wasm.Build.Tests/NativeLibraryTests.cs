@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
+    [TestCategory("native")]
     public class NativeLibraryTests : WasmTemplateTestsBase
     {
         public NativeLibraryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

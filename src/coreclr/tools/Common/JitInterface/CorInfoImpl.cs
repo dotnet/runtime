@@ -25,13 +25,13 @@ using Internal.Pgo;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 #if READYTORUN
+using ILCompiler.ReadyToRun.TypeSystem;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
-
-using ILCompiler.ObjectWriter;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
@@ -120,7 +120,7 @@ namespace Internal.JitInterface
         private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitLibrary)]
-        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private static extern IntPtr GetJitHost(IntPtr configProvider);
@@ -390,6 +390,10 @@ namespace Internal.JitInterface
 #else
                 ThrowHelper.ThrowInvalidProgramException();
 #endif
+            }
+            if (result == CorJitResult.CORJIT_OUTOFMEM)
+            {
+                throw new OutOfMemoryException();
             }
             if (result != CorJitResult.CORJIT_OK)
             {
@@ -698,8 +702,8 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
-            _asyncResumptionStub = null;
 #endif
+            _asyncResumptionStub = null;
 
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -1385,7 +1389,9 @@ namespace Internal.JitInterface
                 // cases where the virtual function resolution algorithm either does not function, or is not used
                 // correctly.
 #if DEBUG
-                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
+                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN
+                    // TODO: resolution and devirtualization of async variants https://github.com/dotnet/runtime/issues/124620
+                    && !decl.IsAsyncVariant())
                 {
                     Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targeting type {objType}");
                     Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
@@ -1556,6 +1562,27 @@ namespace Internal.JitInterface
             *methodArg = null;
             *classArg = null;
             return null;
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            if (method.IsAsyncVariant())
+            {
+                method = method.GetTargetOfAsyncVariant();
+            }
+            else if (method.Signature.ReturnsTaskOrValueTask())
+            {
+                method = method.GetAsyncVariant();
+            }
+            else
+            {
+                variantIsThunk = false;
+                return null;
+            }
+
+            variantIsThunk = method?.IsAsyncThunk() ?? false;
+            return ObjectToHandle(method);
         }
 
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
@@ -1778,7 +1805,7 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
-            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
+            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
 
             return result;
@@ -1868,7 +1895,7 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
-                if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
+                if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 {
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
@@ -1877,20 +1904,6 @@ namespace Internal.JitInterface
 
                     // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                     allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-#if !READYTORUN
-                    if (allowAsyncVariant)
-                    {
-                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || method.IsCallEffectivelyDirect();
-                        if (isDirect && !method.IsAsync)
-                        {
-                            // Async variant would be a thunk. Do not resolve direct calls
-                            // to async thunks. That just creates and JITs unnecessary
-                            // thunks, and the thunks are harder for the JIT to optimize.
-                            allowAsyncVariant = false;
-                        }
-                    }
-#endif
 
                     method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
@@ -3860,20 +3873,6 @@ namespace Internal.JitInterface
 #endif
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
-#pragma warning restore CA1822 // Mark members as static
-        {
-#if READYTORUN
-            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
-#else
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
-            return ObjectToHandle(_asyncResumptionStub);
-#endif
-        }
-
         private byte[] _code;
         private byte[] _coldCode;
         private int _codeAlignment;
@@ -4499,7 +4498,17 @@ namespace Internal.JitInterface
                 )
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
+
+                // Runtime cannot handle hot/cold splitting for async methods
+                flags.Clear(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
             }
+
+#if READYTORUN
+            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+            }
+#endif
 
             return (uint)sizeof(CORJIT_FLAGS);
         }

@@ -8,27 +8,30 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Pkcs.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct EssCertIdV2
+    file static class SharedEssCertIdV2
     {
-        private static ReadOnlySpan<byte> DefaultHashAlgorithm => [0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01];
-
-        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
-        internal ReadOnlyMemory<byte> Hash;
-        internal System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial? IssuerSerial;
+        internal static ReadOnlySpan<byte> DefaultHashAlgorithm => [0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01];
 
 #if DEBUG
-        static EssCertIdV2()
+        static SharedEssCertIdV2()
         {
             EssCertIdV2 decoded = default;
             ReadOnlyMemory<byte> rebind = default;
-            AsnValueReader reader;
+            ValueAsnReader reader;
 
-            reader = new AsnValueReader(DefaultHashAlgorithm, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedEssCertIdV2.DefaultHashAlgorithm, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.HashAlgorithm);
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct EssCertIdV2
+    {
+        internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
+        internal ReadOnlyMemory<byte> Hash;
+        internal System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial? IssuerSerial;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -45,7 +48,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
                 HashAlgorithm.Encode(tmp);
 
-                if (!tmp.EncodedValueEquals(DefaultHashAlgorithm))
+                if (!tmp.EncodedValueEquals(SharedEssCertIdV2.DefaultHashAlgorithm))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -70,7 +73,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out EssCertIdV2 decoded);
                 reader.ThrowIfNotEmpty();
@@ -82,12 +85,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
         {
             try
             {
@@ -99,11 +102,11 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out EssCertIdV2 decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader defaultReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
@@ -115,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(DefaultHashAlgorithm, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedEssCertIdV2.DefaultHashAlgorithm, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.HashAlgorithm);
             }
 
