@@ -20,7 +20,7 @@ namespace System.Diagnostics
 
         // When not disabled via the environment variable, use overlapped (async) I/O for the parent's end
         // of stdout/stderr pipes so that reads don't tie up a thread-pool thread per pipe instance.
-        private static readonly bool s_useAsyncReads = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_DIAGNOSTICS_PROCESS_DISABLE_ASYNC_READ") != "true";
+        private static readonly bool s_useAsyncReads = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_DIAGNOSTICS_PROCESS_DISABLE_ASYNC_READS") != "true";
 
         private string? _processName;
 
@@ -818,7 +818,7 @@ namespace System.Diagnostics
             // Only the parent's read end benefits from async I/O; stdin is always sync.
             // asyncRead applies to the read handle; asyncWrite to the write handle.
             bool asyncRead = !parentInputs && asyncReads;
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: asyncRead);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: asyncRead, asyncWrite: false);
 
             // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
             // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
