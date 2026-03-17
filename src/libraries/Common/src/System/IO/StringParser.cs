@@ -134,44 +134,37 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int32.</summary>
-        public unsafe int ParseNextInt32()
+        public int ParseNextInt32()
         {
             MoveNextOrFail();
 
+            if (_startIndex == _endIndex)
+            {
+                ThrowForInvalidData();
+            }
+
             bool negative = false;
             int result = 0;
+            int i = _startIndex;
 
-            fixed (char* bufferPtr = _buffer)
+            if (_buffer[i] == '-')
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-
-                if (p == end)
+                negative = true;
+                i++;
+                if (i == _endIndex)
                 {
                     ThrowForInvalidData();
                 }
+            }
 
-                if (*p == '-')
+            for (; i < _endIndex; i++)
+            {
+                int d = _buffer[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    negative = true;
-                    p++;
-                    if (p == end)
-                    {
-                        ThrowForInvalidData();
-                    }
+                    ThrowForInvalidData();
                 }
-
-                while (p != end)
-                {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
-
-                    p++;
-                }
+                result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
             }
 
             Debug.Assert(result == int.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -179,44 +172,37 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int64.</summary>
-        public unsafe long ParseNextInt64()
+        public long ParseNextInt64()
         {
             MoveNextOrFail();
 
+            if (_startIndex == _endIndex)
+            {
+                ThrowForInvalidData();
+            }
+
             bool negative = false;
             long result = 0;
+            int i = _startIndex;
 
-            fixed (char* bufferPtr = _buffer)
+            if (_buffer[i] == '-')
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-
-                if (p == end)
+                negative = true;
+                i++;
+                if (i == _endIndex)
                 {
                     ThrowForInvalidData();
                 }
+            }
 
-                if (*p == '-')
+            for (; i < _endIndex; i++)
+            {
+                int d = _buffer[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    negative = true;
-                    p++;
-                    if (p == end)
-                    {
-                        ThrowForInvalidData();
-                    }
+                    ThrowForInvalidData();
                 }
-
-                while (p != end)
-                {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
-
-                    p++;
-                }
+                result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
             }
 
             Debug.Assert(result == long.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -224,7 +210,7 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as a UInt32.</summary>
-        public unsafe uint ParseNextUInt32()
+        public uint ParseNextUInt32()
         {
             MoveNextOrFail();
             if (_startIndex == _endIndex)
@@ -233,21 +219,14 @@ namespace System.IO
             }
 
             uint result = 0;
-            fixed (char* bufferPtr = _buffer)
+            for (int i = _startIndex; i < _endIndex; i++)
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-                while (p != end)
+                int d = _buffer[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = (uint)checked((result * 10) + d);
-
-                    p++;
+                    ThrowForInvalidData();
                 }
+                result = (uint)checked((result * 10) + d);
             }
 
             Debug.Assert(result == uint.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -255,26 +234,23 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as a UInt64.</summary>
-        public unsafe ulong ParseNextUInt64()
+        public ulong ParseNextUInt64()
         {
             MoveNextOrFail();
+            if (_startIndex == _endIndex)
+            {
+                ThrowForInvalidData();
+            }
 
             ulong result = 0;
-            fixed (char* bufferPtr = _buffer)
+            for (int i = _startIndex; i < _endIndex; i++)
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-                while (p != end)
+                int d = _buffer[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = checked((result * 10ul) + (ulong)d);
-
-                    p++;
+                    ThrowForInvalidData();
                 }
+                result = checked((result * 10ul) + (ulong)d);
             }
 
             Debug.Assert(result == ulong.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
