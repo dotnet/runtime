@@ -7,10 +7,10 @@
 
 #include <clrtypes.h>
 
+#include "../vm/cdacdata.h"
+
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_
-
-template<typename T> struct cdac_data;
 
 // --------------------------------------------------------------------------------
 // Describes information needed to make an OSR transition
@@ -219,7 +219,7 @@ struct PatchpointInfo
     }
 
 private:
-    friend struct cdac_data<PatchpointInfo>;
+    friend struct ::cdac_data<PatchpointInfo>;
 
     enum
     {
