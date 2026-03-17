@@ -450,6 +450,16 @@ void UnwindInfoTable::FlushPendingEntries()
     {
         for(int i = 0; i < unwindInfoCount; i++)
             AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, &unwindInfo[i], pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+
+        // Flush any entries that were buffered above to the OS can unwind this
+        // method immediately. Otherwise, we may end up with broken stack traces
+        // for recently JITed methods.
+        CrstHolder ch(s_pUnwindInfoTableLock);
+        UnwindInfoTable* unwindInfoTable = pRS->_pUnwindInfoTable;
+        if (unwindInfoTable != NULL && unwindInfoTable->cPendingCount > 0)
+        {
+            unwindInfoTable->FlushPendingEntries();
+        }
     }
 }
 
