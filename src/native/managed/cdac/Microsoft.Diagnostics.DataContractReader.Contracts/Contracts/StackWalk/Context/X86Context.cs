@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
@@ -82,18 +85,18 @@ public struct X86Context : IPlatformContext
         if (name.Equals("fs", StringComparison.OrdinalIgnoreCase)) { Fs = (uint)value.Value; return true; }
         if (name.Equals("es", StringComparison.OrdinalIgnoreCase)) { Es = (uint)value.Value; return true; }
         if (name.Equals("ds", StringComparison.OrdinalIgnoreCase)) { Ds = (uint)value.Value; return true; }
-        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { Cs = (uint)value.Value; return true; }
-        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { Ss = (uint)value.Value; return true; }
         if (name.Equals("edi", StringComparison.OrdinalIgnoreCase)) { Edi = (uint)value.Value; return true; }
         if (name.Equals("esi", StringComparison.OrdinalIgnoreCase)) { Esi = (uint)value.Value; return true; }
         if (name.Equals("ebx", StringComparison.OrdinalIgnoreCase)) { Ebx = (uint)value.Value; return true; }
         if (name.Equals("edx", StringComparison.OrdinalIgnoreCase)) { Edx = (uint)value.Value; return true; }
         if (name.Equals("ecx", StringComparison.OrdinalIgnoreCase)) { Ecx = (uint)value.Value; return true; }
         if (name.Equals("eax", StringComparison.OrdinalIgnoreCase)) { Eax = (uint)value.Value; return true; }
-        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { EFlags = (uint)value.Value; return true; }
         if (name.Equals("ebp", StringComparison.OrdinalIgnoreCase)) { Ebp = (uint)value.Value; return true; }
         if (name.Equals("eip", StringComparison.OrdinalIgnoreCase)) { Eip = (uint)value.Value; return true; }
+        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { Cs = (uint)value.Value; return true; }
+        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { EFlags = (uint)value.Value; return true; }
         if (name.Equals("esp", StringComparison.OrdinalIgnoreCase)) { Esp = (uint)value.Value; return true; }
+        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { Ss = (uint)value.Value; return true; }
         return false;
     }
 
@@ -118,54 +121,31 @@ public struct X86Context : IPlatformContext
         if (name.Equals("fs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fs); return true; }
         if (name.Equals("es", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Es); return true; }
         if (name.Equals("ds", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ds); return true; }
-        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cs); return true; }
-        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ss); return true; }
         if (name.Equals("edi", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Edi); return true; }
         if (name.Equals("esi", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Esi); return true; }
         if (name.Equals("ebx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ebx); return true; }
         if (name.Equals("edx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Edx); return true; }
         if (name.Equals("ecx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ecx); return true; }
         if (name.Equals("eax", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Eax); return true; }
-        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(EFlags); return true; }
         if (name.Equals("ebp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ebp); return true; }
         if (name.Equals("eip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Eip); return true; }
+        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cs); return true; }
+        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(EFlags); return true; }
         if (name.Equals("esp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Esp); return true; }
+        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ss); return true; }
         return false;
     }
 
 
-    public bool TrySetRegister(int number, TargetNUInt value)
+    // Maps numbered GP registers (0–7) to their canonical names for by-number dispatch.
+    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
     {
-        switch (number)
-        {
-            case 0: Eax = (uint)value.Value; return true;
-            case 1: Ecx = (uint)value.Value; return true;
-            case 2: Edx = (uint)value.Value; return true;
-            case 3: Ebx = (uint)value.Value; return true;
-            case 4: Esp = (uint)value.Value; return true;
-            case 5: Ebp = (uint)value.Value; return true;
-            case 6: Esi = (uint)value.Value; return true;
-            case 7: Edi = (uint)value.Value; return true;
-            default: return false;
-        }
-    }
+        [0] = "Eax", [1] = "Ecx", [2] = "Edx", [3] = "Ebx",
+        [4] = "Esp", [5] = "Ebp", [6] = "Esi", [7] = "Edi",
+    }.ToFrozenDictionary();
 
-    public bool TryReadRegister(int number, out TargetNUInt value)
-    {
-        value = default;
-        switch (number)
-        {
-            case 0: value = new TargetNUInt(Eax); return true;
-            case 1: value = new TargetNUInt(Ecx); return true;
-            case 2: value = new TargetNUInt(Edx); return true;
-            case 3: value = new TargetNUInt(Ebx); return true;
-            case 4: value = new TargetNUInt(Esp); return true;
-            case 5: value = new TargetNUInt(Ebp); return true;
-            case 6: value = new TargetNUInt(Esi); return true;
-            case 7: value = new TargetNUInt(Edi); return true;
-            default: return false;
-        }
-    }
+    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
+        => s_registersByNumber.TryGetValue(number, out name);
 
     [FieldOffset(0x0)]
     public uint ContextFlags;

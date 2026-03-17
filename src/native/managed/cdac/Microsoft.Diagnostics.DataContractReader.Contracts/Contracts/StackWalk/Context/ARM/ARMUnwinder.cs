@@ -918,27 +918,9 @@ internal class ARMUnwinder(Target target)
 
     private static void SetRegister(ref ARMContext context, int regIndex, uint value)
     {
-        switch (regIndex)
-        {
-            case 0: context.R0 = value; break;
-            case 1: context.R1 = value; break;
-            case 2: context.R2 = value; break;
-            case 3: context.R3 = value; break;
-            case 4: context.R4 = value; break;
-            case 5: context.R5 = value; break;
-            case 6: context.R6 = value; break;
-            case 7: context.R7 = value; break;
-            case 8: context.R8 = value; break;
-            case 9: context.R9 = value; break;
-            case 10: context.R10 = value; break;
-            case 11: context.R11 = value; break;
-            case 12: context.R12 = value; break;
-            case 13: context.Sp = value; break;
-            case 14: context.Lr = value; break;
-            case 15: context.Pc = value; break;
-            case 16: context.Cpsr = value; break;
-            default: throw new ArgumentOutOfRangeException(nameof(regIndex));
-        }
+        if (!context.TryGetRegisterName(regIndex, out string? name))
+            throw new ArgumentOutOfRangeException(nameof(regIndex));
+        context.TrySetRegister(name, new TargetNUInt(value));
     }
 
     private static uint GetRegister(ref ARMContext context, int regIndex) =>

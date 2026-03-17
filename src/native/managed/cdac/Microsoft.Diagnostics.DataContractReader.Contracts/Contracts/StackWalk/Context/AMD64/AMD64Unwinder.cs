@@ -1285,27 +1285,9 @@ internal class AMD64Unwinder(Target target)
 
     private static void SetRegister(ref AMD64Context context, byte register, TargetPointer value)
     {
-        switch (register)
-        {
-            case 0: context.Rax = value; break;
-            case 1: context.Rcx = value; break;
-            case 2: context.Rdx = value; break;
-            case 3: context.Rbx = value; break;
-            case 4: context.Rsp = value; break;
-            case 5: context.Rbp = value; break;
-            case 6: context.Rsi = value; break;
-            case 7: context.Rdi = value; break;
-            case 8: context.R8 = value; break;
-            case 9: context.R9 = value; break;
-            case 10: context.R10 = value; break;
-            case 11: context.R11 = value; break;
-            case 12: context.R12 = value; break;
-            case 13: context.R13 = value; break;
-            case 14: context.R14 = value; break;
-            case 15: context.R15 = value; break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
-        }
+        if (!context.TryGetRegisterName(register, out string? name))
+            throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
+        context.TrySetRegister(name, new TargetNUInt(value));
     }
 
     private static void UnwinderAssert(bool condition, string? message = null)

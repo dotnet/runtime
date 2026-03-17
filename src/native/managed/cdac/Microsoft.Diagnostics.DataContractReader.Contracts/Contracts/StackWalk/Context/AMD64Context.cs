@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.AMD64;
 
@@ -70,11 +73,6 @@ internal struct AMD64Context : IPlatformContext
         if (name.Equals("dr3", StringComparison.OrdinalIgnoreCase)) { Dr3 = value.Value; return true; }
         if (name.Equals("dr6", StringComparison.OrdinalIgnoreCase)) { Dr6 = value.Value; return true; }
         if (name.Equals("dr7", StringComparison.OrdinalIgnoreCase)) { Dr7 = value.Value; return true; }
-        if (name.Equals("debugcontrol", StringComparison.OrdinalIgnoreCase)) { DebugControl = value.Value; return true; }
-        if (name.Equals("lastbranchtorip", StringComparison.OrdinalIgnoreCase)) { LastBranchToRip = value.Value; return true; }
-        if (name.Equals("lastbranchfromrip", StringComparison.OrdinalIgnoreCase)) { LastBranchFromRip = value.Value; return true; }
-        if (name.Equals("lastexceptiontorip", StringComparison.OrdinalIgnoreCase)) { LastExceptionToRip = value.Value; return true; }
-        if (name.Equals("lastexceptionfromrip", StringComparison.OrdinalIgnoreCase)) { LastExceptionFromRip = value.Value; return true; }
         if (name.Equals("rax", StringComparison.OrdinalIgnoreCase)) { Rax = value.Value; return true; }
         if (name.Equals("rcx", StringComparison.OrdinalIgnoreCase)) { Rcx = value.Value; return true; }
         if (name.Equals("rdx", StringComparison.OrdinalIgnoreCase)) { Rdx = value.Value; return true; }
@@ -92,6 +90,11 @@ internal struct AMD64Context : IPlatformContext
         if (name.Equals("r14", StringComparison.OrdinalIgnoreCase)) { R14 = value.Value; return true; }
         if (name.Equals("r15", StringComparison.OrdinalIgnoreCase)) { R15 = value.Value; return true; }
         if (name.Equals("rip", StringComparison.OrdinalIgnoreCase)) { Rip = value.Value; return true; }
+        if (name.Equals("debugcontrol", StringComparison.OrdinalIgnoreCase)) { DebugControl = value.Value; return true; }
+        if (name.Equals("lastbranchtorip", StringComparison.OrdinalIgnoreCase)) { LastBranchToRip = value.Value; return true; }
+        if (name.Equals("lastbranchfromrip", StringComparison.OrdinalIgnoreCase)) { LastBranchFromRip = value.Value; return true; }
+        if (name.Equals("lastexceptiontorip", StringComparison.OrdinalIgnoreCase)) { LastExceptionToRip = value.Value; return true; }
+        if (name.Equals("lastexceptionfromrip", StringComparison.OrdinalIgnoreCase)) { LastExceptionFromRip = value.Value; return true; }
         return false;
     }
 
@@ -111,11 +114,6 @@ internal struct AMD64Context : IPlatformContext
         if (name.Equals("dr3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr3); return true; }
         if (name.Equals("dr6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr6); return true; }
         if (name.Equals("dr7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr7); return true; }
-        if (name.Equals("debugcontrol", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(DebugControl); return true; }
-        if (name.Equals("lastbranchtorip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastBranchToRip); return true; }
-        if (name.Equals("lastbranchfromrip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastBranchFromRip); return true; }
-        if (name.Equals("lastexceptiontorip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastExceptionToRip); return true; }
-        if (name.Equals("lastexceptionfromrip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastExceptionFromRip); return true; }
         if (name.Equals("rax", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rax); return true; }
         if (name.Equals("rcx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rcx); return true; }
         if (name.Equals("rdx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rdx); return true; }
@@ -133,59 +131,25 @@ internal struct AMD64Context : IPlatformContext
         if (name.Equals("r14", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R14); return true; }
         if (name.Equals("r15", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(R15); return true; }
         if (name.Equals("rip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Rip); return true; }
+        if (name.Equals("debugcontrol", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(DebugControl); return true; }
+        if (name.Equals("lastbranchtorip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastBranchToRip); return true; }
+        if (name.Equals("lastbranchfromrip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastBranchFromRip); return true; }
+        if (name.Equals("lastexceptiontorip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastExceptionToRip); return true; }
+        if (name.Equals("lastexceptionfromrip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(LastExceptionFromRip); return true; }
         return false;
     }
 
-    public bool TrySetRegister(int number, TargetNUInt value)
+    // Maps numbered GP registers (0–15) to their canonical names for by-number dispatch.
+    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
     {
-        switch (number)
-        {
-            case 0: Rax = value.Value; return true;
-            case 1: Rcx = value.Value; return true;
-            case 2: Rdx = value.Value; return true;
-            case 3: Rbx = value.Value; return true;
-            case 4: Rsp = value.Value; return true;
-            case 5: Rbp = value.Value; return true;
-            case 6: Rsi = value.Value; return true;
-            case 7: Rdi = value.Value; return true;
-            case 8: R8 = value.Value; return true;
-            case 9: R9 = value.Value; return true;
-            case 10: R10 = value.Value; return true;
-            case 11: R11 = value.Value; return true;
-            case 12: R12 = value.Value; return true;
-            case 13: R13 = value.Value; return true;
-            case 14: R14 = value.Value; return true;
-            case 15: R15 = value.Value; return true;
-            default: return false;
-        }
-    }
+        [0] = "Rax", [1] = "Rcx", [2] = "Rdx", [3] = "Rbx",
+        [4] = "Rsp", [5] = "Rbp", [6] = "Rsi", [7] = "Rdi",
+        [8] = "R8", [9] = "R9", [10] = "R10", [11] = "R11",
+        [12] = "R12", [13] = "R13", [14] = "R14", [15] = "R15",
+    }.ToFrozenDictionary();
 
-    public bool TryReadRegister(int number, out TargetNUInt value)
-    {
-        value = default;
-        switch (number)
-        {
-            case 0: value = new TargetNUInt(Rax); return true;
-            case 1: value = new TargetNUInt(Rcx); return true;
-            case 2: value = new TargetNUInt(Rdx); return true;
-            case 3: value = new TargetNUInt(Rbx); return true;
-            case 4: value = new TargetNUInt(Rsp); return true;
-            case 5: value = new TargetNUInt(Rbp); return true;
-            case 6: value = new TargetNUInt(Rsi); return true;
-            case 7: value = new TargetNUInt(Rdi); return true;
-            case 8: value = new TargetNUInt(R8); return true;
-            case 9: value = new TargetNUInt(R9); return true;
-            case 10: value = new TargetNUInt(R10); return true;
-            case 11: value = new TargetNUInt(R11); return true;
-            case 12: value = new TargetNUInt(R12); return true;
-            case 13: value = new TargetNUInt(R13); return true;
-            case 14: value = new TargetNUInt(R14); return true;
-            case 15: value = new TargetNUInt(R15); return true;
-            default: return false;
-        }
-    }
-
-
+    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
+        => s_registersByNumber.TryGetValue(number, out name);
 
     [FieldOffset(0x0)]
     public ulong P1Home;

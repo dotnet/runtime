@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.RISCV64;
 
@@ -62,6 +65,7 @@ internal struct RISCV64Context : IPlatformContext
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {
+        if (name.Equals("zero", StringComparison.OrdinalIgnoreCase)) { return false; }
         if (name.Equals("ra", StringComparison.OrdinalIgnoreCase)) { Ra = value.Value; return true; }
         if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { Sp = value.Value; return true; }
         if (name.Equals("gp", StringComparison.OrdinalIgnoreCase)) { Gp = value.Value; return true; }
@@ -101,6 +105,7 @@ internal struct RISCV64Context : IPlatformContext
     public bool TryReadRegister(string name, out TargetNUInt value)
     {
         value = default;
+        if (name.Equals("zero", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(0); return true; }
         if (name.Equals("ra", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ra); return true; }
         if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Sp); return true; }
         if (name.Equals("gp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Gp); return true; }
@@ -138,87 +143,22 @@ internal struct RISCV64Context : IPlatformContext
     }
 
 
-    public bool TrySetRegister(int number, TargetNUInt value)
+    // Maps numbered registers (0–31) to their canonical names for by-number dispatch.
+    // Register 0 (zero) is hardwired to 0 and has no backing field; reads return 0, writes are ignored.
+    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
     {
-        // Register 0 (zero) is hardwired to 0 and has no backing field.
-        switch (number)
-        {
-            case 1: Ra = value.Value; return true;
-            case 2: Sp = value.Value; return true;
-            case 3: Gp = value.Value; return true;
-            case 4: Tp = value.Value; return true;
-            case 5: T0 = value.Value; return true;
-            case 6: T1 = value.Value; return true;
-            case 7: T2 = value.Value; return true;
-            case 8: Fp = value.Value; return true;
-            case 9: S1 = value.Value; return true;
-            case 10: A0 = value.Value; return true;
-            case 11: A1 = value.Value; return true;
-            case 12: A2 = value.Value; return true;
-            case 13: A3 = value.Value; return true;
-            case 14: A4 = value.Value; return true;
-            case 15: A5 = value.Value; return true;
-            case 16: A6 = value.Value; return true;
-            case 17: A7 = value.Value; return true;
-            case 18: S2 = value.Value; return true;
-            case 19: S3 = value.Value; return true;
-            case 20: S4 = value.Value; return true;
-            case 21: S5 = value.Value; return true;
-            case 22: S6 = value.Value; return true;
-            case 23: S7 = value.Value; return true;
-            case 24: S8 = value.Value; return true;
-            case 25: S9 = value.Value; return true;
-            case 26: S10 = value.Value; return true;
-            case 27: S11 = value.Value; return true;
-            case 28: T3 = value.Value; return true;
-            case 29: T4 = value.Value; return true;
-            case 30: T5 = value.Value; return true;
-            case 31: T6 = value.Value; return true;
-            default: return false;
-        }
-    }
+        [0] = "zero",
+        [1] = "Ra", [2] = "Sp", [3] = "Gp", [4] = "Tp",
+        [5] = "T0", [6] = "T1", [7] = "T2", [8] = "Fp", [9] = "S1",
+        [10] = "A0", [11] = "A1", [12] = "A2", [13] = "A3", [14] = "A4",
+        [15] = "A5", [16] = "A6", [17] = "A7",
+        [18] = "S2", [19] = "S3", [20] = "S4", [21] = "S5", [22] = "S6",
+        [23] = "S7", [24] = "S8", [25] = "S9", [26] = "S10", [27] = "S11",
+        [28] = "T3", [29] = "T4", [30] = "T5", [31] = "T6",
+    }.ToFrozenDictionary();
 
-    public bool TryReadRegister(int number, out TargetNUInt value)
-    {
-        value = default;
-        // Register 0 (zero) is hardwired to 0 and has no backing field.
-        if (number == 0) { value = new TargetNUInt(0); return true; }
-        switch (number)
-        {
-            case 1: value = new TargetNUInt(Ra); return true;
-            case 2: value = new TargetNUInt(Sp); return true;
-            case 3: value = new TargetNUInt(Gp); return true;
-            case 4: value = new TargetNUInt(Tp); return true;
-            case 5: value = new TargetNUInt(T0); return true;
-            case 6: value = new TargetNUInt(T1); return true;
-            case 7: value = new TargetNUInt(T2); return true;
-            case 8: value = new TargetNUInt(Fp); return true;
-            case 9: value = new TargetNUInt(S1); return true;
-            case 10: value = new TargetNUInt(A0); return true;
-            case 11: value = new TargetNUInt(A1); return true;
-            case 12: value = new TargetNUInt(A2); return true;
-            case 13: value = new TargetNUInt(A3); return true;
-            case 14: value = new TargetNUInt(A4); return true;
-            case 15: value = new TargetNUInt(A5); return true;
-            case 16: value = new TargetNUInt(A6); return true;
-            case 17: value = new TargetNUInt(A7); return true;
-            case 18: value = new TargetNUInt(S2); return true;
-            case 19: value = new TargetNUInt(S3); return true;
-            case 20: value = new TargetNUInt(S4); return true;
-            case 21: value = new TargetNUInt(S5); return true;
-            case 22: value = new TargetNUInt(S6); return true;
-            case 23: value = new TargetNUInt(S7); return true;
-            case 24: value = new TargetNUInt(S8); return true;
-            case 25: value = new TargetNUInt(S9); return true;
-            case 26: value = new TargetNUInt(S10); return true;
-            case 27: value = new TargetNUInt(S11); return true;
-            case 28: value = new TargetNUInt(T3); return true;
-            case 29: value = new TargetNUInt(T4); return true;
-            case 30: value = new TargetNUInt(T5); return true;
-            case 31: value = new TargetNUInt(T6); return true;
-            default: return false;
-        }
-    }
+    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
+        => s_registersByNumber.TryGetValue(number, out name);
 
     // Control flags
 

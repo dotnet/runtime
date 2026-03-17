@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.LoongArch64;
 
@@ -145,86 +148,21 @@ internal struct LoongArch64Context : IPlatformContext
     }
 
 
-    public bool TrySetRegister(int number, TargetNUInt value)
+    // Maps numbered registers (0–31) to their canonical names for by-number dispatch.
+    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
     {
-        switch (number)
-        {
-            case 0: R0 = value.Value; return true;
-            case 1: Ra = value.Value; return true;
-            case 2: Tp = value.Value; return true;
-            case 3: Sp = value.Value; return true;
-            case 4: A0 = value.Value; return true;
-            case 5: A1 = value.Value; return true;
-            case 6: A2 = value.Value; return true;
-            case 7: A3 = value.Value; return true;
-            case 8: A4 = value.Value; return true;
-            case 9: A5 = value.Value; return true;
-            case 10: A6 = value.Value; return true;
-            case 11: A7 = value.Value; return true;
-            case 12: T0 = value.Value; return true;
-            case 13: T1 = value.Value; return true;
-            case 14: T2 = value.Value; return true;
-            case 15: T3 = value.Value; return true;
-            case 16: T4 = value.Value; return true;
-            case 17: T5 = value.Value; return true;
-            case 18: T6 = value.Value; return true;
-            case 19: T7 = value.Value; return true;
-            case 20: T8 = value.Value; return true;
-            case 21: X0 = value.Value; return true;
-            case 22: Fp = value.Value; return true;
-            case 23: S0 = value.Value; return true;
-            case 24: S1 = value.Value; return true;
-            case 25: S2 = value.Value; return true;
-            case 26: S3 = value.Value; return true;
-            case 27: S4 = value.Value; return true;
-            case 28: S5 = value.Value; return true;
-            case 29: S6 = value.Value; return true;
-            case 30: S7 = value.Value; return true;
-            case 31: S8 = value.Value; return true;
-            default: return false;
-        }
-    }
+        [0] = "R0", [1] = "Ra", [2] = "Tp", [3] = "Sp",
+        [4] = "A0", [5] = "A1", [6] = "A2", [7] = "A3",
+        [8] = "A4", [9] = "A5", [10] = "A6", [11] = "A7",
+        [12] = "T0", [13] = "T1", [14] = "T2", [15] = "T3",
+        [16] = "T4", [17] = "T5", [18] = "T6", [19] = "T7",
+        [20] = "T8", [21] = "X0", [22] = "Fp", [23] = "S0",
+        [24] = "S1", [25] = "S2", [26] = "S3", [27] = "S4",
+        [28] = "S5", [29] = "S6", [30] = "S7", [31] = "S8",
+    }.ToFrozenDictionary();
 
-    public bool TryReadRegister(int number, out TargetNUInt value)
-    {
-        value = default;
-        switch (number)
-        {
-            case 0: value = new TargetNUInt(R0); return true;
-            case 1: value = new TargetNUInt(Ra); return true;
-            case 2: value = new TargetNUInt(Tp); return true;
-            case 3: value = new TargetNUInt(Sp); return true;
-            case 4: value = new TargetNUInt(A0); return true;
-            case 5: value = new TargetNUInt(A1); return true;
-            case 6: value = new TargetNUInt(A2); return true;
-            case 7: value = new TargetNUInt(A3); return true;
-            case 8: value = new TargetNUInt(A4); return true;
-            case 9: value = new TargetNUInt(A5); return true;
-            case 10: value = new TargetNUInt(A6); return true;
-            case 11: value = new TargetNUInt(A7); return true;
-            case 12: value = new TargetNUInt(T0); return true;
-            case 13: value = new TargetNUInt(T1); return true;
-            case 14: value = new TargetNUInt(T2); return true;
-            case 15: value = new TargetNUInt(T3); return true;
-            case 16: value = new TargetNUInt(T4); return true;
-            case 17: value = new TargetNUInt(T5); return true;
-            case 18: value = new TargetNUInt(T6); return true;
-            case 19: value = new TargetNUInt(T7); return true;
-            case 20: value = new TargetNUInt(T8); return true;
-            case 21: value = new TargetNUInt(X0); return true;
-            case 22: value = new TargetNUInt(Fp); return true;
-            case 23: value = new TargetNUInt(S0); return true;
-            case 24: value = new TargetNUInt(S1); return true;
-            case 25: value = new TargetNUInt(S2); return true;
-            case 26: value = new TargetNUInt(S3); return true;
-            case 27: value = new TargetNUInt(S4); return true;
-            case 28: value = new TargetNUInt(S5); return true;
-            case 29: value = new TargetNUInt(S6); return true;
-            case 30: value = new TargetNUInt(S7); return true;
-            case 31: value = new TargetNUInt(S8); return true;
-            default: return false;
-        }
-    }
+    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
+        => s_registersByNumber.TryGetValue(number, out name);
 
     // Control flags
 

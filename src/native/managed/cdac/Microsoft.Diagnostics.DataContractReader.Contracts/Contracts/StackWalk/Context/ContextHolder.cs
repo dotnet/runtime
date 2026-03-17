@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
-public class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<ContextHolder<T>>
+public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<ContextHolder<T>>
     where T : unmanaged, IPlatformContext
 {
     public T Context;
@@ -51,7 +51,6 @@ public class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<ContextHold
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);
     public bool TrySetRegister(int number, TargetNUInt value) => Context.TrySetRegister(number, value);
     public bool TryReadRegister(int number, out TargetNUInt value) => Context.TryReadRegister(number, out value);
-
 
     public bool Equals(ContextHolder<T>? other)
     {
