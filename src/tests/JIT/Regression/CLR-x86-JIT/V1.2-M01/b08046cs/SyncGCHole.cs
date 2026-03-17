@@ -22,6 +22,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 class ExternalClass
 {
