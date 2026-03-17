@@ -710,12 +710,6 @@ CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, VirtualAddress, offsetof(IMAGE_D
 CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, Size, offsetof(IMAGE_DATA_DIRECTORY, Size))
 CDAC_TYPE_END(ImageDataDirectory)
 
-CDAC_TYPE_BEGIN(CorCompileExceptionLookupEntry)
-CDAC_TYPE_SIZE(sizeof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY))
-CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, MethodStartRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY, MethodStartRVA))
-CDAC_TYPE_FIELD(CorCompileExceptionLookupEntry, /*uint32*/, ExceptionInfoRva, offsetof(CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY, ExceptionInfoRVA))
-CDAC_TYPE_END(CorCompileExceptionLookupEntry)
-
 CDAC_TYPE_BEGIN(RuntimeFunction)
 CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION))
 CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, BeginAddress, offsetof(RUNTIME_FUNCTION, BeginAddress))
@@ -808,18 +802,6 @@ CDAC_TYPE_BEGIN(EEILException)
 CDAC_TYPE_INDETERMINATE(EEILException)
 CDAC_TYPE_FIELD(EEILException, /* EE_ILEXCEPTION_CLAUSE */, Clauses, offsetof(EE_ILEXCEPTION, Clauses))
 CDAC_TYPE_END(EEILException)
-
-CDAC_TYPE_BEGIN(EEILExceptionClause)
-CDAC_TYPE_SIZE(sizeof(EE_ILEXCEPTION_CLAUSE))
-CDAC_TYPE_FIELD(EEILExceptionClause, /*uint32*/, Flags, offsetof(EE_ILEXCEPTION_CLAUSE, Flags))
-CDAC_TYPE_FIELD(EEILExceptionClause, /*uint32*/, FilterOffset, offsetof(EE_ILEXCEPTION_CLAUSE, FilterOffset))
-CDAC_TYPE_END(EEILExceptionClause)
-
-CDAC_TYPE_BEGIN(CorCompileExceptionClause)
-CDAC_TYPE_SIZE(sizeof(CORCOMPILE_EXCEPTION_CLAUSE))
-CDAC_TYPE_FIELD(CorCompileExceptionClause, /*uint32*/, Flags, offsetof(CORCOMPILE_EXCEPTION_CLAUSE, Flags))
-CDAC_TYPE_FIELD(CorCompileExceptionClause, /*uint32*/, FilterOffset, offsetof(CORCOMPILE_EXCEPTION_CLAUSE, FilterOffset))
-CDAC_TYPE_END(CorCompileExceptionClause)
 
 CDAC_TYPE_BEGIN(PatchpointInfo)
 CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
