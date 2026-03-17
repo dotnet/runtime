@@ -823,8 +823,7 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
                     TableSegment ts = Read<TableSegment>(seg);
                     regions.Add(new GCMemoryRegionData { Start = seg, Size = handleSegmentSize, Heap = (int)j });
                     seg = ts.NextSegment;
-                    maxRegions--;
-                } while (seg != null && seg != first && maxRegions >= 0);
+                } while (seg != null && seg != first);
             }
         }
         handleTableMap = map.Next;
@@ -919,7 +918,7 @@ void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegio
 {
     int iterationMax = MaxSegmentListIterations;
     TargetPointer curr = start;
-    while (curr != null && iterationMax-- > 0)
+    while (curr != null)
     {
         HeapSegment seg = Read<HeapSegment>(curr);
         if (seg.Mem != null)
@@ -929,6 +928,7 @@ void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegio
         }
         curr = seg.Next;
         if (curr == start) break;
+        if (iterationMax-- <= 0) break;
     }
 }
 ```

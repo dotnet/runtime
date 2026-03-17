@@ -544,8 +544,7 @@ internal readonly struct GC_1 : IGC
                             Heap = (int)j,
                         });
                         segmentPtr = segment.NextSegment;
-                        maxRegions--;
-                    } while (segmentPtr != TargetPointer.Null && segmentPtr != firstSegment && maxRegions >= 0);
+                    } while (segmentPtr != TargetPointer.Null && segmentPtr != firstSegment);
                 }
             }
             handleTableMap = map.Next;
@@ -729,7 +728,7 @@ internal readonly struct GC_1 : IGC
             curr = segment.Next;
             if (curr == start)
                 break;
-            if (--iterationMax <= 0)
+            if (iterationMax-- <= 0)
                 break;
         }
     }
