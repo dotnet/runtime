@@ -2334,9 +2334,10 @@ namespace System.Text.RegularExpressions
         /// only the last consumed position. This is possible when <paramref name="subsequent"/> starts with
         /// a literal whose first character is subsumed by the loop's class, and whatever follows is disjoint
         /// from the loop's class — meaning no earlier backtrack position can succeed, since every interior
-        /// position has a loop-set character after it. For One/Set literals, the character(s) must be subsumed
-        /// and the next node in sequence must be disjoint. For Multi literals, the first character must be
-        /// subsumed and the second character must be disjoint.
+        /// position has a loop-set character after it that the disjoint subsequent wouldn't accept.
+        /// For One/Set literals, the character(s) must be subsumed and the next node in sequence must be
+        /// disjoint (e.g. <c>\w+a\s</c> for One, <c>\d+[0-9]\s</c> for Set). For Multi literals, the
+        /// first character must be subsumed and the second character must be disjoint (e.g. <c>\d+0x</c>).
         /// </summary>
         internal static bool CanReduceLoopBacktrackingToSinglePosition(RegexNode loopNode, RegexNode subsequent)
         {
@@ -2351,8 +2352,8 @@ namespace System.Text.RegularExpressions
                 // must also be matched by the loop's character class.
                 switch (literal.Kind)
                 {
-                    case RegexNodeKind.One when CharInLoopSet(loopNode, literal.Ch):
-                    case RegexNodeKind.Set when loopNode.Kind is RegexNodeKind.Setloop && RegexCharClass.IsSubsetOf(literal.Str!, loopNode.Str!):
+                    case RegexNodeKind.One when CharInLoopSet(loopNode, literal.Ch):   // e.g. \w+a\s : 'a' is in \w, check \s is disjoint
+                    case RegexNodeKind.Set when loopNode.Kind is RegexNodeKind.Setloop && RegexCharClass.IsSubsetOf(literal.Str!, loopNode.Str!):   // e.g. \d+[0-9]\s
                         // Find the node that follows the literal in the tree and check whether
                         // the loop would be atomic with respect to it. If nothing follows (end of
                         // pattern), we can't reduce — earlier positions could still succeed.
@@ -2361,11 +2362,12 @@ namespace System.Text.RegularExpressions
                             CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: true, allowLazy: false);
 
                     case RegexNodeKind.Multi when CharInLoopSet(loopNode, literal.Str![0]) && !CharInLoopSet(loopNode, literal.Str[1]):
-                        // For a multi-character literal, treat it as two single characters: the first
-                        // must be subsumed by the loop (so the loop would have consumed it), and the
-                        // second must be disjoint from the loop (so positions within the loop's consumed
-                        // range can't satisfy it). This avoids needing FindNextNodeInSequence/CanBeMadeAtomic
-                        // since the second character is directly available in the multi's string.
+                        // For a multi-character literal (e.g. \d+0x), treat it as two single characters:
+                        // the first must be subsumed by the loop (so the loop would have consumed it),
+                        // and the second must be disjoint from the loop (so positions within the loop's
+                        // consumed range can't satisfy it). This avoids needing FindNextNodeInSequence/
+                        // CanBeMadeAtomic since the second character is directly available in the
+                        // multi's string.
                         return true;
                 }
 

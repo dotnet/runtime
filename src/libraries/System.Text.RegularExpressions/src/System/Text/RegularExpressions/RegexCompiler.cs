@@ -3655,9 +3655,8 @@ namespace System.Text.RegularExpressions
                     subsequent?.FindStartingLiteralNode() is RegexNode literal &&
                     CanEmitIndexOf(literal, out int literalLength))
                 {
-                    // When the subsequent literal is contained in the loop's character class and whatever follows
-                    // that literal is disjoint from the loop's class, no backtrack position other than the very
-                    // last consumed character can possibly succeed. Just check it directly.
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
                     if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
                         // endingPos--;

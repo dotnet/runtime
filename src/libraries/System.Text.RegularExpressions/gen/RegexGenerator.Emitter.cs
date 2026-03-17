@@ -3482,11 +3482,8 @@ namespace System.Text.RegularExpressions.Generator
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
                     TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
-                    // When the subsequent literal is contained in the loop's character class and whatever follows
-                    // that literal is disjoint from the loop's class, no backtrack position other than the very
-                    // last consumed character can possibly succeed (any earlier position would have a loop-set char
-                    // after the literal, which the disjoint subsequent wouldn't accept). In that case, we can just
-                    // check the last consumed character directly instead of repeatedly searching with LastIndexOf.
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
                     if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
                         using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
