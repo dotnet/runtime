@@ -31,7 +31,7 @@ try
     Console.WriteLine("Webcil header: valid");
 
     MetadataReader metadata = reader.GetMetadataReader();
-    Console.WriteLine($"Metadata: valid");
+    Console.WriteLine("Metadata: valid");
 
     if (metadata.IsAssembly)
     {

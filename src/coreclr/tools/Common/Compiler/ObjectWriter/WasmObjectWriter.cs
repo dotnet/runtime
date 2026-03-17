@@ -30,7 +30,7 @@ namespace ILCompiler.ObjectWriter
             _padding.AsSpan().Fill(padByte);
         }
 
-        public void PadStream(Stream s, int n, byte padByte = 0)
+        public void PadStream(Stream s, int n)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(n, _padding.Length);
             ArgumentOutOfRangeException.ThrowIfLessThan(n, 0);
