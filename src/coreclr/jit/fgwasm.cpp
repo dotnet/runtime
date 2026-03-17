@@ -1145,7 +1145,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         FlowGraphTryRegion* const   tryRegion = tryRegions->GetTryRegionByHeader(block);
 
         // If we have both, the loop is logically "outside" the try, so we build its interval first.
-
+        //
         if (loop != nullptr)
         {
             unsigned endCursor = 0;
@@ -1170,25 +1170,11 @@ PhaseStatus Compiler::fgWasmControlFlow()
             {
                 // We may have increased the loop extent (moved the end) to accomodate try regions
                 // that begin in the loop but can end outside. Find the last such block...
-
-                BasicBlock* lastBlock = nullptr;
+                //
                 loop->VisitLoopBlocksPostOrder([&](BasicBlock* block) {
-                    // If the block is in a child loop it can't be the last block of the parent loop too.
-                    // (maybe)
-                    FlowGraphNaturalLoop* childLoop = loop->GetChild();
-                    while (childLoop != nullptr)
-                    {
-                        if (childLoop->ContainsBlock(block))
-                        {
-                            return BasicBlockVisit::Continue;
-                        }
-                        childLoop = childLoop->GetSibling();
-                    }
-                    lastBlock = block;
-                    return BasicBlockVisit::Abort;
+                    endCursor = max(endCursor, block->bbPreorderNum + 1);
+                    return BasicBlockVisit::Continue;
                 });
-
-                endCursor = lastBlock->bbPreorderNum + 1;
 
                 assert(endCursor >= (cursor + loop->NumLoopBlocks()));
 
