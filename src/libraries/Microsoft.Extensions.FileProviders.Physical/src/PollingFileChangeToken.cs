@@ -15,8 +15,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     /// <remarks>
     /// <para>Polling occurs every 4 seconds.</para>
-    /// <para>This change token does not raise any change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
-    /// from <see langword="false"/> to <see langword="true"/> and dispose the token after this happens.</para>
+    /// <para>By default, this change token does not raise change callbacks. Callers should watch for <see cref="HasChanged" /> to turn
+    /// from <see langword="false"/> to <see langword="true"/>.
+    /// When <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>, callbacks registered via
+    /// <see cref="RegisterChangeCallback"/> will be invoked when the file changes.</para>
     /// </remarks>
     public class PollingFileChangeToken : IPollingChangeToken
     {
@@ -28,8 +30,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private CancellationChangeToken? _changeToken;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="PollingFileChangeToken" /> that polls the specified file for changes as
-        /// determined by <see cref="System.IO.FileSystemInfo.LastWriteTimeUtc" />.
+        /// Initializes a new instance of the <see cref="PollingFileChangeToken"/> class that polls the specified file for changes as
+        /// determined by <see cref="System.IO.FileSystemInfo.LastWriteTimeUtc"/>.
         /// </summary>
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo"/> to poll.</param>
         public PollingFileChangeToken(FileInfo fileInfo)
@@ -54,7 +56,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Gets a value that's always <see langword="false"/>.
+        /// Gets a value that indicates whether this token will proactively raise callbacks. If <see langword="false"/>, the token
+        /// consumer must poll <see cref="HasChanged"/> to detect changes.
         /// </summary>
         public bool ActiveChangeCallbacks { get; internal set; }
 
@@ -108,10 +111,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Does not actually register callbacks.
+        /// Registers a callback that will be invoked when the token changes, if <see cref="ActiveChangeCallbacks"/> is <see langword="true"/>.
+        /// If <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>, no callback is registered and an empty disposable is returned.
         /// </summary>
-        /// <param name="callback">This parameter is ignored.</param>
-        /// <param name="state">This parameter is ignored.</param>
+        /// <param name="callback">The callback to invoke. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
+        /// <param name="state">The state to pass to <paramref name="callback"/>. This parameter is ignored when <see cref="ActiveChangeCallbacks"/> is <see langword="false"/>.</param>
         /// <returns>A disposable object that no-ops when disposed.</returns>
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {

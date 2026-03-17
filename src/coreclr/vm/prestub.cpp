@@ -106,19 +106,10 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bo
         //     MethodDesc::BackpatchEntryPointSlots()
 
         // Backpatching the temporary entry point:
-        //     The temporary entry point is not directly backpatched for methods versionable with vtable slot backpatch.
-        //     New vtable slots inheriting the method will initially point to the temporary entry point. During call
-        //     counting, the temporary entry point's precode target may be temporarily redirected to a call counting
-        //     stub, but it must revert to the prestub when call counting ends (not to native code). This ensures new
-        //     vtable slots will come here for backpatching so they can be discovered and recorded for future
-        //     backpatching. The precode for backpatchable methods should only ever point to:
-        //       1. The prestub (default, and when call counting is not active)
-        //       2. A call counting stub (during active call counting only)
-        //     It must never point directly to native code, as that would permanently bypass slot recording.
-        //
-        //     To enable slot recording after the precode reverts to prestub, GetMethodEntryPoint() must be set to the
-        //     native code entry point (not the temporary entry point) during call counting. This prevents the
-        //     pExpected == pTarget check above from short-circuiting slot recording.
+        //     The temporary entry point is never backpatched for methods versionable with vtable slot backpatch. New vtable
+        //     slots inheriting the method will initially point to the temporary entry point and it must point to the prestub
+        //     and come here for backpatching such that the new vtable slot can be discovered and recorded for future
+        //     backpatching.
 
         _ASSERTE(!HasNonVtableSlot());
     }
@@ -362,16 +353,10 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 && HasUnmanagedCallersOnlyAttribute())))
     {
         NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
-        if (codeVersion.IsDefaultVersion())
-        {
-            pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(codeVersion.IsFinalTier());
-        }
-        else if (!codeVersion.IsFinalTier())
+        if (!codeVersion.IsFinalTier())
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
-        pConfig->SetWasTieringDisabledBeforeJitting();
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
@@ -1101,7 +1086,6 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_generatedOrLoadedNewCode(false),
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-    m_wasTieringDisabledBeforeJitting(false),
     m_shouldCountCalls(false),
 #endif
     m_jitSwitchedToMinOpt(false),
@@ -1274,17 +1258,42 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
 // This function should be called before SetNativeCode() for consistency with usage of FinalizeOptimizationTierForTier0Jit
 bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
 {
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
     _ASSERTE(!JitSwitchedToOptimized());
+    bool shouldTier = true;
+
+    switch (GetCodeVersion().GetOptimizationTier())
+    {
+        case NativeCodeVersion::OptimizationTier0: // This is the default when we may tier up further
+            break;
+
+        case NativeCodeVersion::OptimizationTierOptimized: // If we've decided for some reason that the R2R code is the final tier
+            shouldTier = false;
+            break;
+
+        case NativeCodeVersion::OptimizationTier0Instrumented:
+            // We should adjust the tier back to regular Tier 0, since the R2R code is not instrumented.
+            GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTier0);
+            break;
+
+        default:
+            _ASSERTE(!"Unexpected optimization tier for a method loaded via R2R");
+            UNREACHABLE();
+    }
 
     if (!IsForMulticoreJit())
     {
-        return true; // should count calls if SetNativeCode() succeeds
+        return shouldTier; // should count calls if SetNativeCode() succeeds
     }
 
     // When using multi-core JIT, the loaded code would not be used until the method is called. Record some information that may
     // be used later when the method is called.
-    ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
+    if (shouldTier)
+    {
+        ((MulticoreJitPrepareCodeConfig *)this)->SetWasTier0();
+    }
     return false; // don't count calls
 }
 
@@ -1293,6 +1302,8 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
 // version, and it should have already been finalized.
 bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
 {
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
 
     if (IsForMulticoreJit())
@@ -1320,10 +1331,6 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
         // call counting would have to be disabled for the method.
         NativeCodeVersion codeVersion = GetCodeVersion();
-        if (codeVersion.IsDefaultVersion())
-        {
-            GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-        }
         codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         return false; // don't count calls
     }
@@ -2030,7 +2037,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_ARM)
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_RISCV64)
+    #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_WASM)
         // We do not yet have an ABI for WebAssembly native code to handle here.
@@ -2300,15 +2307,34 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         if (pCode == (PCODE)NULL)
         {
             pCode = GetStubForInteropMethod(this);
-        }
 
+#ifdef FEATURE_INTERPRETER
+            // Store the IL stub interpreter data on the P/Invoke MethodDesc so the
+            // interpreter can run the IL stub as a child frame with a single native
+            // transition. On WASM this is done for all P/Invokes; on ARM64 Apple it
+            // is needed specifically for Swift to avoid a stale SwiftError (x21).
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // Store the IL Stub interpreter data on the actual
-        // P/Invoke MethodDesc.
-        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
-        _ASSERTE(ilStubInterpData != NULL);
-        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+            void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+            _ASSERTE(ilStubInterpData != NULL);
+            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+            {
+                CorInfoCallConvExtension callConv;
+                PInvoke::GetCallingConvention_IgnoreErrors(this, &callConv, nullptr);
+                if (callConv == CorInfoCallConvExtension::Swift)
+                {
+                    TADDR ilStubInterpCode = GetInterpreterCodeFromInterpreterPrecodeIfPresent(pCode);
+                    if (ilStubInterpCode != (TADDR)pCode)
+                    {
+                        SetInterpreterCode(dac_cast<InterpByteCodeStart*>(ilStubInterpCode));
+                    }
+                }
+            }
+#endif // TARGET_APPLE && TARGET_ARM64
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_INTERPRETER
+        }
     }
     else if (IsFCall())
     {
@@ -2398,6 +2424,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
         SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+
+        // Use this method's own PortableEntryPoint rather than the stub's.
+        // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
+        pCode = GetPortableEntryPoint();
+        PortableEntryPoint::SetInterpreterData(pCode, (PCODE)(TADDR)ilStubInterpData);
         SetCodeEntryPoint(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))

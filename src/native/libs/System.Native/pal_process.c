@@ -549,7 +549,11 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
         case PAL_RLIMIT_CORE:
             return RLIMIT_CORE;
         case PAL_RLIMIT_AS:
+#ifdef RLIMIT_AS
             return RLIMIT_AS;
+#elif defined(RLIMIT_VMEM)
+            return RLIMIT_VMEM;
+#endif
 #ifdef RLIMIT_RSS
         case PAL_RLIMIT_RSS:
             return RLIMIT_RSS;

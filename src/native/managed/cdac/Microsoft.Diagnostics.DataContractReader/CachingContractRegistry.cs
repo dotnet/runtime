@@ -76,4 +76,12 @@ internal sealed class CachingContractRegistry : ContractRegistry
         // Contract was already registered by someone else
         return (TContract)_contracts[typeof(TContract)];
     }
+
+    public override void Flush()
+    {
+        foreach (IContract contract in _contracts.Values)
+        {
+            contract.Flush();
+        }
+    }
 }
