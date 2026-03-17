@@ -6022,7 +6022,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                         return LowerNode(tmp1);
                     }
 
-                    idx = m_compiler->gtNewIconNode(0x7F, TYP_INT);
+                    idx = m_compiler->gtNewIconNode(0xFF, TYP_INT);
                 }
                 BlockRange().InsertBefore(node, idx);
 
