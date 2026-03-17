@@ -117,7 +117,6 @@ namespace Tests.System.IO
         public void TestEmptyComponentThrowsInvalidData(string buffer, string method)
         {
             StringParser sp = new StringParser(buffer, ',');
-            sp.MoveNextOrFail();
 
             switch (method)
             {
@@ -132,6 +131,9 @@ namespace Tests.System.IO
                     break;
                 case "ParseNextUInt64":
                     Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt64());
+                    break;
+                default:
+                    Assert.Fail($"Unknown parse method: {method}");
                     break;
             }
         }
