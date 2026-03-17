@@ -265,20 +265,9 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                // If sending the signal fails, we want to kill the process ASAP
+                // If sending the signal fails or process did not exit on its own, we want to kill the process ASAP
                 // to prevent RemoteExecutor's timeout from hiding it.
-#if NETCOREAPP3_1_OR_GREATER
                 remoteHandle.Process.Kill();
-#else
-                try
-                {
-                    remoteHandle.Process.Kill();
-                }
-                catch (InvalidOperationException)
-                {
-                    // Process already exited
-                }
-#endif
             }
         }
 
