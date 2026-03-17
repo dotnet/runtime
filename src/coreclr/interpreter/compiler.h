@@ -672,6 +672,9 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // Indicates that we are going to generate the first interpreter byte code instruction for an IL opcode with an empty stack.
+    bool        m_isFirstInstForEmptyILStack = true;
+
     // If the method has a hidden argument, GenerateCode allocates a var to store it and
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
