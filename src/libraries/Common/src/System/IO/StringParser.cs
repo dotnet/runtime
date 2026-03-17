@@ -138,28 +138,32 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            if (_startIndex == _endIndex)
+            int startIndex = _startIndex;
+            int endIndex = _endIndex;
+            string buffer = _buffer;
+
+            if (startIndex == endIndex)
             {
                 ThrowForInvalidData();
             }
 
             bool negative = false;
             int result = 0;
-            int i = _startIndex;
+            int i = startIndex;
 
-            if (_buffer[i] == '-')
+            if (buffer[i] == '-')
             {
                 negative = true;
                 i++;
-                if (i == _endIndex)
+                if (i == endIndex)
                 {
                     ThrowForInvalidData();
                 }
             }
 
-            for (; i < _endIndex; i++)
+            for (; i < endIndex; i++)
             {
-                int d = _buffer[i] - '0';
+                int d = buffer[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
@@ -176,28 +180,32 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            if (_startIndex == _endIndex)
+            int startIndex = _startIndex;
+            int endIndex = _endIndex;
+            string buffer = _buffer;
+
+            if (startIndex == endIndex)
             {
                 ThrowForInvalidData();
             }
 
             bool negative = false;
             long result = 0;
-            int i = _startIndex;
+            int i = startIndex;
 
-            if (_buffer[i] == '-')
+            if (buffer[i] == '-')
             {
                 negative = true;
                 i++;
-                if (i == _endIndex)
+                if (i == endIndex)
                 {
                     ThrowForInvalidData();
                 }
             }
 
-            for (; i < _endIndex; i++)
+            for (; i < endIndex; i++)
             {
-                int d = _buffer[i] - '0';
+                int d = buffer[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
@@ -213,15 +221,20 @@ namespace System.IO
         public uint ParseNextUInt32()
         {
             MoveNextOrFail();
-            if (_startIndex == _endIndex)
+
+            int startIndex = _startIndex;
+            int endIndex = _endIndex;
+            string buffer = _buffer;
+
+            if (startIndex == endIndex)
             {
                 ThrowForInvalidData();
             }
 
             uint result = 0;
-            for (int i = _startIndex; i < _endIndex; i++)
+            for (int i = startIndex; i < endIndex; i++)
             {
-                int d = _buffer[i] - '0';
+                int d = buffer[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
@@ -237,15 +250,20 @@ namespace System.IO
         public ulong ParseNextUInt64()
         {
             MoveNextOrFail();
-            if (_startIndex == _endIndex)
+
+            int startIndex = _startIndex;
+            int endIndex = _endIndex;
+            string buffer = _buffer;
+
+            if (startIndex == endIndex)
             {
                 ThrowForInvalidData();
             }
 
             ulong result = 0;
-            for (int i = _startIndex; i < _endIndex; i++)
+            for (int i = startIndex; i < endIndex; i++)
             {
-                int d = _buffer[i] - '0';
+                int d = buffer[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
