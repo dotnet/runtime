@@ -13,39 +13,39 @@ namespace System.Numerics
 
         // https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 
-        public static void Pow(uint value, uint power, Span<uint> bits)
+        public static void Pow(nuint value, nuint power, Span<nuint> bits)
         {
-            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, bits);
+            Pow(value != 0 ? new ReadOnlySpan<nuint>(in value) : default, power, bits);
         }
 
-        public static void Pow(ReadOnlySpan<uint> value, uint power, Span<uint> bits)
+        public static void Pow(ReadOnlySpan<nuint> value, nuint power, Span<nuint> bits)
         {
             Debug.Assert(bits.Length == PowBound(power, value.Length));
 
-            uint[]? tempFromPool = null;
-            Span<uint> temp = (bits.Length <= StackAllocThreshold ?
-                              stackalloc uint[StackAllocThreshold]
-                              : tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            nuint[]? tempFromPool = null;
+            Span<nuint> temp = (bits.Length <= StackAllocThreshold ?
+                              stackalloc nuint[StackAllocThreshold]
+                              : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
-            uint[]? valueCopyFromPool = null;
-            Span<uint> valueCopy = (bits.Length <= StackAllocThreshold ?
-                                   stackalloc uint[StackAllocThreshold]
-                                   : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            nuint[]? valueCopyFromPool = null;
+            Span<nuint> valueCopy = (bits.Length <= StackAllocThreshold ?
+                                   stackalloc nuint[StackAllocThreshold]
+                                   : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             value.CopyTo(valueCopy);
             valueCopy.Slice(value.Length).Clear();
 
-            Span<uint> result = PowCore(valueCopy, value.Length, temp, power, bits);
+            Span<nuint> result = PowCore(valueCopy, value.Length, temp, power, bits);
             result.CopyTo(bits);
             bits.Slice(result.Length).Clear();
 
             if (tempFromPool != null)
-                ArrayPool<uint>.Shared.Return(tempFromPool);
+                ArrayPool<nuint>.Shared.Return(tempFromPool);
             if (valueCopyFromPool != null)
-                ArrayPool<uint>.Shared.Return(valueCopyFromPool);
+                ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
         }
 
-        private static Span<uint> PowCore(Span<uint> value, int valueLength, Span<uint> temp, uint power, Span<uint> result)
+        private static Span<nuint> PowCore(Span<nuint> value, int valueLength, Span<nuint> temp, nuint power, Span<nuint> result)
         {
             Debug.Assert(value.Length >= valueLength);
             Debug.Assert(temp.Length == result.Length);
@@ -67,7 +67,7 @@ namespace System.Numerics
             return result.Slice(0, resultLength);
         }
 
-        private static int MultiplySelf(ref Span<uint> left, int leftLength, ReadOnlySpan<uint> right, ref Span<uint> temp)
+        private static int MultiplySelf(ref Span<nuint> left, int leftLength, ReadOnlySpan<nuint> right, ref Span<nuint> temp)
         {
             Debug.Assert(leftLength <= left.Length);
 
@@ -77,13 +77,13 @@ namespace System.Numerics
 
             left.Clear();
             //switch buffers
-            Span<uint> t = left;
+            Span<nuint> t = left;
             left = temp;
             temp = t;
             return ActualLength(left.Slice(0, resultLength));
         }
 
-        private static int SquareSelf(ref Span<uint> value, int valueLength, ref Span<uint> temp)
+        private static int SquareSelf(ref Span<nuint> value, int valueLength, ref Span<nuint> temp)
         {
             Debug.Assert(valueLength <= value.Length);
             Debug.Assert(temp.Length >= valueLength + valueLength);
@@ -94,13 +94,13 @@ namespace System.Numerics
 
             value.Clear();
             //switch buffers
-            Span<uint> t = value;
+            Span<nuint> t = value;
             value = temp;
             temp = t;
             return ActualLength(value.Slice(0, resultLength));
         }
 
-        public static int PowBound(uint power, int valueLength)
+        public static int PowBound(nuint power, int valueLength)
         {
             // The basic pow algorithm, but instead of squaring
             // and multiplying we just sum up the lengths.
@@ -121,53 +121,68 @@ namespace System.Numerics
             return resultLength;
         }
 
-        public static uint Pow(uint value, uint power, uint modulus)
+        public static nuint Pow(nuint value, nuint power, nuint modulus)
         {
-            // The 32-bit modulus pow method for a 32-bit integer
+            // The single-limb modulus pow method for a single-limb integer
             // raised by a 32-bit integer...
 
             return PowCore(value, power, modulus, 1);
         }
 
-        public static uint Pow(ReadOnlySpan<uint> value, uint power, uint modulus)
+        public static nuint Pow(ReadOnlySpan<nuint> value, nuint power, nuint modulus)
         {
-            // The 32-bit modulus pow method for a big integer
+            // The single-limb modulus pow method for a big integer
             // raised by a 32-bit integer...
 
-            uint v = Remainder(value, modulus);
+            nuint v = Remainder(value, modulus);
             return PowCore(v, power, modulus, 1);
         }
 
-        public static uint Pow(uint value, ReadOnlySpan<uint> power, uint modulus)
+        public static nuint Pow(nuint value, ReadOnlySpan<nuint> power, nuint modulus)
         {
-            // The 32-bit modulus pow method for a 32-bit integer
+            // The single-limb modulus pow method for a single-limb integer
             // raised by a big integer...
 
             return PowCore(value, power, modulus, 1);
         }
 
-        public static uint Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power, uint modulus)
+        public static nuint Pow(ReadOnlySpan<nuint> value, ReadOnlySpan<nuint> power, nuint modulus)
         {
-            // The 32-bit modulus pow method for a big integer
+            // The single-limb modulus pow method for a big integer
             // raised by a big integer...
 
-            uint v = Remainder(value, modulus);
+            nuint v = Remainder(value, modulus);
             return PowCore(v, power, modulus, 1);
         }
 
-        private static uint PowCore(ulong value, ReadOnlySpan<uint> power, uint modulus, ulong result)
+        private static nuint PowCore(nuint value, ReadOnlySpan<nuint> power, nuint modulus, nuint result)
         {
-            // The 32-bit modulus pow algorithm for all but
+            // The single-limb modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
 
             for (int i = 0; i < power.Length - 1; i++)
             {
-                uint p = power[i];
-                for (int j = 0; j < 32; j++)
+                nuint p = power[i];
+                for (int j = 0; j < kcbitNuint; j++)
                 {
-                    if ((p & 1) == 1)
-                        result = (result * value) % modulus;
-                    value = (value * value) % modulus;
+                    if (nint.Size == 8)
+                    {
+                        if ((p & 1) == 1)
+                        {
+                            UInt128 prod = (UInt128)(ulong)result * (ulong)value;
+                            result = (nuint)(ulong)(prod % (ulong)modulus);
+                        }
+                        {
+                            UInt128 sq = (UInt128)(ulong)value * (ulong)value;
+                            value = (nuint)(ulong)(sq % (ulong)modulus);
+                        }
+                    }
+                    else
+                    {
+                        if ((p & 1) == 1)
+                            result = (nuint)(uint)(((ulong)result * value) % modulus);
+                        value = (nuint)(uint)(((ulong)value * value) % modulus);
+                    }
                     p >>= 1;
                 }
             }
@@ -175,31 +190,47 @@ namespace System.Numerics
             return PowCore(value, power[power.Length - 1], modulus, result);
         }
 
-        private static uint PowCore(ulong value, uint power, uint modulus, ulong result)
+        private static nuint PowCore(nuint value, nuint power, nuint modulus, nuint result)
         {
-            // The 32-bit modulus pow algorithm for the last or
+            // The single-limb modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
 
             while (power != 0)
             {
-                if ((power & 1) == 1)
-                    result = (result * value) % modulus;
-                if (power != 1)
-                    value = (value * value) % modulus;
+                if (nint.Size == 8)
+                {
+                    if ((power & 1) == 1)
+                    {
+                        UInt128 prod = (UInt128)(ulong)result * (ulong)value;
+                        result = (nuint)(ulong)(prod % (ulong)modulus);
+                    }
+                    if (power != 1)
+                    {
+                        UInt128 sq = (UInt128)(ulong)value * (ulong)value;
+                        value = (nuint)(ulong)(sq % (ulong)modulus);
+                    }
+                }
+                else
+                {
+                    if ((power & 1) == 1)
+                        result = (nuint)(uint)(((ulong)result * value) % modulus);
+                    if (power != 1)
+                        value = (nuint)(uint)(((ulong)value * value) % modulus);
+                }
                 power >>= 1;
             }
 
-            return (uint)(result % modulus);
+            return result % modulus;
         }
 
-        public static void Pow(uint value, uint power,
-                               ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(nuint value, nuint power,
+                               ReadOnlySpan<nuint> modulus, Span<nuint> bits)
         {
-            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
+            Pow(value != 0 ? new ReadOnlySpan<nuint>(in value) : default, power, modulus, bits);
         }
 
-        public static void Pow(ReadOnlySpan<uint> value, uint power,
-                               ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(ReadOnlySpan<nuint> value, nuint power,
+                               ReadOnlySpan<nuint> modulus, Span<nuint> bits)
         {
             Debug.Assert(!modulus.IsEmpty);
             Debug.Assert(bits.Length == modulus.Length + modulus.Length);
@@ -207,11 +238,11 @@ namespace System.Numerics
             // The big modulus pow method for a big integer
             // raised by a 32-bit integer...
 
-            uint[]? valueCopyFromPool = null;
+            nuint[]? valueCopyFromPool = null;
             int size = Math.Max(value.Length, bits.Length);
-            Span<uint> valueCopy = (size <= StackAllocThreshold ?
-                                   stackalloc uint[StackAllocThreshold]
-                                   : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> valueCopy = (size <= StackAllocThreshold ?
+                                   stackalloc nuint[StackAllocThreshold]
+                                   : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
 
             // smallish optimization here:
             // subsequent operations will copy the elements to the beginning of the buffer,
@@ -227,28 +258,28 @@ namespace System.Numerics
                 value.CopyTo(valueCopy);
             }
 
-            uint[]? tempFromPool = null;
-            Span<uint> temp = (bits.Length <= StackAllocThreshold ?
-                              stackalloc uint[StackAllocThreshold]
-                              : tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            nuint[]? tempFromPool = null;
+            Span<nuint> temp = (bits.Length <= StackAllocThreshold ?
+                              stackalloc nuint[StackAllocThreshold]
+                              : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
             if (valueCopyFromPool != null)
-                ArrayPool<uint>.Shared.Return(valueCopyFromPool);
+                ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
             if (tempFromPool != null)
-                ArrayPool<uint>.Shared.Return(tempFromPool);
+                ArrayPool<nuint>.Shared.Return(tempFromPool);
         }
 
-        public static void Pow(uint value, ReadOnlySpan<uint> power,
-                               ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(nuint value, ReadOnlySpan<nuint> power,
+                               ReadOnlySpan<nuint> modulus, Span<nuint> bits)
         {
-            Pow(value != 0U ? new ReadOnlySpan<uint>(in value) : default, power, modulus, bits);
+            Pow(value != 0 ? new ReadOnlySpan<nuint>(in value) : default, power, modulus, bits);
         }
 
-        public static void Pow(ReadOnlySpan<uint> value, ReadOnlySpan<uint> power,
-                               ReadOnlySpan<uint> modulus, Span<uint> bits)
+        public static void Pow(ReadOnlySpan<nuint> value, ReadOnlySpan<nuint> power,
+                               ReadOnlySpan<nuint> modulus, Span<nuint> bits)
         {
             Debug.Assert(!modulus.IsEmpty);
             Debug.Assert(bits.Length == modulus.Length + modulus.Length);
@@ -257,10 +288,10 @@ namespace System.Numerics
             // raised by a big integer...
 
             int size = Math.Max(value.Length, bits.Length);
-            uint[]? valueCopyFromPool = null;
-            Span<uint> valueCopy = (size <= StackAllocThreshold ?
-                                   stackalloc uint[StackAllocThreshold]
-                                   : valueCopyFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+            nuint[]? valueCopyFromPool = null;
+            Span<nuint> valueCopy = (size <= StackAllocThreshold ?
+                                   stackalloc nuint[StackAllocThreshold]
+                                   : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
 
             // smallish optimization here:
             // subsequent operations will copy the elements to the beginning of the buffer,
@@ -276,18 +307,18 @@ namespace System.Numerics
                 value.CopyTo(valueCopy);
             }
 
-            uint[]? tempFromPool = null;
-            Span<uint> temp = (bits.Length <= StackAllocThreshold ?
-                              stackalloc uint[StackAllocThreshold]
-                              : tempFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            nuint[]? tempFromPool = null;
+            Span<nuint> temp = (bits.Length <= StackAllocThreshold ?
+                              stackalloc nuint[StackAllocThreshold]
+                              : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
             if (valueCopyFromPool != null)
-                ArrayPool<uint>.Shared.Return(valueCopyFromPool);
+                ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
             if (tempFromPool != null)
-                ArrayPool<uint>.Shared.Return(tempFromPool);
+                ArrayPool<nuint>.Shared.Return(tempFromPool);
         }
 
 #if DEBUG
@@ -298,9 +329,9 @@ namespace System.Numerics
 #endif
         int ReducerThreshold = 32;
 
-        private static void PowCore(Span<uint> value, int valueLength,
-                                    ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus,
-                                    Span<uint> temp, Span<uint> bits)
+        private static void PowCore(Span<nuint> value, int valueLength,
+                                    ReadOnlySpan<nuint> power, ReadOnlySpan<nuint> modulus,
+                                    Span<nuint> temp, Span<nuint> bits)
         {
             // Executes the big pow algorithm.
 
@@ -308,121 +339,121 @@ namespace System.Numerics
 
             if (modulus.Length < ReducerThreshold)
             {
-                Span<uint> result = PowCore(value, valueLength, power, modulus, bits, 1, temp);
+                Span<nuint> result = PowCore(value, valueLength, power, modulus, bits, 1, temp);
                 result.CopyTo(bits);
                 bits.Slice(result.Length).Clear();
             }
             else
             {
                 int size = modulus.Length * 2 + 1;
-                uint[]? rFromPool = null;
-                Span<uint> r = ((uint)size <= StackAllocThreshold ?
-                               stackalloc uint[StackAllocThreshold]
-                               : rFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? rFromPool = null;
+                Span<nuint> r = ((uint)size <= StackAllocThreshold ?
+                               stackalloc nuint[StackAllocThreshold]
+                               : rFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 r.Clear();
 
                 size = r.Length - modulus.Length + 1;
-                uint[]? muFromPool = null;
-                Span<uint> mu = ((uint)size <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : muFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? muFromPool = null;
+                Span<nuint> mu = ((uint)size <= StackAllocThreshold ?
+                                stackalloc nuint[StackAllocThreshold]
+                                : muFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 mu.Clear();
 
                 size = modulus.Length * 2 + 2;
-                uint[]? q1FromPool = null;
-                Span<uint> q1 = ((uint)size <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : q1FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? q1FromPool = null;
+                Span<nuint> q1 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc nuint[StackAllocThreshold]
+                                : q1FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 q1.Clear();
 
-                uint[]? q2FromPool = null;
-                Span<uint> q2 = ((uint)size <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : q2FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? q2FromPool = null;
+                Span<nuint> q2 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc nuint[StackAllocThreshold]
+                                : q2FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 q2.Clear();
 
                 FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
 
                 if (rFromPool != null)
-                    ArrayPool<uint>.Shared.Return(rFromPool);
+                    ArrayPool<nuint>.Shared.Return(rFromPool);
 
-                Span<uint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
+                Span<nuint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
                 result.CopyTo(bits);
                 bits.Slice(result.Length).Clear();
 
                 if (muFromPool != null)
-                    ArrayPool<uint>.Shared.Return(muFromPool);
+                    ArrayPool<nuint>.Shared.Return(muFromPool);
                 if (q1FromPool != null)
-                    ArrayPool<uint>.Shared.Return(q1FromPool);
+                    ArrayPool<nuint>.Shared.Return(q1FromPool);
                 if (q2FromPool != null)
-                    ArrayPool<uint>.Shared.Return(q2FromPool);
+                    ArrayPool<nuint>.Shared.Return(q2FromPool);
             }
         }
 
-        private static void PowCore(Span<uint> value, int valueLength,
-                                    uint power, ReadOnlySpan<uint> modulus,
-                                    Span<uint> temp, Span<uint> bits)
+        private static void PowCore(Span<nuint> value, int valueLength,
+                                    nuint power, ReadOnlySpan<nuint> modulus,
+                                    Span<nuint> temp, Span<nuint> bits)
         {
             // Executes the big pow algorithm.
             bits[0] = 1;
 
             if (modulus.Length < ReducerThreshold)
             {
-                Span<uint> result = PowCore(value, valueLength, power, modulus, bits, 1, temp);
+                Span<nuint> result = PowCore(value, valueLength, power, modulus, bits, 1, temp);
                 result.CopyTo(bits);
                 bits.Slice(result.Length).Clear();
             }
             else
             {
                 int size = modulus.Length * 2 + 1;
-                uint[]? rFromPool = null;
-                Span<uint> r = ((uint)size <= StackAllocThreshold ?
-                               stackalloc uint[StackAllocThreshold]
-                               : rFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? rFromPool = null;
+                Span<nuint> r = ((uint)size <= StackAllocThreshold ?
+                               stackalloc nuint[StackAllocThreshold]
+                               : rFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 r.Clear();
 
                 size = r.Length - modulus.Length + 1;
-                uint[]? muFromPool = null;
-                Span<uint> mu = ((uint)size <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : muFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? muFromPool = null;
+                Span<nuint> mu = ((uint)size <= StackAllocThreshold ?
+                                stackalloc nuint[StackAllocThreshold]
+                                : muFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 mu.Clear();
 
                 size = modulus.Length * 2 + 2;
-                uint[]? q1FromPool = null;
-                Span<uint> q1 = ((uint)size <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : q1FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? q1FromPool = null;
+                Span<nuint> q1 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc nuint[StackAllocThreshold]
+                                : q1FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 q1.Clear();
 
-                uint[]? q2FromPool = null;
-                Span<uint> q2 = ((uint)size <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : q2FromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
+                nuint[]? q2FromPool = null;
+                Span<nuint> q2 = ((uint)size <= StackAllocThreshold ?
+                                stackalloc nuint[StackAllocThreshold]
+                                : q2FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
                 q2.Clear();
 
                 FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
 
                 if (rFromPool != null)
-                    ArrayPool<uint>.Shared.Return(rFromPool);
+                    ArrayPool<nuint>.Shared.Return(rFromPool);
 
-                Span<uint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
+                Span<nuint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
                 result.CopyTo(bits);
                 bits.Slice(result.Length).Clear();
 
                 if (muFromPool != null)
-                    ArrayPool<uint>.Shared.Return(muFromPool);
+                    ArrayPool<nuint>.Shared.Return(muFromPool);
                 if (q1FromPool != null)
-                    ArrayPool<uint>.Shared.Return(q1FromPool);
+                    ArrayPool<nuint>.Shared.Return(q1FromPool);
                 if (q2FromPool != null)
-                    ArrayPool<uint>.Shared.Return(q2FromPool);
+                    ArrayPool<nuint>.Shared.Return(q2FromPool);
             }
         }
 
-        private static Span<uint> PowCore(Span<uint> value, int valueLength,
-                                          ReadOnlySpan<uint> power, ReadOnlySpan<uint> modulus,
-                                          Span<uint> result, int resultLength,
-                                          Span<uint> temp)
+        private static Span<nuint> PowCore(Span<nuint> value, int valueLength,
+                                          ReadOnlySpan<nuint> power, ReadOnlySpan<nuint> modulus,
+                                          Span<nuint> result, int resultLength,
+                                          Span<nuint> temp)
         {
             // The big modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
@@ -432,8 +463,8 @@ namespace System.Numerics
 
             for (int i = 0; i < power.Length - 1; i++)
             {
-                uint p = power[i];
-                for (int j = 0; j < 32; j++)
+                nuint p = power[i];
+                for (int j = 0; j < kcbitNuint; j++)
                 {
                     if ((p & 1) == 1)
                     {
@@ -449,10 +480,10 @@ namespace System.Numerics
             return PowCore(value, valueLength, power[power.Length - 1], modulus, result, resultLength, temp);
         }
 
-        private static Span<uint> PowCore(Span<uint> value, int valueLength,
-                                          uint power, ReadOnlySpan<uint> modulus,
-                                          Span<uint> result, int resultLength,
-                                          Span<uint> temp)
+        private static Span<nuint> PowCore(Span<nuint> value, int valueLength,
+                                          nuint power, ReadOnlySpan<nuint> modulus,
+                                          Span<nuint> result, int resultLength,
+                                          Span<nuint> temp)
         {
             // The big modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
@@ -478,10 +509,10 @@ namespace System.Numerics
             return result.Slice(0, resultLength);
         }
 
-        private static Span<uint> PowCore(Span<uint> value, int valueLength,
-                                          ReadOnlySpan<uint> power, in FastReducer reducer,
-                                          Span<uint> result, int resultLength,
-                                          Span<uint> temp)
+        private static Span<nuint> PowCore(Span<nuint> value, int valueLength,
+                                          ReadOnlySpan<nuint> power, in FastReducer reducer,
+                                          Span<nuint> result, int resultLength,
+                                          Span<nuint> temp)
         {
             // The big modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
@@ -491,8 +522,8 @@ namespace System.Numerics
 
             for (int i = 0; i < power.Length - 1; i++)
             {
-                uint p = power[i];
-                for (int j = 0; j < 32; j++)
+                nuint p = power[i];
+                for (int j = 0; j < kcbitNuint; j++)
                 {
                     if ((p & 1) == 1)
                     {
@@ -508,10 +539,10 @@ namespace System.Numerics
             return PowCore(value, valueLength, power[power.Length - 1], reducer, result, resultLength, temp);
         }
 
-        private static Span<uint> PowCore(Span<uint> value, int valueLength,
-                                          uint power, in FastReducer reducer,
-                                          Span<uint> result, int resultLength,
-                                          Span<uint> temp)
+        private static Span<nuint> PowCore(Span<nuint> value, int valueLength,
+                                          nuint power, in FastReducer reducer,
+                                          Span<nuint> result, int resultLength,
+                                          Span<nuint> temp)
         {
             // The big modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.

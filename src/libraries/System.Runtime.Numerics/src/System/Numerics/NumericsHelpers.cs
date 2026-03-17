@@ -10,8 +10,6 @@ namespace System.Numerics
 {
     internal static class NumericsHelpers
     {
-        private const int kcbitUint = 32;
-
         public static void GetDoubleParts(double dbl, out int sign, out int exp, out ulong man, out bool fFinite)
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(dbl);
@@ -98,7 +96,7 @@ namespace System.Numerics
 
         // Do an in-place two's complement. "Dangerous" because it causes
         // a mutation and needs to be used with care for immutable types.
-        public static void DangerousMakeTwosComplement(Span<uint> d)
+        public static void DangerousMakeTwosComplement(Span<nuint> d)
         {
             // Given a number:
             //     XXXXXXXXXXXY00000
@@ -108,7 +106,7 @@ namespace System.Numerics
             // where A = ~X and B = -Y
 
             // Trim trailing 0s (at the first in little endian array)
-            int i = d.IndexOfAnyExcept(0u);
+            int i = d.IndexOfAnyExcept((nuint)0);
 
             if ((uint)i >= (uint)d.Length)
             {
@@ -116,7 +114,7 @@ namespace System.Numerics
             }
 
             // Make the first non-zero element to be two's complement
-            d[i] = (uint)(-(int)d[i]);
+            d[i] = (nuint)(-(nint)d[i]);
             d = d.Slice(i + 1);
 
             if (d.IsEmpty)
@@ -129,7 +127,7 @@ namespace System.Numerics
 
         // Do an in-place one's complement. "Dangerous" because it causes
         // a mutation and needs to be used with care for immutable types.
-        public static void DangerousMakeOnesComplement(Span<uint> d)
+        public static void DangerousMakeOnesComplement(Span<nuint> d)
         {
             // Given a number:
             //     XXXXXXXXXXX
@@ -139,27 +137,27 @@ namespace System.Numerics
             // where A = ~X
 
             int offset = 0;
-            ref uint start = ref MemoryMarshal.GetReference(d);
+            ref nuint start = ref MemoryMarshal.GetReference(d);
 
-            while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<uint>.Count)
+            while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<nuint>.Count)
             {
-                Vector512<uint> complement = ~Vector512.LoadUnsafe(ref start, (nuint)offset);
+                Vector512<nuint> complement = ~Vector512.LoadUnsafe(ref start, (nuint)offset);
                 Vector512.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector512<uint>.Count;
+                offset += Vector512<nuint>.Count;
             }
 
-            while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<uint>.Count)
+            while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<nuint>.Count)
             {
-                Vector256<uint> complement = ~Vector256.LoadUnsafe(ref start, (nuint)offset);
+                Vector256<nuint> complement = ~Vector256.LoadUnsafe(ref start, (nuint)offset);
                 Vector256.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector256<uint>.Count;
+                offset += Vector256<nuint>.Count;
             }
 
-            while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<uint>.Count)
+            while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<nuint>.Count)
             {
-                Vector128<uint> complement = ~Vector128.LoadUnsafe(ref start, (nuint)offset);
+                Vector128<nuint> complement = ~Vector128.LoadUnsafe(ref start, (nuint)offset);
                 Vector128.StoreUnsafe(complement, ref start, (nuint)offset);
-                offset += Vector128<uint>.Count;
+                offset += Vector128<nuint>.Count;
             }
 
             for (; offset < d.Length; offset++)
@@ -168,17 +166,12 @@ namespace System.Numerics
             }
         }
 
-        public static ulong MakeUInt64(uint uHi, uint uLo)
-        {
-            return ((ulong)uHi << kcbitUint) | uLo;
-        }
-
-        public static uint Abs(int a)
+        public static nuint Abs(nint a)
         {
             unchecked
             {
-                uint mask = (uint)(a >> 31);
-                return ((uint)a ^ mask) - mask;
+                nuint mask = (nuint)(a >> (nint.Size * 8 - 1));
+                return ((nuint)a ^ mask) - mask;
             }
         }
     }
