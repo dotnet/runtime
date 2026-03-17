@@ -4797,23 +4797,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // On portable entry point platforms, managed calli targets are portable entry
-        // points with a MethodDesc. At execution time, interpreted methods and FCalls
-        // have no native entry point in the PortableEntryPoint and are dispatched via
-        // CALL_INTERP_METHOD. Newobj allocator helpers carry both a native entry point
-        // and a dummy MethodDesc, so the call cookie is derived from the MethodDesc.
-        // The compile-time cookie is not used for managed callis, so pass NULL to avoid
-        // asserting on signatures that ComputeCalliSigThunk does not recognize
-        // (e.g. delegate invokes).
+        // Get cookie for unmanaged calli. For managed calli and FCalls, the cookie will be NULL
+        // and the interpreter will resolve the call at runtime from the PortableEntryPoint's MethodDesc.
+        CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isUnmanaged)
         {
-            CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
-            bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
-            if (isUnmanaged)
-            {
-                calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
-            }
-            // For managed callis, calliCookie stays NULL — the interpreter resolves
-            // the call at runtime from the PortableEntryPoint's MethodDesc.
+            calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
         }
 #else
         calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
