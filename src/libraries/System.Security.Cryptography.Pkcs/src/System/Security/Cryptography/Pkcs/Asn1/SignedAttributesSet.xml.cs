@@ -9,13 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct SignedAttributesSet
-    {
-        internal System.Security.Cryptography.Asn1.AttributeAsn[]? SignedAttributes;
-
 #if DEBUG
-        static SignedAttributesSet()
+    file static class ValidateSignedAttributesSet
+    {
+        static ValidateSignedAttributesSet()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -29,6 +26,24 @@ namespace System.Security.Cryptography.Pkcs
             };
 
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "SignedAttributes");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct SignedAttributesSet
+    {
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? SignedAttributes;
+
+#if DEBUG
+        static SignedAttributesSet()
+        {
+            ValidateSignedAttributesSet.Validate();
         }
 #endif
 

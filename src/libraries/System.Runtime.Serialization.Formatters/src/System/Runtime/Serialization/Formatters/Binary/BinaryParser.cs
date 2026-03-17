@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal MemberPrimitiveUnTyped? memberPrimitiveUnTyped;
         internal MemberReference? _memberReference;
         internal ObjectNull? _objectNull;
-        internal static volatile MessageEnd? _messageEnd;
+        internal static MessageEnd? _messageEnd;
 
         internal BinaryParser(Stream stream, ObjectReader objectReader)
         {

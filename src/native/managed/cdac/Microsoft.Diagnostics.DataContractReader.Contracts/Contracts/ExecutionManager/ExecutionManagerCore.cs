@@ -32,6 +32,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _r2rJitManager = new ReadyToRunJitManager(_target);
     }
 
+    public void Flush()
+    {
+        _codeInfos.Clear();
+    }
+
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {

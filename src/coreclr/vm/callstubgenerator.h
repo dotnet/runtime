@@ -124,12 +124,14 @@ class CallStubGenerator
         ReturnTypeSwiftLowered,
 #endif // TARGET_APPLE
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        ReturnTypeFloat,
+        ReturnType2Float,
         ReturnType2I8,
         ReturnType2Double,
         ReturnTypeFloatInt,
         ReturnTypeIntFloat,
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     };
 
     enum class RoutineType

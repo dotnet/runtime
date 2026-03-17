@@ -38,9 +38,9 @@ namespace Microsoft.Win32.SafeHandles
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
         // not using bool? as it's not thread safe
-        private volatile NullableBool _canSeek /* = NullableBool.Undefined */;
-        private volatile NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
-        private volatile NullableBool _isAsync /* = NullableBool.Undefined */;
+        private NullableBool _canSeek /* = NullableBool.Undefined */;
+        private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
+        private NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
