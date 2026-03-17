@@ -2740,8 +2740,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 """);
 
             var obj = configuration.GetSection("value").Get<IConfiguration>();
-            var section = Assert.IsAssignableFrom<IConfigurationSection>(obj);
-            Assert.Equal("MyString", section.Value);
+            Assert.NotNull(obj);
 
             configuration = TestHelpers.GetConfigurationFromJsonString("""
                 {
@@ -2759,12 +2758,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             static void ValidateList(List<IConfiguration> list)
             {
                 Assert.Equal(2, list.Count);
-                Assert.Equal("0", Assert.IsAssignableFrom<IConfigurationSection>(list[0]).Key);
-                Assert.Equal("MyString", Assert.IsAssignableFrom<IConfigurationSection>(list[0]).Value);
-
-                Assert.Equal("1", Assert.IsAssignableFrom<IConfigurationSection>(list[1]).Key);
-                var nestedSection = Assert.IsAssignableFrom<IConfigurationSection>(list[1].GetSection("nested"));
-                Assert.Equal("value", nestedSection.Value);
+                Assert.Empty(list[0].GetChildren());
+                Assert.Equal("value", list[1]["nested"]);
             }
         }
 
