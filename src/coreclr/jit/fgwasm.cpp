@@ -2166,10 +2166,6 @@ PhaseStatus Compiler::fgWasmEhFlow()
         // Resumption block is where control goes if there is a native exception.
         //
         BasicBlock* const resumptionBlock = hasContinuations ? switchBlock : rethrowBlock;
-
-        // Split the try entry block so we can create a branch to the resumption block.
-        // Note this is inside the try so it can handle resumptions inside the try.
-        //
         fgSplitBlockAtBeginning(regionEntryBlock);
 
         assert(regionEntryBlock->isEmpty());
@@ -2227,8 +2223,28 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
             for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                BasicBlock* const continuation = catchRetBlock->GetTarget();
-                unsigned const    caseIndex    = catchRetBlock->bbPreorderNum;
+                BasicBlock* continuation = nullptr;
+
+                if (catchRetBlock->KindIs(BBJ_EHCATCHRET))
+                {
+                    continuation = catchRetBlock->GetTarget();
+                }
+                else
+                {
+                    // If the catchret block was also a try entry, may have split it.
+                    // If so, the continuation should be the target of the false target.
+                    // TODO: split this eagerly when we're looking for catchrets?
+                    //
+                    assert(catchRetBlock->KindIs(BBJ_COND));
+                    assert(catchRetBlock->GetFalseTarget()->KindIs(BBJ_EHCATCHRET));
+
+                    JITDUMP("Catchret block " FMT_BB " was a try entry and was split; using " FMT_BB
+                            " to find the continuation\n",
+                            catchRetBlock->bbNum, catchRetBlock->GetFalseTarget()->bbNum);
+                    continuation = catchRetBlock->GetFalseTarget()->GetTarget();
+                }
+
+                unsigned const caseIndex = catchRetBlock->bbPreorderNum;
                 assert(caseIndex >= caseBias);
                 unsigned const biasedCaseIndex = caseIndex - caseBias;
                 assert(biasedCaseIndex < caseCount);
@@ -2264,9 +2280,22 @@ PhaseStatus Compiler::fgWasmEhFlow()
             BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
             for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                BasicBlock* const succ = catchRetBlock->GetTarget();
+                BasicBlock* continuation = nullptr;
 
-                if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+                // See note above about try entrys that were also catchrets
+                //
+                if (catchRetBlock->KindIs(BBJ_EHCATCHRET))
+                {
+                    continuation = catchRetBlock->GetTarget();
+                }
+                else
+                {
+                    assert(catchRetBlock->KindIs(BBJ_COND));
+                    assert(catchRetBlock->GetFalseTarget()->KindIs(BBJ_EHCATCHRET));
+                    continuation = catchRetBlock->GetFalseTarget()->GetTarget();
+                }
+
+                if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
                 {
                     succCount++;
                 }
@@ -2286,11 +2315,24 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
             for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                BasicBlock* const succ = catchRetBlock->GetTarget();
+                BasicBlock* continuation = nullptr;
 
-                if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, succ->bbNum))
+                // See note above about try entrys that were also catchrets
+                //
+                if (catchRetBlock->KindIs(BBJ_EHCATCHRET))
                 {
-                    succs[succNumber] = fgGetPredForBlock(succ, switchBlock);
+                    continuation = catchRetBlock->GetTarget();
+                }
+                else
+                {
+                    assert(catchRetBlock->KindIs(BBJ_COND));
+                    assert(catchRetBlock->GetFalseTarget()->KindIs(BBJ_EHCATCHRET));
+                    continuation = catchRetBlock->GetFalseTarget()->GetTarget();
+                }
+
+                if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+                {
+                    succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
                     succNumber++;
                 }
             }
