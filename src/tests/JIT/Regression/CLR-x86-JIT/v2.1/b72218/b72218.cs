@@ -19,7 +19,7 @@ public class My
     }
 
     [OuterLoop]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
 

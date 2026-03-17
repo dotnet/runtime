@@ -42,7 +42,7 @@ public class ExternalException : Exception
     public static int Ignored { get; set; }
 
     [OuterLoop]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         ExitCode = 100;
