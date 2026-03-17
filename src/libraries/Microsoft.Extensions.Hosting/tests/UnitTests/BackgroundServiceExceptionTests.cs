@@ -330,7 +330,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         /// A BackgroundService that overrides <see cref="ExecuteTask"/> to return a separately
         /// controlled task. The internal _executeTask (used by BackgroundService.StopAsync) completes
         /// normally on cancellation, but the overridden ExecuteTask (monitored by
-        /// TryExecuteBackgroundServiceAsync) faults 200ms after StopAsync, deterministically
+        /// TryExecuteBackgroundServiceAsync) faults 200ms after StopAsync, usually
         /// reproducing the race window.
         /// </summary>
         private class DelayedMonitorFaultService : BackgroundService
