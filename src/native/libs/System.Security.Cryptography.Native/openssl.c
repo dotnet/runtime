@@ -1042,7 +1042,7 @@ int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
 }
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc_arg, void *ptr)
+static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc_arg, void* ptr)
 {
     freefunc_arg(ptr);
 }
