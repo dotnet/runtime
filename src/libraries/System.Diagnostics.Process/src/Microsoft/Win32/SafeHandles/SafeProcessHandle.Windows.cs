@@ -520,8 +520,7 @@ namespace Microsoft.Win32.SafeHandles
             int error = Marshal.GetLastPInvokeError();
             return error switch
             {
-                Interop.Errors.ERROR_SUCCESS => true,
-                Interop.Errors.ERROR_ACCESS_DENIED => false,
+                Interop.Errors.ERROR_ACCESS_DENIED => false, // process already exited
                 _ => throw new Win32Exception(error),
             };
         }
