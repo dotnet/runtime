@@ -3555,13 +3555,6 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     def fmt_val(v):
         return "{:,.2f}".format(v) if isinstance(v, float) else "{:,d}".format(v)
 
-    def is_significant_metric_diff(base_val, diff_val):
-        if base_val == diff_val:
-            return False
-        if base_val == 0:
-            return diff_val != 0
-        return abs(compute_pct(base_val, diff_val)) >= 0.01
-
     write_jit_options(base_jit_options, diff_jit_options, write_fh)
 
     # Collect the union of all metrics across all collections (preserving first-seen order)
@@ -3571,7 +3564,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     metrics_with_diffs = set()
     for metric in all_metrics:
         significant_diffs = [(mch, base, diff) for (mch, _, base, diff) in metric_diffs
-                             if metric in base and is_significant_metric_diff(base[metric], diff[metric])]
+                             if metric in base and abs(compute_pct(base[metric], diff[metric])) >= 0.01]
         if not significant_diffs:
             continue
 
