@@ -6310,6 +6310,7 @@ public:
 #ifdef TARGET_WASM
     FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmEhFlow();
+    void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
 #ifdef DEBUG

@@ -2147,211 +2147,12 @@ PhaseStatus Compiler::fgWasmEhFlow()
     unsigned regionIndex = 0;
     for (ArrayStack<BasicBlock*>* catchRetBlocks : catchRetBlocksByTryRegion)
     {
-        if (catchRetBlocks == nullptr)
+        if (catchRetBlocks != nullptr)
         {
-            regionIndex++;
-            continue;
+            fgWasmEhTransformTry(catchRetBlocks, regionIndex, catchRetIndexLocalNum);
         }
-
-        assert(catchRetBlocks->Height() > 0);
-
-        EHblkDsc* const   dsc              = ehGetDsc(regionIndex);
-        BasicBlock* const regionEntryBlock = dsc->ebdTryBeg;
-        BasicBlock* const regionLastBlock  = dsc->ebdTryLast;
-
-        // Prepare to create a block for the switch and the "rethrow"
-        //
-        // The switch and rethrow needs to go in the enclosing region for the try,
-        // so we need to skip over any mutual protect trys.
-        //
-        unsigned const enclosingTryIndex = ehTrueEnclosingTryIndex(regionIndex);
-        unsigned const enclosingHndIndex = ehGetEnclosingHndIndex(regionIndex);
-
-        // Translate these to the "biased form" for insertion point finding
-        //
-        unsigned const biasedEnclosingTryIndex =
-            enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX ? 0 : (enclosingTryIndex + 1);
-        unsigned const biasedEnclosingHndIndex =
-            enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX ? 0 : (enclosingHndIndex + 1);
 
         regionIndex++;
-
-        BasicBlock* const switchBlock =
-            fgNewBBinRegion(BBJ_SWITCH, biasedEnclosingTryIndex, biasedEnclosingHndIndex, regionLastBlock);
-        BasicBlock* const rethrowBlock =
-            fgNewBBinRegion(BBJ_THROW, biasedEnclosingTryIndex, biasedEnclosingHndIndex, switchBlock);
-
-        // Split the header so we can branch to the switch on exception.
-        //
-        fgSplitBlockAtBeginning(regionEntryBlock);
-        assert(regionEntryBlock->isEmpty());
-        assert(regionEntryBlock->KindIs(BBJ_ALWAYS));
-
-        // Capture the edge representing normal control flow into the try.
-        //
-        FlowEdge* const normalEntryEdge = regionEntryBlock->GetTargetEdge();
-
-        // Insert a branch to the switch block: "branch if exception"
-        //
-        FlowEdge* const resumptionEdge = fgAddRefPred(switchBlock, regionEntryBlock);
-        resumptionEdge->setLikelihood(0);
-
-        regionEntryBlock->SetKind(BBJ_COND);
-        regionEntryBlock->SetTrueEdge(resumptionEdge);
-        regionEntryBlock->SetFalseEdge(normalEntryEdge);
-
-        // Create the IR for the branch block.
-        // Use the special wasm GT_WASM_IF_EXCEPT for predicate.
-        //
-        GenTree* const compareNode = new (this, GT_WASM_IF_EXCEPT) GenTree(GT_WASM_IF_EXCEPT, TYP_INT);
-        GenTree* const jumpNode    = gtNewOperNode(GT_JTRUE, TYP_VOID, compareNode);
-
-        jumpNode->gtFlags |= GTF_JTRUE_WASM_EH;
-
-        if (regionEntryBlock->IsLIR())
-        {
-            LIR::Range range = LIR::SeqTree(this, jumpNode);
-            LIR::AsRange(regionEntryBlock).InsertAtEnd(std::move(range));
-        }
-        else
-        {
-            Statement* const jtrueStmt = fgNewStmtAtEnd(regionEntryBlock, jumpNode);
-            gtSetStmtInfo(jtrueStmt);
-            fgSetStmtSeq(jtrueStmt);
-        }
-
-        // Create the IR for the switch block.
-        //
-        unsigned const caseCount  = catchRetBlocks->Height() + 1;
-        unsigned const caseBias   = catchRetBlocks->Top()->bbPreorderNum;
-        unsigned       caseNumber = 0;
-
-        JITDUMP("Dispatch switch block is " FMT_BB "; %u cases\n", switchBlock->bbNum, caseCount);
-
-        // Fill in the case info
-        //
-        FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
-        for (unsigned i = 0; i < caseCount; i++)
-        {
-            cases[i] = nullptr;
-        }
-
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
-        {
-            assert(catchRetBlock->KindIs(BBJ_EHCATCHRET));
-            BasicBlock* const continuation = catchRetBlock->GetTarget();
-            unsigned const    caseIndex    = catchRetBlock->bbPreorderNum;
-            assert(caseIndex >= caseBias);
-            unsigned const biasedCaseIndex = caseIndex - caseBias;
-            assert(biasedCaseIndex < caseCount);
-
-            JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
-            FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
-
-            assert(cases[biasedCaseIndex] == nullptr);
-            cases[biasedCaseIndex] = caseEdge;
-
-            // We only get here on exception
-            caseEdge->setLikelihood(0);
-            caseNumber++;
-        }
-
-        // The "default" case of the switch goes to the rethrow block.
-        // Likelihoods here are unclear since all this code is only reachable via
-        // exception, so we just set the rethrow case to be 1.0.
-        //
-        FlowEdge* const rethrowCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
-        rethrowCaseEdge->setLikelihood(0);
-
-        JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, switchBlock->bbNum);
-        cases[caseNumber++] = rethrowCaseEdge;
-
-        assert(caseNumber == caseCount);
-
-        // Determine the number of unqiue successsors.
-        //
-        unsigned succCount = 0;
-
-        BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
-        BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
-        {
-            BasicBlock* const continuation = catchRetBlock->GetTarget();
-            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
-            {
-                succCount++;
-            }
-        }
-
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
-        {
-            succCount++;
-        }
-
-        unsigned succNumber = 0;
-
-        // Fill in unique successor info
-        //
-        FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[succCount];
-        BitVecOps::ClearD(&bitVecTraits, succBlocks);
-
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
-        {
-            BasicBlock* const continuation = catchRetBlock->GetTarget();
-            if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
-            {
-                succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
-                succNumber++;
-            }
-        }
-
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
-        {
-            succs[succNumber] = rethrowCaseEdge;
-            succNumber++;
-        }
-
-        assert(succNumber == succCount);
-
-        // Install the switch info on the switch block.
-        //
-        BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
-        switchBlock->SetSwitch(swtDesc);
-
-        // Build the IR for the switch
-        //
-        GenTree* const biasValue          = gtNewIconNode(caseBias);
-        GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
-        GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
-        GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
-
-        if (regionEntryBlock->IsLIR())
-        {
-            LIR::Range range = LIR::SeqTree(this, switchNode);
-            LIR::AsRange(switchBlock).InsertAtEnd(std::move(range));
-        }
-        else
-        {
-            Statement* const switchStmt = fgNewStmtAtEnd(switchBlock, switchNode);
-            gtSetStmtInfo(switchStmt);
-            fgSetStmtSeq(switchStmt);
-        }
-
-        // Build the IR for the rethrow block.
-        //
-        GenTree* const rethrowNode = new (this, GT_WASM_THROW_REF) GenTree(GT_WASM_THROW_REF, TYP_VOID);
-
-        if (rethrowBlock->IsLIR())
-        {
-            LIR::Range range = LIR::SeqTree(this, rethrowNode);
-            LIR::AsRange(rethrowBlock).InsertAtEnd(std::move(range));
-        }
-        else
-        {
-            Statement* const rethrowStmt = fgNewStmtAtEnd(rethrowBlock, rethrowNode);
-            gtSetStmtInfo(rethrowStmt);
-            fgSetStmtSeq(rethrowStmt);
-        }
     }
 
     // At the end of each catchret block, set the control variable to the appropriate value.
@@ -2383,7 +2184,218 @@ PhaseStatus Compiler::fgWasmEhFlow()
         }
     }
 
-    // In each continuation reset the value to 0...?
-
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgWasmEhTransformTry: For a single try region with catch-return continuations,
+//    add code that transfers control to the appropriate continuation (or rethrows)
+//    after an exception.
+//
+// Arguments:
+//    catchRetBlocks        - the catch-return blocks for this try region
+//    regionIndex           - the EH region index of the try
+//    catchRetIndexLocalNum - the local variable number holding the catchret index
+//
+void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
+                                    unsigned                 regionIndex,
+                                    unsigned                 catchRetIndexLocalNum)
+{
+    assert(catchRetBlocks->Height() > 0);
+
+    EHblkDsc* const   dsc              = ehGetDsc(regionIndex);
+    BasicBlock* const regionEntryBlock = dsc->ebdTryBeg;
+    BasicBlock* const regionLastBlock  = dsc->ebdTryLast;
+
+    // Prepare to create a block for the switch and the "rethrow"
+    //
+    // The switch and rethrow needs to go in the enclosing region for the try,
+    // so we need to skip over any mutual protect trys.
+    //
+    unsigned const enclosingTryIndex = ehTrueEnclosingTryIndex(regionIndex);
+    unsigned const enclosingHndIndex = ehGetEnclosingHndIndex(regionIndex);
+
+    // Translate these to the "biased form" for insertion point finding
+    //
+    unsigned const biasedEnclosingTryIndex =
+        enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX ? 0 : (enclosingTryIndex + 1);
+    unsigned const biasedEnclosingHndIndex =
+        enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX ? 0 : (enclosingHndIndex + 1);
+
+    BasicBlock* const switchBlock =
+        fgNewBBinRegion(BBJ_SWITCH, biasedEnclosingTryIndex, biasedEnclosingHndIndex, regionLastBlock);
+    BasicBlock* const rethrowBlock =
+        fgNewBBinRegion(BBJ_THROW, biasedEnclosingTryIndex, biasedEnclosingHndIndex, switchBlock);
+
+    // Split the header so we can branch to the switch on exception.
+    //
+    fgSplitBlockAtBeginning(regionEntryBlock);
+    assert(regionEntryBlock->isEmpty());
+    assert(regionEntryBlock->KindIs(BBJ_ALWAYS));
+
+    // Capture the edge representing normal control flow into the try.
+    //
+    FlowEdge* const normalEntryEdge = regionEntryBlock->GetTargetEdge();
+
+    // Insert a branch to the switch block: "branch if exception"
+    //
+    FlowEdge* const resumptionEdge = fgAddRefPred(switchBlock, regionEntryBlock);
+    resumptionEdge->setLikelihood(0);
+
+    regionEntryBlock->SetKind(BBJ_COND);
+    regionEntryBlock->SetTrueEdge(resumptionEdge);
+    regionEntryBlock->SetFalseEdge(normalEntryEdge);
+
+    // Create the IR for the branch block.
+    // Use the special wasm GT_WASM_IF_EXCEPT for predicate.
+    //
+    GenTree* const compareNode = new (this, GT_WASM_IF_EXCEPT) GenTree(GT_WASM_IF_EXCEPT, TYP_INT);
+    GenTree* const jumpNode    = gtNewOperNode(GT_JTRUE, TYP_VOID, compareNode);
+
+    jumpNode->gtFlags |= GTF_JTRUE_WASM_EH;
+
+    if (regionEntryBlock->IsLIR())
+    {
+        LIR::Range range = LIR::SeqTree(this, jumpNode);
+        LIR::AsRange(regionEntryBlock).InsertAtEnd(std::move(range));
+    }
+    else
+    {
+        Statement* const jtrueStmt = fgNewStmtAtEnd(regionEntryBlock, jumpNode);
+        gtSetStmtInfo(jtrueStmt);
+        fgSetStmtSeq(jtrueStmt);
+    }
+
+    // Create the IR for the switch block.
+    //
+    unsigned const caseCount  = catchRetBlocks->Height() + 1;
+    unsigned const caseBias   = catchRetBlocks->Top()->bbPreorderNum;
+    unsigned       caseNumber = 0;
+
+    JITDUMP("Dispatch switch block is " FMT_BB "; %u cases\n", switchBlock->bbNum, caseCount);
+
+    // Fill in the case info
+    //
+    FlowEdge** const cases = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
+    for (unsigned i = 0; i < caseCount; i++)
+    {
+        cases[i] = nullptr;
+    }
+
+    for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+    {
+        assert(catchRetBlock->KindIs(BBJ_EHCATCHRET));
+        BasicBlock* const continuation = catchRetBlock->GetTarget();
+        unsigned const    caseIndex    = catchRetBlock->bbPreorderNum;
+        assert(caseIndex >= caseBias);
+        unsigned const biasedCaseIndex = caseIndex - caseBias;
+        assert(biasedCaseIndex < caseCount);
+
+        JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
+        FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
+
+        assert(cases[biasedCaseIndex] == nullptr);
+        cases[biasedCaseIndex] = caseEdge;
+
+        // We only get here on exception
+        caseEdge->setLikelihood(0);
+        caseNumber++;
+    }
+
+    // The "default" case of the switch goes to the rethrow block.
+    // Likelihoods here are unclear since all this code is only reachable via
+    // exception, so we just set the rethrow case to be 1.0.
+    //
+    FlowEdge* const rethrowCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
+    rethrowCaseEdge->setLikelihood(0);
+
+    JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, switchBlock->bbNum);
+    cases[caseNumber++] = rethrowCaseEdge;
+
+    assert(caseNumber == caseCount);
+
+    // Determine the number of unqiue successsors.
+    //
+    unsigned succCount = 0;
+
+    BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+    BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+    for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+    {
+        BasicBlock* const continuation = catchRetBlock->GetTarget();
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+        {
+            succCount++;
+        }
+    }
+
+    if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
+    {
+        succCount++;
+    }
+
+    unsigned succNumber = 0;
+
+    // Fill in unique successor info
+    //
+    FlowEdge** const succs = new (this, CMK_FlowEdge) FlowEdge*[succCount];
+    BitVecOps::ClearD(&bitVecTraits, succBlocks);
+
+    for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+    {
+        BasicBlock* const continuation = catchRetBlock->GetTarget();
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+        {
+            succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
+            succNumber++;
+        }
+    }
+
+    if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, rethrowBlock->bbNum))
+    {
+        succs[succNumber] = rethrowCaseEdge;
+        succNumber++;
+    }
+
+    assert(succNumber == succCount);
+
+    // Install the switch info on the switch block.
+    //
+    BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
+    switchBlock->SetSwitch(swtDesc);
+
+    // Build the IR for the switch
+    //
+    GenTree* const biasValue          = gtNewIconNode(caseBias);
+    GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
+    GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
+    GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
+
+    if (regionEntryBlock->IsLIR())
+    {
+        LIR::Range range = LIR::SeqTree(this, switchNode);
+        LIR::AsRange(switchBlock).InsertAtEnd(std::move(range));
+    }
+    else
+    {
+        Statement* const switchStmt = fgNewStmtAtEnd(switchBlock, switchNode);
+        gtSetStmtInfo(switchStmt);
+        fgSetStmtSeq(switchStmt);
+    }
+
+    // Build the IR for the rethrow block.
+    //
+    GenTree* const rethrowNode = new (this, GT_WASM_THROW_REF) GenTree(GT_WASM_THROW_REF, TYP_VOID);
+
+    if (rethrowBlock->IsLIR())
+    {
+        LIR::Range range = LIR::SeqTree(this, rethrowNode);
+        LIR::AsRange(rethrowBlock).InsertAtEnd(std::move(range));
+    }
+    else
+    {
+        Statement* const rethrowStmt = fgNewStmtAtEnd(rethrowBlock, rethrowNode);
+        gtSetStmtInfo(rethrowStmt);
+        fgSetStmtSeq(rethrowStmt);
+    }
 }
