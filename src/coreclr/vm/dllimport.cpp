@@ -1564,11 +1564,14 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS | PINVOKESTUB_FL_TARGET_HAS_THIS,
+                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS,
                 iLCIDParamIdx,
                 pTargetMD)
     {
         STANDARD_VM_CONTRACT;
+        // We're creating a reverse stub where only the target has a managed 'this' pointer.
+        // So explicitly tell the stub linker that there is no this pointer to get correct argument indexes.
+        m_slIL.SetHasThis(false);
     }
 
     void BeginEmit(DWORD dwStubFlags)  // COM to CLR IL
@@ -1577,7 +1580,13 @@ public:
 
         ILStubState::BeginEmit(dwStubFlags);
 
-        m_slIL.GetDispatchCodeStream()->EmitLoadThis();
+        ILCodeStream* pDispatch = m_slIL.GetDispatchCodeStream();
+
+        // Add argument for the native 'this' pointer (the COM IP)
+        DWORD dwNativeThisArg = pDispatch->SetStubTargetArgType(ELEMENT_TYPE_I, false);
+        _ASSERTE(dwNativeThisArg == 0);
+        pDispatch->EmitLDARG(dwNativeThisArg);
+        pDispatch->EmitCALL(METHOD__INTERFACEMARSHALER__GET_OBJECT_FOR_COM_CALLABLE_WRAPPER_IUNKNOWN, 1, 1);
     }
 };
 
@@ -3755,6 +3764,13 @@ static void CreatePInvokeStubWorker(StubState*               pss,
     if (SF_IsCOMStub(dwStubFlags))
     {
         ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+
+        if (SF_IsReverseStub(dwStubFlags))
+        {
+            // Reverse COM interop stubs have an implicit "this" parameter that is the first parameter on the native side,
+            // but doesn't exist on the managed side. Account for this in the argument offset.
+            argOffset++;
+        }
     }
     else
 #endif // FEATURE_COMINTEROP

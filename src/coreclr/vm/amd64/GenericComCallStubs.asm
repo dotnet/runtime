@@ -182,7 +182,7 @@ ComMethodFrame_XMM_SAVE_OFFSET = GenericComCallStub_XMM_SAVE_OFFSET - GenericCom
         ;
         ; load argument registers
         ;
-        mov     rcx, [rbp + 40h]        ; ignoring the COM IP at [rsp]
+        mov     rcx, [rsp]
         mov     rdx, [rsp + 08h]
         mov     r8,  [rsp + 10h]
         mov     r9,  [rsp + 18h]
@@ -247,7 +247,7 @@ NESTED_ENTRY COMToCLRDispatchHelper, _TEXT, CallDescrWorkerUnwindFrameChainHandl
         ;
         ; load argument registers
         ;
-        mov     rcx, [rsp + 50h]        ; ignoring the COM IP at [r11 + 00h]
+        mov     rcx, [r11 + 00h]        ; ignoring the COM IP at [r11 + 00h]
         mov     rdx, [r11 + 08h]
         mov     r8,  [r11 + 10h]
         mov     r9,  [r11 + 18h]
