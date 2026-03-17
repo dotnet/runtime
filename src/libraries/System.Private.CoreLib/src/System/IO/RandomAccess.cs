@@ -59,6 +59,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -80,6 +81,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -103,6 +105,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -130,6 +133,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -156,6 +160,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -176,6 +181,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -199,6 +205,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
@@ -226,6 +233,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers"/> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">In .NET 10 and earlier versions, the file does not support seeking (pipe or socket).</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
