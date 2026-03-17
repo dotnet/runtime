@@ -664,6 +664,19 @@ namespace System.Runtime.CompilerServices
                 *pException = ex;
             }
         }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
+        {
+            try
+            {
+                pCtor(*pObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

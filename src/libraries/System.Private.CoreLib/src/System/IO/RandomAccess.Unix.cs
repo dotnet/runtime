@@ -30,7 +30,11 @@ namespace System.IO
                 // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
                 // the function to be used by FileStream for all the same situations.
                 int result;
-                if (handle.SupportsRandomAccess)
+                if (handle.IsAsync)
+                {
+                    result = Interop.Sys.ReadFromNonblocking(handle, bufPtr, buffer.Length);
+                }
+                else if (handle.SupportsRandomAccess)
                 {
                     // Try pread for seekable files.
                     result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
@@ -108,7 +112,11 @@ namespace System.IO
                     // the function to be used by FileStream for all the same situations.
                     int bytesToWrite = GetNumberOfBytesToWrite(buffer.Length);
                     int bytesWritten;
-                    if (handle.SupportsRandomAccess)
+                    if (handle.IsAsync)
+                    {
+                        bytesWritten = Interop.Sys.WriteToNonblocking(handle, bufPtr, bytesToWrite);
+                    }
+                    else if (handle.SupportsRandomAccess)
                     {
                         bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
                         if (bytesWritten == -1)

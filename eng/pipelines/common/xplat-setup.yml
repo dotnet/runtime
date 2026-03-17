@@ -172,7 +172,7 @@ jobs:
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals 1es-ubuntu-2204
+          demands: ImageOverride -equals build.azurelinux.3.amd64
           os: linux
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).

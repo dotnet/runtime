@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import html
 import json
 import locale
 import logging
@@ -2997,7 +2998,7 @@ def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
                 for (func_name, diff, diff_text) in examples_to_put_in_summary:
                     base_size = int(diff["Base ActualCodeBytes"])
                     diff_size = int(diff["Diff ActualCodeBytes"])
-                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
+                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), html.escape(func_name))):
                         write_fh.write(diff_text)
 
 ################################################################################

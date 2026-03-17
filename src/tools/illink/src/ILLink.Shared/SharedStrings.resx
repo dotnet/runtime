@@ -301,7 +301,7 @@
     <value>Root assembly could not be found.</value>
   </data>
   <data name="RootAssemblyCouldNotBeFoundMessage" xml:space="preserve">
-    <value>Root assembly '{0}' could not be found.</value>
+    <value>Root assembly with name '{0}' could not be found.</value>
   </data>
   <data name="XmlDescriptorCouldNotBeFoundTitle" xml:space="preserve">
     <value>XML descriptor file could not be found'.</value>
