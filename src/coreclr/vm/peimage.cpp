@@ -305,7 +305,7 @@ void PEImage::OpenMDImport()
         IMDInternalImport* m_pNewImport;
         const void* pMeta=NULL;
         COUNT_T cMeta=0;
-        if(HasNTHeaders() && HasCorHeader())
+        if(HasHeaders() && HasCorHeader())
             pMeta=GetMetadata(&cMeta);
 
         if(pMeta==NULL)
@@ -470,7 +470,7 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     EX_TRY
     {
-        if (HasLoadedLayout() && HasNTHeaders() && HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG))
+        if (HasLoadedLayout() && HasHeaders() && HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG))
         {
             // Get a pointer to the contents and size of the debug directory and report it
             COUNT_T cbDebugDir;

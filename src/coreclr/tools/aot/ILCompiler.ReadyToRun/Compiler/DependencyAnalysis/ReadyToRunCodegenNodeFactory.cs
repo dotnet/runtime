@@ -487,7 +487,7 @@ namespace ILCompiler.DependencyAnalysis
                 // ARM32 relocs require the thumb bit set, and the JIT/crossgen doesn't set it properly for the usages in async methods.
                 // https://github.com/dotnet/runtime/issues/125337
                 // https://github.com/dotnet/runtime/issues/125338
-                if ((CompilationModuleGroup.IsCompositeBuildMode || Target.Architecture == TargetArchitecture.ARM)
+                if (Target.Architecture == TargetArchitecture.ARM
                     && (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
                 {
                     continue;
@@ -1094,6 +1094,14 @@ namespace ILCompiler.DependencyAnalysis
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
             WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
+            return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
+        public WasmTypeNode WasmTypeNode(MethodDesc method)
+        {
+            WasmFuncType funcType = WasmLowering.GetSignature(method);
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
