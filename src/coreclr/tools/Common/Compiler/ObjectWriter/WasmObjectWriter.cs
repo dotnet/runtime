@@ -15,6 +15,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.Text;
 using Internal.TypeSystem;
+using Microsoft.NET.WebAssembly.Webcil;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
@@ -61,7 +62,6 @@ namespace ILCompiler.ObjectWriter
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
-        public const int WebcilVersionMajor = 0;
 
         public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
@@ -238,8 +238,8 @@ namespace ILCompiler.ObjectWriter
             public int GetFlatMappedSize()
             {
                 int size = 0;
-                size += WebcilHeader.EncodeSize(); // include header
-                size += Sections.Length * WebcilSectionHeader.EncodeSize(); // include size of all section headers
+                size += WebcilEncoder.HeaderEncodeSize(); // include header
+                size += Sections.Length * WebcilEncoder.SectionHeaderEncodeSize(); // include size of all section headers
                 size = AlignmentHelper.AlignUp(size, WebcilSectionAlignment); // account for padding before first section
 
                 foreach (WebcilSection section in Sections)
@@ -328,7 +328,7 @@ namespace ILCompiler.ObjectWriter
         {
             WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
 
-            uint sizeOfHeaders = (uint)WebcilHeader.EncodeSize() + (uint)(webcilSections.Length * WebcilSectionHeader.EncodeSize());
+            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
@@ -341,13 +341,12 @@ namespace ILCompiler.ObjectWriter
                 uint rawSectionSize = (uint)webcilSection.Stream.Length;
                 uint alignedSectionSize = (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
                 uint virtualSize = alignedSectionSize;
-                WebcilSectionHeader sectionHeader = new WebcilSectionHeader
-                {
-                    VirtualAddress = virtualAddress,
-                    VirtualSize = virtualSize,
-                    SizeOfRawData = alignedSectionSize,
-                    PointerToRawData = pointerToRawData
-                };
+                WebcilSectionHeader sectionHeader = new WebcilSectionHeader(
+                    virtualSize: virtualSize,
+                    virtualAddress: virtualAddress,
+                    sizeOfRawData: alignedSectionSize,
+                    pointerToRawData: pointerToRawData
+                );
                 webcilSection.Header = sectionHeader;
 
                 pointerToRawData += alignedSectionSize;
@@ -356,9 +355,9 @@ namespace ILCompiler.ObjectWriter
 
             WebcilHeader header = new WebcilHeader
             {
-                Id = 0x4c496257, // 'WbIL', little endian
-                VersionMajor = WebcilVersionMajor,
-                VersionMinor = 0,
+                Id = WebcilConstants.WEBCIL_MAGIC,
+                VersionMajor = WebcilConstants.WC_VERSION_MAJOR,
+                VersionMinor = WebcilConstants.WC_VERSION_MINOR,
                 CoffSections = (ushort)webcilSections.Length,
                 PeCliHeaderRva = 0, // This RVA will be resolved later
                 PeCliHeaderSize = 0, // Resolved along with RVA
@@ -489,7 +488,7 @@ namespace ILCompiler.ObjectWriter
 
             // webcilVersion: i32 const = 0
             WriteGlobal(writer, "webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
-                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilVersionMajor)]));
+                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WC_VERSION_MAJOR)]));
         }
 
         private void PrependCount(WasmSection section, int count)
@@ -595,11 +594,11 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidDataException($"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
 
             MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
-            _webcilSegment.Header.Emit(webcilStream);
+            WebcilEncoder.EmitHeader(_webcilSegment.Header, webcilStream);
 
             foreach (WebcilSection section in _webcilSegment.Sections)
             {
-                section.Header.Encode(webcilStream);
+                WebcilEncoder.EncodeSectionHeader(section.Header, webcilStream);
             }
 
             foreach (WebcilSection section in _webcilSegment.Sections)

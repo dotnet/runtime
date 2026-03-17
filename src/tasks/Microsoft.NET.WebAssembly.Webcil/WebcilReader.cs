@@ -69,6 +69,7 @@ public sealed partial class WebcilReader : IDisposable
         }
         if (!BitConverter.IsLittleEndian)
         {
+            header.Id = BinaryPrimitives.ReverseEndianness(header.Id);
             header.VersionMajor = BinaryPrimitives.ReverseEndianness(header.VersionMajor);
             header.VersionMinor = BinaryPrimitives.ReverseEndianness(header.VersionMinor);
             header.CoffSections = BinaryPrimitives.ReverseEndianness(header.CoffSections);
@@ -77,10 +78,9 @@ public sealed partial class WebcilReader : IDisposable
             header.PeDebugRva = BinaryPrimitives.ReverseEndianness(header.PeDebugRva);
             header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
         }
-        if (header.Id[0] != 'W' || header.Id[1] != 'b'
-            || header.Id[2] != 'I' || header.Id[3] != 'L'
-            || header.VersionMajor != Internal.Constants.WC_VERSION_MAJOR
-            || header.VersionMinor != Internal.Constants.WC_VERSION_MINOR)
+        if (header.Id != WebcilConstants.WEBCIL_MAGIC
+            || header.VersionMajor != WebcilConstants.WC_VERSION_MAJOR
+            || header.VersionMinor != WebcilConstants.WC_VERSION_MINOR)
         {
             return false;
         }
@@ -342,7 +342,7 @@ public sealed partial class WebcilReader : IDisposable
         {
             if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.VirtualSize)
             {
-                uint offset = (uint)(rva - section.VirtualAddress);
+                uint offset = rva - section.VirtualAddress;
                 if (offset >= section.SizeOfRawData)
                 {
                     throw new BadImageFormatException("RVA maps to an offset beyond the section's raw data", nameof(_stream));
