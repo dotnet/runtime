@@ -1119,25 +1119,19 @@ namespace System
 
         public int CompareTo(Guid value)
         {
-            if (value._a != _a)
-            {
-                return ((uint)_a).CompareTo((uint)value._a);
-            }
-
-            if ((ushort)value._b != (ushort)_b)
-            {
-                return ((ushort)_b).CompareTo((ushort)value._b);
-            }
-
-            if ((ushort)value._c != (ushort)_c)
-            {
-                return ((ushort)_c).CompareTo((ushort)value._c);
-            }
-
-            return GetLow64().CompareTo(value.GetLow64());
+            int c;
+            return (c = ((uint)_a).CompareTo((uint)value._a)) != 0 ? c :
+                (c = ((ushort)_b).CompareTo((ushort)value._b)) != 0 ? c :
+                (c = ((ushort)_c).CompareTo((ushort)value._c)) != 0 ? c :
+                (c = _d.CompareTo(value._d)) != 0 ? c :
+                (c = _e.CompareTo(value._e)) != 0 ? c :
+                (c = _f.CompareTo(value._f)) != 0 ? c :
+                (c = _g.CompareTo(value._g)) != 0 ? c :
+                (c = _h.CompareTo(value._h)) != 0 ? c :
+                (c = _i.CompareTo(value._i)) != 0 ? c :
+                (c = _j.CompareTo(value._j)) != 0 ? c :
+                _k.CompareTo(value._k);
         }
-
-        private ulong GetLow64() => BinaryPrimitives.ReadUInt64BigEndian(MemoryMarshal.CreateReadOnlySpan(in _d, 8));
 
         public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
 
@@ -1546,52 +1540,16 @@ namespace System
         //
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
-        public static bool operator <(Guid left, Guid right)
-        {
-            if (left._a != right._a)
-            {
-                return (uint)left._a < (uint)right._a;
-            }
-
-            if ((ushort)left._b != (ushort)right._b)
-            {
-                return (ushort)left._b < (ushort)right._b;
-            }
-
-            if ((ushort)left._c != (ushort)right._c)
-            {
-                return (ushort)left._c < (ushort)right._c;
-            }
-
-            return left.GetLow64() < right.GetLow64();
-        }
+        public static bool operator <(Guid left, Guid right) => left.CompareTo(right) < 0;
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
-        public static bool operator <=(Guid left, Guid right)
-        {
-            if (left._a != right._a)
-            {
-                return (uint)left._a < (uint)right._a;
-            }
-
-            if ((ushort)left._b != (ushort)right._b)
-            {
-                return (ushort)left._b < (ushort)right._b;
-            }
-
-            if ((ushort)left._c != (ushort)right._c)
-            {
-                return (ushort)left._c < (ushort)right._c;
-            }
-
-            return left.GetLow64() <= right.GetLow64();
-        }
+        public static bool operator <=(Guid left, Guid right) => left.CompareTo(right) <= 0;
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
-        public static bool operator >(Guid left, Guid right) => right < left;
+        public static bool operator >(Guid left, Guid right) => left.CompareTo(right) > 0;
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        public static bool operator >=(Guid left, Guid right) => right <= left;
+        public static bool operator >=(Guid left, Guid right) => left.CompareTo(right) >= 0;
 
         //
         // IParsable
