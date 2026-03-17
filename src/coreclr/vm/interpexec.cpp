@@ -4248,20 +4248,17 @@ do                                                                      \
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
-                    uint32_t continuationContextMask = (1u << CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS) - 1;
-                    uint32_t continuationContextIndex = ((uint32_t)pAsyncSuspendData->flags >> CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT) & continuationContextMask;
-                    if (continuationContextIndex != 0)
+                    PTR_OBJECTREF pContinuationContext = continuation->GetContinuationContextObjectStorageOrNull();
+                    if (pContinuationContext != nullptr)
                     {
                         MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
-                        size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data + (continuationContextIndex - 1) * TARGET_POINTER_SIZE;
-                        uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
 
                         returnOffset = ip[1];
                         callArgsOffset = pMethod->allocaSize;
 
                         // Pass argument to the target method
-                        LOCAL_VAR(callArgsOffset, void*) = pContinuationData;
+                        LOCAL_VAR(callArgsOffset, void*) = pContinuationContext;
                         LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
                         targetMethod = captureSyncContextMethod;
                         ip += 4;
