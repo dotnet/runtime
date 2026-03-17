@@ -7,8 +7,10 @@ namespace Microsoft.Interop
 {
     internal sealed record LibraryImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType)
     {
-        public LibraryImportGeneratorOptions(AnalyzerConfigOptions options)
-            : this(options.GenerateForwarders(), options.UseMarshalType())
+            public LibraryImportGeneratorOptions(AnalyzerConfigOptions options)
+            : this(
+                options.GenerateForwarders(),
+                options.UseMarshalType())
         {
         }
     }
