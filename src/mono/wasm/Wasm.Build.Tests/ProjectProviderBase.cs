@@ -550,11 +550,23 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
+    private static string GetDefaultBootConfigFileName(string binFrameworkDir)
+    {
+        // Probe for known boot config candidates to support different TFMs:
+        // - dotnet.js with embedded config (net10+, inline boot config)
+        // - dotnet.boot.js (net10+, separate boot config)
+        // - blazor.boot.json (pre-net10)
+        if (File.Exists(Path.Combine(binFrameworkDir, "blazor.boot.json")))
+            return "blazor.boot.json";
+
+        return "dotnet.js";
+    }
+
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
 
         EnsureProjectDirIsSet();
-        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir);
+        string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, GetDefaultBootConfigFileName(options.BinFrameworkDir));
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         AssetsData assets = (AssetsData)bootJson.resources;
 
