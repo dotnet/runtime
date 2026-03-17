@@ -85,13 +85,10 @@ namespace ILCompiler.ObjectWriter
             if (classCode is SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
                 or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode)
             {
-                if (!_wellKnownSymbols.TryAdd(classCode, currentSymbolName))
-                {
-                    Utf8String existingSymbolName = _wellKnownSymbols[classCode];
-                    throw new InvalidOperationException(
-                        $"Well-known symbol for '{classCode}' was already recorded as '{existingSymbolName}', " +
-                        $"cannot record duplicate symbol '{currentSymbolName}'.");
-                }
+
+                bool added = _wellKnownSymbols.TryAdd(classCode, currentSymbolName);
+                Debug.Assert(added,
+                    $"Well-known symbol for '{classCode}' was already recorded as '{_wellKnownSymbols[classCode]}', ");
             }
         }
 
@@ -241,7 +238,7 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(section != null, $"Section: {sectionIndex} is not a WebcilSection");
             if (section == null)
             {
-                throw new InvalidOperationException($"Section at index {sectionIndex} is not a WebcilSection and cannot have its alignment updated.");
+                return;
             }
 
             section.MinAlignment = Math.Max(section.MinAlignment, alignment);
@@ -503,10 +500,8 @@ namespace ILCompiler.ObjectWriter
                 valueType,
                 mutability,
                 initExpr);
-            if (!_definedGlobals.TryAdd(name, global))
-            {
-                throw new InvalidDataException($"Duplicate global name: {name}");
-            }
+            bool added = _definedGlobals.TryAdd(name, global);
+            Debug.Assert(added, $"Duplicate global name: {name}");
 
             int size = global.EncodeSize();
             int written = global.Encode(writer.Buffer.GetSpan(size));
@@ -570,10 +565,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
-            if (!outputFileStream.CanSeek)
-            {
-                throw new NotSupportedException("EmitObjectFile requires seekable output stream");
-            }
+            Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
             EmitWasmHeader(outputFileStream);
             foreach (int index in SectionEmitOrder)
@@ -606,25 +598,21 @@ namespace ILCompiler.ObjectWriter
 
             // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
             // to be able to load this segment.
-            if (_wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.CorHeaderNode, out Utf8String corHeaderDefName))
-            {
-                SymbolDefinition corHeaderNode = _definedSymbols[corHeaderDefName];
-                _webcilSegment.Header.PeCliHeaderRva = (uint)_webcilSegment.ResolveSymbolRVA(corHeaderNode);
-                Debug.Assert(_webcilSegment.Header.PeCliHeaderRva != 0);
-                _webcilSegment.Header.PeCliHeaderSize = (uint)corHeaderNode.Size;
-            }
-            else
-                throw new InvalidDataException($"Cor header symbol definition {SortableDependencyNode.ObjectNodeOrder.CorHeaderNode} not found");
+            bool exists = _wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.CorHeaderNode, out Utf8String corHeaderDefName);
+            Debug.Assert(exists, $"Cor header symbol definition {SortableDependencyNode.ObjectNodeOrder.CorHeaderNode} not found");
 
-            if (_wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode, out Utf8String debugDirectoryDefName))
-            {
-                SymbolDefinition debugDirectoryDef = _definedSymbols[debugDirectoryDefName];
-                _webcilSegment.Header.PeDebugRva = (uint)_webcilSegment.ResolveSymbolRVA(debugDirectoryDef);
-                Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
-                _webcilSegment.Header.PeDebugSize = (uint)debugDirectoryDef.Size;
-            }
-            else
-                throw new InvalidDataException($"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
+            SymbolDefinition corHeaderNode = _definedSymbols[corHeaderDefName];
+            _webcilSegment.Header.PeCliHeaderRva = (uint)_webcilSegment.ResolveSymbolRVA(corHeaderNode);
+            Debug.Assert(_webcilSegment.Header.PeCliHeaderRva != 0);
+            _webcilSegment.Header.PeCliHeaderSize = (uint)corHeaderNode.Size;
+
+            exists = _wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode, out Utf8String debugDirectoryDefName);
+            Debug.Assert(exists, $"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
+
+            SymbolDefinition debugDirectoryDef = _definedSymbols[debugDirectoryDefName];
+            _webcilSegment.Header.PeDebugRva = (uint)_webcilSegment.ResolveSymbolRVA(debugDirectoryDef);
+            Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
+            _webcilSegment.Header.PeDebugSize = (uint)debugDirectoryDef.Size;
 
             MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
             WebcilEncoder.EmitHeader(_webcilSegment.Header, webcilStream);
@@ -854,10 +842,7 @@ namespace ILCompiler.ObjectWriter
                 if (import.Index.HasValue)
                 {
                     int assigned = assignedImportIndices[(int)import.Kind];
-                    if (assigned != import.Index.Value)
-                    {
-                        throw new InvalidOperationException($"Import {import.Module}.{import.Name} of kind {import.Kind} assigned index {assigned}, needs {import.Index.Value}");
-                    }
+                    Debug.Assert(assigned == import.Index.Value, $"Import {import.Module}.{import.Name} of kind {import.Kind} assigned index {assigned}, needs {import.Index.Value}");
                 }
                 assignedImportIndices[(int)import.Kind]++;
                 WriteImport(import);
