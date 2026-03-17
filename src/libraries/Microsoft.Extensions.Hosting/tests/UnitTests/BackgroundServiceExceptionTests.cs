@@ -187,6 +187,38 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         /// <summary>
+        /// Regression test for a race where the fire-and-forget TryExecuteBackgroundServiceAsync
+        /// has not yet recorded its exception by the time Host.StopAsync reads the exception list.
+        /// DelayedMonitorFaultService overrides ExecuteTask so that the monitoring task sees a
+        /// separately-controlled task that faults 200ms after StopAsync returns,
+        /// reproducing the window in which the exception would be lost without the fix.
+        /// </summary>
+        [Fact]
+        public async Task BackgroundService_DelayedMonitoringException_ThrowsAggregateException()
+        {
+            var builder = new HostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.Configure<HostOptions>(options =>
+                    {
+                        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+                    });
+                    services.AddHostedService<SynchronousFailureService>();
+                    services.AddHostedService<DelayedMonitorFaultService>();
+                });
+
+            var aggregateException = await Assert.ThrowsAsync<AggregateException>(async () =>
+            {
+                await builder.Build().RunAsync();
+            });
+
+            Assert.Equal(2, aggregateException.InnerExceptions.Count);
+
+            Assert.All(aggregateException.InnerExceptions, ex =>
+                Assert.IsType<InvalidOperationException>(ex));
+        }
+
+        /// <summary>
         /// Tests that when a BackgroundService throws an exception with Ignore behavior,
         /// the host does not throw and continues to run until stopped.
         /// </summary>
@@ -300,6 +332,43 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             public Task StopAsync(CancellationToken cancellationToken) => throw new InvalidOperationException("Stop failure");
+        }
+
+        /// <summary>
+        /// A BackgroundService that overrides <see cref="ExecuteTask"/> to return a separately
+        /// controlled task. The internal _executeTask (used by BackgroundService.StopAsync) completes
+        /// normally on cancellation, but the overridden ExecuteTask (monitored by
+        /// TryExecuteBackgroundServiceAsync) faults 200ms after StopAsync, usually
+        /// reproducing the race window.
+        /// </summary>
+        private class DelayedMonitorFaultService : BackgroundService
+        {
+            private readonly TaskCompletionSource<object?> _monitorTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public override Task? ExecuteTask => _monitorTcs.Task;
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+
+            public override async Task StopAsync(CancellationToken cancellationToken)
+            {
+                await base.StopAsync(cancellationToken);
+                _ = Task.Run(async () =>
+                {
+                    // This is testing that ExecuteTask delays stopping of the host, so it can't be triggered by a deterministic signal.
+                    // It shouldn't cause any flakiness: incorrect ordering could cause the test to succeed when it should fail, but it shouldn't cause the test to fail when it should succeed.
+                    await Task.Delay(200);
+                    _monitorTcs.TrySetException(new InvalidOperationException("Delayed monitor failure"));
+                });
+            }
         }
 
         private class SuccessfulService : BackgroundService
