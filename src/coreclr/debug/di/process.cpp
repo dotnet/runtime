@@ -13603,7 +13603,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
                 //
                 BOOL isBreakPointEvent = (pUnmanagedEvent->m_currentDebugEvent.dwDebugEventCode == EXCEPTION_DEBUG_EVENT &&
                     pUnmanagedEvent->m_currentDebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT);
-                if (pUnmanagedThread->IsContextSet() || IsSSFlagEnabled(&tempContext) || isBreakPointEvent)
+                if (pUnmanagedThread->IsContextSet() || IsSSFlagEnabled(&tempContext, nullptr) || isBreakPointEvent)
                 {
                     _ASSERTE(fcd.pLeftSideContext != NULL);
                     LOG((LF_CORDB, LL_INFO10000, "W32ET::W32EL: updating LS context at 0x%p\n", fcd.pLeftSideContext));
@@ -13970,7 +13970,7 @@ void EnableDebugTrace(CordbUnmanagedThread *ut)
         return;
 
     // If the flag is already set, then don't set it again - that will just get confusing.
-    if (IsSSFlagEnabled(&context))
+    if (IsSSFlagEnabled(&context, nullptr))
     {
         return;
     }

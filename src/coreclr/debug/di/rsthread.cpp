@@ -3548,13 +3548,13 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
         LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from win32.\n"));
 
         // If the user is also setting the SS flag then we no longer have to hide it
-        if(IsSSFlagEnabled(pContext))
+        if(IsSSFlagEnabled(pContext, nullptr))
         {
             ClearState(CUTS_IsSSFlagHidden);
         }
         // if the user is turning off the SS flag but we still want it on then leave it on
         // but hidden
-        if(!IsSSFlagEnabled(pContext) && IsSSFlagNeeded())
+        if(!IsSSFlagEnabled(pContext, nullptr) && IsSSFlagNeeded())
         {
             SetState(CUTS_IsSSFlagHidden);
             SetSSFlag(pContext);
@@ -3584,7 +3584,7 @@ VOID CordbUnmanagedThread::BeginStepping()
     BOOL succ = DbiGetThreadContext(m_handle, &tempContext);
     _ASSERTE(succ);
 
-    if(!IsSSFlagEnabled(&tempContext))
+    if(!IsSSFlagEnabled(&tempContext, nullptr))
     {
         SetSSFlag(&tempContext);
         SetState(CUTS_IsSSFlagHidden);
@@ -3711,7 +3711,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
 
     // we don't want to single step into the vectored exception handler
     // we will restore the SS flag after returning from the hijack
-    if(IsSSFlagEnabled(&context))
+    if(IsSSFlagEnabled(&context, nullptr))
     {
         LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Clearing SS flag\n", this));
         UnsetSSFlag(&context);
@@ -3901,7 +3901,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     LOG((LF_CORDB, LL_INFO1000000, "CUT::SGH: New IP is 0x%08x\n", CORDbgGetIP(GetHijackCtx())));
 
     // We should never single step into the hijack
-    BOOL isSSFlagOn = IsSSFlagEnabled(GetHijackCtx());
+    BOOL isSSFlagOn = IsSSFlagEnabled(GetHijackCtx(), nullptr);
     if(isSSFlagOn)
     {
         UnsetSSFlag(GetHijackCtx());

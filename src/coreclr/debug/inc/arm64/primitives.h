@@ -184,12 +184,6 @@ inline void UnsetSSFlag(DT_CONTEXT *pContext)
     pContext->Cpsr &= ~0x00200000;
 }
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
-{
-    _ASSERTE(pContext != NULL);
-    return (pContext->Cpsr & 0x00200000) != 0;
-}
-
 
 #include "arm_primitives.h"
 #endif // PRIMITIVES_H_

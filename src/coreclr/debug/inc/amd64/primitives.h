@@ -231,7 +231,8 @@ inline void UnsetSSFlag(DT_CONTEXT *pContext)
     pContext->EFlags &= ~0x100;
 }
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * context)
+class Thread;
+inline bool IsSSFlagEnabled(DT_CONTEXT * context, Thread * /* pThread */ = nullptr)
 {
     _ASSERTE(context != NULL);
     return (context->EFlags & 0x100) != 0;
