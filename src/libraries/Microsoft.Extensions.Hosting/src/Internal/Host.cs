@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
         private bool _hostStopped;
+        private List<Task>? _backgroundServiceTasks;
         private List<Exception>? _backgroundServiceExceptions;
 
         public Host(IServiceProvider services,
@@ -126,7 +127,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                         if (service is BackgroundService backgroundService)
                         {
-                            _ = TryExecuteBackgroundServiceAsync(backgroundService);
+                            Task monitorTask = TryExecuteBackgroundServiceAsync(backgroundService);
+                            List<Task> bgTasks = LazyInitializer.EnsureInitialized(ref _backgroundServiceTasks);
+                            lock (bgTasks)
+                            {
+                                bgTasks.Add(monitorTask);
+                            }
                         }
                     }).ConfigureAwait(false);
 
@@ -288,6 +294,23 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
 
                 _hostStopped = true;
+
+                // Ensure all background service monitoring tasks have finished processing
+                // exceptions before we read them. Without this, there's a race: when a
+                // BackgroundService's ExecuteTask faults, both BackgroundService.StopAsync
+                // (which Host awaits) and TryExecuteBackgroundServiceAsync (fire-and-forget)
+                // have continuations scheduled. If StopAsync's continuation runs first, the
+                // Host may read _backgroundServiceExceptions before the monitoring task has
+                // added its exception.
+                if (_backgroundServiceTasks is not null)
+                {
+                    Task bgMonitoringTasks = Task.WhenAll(_backgroundServiceTasks);
+                    var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    using (cancellationToken.Register(s => ((TaskCompletionSource<object?>)s!).TrySetCanceled(), tcs))
+                    {
+                        await Task.WhenAny(bgMonitoringTasks, tcs.Task).ConfigureAwait(false);
+                    }
+                }
 
                 // If background services faulted and caused the host to stop, rethrow the exceptions
                 // so they propagate and cause a non-zero exit code.

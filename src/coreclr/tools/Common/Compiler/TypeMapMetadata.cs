@@ -10,14 +10,47 @@ using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using static ILCompiler.TypeMapManager;
-using static ILCompiler.UsageBasedTypeMapManager;
 
 namespace ILCompiler
 {
     public sealed class TypeMapMetadata
     {
-        internal sealed class Map
+        private enum TypeMapAttributeKind
+        {
+            None,
+            TypeMapAssemblyTarget,
+            TypeMap,
+            TypeMapAssociation
+        }
+
+        private static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
+        {
+            var typeDef = attrType.GetTypeDefinition() as MetadataType;
+            if (typeDef != null && typeDef.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
+            {
+                if (typeDef.Name.SequenceEqual("TypeMapAssemblyTargetAttribute`1"u8))
+                    return TypeMapAttributeKind.TypeMapAssemblyTarget;
+                else if (typeDef.Name.SequenceEqual("TypeMapAttribute`1"u8))
+                    return TypeMapAttributeKind.TypeMap;
+                else if (typeDef.Name.SequenceEqual("TypeMapAssociationAttribute`1"u8))
+                    return TypeMapAttributeKind.TypeMapAssociation;
+            }
+            return TypeMapAttributeKind.None;
+        }
+
+        internal interface IExternalTypeMap
+        {
+            IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> TypeMap { get; }
+            MethodDesc ThrowingMethodStub { get; }
+        }
+
+        internal interface IProxyTypeMap
+        {
+            IReadOnlyDictionary<TypeDesc, TypeDesc> TypeMap { get; }
+            MethodDesc ThrowingMethodStub { get; }
+        }
+
+        internal sealed class Map : IExternalTypeMap, IProxyTypeMap
         {
             private sealed class ThrowingMethodStub : ILStubMethod
             {
@@ -36,7 +69,11 @@ namespace ILCompiler
                 public override ReadOnlySpan<byte> Name => _name;
                 public override MethodIL EmitIL()
                 {
+#if READYTORUN
+                    throw new UnreachableException();
+#else
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
+#endif
                 }
 
                 protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
@@ -105,7 +142,7 @@ namespace ILCompiler
                 _associatedTypeMapExceptionStub ??= new ThrowingMethodStub(stubModule.GetGlobalModuleType(), TypeMapGroup, externalTypeMap: false, exception);
             }
 
-            public void MergePendingMap(Map pendingMap)
+            public void MergePendingMap(ModuleDesc stubModule, Map pendingMap)
             {
                 // Don't waste time adding entries from the pending map if we already have an exception stub,
                 // as the exception stub means the map is invalid and the entries won't be used anyway.
@@ -117,9 +154,16 @@ namespace ILCompiler
                     }
                     else
                     {
-                        foreach (KeyValuePair<TypeDesc, TypeDesc> kvp in pendingMap._associatedTypeMap)
+                        try
                         {
-                            AddAssociatedTypeMapEntry(kvp.Key, kvp.Value);
+                            foreach (KeyValuePair<TypeDesc, TypeDesc> kvp in pendingMap._associatedTypeMap)
+                            {
+                                AddAssociatedTypeMapEntry(kvp.Key, kvp.Value);
+                            }
+                        }
+                        catch (TypeSystemException ex)
+                        {
+                            SetAssociatedTypeMapException(stubModule, ex);
                         }
                     }
                 }
@@ -140,9 +184,16 @@ namespace ILCompiler
                     }
                     else
                     {
-                        foreach (KeyValuePair<string, (TypeDesc type, TypeDesc trimmingTarget)> kvp in pendingMap._externalTypeMap)
+                        try
                         {
-                            AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
+                            foreach (KeyValuePair<string, (TypeDesc type, TypeDesc trimmingTarget)> kvp in pendingMap._externalTypeMap)
+                            {
+                                AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
+                            }
+                        }
+                        catch (TypeSystemException ex)
+                        {
+                            SetExternalTypeMapException(stubModule, ex);
                         }
                     }
                 }
@@ -156,24 +207,6 @@ namespace ILCompiler
                 _targetModules.AddRange(pendingMap._targetModules);
             }
 
-            public IExternalTypeMapNode GetExternalTypeMapNode()
-            {
-                if (_externalTypeMapExceptionStub is not null)
-                {
-                    return new InvalidExternalTypeMapNode(TypeMapGroup, _externalTypeMapExceptionStub);
-                }
-                return new ExternalTypeMapNode(TypeMapGroup, _externalTypeMap);
-            }
-
-            public IProxyTypeMapNode GetProxyTypeMapNode()
-            {
-                if (_associatedTypeMapExceptionStub is not null)
-                {
-                    return new InvalidProxyTypeMapNode(TypeMapGroup, _associatedTypeMapExceptionStub);
-                }
-                return new ProxyTypeMapNode(TypeMapGroup, _associatedTypeMap);
-            }
-
             public void AddTargetModule(ModuleDesc targetModule)
             {
                 _targetModules.Add(targetModule);
@@ -182,7 +215,15 @@ namespace ILCompiler
             /// <summary>
             /// The modules targeted with TypeMapAssemblyTarget attributes for this type map group. This is only populated when TypeMapMetadata is created with TypeMapAssemblyTargetsMode.Record. When TypeMapMetadata is created with TypeMapAssemblyTargetsMode.Traverse, this will be empty as the target assemblies will be traversed to include their type maps instead of just being recorded as targets.
             /// </summary>
-            public IEnumerable<ModuleDesc> TargetModules => _targetModules;
+            public IReadOnlyList<ModuleDesc> TargetModules => _targetModules;
+
+            IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> IExternalTypeMap.TypeMap => _externalTypeMap;
+
+            MethodDesc IExternalTypeMap.ThrowingMethodStub => _externalTypeMapExceptionStub;
+
+            IReadOnlyDictionary<TypeDesc, TypeDesc> IProxyTypeMap.TypeMap => _associatedTypeMap;
+
+            MethodDesc IProxyTypeMap.ThrowingMethodStub => _associatedTypeMapExceptionStub;
         }
 
         public static readonly TypeMapMetadata Empty = new TypeMapMetadata(new Dictionary<TypeDesc, Map>(), "No type maps");
@@ -194,8 +235,6 @@ namespace ILCompiler
             _states = states;
             DiagnosticName = diagnosticName;
         }
-
-        internal Map this[TypeDesc typeMapGroup] => _states[typeMapGroup];
 
         public bool IsEmpty => _states.Count == 0;
 
@@ -234,7 +273,7 @@ namespace ILCompiler
                             {
                                 typeMapStates[currentTypeMapGroup] = typeMapState = new Map(currentTypeMapGroup);
                             }
-                            typeMapState.MergePendingMap(pendingMap.map);
+                            typeMapState.MergePendingMap(throwHelperEmitModule, pendingMap.map);
                             foreach (ModuleDesc targetModule in pendingMap.map.TargetModules)
                             {
                                 Debug.Assert(assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse, "We should only have pending maps with target modules when we're traversing for type map groups, as opposed to just recording targets.");

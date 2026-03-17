@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 
-    public abstract class HeaderNode : ObjectNode, ISymbolDefinitionNode
+    public abstract class ReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {
@@ -99,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ReadyToRunFlags _flags;
         private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipTypeValidationFlag;
 
-        public HeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
+        public ReadyToRunHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
         {
 
             if (moduleToCheckForSkipTypeValidation != null)
@@ -116,6 +116,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void Add(ReadyToRunSectionType id, DependencyNodeCore<NodeFactory> node, ISymbolNode startSymbol)
         {
             _items.Add(new HeaderItem(id, node, startSymbol));
+        }
+
+        public void Add<T>(ReadyToRunSectionType id, T node)
+            where T : DependencyNodeCore<NodeFactory>, ISymbolNode
+        {
+            Add(id, node, node);
         }
 
         public int Offset => 0;
@@ -200,7 +206,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
     }
 
-    public class GlobalHeaderNode : HeaderNode
+    public class GlobalHeaderNode : ReadyToRunHeaderNode
     {
         public GlobalHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipValidation)
             : base(flags, moduleToCheckForSkipValidation)
@@ -223,10 +229,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
         }
 
-        public override int ClassCode => (int)ObjectNodeOrder.ReadyToRunHeaderNode;
+        public override int ClassCode => (int)ObjectNodeOrder.GlobalHeaderNode;
     }
 
-    public class AssemblyHeaderNode : HeaderNode
+    public class AssemblyHeaderNode : ReadyToRunHeaderNode
     {
         private readonly int _index;
 
