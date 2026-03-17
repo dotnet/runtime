@@ -4,10 +4,10 @@
 #nullable enable
 
 using System;
-using System.Linq;
-using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Wasm.Tests.Internal;
@@ -124,6 +124,7 @@ internal class BrowserRunner : IAsyncDisposable
             chromeArgs = chromeArgs.Append("--headless").ToArray();
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
+        Exception? lastException = null;
         int attempt = 0;
         while (attempt < maxRetries)
         {
@@ -143,12 +144,19 @@ internal class BrowserRunner : IAsyncDisposable
             }
             catch (System.TimeoutException ex)
             {
+                lastException = ex;
                 attempt++;
                 _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
             }
+            catch (PlaywrightException ex)
+            {
+                lastException = ex;
+                attempt++;
+                _testOutput.WriteLine($"Attempt {attempt} failed with PlaywrightException: {ex.Message}");
+            }
         }
         if (attempt == maxRetries)
-            throw new Exception($"Failed to launch browser after {maxRetries} attempts");
+            throw new InvalidOperationException($"Failed to launch browser after {maxRetries} attempts", lastException);
         return Browser!;
     }
 
@@ -164,9 +172,43 @@ internal class BrowserRunner : IAsyncDisposable
         Func<string, string>? modifyBrowserUrl = null)
     {
         var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
-        var browser = await SpawnBrowserAsync(urlString, headless, locale: locale);
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = locale });
-        return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+
+        // Retry the full browser session (launch + navigate) to handle
+        // intermittent Chrome crashes in Docker containers under memory pressure.
+        // Chrome can silently die (OOM killed) during navigation when concurrent
+        // test classes run wasm-opt builds alongside browser tests.
+        const int maxSessionRetries = 2;
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                // On retries, only try launching once since SpawnBrowserAsync has its own retry loop
+                int launchRetries = attempt == 0 ? 3 : 1;
+                var browser = await SpawnBrowserAsync(urlString, headless, maxRetries: launchRetries, locale: locale);
+                var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = locale });
+                return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
+            }
+            catch (Exception ex) when (attempt + 1 < maxSessionRetries &&
+                ex is PlaywrightException)
+            {
+                _testOutput.WriteLine($"Browser session attempt {attempt + 1} failed with {ex.GetType().Name}: {ex.Message}");
+                _testOutput.WriteLine("Retrying with a fresh browser instance...");
+                try
+                {
+                    if (Browser is not null)
+                    {
+                        await Browser.DisposeAsync();
+                        Browser = null;
+                    }
+                    Playwright?.Dispose();
+                    Playwright = null;
+                }
+                catch (Exception disposeEx)
+                {
+                    _testOutput.WriteLine($"Browser cleanup failed: {disposeEx.Message}");
+                }
+            }
+        }
     }
 
     public async Task<IPage> RunAsync(

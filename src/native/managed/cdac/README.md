@@ -68,32 +68,12 @@ Key specs: [GC](/docs/design/datacontracts/GC.md) ·
 
 ## Unit testing
 
-### Setting up a solution
+### Opening the solution
 
-For VS Code and Visual Studio, create a file `cdac.slnx` in the runtime repo root to bring
-all the cDAC projects into scope:
-
-```xml
-<Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Folder Name="/cdac/">
-    <Project Path="src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Abstractions/Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
-    <Project Path="src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
-    <Project Path="src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
-    <Project Path="src/native/managed/cdac/mscordaccore_universal/mscordaccore_universal.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="src/native/managed/cdac/tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
-  </Folder>
-</Solution>
-```
-
-In VS Code, run the ".NET: Open Solution" command and select `cdac.slnx`. In Visual Studio,
-open the solution file directly. You can then use Test Explorer to run and debug tests.
+The [`cdac.slnx`](cdac.slnx) solution file in this directory brings all cDAC projects and
+tests into scope. In VS Code, run the ".NET: Open Solution" command and select
+`src/native/managed/cdac/cdac.slnx`. In Visual Studio, open the file directly. You can then
+use Test Explorer to run and debug tests.
 
 ### Running unit tests from the command line
 

@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         private readonly MetadataReader _metadataReader;
         private readonly object _namespaceTableAndListLock = new object();
-        private volatile Dictionary<NamespaceDefinitionHandle, NamespaceData>? _namespaceTable;
+        private Dictionary<NamespaceDefinitionHandle, NamespaceData>? _namespaceTable;
         private NamespaceData? _rootNamespace;
         private uint _virtualNamespaceCounter;
 
