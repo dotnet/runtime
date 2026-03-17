@@ -18,8 +18,8 @@ namespace Internal.Runtime
         ByRefTypeMap                                = 11,
         // unused                                   = 12,
         EmbeddedMetadata                            = 13,
-        // Unused                                   = 14,
-        UnboxingAndInstantiatingStubMap             = 15,
+        // unused                                   = 14,
+        // unused                                   = 15,
         StructMarshallingStubMap                    = 16,
         DelegateMarshallingStubMap                  = 17,
         GenericVirtualMethodTable                   = 18,
@@ -44,9 +44,5 @@ namespace Internal.Runtime
         StaticsInfoHashtable                        = 34,
         GenericMethodsHashtable                     = 35,
         ExactMethodInstantiationsHashtable          = 36,
-
-        // Type map blobs:
-        ExternalTypeMap                             = 40,
-        ProxyTypeMap                                = 41,
     }
 }

@@ -9,7 +9,6 @@
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
 #cmakedefine01 HAVE_F_DUPFD
-#cmakedefine01 HAVE_F_FULLFSYNC
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
@@ -32,6 +31,9 @@
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_BASETYPE
+#cmakedefine01 HAVE_GETFSSTAT_INT
+#cmakedefine01 HAVE_GETFSSTAT_SIZE_T
+#cmakedefine01 HAVE_GETFSSTAT_LONG
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY

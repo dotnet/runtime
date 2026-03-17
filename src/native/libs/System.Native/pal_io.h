@@ -180,6 +180,8 @@ enum
     PAL_O_TRUNC = 0x0080,    // Truncate file to length 0 if it already exists
     PAL_O_SYNC = 0x0100,     // Block writes call will block until physically written
     PAL_O_NOFOLLOW = 0x0200, // Fails to open the target if it's a symlink, parent symlinks are allowed
+    PAL_O_NONBLOCK_READ = 0x0400,  // Set O_NONBLOCK on the read end of a pipe
+    PAL_O_NONBLOCK_WRITE = 0x0800, // Set O_NONBLOCK on the write end of a pipe
 };
 
 /**
@@ -439,12 +441,11 @@ PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
 
 /**
  * Creates a pipe. Implemented as shim to pipe(2) or pipe2(2) if available.
- * Flags are ignored if pipe2 is not available.
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
-                        int32_t flags);    // 0 for defaults or PAL_O_CLOEXEC for close-on-exec
+                        int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_NONBLOCK_READ, and PAL_O_NONBLOCK_WRITE for additional behavior.
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
@@ -705,6 +706,14 @@ PALEXPORT int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t le
 PALEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
 
 /**
+ * Reads the number of bytes specified into the provided buffer from the specified, opened non-blocking file descriptor.
+ * If no data is currently available, polls the file descriptor until data arrives or the pipe/socket is closed.
+ *
+ * Returns the number of bytes read on success; 0 on EOF; otherwise, -1 is returned and errno is set.
+ */
+PALEXPORT int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize);
+
+/**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
  * small, the path will be truncated. No matter what, the buffer will not be null terminated.
  *
@@ -738,6 +747,14 @@ PALEXPORT void SystemNative_Sync(void);
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
 PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
+
+/**
+ * Writes the specified buffer to the provided open non-blocking file descriptor.
+ * If the write buffer is currently full, polls the file descriptor until space is available or the pipe/socket is closed.
+ *
+ * Returns the number of bytes written on success; otherwise, returns -1 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
  * Copies all data from the source file descriptor to the destination file descriptor.

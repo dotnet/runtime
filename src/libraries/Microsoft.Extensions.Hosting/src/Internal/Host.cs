@@ -30,6 +30,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
         private bool _hostStopped;
+        private List<Task>? _backgroundServiceTasks;
+        private List<Exception>? _backgroundServiceExceptions;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -125,7 +127,12 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                         if (service is BackgroundService backgroundService)
                         {
-                            _ = TryExecuteBackgroundServiceAsync(backgroundService);
+                            Task monitorTask = TryExecuteBackgroundServiceAsync(backgroundService);
+                            List<Task> bgTasks = LazyInitializer.EnsureInitialized(ref _backgroundServiceTasks);
+                            lock (bgTasks)
+                            {
+                                bgTasks.Add(monitorTask);
+                            }
                         }
                     }).ConfigureAwait(false);
 
@@ -142,7 +149,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Exceptions in StartedAsync cause startup to be aborted.
                 LogAndRethrow();
 
-                // Call IHostApplicationLifetime.Started
+                // Cancel IHostApplicationLifetime.ApplicationStarted
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStarted();
 
@@ -197,6 +204,11 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
                     _logger.BackgroundServiceStoppingHost(ex);
+                    List<Exception> exceptions = LazyInitializer.EnsureInitialized(ref _backgroundServiceExceptions);
+                    lock (exceptions)
+                    {
+                        exceptions.Add(ex);
+                    }
 
                     // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
@@ -231,7 +243,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (!_hostStarting) // Started?
                 {
 
-                    // Call IHostApplicationLifetime.ApplicationStopping.
+                    // Cancel IHostApplicationLifetime.ApplicationStopping.
                     // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
                 }
@@ -251,7 +263,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                             (service, token) => service.StoppingAsync(token)).ConfigureAwait(false);
                     }
 
-                    // Call IHostApplicationLifetime.ApplicationStopping.
+                    // Cancel IHostApplicationLifetime.ApplicationStopping.
                     // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
 
@@ -267,7 +279,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
-                // Call IHostApplicationLifetime.Stopped
+                // Cancel IHostApplicationLifetime.ApplicationStopped.
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStopped();
 
@@ -283,6 +295,34 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 _hostStopped = true;
 
+                // Ensure all background service monitoring tasks have finished processing
+                // exceptions before we read them. Without this, there's a race: when a
+                // BackgroundService's ExecuteTask faults, both BackgroundService.StopAsync
+                // (which Host awaits) and TryExecuteBackgroundServiceAsync (fire-and-forget)
+                // have continuations scheduled. If StopAsync's continuation runs first, the
+                // Host may read _backgroundServiceExceptions before the monitoring task has
+                // added its exception.
+                if (_backgroundServiceTasks is not null)
+                {
+                    Task bgMonitoringTasks = Task.WhenAll(_backgroundServiceTasks);
+                    var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    using (cancellationToken.Register(s => ((TaskCompletionSource<object?>)s!).TrySetCanceled(), tcs))
+                    {
+                        await Task.WhenAny(bgMonitoringTasks, tcs.Task).ConfigureAwait(false);
+                    }
+                }
+
+                // If background services faulted and caused the host to stop, rethrow the exceptions
+                // so they propagate and cause a non-zero exit code.
+                List<Exception>? backgroundServiceExceptions = Volatile.Read(ref _backgroundServiceExceptions);
+                if (backgroundServiceExceptions is not null)
+                {
+                    lock (backgroundServiceExceptions)
+                    {
+                        exceptions.AddRange(backgroundServiceExceptions);
+                    }
+                }
+
                 if (exceptions.Count > 0)
                 {
                     if (exceptions.Count == 1)
@@ -294,7 +334,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                     else
                     {
-                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                        var ex = new AggregateException("One or more hosted services failed to stop or one or more background services threw an exception.", exceptions);
                         _logger.StoppedWithException(ex);
                         throw ex;
                     }

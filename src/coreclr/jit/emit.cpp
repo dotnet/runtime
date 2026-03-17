@@ -1497,13 +1497,9 @@ void emitter::dispIns(instrDesc* id)
     // For LoongArch64 using the emitDisInsName().
     NYI_LOONGARCH64("Not used on LOONGARCH64.");
 }
-#elif defined(TARGET_RISCV64)
-void emitter::dispIns(instrDesc* id)
-{
-    // For RISCV64 using the emitDisInsName().
-    NYI_RISCV64("Not used on RISCV64.");
-}
 #else
+// Note:
+//    For RISCV64, `emitter::emitInsSanityCheck` is left empty.
 void emitter::dispIns(instrDesc* id)
 {
 #ifdef DEBUG
@@ -1720,20 +1716,12 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     if (m_debugInfoSize > 0)
     {
-        instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-        memset(info, 0, sizeof(instrDescDebugInfo));
-
-        // These fields should have been zero-ed by the above
-        assert(info->idVarRefOffs == 0);
-        assert(info->idMemCookie == 0);
-        assert(info->idFlags == GTF_EMPTY);
-        assert(info->idFinallyCall == false);
-        assert(info->idCatchRet == false);
-        assert(info->idCallSig == nullptr);
-        assert(info->idTargetBlock == nullptr);
+        instrDescDebugInfo* info =
+            new (emitGetMem(sizeof(instrDescDebugInfo)), jitstd::placement_t()) instrDescDebugInfo();
 
         info->idNum  = emitInsCount;
         info->idSize = sz;
+
         id->idDebugOnlyInfo(info);
     }
 
@@ -9778,7 +9766,8 @@ insGroup* emitter::emitAllocIG()
     ig        = (insGroup*)emitGetMem(sz);
 
 #ifdef DEBUG
-    ig->igSelf = ig;
+    ig->igSelf     = ig;
+    ig->igDataSize = 0;
 #endif
 
 #if EMITTER_STATS
@@ -9845,6 +9834,8 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
+
+    ig->igData = nullptr;
 }
 
 /*****************************************************************************
