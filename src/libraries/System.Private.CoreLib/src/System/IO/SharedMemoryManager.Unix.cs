@@ -462,12 +462,23 @@ namespace System.IO
                     }
 
                     // Another process created the file. Try to open it.
+                    // The creator may not have called FChMod yet, so if validation
+                    // fails on permissions, retry — the next attempt should see the
+                    // correct permissions.
                     fd = Interop.Sys.Open(sharedMemoryFilePath, MandatoryFlags, 0);
                     if (!fd.IsInvalid)
                     {
-                        createdFile = false;
-                        ValidateExistingFile(fd, sharedMemoryFilePath, id);
-                        return fd;
+                        try
+                        {
+                            ValidateExistingFile(fd, sharedMemoryFilePath, id);
+                            createdFile = false;
+                            return fd;
+                        }
+                        catch (IOException) when (retries < MaxRetries)
+                        {
+                            Thread.Sleep(1);
+                            continue;
+                        }
                     }
 
                     error = Interop.Sys.GetLastErrorInfo();
