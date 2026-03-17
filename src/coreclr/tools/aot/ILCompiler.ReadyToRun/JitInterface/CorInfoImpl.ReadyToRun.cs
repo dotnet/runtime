@@ -1276,17 +1276,21 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.InitInstClass;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+                    return GetThrowHelperMethodEntrypoint("ThrowArgumentException"u8);
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
+                    return GetThrowHelperMethodEntrypoint("ThrowArgumentOutOfRangeException"u8);
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+                    return GetThrowHelperMethodEntrypoint("ThrowPlatformNotSupportedException"u8);
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+                    return GetThrowHelperMethodEntrypoint("ThrowNotImplementedException"u8);
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
-                // For Vector256.Create and similar cases
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
                 case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
                 // DirectOnThreadLocalData helper is used at runtime during R2R fixup resolution, not during R2R compilation
@@ -1298,6 +1302,19 @@ namespace Internal.JitInterface
             }
 
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
+        }
+
+        private ISymbolNode GetThrowHelperMethodEntrypoint(ReadOnlySpan<byte> methodName)
+        {
+            MetadataType throwHelpersType = _compilation.TypeSystemContext.SystemModule.GetKnownType(
+                "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8);
+            MethodDesc method = throwHelpersType.GetKnownMethod(methodName, null);
+            ModuleToken moduleToken = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+            return _compilation.NodeFactory.MethodEntrypoint(
+                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
+                isInstantiatingStub: false,
+                isPrecodeImportRequired: false,
+                isJumpableImportRequired: false);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
