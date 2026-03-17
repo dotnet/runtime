@@ -7,8 +7,8 @@ namespace b72218;
 
 using System;
 using System.Threading;
-using Xunit;
 using TestLibrary;
+using Xunit;
 
 public class My
 {

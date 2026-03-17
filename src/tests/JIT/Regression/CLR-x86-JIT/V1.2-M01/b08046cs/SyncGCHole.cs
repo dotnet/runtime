@@ -21,8 +21,8 @@ namespace b08046cs;
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Xunit;
 using TestLibrary;
+using Xunit;
 
 class ExternalClass
 {
