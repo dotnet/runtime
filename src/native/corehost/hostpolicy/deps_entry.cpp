@@ -135,7 +135,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
         return to_path(base, asset.local_path, str, search_options, found_in_bundle);
     }
 
-    // runtimepack assets set the path to the local path - use relative_path as-is
+    // For runtimepack assets without a local path set, the relative path is set to the local path on disk - use it as is
     if (library_type == _X("runtimepack"))
     {
         return to_path(base, asset.relative_path, str, search_options, found_in_bundle);
