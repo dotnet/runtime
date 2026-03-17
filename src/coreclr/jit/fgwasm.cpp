@@ -2006,56 +2006,56 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
     for (BasicBlock* const block : Blocks())
     {
-        if (block->KindIs(BBJ_EHCATCHRET))
+        if (!block->KindIs(BBJ_EHCATCHRET))
         {
-            // Find the try region associated with the catch
-            // (note BBJ_EHCATCHRET is in the handler for the try...)
-            //
-            assert(block->hasHndIndex());
-            unsigned const catchingTryIndex = block->getHndIndex();
-
-            // Find the handler region for the continuation.
-            //
-            BasicBlock* const continuationBlock = block->GetTarget();
-
-            unsigned const continuationHndIndex =
-                continuationBlock->hasHndIndex() ? continuationBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-
-            // Now find the dispatching try index by walking through the enclosing handler regions.
-            // Also skip past any inner mutual protect trys.
-            //
-            unsigned dispatchingTryIndex = catchingTryIndex;
-            unsigned enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
-
-            while (enclosingHndIndex != continuationHndIndex)
-            {
-                // Note this should not walk through any non try/catch regions as those will change handler region
-                //
-                dispatchingTryIndex = ehGetEnclosingTryIndex(enclosingHndIndex);
-                enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
-
-                // Create a catchret collection for each region so we know which regions will require try-tables.
-                //
-                getCatchRetBlocksForTryRegion(dispatchingTryIndex);
-            }
-
-            // If this try region is part of a mutual protect set,
-            // we want to use the EH region of the innermost try.
-            //
-            BasicBlock* const dispatchingTryBlock          = ehGetDsc(dispatchingTryIndex)->ebdTryBeg;
-            unsigned const    innermostDispatchingTryIndex = dispatchingTryBlock->getTryIndex();
-
-            JITDUMP("Catchret block " FMT_BB " has continuation " FMT_BB
-                    "; associated try EH#%02u; dispatching try EH#%02u\n",
-                    block->bbNum, continuationBlock->bbNum, catchingTryIndex, innermostDispatchingTryIndex);
-
-            // Add it to the catchret collection for the innermost dispatching try.
-            //
-            ArrayStack<BasicBlock*>* catchRetBlocks = getCatchRetBlocksForTryRegion(innermostDispatchingTryIndex);
-
-            catchRetBlocks->Push(block);
-            foundCatchRetBlocks = true;
+            continue;
         }
+
+        // Find the try region associated with the catch
+        // (note BBJ_EHCATCHRET is in the handler for the try...)
+        //
+        assert(block->hasHndIndex());
+        unsigned const catchingTryIndex = block->getHndIndex();
+
+        // Find the handler region for the continuation.
+        //
+        BasicBlock* const continuationBlock = block->GetTarget();
+
+        unsigned const continuationHndIndex =
+            continuationBlock->hasHndIndex() ? continuationBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+        // Now find the dispatching try index by walking through the enclosing handler regions.
+        // Also skip past any inner mutual protect trys.
+        //
+        unsigned dispatchingTryIndex = catchingTryIndex;
+        unsigned enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
+
+        while (enclosingHndIndex != continuationHndIndex)
+        {
+            // Note this should not walk through any non try/catch regions as those will change handler region
+            //
+            dispatchingTryIndex = ehGetEnclosingTryIndex(enclosingHndIndex);
+            enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
+
+            // Create a catchret collection for each region so we know which regions will require try-tables.
+            //
+            getCatchRetBlocksForTryRegion(dispatchingTryIndex);
+        }
+
+        // If this try region is part of a mutual protect set,
+        // we want to use the EH region of the innermost try.
+        //
+        BasicBlock* const dispatchingTryBlock          = ehGetDsc(dispatchingTryIndex)->ebdTryBeg;
+        unsigned const    innermostDispatchingTryIndex = dispatchingTryBlock->getTryIndex();
+
+        JITDUMP("Catchret block " FMT_BB " has continuation " FMT_BB
+                "; associated try EH#%02u; dispatching try EH#%02u\n",
+                block->bbNum, continuationBlock->bbNum, catchingTryIndex, innermostDispatchingTryIndex);
+
+        ArrayStack<BasicBlock*>* catchRetBlocks = getCatchRetBlocksForTryRegion(innermostDispatchingTryIndex);
+
+        catchRetBlocks->Push(block);
+        foundCatchRetBlocks = true;
     }
 
     // It's possible that there are no catchrets, if every catch unconditinally throws.
@@ -2068,9 +2068,9 @@ PhaseStatus Compiler::fgWasmEhFlow()
     }
 
     // Now give each catchret block a unique number, making sure that each dispatching try's catchrets
-    // have consecutive numbers.
+    // have consecutive numbers. Make sure no catchret is also a try entry.
     //
-    // Start numbering at 1
+    // Start numbering at 1.
     //
     // We hijack the bbPreorderNum to record this info on the blocks.
     //
@@ -2082,8 +2082,18 @@ PhaseStatus Compiler::fgWasmEhFlow()
             continue;
         }
 
-        for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
+        for (BasicBlock*& catchRetBlock : catchRetBlocks->TopDownOrder())
         {
+            // If this catchret is also a try entry, preemptively split it so that the catchret block
+            // identity doesn't change when we split try headers (again) later on.
+            //
+            if (bbIsTryBeg(catchRetBlock))
+            {
+                JITDUMP("Preemptively splitting catchret block " FMT_BB " which is also a try entry\n",
+                        catchRetBlock->bbNum);
+                catchRetBlock = fgSplitBlockAtBeginning(catchRetBlock);
+            }
+
             JITDUMP("Assigning catchret block " FMT_BB " index number %u\n", catchRetBlock->bbNum, catchRetIndex);
             catchRetBlock->bbPreorderNum = catchRetIndex;
             catchRetIndex++;
@@ -2208,28 +2218,9 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
             for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                BasicBlock* continuation = nullptr;
-
-                if (catchRetBlock->KindIs(BBJ_EHCATCHRET))
-                {
-                    continuation = catchRetBlock->GetTarget();
-                }
-                else
-                {
-                    // If the catchret block was also a try entry, may have split it.
-                    // If so, the continuation should be the target of the false target.
-                    // TODO: split this eagerly when we're looking for catchrets?
-                    //
-                    assert(catchRetBlock->KindIs(BBJ_COND));
-                    assert(catchRetBlock->GetFalseTarget()->KindIs(BBJ_EHCATCHRET));
-
-                    JITDUMP("Catchret block " FMT_BB " was a try entry and was split; using " FMT_BB
-                            " to find the continuation\n",
-                            catchRetBlock->bbNum, catchRetBlock->GetFalseTarget()->bbNum);
-                    continuation = catchRetBlock->GetFalseTarget()->GetTarget();
-                }
-
-                unsigned const caseIndex = catchRetBlock->bbPreorderNum;
+                assert(catchRetBlock->KindIs(BBJ_EHCATCHRET));
+                BasicBlock* const continuation = catchRetBlock->GetTarget();
+                unsigned const    caseIndex    = catchRetBlock->bbPreorderNum;
                 assert(caseIndex >= caseBias);
                 unsigned const biasedCaseIndex = caseIndex - caseBias;
                 assert(biasedCaseIndex < caseCount);
@@ -2265,21 +2256,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
             BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
             for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                BasicBlock* continuation = nullptr;
-
-                // See note above about try entrys that were also catchrets
-                //
-                if (catchRetBlock->KindIs(BBJ_EHCATCHRET))
-                {
-                    continuation = catchRetBlock->GetTarget();
-                }
-                else
-                {
-                    assert(catchRetBlock->KindIs(BBJ_COND));
-                    assert(catchRetBlock->GetFalseTarget()->KindIs(BBJ_EHCATCHRET));
-                    continuation = catchRetBlock->GetFalseTarget()->GetTarget();
-                }
-
+                BasicBlock* const continuation = catchRetBlock->GetTarget();
                 if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
                 {
                     succCount++;
@@ -2300,21 +2277,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
             for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
             {
-                BasicBlock* continuation = nullptr;
-
-                // See note above about try entrys that were also catchrets
-                //
-                if (catchRetBlock->KindIs(BBJ_EHCATCHRET))
-                {
-                    continuation = catchRetBlock->GetTarget();
-                }
-                else
-                {
-                    assert(catchRetBlock->KindIs(BBJ_COND));
-                    assert(catchRetBlock->GetFalseTarget()->KindIs(BBJ_EHCATCHRET));
-                    continuation = catchRetBlock->GetFalseTarget()->GetTarget();
-                }
-
+                BasicBlock* const continuation = catchRetBlock->GetTarget();
                 if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
                 {
                     succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
