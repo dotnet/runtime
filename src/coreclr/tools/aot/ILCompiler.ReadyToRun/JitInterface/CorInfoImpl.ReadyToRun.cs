@@ -535,7 +535,7 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode)
+        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode, ReadyToRunCodegenCompilation compilation = null)
         {
             bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration;
             if (methodNeedingCode.IsAggressiveOptimization && targetAllowsRuntimeCodeGeneration)
@@ -569,6 +569,14 @@ namespace Internal.JitInterface
                 // Special methods on delegate types
                 return true;
             }
+            // Async resumption stubs use faux IL with synthetic tokens. When CoreLib is in the
+            // version bubble the stubs are not wrapped with ManifestModuleWrappedMethodIL, so
+            // token resolution for InstantiatedType / ParameterizedType falls through to a path
+            // that cannot handle them. Skip compilation and let the runtime JIT these stubs.
+            if (methodNeedingCode.IsCompilerGeneratedILBodyForAsync() && compilation != null && compilation.NodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                return true;
+            }
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;
@@ -586,6 +594,7 @@ namespace Internal.JitInterface
             var handle = ecmaMethod.Handle;
 
             List<TypeDesc> compExactlyDependsOnList = null;
+            bool hasCompHasFallback = false;
 
             foreach (var attributeHandle in metadataReader.GetMethodDefinition(handle).GetCustomAttributes())
             {
@@ -619,35 +628,41 @@ namespace Internal.JitInterface
                             compExactlyDependsOnList.Add(typeForBypass);
                         }
                     }
+                    else if (metadataReader.StringComparer.Equals(nameHandle, "CompHasFallbackAttribute"))
+                    {
+                        hasCompHasFallback = true;
+                    }
                 }
             }
 
             if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
             {
-                // Default to true, and set to false if at least one of the types is actually supported in the current environment, and none of the
-                // intrinsic types are in an opportunistic state.
-                bool doBypass = true;
+                bool anySupported = false;
 
                 foreach (var intrinsicType in compExactlyDependsOnList)
                 {
                     InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(intrinsicType.Context.Target.Architecture, intrinsicType);
-                    if (instructionSet == InstructionSet.ILLEGAL)
+                    // If the instruction set is ILLEGAL, it means it is never supported by the current architecture so the behavior at runtime is known
+                    if (instructionSet != InstructionSet.ILLEGAL)
                     {
-                        // This instruction set isn't supported on the current platform at all.
-                        continue;
-                    }
-                    if (instructionSetSupport.IsInstructionSetSupported(instructionSet) || instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
-                    {
-                        doBypass = false;
-                    }
-                    else
-                    {
-                        // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
-                        return true;
+                        if (instructionSetSupport.IsInstructionSetSupported(instructionSet))
+                        {
+                            anySupported = true;
+                        }
+                        else if (!instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                        {
+                            // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
+                            return true;
+                        }
                     }
                 }
 
-                return doBypass;
+                if (!anySupported && !hasCompHasFallback)
+                {
+                    // If none of the instruction sets are supported (all are either illegal or explicitly unsupported),
+                    // skip compilation unless the method has a functional fallback path
+                    return true;
+                }
             }
 
             // No reason to bypass compilation and code generation.
@@ -770,7 +785,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled))
+                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled, _compilation))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
@@ -1485,6 +1500,8 @@ namespace Internal.JitInterface
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
                         module = ecmaType.Module;
                         return new ModuleToken(module, token);
+                    case TypeDesc typeDesc:
+                        return _compilation.NodeFactory.Resolver.GetModuleTokenForType(typeDesc, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                     default:
                         throw new NotImplementedException($"Unsupported token resolution for {resultDef.GetType()}");
                 }

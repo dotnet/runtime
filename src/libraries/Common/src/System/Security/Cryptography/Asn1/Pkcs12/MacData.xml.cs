@@ -8,22 +8,17 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1.Pkcs12
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct MacData
+    file static class SharedMacData
     {
-        private static ReadOnlySpan<byte> DefaultIterationCount => [0x02, 0x01, 0x01];
-
-        internal System.Security.Cryptography.Asn1.DigestInfoAsn Mac;
-        internal ReadOnlyMemory<byte> MacSalt;
-        internal int IterationCount;
+        internal static ReadOnlySpan<byte> DefaultIterationCount => [0x02, 0x01, 0x01];
 
 #if DEBUG
-        static MacData()
+        static SharedMacData()
         {
             MacData decoded = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultIterationCount, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedMacData.DefaultIterationCount, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.IterationCount))
             {
@@ -33,6 +28,14 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct MacData
+    {
+        internal System.Security.Cryptography.Asn1.DigestInfoAsn Mac;
+        internal ReadOnlyMemory<byte> MacSalt;
+        internal int IterationCount;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -52,7 +55,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(IterationCount);
 
-                if (!tmp.EncodedValueEquals(DefaultIterationCount))
+                if (!tmp.EncodedValueEquals(SharedMacData.DefaultIterationCount))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -131,7 +134,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultIterationCount, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedMacData.DefaultIterationCount, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.IterationCount))
                 {

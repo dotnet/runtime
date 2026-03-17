@@ -46,6 +46,7 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection ElementSection = new ObjectNodeSection("wasm.element", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ImportSection = new ObjectNodeSection("wasm.import", SectionType.ReadOnly, needsAlign: false);
@@ -183,6 +184,28 @@ namespace ILCompiler.ObjectWriter
         private void WriteGlobalExport(string name, int globalIndex) =>
             WriteExport(name, WasmExportKind.Global, globalIndex);
 
+        private int _numElements;
+        private void WriteFunctionElement(WasmInstructionGroup e0, ReadOnlySpan<int> functionIndices)
+        {
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ElementSection);
+            // e0:expr y*:list(funcidx)
+            //  elem (ref func) (ref.func y)* (active 0 e0)
+            writer.WriteULEB128(0);
+
+            // FIXME: Add a way to encode directly into the writer without a scratch buffer
+            int encodeSize = e0.EncodeSize();
+            int bytesWritten = e0.Encode(writer.Buffer.GetSpan(encodeSize));
+            Debug.Assert(bytesWritten == encodeSize);
+            writer.Buffer.Advance((int)bytesWritten);
+
+            writer.WriteULEB128((ulong)functionIndices.Length);
+
+            foreach (int index in functionIndices)
+                writer.WriteULEB128((ulong)index);
+
+            _numElements++;
+        }
+
         private List<WasmSection> _sections = new();
         private Dictionary<string, int> _sectionNameToIndex = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
@@ -190,12 +213,13 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
             { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
             { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
+            { WasmObjectNodeSection.ElementSection, WasmSectionType.Element },
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
             { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
             { WasmObjectNodeSection.GlobalSection, WasmSectionType.Global },
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
-            { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount }
+            { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount },
         };
 
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
@@ -224,6 +248,15 @@ namespace ILCompiler.ObjectWriter
         }
 
 #if READYTORUN
+        WasmInstructionGroup GetImageFunctionPointerBaseOffset(int offset)
+        {
+            return new WasmInstructionGroup([
+                Global.Get(ImageFunctionPointerBaseGlobalIndex),
+                I32.Const(offset),
+                I32.Add,
+            ]);
+        }
+
         private class WebcilSegment
         {
             public WebcilHeader Header;
@@ -447,8 +480,8 @@ namespace ILCompiler.ObjectWriter
             writer.WriteByte(0x01); // number of tables
             writer.WriteByte(0x70); // element type: funcref
             writer.WriteByte(0x01); // table limits: flags (1 = has maximum)
-            writer.WriteULEB128((ulong)0);
-            writer.WriteULEB128((ulong)_methodCount); // table limits: initial size in number of entries
+            writer.WriteULEB128((ulong)_methodCount); // minimum
+            writer.WriteULEB128((ulong)_methodCount); // maximum
         }
 
         private int _numDefinedGlobals = 0;
@@ -511,9 +544,9 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.GlobalSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
+            WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
-            WasmObjectNodeSection.DataSection.Name,
         ];
 
         private int[] _sectionEmitOrder = null;
@@ -794,13 +827,15 @@ namespace ILCompiler.ObjectWriter
 #nullable disable
 
         const int StackPointerGlobalIndex = 0;
-        const int R2RStartGlobalIndex = 1;
+        const int ImageBaseGlobalIndex = 1;
+        const int ImageFunctionPointerBaseGlobalIndex = 2;
 
         private WasmImport[] _defaultImports = new[]
         {
             null, // placeholder for memory, which is set up dynamically in WriteImports()
             new WasmImport("env", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("env", "__r2r_start", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: R2RStartGlobalIndex),
+            new WasmImport("env", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+            new WasmImport("env", "__image_function_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
         };
 
         private void WriteImports()
@@ -848,12 +883,29 @@ namespace ILCompiler.ObjectWriter
         }
 
         private Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
+        private void WriteElements()
+        {
+            // Generate the function pointer table element that contains function pointers for all of our functions
+            int[] functionIndices = new int[_uniqueSymbols.Count];
+            // NOTE: This relies on items in _uniqueSymbols being assigned sequentially and that iteration over Values is order-preserving.
+            // BCL Dictionary preserves insertion order so as long as we keep using it, we would get the function indices in the order they were added.
+            _uniqueSymbols.Values.CopyTo(functionIndices, 0);
+            // Enforce that the function pointers are sequential so that (image_function_pointer_base + 0) == ftn index 0
+#if DEBUG
+            for (int i = 0; i < _uniqueSymbols.Count; i++) {
+                Debug.Assert(functionIndices[i] == i);
+            }
+#endif
+            WriteFunctionElement(GetImageFunctionPointerBaseOffset(0), functionIndices);
+        }
+
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             WriteImports();
             WriteGlobalSection();
             WriteExports();
+            WriteElements();
 
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
@@ -863,6 +915,11 @@ namespace ILCompiler.ObjectWriter
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
             PrependCount(_sections[exportIdx], _numExports);
+
+            if (_sectionNameToIndex.TryGetValue(WasmObjectNodeSection.ElementSection.Name, out int elementIdx))
+            {
+                PrependCount(_sections[elementIdx], _numElements);
+            }
 
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
 
