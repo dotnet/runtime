@@ -7453,9 +7453,9 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
 
         CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
-        call->gtCallType          = CT_USER_FUNC;
-        call->gtCallMethHnd       = nullptr;
-        call->gtDirectCallAddress = helperLookup.addr;
+        call->gtCallType                  = CT_USER_FUNC;
+        call->gtCallMethHnd               = nullptr;
+        call->gtDirectCallAddress         = helperLookup.addr;
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
         call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
 
