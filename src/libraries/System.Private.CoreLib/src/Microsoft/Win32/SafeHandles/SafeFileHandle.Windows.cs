@@ -65,7 +65,15 @@ namespace Microsoft.Win32.SafeHandles
                 const int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
 
                 // We could consider specifying a larger buffer size.
-                tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(pipeName, openMode, pipeMode, 1, 0, 0, 0, ref securityAttributes);
+                tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(
+                    pipeName,
+                    openMode,
+                    pipeMode,
+                    maxInstances: 1, // we don't want anybody else to open this pipe
+                    outBufferSize: 0, // unused (we use it only for reading)
+                    inBufferSize: 4 * 4096, // CreatePipe uses a 4096 buffer by default, we use bigger buffer for better performance
+                    defaultTimeout: (int)TimeSpan.FromSeconds(120).TotalMilliseconds, // same as the default for CreatePipe
+                    ref securityAttributes);
 
                 try
                 {
