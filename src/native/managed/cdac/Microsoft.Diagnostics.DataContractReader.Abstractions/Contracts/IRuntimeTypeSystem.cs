@@ -213,6 +213,7 @@ public interface IRuntimeTypeSystem : IContract
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
+    TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
 }
 

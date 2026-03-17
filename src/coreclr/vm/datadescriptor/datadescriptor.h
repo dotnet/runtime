@@ -24,6 +24,7 @@
 
 #include "configure.h"
 
+#include "conditionalweaktable.h"
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"

@@ -70,6 +70,15 @@ internal partial class MockDescriptors
         ]
     };
 
+    private static readonly TypeFields ObjectHeaderFields = new TypeFields()
+    {
+        DataType = DataType.ObjectHeader,
+        Fields =
+        [
+            new(nameof(Data.ObjectHeader.SyncBlockValue), DataType.uint32),
+        ]
+    };
+
     private static readonly TypeFields StringFields = new TypeFields()
     {
         DataType = DataType.String,
@@ -120,6 +129,7 @@ internal partial class MockDescriptors
             new(nameof(Data.SyncBlock.Lock), DataType.pointer),
             new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
             new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
+            new(nameof(Data.SyncBlock.HashCode), DataType.uint32),
         ]
     };
 
