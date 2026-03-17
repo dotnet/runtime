@@ -140,30 +140,30 @@ namespace System.IO
 
             int startIndex = _startIndex;
             int endIndex = _endIndex;
-            string buffer = _buffer;
+            ReadOnlySpan<char> span = _buffer.AsSpan(startIndex, endIndex - startIndex);
 
-            if (startIndex == endIndex)
+            if (span.IsEmpty)
             {
                 ThrowForInvalidData();
             }
 
             bool negative = false;
             int result = 0;
-            int i = startIndex;
+            int i = 0;
 
-            if (buffer[i] == '-')
+            if (span[0] == '-')
             {
                 negative = true;
-                i++;
-                if (i == endIndex)
+                i = 1;
+                if (i == span.Length)
                 {
                     ThrowForInvalidData();
                 }
             }
 
-            for (; i < endIndex; i++)
+            for (; i < span.Length; i++)
             {
-                int d = buffer[i] - '0';
+                int d = span[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
@@ -182,30 +182,30 @@ namespace System.IO
 
             int startIndex = _startIndex;
             int endIndex = _endIndex;
-            string buffer = _buffer;
+            ReadOnlySpan<char> span = _buffer.AsSpan(startIndex, endIndex - startIndex);
 
-            if (startIndex == endIndex)
+            if (span.IsEmpty)
             {
                 ThrowForInvalidData();
             }
 
             bool negative = false;
             long result = 0;
-            int i = startIndex;
+            int i = 0;
 
-            if (buffer[i] == '-')
+            if (span[0] == '-')
             {
                 negative = true;
-                i++;
-                if (i == endIndex)
+                i = 1;
+                if (i == span.Length)
                 {
                     ThrowForInvalidData();
                 }
             }
 
-            for (; i < endIndex; i++)
+            for (; i < span.Length; i++)
             {
-                int d = buffer[i] - '0';
+                int d = span[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
@@ -222,19 +222,17 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            int startIndex = _startIndex;
-            int endIndex = _endIndex;
-            string buffer = _buffer;
+            ReadOnlySpan<char> span = _buffer.AsSpan(_startIndex, _endIndex - _startIndex);
 
-            if (startIndex == endIndex)
+            if (span.IsEmpty)
             {
                 ThrowForInvalidData();
             }
 
             uint result = 0;
-            for (int i = startIndex; i < endIndex; i++)
+            for (int i = 0; i < span.Length; i++)
             {
-                int d = buffer[i] - '0';
+                int d = span[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();
@@ -251,19 +249,17 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            int startIndex = _startIndex;
-            int endIndex = _endIndex;
-            string buffer = _buffer;
+            ReadOnlySpan<char> span = _buffer.AsSpan(_startIndex, _endIndex - _startIndex);
 
-            if (startIndex == endIndex)
+            if (span.IsEmpty)
             {
                 ThrowForInvalidData();
             }
 
             ulong result = 0;
-            for (int i = startIndex; i < endIndex; i++)
+            for (int i = 0; i < span.Length; i++)
             {
-                int d = buffer[i] - '0';
+                int d = span[i] - '0';
                 if (d < 0 || d > 9)
                 {
                     ThrowForInvalidData();

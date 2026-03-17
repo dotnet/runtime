@@ -109,6 +109,33 @@ namespace Tests.System.IO
             Assert.Throws<OverflowException>(() => sp.ParseNextUInt64());
         }
 
+        [Theory]
+        [InlineData(",,", "ParseNextInt32")]
+        [InlineData(",,", "ParseNextInt64")]
+        [InlineData(",,", "ParseNextUInt32")]
+        [InlineData(",,", "ParseNextUInt64")]
+        public void TestEmptyComponentThrowsInvalidData(string buffer, string method)
+        {
+            StringParser sp = new StringParser(buffer, ',');
+            sp.MoveNextOrFail();
+
+            switch (method)
+            {
+                case "ParseNextInt32":
+                    Assert.Throws<InvalidDataException>(() => sp.ParseNextInt32());
+                    break;
+                case "ParseNextInt64":
+                    Assert.Throws<InvalidDataException>(() => sp.ParseNextInt64());
+                    break;
+                case "ParseNextUInt32":
+                    Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt32());
+                    break;
+                case "ParseNextUInt64":
+                    Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt64());
+                    break;
+            }
+        }
+
         [Fact]
         public void TestParseNextChar()
         {
