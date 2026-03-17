@@ -131,7 +131,7 @@ namespace System.Numerics
             }
             else
             {
-                long diff = (long)(int)a - (int)b - (int)borrowIn;
+                long diff = (long)a - (long)b - (long)borrowIn;
                 borrowOut = (nuint)(uint)(-(int)(diff >> 32)); // 0 or 1
                 return (nuint)(uint)diff;
             }

@@ -73,7 +73,7 @@ namespace System.Numerics
 
                 // Executes the multiplication algorithm for left and right,
                 // but skips the first k limbs of left, which is equivalent to
-                // preceding division by 2^(32*k). To spare memory allocations
+                // preceding division by 2^(kcbitNuint*k). To spare memory allocations
                 // we write the result to an already allocated memory.
 
                 if (left.Length > k)
@@ -93,7 +93,7 @@ namespace System.Numerics
             {
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
-                // preceding reduction by 2^(32*k). Furthermore, if left is
+                // preceding reduction by 2^(kcbitNuint*k). Furthermore, if left is
                 // still greater than modulus, further subtractions are used.
 
                 if (left.Length > k)
