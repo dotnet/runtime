@@ -117,7 +117,7 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   CreateAssemblyName,        SM_PtrAssemblyName_PtrNativeAssemblyNameParts_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLY_NAME,        CREATE_ASSEMBLY_SPEC,   CreateAssemblyName,        SM_PtrAssemblyName_PtrNativeAssemblyNameParts_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLY_NAME,        PARSE_AS_ASSEMBLYSPEC,  ParseAsAssemblySpec,       SM_PtrChar_PtrVoid_PtrException_RetVoid)
 
 DEFINE_CLASS(NATIVE_ASSEMBLY_NAME_PARTS,   Reflection,             NativeAssemblyNameParts)

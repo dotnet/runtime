@@ -246,7 +246,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    UnmanagedCallersOnlyCaller createAssemblyName(METHOD__ASSEMBLY_NAME__CTOR);
+    UnmanagedCallersOnlyCaller createAssemblyName(METHOD__ASSEMBLY_NAME__CREATE_ASSEMBLY_SPEC);
     createAssemblyName.InvokeThrowing(pAsmName, &nameParts);
 }
 
