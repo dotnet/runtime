@@ -7609,8 +7609,8 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 // FlowGraphTryRegions::Build: Build the flow graph try regions.
 //
 // Arguments:
-//    comp    -- Compiler instance
-//    dfsTree -- DFS tree for the flow graph
+//    comp                 -- Compiler instance
+//    dfsTree              -- DFS tree for the flow graph
 //    includeHandlerBlocks -- include blocks in handlers inside the try
 //
 // Returns:
@@ -7618,14 +7618,14 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 //
 FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree, bool includeHandlerBlocks)
 {
-    bool m_tryRegionsIncludeHandlerBlocks = includeHandlerBlocks;
-
     // We use EHID here for stable indexing. So there may be some empty slots in the
     // collection if we've deleted some EH regions.
     //
     unsigned const       numTryRegions = comp->compEHID;
     FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(dfsTree, numTryRegions);
     assert(numTryRegions >= comp->compHndBBtabCount);
+
+    regions->m_tryRegionsIncludeHandlerBlocks = includeHandlerBlocks;
 
     for (EHblkDsc* ehDsc : EHClauses(comp))
     {
@@ -7691,7 +7691,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             // For flow purposes we may consider it to be outside the try.
         }
 
-        // If this is a BBJ_CATCHRET, find the handler region of the continuation.
+        // If this block is a BBJ_EHCATCHRET, find the handler region of the continuation.
         //
         // Walk up through enclosing trys until we reach the outermost try that
         // is enclosed by the same handler as the continuation.

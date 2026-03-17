@@ -298,18 +298,14 @@ void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valT
 }
 
 //-----------------------------------------------------------------------------
-// emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
-// declaration.
+// emitNewInstrValTypeImm: Construct an instrDesc corresponding to an instruction
+//    with a simple type sig and immediate, like try_table
 //
 // Arguments:
 //   attr        - emit attributes
-//   localCount  - the count of locals in this declaration
-//   type        - the type of local in the declaration
-//   lclOffset   - used to provide the starting index of this local
+//   type        - the simple sig type
+//   imm         - the immediate operand
 //
-// Notes:
-//   `lclOffset` is stored as debug info attached to the instruction,
-//    so the offset will only be used if m_debugInfoSize > 0
 emitter::instrDesc* emitter::emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int imm)
 {
     instrDescValTypeImm* id = static_cast<instrDescValTypeImm*>(emitAllocAnyInstr(sizeof(instrDescValTypeImm), attr));

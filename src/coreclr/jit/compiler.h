@@ -2310,8 +2310,6 @@ public:
 
     static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs, bool includeHandlerBlocks = false);
 
-    FlowGraphTryRegion* GetRegionForBlock(BasicBlock* block);
-
     BitVecTraits GetBlockBitVecTraits()
     {
         return m_dfsTree->PostOrderTraits();

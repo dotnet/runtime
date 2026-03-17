@@ -124,8 +124,8 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
     }
 
     // Also look for any non-funclet entry block that is only reachable EH.
-    // These should have been connected up to special Wasm switches at
-    // method and funclet entry. If not, something is wrong.
+    // These should have been connected up to special Wasm switches by fgWasmEhFlow.
+    // If not, something is wrong.
     //
     hasBlocksOnlyReachableViaEH = false;
 
@@ -1058,10 +1058,8 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 //    PhaseStatus indicating whether the flow graph was modified.
 //
 // Still TODO
-// * Blocks only reachable via EH
 // * tail calls (RETURN_CALL)
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
-// * Compatibility of LaRPO with try region layout constraints (if any)
 //
 PhaseStatus Compiler::fgWasmControlFlow()
 {
@@ -1076,8 +1074,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     if (hasBlocksOnlyReachableViaEH)
     {
-        assert(!hasBlocksOnlyReachableViaEH);
-        JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        // We should not get here now that we are running fgWasmEHFlow upstream.
+        //
+        JITDUMP("\nThere are blocks only reachable via EH\n");
         NYI_WASM("Method has blocks only reachable via EH");
         return PhaseStatus::MODIFIED_NOTHING;
     }
