@@ -8441,27 +8441,42 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
 
-#ifdef TARGET_ARM
-                // ARM32 requires the Thumb bit (bit 0) set on code pointers.
-                // For target (intra-code pointer), OR directly — findKnownBlock preserves it.
-                // For resumeStub (external handle), use addlDelta because we can't do math with handles.
-                if (target != nullptr)
-                {
-                    target = (BYTE*)((size_t)target | 1);
-                }
-#endif
-
                 if (m_compiler->opts.compReloc)
                 {
-#ifdef TARGET_ARM
-                    emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
-                                                      CorInfoReloc::DIRECT, 1);
-#else
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
-#endif
+                    /*
+                        The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
+                        either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
+                        to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
+                        thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
+                        the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
+                        emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
+                        (while regular method calls could not do this) because the async method and its resumption stub
+                        are tightly coupled and effectively funclets of the same method. However, this means that
+                        crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
+                        unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
+                        reloc with the addend for the thumb bit.
+                    */
+                    if (m_compiler->IsReadyToRun() &&
+                        m_compiler->info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_ARM)
+                    {
+                        emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
+                                                          CorInfoReloc::DIRECT, 1);
+                    }
+                    else
+                    {
+                        emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+                    }
                     if (target != nullptr)
                     {
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+                        if (m_compiler->IsReadyToRun() &&
+                            m_compiler->info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_ARM)
+                        {
+                            emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, 1);
+                        }
+                        else
+                        {
+                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+                        }
                     }
                 }
 
