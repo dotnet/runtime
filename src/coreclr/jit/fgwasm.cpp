@@ -2247,12 +2247,9 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     regionEntryBlock->SetFalseEdge(normalEntryEdge);
 
     // Create the IR for the branch block.
-    // Use the special wasm GT_WASM_IF_EXCEPT for predicate.
+    // Use the special wasm GT_WASM_JEXCEPT here.
     //
-    GenTree* const compareNode = new (this, GT_WASM_IF_EXCEPT) GenTree(GT_WASM_IF_EXCEPT, TYP_INT);
-    GenTree* const jumpNode    = gtNewOperNode(GT_JTRUE, TYP_VOID, compareNode);
-
-    jumpNode->gtFlags |= GTF_JTRUE_WASM_EH;
+    GenTree* const jumpNode = new (this, GT_WASM_JEXCEPT) GenTree(GT_WASM_JEXCEPT, TYP_VOID);
 
     if (regionEntryBlock->IsLIR())
     {

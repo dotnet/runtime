@@ -395,15 +395,15 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 //
                 LIR::Range&    blockRange = LIR::AsRange(block);
                 GenTree* const jTrue      = blockRange.LastNode();
-                assert(jTrue->OperIs(GT_JTRUE));
-                GenTree* const ifExcept = jTrue->gtGetOp1();
-                assert(ifExcept->OperIs(GT_WASM_IF_EXCEPT));
+                assert(jTrue->OperIs(GT_WASM_JEXCEPT));
 
                 // Empty stack sig, one catch clause
+                //
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
                 // Post-catch continuation dispatch block is the true target.
                 // False target should be the next block.
+                //
                 assert(block->GetFalseTarget() == block->Next());
                 BasicBlock* const target = block->GetTrueTarget();
                 unsigned          depth  = findTargetDepth(target);
@@ -619,16 +619,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-
-            if ((treeNode->gtFlags & GTF_JTRUE_WASM_EH) != 0)
-            {
-                // part of the try table pattern
-                // no codegen needed
-            }
-            else
-            {
-                genCodeForJTrue(treeNode->AsOp());
-            }
+            genCodeForJTrue(treeNode->AsOp());
             break;
 
         case GT_SWITCH:
@@ -722,7 +713,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genIntrinsic(treeNode->AsIntrinsic());
             break;
 
-        case GT_WASM_IF_EXCEPT:
+        case GT_WASM_JEXCEPT:
             // no codegen needed here.
             break;
 

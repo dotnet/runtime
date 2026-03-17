@@ -12309,8 +12309,8 @@ public:
             case GT_NOP:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
-            case GT_WASM_IF_EXCEPT:
             case GT_WASM_THROW_REF:
+            case GT_WASM_JEXCEPT:
                 break;
 
             // Lclvar unary operators

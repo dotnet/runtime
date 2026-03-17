@@ -2752,7 +2752,6 @@ AGAIN:
             case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
-            case GT_WASM_IF_EXCEPT:
             case GT_WASM_THROW_REF:
                 return true;
 
@@ -6846,7 +6845,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
         case GT_WASM_THROW_REF:
-        case GT_WASM_IF_EXCEPT:
+        case GT_WASM_JEXCEPT:
             return false;
 
         // Standard unary operators
@@ -9724,7 +9723,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_LABEL:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
-            case GT_WASM_IF_EXCEPT:
             case GT_WASM_THROW_REF:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
@@ -10505,7 +10503,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
         case GT_WASM_THROW_REF:
-        case GT_WASM_IF_EXCEPT:
+        case GT_WASM_JEXCEPT:
             m_state = -1;
             return;
 
@@ -11614,15 +11612,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
                 goto DASH;
 
-            case GT_JTRUE:
-                if (tree->gtFlags & GTF_JTRUE_WASM_EH)
-                {
-                    printf("W");
-                    --msgLength;
-                    break;
-                }
-                goto DASH;
-
             default:
             DASH:
                 printf("-");
@@ -12557,7 +12546,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
         case GT_WASM_THROW_REF:
-        case GT_WASM_IF_EXCEPT:
+        case GT_WASM_JEXCEPT:
             break;
 
         case GT_RET_EXPR:
