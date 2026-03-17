@@ -139,7 +139,7 @@ namespace System.Xml.Serialization
         private bool _isReflectionBasedSerializer;
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
-        private static volatile XmlSerializerNamespaces? s_defaultNamespaces;
+        private static XmlSerializerNamespaces? s_defaultNamespaces;
         private static readonly XmlWriterSettings s_writerSettings = new XmlWriterSettings() { Encoding = new UTF8Encoding(false), Indent = true };
 
         private static XmlSerializerNamespaces DefaultNamespaces

@@ -35,16 +35,6 @@ namespace System.Security.Cryptography
                 out key);
         }
 
-        internal static ReadOnlyMemory<byte> ReadSubjectPublicKeyInfo(
-             ReadOnlyMemory<byte> source,
-             out int bytesRead)
-        {
-            return KeyFormatHelper.ReadSubjectPublicKeyInfo(
-                s_validOids,
-                source,
-                out bytesRead);
-        }
-
         internal static void ReadEncryptedPkcs8(
             ReadOnlySpan<byte> source,
             ReadOnlySpan<char> password,
@@ -75,7 +65,7 @@ namespace System.Security.Cryptography
                 out key);
         }
 
-        internal static unsafe ECParameters FromECPrivateKey(ReadOnlySpan<byte> key, out int bytesRead)
+        internal static ECParameters FromECPrivateKey(ReadOnlySpan<byte> key, out int bytesRead)
         {
             try
             {
@@ -86,16 +76,10 @@ namespace System.Security.Cryptography
                     out _,
                     out int firstValueLength);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(key))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, firstValueLength))
-                    {
-                        AlgorithmIdentifierAsn algId = default;
-                        FromECPrivateKey(manager.Memory, algId, out ECParameters ret);
-                        bytesRead = firstValueLength;
-                        return ret;
-                    }
-                }
+                ValueAlgorithmIdentifierAsn algId = default;
+                FromECPrivateKey(key.Slice(0, firstValueLength), algId, out ECParameters ret);
+                bytesRead = firstValueLength;
+                return ret;
             }
             catch (AsnContentException e)
             {
@@ -104,20 +88,20 @@ namespace System.Security.Cryptography
         }
 
         internal static void FromECPrivateKey(
-            ReadOnlyMemory<byte> keyData,
-            in AlgorithmIdentifierAsn algId,
+            ReadOnlySpan<byte> keyData,
+            in ValueAlgorithmIdentifierAsn algId,
             out ECParameters ret)
         {
-            ECPrivateKey key = ECPrivateKey.Decode(keyData, AsnEncodingRules.BER);
+            ValueECPrivateKey.Decode(keyData, AsnEncodingRules.BER, out ValueECPrivateKey key);
             FromECPrivateKey(key, algId, out ret);
         }
 
         internal static void FromECPrivateKey(
-            ECPrivateKey key,
-            in AlgorithmIdentifierAsn algId,
+            ValueECPrivateKey key,
+            in ValueAlgorithmIdentifierAsn algId,
             out ECParameters ret)
         {
-            ValidateParameters(key.Parameters, algId);
+            ValidateParameters(key, algId);
 
             if (key.Version != 1)
             {
@@ -127,9 +111,9 @@ namespace System.Security.Cryptography
             byte[]? x = null;
             byte[]? y = null;
 
-            if (key.PublicKey is not null)
+            if (key.HasPublicKey)
             {
-                ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
+                ReadOnlySpan<byte> publicKeyBytes = key.PublicKey;
 
                 if (publicKeyBytes.Length == 0)
                 {
@@ -153,15 +137,16 @@ namespace System.Security.Cryptography
                 y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray();
             }
 
-            ECDomainParameters domainParameters;
+            ValueECDomainParameters domainParameters;
 
-            if (key.Parameters != null)
+            if (key.HasParameters)
             {
-                domainParameters = key.Parameters.Value;
+                domainParameters = key.Parameters;
             }
             else
             {
-                domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
+                Debug.Assert(algId.HasParameters);
+                ValueECDomainParameters.Decode(algId.Parameters, AsnEncodingRules.DER, out domainParameters);
             }
 
             Debug.Assert((x == null) == (y == null));
@@ -181,16 +166,16 @@ namespace System.Security.Cryptography
         }
 
         internal static void FromECPublicKey(
-            ReadOnlyMemory<byte> key,
-            in AlgorithmIdentifierAsn algId,
+            ReadOnlySpan<byte> key,
+            in ValueAlgorithmIdentifierAsn algId,
             out ECParameters ret)
         {
-            if (algId.Parameters == null)
+            if (!algId.HasParameters)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ReadOnlySpan<byte> publicKeyBytes = key.Span;
+            ReadOnlySpan<byte> publicKeyBytes = key;
 
             if (publicKeyBytes.Length == 0)
             {
@@ -212,9 +197,10 @@ namespace System.Security.Cryptography
 
             int fieldWidth = publicKeyBytes.Length / 2;
 
-            ECDomainParameters domainParameters = ECDomainParameters.Decode(
-                algId.Parameters.Value,
-                AsnEncodingRules.DER);
+            ValueECDomainParameters.Decode(
+                algId.Parameters,
+                AsnEncodingRules.DER,
+                out ValueECDomainParameters domainParameters);
 
             ret = new ECParameters
             {
@@ -229,24 +215,24 @@ namespace System.Security.Cryptography
             ret.Validate();
         }
 
-        private static void ValidateParameters(ECDomainParameters? keyParameters, in AlgorithmIdentifierAsn algId)
+        private static void ValidateParameters(in ValueECPrivateKey ecPrivateKey, in ValueAlgorithmIdentifierAsn algId)
         {
             // At least one is required
-            if (keyParameters == null && algId.Parameters == null)
+            if (!ecPrivateKey.HasParameters && !algId.HasParameters)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
             // If they are both specified they must match.
-            if (keyParameters != null && algId.Parameters != null)
+            if (ecPrivateKey.HasParameters && algId.HasParameters)
             {
-                ReadOnlySpan<byte> algIdParameters = algId.Parameters.Value.Span;
+                ReadOnlySpan<byte> algIdParameters = algId.Parameters;
 
                 // X.509 SubjectPublicKeyInfo specifies DER encoding.
                 // RFC 5915 specifies DER encoding for EC Private Keys.
                 // So we can compare as DER.
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                keyParameters.Value.Encode(writer);
+                ecPrivateKey.Parameters.Encode(writer);
 
                 if (!writer.EncodedValueEquals(algIdParameters))
                 {
@@ -255,14 +241,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static ECCurve GetCurve(ECDomainParameters domainParameters)
+        private static ECCurve GetCurve(in ValueECDomainParameters domainParameters)
         {
-            if (domainParameters.Specified.HasValue)
+            if (domainParameters.HasSpecified)
             {
-                return GetSpecifiedECCurve(domainParameters.Specified.Value);
+                return GetSpecifiedECCurve(domainParameters.Specified);
             }
 
-            if (domainParameters.Named == null)
+            if (domainParameters.Named is null)
             {
                 throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
@@ -277,7 +263,7 @@ namespace System.Security.Cryptography
             return ECCurve.CreateFromOid(curveOid);
         }
 
-        private static ECCurve GetSpecifiedECCurve(SpecifiedECDomain specifiedParameters)
+        private static ECCurve GetSpecifiedECCurve(in ValueSpecifiedECDomain specifiedParameters)
         {
             try
             {
@@ -289,7 +275,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static ECCurve GetSpecifiedECCurveCore(SpecifiedECDomain specifiedParameters)
+        private static ECCurve GetSpecifiedECCurveCore(in ValueSpecifiedECDomain specifiedParameters)
         {
             // sec1-v2 C.3:
             //
@@ -301,7 +287,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            if (specifiedParameters.Version > 1 && !specifiedParameters.Curve.Seed.HasValue)
+            if (specifiedParameters.Version > 1 && !specifiedParameters.Curve.HasSeed)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -313,8 +299,8 @@ namespace System.Security.Cryptography
             {
                 case Oids.EcPrimeField:
                     prime = true;
-                    AsnReader primeReader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
-                    ReadOnlySpan<byte> primeValue = primeReader.ReadIntegerBytes().Span;
+                    ValueAsnReader primeReader = new(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
+                    ReadOnlySpan<byte> primeValue = primeReader.ReadIntegerBytes();
                     primeReader.ThrowIfNotEmpty();
 
                     if (primeValue[0] == 0)
@@ -331,8 +317,8 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.EcChar2Field:
                     prime = false;
-                    AsnReader char2Reader = new AsnReader(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
-                    AsnReader innerReader = char2Reader.ReadSequence();
+                    ValueAsnReader char2Reader = new(specifiedParameters.FieldID.Parameters, AsnEncodingRules.BER);
+                    ValueAsnReader innerReader = char2Reader.ReadSequence();
                     char2Reader.ThrowIfNotEmpty();
 
                     // Characteristic-two ::= SEQUENCE
@@ -368,7 +354,7 @@ namespace System.Security.Cryptography
                             //     k2 INTEGER, -- k2 > k1
                             //     k3 INTEGER -- k3 > k2
                             // }
-                            AsnReader pentanomialReader = innerReader.ReadSequence();
+                            ValueAsnReader pentanomialReader = innerReader.ReadSequence();
 
                             if (!pentanomialReader.TryReadInt32(out k1) ||
                                 !pentanomialReader.TryReadInt32(out k2) ||
@@ -432,7 +418,7 @@ namespace System.Security.Cryptography
             curve.B = specifiedParameters.Curve.B.ToUnsignedIntegerBytes(primeOrPoly.Length);
             curve.Order = specifiedParameters.Order.ToUnsignedIntegerBytes(primeOrPoly.Length);
 
-            ReadOnlySpan<byte> baseSpan = specifiedParameters.Base.Span;
+            ReadOnlySpan<byte> baseSpan = specifiedParameters.Base;
 
             // We only understand the uncompressed point encoding, but that's almost always what's used.
             if (baseSpan[0] != 0x04 || baseSpan.Length != 2 * primeOrPoly.Length + 1)
@@ -443,9 +429,9 @@ namespace System.Security.Cryptography
             curve.G.X = baseSpan.Slice(1, primeOrPoly.Length).ToArray();
             curve.G.Y = baseSpan.Slice(1 + primeOrPoly.Length).ToArray();
 
-            if (specifiedParameters.Cofactor.HasValue)
+            if (specifiedParameters.HasCofactor)
             {
-                curve.Cofactor = specifiedParameters.Cofactor.Value.ToUnsignedIntegerBytes();
+                curve.Cofactor = specifiedParameters.Cofactor.ToUnsignedIntegerBytes();
             }
 
             return curve;
@@ -490,7 +476,9 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters, AttributeAsn[]? attributes = null)
+        internal static AsnWriter WritePkcs8PrivateKey(
+            ECParameters ecParameters,
+            ReadOnlySpan<byte> encodedAttributes = default)
         {
             ecParameters.Validate();
 
@@ -502,27 +490,18 @@ namespace System.Security.Cryptography
             // Don't need the domain parameters because they're contained in the algId.
             AsnWriter ecPrivateKey = WriteEcPrivateKey(ecParameters, includeDomainParameters: false);
             AsnWriter algorithmIdentifier = WriteAlgorithmIdentifier(ecParameters);
-            AsnWriter? attributeWriter = WritePrivateKeyInfoAttributes(attributes);
+            AsnWriter? attributeWriter = WritePrivateKeyInfoAttributes(encodedAttributes);
 
             return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey, attributeWriter);
         }
 
-        [return: NotNullIfNotNull(nameof(attributes))]
-        private static AsnWriter? WritePrivateKeyInfoAttributes(AttributeAsn[]? attributes)
+        private static AsnWriter? WritePrivateKeyInfoAttributes(ReadOnlySpan<byte> encodedAttributes)
         {
-            if (attributes == null)
+            if (encodedAttributes.IsEmpty)
                 return null;
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 0);
-            writer.PushSetOf(tag);
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                attributes[i].Encode(writer);
-            }
-
-            writer.PopSetOf(tag);
+            writer.WriteEncodedValueForCrypto(encodedAttributes);
             return writer;
         }
 

@@ -85,6 +85,6 @@ namespace System.Reflection
         // one reason, we have to instance it per MetadataLoadContext.
         //
         internal Binder GetDefaultBinder() => _lazyDefaultBinder ??= new DefaultBinder(this);
-        private volatile Binder? _lazyDefaultBinder;
+        private Binder? _lazyDefaultBinder;
     }
 }

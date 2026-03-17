@@ -108,6 +108,7 @@ public interface ILoader : IContract
     TargetPointer GetLoaderHeapBlockAddress(TargetPointer block) => throw new NotImplementedException();
     // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
     TargetPointer GetNextLoaderHeapBlock(TargetPointer block) => throw new NotImplementedException();
+    IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader
