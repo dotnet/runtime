@@ -2227,6 +2227,9 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     BasicBlock* const rethrowBlock =
         fgNewBBinRegion(BBJ_THROW, biasedEnclosingTryIndex, biasedEnclosingHndIndex, switchBlock);
 
+    switchBlock->bbSetRunRarely();
+    rethrowBlock->bbSetRunRarely();
+
     // Split the header so we can branch to the switch on exception.
     //
     fgSplitBlockAtBeginning(regionEntryBlock);
@@ -2304,9 +2307,9 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     // exception, so we just set the rethrow case to be 1.0.
     //
     FlowEdge* const rethrowCaseEdge = fgAddRefPred(rethrowBlock, switchBlock);
-    rethrowCaseEdge->setLikelihood(0);
+    rethrowCaseEdge->setLikelihood(1.0);
 
-    JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, switchBlock->bbNum);
+    JITDUMP("  case %u: " FMT_BB " [default]\n", caseNumber, rethrowBlock->bbNum);
     cases[caseNumber++] = rethrowCaseEdge;
 
     assert(caseNumber == caseCount);

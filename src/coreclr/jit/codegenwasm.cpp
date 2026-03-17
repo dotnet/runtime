@@ -720,6 +720,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_WASM_THROW_REF:
             // TODO-WASM: enable when we emit catch_ref instead of catch_all
             // GetEmitter()->emitIns(INS_throw_ref);
+            GetEmitter()->emitIns(INS_unreachable);
             break;
 
         case GT_PINVOKE_PROLOG:
