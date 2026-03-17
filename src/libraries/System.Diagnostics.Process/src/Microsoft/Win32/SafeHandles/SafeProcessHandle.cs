@@ -166,7 +166,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Validate();
 
-            return TryWaitForExitCore(GetTimeoutInMilliseconds(timeout), out exitStatus);
+            return TryWaitForExitCore(ToTimeoutInMilliseconds(timeout), out exitStatus);
         }
 
         /// <summary>
@@ -180,7 +180,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Validate();
 
-            return WaitForExitOrKillOnTimeoutCore(GetTimeoutInMilliseconds(timeout));
+            return WaitForExitOrKillOnTimeoutCore(ToTimeoutInMilliseconds(timeout));
         }
 
         /// <summary>
@@ -235,7 +235,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Validate();
 
-            return KillCore(throwOnError: true);
+            return KillCore();
         }
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        internal static int GetTimeoutInMilliseconds(TimeSpan timeout)
+        internal static int ToTimeoutInMilliseconds(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
 

@@ -424,7 +424,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
-                wasKilledOnTimeout = KillCore(throwOnError: false);
+                wasKilledOnTimeout = KillCore();
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
@@ -494,7 +494,7 @@ namespace Microsoft.Win32.SafeHandles
                         static state =>
                         {
                             var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.KillCore(throwOnError: false);
+                            wasCancelled.Value = handle.KillCore();
                         },
                         (this, wasKilledBox));
                 }
@@ -510,7 +510,7 @@ namespace Microsoft.Win32.SafeHandles
             return new ProcessExitStatus(GetExitCode(), wasKilledBox.Value);
         }
 
-        internal bool KillCore(bool throwOnError)
+        internal bool KillCore()
         {
             if (Interop.Kernel32.TerminateProcess(this, exitCode: -1))
             {
@@ -522,7 +522,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.Errors.ERROR_SUCCESS => true,
                 Interop.Errors.ERROR_ACCESS_DENIED => false,
-                _ when !throwOnError => false,
                 _ => throw new Win32Exception(error),
             };
         }
@@ -553,7 +552,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (signal == PosixSignal.SIGKILL)
             {
-                KillCore(throwOnError: true);
+                KillCore();
                 return;
             }
 
