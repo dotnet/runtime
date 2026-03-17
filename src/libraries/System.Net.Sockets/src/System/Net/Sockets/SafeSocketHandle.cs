@@ -108,6 +108,7 @@ namespace System.Net.Sockets
 
                     // Wait until it's safe.
                     SpinWait sw = default;
+                    bool ioUringWakeSent = false;
                     while (!_released)
                     {
                         // The socket was not released due to the SafeHandle being used.
@@ -115,6 +116,16 @@ namespace System.Net.Sockets
                         // On Linux, TryUnblockSocket will unblock current operations but it doesn't prevent
                         // a new one from starting. So we must call TryUnblockSocket multiple times.
                         canceledOperations |= TryUnblockSocket(abortive);
+
+                        // With io_uring DEFER_TASKRUN, shutdown/disconnect queues cancel CQEs
+                        // as deferred task work. Wake the event loop once so it calls
+                        // io_uring_enter to process them, rather than waiting for the 50ms timeout.
+                        if (!ioUringWakeSent)
+                        {
+                            ioUringWakeSent = true;
+                            TryWakeIoUringEventLoop();
+                        }
+
                         sw.SpinOnce();
                     }
 
@@ -129,6 +140,12 @@ namespace System.Net.Sockets
             }
 #endif
         }
+
+        /// <summary>
+        /// Wakes the io_uring event loop if the socket is registered with one.
+        /// No-op on platforms without io_uring.
+        /// </summary>
+        partial void TryWakeIoUringEventLoop();
 
         private bool CloseHandle(bool abortive, bool canceledOperations)
         {
