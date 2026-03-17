@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,9 +9,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct IPEndPointInfo
+        public unsafe struct IPEndPointInfo
         {
-            public InlineArray16<byte> AddressBytes;
+            public fixed byte AddressBytes[16];
             public uint NumAddressBytes;
             public uint Port;
             private uint __padding; // For native struct-size padding. Does not contain useful data.

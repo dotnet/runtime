@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -9,38 +8,38 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct LinkLayerAddressInfo
+        public unsafe struct LinkLayerAddressInfo
         {
             public int InterfaceIndex;
-            public InlineArray8<byte> AddressBytes;
+            public fixed byte AddressBytes[8];
             public byte NumAddressBytes;
             private byte __padding; // For native struct-size padding. Does not contain useful data.
             public ushort HardwareType;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IpAddressInfo
+        public unsafe struct IpAddressInfo
         {
             public int InterfaceIndex;
-            public InlineArray16<byte> AddressBytes;
+            public fixed byte AddressBytes[16];
             public byte NumAddressBytes;
             public byte PrefixLength;
-            private InlineArray2<byte> __padding;
+            private fixed byte __padding[2];
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct NetworkInterfaceInfo
+        public unsafe struct NetworkInterfaceInfo
         {
-            public InlineArray16<byte> Name;
+            public fixed byte Name[16];
             public long Speed;
             public int InterfaceIndex;
             public int Mtu;
             public ushort HardwareType;
             public byte OperationalState;
             public byte NumAddressBytes;
-            public InlineArray8<byte> AddressBytes;
+            public fixed byte AddressBytes[8];
             public byte SupportsMulticast;
-            private InlineArray3<byte> __padding;
+            private fixed byte __padding[3];
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateInterfaceAddresses")]

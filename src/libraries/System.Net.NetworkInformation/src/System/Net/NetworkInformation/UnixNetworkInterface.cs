@@ -98,7 +98,11 @@ namespace System.Net.NetworkInformation
 
         protected unsafe void ProcessLinkLayerAddress(Interop.Sys.LinkLayerAddressInfo* llAddr)
         {
-            byte[] macAddress = ((ReadOnlySpan<byte>)llAddr->AddressBytes)[..llAddr->NumAddressBytes].ToArray();
+            byte[] macAddress = new byte[llAddr->NumAddressBytes];
+            fixed (byte* macAddressPtr = macAddress)
+            {
+                Buffer.MemoryCopy(llAddr->AddressBytes, macAddressPtr, llAddr->NumAddressBytes, llAddr->NumAddressBytes);
+            }
             PhysicalAddress physicalAddress = new PhysicalAddress(macAddress);
 
             _index = llAddr->InterfaceIndex;
