@@ -401,7 +401,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData("", "", 118)]
-        [InlineData("A !#\t1\u1234", "A !#\t14", 125)] //
+        [InlineData("A !#\t1\u1234", "A !#\t1?", 125)] //
         [InlineData("StatusDescription", "StatusDescription", 135)]
         [InlineData("  StatusDescription  ", "  StatusDescription  ", 139)]
         public async Task StatusDescription_SetCustom_Success(string statusDescription, string expectedStatusDescription, int expectedNumberOfBytes)
