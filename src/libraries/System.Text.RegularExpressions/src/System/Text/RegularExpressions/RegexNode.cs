@@ -393,7 +393,7 @@ namespace System.Text.RegularExpressions
                 // Re-run reduction passes to clean up structures created by the optimizations above.
                 // FinalOptimize can create patterns like Atomic(Alternate(X, Empty)) that ReduceAtomic
                 // would simplify to Loop?(X), or Concatenate(X, Empty) that ReduceConcatenation would
-                // simplify to X. A single re-reduce pass catches all such cases.
+                // simplify to X. A single re-reduce pass catches all known cases.
                 rootNode.FinalReduce();
 
                 // Optimization: unnecessary re-processing of starting loops.
@@ -465,8 +465,15 @@ namespace System.Text.RegularExpressions
 
             for (int i = 0, childCount = ChildCount(); i < childCount; i++)
             {
-                Child(i).FinalReduce();
-                ReplaceChild(i, Child(i)); // ReplaceChild runs Reduce on the child
+                RegexNode child = Child(i);
+                child.FinalReduce();
+
+                RegexNode reduced = child.Reduce();
+                if (!ReferenceEquals(reduced, child))
+                {
+                    reduced.Parent = this;
+                    UnsafeReplaceChild(i, reduced);
+                }
             }
         }
 
@@ -3209,6 +3216,14 @@ namespace System.Text.RegularExpressions
             newChild.Parent = this; // so that the child can see its parent while being reduced
             newChild = newChild.Reduce();
             newChild.Parent = this; // in case Reduce returns a different node that needs to be reparented
+
+            UnsafeReplaceChild(index, newChild);
+        }
+
+        /// <summary>Replaces the child at the specified index without reducing or reparenting.</summary>
+        private void UnsafeReplaceChild(int index, RegexNode newChild)
+        {
+            Debug.Assert(Children != null);
 
             if (Children is RegexNode)
             {

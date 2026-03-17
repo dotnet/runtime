@@ -330,7 +330,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[a-f]+(?=[^a-f])", @"(?>[a-f]+)(?=[^a-f])")]
         [InlineData(@"[0-9]*(?=[^0-9])", @"(?>[0-9]*)(?=[^0-9])")]
         [InlineData(@"a*(?=b)(?=bc)", @"(?>a*)(?=b)(?=bc)")]
-        // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
+        [InlineData("abcde|abcdef", "abcde")]
         [InlineData("abcdef|abcde", "abcde(?>f|)")]
         [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
         [InlineData("(ab|ab*)bc", "(a(?:b|b*))bc")]
@@ -385,7 +385,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("ab??c", "a(?>b?)c")]
         [InlineData("ab{2}?c", "abbc")]
         [InlineData("ab{2,3}?c", "a(?>b{2,3})c")]
-        //[InlineData("(abc*?)", "(ab)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
+        [InlineData("(abc*?)", "(ab)")]
         [InlineData("a{1,3}?", "a{1,4}?")]
         [InlineData("a{2,3}?", "a{2}")]
         [InlineData("bc(a){1,3}?", "bc(a){1,2}?")]
