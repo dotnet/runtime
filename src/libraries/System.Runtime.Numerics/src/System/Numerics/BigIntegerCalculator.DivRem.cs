@@ -312,20 +312,26 @@ namespace System.Numerics
 
             // Combines a subtract and a multiply operation, which is naturally
             // more efficient than multiplying and then subtracting...
+            // Uses branchless underflow detection to avoid branch misprediction
+            // penalties that dominate for large divisions (see issue #41495).
 
-            nuint carry = (nuint)0;
+            nuint carry = 0;
 
             for (int i = 0; i < right.Length; i++)
             {
                 nuint hi = BigMul(right[i], q, out nuint lo);
-                lo += carry;
-                if (lo < carry)
-                    hi++;
-                carry = hi;
+
+                // Add carry to lo, propagate overflow to hi (branchless)
+                nuint loWithCarry = lo + carry;
+                hi += (loWithCarry < lo) ? (nuint)1 : 0;
+
+                // Subtract from left, detect underflow (branchless)
                 ref nuint leftElement = ref left[i];
-                if (leftElement < lo)
-                    ++carry;
-                leftElement -= lo;
+                nuint original = leftElement;
+                leftElement -= loWithCarry;
+                hi += (original < loWithCarry) ? (nuint)1 : 0;
+
+                carry = hi;
             }
 
             return carry;
