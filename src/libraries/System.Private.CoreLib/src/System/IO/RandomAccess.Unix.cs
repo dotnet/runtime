@@ -29,7 +29,7 @@ namespace System.IO
                 // The Windows implementation uses ReadFile, which ignores the offset if the handle
                 // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
                 // the function to be used by FileStream for all the same situations.
-                int result;
+                int result = -1;
                 if (handle.IsAsync)
                 {
                     result = Interop.Sys.ReadFromNonblocking(handle, bufPtr, buffer.Length);
@@ -117,7 +117,7 @@ namespace System.IO
                     // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
                     // the function to be used by FileStream for all the same situations.
                     int bytesToWrite = GetNumberOfBytesToWrite(buffer.Length);
-                    int bytesWritten;
+                    int bytesWritten = -1;
                     if (handle.IsAsync)
                     {
                         bytesWritten = Interop.Sys.WriteToNonblocking(handle, bufPtr, bytesToWrite);
