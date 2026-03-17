@@ -148,6 +148,9 @@ namespace ILCompiler
         public Option<int> DeterminismStress { get; } =
             new("--determinism-stress");
 
+        public Option<bool> StripILBodies { get; } =
+            new("--strip-il-bodies") { Description = "Replace IL method bodies with a minimal stub in the output image" };
+
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
@@ -221,6 +224,7 @@ namespace ILCompiler
             Options.Add(HotColdSplitting);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
+            Options.Add(StripILBodies);
 
             this.SetAction(result =>
             {

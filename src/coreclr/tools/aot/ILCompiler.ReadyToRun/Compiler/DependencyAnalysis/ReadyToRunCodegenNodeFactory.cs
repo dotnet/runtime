@@ -62,6 +62,8 @@ namespace ILCompiler.DependencyAnalysis
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
         public bool IsComponentModule;
+        public bool StripILBodies;
+        public HashSet<MethodDesc> CompiledMethodDefs;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -518,6 +520,19 @@ namespace ILCompiler.DependencyAnalysis
                     yield return methodCodeNode;
                 }
             }
+        }
+
+        public HashSet<MethodDesc> BuildCompiledMethodDefsSet()
+        {
+            Debug.Assert(MarkingComplete);
+
+            var set = new HashSet<MethodDesc>();
+            foreach (MethodWithGCInfo compiled in EnumerateCompiledMethods())
+            {
+                set.Add(compiled.Method.GetTypicalMethodDefinition());
+            }
+
+            return set;
         }
 
         private struct MethodFixupKey : IEquatable<MethodFixupKey>
