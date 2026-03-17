@@ -739,11 +739,22 @@ namespace System.IO.Compression
         public override bool CanSeek => !_isDisposed && _baseStream.CanSeek;
         public override bool CanWrite => false;
 
-        public override long Length => _baseStream.Length;
+        public override long Length
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _baseStream.Length;
+            }
+        }
 
         public override long Position
         {
-            get => _baseStream.Position;
+            get
+            {
+                ThrowIfDisposed();
+                return _baseStream.Position;
+            }
             set
             {
                 ThrowIfDisposed();
@@ -922,7 +933,10 @@ namespace System.IO.Compression
 
         private void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+            }
         }
 
         private void ThrowIfCantSeek()
