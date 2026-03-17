@@ -276,36 +276,23 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (count < 2)
                 return;
 
-            uint low = 0;
-            uint high = count - 2;
             uint entrySize = Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
-            while (high - low > 10)
-            {
-                uint mid = low + ((high - low) / 2);
-                Data.ExceptionLookupTableEntry middleEntry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (mid * entrySize));
 
-                if (methodRVA < middleEntry.MethodStartRVA)
-                {
-                    high = mid - 1;
-                }
-                else
-                {
-                    low = mid;
-                }
-            }
+            Data.ExceptionLookupTableEntry GetEntry(uint index)
+                => Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (index * entrySize));
 
-            for (uint i = low; i <= high; i++)
-            {
-                Data.ExceptionLookupTableEntry entry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + (i * entrySize));
-                if (entry.MethodStartRVA == methodRVA)
-                {
-                    Data.ExceptionLookupTableEntry nextEntry = Target.ProcessedData.GetOrAdd<Data.ExceptionLookupTableEntry>(exceptionLookupTableAddr + ((i + 1) * entrySize));
-                    startExInfoRVA = new TargetPointer(entry.ExceptionInfoRVA + rangeStart);
-                    endExInfoRVA = new TargetPointer(nextEntry.ExceptionInfoRVA + rangeStart);
-                    return;
-                }
-            }
+            if (!BinaryThenLinearSearch.Search(
+                0,
+                count - 2,
+                index => methodRVA < GetEntry(index).MethodStartRVA,
+                index => methodRVA == GetEntry(index).MethodStartRVA,
+                out uint foundIndex))
+                return;
 
+            Data.ExceptionLookupTableEntry entry = GetEntry(foundIndex);
+            Data.ExceptionLookupTableEntry nextEntry = GetEntry(foundIndex + 1);
+            startExInfoRVA = new TargetPointer(entry.ExceptionInfoRVA + rangeStart);
+            endExInfoRVA = new TargetPointer(nextEntry.ExceptionInfoRVA + rangeStart);
         }
 
         public override void GetExceptionClauses(RangeSection range, CodeBlockHandle cbh, out TargetPointer startAddr, out TargetPointer endAddr)
