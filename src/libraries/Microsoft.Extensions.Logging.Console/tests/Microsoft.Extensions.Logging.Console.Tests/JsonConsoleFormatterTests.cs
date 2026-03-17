@@ -79,6 +79,109 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void Log_JsonNamingPolicyCamelCase_ProducesCamelCasePropertyNames()
+        {
+            // Arrange
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    TimestampFormat = "hh:mm:ss ",
+                    JsonNamingPolicy = JsonNamingPolicy.CamelCase,
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            logger.LogInformation("test message");
+
+            // Assert
+            Assert.Equal(1, sink.Writes.Count);
+            string message = GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg));
+
+            // Verify camelCase property names are used
+            Assert.Contains("\"timestamp\":", message);
+            Assert.Contains("\"eventId\":", message);
+            Assert.Contains("\"logLevel\":\"Information\"", message);
+            Assert.Contains("\"category\":\"test\"", message);
+            Assert.Contains("\"message\":\"test message\"", message);
+            Assert.Contains("\"state\":{", message);
+
+            // Verify PascalCase names are NOT used
+            Assert.DoesNotContain("\"Timestamp\":", message);
+            Assert.DoesNotContain("\"EventId\":", message);
+            Assert.DoesNotContain("\"LogLevel\":", message);
+            Assert.DoesNotContain("\"Category\":", message);
+            Assert.DoesNotContain("\"Message\":", message);
+            Assert.DoesNotContain("\"State\":", message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void Log_JsonNamingPolicyNull_PreservesPascalCasePropertyNames()
+        {
+            // Arrange
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    JsonNamingPolicy = null,
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            logger.LogInformation("test message");
+
+            // Assert
+            Assert.Equal(1, sink.Writes.Count);
+            string message = GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg));
+
+            // Verify default PascalCase names are preserved
+            Assert.Contains("\"EventId\":", message);
+            Assert.Contains("\"LogLevel\":\"Information\"", message);
+            Assert.Contains("\"Category\":\"test\"", message);
+            Assert.Contains("\"Message\":\"test message\"", message);
+            Assert.Contains("\"State\":{", message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public void Log_JsonNamingPolicyCamelCase_ScopePropertyNamesAreCamelCase()
+        {
+            // Arrange
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    IncludeScopes = true,
+                    JsonNamingPolicy = JsonNamingPolicy.CamelCase,
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            using (logger.BeginScope("scope1 {name1}", 123))
+                logger.LogInformation("test");
+
+            // Assert
+            Assert.Equal(1, sink.Writes.Count);
+            string message = GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg));
+            Assert.Contains("\"scopes\":[{\"message\":\"scope1 123\"", message);
+            Assert.DoesNotContain("\"Scopes\":", message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_NullMessage_LogsWhenMessageIsNotProvided()
         {
             // Arrange

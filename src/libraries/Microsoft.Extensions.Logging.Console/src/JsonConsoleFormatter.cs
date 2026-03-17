@@ -19,6 +19,19 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private readonly IDisposable? _optionsReloadToken;
 
+        // Property names are pre-computed when options load (in ReloadLoggerOptions) rather than
+        // calling JsonNamingPolicy.ConvertName per log entry. ReloadLoggerOptions already runs on
+        // construction and option reload, so it's the natural place to derive these — and the hot
+        // path (WriteInternal) stays allocation-free with just field reads.
+        private string _timestampPropertyName = "Timestamp";
+        private string _eventIdPropertyName = "EventId";
+        private string _logLevelPropertyName = "LogLevel";
+        private string _categoryPropertyName = "Category";
+        private string _messagePropertyName = "Message";
+        private string _exceptionPropertyName = "Exception";
+        private string _statePropertyName = "State";
+        private string _scopesPropertyName = "Scopes";
+
         public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Json)
         {
@@ -66,27 +79,27 @@ namespace Microsoft.Extensions.Logging.Console
                     var timestampFormat = FormatterOptions.TimestampFormat;
                     if (timestampFormat != null)
                     {
-                        writer.WriteString("Timestamp", stamp.ToString(timestampFormat));
+                        writer.WriteString(_timestampPropertyName, stamp.ToString(timestampFormat));
                     }
-                    writer.WriteNumber(nameof(LogEntry<object>.EventId), eventId);
-                    writer.WriteString(nameof(LogEntry<object>.LogLevel), GetLogLevelString(logLevel));
-                    writer.WriteString(nameof(LogEntry<object>.Category), category);
-                    writer.WriteString("Message", message);
+                    writer.WriteNumber(_eventIdPropertyName, eventId);
+                    writer.WriteString(_logLevelPropertyName, GetLogLevelString(logLevel));
+                    writer.WriteString(_categoryPropertyName, category);
+                    writer.WriteString(_messagePropertyName, message);
 
                     if (exception != null)
                     {
-                        writer.WriteString(nameof(Exception), exception);
+                        writer.WriteString(_exceptionPropertyName, exception);
                     }
 
                     if (hasState)
                     {
-                        writer.WriteStartObject(nameof(LogEntry<object>.State));
+                        writer.WriteStartObject(_statePropertyName);
 
                         // In many cases the message and stateMessage will be the same, so we only write the message if it differs from the stateMessage.
                         // This helps reducing the size of the log entry.
                         if (!string.Equals(message, stateMessage))
                         {
-                            writer.WriteString("Message", stateMessage);
+                            writer.WriteString(_messagePropertyName, stateMessage);
                         }
                         if (stateProperties != null)
                         {
@@ -147,13 +160,13 @@ namespace Microsoft.Extensions.Logging.Console
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
-                writer.WriteStartArray("Scopes");
+                writer.WriteStartArray(_scopesPropertyName);
                 scopeProvider.ForEachScope((scope, state) =>
                 {
                     if (scope is IEnumerable<KeyValuePair<string, object?>> scopeItems)
                     {
                         state.WriteStartObject();
-                        state.WriteString("Message", scope.ToString());
+                        state.WriteString(_messagePropertyName, scope.ToString());
                         foreach (KeyValuePair<string, object?> item in scopeItems)
                         {
                             WriteItem(state, item);
@@ -234,6 +247,30 @@ namespace Microsoft.Extensions.Logging.Console
         private void ReloadLoggerOptions(JsonConsoleFormatterOptions options)
         {
             FormatterOptions = options;
+
+            JsonNamingPolicy? policy = options.JsonNamingPolicy;
+            if (policy != null)
+            {
+                _timestampPropertyName = policy.ConvertName("Timestamp");
+                _eventIdPropertyName = policy.ConvertName("EventId");
+                _logLevelPropertyName = policy.ConvertName("LogLevel");
+                _categoryPropertyName = policy.ConvertName("Category");
+                _messagePropertyName = policy.ConvertName("Message");
+                _exceptionPropertyName = policy.ConvertName("Exception");
+                _statePropertyName = policy.ConvertName("State");
+                _scopesPropertyName = policy.ConvertName("Scopes");
+            }
+            else
+            {
+                _timestampPropertyName = "Timestamp";
+                _eventIdPropertyName = "EventId";
+                _logLevelPropertyName = "LogLevel";
+                _categoryPropertyName = "Category";
+                _messagePropertyName = "Message";
+                _exceptionPropertyName = "Exception";
+                _statePropertyName = "State";
+                _scopesPropertyName = "Scopes";
+            }
         }
 
         public void Dispose()
