@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Tar;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
@@ -12,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ExternalTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ProxyTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences) : ObjectNode, ISymbolDefinitionNode
     {
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -26,9 +27,10 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (IExternalTypeMapNode externalTypeMap in factory.TypeMapManager.GetExternalTypeMaps())
+            foreach (IProxyTypeMapNode proxyTypeMap in manager.GetProxyTypeMaps())
             {
-                typeMapGroupHashTable.Append((uint)externalTypeMap.TypeMapGroup.GetHashCode(), externalTypeMap.CreateTypeMap(factory, writer, hashTableSection, externalReferences));
+                TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
+                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), proxyTypeMap.CreateTypeMap(factory, writer, hashTableSection, externalReferences));
             }
 
             byte[] hashTableBytes = writer.Save();
@@ -37,18 +39,18 @@ namespace ILCompiler.DependencyAnalysis
         }
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_type_map__"u8);
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__proxy_type_map__"u8);
         }
 
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        public override int ClassCode => (int)ObjectNodeOrder.ExternalTypeMapObjectNode;
+        public override int ClassCode => (int)ObjectNodeOrder.ProxyTypeMapObjectNode;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName(NodeFactory context) => "External Type Map Hash Table";
+        protected override string GetName(NodeFactory context) => "Proxy Type Map Hash Table";
     }
 }

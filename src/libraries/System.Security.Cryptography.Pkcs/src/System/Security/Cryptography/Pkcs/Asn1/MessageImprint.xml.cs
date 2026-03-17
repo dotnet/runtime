@@ -96,6 +96,28 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal ReadOnlySpan<byte> HashAlgorithm;
         internal ReadOnlySpan<byte> HashedMessage;
 
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+
+            try
+            {
+                writer.WriteEncodedValue(HashAlgorithm);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            writer.WriteOctetString(HashedMessage);
+            writer.PopSequence(tag);
+        }
+
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueMessageImprint decoded)
         {
             Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
