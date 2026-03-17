@@ -233,8 +233,6 @@ class AsyncTransformation
                            bool                       needsKeepAlive,
                            ContinuationLayoutBuilder* layoutBuilder);
 
-    ContinuationLayout LayOutContinuation(const ContinuationLayoutBuilder* layoutBuilder);
-
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
 
     BasicBlock* CreateSuspensionBlock(BasicBlock* block, GenTreeCall* call, unsigned stateNum);
