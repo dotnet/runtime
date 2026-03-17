@@ -23,6 +23,8 @@ namespace System
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
                                                            | NumberStyles.AllowBinarySpecifier);
 
+        private static nuint[]? s_cachedPowersOf1e9;
+
         private static ReadOnlySpan<nuint> UInt32PowersOfTen
         {
             get
@@ -425,14 +427,7 @@ namespace System
                 int valueDigits = (base1E9.Length - 1) * PowersOf1e9.MaxPartialDigits + FormattingHelpers.CountDigits(base1E9[^1]);
 
                 int powersOf1e9BufferLength = PowersOf1e9.GetBufferSize(Math.Max(valueDigits, trailingZeroCount + 1), out int maxIndex);
-                nuint[]? powersOf1e9BufferFromPool = null;
-                Span<nuint> powersOf1e9Buffer = (
-                    (uint)powersOf1e9BufferLength <= BigIntegerCalculator.StackAllocThreshold
-                    ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                    : powersOf1e9BufferFromPool = ArrayPool<nuint>.Shared.Rent(powersOf1e9BufferLength)).Slice(0, powersOf1e9BufferLength);
-                powersOf1e9Buffer.Clear();
-
-                PowersOf1e9 powersOf1e9 = new PowersOf1e9(powersOf1e9Buffer);
+                PowersOf1e9 powersOf1e9 = PowersOf1e9.GetCached(powersOf1e9BufferLength);
 
                 if (trailingZeroCount > 0)
                 {
@@ -457,9 +452,6 @@ namespace System
                 {
                     Recursive(powersOf1e9, maxIndex, base1E9, bits);
                 }
-
-                if (powersOf1e9BufferFromPool != null)
-                    ArrayPool<nuint>.Shared.Return(powersOf1e9BufferFromPool);
             }
 
             static void Recursive(in PowersOf1e9 powersOf1e9, int powersOf1e9Index, ReadOnlySpan<nuint> base1E9, Span<nuint> bits)
@@ -1009,21 +1001,9 @@ namespace System
             }
 
             PowersOf1e9.FloorBufferSize(bits.Length, out int powersOf1e9BufferLength, out int maxIndex);
-            nuint[]? powersOf1e9BufferFromPool = null;
-            Span<nuint> powersOf1e9Buffer = (
-                powersOf1e9BufferLength <= BigIntegerCalculator.StackAllocThreshold
-                ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                : powersOf1e9BufferFromPool = ArrayPool<nuint>.Shared.Rent(powersOf1e9BufferLength)).Slice(0, powersOf1e9BufferLength);
-            powersOf1e9Buffer.Clear();
-
-            PowersOf1e9 powersOf1e9 = new PowersOf1e9(powersOf1e9Buffer);
+            PowersOf1e9 powersOf1e9 = PowersOf1e9.GetCached(powersOf1e9BufferLength);
 
             DivideAndConquer(powersOf1e9, maxIndex, bits, base1E9Buffer, out base1E9Written);
-
-            if (powersOf1e9BufferFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(powersOf1e9BufferFromPool);
-            }
 
             static void DivideAndConquer(in PowersOf1e9 powersOf1e9, int powersIndex, ReadOnlySpan<nuint> bits, Span<nuint> base1E9Buffer, out int base1E9Written)
             {
@@ -1121,6 +1101,40 @@ namespace System
             private readonly ReadOnlySpan<nuint> pow1E9;
             public const nuint TenPowMaxPartial = 1000000000;
             public const int MaxPartialDigits = 9;
+
+            private PowersOf1e9(nuint[] pow1E9)
+            {
+                this.pow1E9 = pow1E9;
+            }
+
+            public static PowersOf1e9 GetCached(int bufferLength)
+            {
+                nuint[]? cached = s_cachedPowersOf1e9;
+                if (cached is not null && cached.Length >= bufferLength)
+                {
+                    return new PowersOf1e9(cached);
+                }
+
+                nuint[] buffer = new nuint[bufferLength];
+                PowersOf1e9 result = new PowersOf1e9((Span<nuint>)buffer);
+
+                // Only cache buffers large enough to contain computed powers.
+                // Small buffers (≤ LeadingPowers1E9.Length) aren't populated by
+                // the constructor — it uses the static LeadingPowers1E9 directly.
+                if (buffer.Length > LeadingPowers1E9.Length &&
+                    (cached is null || buffer.Length > cached.Length))
+                {
+                    // The write is safe without explicit memory barriers because:
+                    // 1. The array is fully initialized before being stored.
+                    // 2. On ARM64, the .NET GC write barrier uses stlr (store-release),
+                    //    providing release semantics for reference-type stores.
+                    // 3. Readers have a data dependency (load reference → access elements),
+                    //    providing natural acquire ordering on all architectures.
+                    s_cachedPowersOf1e9 = buffer;
+                }
+
+                return result;
+            }
 
             // indexes[i] is pre-calculated length of (10^9)^i
             // This means that pow1E9[indexes[i-1]..indexes[i]] equals 1000000000 * (1<<i)
