@@ -146,6 +146,8 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG
     iRangeEnd = rangeEnd;
     hHandle = NULL;
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
+    cPendingCount = 0;
+    pPendingTable = new T_RUNTIME_FUNCTION[cPendingMaxCount];
 }
 
 /****************************************************************************/
@@ -161,6 +163,7 @@ UnwindInfoTable::~UnwindInfoTable()
     // It would be cleaner if we could take the lock (we did not have to be GC_NOTRIGGER)
     UnRegister();
     delete[] pTable;
+    delete[] pPendingTable;
 }
 
 /*****************************************************************************/
@@ -236,7 +239,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
         ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
 
-        // To ensure the test the growing logic in debug code make the size much smaller.
+        // To ensure we test the growing logic in debug builds, make the size much smaller.
         INDEBUG(size = size / 4 + 1);
         unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
         unwindInfo->Register();
@@ -252,7 +255,9 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         return;
 
     // Check for the fast path: we are adding the end of an UnwindInfoTable with space
-    if (unwindInfo->cTableCurCount < unwindInfo->cTableMaxCount)
+    // and there are no pending entries waiting to be published.
+    if (unwindInfo->cTableCurCount < unwindInfo->cTableMaxCount
+        && unwindInfo->cPendingCount == 0)
     {
         if (unwindInfo->cTableCurCount == 0 ||
             unwindInfo->pTable[unwindInfo->cTableCurCount-1].BeginAddress < data->BeginAddress)
@@ -271,57 +276,108 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         }
     }
 
-    // OK we need to rellocate the table and reregister.  First figure out our 'desiredSpace'
-    // We could imagine being much more efficient for 'bulk' updates, but we don't try
-    // because we assume that this is rare and we want to keep the code simple
+    // The entry is out-of-order or the main table is full.
+    // Buffer the entry and flush when the buffer is full.
+    _ASSERTE(unwindInfo->cPendingCount < UnwindInfoTable::cPendingMaxCount);
+    unwindInfo->pPendingTable[unwindInfo->cPendingCount++] = *data;
 
-    ULONG usedSpace = unwindInfo->cTableCurCount - unwindInfo->cDeletedEntries;
-    ULONG desiredSpace = usedSpace * 5 / 4 + 1;        // Increase by 20%
-    // Be more aggressive if we used all of our space;
-    if (usedSpace == unwindInfo->cTableMaxCount)
-        desiredSpace = usedSpace * 3 / 2 + 1;        // Increase by 50%
-
-    STRESS_LOG7(LF_JIT, LL_INFO100, "AddToUnwindTable Handle: %p [%p, %p] SLOW Realloc Cnt 0x%x Max 0x%x NewMax 0x%x, Adding %x\n",
+    STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%p, pending 0x%x\n",
         unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
-        unwindInfo->cTableCurCount, unwindInfo->cTableMaxCount, desiredSpace, data->BeginAddress);
+        data->BeginAddress, unwindInfo->cPendingCount);
 
-    UnwindInfoTable* newTab = new UnwindInfoTable(unwindInfo->iRangeStart, unwindInfo->iRangeEnd, desiredSpace);
+    if (unwindInfo->cPendingCount == UnwindInfoTable::cPendingMaxCount)
+        unwindInfo->FlushPendingEntries();
+}
 
-    // Copy in the entries, removing deleted entries and adding the new entry wherever it belongs
-    int toIdx = 0;
-    bool inserted = false;    // Have we inserted 'data' into the table
-    for(ULONG fromIdx = 0; fromIdx < unwindInfo->cTableCurCount; fromIdx++)
+/*****************************************************************************/
+void UnwindInfoTable::FlushPendingEntries()
+{
+    CONTRACTL
     {
-        if (!inserted && data->BeginAddress < unwindInfo->pTable[fromIdx].BeginAddress)
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(s_pUnwindInfoTableLock->OwnedByCurrentThread());
+
+    // Sort the pending entries by BeginAddress.
+    // Use a simple insertion sort since cPendingMaxCount is small (32).
+    for (ULONG i = 1; i < cPendingCount; i++)
+    {
+        T_RUNTIME_FUNCTION key = pPendingTable[i];
+        ULONG j = i;
+        while (j > 0 && pPendingTable[j - 1].BeginAddress > key.BeginAddress)
         {
-            STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at MID position 0x%x\n", toIdx);
-            newTab->pTable[toIdx++] = *data;
-            inserted = true;
+            pPendingTable[j] = pPendingTable[j - 1];
+            j--;
         }
-        if (unwindInfo->pTable[fromIdx].UnwindData != 0)	// A 'non-deleted' entry
-            newTab->pTable[toIdx++] = unwindInfo->pTable[fromIdx];
+        pPendingTable[j] = key;
     }
-    if (!inserted)
-    {
-        STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at END position 0x%x\n", toIdx);
-        newTab->pTable[toIdx++] = *data;
-    }
-    newTab->cTableCurCount = toIdx;
-    STRESS_LOG2(LF_JIT, LL_INFO100, "AddToUnwindTable New size 0x%x max 0x%x\n",
-        newTab->cTableCurCount, newTab->cTableMaxCount);
-    _ASSERTE(newTab->cTableCurCount <= newTab->cTableMaxCount);
 
-    // Unregister the old table
-    *unwindInfoPtr = 0;
-    unwindInfo->UnRegister();
+    // Calculate the new table size: live entries from main table + all pending entries
+    ULONG liveCount = cTableCurCount - cDeletedEntries;
+    ULONG newCount = liveCount + cPendingCount;
+    ULONG desiredSpace = newCount * 5 / 4 + 1;  // Increase by 20%
+
+    STRESS_LOG7(LF_JIT, LL_INFO100, "FlushPendingEntries Handle: %p [%p, %p] Merging 0x%x live + 0x%x pending into 0x%x max, from 0x%x\n",
+        hHandle, iRangeStart, iRangeEnd, liveCount, cPendingCount, desiredSpace, cTableMaxCount);
+
+    T_RUNTIME_FUNCTION* newPTable = new T_RUNTIME_FUNCTION[desiredSpace];
+
+    // Merge-sort the main table and pending buffer into newPTable.
+    ULONG mainIdx = 0;
+    ULONG pendIdx = 0;
+    ULONG toIdx = 0;
+
+    while (mainIdx < cTableCurCount && pendIdx < cPendingCount)
+    {
+        // Skip deleted entries in main table
+        if (pTable[mainIdx].UnwindData == 0)
+        {
+            mainIdx++;
+            continue;
+        }
+
+        if (pPendingTable[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
+        {
+            newPTable[toIdx++] = pPendingTable[pendIdx++];
+        }
+        else
+        {
+            newPTable[toIdx++] = pTable[mainIdx++];
+        }
+    }
+
+    while (mainIdx < cTableCurCount)
+    {
+        if (pTable[mainIdx].UnwindData != 0)
+            newPTable[toIdx++] = pTable[mainIdx];
+        mainIdx++;
+    }
+
+    while (pendIdx < cPendingCount)
+    {
+        newPTable[toIdx++] = pPendingTable[pendIdx++];
+    }
+
+    _ASSERTE(toIdx == newCount);
+    _ASSERTE(toIdx <= desiredSpace);
+
+    T_RUNTIME_FUNCTION* oldPTable = pTable;
+
+    UnRegister();
+
+    pTable = newPTable;
+    cTableCurCount = toIdx;
+    cTableMaxCount = desiredSpace;
+    cDeletedEntries = 0;
+    cPendingCount = 0;
 
     // Note that there is a short time when we are not publishing...
+    Register();
 
-    // Register the new table
-    newTab->Register();
-    *unwindInfoPtr = newTab;
-
-    delete unwindInfo;
+    delete[] oldPTable;
 }
 
 /*****************************************************************************/
@@ -345,6 +401,21 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         DWORD relativeEntryPoint = (DWORD)(entryPoint - baseAddress);
         STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
             entryPoint, baseAddress, relativeEntryPoint);
+
+        // First check the pending buffer (not yet published to the OS).
+        // Use swap-remove since the buffer doesn't need to stay sorted.
+        for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
+        {
+            if (unwindInfo->pPendingTable[i].BeginAddress <= relativeEntryPoint &&
+                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pPendingTable[i], unwindInfo->iRangeStart))
+            {
+                unwindInfo->pPendingTable[i] = unwindInfo->pPendingTable[--unwindInfo->cPendingCount];
+                STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
+                return;
+            }
+        }
+
+        // Then check the main (published) table.
         for(ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
         {
             if (unwindInfo->pTable[i].BeginAddress <= relativeEntryPoint &&

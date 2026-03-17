@@ -618,6 +618,8 @@ private:
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size);
 
 private:
+    void FlushPendingEntries();
+
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
     ULONG_PTR           iRangeEnd;        // End of memory described by this table
@@ -625,6 +627,13 @@ private:
     ULONG               cTableCurCount;
     ULONG               cTableMaxCount;
     int                 cDeletedEntries;    // Number of slots we removed.
+
+    // Pending buffer for out-of-order entries that haven't been published to the OS yet.
+    // These entries are accumulated and batch-merged into pTable to amortize the cost of
+    // RtlDeleteGrowableFunctionTable + RtlAddGrowableFunctionTable.
+    T_RUNTIME_FUNCTION* pPendingTable;
+    ULONG               cPendingCount;
+    static const ULONG  cPendingMaxCount = 32;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
