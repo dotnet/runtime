@@ -7747,7 +7747,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 }
 
 //------------------------------------------------------------------------
-// FlowGraphTryRegion::NumBlocks: Dump the number of blocks in the try region.
+// FlowGraphTryRegion::NumBlocks: Return the number of blocks in the try region.
 //
 // Arguments:
 //    region -- region of interest
@@ -7810,7 +7810,7 @@ void FlowGraphTryRegions::Dump(FlowGraphTryRegions* regions)
     {
         printf("%u try regions:\n", regions->NumTryRegions());
 
-        // TODO:show nesting? We currently only have parent links
+        // TODO: show nesting? We currently only have parent links
         //
         for (FlowGraphTryRegion* region : regions->m_tryRegions)
         {

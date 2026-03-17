@@ -1167,7 +1167,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             }
             else
             {
-                // We may have increased the loop extent (moved the end) to accomodate try regions
+                // We may have increased the loop extent (moved the end) to accommodate try regions
                 // that begin in the loop but can end outside. Find the last such block...
                 //
                 loop->VisitLoopBlocksPostOrder([&](BasicBlock* block) {
@@ -1179,7 +1179,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
                 if (endCursor > (cursor + loop->NumLoopBlocks()))
                 {
-                    JITDUMP("Loop " FMT_LP " end extent extended by %u blocks to accomodate partially enclosed trys\n",
+                    JITDUMP("Loop " FMT_LP " end extent extended by %u blocks to accommodate partially enclosed trys\n",
                             loop->GetIndex(), endCursor - (cursor + loop->NumLoopBlocks()));
                 }
             }
@@ -1925,7 +1925,7 @@ void Compiler::fgDumpWasmControlFlowDot()
 //    }
 //    K:
 //
-//    and there is an exeption raised while the inner try is active, and the runtime determines
+//    and there is an exception raised while the inner try is active, and the runtime determines
 //    during its first-pass walk that the inner catch will handle the exception.
 //
 //    In the second pass the runtime will invoke any fault/finally funclets between the throwing
@@ -1934,7 +1934,7 @@ void Compiler::fgDumpWasmControlFlowDot()
 //    inner catch sets a control variable `cv` identifying K as the continuation, and the runtime
 //    throws a native (javascript) exception when the catch funclet returns.
 //
-//    Dispatching try blocks will inspire Wasm `try_tables`s at entry that will catch this exception.
+//    Dispatching try blocks will inspire Wasm `try_table`s at entry that will catch this exception.
 //    These try_tables will transfer control to post-try dispatch blocks which either transfer control
 //    to the continuation or else branch to a post-try rethrow.
 //
@@ -1963,10 +1963,10 @@ void Compiler::fgDumpWasmControlFlowDot()
 //    reachable from outside the try.
 //
 //    Codegen will set the control variable in all BBJ_EHCATCHRET blocks. To do this we give each
-//    continuatin block a method-wide unique index that is dense for the try that will ultimately
+//    continuation block a method-wide unique index that is dense for the try that will ultimately
 //    branch to the continuation.
 //
-//    Later, during Wasm codegen, we will replace the `if (except)` contditional branch with
+//    Later, during Wasm codegen, we will replace the `if (except)` conditional branch with
 //    a Wasm `try_table` that branches to the dispatch block on exception. Thus after invoking
 //    a catch funclet, the runtime can cause resumption of control at the dispatch with the control
 //    variable set (by the just-executed catch funclet) to steer execution to the proper continuation
@@ -1999,7 +1999,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
     // Walk the blocks and collect up the BBJ_EHCATCHRET blocks per "dispatching" region.
     // The dispatching region is the innermost try/catch region that is in the same handler
-    // region as the continuation -- it is the nearest ancstor try region that can branch directly
+    // region as the continuation -- it is the nearest ancestor try region that can branch directly
     // to the continuation.
     //
     // Index into this vector via an "unbiased EH index" (0 is EH#00). Note some vector
@@ -2089,7 +2089,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
         foundCatchRetBlocks = true;
     }
 
-    // It's possible that there are no catchrets, if every catch unconditinally throws.
+    // It's possible that there are no catchrets, if every catch unconditionally throws.
     // If so there is nothing to do, as control cannot resume in this method after a catch.
     //
     if (!foundCatchRetBlocks)
@@ -2135,7 +2135,7 @@ PhaseStatus Compiler::fgWasmEhFlow()
     // TODO-WASM: possibly share this with the "virtual IP"
     // TODO-WASM: this will need to be at a known offset from $fp so runtime can set it
     //   when control will not resume in this method.
-    // We do not wany any opts acting on this local (eg jump threading)
+    // We do not want any opts acting on this local (eg jump threading)
     //
     unsigned const catchRetIndexLocalNum      = lvaGrabTemp(true DEBUGARG("Wasm EH catchret index"));
     lvaGetDesc(catchRetIndexLocalNum)->lvType = TYP_INT;
@@ -2311,7 +2311,7 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 
     assert(caseNumber == caseCount);
 
-    // Determine the number of unqiue successsors.
+    // Determine the number of unique successors.
     //
     unsigned succCount = 0;
 
