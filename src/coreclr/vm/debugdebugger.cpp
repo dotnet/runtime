@@ -187,37 +187,12 @@ bool DebugStackTrace::ExtractContinuationData(MethodTable* pContinuationMT, SArr
     }
     CONTRACTL_END;
 
-    // AsyncDispatcherInfo.t_current is a [ThreadStatic] field on AsyncDispatcherInfo,
-    // NOT on RuntimeAsyncTask<T>. Load the correct type from CoreLib.
-    TypeHandle thDispatcherInfo = ClassLoader::LoadTypeByNameThrowing(
-        pContinuationMT->GetModule()->GetAssembly(),
-        "System.Runtime.CompilerServices",
-        "AsyncDispatcherInfo",
-        ClassLoader::ReturnNullIfNotFound);
-
-    if (thDispatcherInfo.IsNull())
-        return false;
-
-    MethodTable* pDispatcherInfoMT = thDispatcherInfo.AsMethodTable();
-
-    // Find the t_current thread-static field on AsyncDispatcherInfo.
-    FieldDesc* pTCurrentField = NULL;
-    ApproxFieldDescIterator fieldIter(pDispatcherInfoMT, ApproxFieldDescIterator::STATIC_FIELDS);
-    for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
-    {
-        if (!field->IsThreadStatic())
-            continue;
-
-        LPCUTF8 fieldName = field->GetName();
-        if (fieldName != nullptr && !strcmp(fieldName, "t_current"))
-        {
-            pTCurrentField = field;
-            break;
-        }
-    }
-
+    // Use the CoreLib binder to get AsyncDispatcherInfo and its t_current field.
+    FieldDesc* pTCurrentField = CoreLibBinder::GetField(FIELD__ASYNC_DISPATCHER_INFO__T_CURRENT);
     if (pTCurrentField == NULL)
         return false;
+
+    MethodTable* pDispatcherInfoMT = CoreLibBinder::GetClass(CLASS__ASYNC_DISPATCHER_INFO);
 
     Thread * pThread = GetThread();
     if (pThread == NULL)
@@ -228,27 +203,37 @@ bool DebugStackTrace::ExtractContinuationData(MethodTable* pContinuationMT, SArr
     if (base == NULL)
         return false;
 
-    SIZE_T offset = pTCurrentField->GetOffset();
-
-    // AsyncDispatcherInfo layout (64-bit):
-    //   [0]  AsyncDispatcherInfo* Next           (unmanaged pointer)
-    //   [8]  Continuation?        NextContinuation (managed reference)
-    //   [16] Task?                CurrentTask      (managed reference)
-    typedef struct
+    // AsyncDispatcherInfo is a ref struct with explicit layout:
+    //   [0]               AsyncDispatcherInfo* Next             (unmanaged pointer)
+    //   [sizeof(void*)]   Continuation?        NextContinuation (managed reference)
+    //   [2*sizeof(void*)] Task?                CurrentTask      (managed reference)
+    struct DispatcherInfoLayout
     {
         void*     pNext;
         OBJECTREF pContinuation;
-    } DispatcherInfoLayout;
+    };
 
+    // ResumeInfo is an unmanaged struct:
+    //   [0]             delegate*  Resume       (function pointer)
+    //   [sizeof(void*)] void*      DiagnosticIP (code pointer)
+    struct ResumeInfoLayout
+    {
+        PCODE Resume;
+        PCODE DiagnosticIP;
+    };
+
+    SIZE_T offset = pTCurrentField->GetOffset();
     DispatcherInfoLayout** ppDispatcherInfo = (DispatcherInfoLayout**)((PTR_BYTE)base + (DWORD)offset);
     if (ppDispatcherInfo == NULL || *ppDispatcherInfo == NULL)
         return false;
 
     struct
     {
-        OBJECTREF continuation;
+        CONTINUATIONREF continuation;
+        CONTINUATIONREF pNext;
     } gc{};
     gc.continuation = NULL;
+    gc.pNext = NULL;
     GCPROTECT_BEGIN(gc)
     {
         DispatcherInfoLayout* pDispatcherInfo = *ppDispatcherInfo;
@@ -260,44 +245,17 @@ bool DebugStackTrace::ExtractContinuationData(MethodTable* pContinuationMT, SArr
                 continue;
             }
 
-            OBJECTREF continuation = pDispatcherInfo->pContinuation;
-            while (continuation != NULL)
+            gc.continuation = (CONTINUATIONREF)(Object*)OBJECTREFToObject(pDispatcherInfo->pContinuation);
+            while (gc.continuation != NULL)
             {
-                typedef struct
-                {
-                    PCODE Resume;
-                    PCODE DiagnosticIP;
-                } ResumeInfoLayout;
-                    
-                gc.continuation = continuation;
-                OBJECTREF pNext = nullptr;
-                ResumeInfoLayout * pResumeNext = nullptr;
-                int numFound = 0;
+                // Use ContinuationObject accessors — these match the binder-verified layout.
+                gc.pNext = gc.continuation->GetNext();
+                ResumeInfoLayout* pResumeInfo = (ResumeInfoLayout*)gc.continuation->GetResumeInfo();
 
-                ApproxFieldDescIterator continuationFieldIter(continuation->GetMethodTable()->GetParentMethodTable(), ApproxFieldDescIterator::INSTANCE_FIELDS);
-                for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 2; continuationField = continuationFieldIter.Next())
+                if (pResumeInfo != NULL && pResumeInfo->Resume != NULL)
                 {
-                    LPCUTF8 contFieldName = continuationField->GetName();
-                    if (!strcmp(contFieldName, "Next"))
-                    {
-                        pNext = (OBJECTREF)(Object*)continuation->GetPtrOffset(continuationField->GetOffset());
-                        numFound++;
-                    }
-                    else if (!strcmp(contFieldName, "ResumeInfo"))
-                    {
-                        pResumeNext = (ResumeInfoLayout*)continuation->GetPtrOffset(continuationField->GetOffset());
-                        numFound++;
-                    }
-                }
+                    MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)pResumeInfo->Resume);
 
-                if (pResumeNext != NULL && pResumeNext->Resume != NULL)
-                {
-                    MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)pResumeNext->Resume);
-
-                    // Only runtime async resume stubs are dynamic methods with
-                    // ILStubResolvers. Skip non-dynamic continuations (e.g. Task
-                    // infrastructure completion callbacks) to avoid crashes and
-                    // to keep only meaningful user-method frames.
                     if (pMD != NULL && pMD->IsDynamicMethod())
                     {
                         PTR_ILStubResolver pILResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
@@ -306,20 +264,17 @@ bool DebugStackTrace::ExtractContinuationData(MethodTable* pContinuationMT, SArr
                             MethodDesc* pTargetMD = pILResolver->GetStubTargetMethodDesc();
                             if (pTargetMD != nullptr)
                             {
-                                pContinuationResumeList->Append({ pTargetMD, pResumeNext->DiagnosticIP });
+                                pContinuationResumeList->Append({ pTargetMD, pResumeInfo->DiagnosticIP });
                             }
                         }
                     }
                 }
-                if (pNext == nullptr)
-                {
-                    break;
-                }
-                continuation = pNext;
+
+                gc.continuation = gc.pNext;
             }
 
             pDispatcherInfo = (DispatcherInfoLayout*)pDispatcherInfo->pNext;
-        } // while pDispatcherInfo != NULL
+        }
     }
     GCPROTECT_END();
 

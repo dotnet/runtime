@@ -850,6 +850,9 @@ DEFINE_FIELD(CONTINUATION,              RESUME_INFO,        ResumeInfo)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
 
+DEFINE_CLASS(ASYNC_DISPATCHER_INFO,     CompilerServices,   AsyncDispatcherInfo)
+DEFINE_FIELD(ASYNC_DISPATCHER_INFO,     T_CURRENT,          t_current)
+
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_FIELD(RUNTIME_WRAPPED_EXCEPTION, WRAPPED_EXCEPTION,  _wrappedException)
 
