@@ -1595,8 +1595,6 @@ void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacter
     pResult->insLatency    = PERFSCORE_LATENCY_1C;
 }
 
-#endif // defined(DEBUG) || defined(LATE_DISASM)
-
 //----------------------------------------------------------------------------------------
 // getCurrentBlockWeight: Return the block weight for the currently active block
 //
@@ -1618,12 +1616,19 @@ weight_t emitter::getCurrentBlockWeight()
     {
         return m_compiler->compCurBB->getBBWeight(m_compiler);
     }
-    else // we have a null compCurBB
+    else if (emitCurIG != nullptr)
     {
-        // prolog or epilog case, so just use the standard weight
+        // Prolog or epilog case, use the weight of the head group or its extensions.
+        assert((emitCurIG->igFlags & IGF_OUT_OF_ORDER_MASK) != 0);
+        return emitCurIG->igWeight;
+    }
+    else
+    {
+        // This is the prolog case (when we're just initializing the IG list).
         return BB_UNITY_WEIGHT;
     }
 }
+#endif // defined(DEBUG) || defined(LATE_DISASM)
 
 #if defined(TARGET_LOONGARCH64)
 void emitter::dispIns(instrDesc* id)
