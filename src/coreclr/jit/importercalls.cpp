@@ -10755,11 +10755,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                         if (strncmp(className, "Vector", 6) == 0)
                         {
-                            if (className[7] == '\0')
+                            if (className[6] == '\0')
                             {
                                 isVector = true;
                             }
-                            else if (strcmp(className + 7, "`1") == 0)
+                            else if (strcmp(className + 6, "`1") == 0)
                             {
                                 isVectorT = true;
                             }
