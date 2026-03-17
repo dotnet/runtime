@@ -12142,7 +12142,7 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
 
     if (!IsInvariantInRange(bfiPattern.value, tree))
     {
-        return false; 
+        return false;
     }
 
     unsigned regBits = genTypeSize(tree) * BITS_PER_BYTE;
