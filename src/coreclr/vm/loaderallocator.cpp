@@ -267,6 +267,9 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     }
     CONTRACTL_END;
 
+    // Check if this lock can be taken in all places that the function is called
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+
     if (!IsCollectible())
         return FALSE;
 
@@ -275,9 +278,6 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
 
     if (!pOtherLA->IsCollectible())
         return FALSE;
-
-    // Check if this lock can be taken in all places that the function is called
-    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
 
     _ASSERTE(Id()->GetType() == LAT_Assembly);
     CrstHolder ch(GetAppDomain()->GetLoaderAllocatorReferencesLock());
@@ -295,11 +295,11 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
 
     BOOL fNewReferenceNeeded = FALSE;
 
-    if (!IsCollectible())
-        return FALSE;
-
     // Check if this lock can be taken in all places that the function is called
     _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+
+    if (!IsCollectible())
+        return FALSE;
 
     _ASSERTE(Id()->GetType() == LAT_Assembly);
     CrstHolder ch(GetAppDomain()->GetLoaderAllocatorReferencesLock());
