@@ -32,28 +32,7 @@ namespace System.Runtime
         static CachedInterfaceDispatch()
         {
             RuntimeImports.RhpRegisterDispatchCache(ref Unsafe.As<GenericCache<Key, nint>, byte>(ref s_cache));
-
-#if false
-            Lookup1234(new object(), 0x123456, ref s_cache);
-#endif
         }
-
-#if false
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static nint Lookup1234(object thisobj, nint cell, ref GenericCache<Key, nint> cache)
-        {
-            if (cache.TryGet(new Key(cell, (nint)thisobj.GetMethodTable()), out nint result))
-                return result;
-
-            return SlowPath(thisobj, cell);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static nint SlowPath(object thisobj, nint cell)
-        {
-            return 0;
-        }
-#endif
 
         private struct Key : IEquatable<Key>
         {
@@ -146,7 +125,7 @@ namespace System.Runtime
                     info = new DispatchCellInfo
                     {
                         CellType = DispatchCellType.InterfaceAndSlot,
-                        InterfaceType = (MethodTable*)(dispatchCellInfo + (cellIndex * 2)),
+                        InterfaceType = (MethodTable*)(*(dispatchCellInfo + (cellIndex * 2))),
                         InterfaceSlot = (ushort)*(dispatchCellInfo + (cellIndex * 2 + 1))
                     };
                 }
@@ -171,7 +150,9 @@ namespace System.Runtime
             // If the dispatch cell doesn't cache anything yet, cache in the dispatch cell
             if (Interlocked.CompareExchange(ref pDispatchCell->Code, pTargetCode, 0) == 0)
             {
-                pDispatchCell->MethodTable = (nint)pInstanceType;
+                // Use release semantics so the reader's acquire-load of MethodTable
+                // guarantees the Code store is visible.
+                Volatile.Write(ref pDispatchCell->MethodTable, (nint)pInstanceType);
             }
             else
             {

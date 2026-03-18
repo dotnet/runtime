@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.RequireInitialAlignment(factory.Target.PointerSize);
 
             int currentDispatchCellOffset = 0;
-            foreach (InterfaceDispatchCellNode node in new SortedSet<InterfaceDispatchCellNode>(factory.MetadataManager.GetInterfaceDispatchCells(), new DispatchCellComparer(factory)))
+            foreach (InterfaceDispatchCellNode node in new SortedSet<InterfaceDispatchCellNode>(factory.MetadataManager.GetInterfaceDispatchCells(), new DispatchCellComparer()))
             {
                 MethodDesc targetMethod = node.TargetMethod;
                 int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
@@ -74,13 +74,7 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         private sealed class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
         {
-            private readonly NodeFactory _factory;
             private readonly CompilerComparer _comparer = CompilerComparer.Instance;
-
-            public DispatchCellComparer(NodeFactory factory)
-            {
-                _factory = factory;
-            }
 
             public int Compare(InterfaceDispatchCellNode x, InterfaceDispatchCellNode y)
             {
