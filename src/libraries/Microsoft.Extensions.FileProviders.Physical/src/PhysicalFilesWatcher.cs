@@ -34,6 +34,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly string _root;
         private readonly ExclusionFilters _filters;
 
+        // Tracks non-recursive watchers used when parent directories of a watched path do not yet exist.
+        // Key: deepest existing ancestor directory path. Value: the watcher for that directory.
+        // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so this is always empty on those platforms.
+#pragma warning disable CA1416
+        private readonly ConcurrentDictionary<string, PendingCreationWatcher> _pendingCreationWatchers
+            = new(StringComparer.OrdinalIgnoreCase);
+#pragma warning restore CA1416
+
         private Timer? _timer;
         private bool _timerInitialized;
         private object _timerLock = new();
@@ -165,6 +173,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
+            // When using a FileSystemWatcher, if any parent directory in the path does not yet exist,
+            // return a token from a non-recursive watcher placed at the deepest existing ancestor.
+            // This avoids adding recursive inotify watches on a high-level directory (e.g. the root)
+            // for a path whose parents do not exist yet.  When the next missing component is created
+            // the token fires, ChangeToken.OnChange re-registers, and the process cascades downward
+            // until all parent directories exist and the normal FSW can track the file.
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416
+            if (_fileWatcher != null && HasMissingParentDirectory(filePath))
+            {
+                return GetOrAddPendingCreationToken(filePath);
+            }
+#pragma warning restore CA1416
+
             if (!_filePathTokenLookup.TryGetValue(filePath, out ChangeTokenInfo tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
@@ -196,6 +218,136 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             return changeToken;
+        }
+
+        // Returns true when at least one directory component of filePath (relative to _root) does not exist.
+        // filePath uses '/' separators (already normalized by NormalizePath).
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private bool HasMissingParentDirectory(string filePath)
+        {
+            string currentDir = _root;
+            int start = 0;
+            int slashIdx;
+            while ((slashIdx = filePath.IndexOf('/', start)) >= 0)
+            {
+                int len = slashIdx - start;
+                if (len > 0)
+                {
+                    currentDir = Path.Combine(currentDir, filePath.Substring(start, len));
+                    if (!Directory.Exists(currentDir))
+                    {
+                        return true;
+                    }
+                }
+                start = slashIdx + 1;
+            }
+            return false;
+        }
+
+        // Returns the absolute path of the deepest existing ancestor directory of filePath.
+        // filePath uses '/' separators (already normalized).
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private string FindDeepestExistingAncestor(string filePath)
+        {
+            string currentDir = _root;
+            string deepest = currentDir;
+            int start = 0;
+            int slashIdx;
+            while ((slashIdx = filePath.IndexOf('/', start)) >= 0)
+            {
+                int len = slashIdx - start;
+                if (len > 0)
+                {
+                    string next = Path.Combine(currentDir, filePath.Substring(start, len));
+                    if (!Directory.Exists(next))
+                    {
+                        return deepest;
+                    }
+                    deepest = next;
+                    currentDir = next;
+                }
+                start = slashIdx + 1;
+            }
+            return deepest;
+        }
+
+        // Returns a change token that fires when any item is created inside the deepest
+        // existing ancestor of filePath.  A non-recursive FileSystemWatcher is placed at
+        // that ancestor so no recursive inotify watches are added.
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private CancellationChangeToken GetOrAddPendingCreationToken(string filePath)
+        {
+            string watchDir = FindDeepestExistingAncestor(filePath);
+
+            // Normalize the key: remove any trailing separator so the dictionary key is stable.
+            string key = watchDir.Length > 1
+                ? watchDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                : watchDir; // preserve "/" or "C:\" root paths as-is
+
+            while (true)
+            {
+                if (_pendingCreationWatchers.TryGetValue(key, out PendingCreationWatcher? existing))
+                {
+                    if (!existing.Cts.IsCancellationRequested)
+                    {
+                        return new CancellationChangeToken(existing.Cts.Token);
+                    }
+
+                    // Stale watcher (already fired); remove it and create a fresh one.
+                    _pendingCreationWatchers.TryRemove(key, out _);
+                    // Do not dispose here – cleanup is already scheduled via Cts.Token.Register.
+                }
+
+                PendingCreationWatcher newWatcher;
+                try
+                {
+                    newWatcher = new PendingCreationWatcher(watchDir);
+                }
+                catch
+                {
+                    // Unexpected – the watchDir was confirmed to exist moments ago.
+                    // Fall back to an already-cancelled token so the caller re-registers immediately.
+                    return new CancellationChangeToken(new CancellationToken(canceled: true));
+                }
+
+                if (_pendingCreationWatchers.TryAdd(key, newWatcher))
+                {
+                    // When the token fires, remove this entry and dispose the watcher asynchronously
+                    // (we must not dispose a FileSystemWatcher on its own event thread).
+                    newWatcher.Cts.Token.Register(static state =>
+                    {
+                        var tuple = (Tuple<ConcurrentDictionary<string, PendingCreationWatcher>, string, PendingCreationWatcher>)state!;
+                        ConcurrentDictionary<string, PendingCreationWatcher> dict = tuple.Item1;
+                        string k = tuple.Item2;
+                        PendingCreationWatcher w = tuple.Item3;
+
+                        dict.TryRemove(k, out _);
+                        Task.Factory.StartNew(
+                            static watcher => ((PendingCreationWatcher)watcher!).Dispose(),
+                            w,
+                            CancellationToken.None,
+                            TaskCreationOptions.DenyChildAttach,
+                            TaskScheduler.Default);
+                    }, Tuple.Create(_pendingCreationWatchers, key, newWatcher));
+
+                    return new CancellationChangeToken(newWatcher.Cts.Token);
+                }
+
+                // Another thread won the TryAdd race; dispose ours and retry.
+                newWatcher.Dispose();
+            }
         }
 
         internal IChangeToken GetOrAddWildcardChangeToken(string pattern)
@@ -256,6 +408,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     _fileWatcher?.Dispose();
                     _timer?.Dispose();
+
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher so _pendingCreationWatchers is always empty on those platforms.
+#pragma warning disable CA1416
+                    foreach (System.Collections.Generic.KeyValuePair<string, PendingCreationWatcher> kvp in _pendingCreationWatchers)
+                    {
+                        kvp.Value.Dispose();
+                    }
+                    _pendingCreationWatchers.Clear();
+#pragma warning restore CA1416
                 }
                 _disposed = true;
             }
@@ -516,5 +677,39 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             public Matcher? Matcher { get; }
         }
+
+        // Watches a directory non-recursively for any item creation so that file-path change tokens
+        // for paths whose parent directories do not yet exist can fire when the next missing directory
+        // component is created.  Only ONE inotify watch (or equivalent) is added, not a recursive tree.
+        // This class is only ever instantiated from platform-guarded code paths.
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416
+        private sealed class PendingCreationWatcher : IDisposable
+        {
+            public readonly CancellationTokenSource Cts = new();
+            private FileSystemWatcher? _watcher;
+
+            public PendingCreationWatcher(string existingDirectory)
+            {
+                _watcher = new FileSystemWatcher(existingDirectory)
+                {
+                    IncludeSubdirectories = false,
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                    EnableRaisingEvents = true,
+                };
+                _watcher.Created += Trigger;
+                _watcher.Renamed += Trigger;
+            }
+
+            private void Trigger(object sender, FileSystemEventArgs e) => Cts.Cancel();
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _watcher, null)?.Dispose();
+                Cts.Cancel();
+                Cts.Dispose();
+            }
+        }
+#pragma warning restore CA1416
     }
 }

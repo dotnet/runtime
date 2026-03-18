@@ -223,6 +223,101 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task GetOrAddFilePathChangeToken_FiresWhenMissingDirectoryIsCreated()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string missingDir = Path.Combine(root.Path, "missingdir");
+
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                root.Path + Path.DirectorySeparatorChar,
+                new FileSystemWatcher(root.Path),
+                pollForChanges: false);
+
+            // filePath's parent directory doesn't exist yet – should get a pending creation token
+            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("missingdir/file.txt");
+
+            var tcs = new TaskCompletionSource<bool>();
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            // Now create the missing directory – the token must fire
+            Directory.CreateDirectory(missingDir);
+
+            Assert.True(await tcs.Task);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task GetOrAddFilePathChangeToken_FiresWhenMultipleMissingDirectoryLevelsAreCreated()
+        {
+            // Verifies the cascading behavior: each time a missing directory is created the token fires,
+            // the caller re-registers, and a new pending watcher is placed one level deeper.
+            using var root = new TempDirectory(GetTestFilePath());
+            string level1 = Path.Combine(root.Path, "level1");
+            string level2 = Path.Combine(level1, "level2");
+
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                root.Path + Path.DirectorySeparatorChar,
+                new FileSystemWatcher(root.Path),
+                pollForChanges: false);
+
+            var allLevelsDone = new TaskCompletionSource<bool>();
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            cts.Token.Register(() => allLevelsDone.TrySetCanceled());
+
+            void Register()
+            {
+                IChangeToken t = physicalFilesWatcher.GetOrAddFilePathChangeToken("level1/level2/file.txt");
+                t.RegisterChangeCallback(_ =>
+                {
+                    if (!Directory.Exists(level1) || !Directory.Exists(level2))
+                    {
+                        Register();
+                    }
+                    else
+                    {
+                        allLevelsDone.TrySetResult(true);
+                    }
+                }, null);
+            }
+
+            Register();
+
+            // Create level1 – first token fires
+            Directory.CreateDirectory(level1);
+            await Task.Delay(300);
+
+            // Create level2 – second token fires and allLevelsDone completes
+            Directory.CreateDirectory(level2);
+
+            Assert.True(await allLevelsDone.Task);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void CreateFileChangeToken_DoesNotEnableMainFswWhenParentMissing()
+        {
+            // Verifies that the main FileSystemWatcher is NOT enabled (EnableRaisingEvents stays false)
+            // when only pending-creation tokens are registered, preventing the recursive-watch explosion.
+            using var root = new TempDirectory(GetTestFilePath());
+
+            var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                root.Path + Path.DirectorySeparatorChar,
+                fileSystemWatcher,
+                pollForChanges: false);
+
+            // Register a token for a path with a missing parent directory
+            _ = physicalFilesWatcher.CreateFileChangeToken("missingdir/file.txt");
+
+            // The main FSW should NOT be enabled because only a pending-creation token exists
+            Assert.False(fileSystemWatcher.EnableRaisingEvents,
+                "Main FileSystemWatcher should not be enabled when parent directories are missing");
+        }
+
         private class TestPollingChangeToken : IPollingChangeToken
         {
             public int Id { get; set; }
