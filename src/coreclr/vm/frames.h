@@ -1728,6 +1728,7 @@ struct cdac_data<StubDispatchFrame>
 {
     static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
     static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
+    static constexpr size_t GCRefMap = offsetof(StubDispatchFrame, m_pGCRefMap);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -1763,6 +1764,8 @@ public:
 
 class ExternalMethodFrame : public FramedMethodFrame
 {
+    friend struct ::cdac_data<ExternalMethodFrame>;
+
     // Indirection and containing module. Used to compute pGCRefMap lazily.
     PTR_Module      m_pZapModule;
     TADDR           m_pIndirection;
@@ -1803,8 +1806,16 @@ public:
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
 
+template <>
+struct cdac_data<ExternalMethodFrame>
+{
+    static constexpr size_t GCRefMap = offsetof(ExternalMethodFrame, m_pGCRefMap);
+};
+
 class DynamicHelperFrame : public FramedMethodFrame
 {
+    friend struct ::cdac_data<DynamicHelperFrame>;
+
     int m_dynamicHelperFrameFlags;
 
 public:
@@ -1824,6 +1835,12 @@ public:
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
+
+template <>
+struct cdac_data<DynamicHelperFrame>
+{
+    static constexpr size_t DynamicHelperFrameFlags = offsetof(DynamicHelperFrame, m_dynamicHelperFrameFlags);
+};
 
 #ifdef FEATURE_COMINTEROP
 

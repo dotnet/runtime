@@ -913,7 +913,18 @@ CDAC_TYPE_SIZE(sizeof(StubDispatchFrame))
 CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, RepresentativeMTPtr, cdac_data<StubDispatchFrame>::RepresentativeMTPtr)
 CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_FIELD(StubDispatchFrame, /*uint32*/, RepresentativeSlot, cdac_data<StubDispatchFrame>::RepresentativeSlot)
+CDAC_TYPE_FIELD(StubDispatchFrame, /*pointer*/, GCRefMap, cdac_data<StubDispatchFrame>::GCRefMap)
 CDAC_TYPE_END(StubDispatchFrame)
+
+CDAC_TYPE_BEGIN(ExternalMethodFrame)
+CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
+CDAC_TYPE_FIELD(ExternalMethodFrame, /*pointer*/, GCRefMap, cdac_data<ExternalMethodFrame>::GCRefMap)
+CDAC_TYPE_END(ExternalMethodFrame)
+
+CDAC_TYPE_BEGIN(DynamicHelperFrame)
+CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))
+CDAC_TYPE_FIELD(DynamicHelperFrame, /*int32*/, DynamicHelperFrameFlags, cdac_data<DynamicHelperFrame>::DynamicHelperFrameFlags)
+CDAC_TYPE_END(DynamicHelperFrame)
 
 #ifdef FEATURE_HIJACK
 CDAC_TYPE_BEGIN(ResumableFrame)
@@ -1287,6 +1298,18 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 #undef FRAME_TYPE_NAME
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
+
+CDAC_GLOBAL(TransitionBlockOffsetOfArgs, uint32, sizeof(TransitionBlock))
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
+CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, uint32, sizeof(TransitionBlock))
+CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, uint32, sizeof(TransitionBlock))
+#elif defined(TARGET_ARM64)
+CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, uint32, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, uint32, offsetof(TransitionBlock, m_x8RetBuffReg))
+#else
+CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, uint32, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, uint32, offsetof(TransitionBlock, m_argumentRegisters))
+#endif
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else

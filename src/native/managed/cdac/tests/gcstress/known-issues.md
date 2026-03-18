@@ -6,30 +6,31 @@ enumeration (`ISOSDacInterface::GetStackReferences`) and the runtime's GC root s
 ## GC Stress Test Results
 
 With `DOTNET_GCStress=0x24` (instruction-level JIT stress + cDAC verification):
-- ~25,000 PASS / ~125 FAIL out of ~25,100 stress points (99.5% pass rate)
+- ~25,200 PASS / ~55 FAIL out of ~25,300 stress points (99.8% pass rate)
+- All 55 failures have delta=1 (RT reports 1 more ref than cDAC)
 
 ## Known Issues
 
-### 1. Dynamic Method / IL Stub GC Refs Not Enumerated
+### 1. One GC Slot Missing Per Dynamic Method Stack Walk
 
-**Severity**: Low — matches legacy DAC behavior
-**Affected methods**: `dynamicclass::InvokeStub_*` (reflection invoke stubs), LCG methods
-**Pattern**: `cDAC < RT` (diff=-1), always missing `RT[0]` register ref
+**Severity**: Low
+**Pattern**: `cDAC < RT` (diff=-1), RT has one extra stack-based copy of a GC ref
 
-The cDAC (and legacy DAC) cannot resolve code blocks for methods in RangeList-based
-code heaps (HostCodeHeap). Both `EEJitManager::JitCodeToMethodInfo` and the cDAC's
-`FindMethodCode` return failure for `RANGE_SECTION_RANGELIST` sections. This means
-GcInfo cannot be decoded for these methods, and their GC refs are not reported.
+The remaining 55 failures each show the RT reporting one GC object at both a register
+location (Address=0) and a stack spill address, while the cDAC only reports the register
+copy. This is NOT caused by `FindMethodCode` failing for RangeList sections — investigation
+confirmed that JIT'd dynamic method code (InvokeStub_*) lives in CODEHEAP sections with
+nibble maps, and the cDAC resolves them successfully.
 
-The runtime's `GcStackCrawlCallBack` reports additional refs from these methods
-because it processes them through the Frame chain (`ResumableFrame`, `InlinedCallFrame`)
-which has access to the register state.
+The root cause is a subtle difference in GcInfo slot decoding. The runtime reports one
+additional stack-spilled copy of a GC ref that the cDAC misses, likely due to:
+- Different handling of callee-saved register spill slots
+- Or a funclet parent frame flag (known issue #4) causing the runtime to report
+  an extra slot that the cDAC skips
 
-This is a pre-existing gap in the DAC's diagnostic API, not a cDAC regression.
-
-**Follow-up**: Implement RangeList-based code lookup in the cDAC's ExecutionManager.
-This requires reading the `HostCodeHeap` linked list and matching IPs to code headers
-within dynamic code heaps.
+**Follow-up**: Add per-frame GC slot logging to identify which specific frame and
+GcInfo slot produces the extra ref, then compare cDAC vs runtime GcInfo decoding
+for that frame.
 
 ### 2. Frame Context Restoration Causes Duplicate Walks
 
@@ -53,23 +54,32 @@ different Source IPs are not caught.
 **Follow-up**: Track walked method address ranges in the cDAC's stack walker and
 suppress duplicate `SW_FRAMELESS` yields for methods already visited.
 
-### 3. PromoteCallerStack Not Implemented for Stub Frames
+### 3. PromoteCallerStack — Implemented
 
-**Severity**: Low — not currently manifesting in GC stress tests
+**Status**: Implemented — GCRefMap path + MetaSig fallback + DynamicHelperFrame scanning
 **Affected frames**: `StubDispatchFrame`, `ExternalMethodFrame`, `CallCountingHelperFrame`,
-`DynamicHelperFrame`, `CLRToCOMMethodFrame`
+`PrestubMethodFrame`, `DynamicHelperFrame`
 
 These Frame types call `PromoteCallerStack` / `PromoteCallerStackUsingGCRefMap`
-to report method arguments from the transition block. The cDAC's `ScanFrameRoots`
-is a no-op for these frame types.
+to report method arguments from the transition block. The cDAC now implements:
 
-This gap doesn't manifest in GC stress testing because stub frame arguments are
-not the source of the current count differences. However, it IS a DAC parity gap —
-the legacy DAC reports these refs via `Frame::GcScanRoots`.
+1. **GCRefMap-based scanning** for StubDispatchFrame (when cached) and ExternalMethodFrame
+2. **MetaSig-based scanning** for PrestubMethodFrame, CallCountingHelperFrame, and
+   StubDispatchFrame (when GCRefMap is null — dynamic/LCG methods)
+3. **DynamicHelperFrame flag-based scanning** for argument registers
 
-**Follow-up**: Port `GCRefMapDecoder` to managed code and implement
-`PromoteCallerStackUsingGCRefMap` in `ScanFrameRoots`. Prototype implementation
-exists (stashed as "PromoteCallerStack implementation + GCRefMapDecoder").
+The MetaSig path parses ECMA-335 MethodDefSig format (including ELEMENT_TYPE_INTERNAL
+for runtime-internal types in dynamic method signatures) and maps parameter positions
+to transition block offsets using the GCRefMap position scheme.
+
+This reduced the per-failure delta from 3 to 1 for all 55 failures. The remaining
+delta is from issue #1 (RangeList code heap resolution).
+
+**Not yet implemented**:
+- CLRToCOMMethodFrame (COM interop, requires return value promotion)
+- PInvokeCalliFrame (requires VASigCookie-based signature reading)
+- Value type GCDesc scanning in MetaSig path (ELEMENT_TYPE_VALUETYPE with embedded refs)
+- x86-specific register ordering in OffsetFromGCRefMapPos
 
 ### 4. Funclet Parent Frame Flags Not Consumed
 
