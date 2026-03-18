@@ -488,23 +488,15 @@ namespace System.Formats.Tar.Tests
                 TarFile.ExtractToDirectory(extractStream, root.Path, overwriteFiles: false));
         }
 
-        public static IEnumerable<object[]> PaxExtraction_SizeOverrideData()
-        {
-            // actualData, headerSize, eaSize
-            yield return new object[] { "ABCDEFGHIJ"u8.ToArray(), 10L, 50L };  // EA larger
-            yield return new object[] { new byte[100], 100L, 25L };            // EA smaller
-        }
-
         [Theory]
-        [MemberData(nameof(PaxExtraction_SizeOverrideData))]
-        public void PaxExtraction_EntryLengthMatchesExtractedFileSize(byte[] actualData, long headerSize, long eaSize)
+        [InlineData(10, 50)]  // EA larger than header
+        [InlineData(100, 25)] // EA smaller than header
+        public void PaxExtraction_EntryLengthMatchesExtractedFileSize(int dataSize, long eaSize)
         {
-            if (actualData.Length == 100)
-            {
-                Array.Fill<byte>(actualData, (byte)'X');
-            }
+            byte[] actualData = new byte[dataSize];
+            Array.Fill<byte>(actualData, (byte)'X');
 
-            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, dataSize, eaSize);
 
             long apiLength;
             using (var scanStream = new MemoryStream(archive))
