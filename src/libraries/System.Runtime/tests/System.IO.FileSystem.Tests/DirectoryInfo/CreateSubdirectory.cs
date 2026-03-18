@@ -244,8 +244,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public void CreateSubdirectory_RootDriveSubfolder_ThrowsUnauthorizedAccessException_Linux()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CreateSubdirectory_RootDriveSubfolder_ThrowsUnauthorizedAccessException_Unix()
         {
             DirectoryInfo rootDirectory = new DirectoryInfo("/");
             string testFolderName = GetTestFileName();
