@@ -2017,45 +2017,30 @@ PhaseStatus Compiler::fgWasmEhFlow()
             continue;
         }
 
+        // This is where control resumes after this block executes.
+        //
+        BasicBlock* const continuationBlock = block->GetTarget();
+
         // Find the try region associated with the catch
         // (note BBJ_EHCATCHRET is in the handler for the try...)
         //
         assert(block->hasHndIndex());
         unsigned const catchingTryIndex = block->getHndIndex();
 
-        // Find the handler region for the continuation.
-        //
-        BasicBlock* const continuationBlock = block->GetTarget();
-
-        unsigned const continuationHndIndex =
-            continuationBlock->hasHndIndex() ? continuationBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-
-        // Now find the dispatching try index by walking through the enclosing handler regions.
-        // Also skip past any inner mutual protect trys.
-        //
-        unsigned dispatchingTryIndex = catchingTryIndex;
-        unsigned enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
-
-        while (enclosingHndIndex != continuationHndIndex)
-        {
-            // Note this should not walk through any non try/catch regions as those will change handler region
-            //
-            dispatchingTryIndex = ehGetEnclosingTryIndex(enclosingHndIndex);
-            enclosingHndIndex   = ehGetEnclosingHndIndex(dispatchingTryIndex);
-        }
-
         // If this try region is part of a mutual protect set,
         // we want to use the EH region of the innermost try as the "dispatching" try.
         //
-        BasicBlock* const dispatchingTryBlock          = ehGetDsc(dispatchingTryIndex)->ebdTryBeg;
+        BasicBlock* const dispatchingTryBlock          = ehGetDsc(catchingTryIndex)->ebdTryBeg;
         unsigned const    innermostDispatchingTryIndex = dispatchingTryBlock->getTryIndex();
 
         JITDUMP("Catchret block " FMT_BB " has continuation " FMT_BB
                 "; associated try EH#%02u; dispatching try EH#%02u\n",
                 block->bbNum, continuationBlock->bbNum, catchingTryIndex, innermostDispatchingTryIndex);
 
-        // If the continuation is within the dispatching try, we have to bail out.
-        // Note this takes and returns a biased index.
+        assert(EHblkDsc::ebdIsSameTry(ehGetDsc(catchingTryIndex), ehGetDsc(innermostDispatchingTryIndex)));
+
+        // If the continuationBlock is within the dispatching try, we have to bail out for now.
+        // Note bbFindInnermostCommonTryRegion takes and returns a biased index.
         //
         unsigned const biasedCommonEnclosingTryIndex =
             bbFindInnermostCommonTryRegion(innermostDispatchingTryIndex + 1, continuationBlock);
