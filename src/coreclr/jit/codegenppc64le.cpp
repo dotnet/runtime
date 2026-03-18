@@ -584,7 +584,8 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    GetEmitter()->emitIns(INS_blr);
 }
 
 //------------------------------------------------------------------------

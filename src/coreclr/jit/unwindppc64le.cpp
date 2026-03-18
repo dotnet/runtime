@@ -33,40 +33,47 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::unwindBegProlog()
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 void Compiler::unwindEndProlog()
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 void Compiler::unwindBegEpilog()
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 void Compiler::unwindEndEpilog()
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 #if defined(TARGET_POWERPC64)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 {
-    _ASSERTE(!"NYI");
-    unreached();
+    //_ASSERTE(!"NYI");
+    //unreached();
+    //TODO: JK, no-op for minimal frameless bring-up
 }
 
 #endif // defined(TARGET_POWERPC64)
@@ -76,7 +83,7 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindReserve()
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
 }
 
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
@@ -91,12 +98,12 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
 }
 
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
-    _ASSERTE(!"NYI");
+   // _ASSERTE(!"NYI");
 }
 
 #if defined(TARGET_POWERPC64)

@@ -51,6 +51,11 @@ static inline uint32_t ppc_blr()
     return ppc_bclr(20, 0, 0);
 }
 
+static inline uint32_t ppc_nop()
+{
+    return 0x60000000; // ori r0, r0, 0
+}
+
 static inline void writeU32LE(BYTE* dst, uint32_t w)
 {
     dst[0] = (BYTE)(w >> 0);
@@ -291,17 +296,20 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstr(EA_8BYTE);
+    instrDesc* id = emitNewInstr(EA_4BYTE);
 
     id->idIns(ins);
 
     switch (ins)
     {
+	case INS_nop:
         case INS_blr:
             break;
 
-        default:
-            NO_WAY("Unsupported instruction in minimal PPC64 emitIns");
+    	default:
+           fprintf(stderr, "PPC64LE DEBUG: emitIns unsupported: ins=%d\n", (int)ins);
+	   fflush(stderr);
+           NO_WAY("Unsupported instruction in minimal PPC64 emitIns");
     }
 
     appendToCurIG(id);
@@ -393,22 +401,28 @@ void emitter::emitSetShortJump(instrDescJmp* id)
  *  point past the generated code, and returns the size of the instruction
  *  descriptor in bytes.
  */
-
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE* dst = *dp;
+    BYTE* dstRW = dst + writeableOffset;
 
     switch (id->idIns())
     {
-        case INS_blr:
-            writeU32LE(dst, ppc_blr());
+	case INS_nop:
+            writeU32LE(dstRW, ppc_nop());
             *dp = dst + 4;
-            return 4;
+            return emitSizeOfInsDsc(id);
+
+        case INS_blr:
+            writeU32LE(dstRW, ppc_blr());
+            *dp = dst + 4;
+            return emitSizeOfInsDsc(id);
 
         default:
             NO_WAY("Unsupported instruction in minimal PPC64 emitOutputInstr");
     }
 }
+
 /*****************************************************************************
  *
  *  Display (optionally) the instruction encoding in hex
@@ -485,7 +499,15 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
+
+	insExecutionCharacteristics result;
+
+    // TODO-PPC64LE: support this function.
+    	result.insThroughput       = PERFSCORE_THROUGHPUT_ZERO;
+    	result.insLatency          = PERFSCORE_LATENCY_ZERO;
+    	result.insMemoryAccessKind = PERFSCORE_MEMORY_NONE;
+
+    	return result;
 }
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)

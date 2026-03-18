@@ -1160,15 +1160,15 @@ protected:
         }
 #elif defined(TARGET_POWERPC64)
 
-	inline bool idIsEmptyAlign() const
-	{
-		_ASSERTE("NYI POWERPC64");
-	}
+        bool idIsEmptyAlign() const
+        {
+            return false;
+        }
 
-	unsigned idCodeSize() const
-	{
-		_ASSERTE("NYI POWERPC64");
-	}
+        unsigned idCodeSize() const
+        {
+            return 4;
+        }
 #elif defined(TARGET_ARM)
 
         bool idInstrIsT1() const
