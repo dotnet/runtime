@@ -256,7 +256,14 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
     // Means we had a failure publishing to the OS, in this case we give up
     if (unwindInfo->hHandle == NULL)
-        return;
+     {
+         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+         // Re-read the table under the publish lock in case a flush/unregister/register
+         // sequence was in progress when we first inspected hHandle.
+         unwindInfo = *unwindInfoPtr;
+         if (unwindInfo == NULL || unwindInfo->hHandle == NULL)
+             return;
+     }
 
     // Add to the pending buffer. If the buffer is full, flush it first and retry.
     while (true)
@@ -267,7 +274,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             {
                 unwindInfo->pPendingTable[unwindInfo->cPendingCount++] = *data;
 
-                STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%p, pending 0x%x\n",
+                STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%x, pending 0x%x\n",
                     unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
                     data->BeginAddress, unwindInfo->cPendingCount);
                 return;
