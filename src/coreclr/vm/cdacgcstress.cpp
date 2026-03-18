@@ -25,6 +25,11 @@
 #include "eeconfig.h"
 #include "gccover.h"
 #include "sstring.h"
+#include "exinfo.h"
+
+// Forward-declare the 3-param GcEnumObject used as a GCEnumCallback.
+// Defined in gcenv.ee.common.cpp; not exposed in any header.
+extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
 
 #define CDAC_LIB_NAME MAKEDLLNAME_W(W("mscordaccore_universal"))
 
@@ -55,8 +60,13 @@ static ISOSDacInterface*    s_cdacSosDac = nullptr;     // Cached QI result for 
 // Static state — common
 static bool             s_initialized = false;
 static bool             s_failFast = true;
+static DWORD            s_step = 1;       // Verify every Nth stress point (1=every point)
 static FILE*            s_logFile = nullptr;
 static CrstStatic       s_cdacLock;       // Serializes cDAC access from concurrent GC stress threads
+
+// Thread-local reentrancy guard — prevents infinite recursion when
+// allocations inside VerifyAtStressPoint trigger VerifyAtAllocPoint.
+thread_local bool       t_inVerification = false;
 
 // Verification counters (reported at shutdown)
 static volatile LONG    s_verifyCount = 0;
@@ -218,6 +228,11 @@ bool CdacGcStress::Initialize()
     // Read configuration for fail-fast behavior
     s_failFast = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacFailFast) != 0;
 
+    // Read step interval for throttling verifications
+    s_step = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacStep);
+    if (s_step == 0)
+        s_step = 1;
+
     // Cache QI results so we don't QI on every stress point
     {
         HRESULT hr = s_cdacSosInterface->QueryInterface(__uuidof(IXCLRDataProcess), reinterpret_cast<void**>(&s_cdacProcess));
@@ -254,7 +269,8 @@ bool CdacGcStress::Initialize()
         if (s_logFile != nullptr)
         {
             fprintf(s_logFile, "=== cDAC GC Stress Verification Log ===\n");
-            fprintf(s_logFile, "FailFast: %s\n\n", s_failFast ? "true" : "false");
+            fprintf(s_logFile, "FailFast: %s\n", s_failFast ? "true" : "false");
+            fprintf(s_logFile, "Step: %u (verify every %u stress points)\n\n", s_step, s_step);
         }
     }
 
@@ -271,16 +287,18 @@ void CdacGcStress::Shutdown()
         return;
 
     // Print summary to stderr so results are always visible
-    fprintf(stderr, "CDAC GC Stress: %ld verifications (%ld pass / %ld fail, %ld skipped)\n",
-        (long)s_verifyCount, (long)s_verifyPass, (long)s_verifyFail, (long)s_verifySkip);
+    LONG actualVerifications = s_verifyPass + s_verifyFail + s_verifySkip;
+    fprintf(stderr, "CDAC GC Stress: %ld stress points, %ld verifications (%ld pass / %ld fail, %ld skipped)\n",
+        (long)s_verifyCount, (long)actualVerifications, (long)s_verifyPass, (long)s_verifyFail, (long)s_verifySkip);
     STRESS_LOG3(LF_GCROOTS, LL_ALWAYS,
         "CDAC GC Stress shutdown: %d verifications (%d pass / %d fail)\n",
-        (int)s_verifyCount, (int)s_verifyPass, (int)s_verifyFail);
+        (int)actualVerifications, (int)s_verifyPass, (int)s_verifyFail);
 
     if (s_logFile != nullptr)
     {
         fprintf(s_logFile, "\n=== Summary ===\n");
-        fprintf(s_logFile, "Total verifications: %ld\n", (long)s_verifyCount);
+        fprintf(s_logFile, "Total stress points: %ld\n", (long)s_verifyCount);
+        fprintf(s_logFile, "Total verifications: %ld\n", (long)actualVerifications);
         fprintf(s_logFile, "  Passed:  %ld\n", (long)s_verifyPass);
         fprintf(s_logFile, "  Failed:  %ld\n", (long)s_verifyFail);
         fprintf(s_logFile, "  Skipped: %ld\n", (long)s_verifySkip);
@@ -405,12 +423,8 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
         ref.Flags |= SOSRefInterior;
     if (flags & GC_CALL_PINNED)
         ref.Flags |= SOSRefPinned;
-
     ref.Source = 0;
     ref.SourceType = 0;
-    ref.Register = 0;
-    ref.Offset = 0;
-    ref.StackPointer = 0;
 }
 
 static bool CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* outRefs, int* outCount)
@@ -448,7 +462,48 @@ static bool CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* ou
     unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
     flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 
-    pThread->StackWalkFrames(GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+    // Use a callback that matches DAC behavior (DacStackReferenceWalker::Callback):
+    // Only call EnumGcRefs for frameless frames and GcScanRoots for explicit frames.
+    // Deliberately skip the post-scan logic (LCG resolver promotion,
+    // GcReportLoaderAllocator, generic param context) that GcStackCrawlCallBack
+    // includes — the DAC's callback has that logic disabled (#if 0).
+    struct DiagContext { GCCONTEXT* gcctx; RuntimeRefCollectionContext* collectCtx; };
+    DiagContext diagCtx = { &gcctx, &collectCtx };
+
+    auto dacLikeCallback = [](CrawlFrame* pCF, VOID* pData) -> StackWalkAction
+    {
+        DiagContext* dCtx = (DiagContext*)pData;
+        GCCONTEXT* gcctx = dCtx->gcctx;
+
+        ResetPointerHolder<CrawlFrame*> rph(&gcctx->cf);
+        gcctx->cf = pCF;
+
+        bool fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
+
+        if (fReportGCReferences)
+        {
+            if (pCF->IsFrameless())
+            {
+                ICodeManager* pCM = pCF->GetCodeManager();
+                _ASSERTE(pCM != NULL);
+                unsigned flags = pCF->GetCodeManagerFlags();
+                pCM->EnumGcRefs(pCF->GetRegisterSet(),
+                                pCF->GetCodeInfo(),
+                                flags,
+                                GcEnumObject,
+                                gcctx);
+            }
+            else
+            {
+                Frame* pFrame = pCF->GetFrame();
+                pFrame->GcScanRoots(gcctx->f, gcctx->sc);
+            }
+        }
+
+        return SWA_CONTINUE;
+    };
+
+    pThread->StackWalkFrames(dacLikeCallback, &diagCtx, flagsStackWalk);
 
     // NOTE: ScanStackRoots also scans the separate GCFrame linked list
     // (Thread::GetGCFrame), but the DAC's GetStackReferences / DacStackReferenceWalker
@@ -548,13 +603,51 @@ static void ReportMismatch(const char* message, Thread* pThread, PCONTEXT regs)
 // Main entry point: verify at a GC stress point
 //-----------------------------------------------------------------------------
 
+bool CdacGcStress::ShouldSkipStressPoint()
+{
+    LONG count = InterlockedIncrement(&s_verifyCount);
+
+    if (s_step <= 1)
+        return false;
+
+    return (count % s_step) != 0;
+}
+
+void CdacGcStress::VerifyAtAllocPoint()
+{
+    if (!s_initialized)
+        return;
+
+    // Reentrancy guard: allocations inside VerifyAtStressPoint (e.g., SArray)
+    // would trigger this function again, causing deadlock on s_cdacLock.
+    if (t_inVerification)
+        return;
+
+    if (ShouldSkipStressPoint())
+        return;
+
+    Thread* pThread = GetThreadNULLOk();
+    if (pThread == nullptr || !pThread->PreemptiveGCDisabled())
+        return;
+
+    CONTEXT ctx;
+    RtlCaptureContext(&ctx);
+    VerifyAtStressPoint(pThread, &ctx);
+}
+
 void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 {
     _ASSERTE(s_initialized);
     _ASSERTE(pThread != nullptr);
     _ASSERTE(regs != nullptr);
 
-    InterlockedIncrement(&s_verifyCount);
+    // RAII guard: set t_inVerification=true on entry, false on exit.
+    // Prevents infinite recursion when allocations inside this function
+    // trigger VerifyAtAllocPoint again (which would deadlock on s_cdacLock).
+    struct ReentrancyGuard {
+        ReentrancyGuard() { t_inVerification = true; }
+        ~ReentrancyGuard() { t_inVerification = false; }
+    } reentrancyGuard;
 
     // Serialize cDAC access — the cDAC's ProcessedData cache and COM interfaces
     // are not thread-safe, and GC stress can fire on multiple threads.
@@ -811,7 +904,72 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
                     cdacRefs[i].Register, cdacRefs[i].Offset, (unsigned long long)cdacRefs[i].StackPointer);
             for (int i = 0; i < runtimeCount; i++)
                 fprintf(s_logFile, "  RT   [%d]: Address=0x%llx Object=0x%llx Flags=0x%x\n",
-                    i, (unsigned long long)runtimeRefsBuf[i].Address, (unsigned long long)runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags);
+                    i, (unsigned long long)runtimeRefsBuf[i].Address, (unsigned long long)runtimeRefsBuf[i].Object,
+                    runtimeRefsBuf[i].Flags);
+
+            // Dump ExInfo chain for exception-unwinding investigation
+            {
+                PTR_ExInfo pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+                int trackerIdx = 0;
+                while (pExInfo != NULL)
+                {
+                    StackFrame sfLow = pExInfo->m_ScannedStackRange.GetLowerBound();
+                    StackFrame sfHigh = pExInfo->m_ScannedStackRange.GetUpperBound();
+                    fprintf(s_logFile, "  ExInfo[%d]: UnwindStarted=%d StackLow=0x%llx StackHigh=0x%llx CSFEHClause=0x%llx CSFEnclosing=0x%llx CallerOfHandler=0x%llx\n",
+                        trackerIdx,
+                        pExInfo->m_ExceptionFlags.UnwindHasStarted() ? 1 : 0,
+                        (unsigned long long)sfLow.SP,
+                        (unsigned long long)sfHigh.SP,
+                        (unsigned long long)pExInfo->m_csfEHClause.SP,
+                        (unsigned long long)pExInfo->m_csfEnclosingClause.SP,
+                        (unsigned long long)pExInfo->m_sfCallerOfActualHandlerFrame.SP);
+                    pExInfo = (PTR_ExInfo)pExInfo->m_pPrevNestedInfo;
+                    trackerIdx++;
+                }
+                if (trackerIdx == 0)
+                    fprintf(s_logFile, "  ExInfo chain: EMPTY (no active exception trackers)\n");
+
+                // For extra cDAC refs: identify the "extra" Source and check if it's a funclet
+                if (cdacCount > runtimeCount)
+                {
+                    // Build set of RT objects for comparison
+                    for (int ci = 0; ci < cdacCount; ci++)
+                    {
+                        bool foundInRT = false;
+                        for (int ri = 0; ri < runtimeCount; ri++)
+                        {
+                            if (cdacRefs[ci].Object == runtimeRefsBuf[ri].Object &&
+                                cdacRefs[ci].Flags == runtimeRefsBuf[ri].Flags)
+                            {
+                                foundInRT = true;
+                                break;
+                            }
+                        }
+                        if (!foundInRT)
+                        {
+                            PCODE extraSource = (PCODE)cdacRefs[ci].Source;
+                            fprintf(s_logFile, "  EXTRA cDAC[%d]: Source=0x%llx Object=0x%llx\n",
+                                ci, (unsigned long long)extraSource, (unsigned long long)cdacRefs[ci].Object);
+
+                            // Check if the extra source is a funclet
+                            EECodeInfo extraCodeInfo(extraSource);
+                            if (extraCodeInfo.IsValid())
+                            {
+                                MethodDesc* pExtraMD = extraCodeInfo.GetMethodDesc();
+                                PCODE extraStart = extraCodeInfo.GetStartAddress();
+                                bool isFunclet = extraCodeInfo.IsFunclet();
+                                fprintf(s_logFile, "  EXTRA: Method=%s::%s start=0x%llx relOffset=0x%x IsFunclet=%d\n",
+                                    pExtraMD ? pExtraMD->m_pszDebugClassName : "?",
+                                    pExtraMD ? pExtraMD->m_pszDebugMethodName : "?",
+                                    (unsigned long long)extraStart,
+                                    extraCodeInfo.GetRelOffset(),
+                                    isFunclet ? 1 : 0);
+                            }
+                        }
+                    }
+                }
+            }
+
             fflush(s_logFile);
         }
     }

@@ -144,6 +144,8 @@ CDAC_TYPE_FIELD(ExceptionInfo, /*uint8*/, PassNumber, offsetof(ExInfo, m_passNum
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEHClause, offsetof(ExInfo, m_csfEHClause))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEnclosingClause, offsetof(ExInfo, m_csfEnclosingClause))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CallerOfActualHandlerFrame, offsetof(ExInfo, m_sfCallerOfActualHandlerFrame))
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint32*/, ClauseForCatchHandlerStartPC, offsetof(ExInfo, m_ClauseForCatch) + offsetof(EE_ILEXCEPTION_CLAUSE, HandlerStartPC))
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint32*/, ClauseForCatchHandlerEndPC, offsetof(ExInfo, m_ClauseForCatch) + offsetof(EE_ILEXCEPTION_CLAUSE, HandlerEndPC))
 CDAC_TYPE_END(ExceptionInfo)
 
 CDAC_TYPE_BEGIN(GCHandle)

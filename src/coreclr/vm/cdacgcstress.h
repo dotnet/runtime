@@ -40,6 +40,16 @@ public:
     //   pThread - the thread being stress-tested
     //   regs    - the register context at the stress point
     static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs);
+
+    // Verify at an allocation stress point. Captures the current thread context
+    // and calls VerifyAtStressPoint. Called from the allocation path when
+    // GCSTRESS_CDAC is enabled with allocation-based stress (0x1 + 0x20).
+    static void VerifyAtAllocPoint();
+
+    // Returns true if this stress point should be skipped based on the step interval
+    // (DOTNET_GCStressCdacStep). When true, the caller should skip both cDAC verification
+    // AND StressHeap to reduce overhead while maintaining code path diversity.
+    static bool ShouldSkipStressPoint();
 };
 
 #endif // HAVE_GCCOVER

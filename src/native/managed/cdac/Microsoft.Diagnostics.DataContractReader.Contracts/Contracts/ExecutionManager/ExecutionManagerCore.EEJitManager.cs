@@ -65,13 +65,17 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.IsRangeList)
+            {
                 return TargetPointer.Null;
+            }
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
             TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
             if (codeStart == TargetPointer.Null)
+            {
                 return TargetPointer.Null;
+            }
             Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
 
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
@@ -188,7 +192,10 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 throw new ArgumentException(nameof(rangeSection));
 
             Data.RealCodeHeader? realCodeHeader;
-            if (!GetRealCodeHeader(rangeSection, codeInfoHandle.Address, out realCodeHeader) || realCodeHeader == null)
+            // codeInfoHandle.Address is the IP, not the code start. We need to find the actual
+            // method start via the nibble map so GetRealCodeHeader reads at the correct offset.
+            TargetPointer codeStart = FindMethodCode(rangeSection, new TargetCodePointer(codeInfoHandle.Address.Value));
+            if (!GetRealCodeHeader(rangeSection, codeStart, out realCodeHeader) || realCodeHeader == null)
                 return;
 
             if (realCodeHeader.EHInfo == TargetPointer.Null)

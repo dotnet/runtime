@@ -23,6 +23,8 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
         CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
         CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
         CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
+        ClauseForCatchHandlerStartPC = target.Read<uint>(address + (ulong)type.Fields[nameof(ClauseForCatchHandlerStartPC)].Offset);
+        ClauseForCatchHandlerEndPC = target.Read<uint>(address + (ulong)type.Fields[nameof(ClauseForCatchHandlerEndPC)].Offset);
     }
 
     public TargetPointer PreviousNestedInfo { get; }
@@ -35,4 +37,6 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     public TargetPointer CSFEHClause { get; }
     public TargetPointer CSFEnclosingClause { get; }
     public TargetPointer CallerOfActualHandlerFrame { get; }
+    public uint ClauseForCatchHandlerStartPC { get; }
+    public uint ClauseForCatchHandlerEndPC { get; }
 }

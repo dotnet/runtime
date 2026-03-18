@@ -1,0 +1,25 @@
+<Project>
+  <!--
+    GCStress test orchestration targets.
+    Auto-discovers debuggee projects, builds them, and makes their paths
+    available to the test project as runtime config properties.
+  -->
+  <PropertyGroup>
+    <DebuggeeDir>$(MSBuildThisFileDirectory)Debuggees\</DebuggeeDir>
+    <DebuggeeConfiguration Condition="'$(DebuggeeConfiguration)' == ''">Release</DebuggeeConfiguration>
+  </PropertyGroup>
+
+  <!-- Auto-discover debuggee .csproj files -->
+  <ItemGroup>
+    <DebuggeeProject Include="$(DebuggeeDir)*\*.csproj" />
+  </ItemGroup>
+
+  <!-- Build all debuggees before running tests -->
+  <Target Name="BuildDebuggees"
+          BeforeTargets="Build"
+          Condition="'@(DebuggeeProject)' != ''">
+    <MSBuild Projects="@(DebuggeeProject)"
+             Targets="Restore;Build"
+             Properties="Configuration=$(DebuggeeConfiguration)" />
+  </Target>
+</Project>

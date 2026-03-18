@@ -30,6 +30,10 @@
 #include "eeprofinterfaces.inl"
 #include "frozenobjectheap.h"
 
+#ifdef HAVE_GCCOVER
+#include "cdacgcstress.h"
+#endif
+
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -411,6 +415,14 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         }
     }
 
+    // Verify cDAC stack references before the allocation-triggered GC (while refs haven't moved).
+#ifdef HAVE_GCCOVER
+    if (CdacGcStress::IsInitialized())
+    {
+        CdacGcStress::VerifyAtAllocPoint();
+    }
+#endif
+
     GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
 
     // for SOH, if there is enough space in the current allocation context, then
@@ -477,6 +489,12 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
         ee_alloc_context *threadContext = GetThreadEEAllocContext();
+#ifdef HAVE_GCCOVER
+        if (CdacGcStress::IsInitialized())
+        {
+            CdacGcStress::VerifyAtAllocPoint();
+        }
+#endif
         GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
         retVal = Alloc(threadContext, size, flags);
     }
@@ -484,6 +502,12 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
         ee_alloc_context *globalContext = &g_global_alloc_context;
+#ifdef HAVE_GCCOVER
+        if (CdacGcStress::IsInitialized())
+        {
+            CdacGcStress::VerifyAtAllocPoint();
+        }
+#endif
         GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
         retVal = Alloc(globalContext, size, flags);
     }

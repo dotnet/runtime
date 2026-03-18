@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- DumpTests is a separate test project with its own csproj -->
+    <!-- DumpTests and GCStressTests are separate test projects with their own csproj files -->
     <Compile Remove="DumpTests\**" />
+    <Compile Remove="GCStressTests\**" />
   </ItemGroup>
 
   <Import Project="..\..\subproject.props" />
