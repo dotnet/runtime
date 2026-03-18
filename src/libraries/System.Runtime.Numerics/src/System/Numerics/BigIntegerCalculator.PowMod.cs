@@ -425,6 +425,57 @@ namespace System.Numerics
                 ArrayPool<nuint>.Shared.Return(q2FromPool);
         }
 
+        /// <summary>
+        /// Chooses the sliding window size based on exponent bit length.
+        /// Larger windows reduce multiplications but increase precomputation.
+        /// Thresholds follow Java's BigInteger (adjusted for 64-bit limbs).
+        /// </summary>
+        private static int ChooseWindowSize(int expBitLength)
+        {
+            if (expBitLength <= 24)
+                return 1;
+            if (expBitLength <= 96)
+                return 3;
+            if (expBitLength <= 384)
+                return 4;
+            if (expBitLength <= 1536)
+                return 5;
+            if (expBitLength <= 4096)
+                return 6;
+
+            return 7;
+        }
+
+        /// <summary>
+        /// Returns the total bit length of the exponent (position of highest set bit + 1).
+        /// </summary>
+        private static int BitLength(ReadOnlySpan<nuint> value)
+        {
+            int length = ActualLength(value);
+            if (length == 0)
+                return 0;
+
+            nuint topLimb = value[length - 1];
+            int bits = (length - 1) * kcbitNuint;
+
+            if (nint.Size == 8)
+                bits += 64 - BitOperations.LeadingZeroCount((ulong)topLimb);
+            else
+                bits += 32 - BitOperations.LeadingZeroCount((uint)topLimb);
+
+            return bits;
+        }
+
+        /// <summary>
+        /// Gets the bit at position <paramref name="bitIndex"/> of the multi-limb exponent.
+        /// </summary>
+        private static int GetBit(ReadOnlySpan<nuint> value, int bitIndex)
+        {
+            int limbIndex = bitIndex / kcbitNuint;
+            int bitOffset = bitIndex % kcbitNuint;
+            return (int)((value[limbIndex] >> bitOffset) & 1);
+        }
+
         private static void PowCoreMontgomery(Span<nuint> value, int valueLength,
                                                ReadOnlySpan<nuint> power, ReadOnlySpan<nuint> modulus,
                                                Span<nuint> temp, Span<nuint> bits)
@@ -438,6 +489,7 @@ namespace System.Numerics
             Span<nuint> originalBits = bits;
 
             int k = modulus.Length;
+            int bufLen = k * 2;
             nuint n0inv = ComputeMontgomeryInverse(modulus[0]);
 
             // Convert value to Montgomery form: montValue = (value << k*wordBits) mod n
@@ -459,67 +511,166 @@ namespace System.Numerics
             if (shiftPool is not null)
                 ArrayPool<nuint>.Shared.Return(shiftPool);
 
-            // Initialize result to Montgomery form of 1: R mod n
-            int oneShiftLen = k + 1;
-            nuint[]? oneShiftPool = null;
-            Span<nuint> oneShifted = ((uint)oneShiftLen <= StackAllocThreshold
+            // Compute R mod n (Montgomery form of 1) and save for later
+            nuint[]? rModNPool = null;
+            Span<nuint> rModN = ((uint)k <= StackAllocThreshold
                 ? stackalloc nuint[StackAllocThreshold]
-                : oneShiftPool = ArrayPool<nuint>.Shared.Rent(oneShiftLen)).Slice(0, oneShiftLen);
-            oneShifted.Clear();
-            oneShifted[k] = 1;
+                : rModNPool = ArrayPool<nuint>.Shared.Rent(k)).Slice(0, k);
+            {
+                int oneShiftLen = k + 1;
+                nuint[]? oneShiftPool = null;
+                Span<nuint> oneShifted = ((uint)oneShiftLen <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : oneShiftPool = ArrayPool<nuint>.Shared.Rent(oneShiftLen)).Slice(0, oneShiftLen);
+                oneShifted.Clear();
+                oneShifted[k] = 1;
+                DivRem(oneShifted, modulus, default);
+                oneShifted.Slice(0, k).CopyTo(rModN);
+                if (oneShiftPool is not null)
+                    ArrayPool<nuint>.Shared.Return(oneShiftPool);
+            }
+            int rModNLength = ActualLength(rModN);
 
-            DivRem(oneShifted, modulus, default);
+            // Choose sliding window size based on exponent bit length
+            int expBitLength = BitLength(power);
+            if (expBitLength == 0)
+            {
+                // power is zero: result = 1 mod n
+                bits.Clear();
+                rModN.Slice(0, rModNLength).CopyTo(bits);
+                bits.Slice(rModNLength).Clear();
+                int resultLength = MontgomeryReduce(bits, modulus, n0inv);
+                bits.Slice(0, resultLength).CopyTo(originalBits);
+                originalBits.Slice(resultLength).Clear();
+                if (rModNPool is not null)
+                    ArrayPool<nuint>.Shared.Return(rModNPool);
+                return;
+            }
 
+            int windowSize = ChooseWindowSize(expBitLength);
+            int tableLen = 1 << (windowSize - 1);
+
+            // Cap window size so the precomputation table stays reasonable
+            // (e.g., for a 100K-limb modulus, window 7 would need 64*100K = 6.4M limbs)
+            while (windowSize > 1 && (long)tableLen * k > 64 * 1024)
+            {
+                windowSize--;
+                tableLen = 1 << (windowSize - 1);
+            }
+
+            // Precompute odd powers in Montgomery form: base^1, base^3, ..., base^(2*tableLen-1)
+            int totalTableLen = tableLen * k;
+            nuint[] tablePool = ArrayPool<nuint>.Shared.Rent(totalTableLen);
+            Span<nuint> table = tablePool.AsSpan(0, totalTableLen);
+            table.Clear();
+
+            // table[0] = base in Montgomery form
+            value.Slice(0, valueLength).CopyTo(table.Slice(0, k));
+
+            if (tableLen > 1)
+            {
+                // Use a separate product buffer for precomputation to avoid
+                // corrupting bits/temp (which are needed pristine for the main loop).
+                nuint[]? prodPool = null;
+                Span<nuint> prod = ((uint)bufLen <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : prodPool = ArrayPool<nuint>.Shared.Rent(bufLen)).Slice(0, bufLen);
+
+                // Compute base^2 in Montgomery form
+                nuint[]? base2Pool = null;
+                Span<nuint> base2 = ((uint)k <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : base2Pool = ArrayPool<nuint>.Shared.Rent(k)).Slice(0, k);
+                base2.Clear();
+
+                prod.Clear();
+                Square(value.Slice(0, valueLength), prod.Slice(0, valueLength * 2));
+                MontgomeryReduce(prod, modulus, n0inv);
+                prod.Slice(0, k).CopyTo(base2);
+                int base2Length = ActualLength(base2);
+
+                // table[i] = table[i-1] * base^2 (mod n, in Montgomery form)
+                for (int i = 1; i < tableLen; i++)
+                {
+                    ReadOnlySpan<nuint> prev = table.Slice((i - 1) * k, k);
+                    int prevLength = ActualLength(prev);
+
+                    prod.Clear();
+                    Multiply(prev.Slice(0, prevLength), (ReadOnlySpan<nuint>)base2.Slice(0, base2Length),
+                             prod.Slice(0, prevLength + base2Length));
+                    MontgomeryReduce(prod, modulus, n0inv);
+                    prod.Slice(0, k).CopyTo(table.Slice(i * k, k));
+                }
+
+                if (base2Pool is not null)
+                    ArrayPool<nuint>.Shared.Return(base2Pool);
+                if (prodPool is not null)
+                    ArrayPool<nuint>.Shared.Return(prodPool);
+            }
+
+            // Initialize result to R mod n (bits and temp are untouched from caller)
             bits.Clear();
-            oneShifted.Slice(0, k).CopyTo(bits);
-            int resultLength = ActualLength(bits.Slice(0, k));
+            rModN.Slice(0, rModNLength).CopyTo(bits);
+            int resultLen = rModNLength;
 
-            if (oneShiftPool is not null)
-                ArrayPool<nuint>.Shared.Return(oneShiftPool);
+            if (rModNPool is not null)
+                ArrayPool<nuint>.Shared.Return(rModNPool);
 
-            // Square-and-multiply loop processing exponent bits right-to-left
-            for (int i = 0; i < power.Length - 1; i++)
+            // Left-to-right sliding window exponentiation
+            int bitPos = expBitLength - 1;
+            while (bitPos >= 0)
             {
-                nuint p = power[i];
-                for (int j = 0; j < kcbitNuint; j++)
+                if (GetBit(power, bitPos) == 0)
                 {
-                    if ((p & 1) == 1)
+                    resultLen = SquareSelf(ref bits, resultLen, ref temp);
+                    resultLen = MontgomeryReduce(bits, modulus, n0inv);
+                    bitPos--;
+                }
+                else
+                {
+                    // Collect up to windowSize bits starting from bitPos
+                    int wLen = 1;
+                    int wValue = 1;
+                    for (int i = 1; i < windowSize && bitPos - i >= 0; i++)
                     {
-                        resultLength = MultiplySelf(ref bits, resultLength, value.Slice(0, valueLength), ref temp);
-                        resultLength = MontgomeryReduce(bits, modulus, n0inv);
+                        wValue = (wValue << 1) | GetBit(power, bitPos - i);
+                        wLen++;
                     }
-                    valueLength = SquareSelf(ref value, valueLength, ref temp);
-                    valueLength = MontgomeryReduce(value, modulus, n0inv);
-                    p >>= 1;
+
+                    // Trim trailing zeros to ensure the window value is odd
+                    while ((wValue & 1) == 0)
+                    {
+                        wValue >>= 1;
+                        wLen--;
+                    }
+
+                    // Square for each bit in the window
+                    for (int i = 0; i < wLen; i++)
+                    {
+                        resultLen = SquareSelf(ref bits, resultLen, ref temp);
+                        resultLen = MontgomeryReduce(bits, modulus, n0inv);
+                    }
+
+                    // Multiply by the precomputed odd power
+                    Debug.Assert(wValue >= 1 && (wValue & 1) == 1);
+                    ReadOnlySpan<nuint> entry = table.Slice(((wValue - 1) >> 1) * k, k);
+                    int entryLength = ActualLength(entry);
+                    resultLen = MultiplySelf(ref bits, resultLen, entry.Slice(0, entryLength), ref temp);
+                    resultLen = MontgomeryReduce(bits, modulus, n0inv);
+
+                    bitPos -= wLen;
                 }
             }
 
-            // Last exponent limb
-            {
-                nuint p = power[power.Length - 1];
-                while (p != 0)
-                {
-                    if ((p & 1) == 1)
-                    {
-                        resultLength = MultiplySelf(ref bits, resultLength, value.Slice(0, valueLength), ref temp);
-                        resultLength = MontgomeryReduce(bits, modulus, n0inv);
-                    }
-                    if (p != 1)
-                    {
-                        valueLength = SquareSelf(ref value, valueLength, ref temp);
-                        valueLength = MontgomeryReduce(value, modulus, n0inv);
-                    }
-                    p >>= 1;
-                }
-            }
+            ArrayPool<nuint>.Shared.Return(tablePool);
 
             // Convert result from Montgomery form: REDC(montResult)
-            bits.Slice(resultLength).Clear();
-            resultLength = MontgomeryReduce(bits, modulus, n0inv);
+            bits.Slice(resultLen).Clear();
+            resultLen = MontgomeryReduce(bits, modulus, n0inv);
 
             // Copy result back to the original output buffer
-            bits.Slice(0, resultLength).CopyTo(originalBits);
-            originalBits.Slice(resultLength).Clear();
+            bits.Slice(0, resultLen).CopyTo(originalBits);
+            originalBits.Slice(resultLen).Clear();
         }
 
         /// <summary>
