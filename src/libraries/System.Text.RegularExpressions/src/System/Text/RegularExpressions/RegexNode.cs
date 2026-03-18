@@ -464,12 +464,18 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void FinalReduce()
         {
+            int childCount = ChildCount();
+            if (childCount == 0)
+            {
+                return;
+            }
+
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return;
             }
 
-            for (int i = 0, childCount = ChildCount(); i < childCount; i++)
+            for (int i = 0; i < childCount; i++)
             {
                 RegexNode child = Child(i);
                 child.FinalReduce();
