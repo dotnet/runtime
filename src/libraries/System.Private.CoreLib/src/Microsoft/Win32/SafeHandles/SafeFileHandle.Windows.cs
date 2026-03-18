@@ -71,7 +71,6 @@ namespace Microsoft.Win32.SafeHandles
 
                 const int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
 
-                // We could consider specifying a larger buffer size.
                 tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(
                     pipeName,
                     openMode,

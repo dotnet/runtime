@@ -464,7 +464,7 @@ namespace System.Diagnostics
                     {
                         if (startInfo.RedirectStandardInput)
                         {
-                            CreatePipe(out parentInputPipeHandle, out childInputPipeHandle, true, asyncReads: false);
+                            CreatePipe(out parentInputPipeHandle, out childInputPipeHandle, true);
                         }
                         else
                         {
@@ -473,7 +473,7 @@ namespace System.Diagnostics
 
                         if (startInfo.RedirectStandardOutput)
                         {
-                            CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false, asyncReads: true);
+                            CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false);
                         }
                         else
                         {
@@ -482,7 +482,7 @@ namespace System.Diagnostics
 
                         if (startInfo.RedirectStandardError)
                         {
-                            CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false, asyncReads: true);
+                            CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false);
                         }
                         else
                         {
@@ -809,12 +809,11 @@ namespace System.Diagnostics
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
         // We therefore only open the parent's end of the pipe for async I/O (overlapped), while the
         // child's end is always opened for synchronous I/O so the child process can use it normally.
-        private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs, bool asyncReads)
+        private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             // Only the parent's read end benefits from async I/O; stdin is always sync.
             // asyncRead applies to the read handle; asyncWrite to the write handle.
-            bool asyncRead = !parentInputs && asyncReads;
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: asyncRead, asyncWrite: false);
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: !parentInputs, asyncWrite: false);
 
             // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
             // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
