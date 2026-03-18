@@ -283,8 +283,8 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(serialized.Span, AsnEncodingRules.BER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(serialized.Span, AsnEncodingRules.BER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
 
                 reader.ThrowIfNotEmpty();
                 while (sequenceReader.HasData)

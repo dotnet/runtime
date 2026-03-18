@@ -296,7 +296,7 @@ End
 
 Crst LoaderAllocatorReferences
     AcquiredBefore LoaderAllocator
-    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable
+    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable ILStubGen
 End
 
 Crst AssemblyList

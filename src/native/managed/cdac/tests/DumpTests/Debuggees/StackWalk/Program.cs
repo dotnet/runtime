@@ -15,19 +15,31 @@ internal static class Program
 
     private static void Main()
     {
-        MethodA();
+        MethodA(0);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void MethodA()
+    private static void MethodA(int depth)
     {
+        if (depth < 0)
+            return;
         MethodB();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void MethodB()
     {
-        MethodC();
+        // The try/finally ensures localObj is stored as a real IL local variable,
+        // because the evaluation stack is empty at finally-block entry per ECMA-335.
+        object localObj = new object();
+        try
+        {
+            MethodC();
+        }
+        finally
+        {
+            GC.KeepAlive(localObj);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -3764,6 +3764,8 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC BOOL last_gc_before_oom;
 
 #ifdef MULTIPLE_HEAPS
+    // approximate alloc_context_count. This is updated by multiple threads without locking; the
+    // increments/decrements are non-interlocked so the value is only approximate.
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int) alloc_context_count;
 
     // Init-ed during a GC and updated by allocator after that GC

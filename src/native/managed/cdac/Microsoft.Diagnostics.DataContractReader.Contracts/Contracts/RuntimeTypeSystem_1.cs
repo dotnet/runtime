@@ -18,6 +18,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
+    private readonly TargetPointer _continuationMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -28,6 +29,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
     private readonly Dictionary<TypeKeyByName, TypeHandle> _typeHandlesByName = new();
+
+    public void Flush()
+    {
+        _methodTables.Clear();
+        _methodDescs.Clear();
+        _typeHandles.Clear();
+        _typeHandlesByName.Clear();
+    }
 
     internal struct MethodTable
     {
@@ -396,10 +405,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    internal RuntimeTypeSystem_1(Target target, TypeValidation typeValidation, MethodValidation methodValidation, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
+    internal RuntimeTypeSystem_1(Target target, TypeValidation typeValidation, MethodValidation methodValidation, TargetPointer freeObjectMethodTablePointer, TargetPointer continuationMethodTablePointer, ulong methodDescAlignment)
     {
         _target = target;
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
+        _continuationMethodTablePointer = continuationMethodTablePointer;
         _methodDescAlignment = methodDescAlignment;
         _typeValidation = typeValidation;
         _methodValidation = methodValidation;
@@ -407,6 +417,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 
@@ -526,6 +537,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+        && _continuationMethodTablePointer != TargetPointer.Null
+        && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
     public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
     public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
 

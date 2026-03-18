@@ -130,7 +130,7 @@ export function exit(exitCode: number, reason: any): void {
                     }
                 }
             }
-            if (!runtimeState.dotnetReady) {
+            if (runtimeState.creatingRuntime) {
                 dotnetLogger.info(`Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
             }

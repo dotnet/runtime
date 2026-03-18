@@ -15,11 +15,13 @@ internal readonly struct SyncBlock_1 : ISyncBlock
     private const string LockNamespace = "System.Threading";
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
+    private readonly ulong _syncBlockLinkOffset;
 
-    internal SyncBlock_1(Target target, TargetPointer syncTableEntries)
+    internal SyncBlock_1(Target target, TargetPointer syncTableEntries, ulong syncBlockLinkOffset)
     {
         _target = target;
         _syncTableEntries = syncTableEntries;
+        _syncBlockLinkOffset = syncBlockLinkOffset;
     }
 
     public TargetPointer GetSyncBlock(uint index)
@@ -95,15 +97,43 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
     public uint GetAdditionalThreadCount(TargetPointer syncBlock)
     {
+        // TODO: read conditional weak table to get additional thread count
+        return 0;
+    }
+
+    public TargetPointer GetSyncBlockFromCleanupList()
+    {
+        TargetPointer syncBlockCache = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.SyncBlockCache));
+        Data.SyncBlockCache cache = _target.ProcessedData.GetOrAdd<Data.SyncBlockCache>(syncBlockCache);
+        TargetPointer cleanupBlockList = cache.CleanupBlockList;
+        if (cleanupBlockList == TargetPointer.Null)
+            return TargetPointer.Null;
+        return new TargetPointer(cleanupBlockList.Value - _syncBlockLinkOffset);
+    }
+
+    public TargetPointer GetNextSyncBlock(TargetPointer syncBlock)
+    {
         Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
-        uint threadCount = 0;
-        TargetPointer next = sb.LinkNext;
-        while (next != TargetPointer.Null && threadCount < 1000)
-        {
-            threadCount++;
-            next = _target.ProcessedData.GetOrAdd<Data.SLink>(next).Next;
-        }
-        return threadCount;
+        if (sb.LinkNext == TargetPointer.Null)
+            return TargetPointer.Null;
+        return new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
+    }
+
+    public bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)
+    {
+        rcw = TargetPointer.Null;
+        ccw = TargetPointer.Null;
+        ccf = TargetPointer.Null;
+
+        Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
+        Data.InteropSyncBlockInfo? interopInfo = sb.InteropInfo;
+        if (interopInfo == null)
+            return false;
+
+        rcw = interopInfo.RCW & ~1ul;
+        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
+        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
+        return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
     }
 
     private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)

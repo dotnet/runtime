@@ -178,5 +178,25 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
             return true;
         }
+
+        public override void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr)
+        {
+            startAddr = TargetPointer.Null;
+            endAddr = TargetPointer.Null;
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            Data.RealCodeHeader? realCodeHeader;
+            if (!GetRealCodeHeader(rangeSection, codeInfoHandle.Address, out realCodeHeader) || realCodeHeader == null)
+                return;
+
+            if (realCodeHeader.JitEHInfo == null)
+                return;
+
+            TargetNUInt numEHInfos = Target.ReadNUInt(realCodeHeader.JitEHInfo.Address - (ulong)Target.PointerSize);
+            startAddr = realCodeHeader.JitEHInfo.Clauses;
+            endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
+        }
     }
 }

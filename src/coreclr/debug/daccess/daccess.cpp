@@ -1121,6 +1121,12 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
 
     if (typeHandle.IsNull())
     {
+        if (mod == NULL)
+        {
+            status = E_INVALIDARG;
+            goto Fail;
+        }
+         
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
@@ -3279,6 +3285,9 @@ ClrDataAccess::Flush(void)
     // Free MD import objects.
     //
     m_mdImports.Flush();
+
+    // Free cached patch entries for thread unwinding
+    m_patchCache.Flush();
 
     // Free instance memory.
     m_instances.Flush();
@@ -6372,27 +6381,22 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
     PEImageLayout   *layout = NULL;
-    IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
-    if (pDir == NULL || pDir->Size == 0)
+    mdImage = pPEAssembly->GetPEImage();
+    if (mdImage != NULL)
     {
-        mdImage = pPEAssembly->GetPEImage();
-        if (mdImage != NULL)
-        {
-            layout = mdImage->GetLoadedLayout();
-            pDir = &layout->GetCorHeader()->MetaData;
+        layout = mdImage->GetLoadedLayout();
 
-            // In IL image case, we do not have any hint to IL metadata since it is stored
-            // in the corheader.
-            //
-            dwRvaHint = 0;
-            dwDataSize = pDir->Size;
-        }
-        else
-        {
-            return false;
-        }
+        // In IL image case, we do not have any hint to IL metadata since it is stored
+        // in the corheader.
+        //
+        dwRvaHint = 0;
+        dwDataSize = layout->GetCorHeader()->MetaData.Size;
+    }
+    else
+    {
+        return false;
     }
 
     // Do not fail if path can not be read. Triage dumps don't have paths and we want to fallback
@@ -8335,11 +8339,23 @@ HRESULT DacGCBookkeepingEnumerator::Init()
 
 HRESULT DacHandleTableMemoryEnumerator::Init()
 {
-    int max_slots = 1;
+    // The GC sets the number of slots based on the number of processors. Prior to
+    // DATAS, num_processors == GCHeapCount() for ServerGC. Unfortunately the GC DAC
+    // contract didn't record the number of processors independently until minor
+    // version 8 and DATAS was enabled prior to that. When using a standalone GC version
+    // < 8 the DAC approximates the processor count as GCHeapCount() because we don't
+    // have more accurate data to work with. This may cause handle enumeration to be
+    // incomplete.
+    uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = GCHeapCount();
+    {
+        if (g_gcDacGlobals->minor_version_number >= 8)
+            max_slots = *g_gcDacGlobals->g_totalCpuCount;
+        else
+            max_slots = GCHeapCount();
+    }
 #endif // FEATURE_SVR_GC
 
     // Cap the number of regions we will walk in case we hit an infinite loop due
@@ -8352,9 +8368,9 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
         {
             if (map->pBuckets[i] != NULL)
             {
-                for (int j = 0; j < max_slots ; ++j)
+                for (uint32_t j = 0; j < max_slots ; ++j)
                 {
-                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[(int)j];
                     DPTR(dac_handle_table_segment) pFirstSegment = pTable->pSegmentList;
                     DPTR(dac_handle_table_segment) curr = pFirstSegment;
 
@@ -8363,7 +8379,7 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
                         SOSMemoryRegion mem = {0};
                         mem.Start = curr.GetAddr();
                         mem.Size = HANDLE_SEGMENT_SIZE;
-                        mem.Heap = j; // heap number
+                        mem.Heap = (int)j; // heap number
 
                         mRegions.Add(mem);
 

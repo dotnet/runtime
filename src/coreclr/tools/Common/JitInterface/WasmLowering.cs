@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using ILCompiler.DependencyAnalysis.Wasm;
+
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface

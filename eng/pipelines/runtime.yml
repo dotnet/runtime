@@ -35,6 +35,7 @@ pr:
     include:
     - main
     - release/*.*
+    - copilot/*
   paths:
     include:
     - '*'
@@ -961,8 +962,6 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: true
-          # TODO consider shouldContinueOnError: true
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome

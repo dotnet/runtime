@@ -64,6 +64,8 @@ public sealed class DumpInfo
             System.Runtime.InteropServices.Architecture.X86 => "x86",
             System.Runtime.InteropServices.Architecture.Arm64 => "arm64",
             System.Runtime.InteropServices.Architecture.Arm => "arm",
+            System.Runtime.InteropServices.Architecture.RiscV64 => "riscv64",
+            System.Runtime.InteropServices.Architecture.LoongArch64 => "loongarch64",
             _ => "unknown",
         };
 

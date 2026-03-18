@@ -736,6 +736,11 @@ namespace System.Text.RegularExpressions
                                     }
                                     Ldloc(pos);
                                     BltFar(returnFalse);
+
+                                    // base.runtextpos = pos;
+                                    Ldthis();
+                                    Ldloc(pos);
+                                    Stfld(RuntextposField);
                                 }
 
                                 MarkLabel(label);
