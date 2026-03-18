@@ -6015,7 +6015,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                         }
                         else
                         {
-                            tmp2->SetUnusedValue();
+                            tmp1->SetUnusedValue();
                         }
 
                         BlockRange().Remove(node);
