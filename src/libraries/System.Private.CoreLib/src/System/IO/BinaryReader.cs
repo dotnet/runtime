@@ -183,6 +183,22 @@ namespace System.IO
 
         public virtual byte ReadByte() => InternalReadByte();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureCanRead(int byteCount)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
+            ThrowIfDisposed();
+
+            if (_stream.CanSeek)
+            {
+                long remaining = _stream.Length - _stream.Position;
+                if (remaining < 0 || remaining < byteCount)
+                {
+                    ThrowHelper.ThrowEndOfFileException();
+                }
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // Inlined to avoid some method call overhead with InternalRead.
         private byte InternalReadByte()
         {
@@ -255,6 +271,8 @@ namespace System.IO
             {
                 return string.Empty;
             }
+
+            EnsureCanRead(stringLength);
 
             Span<byte> charBytes = stackalloc byte[MaxCharBytesSize];
 
@@ -466,6 +484,7 @@ namespace System.IO
         public virtual void ReadExactly(Span<byte> buffer)
         {
             ThrowIfDisposed();
+            EnsureCanRead(buffer.Length);
             _stream.ReadExactly(buffer);
         }
 
@@ -481,7 +500,7 @@ namespace System.IO
             }
             else
             {
-                ThrowIfDisposed();
+                EnsureCanRead(buffer.Length);
 
                 _stream.ReadExactly(buffer);
 
@@ -523,8 +542,14 @@ namespace System.IO
                         return;
                     }
                     byte[] buffer = ArrayPool<byte>.Shared.Rent(numBytes);
-                    _stream.ReadExactly(buffer.AsSpan(0, numBytes));
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    try
+                    {
+                        _stream.ReadExactly(buffer.AsSpan(0, numBytes));
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                     break;
             }
         }
