@@ -928,6 +928,49 @@ namespace System.Numerics.Tests
             Assert.Equal(BigInteger.Zero, nintMaxPlus1 ^ nintMaxPlus1);
             Assert.Equal(BigInteger.Zero, nintMin ^ nintMin);
         }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(20)]
+        [InlineData(32)]
+        public void ModPowOddModulus(int limbCount)
+        {
+            Random rng = new Random(42);
+            int byteCount = limbCount * nint.Size;
+
+            byte[] modBytes = new byte[byteCount + 1];
+            rng.NextBytes(modBytes);
+            modBytes[^1] = 0;
+            modBytes[0] |= 1; // ensure odd
+
+            BigInteger mod = new BigInteger(modBytes);
+
+            byte[] baseBytes = new byte[byteCount / 2 + 1];
+            rng.NextBytes(baseBytes);
+            baseBytes[^1] = 0;
+            BigInteger b = new BigInteger(baseBytes);
+
+            BigInteger exp = 65537;
+
+            BigInteger result = BigInteger.ModPow(b, exp, mod);
+
+            BigInteger check = BigInteger.One;
+            BigInteger bb = b % mod;
+            int e = 65537;
+            while (e > 0)
+            {
+                if ((e & 1) == 1)
+                    check = (check * bb) % mod;
+                bb = (bb * bb) % mod;
+                e >>= 1;
+            }
+
+            Assert.Equal(check, result);
+        }
     }
 
     internal static class BigIntegerTestExtensions
