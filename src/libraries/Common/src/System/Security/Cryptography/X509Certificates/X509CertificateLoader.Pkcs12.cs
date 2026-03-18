@@ -1112,7 +1112,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 decrypted = KeyFormatHelper.DecryptPkcs8(
                                     password,
-                                    bag.BagValue,
+                                    bag.BagValue.Span,
                                     out contentRead);
 
                                 try
@@ -1140,7 +1140,7 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 decrypted = KeyFormatHelper.DecryptPkcs8(
                                     password,
-                                    bag.BagValue,
+                                    bag.BagValue.Span,
                                     out contentRead);
 
                                 try
