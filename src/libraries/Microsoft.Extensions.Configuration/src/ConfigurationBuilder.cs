@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
         public IConfigurationBuilder Add(IConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             _sources.Add(source);
             return this;

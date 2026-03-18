@@ -3,9 +3,12 @@
 // Tests GC.Collect(0)
 
 using System;
+using Xunit;
 
 public class Test_Collect0 {
-	public static int Main() {
+	[Fact]
+	[ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
+	public static int TestEntryPoint() {
 
 		int[] array = new int[25];
 		int agen1 = GC.GetGeneration(array);

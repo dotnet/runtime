@@ -80,7 +80,7 @@ namespace System
         // Converts the boolean value of this instance to a String.
         public override string ToString()
         {
-            if (false == m_value)
+            if (!m_value)
             {
                 return FalseLiteral;
             }
@@ -96,22 +96,17 @@ namespace System
         {
             if (m_value)
             {
-                if (destination.Length > 3)
+                if (TrueLiteral.TryCopyTo(destination))
                 {
-                    ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720054ul : 0x54007200750065ul; // "True"
-                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in true_val);
-                    charsWritten = 4;
+                    charsWritten = TrueLiteral.Length;
                     return true;
                 }
             }
             else
             {
-                if (destination.Length > 4)
+                if (FalseLiteral.TryCopyTo(destination))
                 {
-                    ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
-                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), in fals_val);
-                    destination[4] = 'e';
-                    charsWritten = 5;
+                    charsWritten = FalseLiteral.Length;
                     return true;
                 }
             }
@@ -160,7 +155,7 @@ namespace System
             {
                 return 0;
             }
-            else if (m_value == false)
+            else if (!m_value)
             {
                 return -1;
             }
@@ -173,7 +168,7 @@ namespace System
             {
                 return 0;
             }
-            else if (m_value == false)
+            else if (!m_value)
             {
                 return -1;
             }

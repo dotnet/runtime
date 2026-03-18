@@ -67,7 +67,7 @@
 
 #define szFileNameExistsWithExt           "searchpathw.c"
 
-char  fileloc_SearchPathW_test1[_MAX_PATH];
+char  fileloc_SearchPathW_test1[MAX_PATH];
 
 void removeFileHelper_SearchPathW_test1(LPSTR pfile, int location)
 {
@@ -105,7 +105,7 @@ PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPath
     WCHAR* lpFileName    = NULL;
     WCHAR* lpExtension   = NULL;
     DWORD  nBufferLength = 0;
-    WCHAR  lpBuffer[_MAX_PATH];
+    WCHAR  lpBuffer[MAX_PATH];
     WCHAR** lpFilePart    = NULL;
     DWORD  error         = 0;
     DWORD  result        = 0;
@@ -132,7 +132,7 @@ PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPath
         Fail("ERROR: GetTempPathA failed to get a path\n");
     }
 
-    memset(fileloc_SearchPathW_test1, 0, _MAX_PATH);
+    memset(fileloc_SearchPathW_test1, 0, MAX_PATH);
     sprintf_s(fileloc_SearchPathW_test1, ARRAY_SIZE(fileloc_SearchPathW_test1), "%s%s", fullPath, szFileNameExistsWithExt);
 
     RemoveAll_SearchPathW_test1();

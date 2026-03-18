@@ -19,10 +19,9 @@ namespace Internal.TypeSystem.Interop
 
             typeDesc = typeDesc.UnderlyingType;
 
-            // TODO: There are primitive types which require marshalling, such as bool, char.
             if (typeDesc.IsPrimitive)
             {
-                return false;
+                return typeDesc.Category is TypeFlags.Boolean or TypeFlags.Char;
             }
 
             MetadataType type = typeDesc as MetadataType;
@@ -32,11 +31,11 @@ namespace Internal.TypeSystem.Interop
             }
 
             //
-            // For struct marshalling it is required to have either Sequential
-            // or Explicit layout. For Auto layout the P/Invoke marshalling code
+            // For struct marshalling it is required to not have Auto layout.
+            // For Auto layout the P/Invoke marshalling code
             // will throw appropriate error message.
             //
-            if (!type.HasLayout())
+            if (type.IsAutoLayout)
                 return false;
 
             if (!type.IsValueType)
@@ -124,7 +123,7 @@ namespace Internal.TypeSystem.Interop
             TypeSystemContext context = method.Context;
             MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
                 new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-            MethodDesc exceptionCtor = InteropTypes.GetMarshalDirectiveException(context).GetKnownMethod(".ctor", ctorSignature);
+            MethodDesc exceptionCtor = InteropTypes.GetMarshalDirectiveException(context).GetKnownMethod(".ctor"u8, ctorSignature);
 
             ILCodeStream codeStream = emitter.NewCodeStream();
             codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));

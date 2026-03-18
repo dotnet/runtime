@@ -22,7 +22,7 @@ namespace System.IO.Enumeration
             entry.OriginalRootDirectory = originalRootDirectory;
         }
 
-        internal unsafe Interop.NtDll.FILE_FULL_DIR_INFORMATION* _info;
+        internal Interop.NtDll.FILE_FULL_DIR_INFORMATION* _info;
 
         /// <summary>Gets the full path of the directory this entry resides in.</summary>
         /// <value>The full path of this entry's directory.</value>

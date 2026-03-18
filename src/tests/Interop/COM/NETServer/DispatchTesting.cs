@@ -55,6 +55,7 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
         switch (excep)
         {
         case IDispatchTesting_Exception.Disp:
+        case IDispatchTesting_Exception.DispLegacy:
             throw new Exception();
         case IDispatchTesting_Exception.HResult:
         case IDispatchTesting_Exception.Int:
@@ -87,5 +88,18 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
     public System.Collections.IEnumerator GetEnumerator()
     {
         return Enumerable.Range(0, 10).ToList().GetEnumerator();
+    }
+
+    public object TriggerCustomMarshaler(object objIn, ref object objRef)
+    {
+        if (!Marshal.IsComObject(objIn))
+            throw new ArgumentException("objIn is not a COM object");
+
+        if (!Marshal.IsComObject(objRef))
+            throw new ArgumentException("objRef is not a COM object");
+
+        var ret = objRef;
+        objRef = objIn;
+        return ret;
     }
 }

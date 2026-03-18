@@ -344,7 +344,7 @@ public static class VectorMgdMgd
                 {
                     if (!printedMsg)
                     {
-                        Console.WriteLine("{0}: FAILED - Vector64<T> checkValues(index = {1}, i = {2}) {3}",
+                        Console.WriteLine("{0}: FAILED - Vector128<T> checkValues(index = {1}, i = {2}) {3}",
                                           msg, index, i, isReflection ? "(via reflection)" : "" );
                         printedMsg = true;
                     }

@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         private const int InvalidArgFailure = unchecked((int)0x80008081);
         private const int HostInvalidState = unchecked((int)0x800080a3);
         private const int HostPropertyNotFound = unchecked((int)0x800080a4);
-        private const int CoreHostIncompatibleConfig = unchecked((int)0x800080a5);
+        private const int HostIncompatibleConfig = unchecked((int)0x800080a5);
         private const int Success_HostAlreadyInitialized = 0x00000001;
         private const int Success_DifferentRuntimeProperties = 0x00000002;
 
@@ -327,10 +327,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.ConfigMultiple)]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.Mixed)]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.NonContextMixedAppHost)]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.NonContextMixedDotnet)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.ConfigMultiple)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.Mixed)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.NonContextMixedAppHost)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.NonContextMixedDotnet)]
         public void CompatibilityCheck_Frameworks(string scenario, FrameworkCompatibilityTestData testData)
         {
             if (scenario != Scenario.ConfigMultiple && scenario != Scenario.Mixed && scenario != Scenario.NonContextMixedAppHost && scenario != Scenario.NonContextMixedDotnet)
@@ -420,27 +420,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 else
                 {
                     result.Should().Fail()
-                        .And.FailToInitializeContextForConfig(CoreHostIncompatibleConfig)
+                        .And.FailToInitializeContextForConfig(HostIncompatibleConfig)
                         .And.HaveStdErrMatching($".*The specified framework '{frameworkName}', version '{version}', apply_patches=[0-1], version_compatibility_range=[^ ]* is incompatible with the previously loaded version '{SharedTestState.NetCoreAppVersion}'.*");
                 }
             }
             else
             {
                 result.Should().Fail()
-                    .And.FailToInitializeContextForConfig(CoreHostIncompatibleConfig)
+                    .And.FailToInitializeContextForConfig(HostIncompatibleConfig)
                     .And.HaveStdErrContaining($"The specified framework '{frameworkName}' is not present in the previously loaded runtime");
             }
         }
 
         [Theory]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.ConfigMultiple, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.ConfigMultiple, true })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.Mixed, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.Mixed, true })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedAppHost, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedAppHost, true })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedDotnet, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedDotnet, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.ConfigMultiple, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.ConfigMultiple, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.Mixed, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.Mixed, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedAppHost, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedAppHost, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedDotnet, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedDotnet, true })]
         public void CompatibilityCheck_Properties(string scenario, bool hasMultipleProperties, PropertyTestData[] properties)
         {
             if (scenario != Scenario.ConfigMultiple && scenario != Scenario.Mixed && scenario != Scenario.NonContextMixedAppHost && scenario != Scenario.NonContextMixedDotnet)
@@ -683,7 +683,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new DotNetBuilder(BaseDirectory, TestContext.BuiltDotNet.BinPath, "mockRuntime")
+                var dotNet = new DotNetBuilder(BaseDirectory, HostTestContext.BuiltDotNet.BinPath, "mockRuntime")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(NetCoreAppVersion)
                     .Build();
                 DotNetRoot = dotNet.BinPath;

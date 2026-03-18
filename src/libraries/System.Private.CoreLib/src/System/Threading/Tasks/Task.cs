@@ -123,15 +123,12 @@ namespace System.Threading.Tasks
         // The delegate to invoke for a delegate-backed Task.
         // This field also may be used by async state machines to cache an Action.
         internal Delegate? m_action;
-
         private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
 
         private Task? ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
-        private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
-        private TaskStateFlags StateFlags => (TaskStateFlags)(m_stateFlags & ~(int)TaskStateFlags.OptionsMask); // Private property used to help with debugging
 
         [Flags]
         internal enum TaskStateFlags
@@ -176,10 +173,17 @@ namespace System.Threading.Tasks
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
         internal static bool s_asyncDebuggingEnabled; // false by default
 
-        // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
+        // This dictionary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
+#if !MONO
+        // Dictionary that relates a runtime-async Task's ID to the timestamp when the current inflight invocation started.
+        // Needed because Continuations that are inflight have already been dequeued from the chain.
+        private static Dictionary<int, long>? s_runtimeAsyncTaskTimestamps;
+        // Dictionary to store the timestamp when the logical invocation to which the Continuation belongs started.
+        private static Dictionary<object, long>? s_runtimeAsyncContinuationTimestamps;
+#endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
         internal static bool AddToActiveTasks(Task task)
@@ -212,6 +216,73 @@ namespace System.Threading.Tasks
                 activeTasks.Remove(taskId);
             }
         }
+
+#if !MONO
+        internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long timestamp)
+        {
+            Dictionary<object, long> continuationTimestamps =
+                Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<object, long>(ReferenceEqualityComparer.Instance), null) ??
+                s_runtimeAsyncContinuationTimestamps;
+
+            lock (continuationTimestamps)
+            {
+                continuationTimestamps.TryAdd(continuation, timestamp);
+            }
+        }
+
+        internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long timestamp)
+        {
+            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+            {
+                timestamp = 0;
+                return false;
+            }
+
+            lock (continuationTimestamps)
+            {
+                return continuationTimestamps.TryGetValue(continuation, out timestamp);
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
+        {
+            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
+
+            lock (continuationTimestamps)
+            {
+                continuationTimestamps.Remove(continuation);
+            }
+        }
+
+        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, long inflightTimestamp)
+        {
+            Dictionary<int, long> runtimeAsyncTaskTimestamps =
+                Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncTaskTimestamps, new Dictionary<int, long>(), null) ??
+                s_runtimeAsyncTaskTimestamps;
+
+            lock (runtimeAsyncTaskTimestamps)
+            {
+                runtimeAsyncTaskTimestamps[task.Id] = inflightTimestamp;
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTaskTimestamp(Task task)
+        {
+            Dictionary<int, long>? runtimeAsyncTaskTimestamps = s_runtimeAsyncTaskTimestamps;
+            if (runtimeAsyncTaskTimestamps is null)
+                return;
+
+            lock (runtimeAsyncTaskTimestamps)
+            {
+                runtimeAsyncTaskTimestamps.Remove(task.Id);
+            }
+        }
+#endif
 
         // We moved a number of Task properties into this class.  The idea is that in most cases, these properties never
         // need to be accessed during the life cycle of a Task, so we don't want to instantiate them every time.  Once
@@ -298,6 +369,7 @@ namespace System.Threading.Tasks
         // Constructs the task as already completed
         internal Task(bool canceled, TaskCreationOptions creationOptions, CancellationToken ct)
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             int optionFlags = (int)creationOptions;
             if (canceled)
             {
@@ -317,6 +389,7 @@ namespace System.Threading.Tasks
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
         internal Task()
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             m_stateFlags = (int)TaskStateFlags.WaitingForActivation | (int)InternalTaskOptions.PromiseTask;
         }
 
@@ -325,6 +398,7 @@ namespace System.Threading.Tasks
         // (action,TCO).  It should always be true.
         internal Task(object? state, TaskCreationOptions creationOptions, bool promiseStyle)
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             Debug.Assert(promiseStyle, "Promise CTOR: promiseStyle was false");
 
             // Check the creationOptions. We allow the AttachedToParent option to be specified for promise tasks.
@@ -505,6 +579,7 @@ namespace System.Threading.Tasks
         internal Task(Delegate action, object? state, Task? parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler? scheduler)
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             if (action == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
@@ -819,6 +894,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
+        [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
         internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
             (m_stateFlags & (int)TaskStateFlags.WaitCompletionNotification) != 0;
 
@@ -1083,7 +1159,8 @@ namespace System.Threading.Tasks
                     // to the guideline that an exception implies that no state change took place),
                     // so it is safe to catch the exception and move the task to a final state.  The
                     // same cannot be said for Wait()/WaitAll()/FastWaitAll().
-                    if (!scheduler.TryRunInline(this, false))
+                    taskQueued = scheduler.TryRunInline(this, false);
+                    if (!taskQueued)
                     {
                         scheduler.InternalQueueTask(this);
                         taskQueued = true; // only mark this after successfully queuing the task.
@@ -1677,11 +1754,12 @@ namespace System.Threading.Tasks
             if (s_asyncDebuggingEnabled)
                 AddToActiveTasks(this);
 
-            if (TplEventSource.Log.IsEnabled() && (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
+            if (TplEventSource.Log.IsEnabled() &&
+                (Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0 &&
+                m_action is Delegate action)
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
-                Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.GetMethodName(), 0);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + action.GetMethodName(), 0);
             }
 
             try
@@ -1791,7 +1869,7 @@ namespace System.Threading.Tasks
         {
             //
             // WARNING: The Task/Task<TResult>/TaskCompletionSource classes
-            // have all been carefully crafted to insure that GetExceptions()
+            // have all been carefully crafted to ensure that GetExceptions()
             // is never called while AddException() is being called.  There
             // are locks taken on m_contingentProperties in several places:
             //
@@ -1803,7 +1881,7 @@ namespace System.Threading.Tasks
             //    is allowed to complete its operation before Task.Exception_get()
             //    can access GetExceptions().
             //
-            // -- Task.ThrowIfExceptional(): The lock insures that Wait() will
+            // -- Task.ThrowIfExceptional(): The lock ensures that Wait() will
             //    not attempt to call GetExceptions() while Task<TResult>.TrySetException()
             //    is in the process of calling AddException().
             //
@@ -2447,6 +2525,7 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(bool continueOnCapturedContext)
         {
             return new ConfiguredTaskAwaitable(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
@@ -2456,6 +2535,7 @@ namespace System.Threading.Tasks
         /// <param name="options">Options used to configure how awaits on this task are performed.</param>
         /// <returns>An object used to await this task.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        [Intrinsic]
         public ConfiguredTaskAwaitable ConfigureAwait(ConfigureAwaitOptions options)
         {
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |
@@ -3001,6 +3081,8 @@ namespace System.Threading.Tasks
             }
             else
             {
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
                 returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
 
@@ -3056,26 +3138,23 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-#if CORECLR
-                if (ThreadPoolWorkQueue.s_prioritizationExperiment)
-                {
-                    // We're about to block waiting for the task to complete, which is expensive, and if
-                    // the task being waited on depends on some other work to run, this thread could end up
-                    // waiting for some other thread to do work. If the two threads are part of the same scheduler,
-                    // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
-                    // it also leading to a possible priority inversion on previously queued work. Each thread in
-                    // the thread pool has a local queue. A key motivator for this local queue is it allows this
-                    // thread to create work items that it will then prioritize above all other work in the
-                    // pool. However, while this thread makes its own local queue the top priority, that queue is
-                    // every other thread's lowest priority. If this thread blocks, all of its created work that's
-                    // supposed to be high priority becomes low priority, and work that's typically part of a
-                    // currently in-flight operation gets deprioritized relative to new requests coming into the
-                    // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
-                    // just before we block, we move all local work into a global queue, so that it's at least
-                    // prioritized by other threads more fairly with respect to other work.
-                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
-                }
-#endif
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+                // We're about to block waiting for the task to complete, which is expensive, and if
+                // the task being waited on depends on some other work to run, this thread could end up
+                // waiting for some other thread to do work. If the two threads are part of the same scheduler,
+                // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
+                // it also leading to a possible priority inversion on previously queued work. Each thread in
+                // the thread pool has a local queue. A key motivator for this local queue is it allows this
+                // thread to create work items that it will then prioritize above all other work in the
+                // pool. However, while this thread makes its own local queue the top priority, that queue is
+                // every other thread's lowest priority. If this thread blocks, all of its created work that's
+                // supposed to be high priority becomes low priority, and work that's typically part of a
+                // currently in-flight operation gets deprioritized relative to new requests coming into the
+                // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
+                // just before we block, we move all local work into a global queue, so that it's at least
+                // prioritized by other threads more fairly with respect to other work.
+                ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
 
                 var mres = new SetOnInvokeMres();
                 try
@@ -3139,13 +3218,18 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
+            if (!RuntimeFeature.IsMultithreadingSupported)
+            {
+                return false;
+            }
+
             if (millisecondsTimeout == 0)
             {
                 // For 0-timeouts, we just return immediately.
                 return false;
             }
 
-            int spinCount = Threading.SpinWait.SpinCountforSpinBeforeWait;
+            int spinCount = Threading.SpinWait.SpinCountForSpinBeforeWait;
             SpinWait spinner = default;
             while (spinner.Count < spinCount)
             {
@@ -4531,6 +4615,9 @@ namespace System.Threading.Tasks
                 action.Invoke(this); // run the action directly if we failed to queue the continuation (i.e., the task completed)
         }
 
+        internal bool TryAddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers = false)
+            => AddTaskContinuation(action, addBeforeOthers);
+
         // Support method for AddTaskContinuation that takes care of multi-continuation logic.
         // Returns true if and only if the continuation was successfully queued.
         private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
@@ -4988,6 +5075,8 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
                 // Block waiting for the tasks to complete.
                 returnValue = WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
 
@@ -5060,6 +5149,8 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
+
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             bool waitCompleted = false;
             var mres = new SetOnCountdownMres(tasks.Count);
@@ -5326,6 +5417,8 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);
                 if (waitCompleted)
@@ -5906,6 +5999,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
+            int? count = null;
             if (tasks is ICollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
@@ -5918,19 +6012,23 @@ namespace System.Threading.Tasks
                     return WhenAll(CollectionsMarshal.AsSpan(taskList));
                 }
 
-                taskArray = new Task[taskCollection.Count];
-                taskCollection.CopyTo(taskArray, 0);
-                return WhenAll((ReadOnlySpan<Task>)taskArray);
+                count = taskCollection.Count;
             }
-            else
+
+            // Buffer the tasks into a temporary span. Small sets of tasks are common,
+            // so for <= 8 we stack allocate.
+            ValueListBuilder<Task> builder = count is > 8 ?
+                new ValueListBuilder<Task>(count.Value) :
+                new ValueListBuilder<Task>([null, null, null, null, null, null, null, null]);
+            foreach (Task task in tasks)
             {
-                var taskList = new List<Task>();
-                foreach (Task task in tasks)
-                {
-                    taskList.Add(task);
-                }
-                return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                builder.Append(task);
             }
+
+            Task t = WhenAll(builder.AsSpan());
+
+            builder.Dispose();
+            return t;
         }
 
         /// <summary>
@@ -5992,8 +6090,25 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
-            tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks)
+        {
+            switch (tasks.Length)
+            {
+                case 0:
+                    return CompletedTask;
+
+                case 1:
+                    Task t = tasks[0];
+                    if (t is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
+                    return t;
+
+                default:
+                    return new WhenAllPromise(tasks);
+            }
+        }
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
@@ -6214,7 +6329,7 @@ namespace System.Threading.Tasks
                 int count = taskCollection.Count;
                 if (count == 0)
                 {
-                    return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                    return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
                 }
 
                 taskArray = new Task<TResult>[count];
@@ -6248,13 +6363,14 @@ namespace System.Threading.Tasks
             }
 
             return taskList.Count == 0 ?
-                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
+                new Task<TResult[]>(false, [], TaskCreationOptions.None, default) :
                 new WhenAllPromise<TResult>(taskList.ToArray());
         }
 
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
         /// <remarks>
@@ -6295,6 +6411,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
         /// <remarks>
@@ -6323,7 +6440,7 @@ namespace System.Threading.Tasks
         {
             if (tasks.IsEmpty)
             {
-                return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
             }
 
             Task<TResult>[] tasksCopy = tasks.ToArray();
@@ -6669,6 +6786,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TTask">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6743,6 +6861,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6765,6 +6884,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6778,6 +6898,7 @@ namespace System.Threading.Tasks
             WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="task1">The first task to wait on for completion.</param>
         /// <param name="task2">The second task to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
@@ -6794,6 +6915,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6827,14 +6949,18 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
-        public static IAsyncEnumerable<Task> WhenEach(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
+        public static IAsyncEnumerable<Task> WhenEach(params ReadOnlySpan<Task> tasks) =>
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task> WhenEach(IEnumerable<Task> tasks) =>
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params Task<TResult>[] tasks)
         {
             ArgumentNullException.ThrowIfNull(tasks);
@@ -6842,10 +6968,14 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
-        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(ReadOnlySpan<Task>.CastUp(tasks)));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(IEnumerable<Task<TResult>> tasks) =>
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(tasks));
 

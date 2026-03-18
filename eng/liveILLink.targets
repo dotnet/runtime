@@ -10,7 +10,8 @@
         '$(IsAotCompatible)' == 'true' Or '$(EnableAotAnalyzer)' == 'true' Or
         '$(PublishTrimmed)' == 'true' Or
         '$(IsTrimmable)' == 'true' Or '$(EnableTrimAnalyzer)' == 'true' Or
-        '$(EnableSingleFileAnalyzer)' == 'true')">true</_RequiresLiveILLink>
+        '$(EnableSingleFileAnalyzer)' == 'true' Or
+        '$(EnableUnsafeAnalyzer)' == 'true')">true</_RequiresLiveILLink>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
@@ -23,9 +24,8 @@
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- Don't use SDK's trimming functionality. -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <!-- Keep in sync with SetTargetFramework metadata on the ProjectReference below. -->
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)$(NetCoreAppToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)$(NetFrameworkToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)net\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)netframework\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
@@ -34,7 +34,8 @@
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       Private="false"
-                      SetConfiguration="Configuration=$(ToolsConfiguration)">
+                      SetConfiguration="Configuration=$(ToolsConfiguration)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier">
         <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>
@@ -42,6 +43,13 @@
 
     <!-- Need to reference the analyzer project separately, because there's no easy way to get it as a transitive reference of ILLink.Tasks.csproj -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
+
+    <!-- Add the code fix provider for IDE fix suggestions -->
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       OutputItemType="Analyzer"

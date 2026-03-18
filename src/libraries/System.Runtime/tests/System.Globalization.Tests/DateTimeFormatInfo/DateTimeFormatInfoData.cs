@@ -40,11 +40,6 @@ namespace System.Globalization.Tests
 
         public static CalendarWeekRule BrFRCalendarWeekRule()
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return CalendarWeekRule.FirstDay;
-            }
-
             if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
             {
                 return CalendarWeekRule.FirstFullWeek;
@@ -69,7 +64,7 @@ namespace System.Globalization.Tests
         };
         public static bool HasBadIcuTimePatterns(CultureInfo culture)
         {
-            return PlatformDetection.IsIcuGlobalizationAndNotHybridOnBrowser
+            return PlatformDetection.IsIcuGlobalization
                 && _badIcuTimePatterns.TryGetValue(culture.Name, out var version)
                 && PlatformDetection.ICUVersion < version;
         }

@@ -32,6 +32,11 @@ namespace System.Diagnostics.CodeAnalysis
         }
 
         /// <summary>
+        /// When set to true, indicates that the annotation should not apply to static members.
+        /// </summary>
+        public bool ExcludeStatics { get; set; }
+
+        /// <summary>
         /// Gets a message that contains information about the usage of unreferenced code.
         /// </summary>
         public string Message { get; }

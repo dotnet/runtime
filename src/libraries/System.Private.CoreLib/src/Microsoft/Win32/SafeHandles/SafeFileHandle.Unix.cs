@@ -34,12 +34,13 @@ namespace Microsoft.Win32.SafeHandles
             UnixFileMode.OtherRead |
             UnixFileMode.OtherWrite;
 
-        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() // #40065: Emscripten does not support file locking
+        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()// #40065: Emscripten does not support file locking
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
         // not using bool? as it's not thread safe
-        private volatile NullableBool _canSeek = NullableBool.Undefined;
-        private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
+        private volatile NullableBool _canSeek /* = NullableBool.Undefined */;
+        private volatile NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
+        private volatile NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -53,7 +54,25 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(new IntPtr(-1));
         }
 
-        public bool IsAsync { get; private set; }
+        public bool IsAsync
+        {
+            get
+            {
+                NullableBool isAsync = _isAsync;
+                if (isAsync == NullableBool.Undefined && !IsClosed)
+                {
+                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool isNonBlocking) != 0)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), Path);
+                    }
+
+                    _isAsync = isAsync = isNonBlocking ? NullableBool.True : NullableBool.False;
+                }
+
+                return isAsync == NullableBool.True;
+            }
+            private set => _isAsync = value ? NullableBool.True : NullableBool.False;
+        }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
 
@@ -71,7 +90,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             set
             {
-                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                Debug.Assert(!value); // We should only use the setter to disable random access.
                 _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
             }
         }
@@ -123,10 +142,6 @@ namespace Microsoft.Win32.SafeHandles
             return handle;
         }
 
-        // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
-        [ThreadStatic]
-        internal static Interop.ErrorInfo? t_lastCloseErrorInfo;
-
         protected override bool ReleaseHandle()
         {
             // If DeleteOnClose was requested when constructed, delete the file now.
@@ -152,15 +167,8 @@ namespace Microsoft.Win32.SafeHandles
                 _isLocked = false;
             }
 
-            // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
-            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
-            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
-            int result = Interop.Sys.Close(handle);
-            if (result != 0)
-            {
-                t_lastCloseErrorInfo = Interop.Sys.GetLastErrorInfo();
-            }
-            return result == 0;
+            // Close the descriptor.
+            return Interop.Sys.Close(handle) == 0;
         }
 
         public override bool IsInvalid
@@ -170,6 +178,49 @@ namespace Microsoft.Win32.SafeHandles
                 long h = (long)handle;
                 return h < 0 || h > int.MaxValue;
             }
+        }
+
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        {
+            // Allocate the handles first, so in case of OOM we don't leak any handles.
+            SafeFileHandle tempReadHandle = new();
+            SafeFileHandle tempWriteHandle = new();
+
+            Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
+            if (asyncRead)
+            {
+                flags |= Interop.Sys.PipeFlags.O_NONBLOCK_READ;
+            }
+
+            if (asyncWrite)
+            {
+                flags |= Interop.Sys.PipeFlags.O_NONBLOCK_WRITE;
+            }
+
+            int readFd, writeFd;
+            unsafe
+            {
+                int* fds = stackalloc int[2];
+                if (Interop.Sys.Pipe(fds, flags) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    tempReadHandle.Dispose();
+                    tempWriteHandle.Dispose();
+                    throw Interop.GetExceptionForIoErrno(error);
+                }
+
+                readFd = fds[Interop.Sys.ReadEndOfPipe];
+                writeFd = fds[Interop.Sys.WriteEndOfPipe];
+            }
+
+            tempReadHandle.SetHandle(readFd);
+            tempReadHandle.IsAsync = asyncRead;
+
+            tempWriteHandle.SetHandle(writeFd);
+            tempWriteHandle.IsAsync = asyncWrite;
+
+            readHandle = tempReadHandle;
+            writeHandle = tempWriteHandle;
         }
 
         // Specialized Open that returns the file length and permissions of the opened file.
@@ -304,7 +355,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // Translate some FileOptions; some just aren't supported, and others will be handled after calling open.
-            // - Asynchronous: Handled in ctor, setting _useAsync and SafeFileHandle.IsAsync to true
+            // - Asynchronous: Unix does not support O_NONBLOCK for regular files, only for pipes and sockets.
             // - DeleteOnClose: Doesn't have a Unix equivalent, but we approximate it in Dispose
             // - Encrypted: No equivalent on Unix and is ignored
             // - RandomAccess: Implemented after open if posix_fadvise is available
@@ -350,11 +401,14 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
+                // Cache the file type from the status
+                _cachedFileType = (int)MapUnixFileTypeToFileType(status);
+
                 fileLength = status.Size;
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
 
-            IsAsync = (options & FileOptions.Asynchronous) != 0;
+            IsAsync = false; // Unix does not support O_NONBLOCK for regular files.
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
@@ -453,7 +507,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // Delete the file we've created.
                     Debug.Assert(mode == FileMode.Create || mode == FileMode.CreateNew);
-                    Interop.Sys.Unlink(path!);
+                    Interop.Sys.Unlink(path);
 
                     throw new IOException(SR.Format(errorInfo.Error == Interop.Error.EFBIG
                                                         ? SR.IO_FileTooLarge_Path_AllocationSize
@@ -473,30 +527,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return false;
             }
-            else if (lockOperation == Interop.Sys.LockOperations.LOCK_EX)
-            {
-                return true; // LOCK_EX is always OK
-            }
-            else if ((access & FileAccess.Write) == 0)
-            {
-                return true; // LOCK_SH is always OK when reading
-            }
 
-            if (!Interop.Sys.TryGetFileSystemType(this, out Interop.Sys.UnixFileSystemTypes unixFileSystemType))
-            {
-                return false; // assume we should not acquire the lock if we don't know the File System
-            }
-
-            switch (unixFileSystemType)
-            {
-                case Interop.Sys.UnixFileSystemTypes.nfs: // #44546
-                case Interop.Sys.UnixFileSystemTypes.smb:
-                case Interop.Sys.UnixFileSystemTypes.smb2: // #53182
-                case Interop.Sys.UnixFileSystemTypes.cifs:
-                    return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
-                default:
-                    return true; // in all other situations it should be OK
-            }
+            return Interop.Sys.FileSystemSupportsLocking(this, lockOperation, accessWrite: (access & FileAccess.Write) != 0);
         }
 
         private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)
@@ -527,18 +559,36 @@ namespace Microsoft.Win32.SafeHandles
             return canSeek == NullableBool.True;
         }
 
+        internal FileHandleType GetFileTypeCore()
+        {
+            int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
+            if (result != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                throw Interop.GetExceptionForIoErrno(error, Path);
+            }
+
+            return MapUnixFileTypeToFileType(status);
+        }
+
+        private static FileHandleType MapUnixFileTypeToFileType(Interop.Sys.FileStatus status)
+            => (status.Mode & Interop.Sys.FileTypes.S_IFMT) switch
+            {
+                Interop.Sys.FileTypes.S_IFREG => FileHandleType.RegularFile,
+                Interop.Sys.FileTypes.S_IFDIR => FileHandleType.Directory,
+                Interop.Sys.FileTypes.S_IFLNK => FileHandleType.SymbolicLink,
+                Interop.Sys.FileTypes.S_IFIFO => FileHandleType.Pipe,
+                Interop.Sys.FileTypes.S_IFSOCK => FileHandleType.Socket,
+                Interop.Sys.FileTypes.S_IFCHR => FileHandleType.CharacterDevice,
+                Interop.Sys.FileTypes.S_IFBLK => FileHandleType.BlockDevice,
+                _ => FileHandleType.Unknown
+            };
+
         internal long GetFileLength()
         {
             int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
-        }
-
-        private enum NullableBool
-        {
-            Undefined = 0,
-            False = -1,
-            True = 1
         }
     }
 }

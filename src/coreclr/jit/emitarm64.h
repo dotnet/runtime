@@ -98,7 +98,8 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
@@ -106,7 +107,8 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*   enum to allow instruction optimisation to specify register order   */
@@ -552,6 +554,9 @@ static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(emitAttr size);
+
+// Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
+static code_t insEncodeNarrowingSveElemsize(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the size at bit locations '22-21'.
@@ -1052,6 +1057,9 @@ static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
 static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
+
+// true if this 'imm' can be encoded as the offset in an scaled SVE ldr/str instruction
+static bool emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm);
 
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);
@@ -1733,31 +1741,6 @@ void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg
 
 void emitIns_R_ARX(
     instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, unsigned mul, int disp);
-
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
-    EC_INDIR_R,    // Indirect call via register
-    EC_COUNT
-};
-
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  ssize_t          argSize,
-                  emitAttr         retSize,
-                  emitAttr         secondRetSize,
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  const DebugInfo& di,
-                  regNumber        ireg,
-                  regNumber        xreg,
-                  unsigned         xmul,
-                  ssize_t          disp,
-                  bool             isJump,
-                  bool             noSafePoint = false);
 
 BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);

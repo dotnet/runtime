@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <PropertyGroup>
+    <TargetCrossRid>android-x86</TargetCrossRid>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.NETCore.App.MonoCrossAOT.props" />
+</Project>

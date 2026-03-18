@@ -19,32 +19,32 @@ namespace System.Net.Http
         private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
         private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
 
-        private static volatile int s_usePortInSpn = -1;
+        private static volatile NullableBool s_usePortInSpn;
 
         private static bool UsePortInSpn
         {
             get
             {
-                int usePortInSpn = s_usePortInSpn;
-                if (usePortInSpn != -1)
+                NullableBool usePortInSpn = s_usePortInSpn;
+                if (usePortInSpn != NullableBool.Undefined)
                 {
-                    return usePortInSpn != 0;
+                    return usePortInSpn == NullableBool.True;
                 }
 
                 // First check for the AppContext switch, giving it priority over the environment variable.
                 if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool value))
                 {
-                    s_usePortInSpn = value ? 1 : 0;
+                    s_usePortInSpn = value ? NullableBool.True : NullableBool.False;
                 }
                 else
                 {
                     // AppContext switch wasn't used. Check the environment variable.
                     s_usePortInSpn =
                         Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? NullableBool.True : NullableBool.False;
                 }
 
-                return s_usePortInSpn != 0;
+                return s_usePortInSpn == NullableBool.True;
             }
         }
 

@@ -264,6 +264,7 @@ namespace JIT.HardwareIntrinsics.X86
 
                 if ({CastingMethod}(result[i]) != answerTable[i])
                 {
+                    Console.WriteLine("Failed on index: " + i + " with value: " + result[i] + " and expected: " + answerTable[i] + {CastingMethod}(result[i]));
                     succeeded = false;
                     Console.WriteLine("Avx512 {Method} Embedded rounding failed on {RetBaseType} with {RoundingMode}:");
                     foreach (var item in result)
@@ -360,6 +361,12 @@ namespace JIT.HardwareIntrinsics.X86
             {("Avx10v1.V512", "Single", "UInt64",  "ConvertToVector512UInt64", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
             {("Avx10v1.V512", "Single", "UInt64",  "ConvertToVector512UInt64", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
             {("Avx10v1.V512", "Single", "UInt64",  "ConvertToVector512UInt64", "ToZero"),             new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx10v2.V512", "Single", "Int32", "ConvertToSByteWithSaturationAndZeroExtendToInt32", "ToNegativeInfinity"), new ulong[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+            {("Avx10v2.V512", "Single", "Int32", "ConvertToSByteWithSaturationAndZeroExtendToInt32", "ToPositiveInfinity"), new ulong[] {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}},
+            {("Avx10v2.V512", "Single", "Int32", "ConvertToSByteWithSaturationAndZeroExtendToInt32", "ToZero"), new ulong[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}},
+            {("Avx10v2.V512", "Single", "Int32", "ConvertToByteWithSaturationAndZeroExtendToInt32", "ToNegativeInfinity"), new ulong[] {0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b}},
+            {("Avx10v2.V512", "Single", "Int32", "ConvertToByteWithSaturationAndZeroExtendToInt32", "ToPositiveInfinity"), new ulong[] {0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c, 0x1c}},
+            {("Avx10v2.V512", "Single", "Int32", "ConvertToByteWithSaturationAndZeroExtendToInt32", "ToZero"), new ulong[] {0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b}},
         };
     }
 }

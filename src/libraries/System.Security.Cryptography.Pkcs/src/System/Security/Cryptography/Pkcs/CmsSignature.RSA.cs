@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.RsaPkcs1Sha256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.RsaPkcs1Sha384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.RsaPkcs1Sha512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha512, HashAlgorithmName.SHA512));
-#if NET8_0_OR_GREATER
+#if NET
             lookup.Add(Oids.RsaPkcs1Sha3_256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_256, HashAlgorithmName.SHA3_256));
             lookup.Add(Oids.RsaPkcs1Sha3_384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_384, HashAlgorithmName.SHA3_384));
             lookup.Add(Oids.RsaPkcs1Sha3_512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_512, HashAlgorithmName.SHA3_512));
@@ -39,10 +39,8 @@ namespace System.Security.Cryptography.Pkcs
                 _expectedDigest = expectedDigest;
             }
 
-            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
-            {
-                return (key as RSA) != null;
-            }
+            protected override bool VerifyKeyType(object key) => key is RSA;
+            internal override bool NeedsHashedMessage => true;
 
             internal override bool VerifySignature(
 #if NET || NETSTANDARD2_1
@@ -53,10 +51,11 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] signature,
 #endif
                 string? digestAlgorithmOid,
-                HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
+                HashAlgorithmName digestAlgorithmName = PkcsHelpers.GetDigestAlgorithm(digestAlgorithmOid, forVerification: true);
+
                 if (_expectedDigest.HasValue && _expectedDigest.Value != digestAlgorithmName)
                 {
                     throw new CryptographicException(
@@ -79,15 +78,18 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                return publicKey.VerifyHash(
-                    valueHash,
+                using (publicKey)
+                {
+                    return publicKey.VerifyHash(
+                        valueHash,
 #if NET || NETSTANDARD2_1
-                    signature.Span,
+                        signature.Span,
 #else
-                    signature,
+                        signature,
 #endif
-                    digestAlgorithmName,
-                    padding);
+                        digestAlgorithmName,
+                        padding);
+                }
             }
 
             protected abstract RSASignaturePadding GetSignaturePadding(
@@ -104,65 +106,73 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm? key,
+                object? key,
                 bool silent,
                 RSASignaturePadding signaturePadding,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
-                RSA certPublicKey = certificate.GetRSAPublicKey()!;
-
-                // If there's no private key, fall back to the public key for a "no private key" exception.
-                RSA? privateKey = key as RSA ??
-                    PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
-                    certPublicKey;
-
-                if (privateKey is null)
+                using (GetSigningKey(key, certificate, silent, RSACertificateExtensions.GetRSAPublicKey, out RSA? privateKey))
                 {
-                    signatureValue = null;
-                    return false;
-                }
-
-#if NET || NETSTANDARD2_1
-                byte[] signature = new byte[privateKey.KeySize / 8];
-
-                bool signed = privateKey.TrySignHash(
-                    dataHash,
-                    signature,
-                    hashAlgorithmName,
-                    signaturePadding,
-                    out int bytesWritten);
-
-                if (signed && signature.Length == bytesWritten)
-                {
-                    signatureValue = signature;
-
-                    if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                    if (privateKey is null)
                     {
-                        // key did not match certificate
                         signatureValue = null;
                         return false;
                     }
 
+#if NET || NETSTANDARD2_1
+                    byte[] signature = new byte[privateKey.KeySize / 8];
+
+                    bool signed = privateKey.TrySignHash(
+                        dataHash,
+                        signature,
+                        hashAlgorithmName,
+                        signaturePadding,
+                        out int bytesWritten);
+
+                    if (signed && signature.Length == bytesWritten)
+                    {
+                        signatureValue = signature;
+
+                        if (key is not null)
+                        {
+                            using (RSA certKey = certificate.GetRSAPublicKey()!)
+                            {
+                                if (!certKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                                {
+                                    // key did not match certificate
+                                    signatureValue = null;
+                                    return false;
+                                }
+                            }
+                        }
+
+                        return true;
+                    }
+#endif
+                    signatureValue = privateKey.SignHash(
+#if NET || NETSTANDARD2_1
+                        dataHash.ToArray(),
+#else
+                        dataHash,
+#endif
+                        hashAlgorithmName,
+                        signaturePadding);
+
+                    if (key is not null)
+                    {
+                        using (RSA certKey = certificate.GetRSAPublicKey()!)
+                        {
+                            if (!certKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
+                            {
+                                // key did not match certificate
+                                signatureValue = null;
+                                return false;
+                            }
+                        }
+                    }
+
                     return true;
                 }
-#endif
-                signatureValue = privateKey.SignHash(
-#if NET || NETSTANDARD2_1
-                    dataHash.ToArray(),
-#else
-                    dataHash,
-#endif
-                    hashAlgorithmName,
-                    signaturePadding);
-
-                if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, signaturePadding))
-                {
-                    // key did not match certificate
-                    signatureValue = null;
-                    return false;
-                }
-
-                return true;
             }
         }
 
@@ -202,9 +212,9 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                string? hashAlgorithmOid,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm? key,
+                object? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue,
@@ -212,7 +222,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 bool result = SignCore(
                     dataHash,
-                    hashAlgorithmName,
+                    PkcsHelpers.GetDigestAlgorithm(hashAlgorithmOid),
                     certificate,
                     key,
                     silent,
@@ -322,14 +332,16 @@ namespace System.Security.Cryptography.Pkcs
 #else
                 byte[] dataHash,
 #endif
-                HashAlgorithmName hashAlgorithmName,
+                string? hashAlgorithmOid,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm? key,
+                object? key,
                 bool silent,
                 [NotNullWhen(true)] out string? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue,
                 out byte[]? signatureParameters)
             {
+                HashAlgorithmName hashAlgorithmName = PkcsHelpers.GetDigestAlgorithm(hashAlgorithmOid);
+
                 bool result = SignCore(
                     dataHash,
                     hashAlgorithmName,

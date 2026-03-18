@@ -136,7 +136,7 @@ namespace System.Speech.Internal.SrgsCompiler
         {
             set
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 _backend.LangId = value.LCID;
             }

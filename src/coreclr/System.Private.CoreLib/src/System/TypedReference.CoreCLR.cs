@@ -5,6 +5,7 @@
 // These are blob that must be dealt with by the compiler.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -15,6 +16,12 @@ namespace System
     {
         private readonly ref byte _value;
         private readonly IntPtr _type;
+
+        private TypedReference(ref byte target, RuntimeType type)
+        {
+            _value = ref target;
+            _type = type.GetUnderlyingNativeHandle();
+        }
 
         public static unsafe object? ToObject(TypedReference value)
         {
@@ -47,6 +54,22 @@ namespace System
             }
 
             return result;
+        }
+
+        // Implementation of CORINFO_HELP_GETREFANY
+        [StackTraceHidden]
+        internal static ref byte GetRefAny(IntPtr type, TypedReference value)
+        {
+            if (type != value._type)
+            {
+                ThrowInvalidCastException();
+            }
+
+            return ref value._value;
+
+            [DoesNotReturn]
+            [StackTraceHidden]
+            static void ThrowInvalidCastException() => throw new InvalidCastException();
         }
     }
 }

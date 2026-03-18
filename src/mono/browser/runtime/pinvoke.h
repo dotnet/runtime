@@ -9,6 +9,18 @@ typedef struct {
 } PinvokeImport;
 
 typedef struct {
+	const char *name;
+	PinvokeImport *imports;
+	int count;
+} PinvokeTable;
+
+typedef struct {
+	const char *key;
+	uint32_t token;
+	void *func;
+} UnmanagedExport;
+
+typedef struct {
 	void *func;
 	void *arg;
 } InterpFtnDesc;
@@ -20,7 +32,7 @@ int
 wasm_dl_is_pinvoke_table (void *handle);
 
 void*
-wasm_dl_get_native_to_interp (const char *key, void *extra_arg);
+wasm_dl_get_native_to_interp (uint32_t token, const char *key, void *extra_arg);
 
 void
 mono_wasm_pinvoke_vararg_stub (void);
@@ -45,6 +57,6 @@ double
 mono_wasm_interp_method_args_get_darg (MonoInterpMethodArguments *margs, int i);
 
 void*
-mono_wasm_interp_method_args_get_retval  (MonoInterpMethodArguments *margs);
+mono_wasm_interp_method_args_get_retval (MonoInterpMethodArguments *margs);
 
 #endif

@@ -77,7 +77,7 @@ inline static Enum_StdInterfaces GetStdInterfaceKind(PTR_IUnknown pUnk)
 
 // IUnknown is part of IDispatch
 // Common vtables for well-known COM interfaces
-// shared by all COM+ callable wrappers.
+// shared by all CLR callable wrappers.
 extern const StdInterfaceDesc<3>  g_InnerUnknown;
 extern const StdInterfaceDesc<4>  g_IProvideClassInfo;
 extern const StdInterfaceDesc<9>  g_IMarshal;
@@ -185,5 +185,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, bool bClassIn
 
 // Gets the MethodTable for the associated IRecordInfo.
 MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo);
+
+extern const TADDR g_cdacTearOffAddRef;
+extern const TADDR g_cdacTearOffAddRefSimple;
+extern const TADDR g_cdacTearOffAddRefSimpleInner;
 
 #endif

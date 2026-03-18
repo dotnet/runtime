@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.Extensions.DependencyModel;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -22,7 +26,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Muxer_Default()
         {
-            var dotnet = TestContext.BuiltDotNet;
+            var dotnet = HostTestContext.BuiltDotNet;
             var appDll = sharedTestState.App.AppDll;
 
             dotnet.Exec(appDll)
@@ -47,22 +51,110 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Change *.dll to *.exe
             var appDll = app.AppDll;
+            var appOtherExt = Path.ChangeExtension(appDll, ".other");
+            File.Copy(appDll, appOtherExt, true);
+            File.Delete(appDll);
+
+            HostTestContext.BuiltDotNet.Exec(appOtherExt)
+                .CaptureStdErr()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The application '{appOtherExt}' does not exist or is not a managed .dll or .exe");
+        }
+
+        [Fact]
+        public void Muxer_AssemblyWithExeExtension()
+        {
+            var app = sharedTestState.App.Copy();
+
+            // The host and runtime specifically allow .dll or .exe as extensions for managed assemblies
+            // Validate that we can run an app where the managed entry assembly is an .exe
+            var appDll = app.AppDll;
             var appExe = Path.ChangeExtension(appDll, ".exe");
             File.Copy(appDll, appExe, true);
             File.Delete(appDll);
 
-            TestContext.BuiltDotNet.Exec("exec", appExe)
+            using (FileStream fileStream = File.Open(app.DepsJson, FileMode.Open, FileAccess.ReadWrite))
+            using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
+            {
+                DependencyContext context = reader.Read(fileStream);
+
+                // Update the app .dll in the .deps.json to point at the .exe
+                List<RuntimeLibrary> updatedRuntimeLibraries = new(context.RuntimeLibraries);
+                RuntimeLibrary existing = updatedRuntimeLibraries.Find(l => l.Name == app.Name);
+                updatedRuntimeLibraries.Remove(existing);
+
+                List<RuntimeAssetGroup> updatedAssetGroups = new(existing.RuntimeAssemblyGroups);
+                RuntimeAssetGroup existingGroup = existing.RuntimeAssemblyGroups.GetDefaultGroup();
+                updatedAssetGroups.Remove(existingGroup);
+                updatedAssetGroups.Add(
+                    new RuntimeAssetGroup(
+                        existingGroup.Runtime,
+                        existingGroup.AssetPaths.Where(r => r != Path.GetFileName(app.AppDll)).Append(Path.GetFileName(appExe))));
+
+                RuntimeLibrary updated = new RuntimeLibrary(
+                    existing.Type,
+                    existing.Name,
+                    existing.Version,
+                    existing.Hash,
+                    updatedAssetGroups,
+                    existing.NativeLibraryGroups,
+                    existing.ResourceAssemblies,
+                    existing.Dependencies,
+                    existing.Serviceable);
+                updatedRuntimeLibraries.Add(updated);
+
+                DependencyContext newContext = new DependencyContext(
+                    context.Target,
+                    context.CompilationOptions,
+                    context.CompileLibraries,
+                    updatedRuntimeLibraries,
+                    context.RuntimeGraph);
+
+                fileStream.Seek(0, SeekOrigin.Begin);
+                DependencyContextWriter writer = new DependencyContextWriter();
+                writer.Write(newContext, fileStream);
+                fileStream.SetLength(fileStream.Position);
+            }
+
+            HostTestContext.BuiltDotNet.Exec(appExe)
+                .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Muxer_NonAssemblyWithExeExtension()
+        {
+            var app = sharedTestState.App.Copy();
+
+            // The host and runtime specifically allow .dll or .exe as extensions for assemblies to run
+            // Use the app host as the non-managed assembly that we attempt to run
+            app.CreateAppHost();
+            string appExe = app.AppExe;
+            if (!OperatingSystem.IsWindows())
+            {
+                appExe = Path.ChangeExtension(appExe, ".exe");
+                File.Move(app.AppExe, appExe);
+            }
+
+            // If the app being run is not actually a managed assembly, it should come through as a load failure.
+            HostTestContext.BuiltDotNet.Exec(appExe)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining("has already been found but with a different file extension");
+                .And.HaveStdErrContaining("BadImageFormatException");
         }
 
         [Fact]
         public void Muxer_AltDirectorySeparatorChar()
         {
             var appDll = sharedTestState.App.AppDll.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            TestContext.BuiltDotNet.Exec(appDll)
+            HostTestContext.BuiltDotNet.Exec(appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -81,7 +173,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var runtimeConfig = Path.Combine(subdirectory, Path.GetFileName(app.RuntimeConfigJson));
             File.Move(app.RuntimeConfigJson, runtimeConfig, overwrite: true);
 
-            TestContext.BuiltDotNet.Exec("exec", "--runtimeconfig", runtimeConfig, app.AppDll)
+            HostTestContext.BuiltDotNet.Exec("exec", "--runtimeconfig", runtimeConfig, app.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -96,81 +188,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (Binaries.CetCompat.IsSupported)
                 Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
 
-            // Get the framework location that was built
-            string builtDotnet = TestContext.BuiltDotNet.BinPath;
-
-            // Verify running with the default working directory
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
-
-
-            // Verify running from within the working directory
-            Command.Create(appExe)
-                .WorkingDirectory(sharedTestState.App.Location)
-                .DotNetRoot(builtDotnet, TestContext.BuildArchitecture)
-                .MultilevelLookup(false)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void AppHost_GlobalLocation(bool useRegisteredLocation)
-        {
-            string appExe = sharedTestState.App.AppExe;
-
-            // Get the framework location that was built
-            string builtDotnet = TestContext.BuiltDotNet.BinPath;
-
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
-            {
-                string architecture = TestContext.BuildArchitecture;
-                if (useRegisteredLocation)
-                {
-                    registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });
-                }
-
-                // Verify running with the default working directory
-                Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .MultilevelLookup(false)
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .DotNetRoot(null)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErr();
-
-                // Verify running from within the working directory
-                Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
-                    .MultilevelLookup(false)
-                    .WorkingDirectory(sharedTestState.App.Location)
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .DotNetRoot(null)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErr();
-            }
+                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
@@ -183,12 +209,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Command.Create(app.AppExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -197,25 +223,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             string appExe = sharedTestState.App.AppExe;
 
-            string dotnetPath = $@"\\?\{TestContext.BuiltDotNet.BinPath}";
+            string dotnetPath = $@"\\?\{HostTestContext.BuiltDotNet.BinPath}";
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(dotnetPath, TestContext.BuildArchitecture)
+                .DotNetRoot(dotnetPath, HostTestContext.BuildArchitecture)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
 
-            dotnetPath = $@"\\.\{TestContext.BuiltDotNet.BinPath}";
+            dotnetPath = $@"\\.\{HostTestContext.BuiltDotNet.BinPath}";
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(dotnetPath, TestContext.BuildArchitecture)
+                .DotNetRoot(dotnetPath, HostTestContext.BuildArchitecture)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -237,7 +263,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 File.Copy(file, Path.Combine(newDir, Path.GetFileName(file)), true);
 
             Command.Create(appExe)
-                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
                 .Execute()
@@ -248,7 +274,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void ComputedTPA_NoTrailingPathSeparator()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -264,11 +290,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(sharedTestState.MockApp.AppExe)
-                    .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
+                    .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture);
             }
             else
             {
-                command = TestContext.BuiltDotNet.Exec(sharedTestState.MockApp.AppDll);
+                command = HostTestContext.BuiltDotNet.Exec(sharedTestState.MockApp.AppDll);
             }
 
             command.EnableTracingAndCaptureOutputs()
@@ -292,20 +318,58 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(app.AppExe)
-                    .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture);
+                    .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture);
             }
             else
             {
-                command = TestContext.BuiltDotNet.Exec(app.AppDll);
+                command = HostTestContext.BuiltDotNet.Exec(app.AppDll);
             }
 
             command.EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The library '{Binaries.HostPolicy.FileName}' required to execute the application was not found")
                 .And.HaveStdErrContaining("Failed to run as a self-contained app")
                 .And.HaveStdErrContaining($"'{app.RuntimeConfigJson}' did not specify a framework");
+        }
+
+        [Fact]
+        public void MissingFrameworkName()
+        {
+            TestApp app = sharedTestState.MockApp.Copy();
+
+            // Create a runtimeconfig.json with a framework that has no name property
+            var framework = new RuntimeConfig.Framework(null, HostTestContext.MicrosoftNETCoreAppVersion);
+            new RuntimeConfig(app.RuntimeConfigJson)
+                .WithFramework(framework)
+                .Save();
+
+            Command.Create(app.AppExe)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"No framework name specified: {framework.ToJson().ToJsonString(new JsonSerializerOptions { WriteIndented = false })}")
+                .And.HaveStdErrContaining($"Invalid runtimeconfig.json [{app.RuntimeConfigJson}]");
+        }
+
+        [Fact]
+        public void MissingFrameworkVersion()
+        {
+            TestApp app = sharedTestState.MockApp.Copy();
+
+            // Create a runtimeconfig.json with a framework that has no version property
+            new RuntimeConfig(app.RuntimeConfigJson)
+                .WithFramework(Constants.MicrosoftNETCoreApp, null)
+                .Save();
+
+            Command.Create(app.AppExe)
+                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"Framework '{Constants.MicrosoftNETCoreApp}' is missing a version")
+                .And.HaveStdErrContaining($"Invalid runtimeconfig.json [{app.RuntimeConfigJson}]");
         }
 
         [Theory]
@@ -321,29 +385,29 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 if (missingHostfxr)
                 {
                     expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure;
-                    expectedStdErr = $"&apphost_version={TestContext.MicrosoftNETCoreAppVersion}";
+                    expectedStdErr = $"&apphost_version={HostTestContext.MicrosoftNETCoreAppVersion}";
                     expectedUrlQuery = "missing_runtime=true&";
                 }
                 else
                 {
-                    new DotNetBuilder(invalidDotNet.Location, TestContext.BuiltDotNet.BinPath, null)
+                    new DotNetBuilder(invalidDotNet.Location, HostTestContext.BuiltDotNet.BinPath, null)
                         .Build();
 
                     expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
                     expectedStdErr = $"Framework: '{Constants.MicrosoftNETCoreApp}', " +
-                        $"version '{TestContext.MicrosoftNETCoreAppVersion}' ({TestContext.BuildArchitecture})";
-                    expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={TestContext.MicrosoftNETCoreAppVersion}";
+                        $"version '{HostTestContext.MicrosoftNETCoreAppVersion}' ({HostTestContext.BuildArchitecture})";
+                    expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={HostTestContext.MicrosoftNETCoreAppVersion}";
                 }
 
                 CommandResult result = Command.Create(sharedTestState.App.AppExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
-                    .Execute(expectedToFail: true);
+                    .Execute();
 
                 result.Should().Fail()
                     .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
-                    .And.HaveStdErrContaining($"&rid={TestContext.BuildRID}")
+                    .And.HaveStdErrContaining($"&rid={HostTestContext.BuildRID}")
                     .And.HaveStdErrContaining(expectedStdErr)
                     .And.ExitWith(expectedErrorCode);
             }
@@ -361,11 +425,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 string expectedErrorCode;
                 string expectedUrlQuery;
-                new DotNetBuilder(invalidDotNet.Location, TestContext.BuiltDotNet.BinPath, null)
+                new DotNetBuilder(invalidDotNet.Location, HostTestContext.BuiltDotNet.BinPath, null)
                     .Build();
 
                 expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
-                expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={TestContext.MicrosoftNETCoreAppVersion}";
+                expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={HostTestContext.MicrosoftNETCoreAppVersion}";
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
@@ -375,13 +439,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
-                string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{TestContext.MicrosoftNETCoreAppVersion}' ({TestContext.BuildArchitecture})";
-                var result = command.WaitForExit(true)
+                string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{HostTestContext.MicrosoftNETCoreAppVersion}' ({HostTestContext.BuildArchitecture})";
+                var result = command.WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining("&gui=true")
-                    .And.HaveStdErrContaining($"&rid={TestContext.BuildRID}")
+                    .And.HaveStdErrContaining($"&rid={HostTestContext.BuildRID}")
                     .And.HaveStdErrMatching($"details: (?>.|\\s)*{System.Text.RegularExpressions.Regex.Escape(expectedMissingFramework)}");
             }
         }
@@ -406,12 +470,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
-                var result = command.WaitForExit(true)
+                var result = command.WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?missing_runtime=true")
                     .And.HaveStdErrContaining("gui=true")
-                    .And.HaveStdErrContaining($"&apphost_version={TestContext.MicrosoftNETCoreAppVersion}");
+                    .And.HaveStdErrContaining($"&apphost_version={HostTestContext.MicrosoftNETCoreAppVersion}");
             }
         }
 
@@ -426,14 +490,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // The mockhostfxrFrameworkMissingFailure folder name is used by mock hostfxr to return the appropriate error code
             using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
             {
-                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, HostTestContext.BuiltDotNet.BinPath, null)
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0))
                     .Build();
 
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
+                    .DotNetRoot(dotnet.BinPath, HostTestContext.BuildArchitecture)
                     .MultilevelLookup(false)
                     .Start();
 
@@ -441,7 +505,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.Process.Kill();
 
                 string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
-                command.WaitForExit(true)
+                command.WaitForExit()
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining("You must install or update .NET to run this application.")

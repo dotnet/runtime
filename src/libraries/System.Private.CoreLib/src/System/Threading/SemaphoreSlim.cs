@@ -175,7 +175,7 @@ namespace System.Threading
         public void Wait()
         {
             // Call wait with infinite timeout
-            Wait(Timeout.Infinite, CancellationToken.None);
+            WaitCore(Timeout.Infinite, CancellationToken.None);
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace System.Threading
         public void Wait(CancellationToken cancellationToken)
         {
             // Call wait with infinite timeout
-            Wait(Timeout.Infinite, cancellationToken);
+            WaitCore(Timeout.Infinite, cancellationToken);
         }
 
         /// <summary>
@@ -205,21 +205,20 @@ namespace System.Threading
         /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>;
         /// otherwise, false.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
-        /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="int.MaxValue"/>.</exception>
+        /// number other than -1 milliseconds, which represents an infinite time-out.</exception>
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
-            return Wait((int)timeout.TotalMilliseconds, CancellationToken.None);
+            return WaitCore(totalMilliseconds, CancellationToken.None);
         }
 
         /// <summary>
@@ -235,22 +234,21 @@ namespace System.Threading
         /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>;
         /// otherwise, false.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
-        /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="int.MaxValue"/>.</exception>
+        /// number other than -1 milliseconds, which represents an infinite time-out.</exception>
         /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
-            return Wait((int)timeout.TotalMilliseconds, cancellationToken);
+            return WaitCore(totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -266,7 +264,12 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
-            return Wait(millisecondsTimeout, CancellationToken.None);
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
+            return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
 
         /// <summary>
@@ -284,16 +287,29 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            CheckDispose();
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
-
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
+
+            return WaitCore(millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>
+        /// Blocks the current thread until it can enter the <see cref="SemaphoreSlim"/>,
+        /// using a 32-bit unsigned integer to measure the time interval,
+        /// while observing a <see cref="CancellationToken"/>.
+        /// </summary>
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.UnsignedInfinite"/> to
+        /// wait indefinitely.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>; otherwise, false.</returns>
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
+        private bool WaitCore(long millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            CheckDispose();
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -304,10 +320,12 @@ namespace System.Threading
                 return false;
             }
 
-            uint startTime = 0;
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+            long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = Environment.TickCount64;
             }
 
             bool waitSuccessful = false;
@@ -328,7 +346,7 @@ namespace System.Threading
                     // Monitor.Enter followed by Monitor.Wait is much more expensive than waiting on an event as it involves another
                     // spin, contention, etc. The usual number of spin iterations that would otherwise be used here is increased to
                     // lessen that extra expense of doing a proper wait.
-                    int spinCount = SpinWait.SpinCountforSpinBeforeWait * 4;
+                    int spinCount = SpinWait.SpinCountForSpinBeforeWait * 4;
 
                     SpinWait spinner = default;
                     while (spinner.Count < spinCount)
@@ -350,7 +368,7 @@ namespace System.Threading
                 if (m_asyncHead is not null)
                 {
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't");
-                    asyncWaitTask = WaitAsync(millisecondsTimeout, cancellationToken);
+                    asyncWaitTask = WaitAsyncCore(millisecondsTimeout, cancellationToken);
                 }
                 // There are no async waiters, so we can proceed with normal synchronous waiting.
                 else
@@ -431,9 +449,11 @@ namespace System.Threading
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
         /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
         [UnsupportedOSPlatform("browser")]
-        private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
+        private bool WaitUntilCountOrTimeout(long millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
-            int remainingWaitMilliseconds = Timeout.Infinite;
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+            int monitorWaitMilliseconds = Timeout.Infinite;
 
             // Wait on the monitor as long as the count is zero
             while (m_currentCount == 0)
@@ -441,17 +461,32 @@ namespace System.Threading
                 // If cancelled, we throw. Trying to wait could lead to deadlock.
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // Since Monitor.Wait will handle the actual wait and it accepts an int timeout,
+                // we may need to cap the timeout to int.MaxValue.
+                bool timeoutIsCapped = false;
                 if (millisecondsTimeout != Timeout.Infinite)
                 {
-                    remainingWaitMilliseconds = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
+                    long remainingWaitMilliseconds = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
                     if (remainingWaitMilliseconds <= 0)
                     {
                         // The thread has expires its timeout
                         return false;
                     }
+                    if (remainingWaitMilliseconds <= int.MaxValue)
+                    {
+                        monitorWaitMilliseconds = (int)remainingWaitMilliseconds;
+                    }
+                    else
+                    {
+                        timeoutIsCapped = true;
+                        monitorWaitMilliseconds = int.MaxValue;
+                    }
                 }
-                // ** the actual wait **
-                bool waitSuccessful = Monitor.Wait(m_lockObjAndDisposed, remainingWaitMilliseconds);
+
+
+                // The actual wait. If the timeout was capped and waitSuccessful is false, it doesn't imply
+                // a timeout, we are just limited by Monitor.Wait's maximum timeout value.
+                bool waitSuccessful = Monitor.Wait(m_lockObjAndDisposed, monitorWaitMilliseconds);
 
                 // This waiter has woken up and this needs to be reflected in the count of waiters pulsed to wake. Since we
                 // don't have thread-specific pulse state, there is not enough information to tell whether this thread woke up
@@ -464,7 +499,7 @@ namespace System.Threading
                     --m_countOfWaitersPulsedToWake;
                 }
 
-                if (!waitSuccessful)
+                if (!timeoutIsCapped && !waitSuccessful)
                 {
                     return false;
                 }
@@ -479,7 +514,7 @@ namespace System.Threading
         /// <returns>A task that will complete when the semaphore has been entered.</returns>
         public Task WaitAsync()
         {
-            return WaitAsync(Timeout.Infinite, default);
+            return WaitAsyncCore(Timeout.Infinite, default);
         }
 
         /// <summary>
@@ -495,7 +530,7 @@ namespace System.Threading
         /// </exception>
         public Task WaitAsync(CancellationToken cancellationToken)
         {
-            return WaitAsync(Timeout.Infinite, cancellationToken);
+            return WaitAsyncCore(Timeout.Infinite, cancellationToken);
         }
 
         /// <summary>
@@ -516,7 +551,12 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
-            return WaitAsync(millisecondsTimeout, default);
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
+            return WaitAsyncCore(millisecondsTimeout, default);
         }
 
         /// <summary>
@@ -541,7 +581,16 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
         {
-            return WaitAsync(timeout, default);
+            // Validate the timeout
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
+            }
+
+            // Call wait with the timeout milliseconds
+            return WaitAsyncCore(totalMilliseconds, default);
         }
 
         /// <summary>
@@ -567,14 +616,14 @@ namespace System.Threading
         {
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            if (totalMilliseconds < -1)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
-            return WaitAsync((int)timeout.TotalMilliseconds, cancellationToken);
+            return WaitAsyncCore(totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -597,13 +646,33 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            CheckDispose();
-
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
+
+            return WaitAsyncCore(millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously waits to enter the <see cref="SemaphoreSlim"/>,
+        /// using a 32-bit unsigned integer to measure the time interval,
+        /// while observing a <see cref="CancellationToken"/>.
+        /// </summary>
+        /// <param name="millisecondsTimeout">
+        /// The number of milliseconds to wait, or <see cref="Timeout.UnsignedInfinite"/> to wait indefinitely.
+        /// </param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
+        /// <returns>
+        /// A task that will complete with a result of true if the current thread successfully entered
+        /// the <see cref="SemaphoreSlim"/>, otherwise with a result of false.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The current instance has already been
+        /// disposed.</exception>
+        private Task<bool> WaitAsyncCore(long millisecondsTimeout, CancellationToken cancellationToken)
+        {
+            CheckDispose();
 
             // Bail early for cancellation
             if (cancellationToken.IsCancellationRequested)
@@ -677,8 +746,8 @@ namespace System.Threading
             bool wasInList = m_asyncHead == task || task.Prev is not null;
 
             // Remove it from the linked list
-            if (task.Next is not null) task.Next.Prev = task.Prev;
-            if (task.Prev is not null) task.Prev.Next = task.Next;
+            task.Next?.Prev = task.Prev;
+            task.Prev?.Next = task.Next;
             if (m_asyncHead == task) m_asyncHead = task.Next;
             if (m_asyncTail == task) m_asyncTail = task.Prev;
             Debug.Assert((m_asyncHead is null) == (m_asyncTail is null), "Head is null iff tail is null");
@@ -695,12 +764,14 @@ namespace System.Threading
         /// <param name="millisecondsTimeout">The timeout.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The task to return to the caller.</returns>
-        private async Task<bool> WaitUntilCountOrTimeoutAsync(TaskNode asyncWaiter, int millisecondsTimeout, CancellationToken cancellationToken)
+        private async Task<bool> WaitUntilCountOrTimeoutAsync(TaskNode asyncWaiter, long millisecondsTimeout, CancellationToken cancellationToken)
         {
             Debug.Assert(asyncWaiter is not null, "Waiter should have been constructed");
             Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
-            await ((Task)asyncWaiter.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellationToken)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            await ((Task)asyncWaiter.WaitAsync(
+                TimeSpan.FromMilliseconds(millisecondsTimeout),
+                cancellationToken)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
             if (cancellationToken.IsCancellationRequested)
             {

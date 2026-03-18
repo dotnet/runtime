@@ -160,9 +160,9 @@ public:
     {
         // If it doesn't contain pointers, there isn't a GCDesc
         PTR_MethodTable mt(pMT);
-
+#ifndef SOS_INCLUDE
         _ASSERTE(mt->ContainsGCPointers());
-
+#endif
         return PTR_CGCDesc(mt);
     }
 

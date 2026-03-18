@@ -28,7 +28,7 @@ namespace JSImportGenerator.Unit.Tests
                     Task<float> ta5,
                     Task<IntPtr> ta7,
                     JSObject jso,
-                    string[] aa1, byte[] aab, double[] aad, int[] aai
+                    string[] aa1, byte[] aab, double[] aad, float[] aaf, int[] aai
                 );
             }
             """;
@@ -56,8 +56,39 @@ namespace JSImportGenerator.Unit.Tests
                     [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTime> a12,
                     [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTimeOffset> a13,
                     [JSMarshalAs<JSType.Promise<JSType.Number>>] Task<long> a14,
-                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15
+                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15,
+                    [JSMarshalAs<JSType.MemoryView>] ArraySegment<float> a16
                 );
+            }
+            """;
+
+        public static readonly string AllAnnotatedExport = """
+            //AllAnnotated
+            using System;
+            using System.Runtime.InteropServices.JavaScript;
+            using System.Threading.Tasks;
+            partial class Basic
+            {
+                [JSExport]
+                internal static void AnnotatedExport(
+                    [JSMarshalAs<JSType.Any>] object a1,
+                    [JSMarshalAs<JSType.Number>] long a2,
+                    [JSMarshalAs<JSType.BigInt>] long a3,
+                    [JSMarshalAs<JSType.Function>] Action a4,
+                    [JSMarshalAs<JSType.Function<JSType.Number>>] Func<int> a5,
+                    [JSMarshalAs<JSType.MemoryView>] Span<byte> a6,
+                    [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> a7,
+                    [JSMarshalAs<JSType.Promise<JSType.Any>>] Task<object> a8,
+                    [JSMarshalAs<JSType.Array<JSType.Any>>] object[] a9,
+                    [JSMarshalAs<JSType.Date>] DateTime a10,
+                    [JSMarshalAs<JSType.Date>] DateTimeOffset a11,
+                    [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTime> a12,
+                    [JSMarshalAs<JSType.Promise<JSType.Date>>] Task<DateTimeOffset> a13,
+                    [JSMarshalAs<JSType.Promise<JSType.Number>>] Task<long> a14,
+                    [JSMarshalAs<JSType.Promise<JSType.BigInt>>] Task<long> a15,
+                    [JSMarshalAs<JSType.MemoryView>] ArraySegment<float> a16
+                )
+                {}
             }
             """;
 
@@ -84,7 +115,8 @@ namespace JSImportGenerator.Unit.Tests
                     Task<DateTime> a12,
                     Task<DateTimeOffset> a13,
                     Task<long> a14,
-                    Task<long> a15
+                    Task<long> a15,
+                    ArraySegment<float> a16
                 );
             }
             """;

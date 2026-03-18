@@ -309,6 +309,60 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// IsInsertedSsaLiveIn: See if a local is marked as being live-in to a block in
+// the side table with locals inserted into SSA.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if the local is marked as live-in to that block
+//
+bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    assert(lvaGetDesc(lclNum)->lvInSsa);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        return false;
+    }
+
+    return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
+}
+
+//------------------------------------------------------------------------
+// AddInsertedSsaLiveIn: Mark as local that was inserted into SSA as being
+// live-in to a block.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if this was added anew; false if the local was already marked as such.
+//
+bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    // SSA-inserted locals always have explicit reaching defs for all uses, so
+    // it never makes sense for them to be live into the first block.
+    assert(block != fgFirstBB);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
+    }
+
+    if (m_insertedSsaLocalsLiveIn->Set(BasicBlockLocalPair(block, lclNum), true, BasicBlockLocalPairSet::Overwrite))
+    {
+        return false;
+    }
+
+    JITDUMP("Marked V%02u as live into " FMT_BB "\n", lclNum, block->bbNum);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsLastHotBlock: see if this is the last block before the cold section
 //
 // Arguments:
@@ -350,7 +404,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
+    return JumpsToNext() && !IsLastHotBlock(compiler);
 }
 
 //------------------------------------------------------------------------
@@ -367,134 +421,34 @@ bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) c
 {
     assert(KindIs(BBJ_COND));
     assert(TrueTargetIs(target) || FalseTargetIs(target));
-    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
+    return NextIs(target) && !IsLastHotBlock(compiler);
 }
+
+#ifdef DEBUG
 
 //------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:
-//    false if pred list is not in increasing bbNum order.
+//    false if pred list is not in increasing bbID order.
 //
 bool BasicBlock::checkPredListOrder()
 {
-    unsigned lastBBNum = 0;
+    unsigned lastBBID = 0;
+    bool     compare  = false;
     for (BasicBlock* const predBlock : PredBlocks())
     {
-        const unsigned bbNum = predBlock->bbNum;
-        if (bbNum <= lastBBNum)
+        const unsigned bbID = predBlock->bbID;
+        if (compare && (bbID <= lastBBID))
         {
-            assert(bbNum != lastBBNum);
+            assert(bbID != lastBBID);
             return false;
         }
-        lastBBNum = bbNum;
+        compare  = true;
+        lastBBID = bbID;
     }
     return true;
 }
-
-//------------------------------------------------------------------------
-// ensurePredListOrder: ensure all pred list entries appear in increasing
-//    bbNum order.
-//
-// Arguments:
-//    compiler - current compiler instance
-//
-void BasicBlock::ensurePredListOrder(Compiler* compiler)
-{
-    // First, check if list is already in order.
-    //
-    if (checkPredListOrder())
-    {
-        return;
-    }
-
-    reorderPredList(compiler);
-    assert(checkPredListOrder());
-}
-
-//------------------------------------------------------------------------
-// reorderPredList: relink pred list in increasing bbNum order.
-//
-// Arguments:
-//    compiler - current compiler instance
-//
-void BasicBlock::reorderPredList(Compiler* compiler)
-{
-    // Count number or entries.
-    //
-    int count = 0;
-    for (FlowEdge* const pred : PredEdges())
-    {
-        count++;
-    }
-
-    // If only 0 or 1 entry, nothing to reorder.
-    //
-    if (count < 2)
-    {
-        return;
-    }
-
-    // Allocate sort vector if needed.
-    //
-    if (compiler->fgPredListSortVector == nullptr)
-    {
-        CompAllocator allocator        = compiler->getAllocator(CMK_FlowEdge);
-        compiler->fgPredListSortVector = new (allocator) jitstd::vector<FlowEdge*>(allocator);
-    }
-
-    jitstd::vector<FlowEdge*>* const sortVector = compiler->fgPredListSortVector;
-    sortVector->clear();
-
-    // Fill in the vector from the list.
-    //
-    for (FlowEdge* const pred : PredEdges())
-    {
-        sortVector->push_back(pred);
-    }
-
-    // Sort by increasing bbNum
-    //
-    struct FlowEdgeBBNumCmp
-    {
-        bool operator()(const FlowEdge* f1, const FlowEdge* f2)
-        {
-            return f1->getSourceBlock()->bbNum < f2->getSourceBlock()->bbNum;
-        }
-    };
-
-    jitstd::sort(sortVector->begin(), sortVector->end(), FlowEdgeBBNumCmp());
-
-    // Rethread the list.
-    //
-    FlowEdge* last = nullptr;
-
-    for (FlowEdge* current : *sortVector)
-    {
-        if (last == nullptr)
-        {
-            bbPreds = current;
-        }
-        else
-        {
-            last->setNextPredEdge(current);
-        }
-
-        last = current;
-    }
-
-    last->setNextPredEdge(nullptr);
-
-    // Note bbLastPred is only used transiently, during
-    // initial pred list construction.
-    //
-    if (!compiler->fgPredsComputed)
-    {
-        bbLastPred = last;
-    }
-}
-
-#ifdef DEBUG
 
 //------------------------------------------------------------------------
 // dspBlockILRange(): Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for BAD_IL_OFFSET.
@@ -537,24 +491,18 @@ void BasicBlock::dspFlags() const
         {BBF_IMPORTED, "i"},
         {BBF_IS_LIR, "LIR"},
         {BBF_PROF_WEIGHT, "IBC"},
-        {BBF_RUN_RARELY, "rare"},
         {BBF_MARKED, "m"},
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
         {BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY, "xentry"},
         {BBF_GC_SAFE_POINT, "gcsafe"},
-        {BBF_FUNCLET_BEG, "flet"},
-        {BBF_HAS_IDX_LEN, "idxlen"},
-        {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
-        {BBF_HAS_NULLCHECK, "nullcheck"},
+        {BBF_HAS_NEWARR, "newarr"},
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},
         {BBF_BACKWARD_JUMP_SOURCE, "bwd-src"},
@@ -574,6 +522,10 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_HAS_VALUE_PROFILE, "val-prof"},
+        {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
+        {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_THROW_HELPER, "throw-hlpr"},
     };
 
     bool first = true;
@@ -630,46 +582,13 @@ unsigned BasicBlock::dspPreds() const
 //------------------------------------------------------------------------
 // dspSuccs: Display the basic block successors.
 //
-// Arguments:
-//    compiler - compiler instance; passed to NumSucc(Compiler*) -- see that function for implications.
-//
-void BasicBlock::dspSuccs(Compiler* compiler)
+void BasicBlock::dspSuccs() const
 {
     bool first = true;
-
-    // If this is a switch, we don't want to call `Succs(Compiler*)` because it will eventually call
-    // `GetSwitchDescMap()`, and that will have the side-effect of allocating the unique switch descriptor map
-    // and/or compute this switch block's unique succ set if it is not present. Debug output functions should
-    // never have an effect on codegen. We also don't want to assume the unique succ set is accurate, so we
-    // compute it ourselves here.
-    if (bbKind == BBJ_SWITCH)
+    for (const BasicBlock* const succ : Succs())
     {
-        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-        // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->fgBBNumMax;
-        BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
-        BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-        for (BasicBlock* const bTarget : SwitchTargets())
-        {
-            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbNum);
-        }
-        BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
-        unsigned        bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            // Note that we will output switch successors in increasing numerical bbNum order, which is
-            // not related to their order in the bbSwtTargets->bbsDstTab table.
-            printf("%s" FMT_BB, first ? "" : ",", bbNum);
-            first = false;
-        }
-    }
-    else
-    {
-        for (const BasicBlock* const succ : Succs(compiler))
-        {
-            printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
-            first = false;
-        }
+        printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
+        first = false;
     }
 }
 
@@ -723,12 +642,9 @@ void BasicBlock::dspKind() const
             }
             else
             {
-                const unsigned   jumpCnt = bbEhfTargets->bbeCount;
-                FlowEdge** const jumpTab = bbEhfTargets->bbeSuccs;
-
-                for (unsigned i = 0; i < jumpCnt; i++)
+                for (unsigned i = 0; i < bbEhfTargets->GetSuccCount(); i++)
                 {
-                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(bbEhfTargets->GetSucc(i)));
                 }
             }
 
@@ -787,23 +703,23 @@ void BasicBlock::dspKind() const
         {
             printf(" ->");
 
-            const unsigned   jumpCnt = bbSwtTargets->bbsCount;
-            FlowEdge** const jumpTab = bbSwtTargets->bbsDstTab;
+            const unsigned   jumpCnt = bbSwtTargets->GetCaseCount();
+            FlowEdge** const jumpTab = bbSwtTargets->GetCases();
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
                 printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
-                const bool isDefault = bbSwtTargets->bbsHasDefault && (i == jumpCnt - 1);
+                const bool isDefault = bbSwtTargets->HasDefaultCase() && (i == jumpCnt - 1);
                 if (isDefault)
                 {
                     printf("[def]");
                 }
 
-                const bool isDominant = bbSwtTargets->bbsHasDominantCase && (i == bbSwtTargets->bbsDominantCase);
+                const bool isDominant = bbSwtTargets->HasDominantCase() && (i == bbSwtTargets->GetDominantCase());
                 if (isDominant)
                 {
-                    printf("[dom(" FMT_WT ")]", bbSwtTargets->bbsDominantFraction);
+                    printf("[dom]");
                 }
             }
 
@@ -817,10 +733,7 @@ void BasicBlock::dspKind() const
     }
 }
 
-void BasicBlock::dspBlockHeader(Compiler* compiler,
-                                bool      showKind /*= true*/,
-                                bool      showFlags /*= false*/,
-                                bool      showPreds /*= true*/)
+void BasicBlock::dspBlockHeader(bool showKind /*= true*/, bool showFlags /*= false*/, bool showPreds /*= true*/) const
 {
     printf("%s ", dspToString());
     dspBlockILRange();
@@ -833,7 +746,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
         printf(", preds={");
         dspPreds();
         printf("} succs={");
-        dspSuccs(compiler);
+        dspSuccs();
         printf("}");
     }
     if (showFlags)
@@ -883,10 +796,9 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
     to->copyEHRegion(from);
-    to->bbCatchTyp    = from->bbCatchTyp;
+    to->bbCatchType   = from->bbCatchType;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
-    to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
 #ifdef DEBUG
@@ -1063,10 +975,10 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     unsigned hash = SsaStressHashHelper();
     if (hash != 0)
     {
-        return (hash ^ (ptr->bbNum << 16) ^ ptr->bbNum);
+        return (hash ^ (ptr->bbID << 16) ^ ptr->bbID);
     }
 #endif
-    return ptr->bbNum;
+    return ptr->bbID;
 }
 
 //------------------------------------------------------------------------
@@ -1092,7 +1004,7 @@ bool BasicBlock::isEmpty() const
     {
         for (GenTree* node : LIR::AsRange(this))
         {
-            if (node->OperGet() != GT_IL_OFFSET)
+            if (!node->OperIs(GT_IL_OFFSET))
             {
                 return false;
             }
@@ -1150,41 +1062,6 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 }
 
 //------------------------------------------------------------------------
-// bbFallsThrough: Check if inserting a BasicBlock after this one will alter
-// the flowgraph.
-//
-// Returns:
-//    True if so.
-//
-bool BasicBlock::bbFallsThrough() const
-{
-    switch (bbKind)
-    {
-        case BBJ_THROW:
-        case BBJ_EHFINALLYRET:
-        case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_EHCATCHRET:
-        case BBJ_RETURN:
-        case BBJ_ALWAYS:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_LEAVE:
-        case BBJ_SWITCH:
-            return false;
-
-        case BBJ_COND:
-            return true;
-
-        case BBJ_CALLFINALLY:
-            return !HasFlag(BBF_RETLESS_CALL);
-
-        default:
-            assert(!"Unknown bbKind in bbFallsThrough()");
-            return true;
-    }
-}
-
-//------------------------------------------------------------------------
 // NumSucc: Returns the count of block successors. See the declaration comment for details.
 //
 // Arguments:
@@ -1235,10 +1112,10 @@ unsigned BasicBlock::NumSucc() const
                 return 0;
             }
 
-            return bbEhfTargets->bbeCount;
+            return bbEhfTargets->GetSuccCount();
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsCount;
+            return bbSwtTargets->GetSuccCount();
 
         default:
             unreached();
@@ -1246,7 +1123,7 @@ unsigned BasicBlock::NumSucc() const
 }
 
 //------------------------------------------------------------------------
-// GetSucc: Returns the requested successor edge. See the declaration comment for details.
+// GetSuccEdge: Returns the requested successor edge. See the declaration comment for details.
 //
 // Arguments:
 //    i - index of successor to return. 0 <= i <= NumSucc().
@@ -1280,10 +1157,10 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
             }
 
         case BBJ_EHFINALLYRET:
-            return bbEhfTargets->bbeSuccs[i];
+            return bbEhfTargets->GetSucc(i);
 
         case BBJ_SWITCH:
-            return bbSwtTargets->bbsDstTab[i];
+            return bbSwtTargets->GetSucc(i);
 
         default:
             unreached();
@@ -1302,145 +1179,6 @@ FlowEdge* BasicBlock::GetSuccEdge(unsigned i) const
 BasicBlock* BasicBlock::GetSucc(unsigned i) const
 {
     return GetSuccEdge(i)->getDestinationBlock();
-}
-
-//------------------------------------------------------------------------
-// NumSucc: Returns the count of block successors. See the declaration comment for details.
-//
-// Arguments:
-//    comp - Compiler instance
-//
-// Return Value:
-//    Count of block successors.
-//
-unsigned BasicBlock::NumSucc(Compiler* comp)
-{
-    assert(comp != nullptr);
-
-    switch (bbKind)
-    {
-        case BBJ_THROW:
-        case BBJ_RETURN:
-        case BBJ_EHFAULTRET:
-            return 0;
-
-        case BBJ_EHFINALLYRET:
-            // We may call this method before we realize we have invalid IL. Tolerate.
-            //
-            if (!hasHndIndex())
-            {
-                return 0;
-            }
-
-            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
-            //
-            if (bbEhfTargets == nullptr)
-            {
-                return 0;
-            }
-
-            return bbEhfTargets->bbeCount;
-
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_LEAVE:
-            return 1;
-
-        case BBJ_COND:
-            if (bbTrueEdge == bbFalseEdge)
-            {
-                return 1;
-            }
-            else
-            {
-                return 2;
-            }
-
-        case BBJ_SWITCH:
-        {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            return sd.numDistinctSuccs;
-        }
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// GetSucc: Returns the requested successor edge. See the declaration comment for details.
-//
-// Arguments:
-//    i - index of successor to return. 0 <= i <= NumSucc(comp).
-//    comp - Compiler instance
-//
-// Return Value:
-//    Requested successor edge
-//
-FlowEdge* BasicBlock::GetSuccEdge(unsigned i, Compiler* comp)
-{
-    assert(comp != nullptr);
-
-    assert(i < NumSucc(comp)); // Index bounds check.
-    switch (bbKind)
-    {
-        case BBJ_EHFILTERRET:
-            // Handler is the (sole) normal successor of the filter.
-            assert(comp->fgFirstBlockOfHandler(this) == GetTarget());
-            return GetTargetEdge();
-
-        case BBJ_EHFINALLYRET:
-            assert(bbEhfTargets != nullptr);
-            assert(i < bbEhfTargets->bbeCount);
-            return bbEhfTargets->bbeSuccs[i];
-
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-        case BBJ_EHCATCHRET:
-        case BBJ_LEAVE:
-            return GetTargetEdge();
-
-        case BBJ_COND:
-            if (i == 0)
-            {
-                return GetFalseEdge();
-            }
-            else
-            {
-                assert(i == 1);
-                assert(bbTrueEdge != bbFalseEdge);
-                return GetTrueEdge();
-            }
-
-        case BBJ_SWITCH:
-        {
-            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-            assert(i < sd.numDistinctSuccs); // Range check.
-            return sd.nonDuplicates[i];
-        }
-
-        default:
-            unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// GetSucc: Returns the requested block successor. See the declaration comment for details.
-//
-// Arguments:
-//    i - index of successor to return. 0 <= i <= NumSucc(comp).
-//    comp - Compiler instance
-//
-// Return Value:
-//    Requested successor block
-//
-BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
-{
-    return GetSuccEdge(i, comp)->getDestinationBlock();
 }
 
 void BasicBlock::InitVarSets(Compiler* comp)
@@ -1463,7 +1201,7 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
     {
         GenTree* lastNode = this->lastNode();
         assert(lastNode != nullptr);
-        return lastNode->OperGet() == GT_JMP;
+        return lastNode->OperIs(GT_JMP);
     }
 
     return false;
@@ -1479,8 +1217,8 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
 //
 bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/) const
 {
-    GenTree* tailCall                       = nullptr;
-    bool     tailCallsConvertibleToLoopOnly = false;
+    GenTreeCall* tailCall                       = nullptr;
+    bool         tailCallsConvertibleToLoopOnly = false;
     return endsWithJmpMethod(comp) ||
            endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, &tailCall);
 }
@@ -1501,10 +1239,10 @@ bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*
 // Notes:
 //    At most one of fastTailCallsOnly and tailCallsConvertibleToLoopOnly flags can be true.
 //
-bool BasicBlock::endsWithTailCall(Compiler* comp,
-                                  bool      fastTailCallsOnly,
-                                  bool      tailCallsConvertibleToLoopOnly,
-                                  GenTree** tailCall) const
+bool BasicBlock::endsWithTailCall(Compiler*     comp,
+                                  bool          fastTailCallsOnly,
+                                  bool          tailCallsConvertibleToLoopOnly,
+                                  GenTreeCall** tailCall) const
 {
     assert(!fastTailCallsOnly || !tailCallsConvertibleToLoopOnly);
     *tailCall   = nullptr;
@@ -1529,7 +1267,7 @@ bool BasicBlock::endsWithTailCall(Compiler* comp,
         if (result)
         {
             GenTree* lastNode = this->lastNode();
-            if (lastNode->OperGet() == GT_CALL)
+            if (lastNode->OperIs(GT_CALL))
             {
                 GenTreeCall* call = lastNode->AsCall();
                 if (tailCallsConvertibleToLoopOnly)
@@ -1571,7 +1309,7 @@ bool BasicBlock::endsWithTailCall(Compiler* comp,
 // Return Value:
 //    true if the block ends with a tail call convertible to loop.
 //
-bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tailCall) const
+bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTreeCall** tailCall) const
 {
     bool fastTailCallsOnly              = false;
     bool tailCallsConvertibleToLoopOnly = true;
@@ -1611,10 +1349,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     // boundaries), or have been inserted by the JIT
     block->bbCodeOffs    = BAD_IL_OFFSET;
     block->bbCodeOffsEnd = BAD_IL_OFFSET;
-
-#ifdef DEBUG
-    block->bbID = compiler->compBasicBlockID++;
-#endif
+    block->bbID          = compiler->compBasicBlockID++;
 
     /* Give the block a number, set the ancestor count and weight */
 
@@ -1690,7 +1425,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind)
     return block;
 }
 
-BasicBlock* BasicBlock::New(Compiler* compiler, BBehfDesc* ehfTargets)
+BasicBlock* BasicBlock::New(Compiler* compiler, BBJumpTable* ehfTargets)
 {
     BasicBlock* block = BasicBlock::New(compiler);
     block->SetEhf(ehfTargets);
@@ -1792,12 +1527,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    bool returnVal = (bbCatchTyp != BBCT_NONE);
-    if (!returnVal)
-    {
-        assert(!HasFlag(BBF_FUNCLET_BEG));
-    }
-    return returnVal;
+    return (bbCatchType != BBCT_NONE);
 }
 
 //------------------------------------------------------------------------
@@ -1818,22 +1548,6 @@ bool BasicBlock::hasEHBoundaryOut() const
 }
 
 //------------------------------------------------------------------------
-// BBswtDesc copy ctor: copy a switch descriptor, but don't set up the jump table
-//
-// Arguments:
-//    other - existing switch descriptor to copy (except for its jump table)
-//
-BBswtDesc::BBswtDesc(const BBswtDesc* other)
-    : bbsDstTab(nullptr)
-    , bbsCount(other->bbsCount)
-    , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
-    , bbsHasDefault(other->bbsHasDefault)
-    , bbsHasDominantCase(other->bbsHasDominantCase)
-{
-}
-
-//------------------------------------------------------------------------
 // BBswtDesc copy ctor: copy a switch descriptor
 //
 // Arguments:
@@ -1841,39 +1555,33 @@ BBswtDesc::BBswtDesc(const BBswtDesc* other)
 //    other - existing switch descriptor to copy
 //
 BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
-    : bbsDstTab(nullptr)
-    , bbsCount(other->bbsCount)
+    : BBJumpTable(new(comp, CMK_FlowEdge) FlowEdge*[other->succCount + other->caseCount], other -> succCount)
+    , caseCount(other->caseCount)
+    , cases(succs + succCount)
     , bbsDominantCase(other->bbsDominantCase)
-    , bbsDominantFraction(other->bbsDominantFraction)
     , bbsHasDefault(other->bbsHasDefault)
     , bbsHasDominantCase(other->bbsHasDominantCase)
 {
-    // Allocate and fill in a new dst tab
+    // Fill in the new tables
     //
-    bbsDstTab = new (comp, CMK_FlowEdge) FlowEdge*[bbsCount];
-    for (unsigned i = 0; i < bbsCount; i++)
-    {
-        bbsDstTab[i] = other->bbsDstTab[i];
-    }
+    memcpy(succs, other->succs, sizeof(FlowEdge*) * succCount);
+    memcpy(cases, other->cases, sizeof(FlowEdge*) * caseCount);
 }
 
 //------------------------------------------------------------------------
-// BBehfDesc copy ctor: copy a EHFINALLYRET descriptor
+// BBJumpTable copy ctor: copy a N-successor block descriptor
 //
 // Arguments:
 //    comp - compiler instance
 //    other - existing descriptor to copy
 //
-BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other)
-    : bbeCount(other->bbeCount)
+BBJumpTable::BBJumpTable(Compiler* comp, const BBJumpTable* other)
+    : succs(new(comp, CMK_FlowEdge) FlowEdge*[other->succCount])
+    , succCount(other->succCount)
 {
-    // Allocate and fill in a new dst tab
+    // Fill in the new jump table
     //
-    bbeSuccs = new (comp, CMK_FlowEdge) FlowEdge*[bbeCount];
-    for (unsigned i = 0; i < bbeCount; i++)
-    {
-        bbeSuccs[i] = other->bbeSuccs[i];
-    }
+    memcpy(succs, other->succs, sizeof(FlowEdge*) * succCount);
 }
 
 //------------------------------------------------------------------------
@@ -1972,4 +1680,59 @@ StackEntry* BasicBlock::bbStackOnEntry() const
 {
     assert(bbEntryState);
     return bbEntryState->esStack;
+}
+
+//------------------------------------------------------------------------
+// StatementCount: number of statements in the block.
+//
+// Returns:
+//   count of statements
+//
+// Notes:
+//   If you are calling this in order to compare the statement count
+//   against a limit, use StatementCountExceeds as it may do less work.
+//
+unsigned BasicBlock::StatementCount()
+{
+    unsigned count = 0;
+
+    for (Statement* const stmt : Statements())
+    {
+        count++;
+    }
+
+    return count;
+}
+
+//------------------------------------------------------------------------
+// StatementCountExceeds: check if the number of statements in the block
+//   exceeds some limit
+//
+// Arguments:
+//    limit  - limit on the number of statements
+//    count  - [out, optional] actual number of statements (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of statements is greater than limit
+//
+bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (Statement* const stmt : Statements())
+    {
+        if (++localCount > limit)
+        {
+            overLimit = true;
+            break;
+        }
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
 }

@@ -174,7 +174,7 @@ HRESULT RegMeta::GetGuid(
     if (ixGuid == 0)
     {
         // Return zeros
-        *ppGuid = GetPublicApiCompatibilityZeros<const GUID>();
+        *ppGuid = &GUID_NULL;
         hr = S_OK;
     }
     else

@@ -25,5 +25,4 @@ enum CanDoubleAlign
     DEFAULT_DOUBLE_ALIGN = CAN_DOUBLE_ALIGN
 };
 #endif
-
 #endif // REGALLOC_H_

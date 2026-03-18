@@ -21,7 +21,7 @@ namespace System.IO.Tests
         // going to fail the test.  If we don't expect an event to occur, then we need
         // to keep the timeout short, as in a successful run we'll end up waiting for
         // the entire timeout specified.
-        public const int WaitForExpectedEventTimeout = 500;         // ms to wait for an event to happen
+        public const int WaitForExpectedEventTimeout = 1000;         // ms to wait for an event to happen
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
         public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
@@ -382,7 +382,7 @@ namespace System.IO.Tests
             Assert.False(TryErrorEvent(watcher, action, cleanup, attempts, expected: true), message);
         }
 
-        /// /// <summary>
+        /// <summary>
         /// Helper method for the ExpectError/ExpectNoError functions.
         /// </summary>
         /// <param name="watcher">The FileSystemWatcher to test</param>
@@ -505,9 +505,10 @@ namespace System.IO.Tests
 
         }
 
-        // Observe until an expected count of events is triggered, otherwise fail. Return all collected events.
-        internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action)
+        // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.
+        internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action, Func<FiredEvent, bool>? isFilteredOut = null)
         {
+            isFilteredOut ??= _ => false;
             using var eventsOccurred = new AutoResetEvent(false);
             var eventsOrrures = 0;
 
@@ -552,7 +553,13 @@ namespace System.IO.Tests
 
             void AddEvent(WatcherChangeTypes eventType, string dir1, string dir2 = "")
             {
-                events.Add(new FiredEvent(eventType, dir1, dir2));
+                var firedEvent = new FiredEvent(eventType, dir1, dir2);
+                if (isFilteredOut(firedEvent))
+                {
+                    return;
+                }
+
+                events.Add(firedEvent);
                 if (Interlocked.Increment(ref eventsOrrures) == expectedEvents)
                 {
                     eventsOccurred.Set();

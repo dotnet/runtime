@@ -453,30 +453,18 @@ namespace System.Security.Cryptography
             if (parameters.D != null)
             {
                 AsnWriter writer = RSAKeyFormatHelper.WritePkcs8PrivateKey(parameters);
-                ArraySegment<byte> pkcs8 = writer.RentAndEncode();
-
-                try
+                writer.Encode(this, static (RSAOpenSsl rsa, ReadOnlySpan<byte> pkcs8) =>
                 {
-                    ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
-                }
-                finally
-                {
-                    CryptoPool.Return(pkcs8);
-                }
+                    rsa.ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
+                });
             }
             else
             {
                 AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
-                ArraySegment<byte> spki = writer.RentAndEncode();
-
-                try
+                writer.Encode(this, static (RSAOpenSsl rsa, ReadOnlySpan<byte> spki) =>
                 {
-                    ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
-                }
-                finally
-                {
-                    CryptoPool.Return(spki);
-                }
+                    rsa.ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
+                });
             }
         }
 
@@ -501,16 +489,10 @@ namespace System.Security.Cryptography
             }
 
             AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(source.Slice(0, read));
-            ArraySegment<byte> spki = writer.RentAndEncode();
-
-            try
+            writer.Encode(this, static (RSAOpenSsl rsa, ReadOnlySpan<byte> spki) =>
             {
-                ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
-            }
-            finally
-            {
-                CryptoPool.Return(spki);
-            }
+                rsa.ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
+            });
 
             bytesRead = read;
         }
@@ -617,16 +599,11 @@ namespace System.Security.Cryptography
             }
 
             AsnWriter writer = RSAKeyFormatHelper.WritePkcs8PrivateKey(source.Slice(0, read));
-            ArraySegment<byte> pkcs8 = writer.RentAndEncode();
 
-            try
+            writer.Encode(this, static (RSAOpenSsl rsa, ReadOnlySpan<byte> pkcs8) =>
             {
-                ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
-            }
-            finally
-            {
-                CryptoPool.Return(pkcs8);
-            }
+                rsa.ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
+            });
 
             bytesRead = read;
         }

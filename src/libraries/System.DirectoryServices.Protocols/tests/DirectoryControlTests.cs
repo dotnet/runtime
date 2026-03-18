@@ -10,7 +10,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData("", null, false, false)]
         [InlineData("Type", new byte[] { 1, 2, 3 }, true, true)]
-        public void Ctor_Type_Value_IsCritical_ServerSide(string type, byte[] value, bool isCritical, bool serverSide)
+        public void Ctor_Type_Value_IsCritical_ServerSide(string type, byte[]? value, bool isCritical, bool serverSide)
         {
             var control = new DirectoryControl(type, value, isCritical, serverSide);
             Assert.Equal(type, control.Type);

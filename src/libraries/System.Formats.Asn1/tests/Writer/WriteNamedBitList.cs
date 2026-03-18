@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Formats.Asn1.Tests.Reader;
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
@@ -12,32 +13,7 @@ namespace System.Formats.Asn1.Tests.Writer
     public class WriteNamedBitList : Asn1WriterTests
     {
         [Theory]
-        [InlineData(
-            AsnEncodingRules.BER,
-            "030100",
-            ReadNamedBitList.ULongFlags.None)]
-        [InlineData(
-            AsnEncodingRules.CER,
-            "030100",
-            ReadNamedBitList.ULongFlags.None)]
-        [InlineData(
-            AsnEncodingRules.DER,
-            "030100",
-            ReadNamedBitList.ULongFlags.None)]
-        [InlineData(
-            AsnEncodingRules.BER,
-            "0309000000000000000003",
-            ReadNamedBitList.ULongFlags.Max | ReadNamedBitList.ULongFlags.AlmostMax)]
-        [InlineData(
-            AsnEncodingRules.CER,
-            "0309010000000080000002",
-            ReadNamedBitList.LongFlags.Max | ReadNamedBitList.LongFlags.Mid)]
-        [InlineData(
-            AsnEncodingRules.DER,
-            "030204B0",
-            ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment)]
+        [MemberData(nameof(VerifyWriteNamedBitListTheories))]
         public static void VerifyWriteNamedBitList(
             AsnEncodingRules ruleSet,
             string expectedHex,
@@ -53,29 +29,29 @@ namespace System.Formats.Asn1.Tests.Writer
         [InlineData(
             AsnEncodingRules.BER,
             "C00100",
-            ReadNamedBitList.ULongFlags.None)]
+            ReadNamedBitListBase.ULongFlags.None)]
         [InlineData(
             AsnEncodingRules.CER,
             "410100",
-            ReadNamedBitList.ULongFlags.None)]
+            ReadNamedBitListBase.ULongFlags.None)]
         [InlineData(
             AsnEncodingRules.DER,
             "820100",
-            ReadNamedBitList.ULongFlags.None)]
+            ReadNamedBitListBase.ULongFlags.None)]
         [InlineData(
             AsnEncodingRules.BER,
             "C009000000000000000003",
-            ReadNamedBitList.ULongFlags.Max | ReadNamedBitList.ULongFlags.AlmostMax)]
+            ReadNamedBitListBase.ULongFlags.Max | ReadNamedBitListBase.ULongFlags.AlmostMax)]
         [InlineData(
             AsnEncodingRules.CER,
             "4109010000000080000002",
-            ReadNamedBitList.LongFlags.Max | ReadNamedBitList.LongFlags.Mid)]
+            ReadNamedBitListBase.LongFlags.Max | ReadNamedBitListBase.LongFlags.Mid)]
         [InlineData(
             AsnEncodingRules.DER,
             "820204B0",
-            ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment)]
+            ReadNamedBitListBase.X509KeyUsageCSharpStyle.DigitalSignature |
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.KeyEncipherment |
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.DataEncipherment)]
         public static void VerifyWriteNamedBitList_WithTag(
             AsnEncodingRules ruleSet,
             string expectedHex,
@@ -105,9 +81,9 @@ namespace System.Formats.Asn1.Tests.Writer
             AsnWriter genWriter = new AsnWriter(ruleSet);
 
             var flagsValue =
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment;
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.DigitalSignature |
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.KeyEncipherment |
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.DataEncipherment;
 
             genWriter.WriteNamedBitList(flagsValue);
             objWriter.WriteNamedBitList((Enum)flagsValue);
@@ -126,9 +102,9 @@ namespace System.Formats.Asn1.Tests.Writer
             Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 52);
 
             var flagsValue =
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DigitalSignature |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.KeyEncipherment |
-                ReadNamedBitList.X509KeyUsageCSharpStyle.DataEncipherment;
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.DigitalSignature |
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.KeyEncipherment |
+                ReadNamedBitListBase.X509KeyUsageCSharpStyle.DataEncipherment;
 
             genWriter.WriteNamedBitList(flagsValue, tag);
             objWriter.WriteNamedBitList((Enum)flagsValue, tag);
@@ -379,6 +355,57 @@ namespace System.Formats.Asn1.Tests.Writer
             writer.WriteNamedBitList(array);
 
             Verify(writer, kuExt.RawData.ByteArrayToHex());
+        }
+
+        public static IEnumerable<object[]> VerifyWriteNamedBitListTheories
+        {
+            get
+            {
+                AsnEncodingRules[] rules = [AsnEncodingRules.BER, AsnEncodingRules.CER, AsnEncodingRules.DER];
+
+                foreach (AsnEncodingRules rule in rules)
+                {
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.ULongFlags.None };
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.LongFlags.None };
+
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.UIntFlags.None };
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.IntFlags.None };
+
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.UShortFlags.None };
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.ShortFlags.None };
+
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.ByteFlags.None };
+                    yield return new object[] { rule, "030100", ReadNamedBitListBase.SByteFlags.None };
+
+                    yield return new object[] { rule, "030200FF", ReadNamedBitListBase.SByteFlags.AllBits };
+                    yield return new object[] { rule, "030300FFFF", ReadNamedBitListBase.ShortFlags.AllBits };
+                    yield return new object[] { rule, "030500FFFFFFFF", ReadNamedBitListBase.IntFlags.AllBits };
+                    yield return new object[] { rule, "030900FFFFFFFFFFFFFFFF", ReadNamedBitListBase.LongFlags.AllBits };
+                }
+
+                yield return new object[]
+                {
+                    AsnEncodingRules.BER,
+                    "0309000000000000000003",
+                    ReadNamedBitListBase.ULongFlags.Max | ReadNamedBitListBase.ULongFlags.AlmostMax,
+                };
+
+                yield return new object[]
+                {
+                    AsnEncodingRules.CER,
+                    "0309010000000080000002",
+                    ReadNamedBitListBase.LongFlags.Max | ReadNamedBitListBase.LongFlags.Mid,
+                };
+
+                yield return new object[]
+                {
+                    AsnEncodingRules.DER,
+                    "030204B0",
+                    ReadNamedBitListBase.X509KeyUsageCSharpStyle.DigitalSignature |
+                        ReadNamedBitListBase.X509KeyUsageCSharpStyle.KeyEncipherment |
+                        ReadNamedBitListBase.X509KeyUsageCSharpStyle.DataEncipherment,
+                };
+            }
         }
     }
 }

@@ -47,7 +47,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
-            public List<DiagnosticInfo> Diagnostics { get; } = new();
+            public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
 
             public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object?[]? messageArgs)
@@ -60,7 +60,7 @@ namespace System.Text.Json.SourceGeneration
                     location = _contextClassLocation;
                 }
 
-                Diagnostics.Add(DiagnosticInfo.Create(descriptor, location, messageArgs));
+                Diagnostics.Add(Diagnostic.Create(descriptor, location, messageArgs));
             }
 
             public Parser(KnownTypeSymbols knownSymbols)
@@ -98,6 +98,15 @@ namespace System.Text.Json.SourceGeneration
                 if (!_knownSymbols.JsonSerializerContextType.IsAssignableFrom(contextTypeSymbol))
                 {
                     ReportDiagnostic(DiagnosticDescriptors.JsonSerializableAttributeOnNonContextType, _contextClassLocation, contextTypeSymbol.ToDisplayString());
+                    return null;
+                }
+
+                // When a context class is split across multiple partial declarations with
+                // [JsonSerializable] attributes on different partials, we only want to
+                // generate code once (from the canonical partial) to avoid duplicate hintNames.
+                if (!IsCanonicalPartialDeclaration(contextTypeSymbol, contextClassDeclaration))
+                {
+                    _contextClassLocation = null;
                     return null;
                 }
 
@@ -258,6 +267,54 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
+            /// <summary>
+            /// Determines if the given class declaration is the canonical partial declaration
+            /// for the context type. When a context class is split across multiple partial
+            /// declarations with [JsonSerializable] attributes on different partials, we only
+            /// want to generate code once (from the canonical partial) to avoid duplicate hintNames.
+            /// The canonical partial is determined by picking the first syntax tree alphabetically
+            /// by file path among all trees that have at least one [JsonSerializable] attribute.
+            /// If file paths are empty or identical, comparison falls back to ordinal string order
+            /// which provides deterministic behavior. If no attributes are found (edge case that
+            /// shouldn't occur since this method is called from a context triggered by the attribute),
+            /// the current partial is treated as canonical.
+            /// </summary>
+            private bool IsCanonicalPartialDeclaration(INamedTypeSymbol contextTypeSymbol, ClassDeclarationSyntax contextClassDeclaration)
+            {
+                Debug.Assert(_knownSymbols.JsonSerializableAttributeType != null);
+
+                // Collect all distinct syntax trees that have [JsonSerializable] attributes for this type
+                SyntaxTree? canonicalTree = null;
+
+                foreach (AttributeData attributeData in contextTypeSymbol.GetAttributes())
+                {
+                    if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonSerializableAttributeType))
+                    {
+                        continue;
+                    }
+
+                    SyntaxTree? attributeTree = attributeData.ApplicationSyntaxReference?.SyntaxTree;
+                    if (attributeTree is null)
+                    {
+                        continue;
+                    }
+
+                    // Pick the first tree alphabetically by file path.
+                    // Empty file paths compare as less than non-empty paths with ordinal comparison.
+                    if (canonicalTree is null ||
+                        string.Compare(attributeTree.FilePath, canonicalTree.FilePath, StringComparison.Ordinal) < 0)
+                    {
+                        canonicalTree = attributeTree;
+                    }
+                }
+
+                // This partial is canonical if its syntax tree is the canonical tree.
+                // If canonicalTree is null (no attributes found), treat current partial as canonical.
+                // This is a fallback that shouldn't normally occur since this method is called
+                // from a context triggered by ForAttributeWithMetadataName for JsonSerializableAttribute.
+                return canonicalTree is null || canonicalTree == contextClassDeclaration.SyntaxTree;
+            }
+
             private SourceGenerationOptionsSpec ParseJsonSourceGenerationOptionsAttribute(INamedTypeSymbol contextType, AttributeData attributeData)
             {
                 JsonSourceGenerationMode? generationMode = null;
@@ -280,12 +337,14 @@ namespace System.Text.Json.SourceGeneration
                 bool? propertyNameCaseInsensitive = null;
                 JsonKnownNamingPolicy? propertyNamingPolicy = null;
                 JsonCommentHandling? readCommentHandling = null;
+                JsonKnownReferenceHandler? referenceHandler = null;
                 JsonUnknownTypeHandling? unknownTypeHandling = null;
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool? useStringEnumConverter = null;
                 bool? writeIndented = null;
                 char? indentCharacter = null;
                 int? indentSize = null;
+                bool? allowDuplicateProperties = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -379,6 +438,10 @@ namespace System.Text.Json.SourceGeneration
                             readCommentHandling = (JsonCommentHandling)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.ReferenceHandler):
+                            referenceHandler = (JsonKnownReferenceHandler)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.UnknownTypeHandling):
                             unknownTypeHandling = (JsonUnknownTypeHandling)namedArg.Value.Value!;
                             break;
@@ -405,6 +468,10 @@ namespace System.Text.Json.SourceGeneration
 
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
                             generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowDuplicateProperties):
+                            allowDuplicateProperties = (bool)namedArg.Value.Value!;
                             break;
 
                         default:
@@ -434,12 +501,14 @@ namespace System.Text.Json.SourceGeneration
                     PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
                     PropertyNamingPolicy = propertyNamingPolicy,
                     ReadCommentHandling = readCommentHandling,
+                    ReferenceHandler = referenceHandler,
                     UnknownTypeHandling = unknownTypeHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     UseStringEnumConverter = useStringEnumConverter,
                     WriteIndented = writeIndented,
                     IndentCharacter = indentCharacter,
                     IndentSize = indentSize,
+                    AllowDuplicateProperties = allowDuplicateProperties,
                 };
             }
 
@@ -834,6 +903,11 @@ namespace System.Text.Json.SourceGeneration
                     collectionType = CollectionType.ISet;
                     valueType = actualTypeToConvert.TypeArguments[0];
                 }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.IReadOnlySetOfTType)) != null)
+                {
+                    collectionType = CollectionType.IReadOnlySetOfT;
+                    valueType = actualTypeToConvert.TypeArguments[0];
+                }
                 else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ICollectionOfTType)) != null)
                 {
                     collectionType = CollectionType.ICollectionOfT;
@@ -1093,14 +1167,39 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 INamedTypeSymbol? actualDictionaryType = type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValueType);
-                if (actualDictionaryType == null)
+                if (actualDictionaryType != null)
                 {
-                    return false;
+                    if (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
+                        (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
+                         SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType)))
+                    {
+                        return true;
+                    }
                 }
 
-                return SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
-                        (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
-                         SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType));
+                // Also check for IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement>
+                // but only if Dictionary can be assigned to it (to exclude ImmutableDictionary and similar types)
+                INamedTypeSymbol? actualReadOnlyDictionaryType = type.GetCompatibleGenericBaseType(_knownSymbols.IReadonlyDictionaryOfTKeyTValueType);
+                if (actualReadOnlyDictionaryType != null)
+                {
+                    if (SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
+                        (SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
+                         SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType)))
+                    {
+                        // Check if Dictionary can be assigned to this type
+                        INamedTypeSymbol? dictionaryType = SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.ObjectType)
+                            ? _knownSymbols.StringObjectDictionaryType
+                            : _knownSymbols.StringJsonElementDictionaryType;
+
+                        if (dictionaryType != null)
+                        {
+                            Conversion conversion = _knownSymbols.Compilation.ClassifyConversion(dictionaryType, type);
+                            return conversion.IsImplicit || conversion.IsIdentity;
+                        }
+                    }
+                }
+
+                return false;
             }
 
             private PropertyGenerationSpec? ParsePropertyGenerationSpec(
@@ -1508,6 +1607,11 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    if (property.DefaultIgnoreCondition == JsonIgnoreCondition.Always && !property.IsRequired)
+                    {
+                        continue;
+                    }
+
                     if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
                     {
                         if (!(memberInitializerNames ??= new()).Add(property.MemberName))
@@ -1530,7 +1634,7 @@ namespace System.Text.Json.SourceGeneration
 
                             var propertyInitializer = new PropertyInitializerGenerationSpec
                             {
-                                Name = property.MemberName,
+                                Name = property.NameSpecifiedInSourceCode,
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,

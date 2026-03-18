@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
@@ -15,9 +14,6 @@ namespace System.Reflection.Metadata
 
         internal DeclarativeSecurityAttribute(MetadataReader reader, int rowId)
         {
-            Debug.Assert(reader != null);
-            Debug.Assert(rowId != 0);
-
             _reader = reader;
             _rowId = rowId;
         }

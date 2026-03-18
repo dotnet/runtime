@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct KeyAgreeRecipientIdentifierAsn
     {
-        internal System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
+        internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
         internal System.Security.Cryptography.Pkcs.Asn1.RecipientKeyIdentifier? RKeyId;
 
 #if DEBUG
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out KeyAgreeRecipientIdentifierAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out KeyAgreeRecipientIdentifierAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out KeyAgreeRecipientIdentifierAsn decoded)
         {
             try
             {
@@ -89,15 +89,15 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out KeyAgreeRecipientIdentifierAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out KeyAgreeRecipientIdentifierAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
 
             if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn tmpIssuerAndSerialNumber;
-                System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn.Decode(ref reader, rebind, out tmpIssuerAndSerialNumber);
+                System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn tmpIssuerAndSerialNumber;
+                System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn.Decode(ref reader, rebind, out tmpIssuerAndSerialNumber);
                 decoded.IssuerAndSerialNumber = tmpIssuerAndSerialNumber;
 
             }

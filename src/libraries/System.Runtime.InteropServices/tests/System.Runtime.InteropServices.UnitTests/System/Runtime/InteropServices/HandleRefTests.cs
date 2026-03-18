@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null, 0)]
         [InlineData("Wrapper", 1337)]
-        public void Ctor_Wrapper_Handle(object wrapper, int handle)
+        public void Ctor_Wrapper_Handle(object? wrapper, int handle)
         {
             var handleRef = new HandleRef(wrapper, (IntPtr)handle);
             Assert.Same(wrapper, handleRef.Wrapper);

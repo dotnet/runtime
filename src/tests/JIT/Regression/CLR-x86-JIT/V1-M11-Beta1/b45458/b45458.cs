@@ -9,6 +9,7 @@ namespace JitTest
 
     public class Test
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

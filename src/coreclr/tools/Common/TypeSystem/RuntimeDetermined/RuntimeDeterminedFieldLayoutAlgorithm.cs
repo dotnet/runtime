@@ -48,6 +48,14 @@ namespace Internal.TypeSystem
             return canonicalType.ContainsGCPointers;
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;
+            DefType canonicalType = runtimeDeterminedType.CanonicalType;
+
+            return canonicalType.ContainsByRefs;
+        }
+
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;

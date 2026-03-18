@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Encodings.Web;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Xunit;
@@ -191,7 +192,9 @@ namespace System.Text.Json.Serialization.Tests
             // Verify the name is escaped after serialize.
             string json = await Serializer.SerializeWrapper(obj, s_serializerOptionsPreserve);
             Assert.StartsWith("{\"$id\":\"1\",", json);
-            Assert.Contains(@"""A\u0467"":1", json);
+            Assert.Contains("""
+                "A\u0467":1
+                """, json);
 
             // Round-trip
             ClassWithUnicodeProperty objCopy = await Serializer.DeserializeWrapper<ClassWithUnicodeProperty>(json, s_serializerOptionsPreserve);
@@ -221,7 +224,9 @@ namespace System.Text.Json.Serialization.Tests
             // Verify the name is escaped after serialize.
             json = await Serializer.SerializeWrapper(obj, s_serializerOptionsPreserve);
             Assert.StartsWith("{\"$id\":\"1\",", json);
-            Assert.Contains(@"""A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"":1", json);
+            Assert.Contains("""
+                "A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890":1
+                """, json);
 
             // Round-trip
             objCopy = await Serializer.DeserializeWrapper<ClassWithUnicodeProperty>(json, s_serializerOptionsPreserve);
@@ -382,7 +387,7 @@ namespace System.Text.Json.Serialization.Tests
             Dictionary<string, int> obj = new Dictionary<string, int> { { "A\u0467", 1 } };
             // Verify the name is escaped after serialize.
             string json = await Serializer.SerializeWrapper(obj, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""A\u0467"":1}", json);
+            Assert.Equal("""{"$id":"1","A\u0467":1}""", json);
 
             // Round-trip
             Dictionary<string, int> objCopy = await Serializer.DeserializeWrapper<Dictionary<string, int>>(json, s_serializerOptionsPreserve);
@@ -540,22 +545,24 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CustomReferenceResolver()
         {
-            string json = @"[
-  {
-    ""$id"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3"",
-    ""Name"": ""John Smith"",
-    ""Spouse"": {
-      ""$id"": ""ae3c399c-058d-431d-91b0-a36c266441b9"",
-      ""Name"": ""Jane Smith"",
-      ""Spouse"": {
-        ""$ref"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3""
-      }
-    }
-  },
-  {
-    ""$ref"": ""ae3c399c-058d-431d-91b0-a36c266441b9""
-  }
-]";
+            string json = """
+                [
+                  {
+                    "$id": "0b64ffdf-d155-44ad-9689-58d9adb137f3",
+                    "Name": "John Smith",
+                    "Spouse": {
+                      "$id": "ae3c399c-058d-431d-91b0-a36c266441b9",
+                      "Name": "Jane Smith",
+                      "Spouse": {
+                        "$ref": "0b64ffdf-d155-44ad-9689-58d9adb137f3"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "ae3c399c-058d-431d-91b0-a36c266441b9"
+                  }
+                ]
+                """;
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
@@ -588,33 +595,37 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json =
-@"[
-  {
-    ""$id"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3"",
-    ""Name"": ""John Smith"",
-    ""Spouse"": {
-      ""$id"": ""ae3c399c-058d-431d-91b0-a36c266441b9"",
-      ""Name"": ""Jane Smith"",
-      ""Spouse"": {
-        ""$ref"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3""
+"""
+    [
+      {
+        "$id": "0b64ffdf-d155-44ad-9689-58d9adb137f3",
+        "Name": "John Smith",
+        "Spouse": {
+          "$id": "ae3c399c-058d-431d-91b0-a36c266441b9",
+          "Name": "Jane Smith",
+          "Spouse": {
+            "$ref": "0b64ffdf-d155-44ad-9689-58d9adb137f3"
+          }
+        }
+      },
+      {
+        "$ref": "ae3c399c-058d-431d-91b0-a36c266441b9"
       }
-    }
-  },
-  {
-    ""$ref"": ""ae3c399c-058d-431d-91b0-a36c266441b9""
-  }
-]";
+    ]
+    """;
             ImmutableArray<PersonReference> firstListOfPeople = await Serializer.DeserializeWrapper<ImmutableArray<PersonReference>>(json, options);
 
             json =
-@"[
-  {
-    ""$ref"": ""0b64ffdf-d155-44ad-9689-58d9adb137f3""
-  },
-  {
-    ""$ref"": ""ae3c399c-058d-431d-91b0-a36c266441b9""
-  }
-]";
+"""
+    [
+      {
+        "$ref": "0b64ffdf-d155-44ad-9689-58d9adb137f3"
+      },
+      {
+        "$ref": "ae3c399c-058d-431d-91b0-a36c266441b9"
+      }
+    ]
+    """;
             ImmutableArray<PersonReference> secondListOfPeople = await Serializer.DeserializeWrapper<ImmutableArray<PersonReference>>(json, options);
 
             Assert.Same(firstListOfPeople[0], secondListOfPeople[0]);
@@ -736,12 +747,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DoNotPreserveReferenceWhenRefPropertyIsAbsent()
         {
-            string json = @"{""Child"":{""$id"":""1""},""Sibling"":{""foo"":""1""}}";
+            string json = """{"Child":{"$id":"1"},"Sibling":{"foo":"1"}}""";
             ClassWithObjectProperty root = await Serializer.DeserializeWrapper<ClassWithObjectProperty>(json);
             Assert.IsType<JsonElement>(root.Sibling);
 
             // $ref with any escaped character shall not be treated as metadata, hence Sibling must be JsonElement.
-            json = @"{""Child"":{""$id"":""1""},""Sibling"":{""\\u0024ref"":""1""}}";
+            json = """{"Child":{"$id":"1"},"Sibling":{"\\u0024ref":"1"}}""";
             root = await Serializer.DeserializeWrapper<ClassWithObjectProperty>(json);
             Assert.IsType<JsonElement>(root.Sibling);
         }
@@ -749,7 +760,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task VerifyValidationsOnPreservedReferenceOfTypeObject()
         {
-            const string baseJson = @"{""Child"":{""$id"":""1""},""Sibling"":";
+            const string baseJson = """{"Child":{"$id":"1"},"Sibling":""";
 
             // A JSON object that contains a '$ref' metadata property must not contain any other properties.
             string testJson = baseJson + @"{""foo"":""value"",""$ref"":""1""}}";
@@ -773,7 +784,7 @@ namespace System.Text.Json.Serialization.Tests
             value.Property = new object[] { value };
 
             string json = await Serializer.SerializeWrapper(value, new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve });
-            Assert.Equal(@"{""$id"":""1"",""Property"":[{""$ref"":""1""}]}", json);
+            Assert.Equal("""{"$id":"1","Property":[{"$ref":"1"}]}""", json);
         }
 
         [Fact]
@@ -783,7 +794,7 @@ namespace System.Text.Json.Serialization.Tests
             value.Property = new object[] { value };
 
             string json = await Serializer.SerializeWrapper(value, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""Property"":[{""$ref"":""1""}]}", json);
+            Assert.Equal("""{"$id":"1","Property":[{"$ref":"1"}]}""", json);
         }
 
         [Fact]
@@ -793,7 +804,7 @@ namespace System.Text.Json.Serialization.Tests
             var array = new object[] { box, box };
 
             string json = await Serializer.SerializeWrapper(array, s_serializerOptionsPreserve);
-            Assert.Equal(@"[{""$id"":""1"",""Property"":42},{""$ref"":""1""}]", json);
+            Assert.Equal("""[{"$id":"1","Property":42},{"$ref":"1"}]""", json);
         }
 
         [Fact]
@@ -803,7 +814,7 @@ namespace System.Text.Json.Serialization.Tests
             var array = new object[] { box, box };
 
             string json = await Serializer.SerializeWrapper(array, s_serializerOptionsPreserve);
-            Assert.Equal(@"[{""$id"":""1"",""$values"":[42]},{""$ref"":""1""}]", json);
+            Assert.Equal("""[{"$id":"1","$values":[42]},{"$ref":"1"}]""", json);
         }
 
         [Fact]
@@ -813,7 +824,7 @@ namespace System.Text.Json.Serialization.Tests
             var array = new object[] { box, box };
 
             string json = await Serializer.SerializeWrapper(array, s_serializerOptionsPreserve);
-            Assert.Equal(@"[42,42]", json);
+            Assert.Equal("[42,42]", json);
         }
 
         public class ClassWithObjectProperty
@@ -848,6 +859,77 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithConflictingRefProperty), "$ref")]
+        [InlineData(typeof(ClassWithConflictingIdProperty), "$id")]
+        public async Task ClassWithConflictingMetadataProperties_ThrowsInvalidOperationException(Type type, string propertyName)
+        {
+            InvalidOperationException ex;
+            object value = Activator.CreateInstance(type);
+
+            ex = Assert.Throws<InvalidOperationException>(() => Serializer.GetTypeInfo(type, s_serializerOptionsPreserve));
+            ValidateException(ex);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value, type, s_serializerOptionsPreserve));
+            ValidateException(ex);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper("{}", type, s_serializerOptionsPreserve));
+            ValidateException(ex);
+
+            void ValidateException(InvalidOperationException ex)
+            {
+                Assert.Contains($"The type '{type}' contains property '{propertyName}' that conflicts with an existing metadata property name.", ex.Message);
+            }
+        }
+
+        public class ClassWithConflictingRefProperty
+        {
+            [JsonPropertyName("$ref")]
+            public int Value { get; set; }
+        }
+
+        public class ClassWithConflictingIdProperty
+        {
+            [JsonPropertyName("$id")]
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public async Task ClassWithIgnoredConflictingProperty_Supported()
+        {
+            ClassWithIgnoredConflictingProperty value = new();
+            string json = await Serializer.SerializeWrapper(value, s_serializerOptionsPreserve);
+            Assert.Equal("""{"$id":"1"}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithIgnoredConflictingProperty>(json, s_serializerOptionsPreserve);
+            Assert.NotNull(value);
+        }
+
+        public class ClassWithIgnoredConflictingProperty
+        {
+            [JsonPropertyName("$id"), JsonIgnore]
+            public int Value { get; set; }
+        }
+
+        [Fact]
+        public async Task ClassWithExtensionDataConflictingProperty_Supported()
+        {
+            ClassWithExtensionDataConflictingProperty value = new();
+            string json = await Serializer.SerializeWrapper(value, s_serializerOptionsPreserve);
+            Assert.Equal("""{"$id":"1"}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithExtensionDataConflictingProperty>("""{"$id":"1","extraProp":null}""", s_serializerOptionsPreserve);
+            Assert.NotNull(value);
+            Assert.Equal(1, value.Value.Count);
+            Assert.Contains("extraProp", value.Value);
+        }
+
+        public class ClassWithExtensionDataConflictingProperty
+        {
+            [JsonPropertyName("$id"), JsonExtensionData]
+            public JsonObject Value { get; set; }
         }
     }
 }

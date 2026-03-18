@@ -148,7 +148,7 @@ namespace Microsoft.Quic
         [FieldOffset(0)]
         public QuicAddrFamilyAndLen FamilyLen;
 
-        public static bool SockaddrHasLength => OperatingSystem.IsFreeBSD() || OperatingSystem.IsIOS() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS();
+        public static bool SockaddrHasLength => OperatingSystem.IsFreeBSD() || OperatingSystem.IsIOS() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsTvOS();
 
         public int Family
         {

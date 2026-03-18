@@ -16,6 +16,7 @@ using Xunit;
 public class Runtime_34587
 {
     [Fact]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
         TestLibrary.TestFramework.LogInformation("Supported x86 ISAs:");
@@ -415,7 +416,7 @@ public class Runtime_34587
         testSucceeded = ValidateVector256();
         Console.WriteLine($"ValidateVector256: {testSucceeded}");
         succeeded &= testSucceeded;
-        
+
         return succeeded;
 
         static bool ValidateX86Base()
@@ -713,7 +714,9 @@ public class Runtime_34587
             if (Avx2IsSupported)
             {
                 succeeded &= VectorIsHardwareAccelerated;
-                succeeded &= VectorByteCount == 32;
+                // MaxVectorTBitWidth env variable can be used to change Vector<T> size.
+                // We can only assume it is at least 16 bytes.
+                succeeded &= VectorByteCount >= 16;
             }
             else if (Sse2IsSupported)
             {

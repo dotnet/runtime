@@ -127,6 +127,22 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        interface ComInterface
+        {
+            void Func();
+        }
+
+        // This class is used to test the PrepareMethod API with COM interop on non-Windows platforms.
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        class ComClass : ComInterface
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            public extern void Func();
+        }
+
         [Fact]
         public static void PrepareMethod()
         {
@@ -138,6 +154,16 @@ namespace System.Runtime.CompilerServices.Tests
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+            }
+
+            try
+            {
+                // This is expected to either succeed or throw PlatformNotSupportedException depending on the platform
+                // and runtime flavor
+                RuntimeHelpers.PrepareMethod(typeof(ComClass).GetMethod("Func").MethodHandle);
+            }
+            catch (PlatformNotSupportedException)
+            {
             }
         }
 
@@ -391,10 +417,10 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(a, RuntimeHelpers.GetSubArray(a, range));
 
             range = new Range(Index.FromStart(1), Index.FromEnd(5));
-            Assert.Equal(new int [] { 2, 3, 4, 5}, RuntimeHelpers.GetSubArray(a, range));
+            Assert.Equal(new int[] { 2, 3, 4, 5 }, RuntimeHelpers.GetSubArray(a, range));
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { int[] array = RuntimeHelpers.GetSubArray(a, range); });
         }
 
         [Fact]
@@ -420,9 +446,49 @@ namespace System.Runtime.CompilerServices.Tests
         public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+
+            // Validate that the allocation succeeded
             Assert.NotEqual(memory, IntPtr.Zero);
+
             // Validate that the memory is zeroed out
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
+        }
+
+        [Fact]
+        public static void AllocateTypeAssociatedMemoryAlignedInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10, 1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 1); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 0); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 3); });
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(8)]      // .NET largest natural alignment
+        [InlineData(16)]     // V128, typical max_align_t
+        [InlineData(32)]     // V256
+        [InlineData(64)]     // V512, typical cache line size
+        [InlineData(128)]    // less typical cache line size
+        [InlineData(512)]    // historical disk sector size
+        [InlineData(4096)]   // typical disk sector and page size
+        [InlineData(16384)]  // less typical disk sector and page size
+        [InlineData(65536)]  // typical texture and buffer alignment for GPU
+        [InlineData(262144)] // typical non-temporal chunk alignment
+        public static unsafe void AllocateTypeAssociatedMemoryAlignedValidArguments(int alignment)
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32, alignment);
+
+            // Validate that the allocation succeeded
+            Assert.NotEqual(memory, IntPtr.Zero);
+
+            // Validate that the memory is zeroed out
+            Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
+
+            // Validate that the memory is aligned
+            Assert.True((memory % alignment) == 0);
         }
 
 #pragma warning disable CS0649
@@ -454,6 +520,11 @@ namespace System.Runtime.CompilerServices.Tests
         private ref struct RefStructWithRef
         {
             public ref int a;
+
+            internal RefStructWithRef(ref int aVal)
+            {
+                a = ref aVal;
+            }
         }
 
         private ref struct RefStructWithNestedRef
@@ -499,7 +570,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
             Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
-            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate*<void>).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(int).MakeByRefType().TypeHandle));
             Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
             Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));

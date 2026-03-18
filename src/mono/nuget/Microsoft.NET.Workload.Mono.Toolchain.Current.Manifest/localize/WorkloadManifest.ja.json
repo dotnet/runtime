@@ -1,5 +1,4 @@
 ﻿{
   "workloads/wasm-tools/description": ".NET WebAssembly ビルドツール",
-  "workloads/wasm-experimental/description": ".NET WebAssembly 実験的ツール",
-  "workloads/runtimes-windows/description": "Windows ランタイム パック"
+  "workloads/wasm-experimental/description": ".NET WebAssembly 実験的ツール"
 }

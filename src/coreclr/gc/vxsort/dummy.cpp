@@ -28,3 +28,8 @@ void do_vxsort_avx512 (uint8_t** low, uint8_t** high, uint8_t* range_low, uint8_
 {
     assert(false);
 }
+
+void do_vxsort_neon (uint8_t** low, uint8_t** high, uint8_t* range_low, uint8_t* range_high)
+{
+    assert(false);
+}

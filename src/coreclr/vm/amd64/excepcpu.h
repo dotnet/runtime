@@ -12,7 +12,7 @@
 #ifndef __excepamd64_h__
 #define __excepamd64_h__
 
-#include "corerror.h"  // HResults for the COM+ Runtime
+#include "corerror.h"
 
 #include "../dlls/mscorrc/resource.h"
 
@@ -26,28 +26,21 @@ EXTERN_C void RedirectForThrowControl();
 #define STATUS_CLR_GCCOVER_CODE         STATUS_PRIVILEGED_INSTRUCTION
 
 //
-// No FS:0, nothing to do.
-//
-#define INSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
-
-//
-// On Win64, the COMPlusFrameHandler's work is done by our personality routine.
-//
-#define DECLARE_CPFH_EH_RECORD(pCurThread)
-
-//
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
+#ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatcherContext);
+#endif // TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
 
+#ifdef TARGET_WINDOWS
 //
 // Retrieves the FaultingExceptionFrame* from the stack frame of
 // RedirectForThrowControl.
 //
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext);
+#endif // TARGET_WINDOWS
 
 //
 // Functions that wrap RtlVirtualUnwind to make sure that in the AMD64 case all the

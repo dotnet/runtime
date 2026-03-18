@@ -419,7 +419,7 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
         // Tell caller to break at the correct location.
         case IDRETRY:
 
-            if (IsDebuggerPresent())
+            if (minipal_is_native_debugger_present())
             {
                 SetErrorMode(0);
             }

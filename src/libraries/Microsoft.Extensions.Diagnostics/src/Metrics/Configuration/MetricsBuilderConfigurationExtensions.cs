@@ -24,15 +24,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// <returns>The original <see cref="IMetricsBuilder"/> for chaining.</returns>
         public static IMetricsBuilder AddConfiguration(this IMetricsBuilder builder, IConfiguration configuration)
         {
-            if (builder is null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ArgumentNullException.ThrowIfNull(builder);
 
-            if (configuration is null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ArgumentNullException.ThrowIfNull(configuration);
 
             builder.Services.AddSingleton<IConfigureOptions<MetricsOptions>>(new MetricsConfigureOptions(configuration));
             builder.Services.AddSingleton<IOptionsChangeTokenSource<MetricsOptions>>(new ConfigurationChangeTokenSource<MetricsOptions>(configuration));

@@ -24,10 +24,7 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteByteString(byte[] value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             WriteByteString(value.AsSpan());
         }
@@ -108,10 +105,7 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteTextString(string value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             WriteTextString(value.AsSpan());
         }
@@ -131,7 +125,7 @@ namespace System.Formats.Cbor
             int length;
             try
             {
-                length = CborHelpers.GetByteCount(utf8Encoding, value);
+                length = utf8Encoding.GetByteCount(value);
             }
             catch (EncoderFallbackException e)
             {
@@ -150,7 +144,7 @@ namespace System.Formats.Cbor
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
 
-            CborHelpers.GetBytes(utf8Encoding, value, _buffer.AsSpan(_offset, length));
+            utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
             _offset += length;
             AdvanceDataItemCounters();
         }

@@ -22,9 +22,6 @@ namespace Microsoft.Interop.UnitTests
     /// <summary>
     /// The target framework to compile against.
     /// </summary>
-    /// <remarks>
-    /// This enumeration is for testing only and is not to be confused with the product's TargetFramework enum.
-    /// </remarks>
     public enum TestTargetFramework
     {
         /// <summary>
@@ -32,21 +29,13 @@ namespace Microsoft.Interop.UnitTests
         /// </summary>
         Framework,
         /// <summary>
-        /// The latest supported .NET Core version.
+        /// .NET standard 2.0
         /// </summary>
-        Core,
+        Standard2_0,
         /// <summary>
-        /// The latest supported .NET Standard version.
+        /// .NET Standard 2.1
         /// </summary>
-        Standard,
-        /// <summary>
-        /// The latest supported (live-built) .NET version.
-        /// </summary>
-        Net,
-        /// <summary>
-        /// .NET version 6.0.
-        /// </summary>
-        Net6,
+        Standard2_1
     }
 
     public static class TestUtils
@@ -136,9 +125,9 @@ namespace Microsoft.Interop.UnitTests
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
         /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
+        public static Compilation CreateCompilation(string source, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols, allowUnsafe);
+            return CreateCompilation([source], outputKind, refs, preprocessorSymbols, allowUnsafe);
         }
 
         /// <summary>
@@ -151,12 +140,11 @@ namespace Microsoft.Interop.UnitTests
         /// <param name="preprocessorSymbols">Prepocessor symbols</param>
         /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
+        public static Compilation CreateCompilation(string[] sources, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
-                targetFramework,
                 outputKind,
                 refs,
                 allowUnsafe);
@@ -171,15 +159,9 @@ namespace Microsoft.Interop.UnitTests
         /// <param name="refs">Additional metadata references</param>
         /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, bool allowUnsafe = true)
+        public static Compilation CreateCompilation(SyntaxTree[] sources, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, bool allowUnsafe = true)
         {
-            var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
-
-            // [TODO] Can remove once ancillary logic is removed.
-            if (targetFramework is TestTargetFramework.Net)
-            {
-                referenceAssemblies = referenceAssemblies.Add(GetAncillaryReference());
-            }
+            ImmutableArray<MetadataReference> referenceAssemblies = [ ..SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences(), GetAncillaryReference() ];
 
             if (refs is not null)
             {
@@ -190,37 +172,6 @@ namespace Microsoft.Interop.UnitTests
                 sources,
                 referenceAssemblies,
                 new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe, specificDiagnosticOptions: BindingRedirectWarnings));
-        }
-
-        /// <summary>
-        /// Get the reference assembly collection for the <see cref="TestTargetFramework"/>.
-        /// </summary>
-        /// <param name="targetFramework">The target framework.</param>
-        /// <returns>The reference assembly collection and metadata references</returns>
-        private static async Task<ImmutableArray<MetadataReference>> GetReferenceAssemblies(TestTargetFramework targetFramework = TestTargetFramework.Net)
-        {
-            // Compute the reference assemblies for the target framework.
-            if (targetFramework == TestTargetFramework.Net)
-            {
-                return SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences();
-            }
-            else
-            {
-                var referenceAssembliesSdk = targetFramework switch
-                {
-                    TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
-                    TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
-                    TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
-                    TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
-                    _ => ReferenceAssemblies.Default
-                };
-
-                // Update the reference assemblies to include details from the NuGet.config.
-                var referenceAssemblies = referenceAssembliesSdk
-                    .WithNuGetConfigFilePath(Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "NuGet.config"));
-
-                return await ResolveReferenceAssemblies(referenceAssemblies);
-            }
         }
 
         /// <summary>
@@ -267,44 +218,5 @@ namespace Microsoft.Interop.UnitTests
                 parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options,
                 optionsProvider: options,
                 driverOptions: driverOptions);
-
-        private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)
-        {
-            try
-            {
-                ResolveRedirect.Instance.Start();
-                return await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
-            }
-            finally
-            {
-                ResolveRedirect.Instance.Stop();
-            }
-        }
-
-        private class ResolveRedirect
-        {
-            private const string EnvVarName = "NUGET_PACKAGES";
-
-            private static readonly ResolveRedirect s_instance = new ResolveRedirect();
-            public static ResolveRedirect Instance => s_instance;
-
-            private int _count = 0;
-
-            public void Start()
-            {
-                // Set the NuGet package cache location to a subdirectory such that we should always have access to it
-                Environment.SetEnvironmentVariable(EnvVarName, Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "packages"));
-                Interlocked.Increment(ref _count);
-            }
-
-            public void Stop()
-            {
-                int count = Interlocked.Decrement(ref _count);
-                if (count == 0)
-                {
-                    Environment.SetEnvironmentVariable(EnvVarName, null);
-                }
-            }
-        }
     }
 }

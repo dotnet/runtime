@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
@@ -16,9 +15,6 @@ namespace System.Reflection.Metadata
 
         internal PropertyDefinition(MetadataReader reader, PropertyDefinitionHandle handle)
         {
-            Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
-
             _reader = reader;
             _rowId = handle.RowId;
         }
@@ -67,6 +63,14 @@ namespace System.Reflection.Metadata
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
             return new CustomAttributeHandleCollection(_reader, Handle);
+        }
+
+        /// <summary>
+        /// Returns a handle to the type that declares this property.
+        /// </summary>
+        public TypeDefinitionHandle GetDeclaringType()
+        {
+            return _reader.GetDeclaringType(Handle);
         }
 
         public PropertyAccessors GetAccessors()

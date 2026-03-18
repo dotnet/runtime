@@ -322,8 +322,6 @@ public:
     CORDB_ADDRESS m_pNextStgdb;
     ULONG32 m_eFileType;
     CORDB_ADDRESS m_wszFileName;
-    ULONG32 m_dwDatabaseLFT;
-    ULONG32 m_dwDatabaseLFS;
     CORDB_ADDRESS m_pStgIO;
 };
 

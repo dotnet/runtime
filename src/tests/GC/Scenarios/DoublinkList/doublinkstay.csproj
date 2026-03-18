@@ -1,9 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Precise GC not supported on Mono -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="doublinkstay.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

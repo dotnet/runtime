@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
         /// </summary>
-        /// <returns>A <see cref="IChangeToken"/>.</returns>
+        /// <returns>An <see cref="IChangeToken"/> token if this provider supports change tracking; otherwise, <see langword="null" />.</returns>
         IChangeToken GetReloadToken();
     }
 }

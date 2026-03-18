@@ -41,7 +41,7 @@ namespace System.Reflection
         public override Guid GUID => typeImpl.GUID;
         public override int MetadataToken => typeImpl.MetadataToken;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -56,6 +56,8 @@ namespace System.Reflection
         public override string? Namespace => typeImpl.Namespace;
         public override string? AssemblyQualifiedName => typeImpl.AssemblyQualifiedName;
         public override Type? BaseType => typeImpl.BaseType;
+
+        public override int GetArrayRank() => typeImpl.GetArrayRank();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,

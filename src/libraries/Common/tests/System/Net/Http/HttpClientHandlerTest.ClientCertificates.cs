@@ -83,9 +83,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, false)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/69238")]
-            if (IsWinHttpHandler) throw new SkipTestException("https://github.com/dotnet/runtime/issues/69238");
-
             var options = new LoopbackServer.Options { UseSsl = true };
 
             X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch
@@ -115,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             _output.WriteLine(
                                 "Client cert: {0}",
-                                new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
+                                X509CertificateLoader.LoadCertificate(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
                             Assert.Equal(cert, sslStream.RemoteCertificate);
                         }
                         else
@@ -233,7 +230,7 @@ namespace System.Net.Http.Functional.Tests
 
                             _output.WriteLine(
                                 "Client cert: {0}",
-                                new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
+                                X509CertificateLoader.LoadCertificate(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
 
                             Assert.Equal(clientCertificate.GetCertHashString(), sslStream.RemoteCertificate.GetCertHashString());
 

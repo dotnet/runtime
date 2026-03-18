@@ -11,10 +11,10 @@ namespace System.Text.Json.Serialization
     public abstract class ReferenceHandler
     {
         /// <summary>
-        /// Indicates whether this ReferenceHandler implementation should use <see cref="ReferenceHandlingStrategy.Preserve"/> semantics or <see cref="ReferenceHandlingStrategy.IgnoreCycles"/> semantics.
+        /// Indicates whether this ReferenceHandler implementation should use <see cref="JsonKnownReferenceHandler.Preserve"/> semantics or <see cref="JsonKnownReferenceHandler.IgnoreCycles"/> semantics.
         /// The defualt is Preserve.
         /// </summary>
-        internal ReferenceHandlingStrategy HandlingStrategy = ReferenceHandlingStrategy.Preserve;
+        internal JsonKnownReferenceHandler HandlingStrategy = JsonKnownReferenceHandler.Preserve;
 
         /// <summary>
         /// Metadata properties will be honored when deserializing JSON objects and arrays into reference types and written when serializing reference types. This is necessary to create round-trippable JSON from objects that contain cycles or duplicate references.

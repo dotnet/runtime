@@ -31,7 +31,7 @@ namespace System.ComponentModel.Design.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("key")]
-        public void SetSavedLicenseKey_ValidType_Success(string key)
+        public void SetSavedLicenseKey_ValidType_Success(string? key)
         {
             var context = new DesigntimeLicenseContext();
             context.SetSavedLicenseKey(typeof(int), key);

@@ -16,6 +16,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.EventSourceError
 {
@@ -33,6 +34,8 @@ namespace Tracing.Tests.EventSourceError
         private static readonly ulong GC_HeapDump_Keyword = 0x100000UL;
         private static ManualResetEvent _gcStopReceived = new ManualResetEvent(false);
 
+        [ActiveIssue("System.Diagnostics.Process is not supported on wasm", TestPlatforms.Browser)]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -44,8 +47,7 @@ namespace Tracing.Tests.EventSourceError
                 new EventPipeProvider("Microsoft-Windows-DotNETRuntime", eventLevel: EventLevel.Verbose, keywords: (long)ClrTraceEventParser.Keywords.GCHeapSnapshot)
             };
 
-            bool enableRundown = TestLibrary.Utilities.IsNativeAot? false: true;
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents, enableRundownProvider: enableRundown);
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()

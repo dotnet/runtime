@@ -5,15 +5,15 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
-	public class SkipILVerifyAttribute : BaseExpectedLinkedBehaviorAttribute
-	{
-		public SkipILVerifyAttribute ()
-		{
-		}
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public class SkipILVerifyAttribute : BaseExpectedLinkedBehaviorAttribute
+    {
+        public SkipILVerifyAttribute()
+        {
+        }
 
-		public SkipILVerifyAttribute (string assemblyName)
-		{
-		}
-	}
+        public SkipILVerifyAttribute(string assemblyName)
+        {
+        }
+    }
 }

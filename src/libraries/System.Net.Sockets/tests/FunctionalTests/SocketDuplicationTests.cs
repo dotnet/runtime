@@ -387,10 +387,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public class Synchronous : PolymorphicTests<SocketHelperArraySync>
         {
         }
 
+        [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public class Apm : PolymorphicTests<SocketHelperApm>
         {
         }

@@ -42,6 +42,7 @@
 #include <common.h>
 #include <codeman.h>
 #include <debugger.h>
+#include <walker.h>
 #include <controller.h>
 #include <eedbginterfaceimpl.h>
 #include <methoditer.h>

@@ -7,7 +7,6 @@ using System.Diagnostics.Tracing;
 namespace System.Buffers
 {
     [EventSource(Guid = "0866B2B8-5CEF-5DB9-2612-0C0FFD814A44", Name = "System.Buffers.ArrayPoolEventSource")]
-    [EventSourceAutoGenerate]
     internal sealed partial class ArrayPoolEventSource : EventSource
     {
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
@@ -35,10 +34,6 @@ namespace System.Buffers
             /// <summary>The buffer size was too large to be pooled.</summary>
             OverMaximumSize,
         }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private ArrayPoolEventSource(int _) { }
 
         /// <summary>
         /// Event for when a buffer is rented.  This is invoked once for every successful call to Rent,
@@ -108,7 +103,7 @@ namespace System.Buffers
 
         /// <summary>
         /// Event raised when we attempt to free a buffer due to inactivity or memory pressure (by no longer
-        /// referencing it). It is possible (although not commmon) this buffer could be rented as we attempt
+        /// referencing it). It is possible (although not common) this buffer could be rented as we attempt
         /// to free it. A rent event before or after this event for the same ID, is a rare, but expected case.
         /// </summary>
         [Event(4, Level = EventLevel.Informational)]

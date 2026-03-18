@@ -9,6 +9,9 @@ namespace System.Runtime.Intrinsics.Wasm
     [CLSCompliant(false)]
     public abstract class PackedSimd
     {
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static bool IsSupported { [Intrinsic] get { return false; } }
 
         public static Vector128<sbyte>  Splat(sbyte  value) { throw new PlatformNotSupportedException(); }

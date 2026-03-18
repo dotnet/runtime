@@ -8,6 +8,8 @@
 #define SUCCESS 1
 #define KEEP_CURRENT_DIRECTION -1
 
+c_static_assert(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW == 1);
+
 EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, unsigned char* iv, int32_t enc)
 {
@@ -29,6 +31,9 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         EVP_CIPHER_CTX_free(ctx);
         return NULL;
     }
+
+    // Required for OpenSSL 1.1 AES-KWP, no-op in OpenSSL 3.
+    EVP_CIPHER_CTX_set_flags(ctx, EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
 
     // Perform partial initialization so we can set the key lengths
     int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);
@@ -157,13 +162,19 @@ int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
 int32_t
 CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
+    assert(outl != NULL);
     ERR_clear_error();
 
-    int outLength;
+    int outLength = 0;
     int32_t ret = EVP_CipherUpdate(ctx, out, &outLength, in, inl);
+
     if (ret == SUCCESS)
     {
         *outl = outLength;
+    }
+    else
+    {
+        *outl = 0;
     }
 
     return ret;
@@ -269,6 +280,12 @@ const EVP_CIPHER* CryptoNative_EvpAes128Ccm(void)
     return EVP_aes_128_ccm();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes128WrapPad(void)
+{
+    // No error queue impact.
+    return EVP_aes_128_wrap_pad();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes192Ecb(void)
 {
     // No error queue impact.
@@ -305,6 +322,12 @@ const EVP_CIPHER* CryptoNative_EvpAes192Ccm(void)
     return EVP_aes_192_ccm();
 }
 
+const EVP_CIPHER* CryptoNative_EvpAes192WrapPad(void)
+{
+    // No error queue impact.
+    return EVP_aes_192_wrap_pad();
+}
+
 const EVP_CIPHER* CryptoNative_EvpAes256Ecb(void)
 {
     // No error queue impact.
@@ -339,6 +362,12 @@ const EVP_CIPHER* CryptoNative_EvpAes256Ccm(void)
 {
     // No error queue impact.
     return EVP_aes_256_ccm();
+}
+
+const EVP_CIPHER* CryptoNative_EvpAes256WrapPad(void)
+{
+    // No error queue impact.
+    return EVP_aes_256_wrap_pad();
 }
 
 const EVP_CIPHER* CryptoNative_EvpDesEcb(void)
@@ -386,13 +415,27 @@ const EVP_CIPHER* CryptoNative_EvpDes3Cbc(void)
 const EVP_CIPHER* CryptoNative_EvpRC2Ecb(void)
 {
     // No error queue impact.
-    return EVP_rc2_ecb();
+#if HAVE_OPENSSL_RC2
+    if (API_EXISTS(EVP_rc2_ecb))
+    {
+        return EVP_rc2_ecb();
+    }
+#endif
+
+    return NULL;
 }
 
 const EVP_CIPHER* CryptoNative_EvpRC2Cbc(void)
 {
     // No error queue impact.
-    return EVP_rc2_cbc();
+#if HAVE_OPENSSL_RC2
+    if (API_EXISTS(EVP_rc2_cbc))
+    {
+        return EVP_rc2_cbc();
+    }
+#endif
+
+    return NULL;
 }
 
 const EVP_CIPHER* CryptoNative_EvpChaCha20Poly1305(void)

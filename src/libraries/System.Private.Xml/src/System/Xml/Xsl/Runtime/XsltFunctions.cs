@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.Runtime
         public static bool StartsWith(string s1, string s2)
         {
             //return collation.IsPrefix(s1, s2);
-            return s1.Length >= s2.Length && string.CompareOrdinal(s1, 0, s2, 0, s2.Length) == 0;
+            return s1.StartsWith(s2, StringComparison.Ordinal);
         }
 
         public static bool Contains(string s1, string s2)
@@ -366,7 +366,7 @@ namespace System.Xml.Xsl.Runtime
         {
             try
             {
-                string locale = GetCultureInfo(lang).Name;
+                CultureInfo ci = GetCultureInfo(lang);
 
                 XsdDateTime xdt;
                 if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
@@ -375,8 +375,13 @@ namespace System.Xml.Xsl.Runtime
                 }
                 DateTime dt = xdt.ToZulu();
 
-                // If format is the empty string or not specified, use the default format for the given locale
-                return dt.ToString(format.Length != 0 ? format : null, new CultureInfo(locale));
+                // If format is the empty string or not specified, use the default date or time format for the given locale
+                if (format.Length == 0)
+                {
+                    format = isDate ? "d" : "T";
+                }
+
+                return dt.ToString(format, ci);
             }
             catch (ArgumentException)
             { // Operations with DateTime can throw this exception eventualy

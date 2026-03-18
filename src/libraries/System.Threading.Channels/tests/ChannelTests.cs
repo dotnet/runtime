@@ -62,7 +62,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Theory]
-        [InlineData(0)]
+        [InlineData(-1)]
         [InlineData(-2)]
         public void CreateBounded_InvalidBufferSizes_ThrowArgumentExceptions(int capacity)
         {
@@ -77,7 +77,7 @@ namespace System.Threading.Channels.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new BoundedChannelOptions(1) { FullMode = mode });
 
         [Theory]
-        [InlineData(0)]
+        [InlineData(-1)]
         [InlineData(-2)]
         public void BoundedChannelOptions_InvalidCapacity_ThrowArgumentExceptions(int capacity) =>
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new BoundedChannelOptions(1) { Capacity = capacity });
@@ -87,7 +87,7 @@ namespace System.Threading.Channels.Tests
         public void CreateBounded_ValidBufferSizes_Success(int bufferedCapacity) =>
             Assert.NotNull(Channel.CreateBounded<int>(bufferedCapacity));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task DefaultWriteAsync_UsesWaitToWriteAsyncAndTryWrite()
         {
             var c = new TestChannelWriter<int>(10);

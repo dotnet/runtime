@@ -7,16 +7,16 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal partial class X509Pal
     {
-        private sealed partial class AppleX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AppleX509Pal : IX509Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
-                return new ECDsaImplementation.ECDsaSecurityTransforms(DecodeECPublicKey(certificatePal));
+                return new ECDsaImplementation.ECDsaAppleCrypto(DecodeECPublicKey(certificatePal));
             }
 
             public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
             {
-                return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(DecodeECPublicKey(certificatePal));
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanAppleCrypto(DecodeECPublicKey(certificatePal));
             }
 
             private static SafeSecKeyRefHandle DecodeECPublicKey(ICertificatePal? certificatePal)

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
@@ -16,6 +17,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public InterruptibleRange(uint index, uint start, uint stop)
         {
             Index = index;
+            Debug.Assert(start <= stop);
             StartOffset = start;
             StopOffset = stop;
         }

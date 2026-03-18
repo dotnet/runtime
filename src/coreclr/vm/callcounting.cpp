@@ -7,6 +7,7 @@
 
 #include "callcounting.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifndef DACCESS_COMPILE
 extern "C" void STDCALL OnCallCountThresholdReachedStub();
@@ -23,30 +24,6 @@ const PCODE CallCountingStub::TargetForThresholdReached = (PCODE)GetEEFuncEntryP
 // CallCountingManager::CallCountingInfo
 
 #ifndef DACCESS_COMPILE
-
-CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVersion)
-    : m_codeVersion(codeVersion),
-    m_callCountingStub(nullptr),
-    m_remainingCallCount(0),
-    m_stage(Stage::Disabled)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!codeVersion.IsNull());
-}
-
-CallCountingManager::CallCountingInfo *
-CallCountingManager::CallCountingInfo::CreateWithCallCountingDisabled(NativeCodeVersion codeVersion)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return new CallCountingInfo(codeVersion);
-}
 
 CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVersion, CallCount callCountThreshold)
     : m_codeVersion(codeVersion),
@@ -87,7 +64,6 @@ NativeCodeVersion CallCountingManager::CallCountingInfo::GetCodeVersion() const
 const CallCountingStub *CallCountingManager::CallCountingInfo::GetCallCountingStub() const
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_stage != Stage::Disabled);
 
     return m_callCountingStub;
 }
@@ -117,7 +93,6 @@ void CallCountingManager::CallCountingInfo::ClearCallCountingStub()
 PTR_CallCount CallCountingManager::CallCountingInfo::GetRemainingCallCountCell()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_stage != Stage::Disabled);
     //_ASSERTE(m_callCountingStub != nullptr);
 
     return &m_remainingCallCount;
@@ -135,7 +110,6 @@ CallCountingManager::CallCountingInfo::Stage CallCountingManager::CallCountingIn
 FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_stage != Stage::Disabled);
     _ASSERTE(stage <= Stage::Complete);
 
     switch (stage)
@@ -222,7 +196,7 @@ CallCountingManager::CallCountingStubAllocator::~CallCountingStubAllocator()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    LoaderHeap *heap = m_heap;
+    InterleavedLoaderHeap *heap = m_heap;
     if (heap != nullptr)
     {
         delete m_heap;
@@ -252,17 +226,18 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
-    LoaderHeap *heap = m_heap;
+    InterleavedLoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {
         heap = AllocateHeap();
     }
 
-    SIZE_T sizeInBytes = sizeof(CallCountingStub);
-    AllocMemHolder<void> allocationAddressHolder(heap->AllocAlignedMem(sizeInBytes, 1));
+    AllocMemHolder<void> allocationAddressHolder(heap->AllocStub());
     CallCountingStub *stub = (CallCountingStub*)(void*)allocationAddressHolder;
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
+
+    FlushCacheForDynamicMappedStub(stub, CallCountingStub::CodeSize);
 
     return stub;
 }
@@ -294,6 +269,14 @@ void (*CallCountingStub::CallCountingStubCode)();
 
 #ifndef DACCESS_COMPILE
 
+static InterleavedLoaderHeapConfig s_callCountingHeapConfig;
+
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
+extern "C" void CallCountingStubCodeTemplate();
+#else
+#define CallCountingStubCodeTemplate NULL
+#endif
+
 void CallCountingStub::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -311,14 +294,24 @@ void CallCountingStub::StaticInitialize()
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unsupported OS page size"));
     }
     #undef ENUM_PAGE_SIZE
+
+    if (CallCountingStubCodeTemplate != NULL && pageSize != 0x4000)
+    {
+        // This should fail if the template is used on a platform which doesn't support the supported page size for templates
+        ThrowHR(COR_E_EXECUTIONENGINE);
+    }
+#elif defined(TARGET_WASM)
+    // CallCountingStub is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
+
+    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage, NULL);
 }
 
 #endif // DACCESS_COMPILE
 
-void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
+void CallCountingStub::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / CallCountingStub::CodeSize) * CallCountingStub::CodeSize;
@@ -329,13 +322,13 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
 
         // Set absolute addresses of the slots in the stub
         BYTE* pCounterSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, RemainingCallCountCell);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_RemainingCallCountCell_Offset)) = pCounterSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_RemainingCallCountCell_Offset)) = pCounterSlot;
 
         BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, TargetForMethod);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForMethod_Offset)) = pTargetSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForMethod_Offset)) = pTargetSlot;
 
         BYTE* pCountReachedZeroSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, TargetForThresholdReached);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)CallCountingStubCode), CallCountingStub::CodeSize, pageSize);
@@ -343,7 +336,7 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
 }
 
 
-NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHeap()
+NOINLINE InterleavedLoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHeap()
 {
     CONTRACTL
     {
@@ -355,7 +348,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 
     _ASSERTE(m_heap == nullptr);
 
-    LoaderHeap *heap = new LoaderHeap(0, 0, &m_heapRangeList, UnlockedLoaderHeap::HeapKind::Interleaved, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
+    InterleavedLoaderHeap *heap = new InterleavedLoaderHeap(&m_heapRangeList, true /* fUnlocked */, &s_callCountingHeapConfig);
     m_heap = heap;
     return heap;
 }
@@ -476,6 +469,7 @@ CallCountingManager::~CallCountingManager()
 }
 
 #ifndef DACCESS_COMPILE
+
 void CallCountingManager::StaticInitialize()
 {
     WRAPPER_NO_CONTRACT;
@@ -484,58 +478,7 @@ void CallCountingManager::StaticInitialize()
 }
 #endif
 
-bool CallCountingManager::IsCallCountingEnabled(NativeCodeVersion codeVersion)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!codeVersion.IsNull());
-    _ASSERTE(codeVersion.IsDefaultVersion());
-    _ASSERTE(codeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-
-    PTR_CallCountingInfo callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(codeVersion);
-    return callCountingInfo == NULL || callCountingInfo->GetStage() != CallCountingInfo::Stage::Disabled;
-}
-
 #ifndef DACCESS_COMPILE
-
-void CallCountingManager::DisableCallCounting(NativeCodeVersion codeVersion)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!codeVersion.IsNull());
-    _ASSERTE(codeVersion.IsDefaultVersion());
-    _ASSERTE(codeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-
-    CallCountingInfo *callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(codeVersion);
-    if (callCountingInfo != nullptr)
-    {
-        // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
-        // native code version of a method. The call counting info is created with call counting enabled or disabled and it
-        // cannot be changed thereafter for consistency in dependents of the info.
-        _ASSERTE(callCountingInfo->GetStage() == CallCountingInfo::Stage::Disabled);
-        return;
-    }
-
-    NewHolder<CallCountingInfo> callCountingInfoHolder = CallCountingInfo::CreateWithCallCountingDisabled(codeVersion);
-    m_callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
-    callCountingInfoHolder.SuppressRelease();
-}
 
 // Returns true if the code entry point was updated to reflect the active code version, false otherwise. In normal paths, the
 // code entry point is not updated only when the use of call counting stubs is disabled, as in that case returning to the
@@ -568,12 +511,7 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
 
     if (!methodDesc->IsEligibleForTieredCompilation() ||
-        (
-            // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
-            // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
-            !activeCodeVersion.IsDefaultVersion() &&
-            activeCodeVersion.IsFinalTier()
-        ) ||
+        activeCodeVersion.IsFinalTier() ||
         !g_pConfig->TieredCompilation_CallCounting())
     {
         methodDesc->SetCodeEntryPoint(codeEntryPoint);
@@ -760,7 +698,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
 
     PCODE codeEntryPoint = 0;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -774,8 +712,8 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
         CallCountingInfo::From(CallCountingStub::From(stubIdentifyingToken)->GetRemainingCallCountCell())->GetCodeVersion();
 
     MethodDesc *methodDesc = codeVersion.GetMethodDesc();
-    FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
-    CallCountingHelperFrame *frame = &frameWithCookie;
+    CallCountingHelperFrame callCountingFrame(transitionBlock, methodDesc);
+    CallCountingHelperFrame *frame = &callCountingFrame;
     frame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -822,8 +760,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     frame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 
     return codeEntryPoint;
 }
@@ -946,8 +882,9 @@ void CallCountingManager::CompleteCallCounting()
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "CallCountingManager::CompleteCallCounting: "
                     "Exception, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
         }
 
         callCountingInfosPendingCompletion.Clear();
@@ -958,10 +895,7 @@ void CallCountingManager::CompleteCallCounting()
             {
                 callCountingInfosPendingCompletion.Preallocate(64);
             }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL;
         }
     }
 }
@@ -1009,7 +943,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     // will not be used after resuming the runtime. The following ensures that other threads will not use an old cached
     // entry point value that will not be valid. Do this here in case of exception later.
     MemoryBarrier(); // flush writes from this thread first to guarantee ordering
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 
     // At this point, allocated call counting stubs won't be used anymore. Call counting stubs and corresponding infos may
     // now be safely deleted. Note that call counting infos may not be deleted prior to this point because call counting
@@ -1089,10 +1023,7 @@ void CallCountingManager::StopAllCallCounting(TieredCompilationManager *tieredCo
                 {
                     callCountingInfosPendingCompletion.Preallocate(64);
                 }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH(RethrowTerminalExceptions);
+                EX_SWALLOW_NONTERMINAL;
             }
         }
 
@@ -1139,11 +1070,6 @@ void CallCountingManager::DeleteAllCallCountingStubs()
         {
             CallCountingInfo *callCountingInfo = *it;
             CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
-            if (callCountingStage == CallCountingInfo::Stage::Disabled)
-            {
-                continue;
-            }
-
             if (callCountingInfo->GetCallCountingStub() != nullptr)
             {
                 callCountingInfo->ClearCallCountingStub();
@@ -1211,10 +1137,7 @@ void CallCountingManager::TrimCollections()
         {
             m_callCountingInfoByCodeVersionHash.Reallocate(count * 2);
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 
     count = m_methodDescForwarderStubHash.GetCount();
@@ -1232,10 +1155,7 @@ void CallCountingManager::TrimCollections()
         {
             m_methodDescForwarderStubHash.Reallocate(count * 2);
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
     }
 }
 

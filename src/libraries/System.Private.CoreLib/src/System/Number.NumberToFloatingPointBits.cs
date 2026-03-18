@@ -722,8 +722,8 @@ namespace System
             // number of bits by which we must adjust the mantissa to shift it into the
             // correct position, and compute the resulting base two exponent for the
             // normalized mantissa:
-            uint initialMantissaBits = BigInteger.CountSignificantBits(initialMantissa);
-            int normalMantissaShift = TFloat.NormalMantissaBits - (int)(initialMantissaBits);
+            int initialMantissaBits = BigInteger.CountSignificantBits(initialMantissa);
+            int normalMantissaShift = TFloat.NormalMantissaBits - initialMantissaBits;
             int normalExponent = initialExponent - normalMantissaShift;
 
             ulong mantissa = initialMantissa;
@@ -835,7 +835,7 @@ namespace System
             return shiftedExponent | mantissa;
         }
 
-        private static ulong ConvertBigIntegerToFloatingPointBits<TFloat>(ref BigInteger value, uint integerBitsOfPrecision, bool hasNonZeroFractionalPart)
+        private static ulong ConvertBigIntegerToFloatingPointBits<TFloat>(ref BigInteger value, int integerBitsOfPrecision, bool hasNonZeroFractionalPart)
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
             int baseExponent = TFloat.DenormalMantissaBits;
@@ -846,9 +846,9 @@ namespace System
                 return AssembleFloatingPointBits<TFloat>(value.ToUInt64(), baseExponent, !hasNonZeroFractionalPart);
             }
 
-            (uint topBlockIndex, uint topBlockBits) = Math.DivRem(integerBitsOfPrecision, 32);
-            uint middleBlockIndex = topBlockIndex - 1;
-            uint bottomBlockIndex = middleBlockIndex - 1;
+            (int topBlockIndex, int topBlockBits) = Math.DivRem(integerBitsOfPrecision, 32);
+            int middleBlockIndex = topBlockIndex - 1;
+            int bottomBlockIndex = middleBlockIndex - 1;
 
             ulong mantissa;
             int exponent = baseExponent + ((int)(bottomBlockIndex) * 32);
@@ -881,7 +881,7 @@ namespace System
                 hasZeroTail &= (bottomBlock & unusedBottomBlockBitsMask) == 0;
             }
 
-            for (uint i = 0; i != bottomBlockIndex; i++)
+            for (int i = 0; i < bottomBlockIndex; i++)
             {
                 hasZeroTail &= (value.GetBlock(i) == 0);
             }
@@ -1058,7 +1058,7 @@ namespace System
             // extra bit is used to correctly round the mantissa (if there are fewer bits
             // than this available, then that's totally okay; in that case we use what we
             // have and we don't need to round).
-            uint requiredBitsOfPrecision = (uint)(TFloat.NormalMantissaBits + 1);
+            int requiredBitsOfPrecision = TFloat.NormalMantissaBits + 1;
 
             uint totalDigits = (uint)(number.DigitsCount);
             uint integerDigitsMissing = positiveExponent - integerDigitsPresent;
@@ -1086,7 +1086,7 @@ namespace System
             // of the mantissa.  If either [1] this number has more than the required
             // number of bits of precision or [2] the mantissa has no fractional part,
             // then we can assemble the result immediately:
-            uint integerBitsOfPrecision = BigInteger.CountSignificantBits(ref integerValue);
+            int integerBitsOfPrecision = BigInteger.CountSignificantBits(ref integerValue);
 
             if ((integerBitsOfPrecision >= requiredBitsOfPrecision) || (fractionalDigitsPresent == 0))
             {
@@ -1139,10 +1139,10 @@ namespace System
             // the same position as the most significant bit in the denominator.  This
             // ensures that when we later shift the numerator N bits to the left, we
             // will produce N bits of precision.
-            uint fractionalNumeratorBits = BigInteger.CountSignificantBits(ref fractionalNumerator);
-            uint fractionalDenominatorBits = BigInteger.CountSignificantBits(ref fractionalDenominator);
+            int fractionalNumeratorBits = BigInteger.CountSignificantBits(ref fractionalNumerator);
+            int fractionalDenominatorBits = BigInteger.CountSignificantBits(ref fractionalDenominator);
 
-            uint fractionalShift = 0;
+            int fractionalShift = 0;
 
             if (fractionalDenominatorBits > fractionalNumeratorBits)
             {
@@ -1154,8 +1154,8 @@ namespace System
                 fractionalNumerator.ShiftLeft(fractionalShift);
             }
 
-            uint requiredFractionalBitsOfPrecision = requiredBitsOfPrecision - integerBitsOfPrecision;
-            uint remainingBitsOfPrecisionRequired = requiredFractionalBitsOfPrecision;
+            int requiredFractionalBitsOfPrecision = requiredBitsOfPrecision - integerBitsOfPrecision;
+            int remainingBitsOfPrecisionRequired = requiredFractionalBitsOfPrecision;
 
             if (integerBitsOfPrecision > 0)
             {
@@ -1188,7 +1188,7 @@ namespace System
             // of two by which we must multiply the fractional part to move it into the
             // range [1.0, 2.0).  This will either be the same as the shift we computed
             // earlier, or one greater than that shift:
-            uint fractionalExponent = fractionalShift;
+            int fractionalExponent = fractionalShift;
 
             if (BigInteger.Compare(ref fractionalNumerator, ref fractionalDenominator) < 0)
             {
@@ -1203,7 +1203,7 @@ namespace System
 
             // We may have produced more bits of precision than were required.  Check,
             // and remove any "extra" bits:
-            uint fractionalMantissaBits = BigInteger.CountSignificantBits(fractionalMantissa);
+            int fractionalMantissaBits = BigInteger.CountSignificantBits(fractionalMantissa);
 
             if (fractionalMantissaBits > requiredFractionalBitsOfPrecision)
             {

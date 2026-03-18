@@ -5,6 +5,9 @@
     <WasmSingleFileBundle>true</WasmSingleFileBundle>
     <InvariantGlobalization>true</InvariantGlobalization>
     -->
+    <!-- adds necessary cli arguments for in-tree samples, see ../Directory.Build.targets
+    <_WasiDebugger>true</_WasiDebugger>
+    -->
     <!-- to strip wasi:http dependency -->
     <PublishTrimmed>true</PublishTrimmed>
     <WasmBuildNative>true</WasmBuildNative>

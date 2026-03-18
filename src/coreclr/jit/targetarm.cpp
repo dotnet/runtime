@@ -24,7 +24,7 @@ const regNumber fltArgRegs [] = {REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5,
 const regMaskTP fltArgMasks[] = {RBM_F0, RBM_F1, RBM_F2, RBM_F3, RBM_F4, RBM_F5, RBM_F6, RBM_F7, RBM_F8, RBM_F9, RBM_F10, RBM_F11, RBM_F12, RBM_F13, RBM_F14, RBM_F15 };
 // clang-format on
 
-static_assert_no_msg(RBM_ALLDOUBLE == (RBM_ALLDOUBLE_HIGH >> 1));
+static_assert(RBM_ALLDOUBLE == (RBM_ALLDOUBLE_HIGH >> 1));
 
 //-----------------------------------------------------------------------------
 // Arm32Classifier:
@@ -194,10 +194,9 @@ ABIPassingInformation Arm32Classifier::ClassifyFloat(Compiler* comp, var_types t
         // As soon as any float arg goes on stack no other float arg can go in a register.
         m_floatRegs = 0;
 
-        m_stackArgSize = roundUp(m_stackArgSize, genTypeSize(type));
-        ABIPassingInformation info =
-            ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
-                                                                                numElems * genTypeSize(type)));
+        m_stackArgSize                = roundUp(m_stackArgSize, genTypeSize(type));
+        ABIPassingSegment     segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, numElems * genTypeSize(type));
+        ABIPassingInformation info    = ABIPassingInformation::FromSegmentByValue(comp, segment);
         m_stackArgSize += numElems * genTypeSize(type);
 
         return info;

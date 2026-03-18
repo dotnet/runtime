@@ -34,8 +34,8 @@ namespace System.Reflection
         public abstract MethodInfo? GetSetMethod(bool nonPublic);
 
         public virtual Type GetModifiedPropertyType() => throw new NotSupportedException();
-        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
-        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetOptionalCustomModifiers() => [];
+        public virtual Type[] GetRequiredCustomModifiers() => [];
 
         [DebuggerHidden]
         [DebuggerStepThrough]
@@ -75,7 +75,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(PropertyInfo? left, PropertyInfo? right) => !(left == right);

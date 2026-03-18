@@ -32,7 +32,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/context.h"
 #include "pal/debug.h"
 #include "pal/environ.h"
-#include "pal/malloc.hpp"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
 #include "pal/virtual.h"
@@ -45,7 +44,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include <unistd.h>
 #elif defined(HAVE_TTRACE) // HAVE_PROCFS_CTL
 #include <sys/ttrace.h>
-#else // defined(HAVE_TTRACE)
+#elif HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif  // HAVE_PROCFS_CTL
 #if HAVE_VM_READ
@@ -61,8 +60,14 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 
 #ifdef __APPLE__
 #include <mach/mach.h>
+#if defined(TARGET_OSX)
 #include <mach/mach_vm.h>
+#endif
 #endif // __APPLE__
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/heap.h>
+#endif // __EMSCRIPTEN__
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -87,7 +92,7 @@ const BOOL DBG_DETACH       = FALSE;
 #endif
 static const char PAL_OUTPUTDEBUGSTRING[]    = "PAL_OUTPUTDEBUGSTRING";
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 #define ENABLE_RUN_ON_DEBUG_BREAK 1
 #endif // _DEBUG
 
@@ -109,6 +114,9 @@ Remarks
 This is a no-op for x86 architectures where the instruction and data
 caches are coherent in hardware. For non-X86 architectures, this call
 usually maps to a kernel API to flush the D-caches on all processors.
+
+It is also no-op on wasm. We don't have a way to flush the instruction
+cache and it is also not needed.
 
 --*/
 BOOL
@@ -421,7 +429,12 @@ Function:
 BOOL
 IsInDebugBreak(void *addr)
 {
+#ifdef TARGET_WASM
+    _ASSERT("IsInDebugBreak not implemented on wasm");
+    return false;
+#else
     return (addr >= (void *)DBG_DebugBreak) && (addr <= (void *)DBG_DebugBreak_End);
+#endif
 }
 
 /*++
@@ -635,7 +648,7 @@ Function:
   PAL_ReadProcessMemory
 
 Abstract
-  Reads process memory. 
+  Reads process memory.
 
 Parameter
   handle : from PAL_OpenProcessMemory
@@ -710,6 +723,17 @@ PAL_ReadProcessMemory(
         free(data);
     }
 #else
+    // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
+    // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
+    // so the kernel does not apply TBI — tagged pointers cause EINVAL.
+    // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
+    //
+    // Currently only Android allocators set a non-zero top byte, so on other ARM64 Linux
+    // configurations this is a no-op. However, any future use of TBI tagging (e.g., ARM MTE)
+    // on other Linux distros would hit the same issue.
+#ifdef TARGET_ARM64
+    address &= 0x00FFFFFFFFFFFFFFULL;
+#endif
     read = pread(handle, buffer, size, address);
     if (read == (size_t)-1)
     {
@@ -742,6 +766,19 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess)
 {
+#if defined(TARGET_BROWSER)
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= emscripten_get_heap_size())
+    {
+        return TRUE;
+    }
+    return FALSE;
+#elif defined(TARGET_WASI)
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
+    {
+        return TRUE;
+    }
+    return FALSE;
+#else // TARGET_BROWSER || TARGET_WASI
     int fds[2];
     int flags;
 
@@ -753,7 +790,7 @@ PAL_ProbeMemory(
 
     flags = fcntl(fds[0], F_GETFL, 0);
     fcntl(fds[0], F_SETFL, flags | O_NONBLOCK);
-    
+
     flags = fcntl(fds[1], F_GETFL, 0);
     fcntl(fds[1], F_SETFL, flags | O_NONBLOCK);
 
@@ -798,6 +835,7 @@ PAL_ProbeMemory(
     close(fds[1]);
 
     return result;
+#endif // TARGET_BROWSER || TARGET_WASI
 }
 
 } // extern "C"

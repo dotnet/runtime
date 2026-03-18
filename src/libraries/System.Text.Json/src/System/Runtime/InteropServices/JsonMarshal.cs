@@ -26,5 +26,24 @@ namespace System.Runtime.InteropServices
         {
             return element.GetRawValue().Span;
         }
+
+        /// <summary>
+        /// Gets a <see cref="ReadOnlySpan{T}"/> view over the raw JSON data of the given <see cref="JsonProperty"/> name.
+        /// </summary>
+        /// <param name="property">The JSON property from which to extract the span.</param>
+        /// <returns>The span containing the raw JSON data of the <paramref name="property"/> name. This will not include the enclosing quotes.</returns>
+        /// <exception cref="ObjectDisposedException">The underlying <see cref="JsonDocument"/> has been disposed.</exception>
+        /// <remarks>
+        /// <para>
+        /// While the method itself does check for disposal of the underlying <see cref="JsonDocument"/>,
+        /// it is possible that it could be disposed after the method returns, which would result in
+        /// the span pointing to a buffer that has been returned to the shared pool. Callers should take
+        /// extra care to make sure that such a scenario isn't possible to avoid potential data corruption.
+        /// </para>
+        /// </remarks>
+        public static ReadOnlySpan<byte> GetRawUtf8PropertyName(JsonProperty property)
+        {
+            return property.NameSpan;
+        }
     }
 }

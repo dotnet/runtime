@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\subproject.props" />
+  <Import Project="DumpTests.targets" />
+
+  <!--
+    SkipDumpVersions: semicolon-separated list of runtime versions whose dump tests should
+    be skipped (e.g. "net10.0;net9.0"). Baked into runtimeconfig.json so tests can read it
+    via AppContext.GetData at runtime. Use when dumps for those versions are not available.
+  -->
+  <ItemGroup Condition="'$(SkipDumpVersions)' != ''">
+    <RuntimeHostConfigurationOption Include="CDAC_SKIP_VERSIONS" Value="$(SkipDumpVersions)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Exclude debuggee source files — they are separate console apps built by DumpTests.targets -->
+    <Compile Remove="Debuggees\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
+      <Compile Include="..\TestHelpers.cs" Link="TestHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+</Project>

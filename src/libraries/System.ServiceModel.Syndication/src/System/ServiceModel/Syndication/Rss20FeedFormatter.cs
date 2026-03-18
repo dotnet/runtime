@@ -30,10 +30,7 @@ namespace System.ServiceModel.Syndication
 
         public Rss20FeedFormatter(Type feedTypeToCreate) : base()
         {
-            if (feedTypeToCreate is null)
-            {
-                throw new ArgumentNullException(nameof(feedTypeToCreate));
-            }
+            ArgumentNullException.ThrowIfNull(feedTypeToCreate);
 
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
@@ -73,10 +70,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             return reader.IsStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
         }
@@ -85,20 +79,14 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             ReadFeed(reader);
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             WriteFeed(writer);
         }
@@ -115,10 +103,7 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             writer.WriteStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
             WriteFeed(writer);
@@ -145,14 +130,8 @@ namespace System.ServiceModel.Syndication
 
         protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
+            ArgumentNullException.ThrowIfNull(feed);
 
             SyndicationItem item = CreateItem(feed);
             ReadItemFrom(reader, item, feed.BaseUri);
@@ -161,14 +140,8 @@ namespace System.ServiceModel.Syndication
 
         protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
+            ArgumentNullException.ThrowIfNull(feed);
 
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
@@ -201,11 +174,11 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (dateTime.TotalOffsetMinutes == 0)
 #else
             if (dateTime.Offset == TimeSpan.Zero)
-#endif // NET8_0_OR_GREATER
+#endif // NET
             {
                 return dateTime.ToUniversalTime().ToString(Rfc822OutputUtcDateTimeFormat, CultureInfo.InvariantCulture);
             }

@@ -13,6 +13,8 @@
       <Type Name="System.DateTimeOffset" Dynamic="Required All" />
       <Type Name="System.TimeSpan" Dynamic="Required All" />
       <Type Name="System.DateTime" Dynamic="Required All" />
+      <Type Name="System.DayOfWeek[]" Dynamic="Required All" />
+      <Type Name="System.Nullable`1[[System.DayOfWeek,System.Runtime]][]" Dynamic="Required All" />
 
       <Type Name="System.Text.StringBuilder" Dynamic="Required All" />
       <Type Name="System.Array" Dynamic="Required All" />

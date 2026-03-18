@@ -19,6 +19,12 @@ configuration:
       - isOpen
       - isNotLabeledWith:
           label: backlog-cleanup-candidate
+      - isNotLabeledWith:
+          label: area-codegen-coreclr
+      - isNotLabeledWith:
+          label: area-iltools-coreclr
+      - isNotLabeledWith:
+          label: area-tools-ilverification
       actions:
       - addReply:
           reply: >-
@@ -111,6 +117,7 @@ configuration:
           reply: Draft Pull Request was automatically closed for 30 days of inactivity. Please [let us know](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you'd like to reopen it.
     eventResponderTasks:
     - if:
+      - isOpen
       - or:
         - payloadType: Issues
         - payloadType: Pull_Request
@@ -123,6 +130,8 @@ configuration:
             label: area-CodeGen-coreclr
         - labelAdded:
             label: area-Codegen-Interpreter-mono
+        - labelAdded:
+            label: area-CodeGen-Interpreter-coreclr
         - labelAdded:
             label: area-Codegen-JIT-Mono
         - labelAdded:
@@ -177,6 +186,8 @@ configuration:
             label: area-Infrastructure-libraries
         - labelAdded:
             label: area-Infrastructure-mono
+        - labelAdded:
+            label: area-Interop-coreclr
         - labelAdded:
             label: area-Meta
         - labelAdded:
@@ -328,9 +339,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
-            - vsadov
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -341,7 +351,9 @@ configuration:
             label: area-AssemblyLoader-mono
         then:
         - mentionUsers:
-            mentionees: []
+            mentionees:
+            - agocke
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -366,8 +378,23 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - brzvlad
+            - vitek-karas
+            - BrzVlad
             - kotlarmilos
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-CodeGen-Interpreter-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - brzvlad
+            - janvorli
+            - kg
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -379,8 +406,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - lambdageek
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -392,8 +419,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - lambdageek
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -405,7 +432,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - fanyang-mono
             - steveisok
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -419,7 +445,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - steveisok
-            - lambdageek
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -443,7 +469,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - steveisok
             - thaystg
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -467,7 +495,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - steveisok
             - tommcdon
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -539,6 +569,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -587,6 +618,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - agocke
             - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -611,9 +643,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
-            - vsadov
+            - jeffschwMSFT
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -625,8 +657,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -639,6 +671,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
+            - dotnet/jit-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -651,6 +684,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
+            - dotnet/jit-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -674,7 +708,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - hoyosjs
+            - agocke
+            - dotnet/runtime-infrastructure
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -698,8 +733,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - directhex
+            - akoeplinger
             - matouskozak
+            - simonrozsival
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -723,7 +759,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - phil-allen-msft
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -747,7 +784,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - phil-allen-msft
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -772,8 +810,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - MichalStrehovsky
-            - jkotas
+            - dotnet/ilc-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -786,7 +823,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - vitek-karas
+            - elinor-fung
             - vsadov
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -907,8 +944,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
-            - ajcvickers
+            - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -920,8 +957,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
-            - ajcvickers
+            - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -933,8 +970,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
-            - ajcvickers
+            - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -946,9 +983,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - davoudeshtehari
-            - david-engel
-            - jrahnama
+            - David-Engel
+            - cheenamalhotra
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -960,7 +996,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/area-system-diagnostics
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1032,9 +1069,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tarekgh
-            - tommcdon
-            - pjanotti
+            - steveisok
+            - dotnet/area-system-diagnostics-tracing
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1047,7 +1083,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-directoryservices
-            - jay98014
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1071,7 +1106,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - phil-allen-msft
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1147,6 +1183,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/area-system-io-compression
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1197,7 +1234,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - cston
+            - phil-allen-msft
+            - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1245,6 +1283,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1257,6 +1296,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1269,6 +1309,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1295,6 +1336,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - karelz
             - dotnet/ncl
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1411,6 +1453,18 @@ configuration:
             assignMentionees: False
       - if:
         - hasLabel:
+            label: area-Interop-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - dotnet/interop-contrib
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
             label: area-System.Runtime.Intrinsics
         then:
         - mentionUsers:
@@ -1427,9 +1481,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - dotnet/area-system-security
             - bartonjs
             - vcsjones
+            - dotnet/area-system-security
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1490,7 +1544,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-text-json
-            - gregsdennis
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1514,7 +1567,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - mangod9
+            - agocke
+            - vsadov
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1550,8 +1604,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - roji
-            - ajcvickers
+            - SamMonoRT
+            - dotnet/efteam
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1576,8 +1630,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - sbomer
-            - vitek-karas
+            - dotnet/illink
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1589,7 +1642,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - mangod9
+            - agocke
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1638,11 +1691,26 @@ configuration:
       description: Add breaking change doc label to PR
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: src/coreclr/inc/jiteeversionguid.h
+          matchAny: true
+      - isPullRequest
+      - isOpen
+      - isAction:
+          action: Opened
+      then:
+      - mentionUsers:
+          mentionees:
+          - dotnet/jit-contrib
+          replyTemplate: >-
+            Tagging @dotnet/jit-contrib for JIT-EE GUID update
+          assignMentionees: False
+      description: '@Mention for JIT-EE GUID update'
+    - if:
+      - payloadType: Pull_Request
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1654,11 +1722,9 @@ configuration:
       description: '[Linkable-framework workgroup] Add linkable-framework label to new Prs that touch files with *ILLink* that not have it already'
     - if:
       - payloadType: Pull_Request
-      - or:
-        - filesMatchPattern:
-            pattern: .*ILLink.*
-        - filesMatchPattern:
-            pattern: .*illink.*
+      - filesMatchPattern:
+          pattern: (?i).*ILLink.*
+          matchAny: true
       - not:
           hasLabel:
             label: linkable-framework
@@ -1684,7 +1750,6 @@ configuration:
           - LakshanF
           - sbomer
           - joperezr
-          - marek-safar
           replyTemplate: >-
             Tagging subscribers to 'linkable-framework': ${mentionees}
 
@@ -1702,7 +1767,6 @@ configuration:
             mentionees:
             - eerhardt
             - SamMonoRT
-            - marek-safar
             replyTemplate: >-
               Tagging subscribers to 'size-reduction': ${mentionees}
 
@@ -1719,6 +1783,7 @@ configuration:
       - mentionUsers:
           mentionees:
           - lewing
+          - pavelsavara
           replyTemplate: >-
             Tagging subscribers to 'arch-wasm': ${mentionees}
 
@@ -1736,7 +1801,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1775,7 +1839,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1795,7 +1858,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-

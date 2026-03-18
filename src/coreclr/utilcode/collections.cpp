@@ -770,7 +770,7 @@ void *CStructArray::Insert(int iIndex)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }
@@ -814,7 +814,7 @@ void *CStructArray::Append()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }
@@ -859,7 +859,7 @@ int CStructArray::AllocateBlock(int iCount)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return result;
 }

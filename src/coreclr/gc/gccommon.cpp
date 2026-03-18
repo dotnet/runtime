@@ -132,6 +132,12 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
     //_snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s.%d%s", temp_logfile_name.Get(), pid, suffix);
     _snprintf_s(logfile_name, MAX_LONGPATH+1, _TRUNCATE, "%s%s", temp_logfile_name.Get(), suffix);
     logFile = fopen(logfile_name, "wb");
+
+    if (logFile == NULL)
+    {
+        log_init_error_to_host ("Cannot create log file %s", logfile_name);
+    }
+
     return logFile;
 }
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
@@ -159,7 +165,6 @@ HRESULT initialize_log_file()
 
         if (gc_log == NULL)
         {
-            GCToEEInterface::LogErrorToHost("Cannot create log file");
             return E_FAIL;
         }
 
@@ -168,7 +173,7 @@ HRESULT initialize_log_file()
 
         if (gc_log_file_size <= 0 || gc_log_file_size > 500)
         {
-            GCToEEInterface::LogErrorToHost("Invalid log file size (valid size needs to be larger than 0 and smaller than 500)");
+            log_init_error_to_host ("Invalid log file size %zd MiB (valid size needs to be > 0 and <= 500 MiB)", gc_log_file_size);
             fclose (gc_log);
             return E_FAIL;
         }
@@ -265,4 +270,26 @@ void GCLog (const char *fmt, ... )
 }
 #endif //TRACE_GC && SIMPLE_DPRINTF
 
+// We log initialization errors to the host to help with diagnostics. By default these will show up in stdout.
+// You can also redirect them to a file. See docs/design/features/host-tracing.md.
+void log_init_error_to_host (const char* format, ...)
+{
+    char error_buf[256];
+    va_list args;
+    va_start (args, format);
+    _vsnprintf_s (error_buf, ARRAY_SIZE (error_buf), _TRUNCATE, format, args);
+    GCToEEInterface::LogErrorToHost (error_buf);
+    va_end (args);
+}
+
+static double g_QPFus = 0.0;
+
+uint64_t GetHighPrecisionTimeStamp()
+{
+    if (g_QPFus == 0.0)
+    {
+        g_QPFus = 1000.0 * 1000.0 / (double)GCToOSInterface::QueryPerformanceFrequency();
+    }
+    return (uint64_t)((double)GCToOSInterface::QueryPerformanceCounter() * g_QPFus);
+}
 #endif // !DACCESS_COMPILE

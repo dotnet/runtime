@@ -1,10 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="leakwheel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

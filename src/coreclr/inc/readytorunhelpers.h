@@ -20,6 +20,7 @@ HELPER(READYTORUN_HELPER_RngChkFail,                CORINFO_HELP_RNGCHKFAIL,    
 HELPER(READYTORUN_HELPER_FailFast,                  CORINFO_HELP_FAIL_FAST,                         OPTIMIZEFORSIZE)
 HELPER(READYTORUN_HELPER_ThrowNullRef,              CORINFO_HELP_THROWNULLREF,                      OPTIMIZEFORSIZE)
 HELPER(READYTORUN_HELPER_ThrowDivZero,              CORINFO_HELP_THROWDIVZERO,                      OPTIMIZEFORSIZE)
+HELPER(READYTORUN_HELPER_ThrowExact,                CORINFO_HELP_THROWEXACT,                        OPTIMIZEFORSIZE)
 
 HELPER(READYTORUN_HELPER_WriteBarrier,              CORINFO_HELP_ASSIGN_REF,                        )
 HELPER(READYTORUN_HELPER_CheckedWriteBarrier,       CORINFO_HELP_CHECKED_ASSIGN_REF,                )
@@ -33,8 +34,6 @@ HELPER(READYTORUN_HELPER_MemSet,                    CORINFO_HELP_MEMSET,        
 HELPER(READYTORUN_HELPER_MemZero,                   CORINFO_HELP_MEMZERO,                           )
 HELPER(READYTORUN_HELPER_NativeMemSet,              CORINFO_HELP_NATIVE_MEMSET,                     )
 HELPER(READYTORUN_HELPER_MemCpy,                    CORINFO_HELP_MEMCPY,                            )
-
-HELPER(READYTORUN_HELPER_LogMethodEnter,            CORINFO_HELP_BBT_FCN_ENTER,                     )
 
 HELPER(READYTORUN_HELPER_GetRuntimeTypeHandle,      CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE,         )
 HELPER(READYTORUN_HELPER_GetRuntimeMethodHandle,    CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD,   )
@@ -80,14 +79,14 @@ HELPER(READYTORUN_HELPER_Mod,                       CORINFO_HELP_MOD,           
 HELPER(READYTORUN_HELPER_UDiv,                      CORINFO_HELP_UDIV,                              )
 HELPER(READYTORUN_HELPER_UMod,                      CORINFO_HELP_UMOD,                              )
 
-HELPER(READYTORUN_HELPER_Dbl2Int,                   CORINFO_HELP_DBL2INT,                           )
 HELPER(READYTORUN_HELPER_Dbl2IntOvf,                CORINFO_HELP_DBL2INT_OVF,                       )
 HELPER(READYTORUN_HELPER_Dbl2Lng,                   CORINFO_HELP_DBL2LNG,                           )
 HELPER(READYTORUN_HELPER_Dbl2LngOvf,                CORINFO_HELP_DBL2LNG_OVF,                       )
-HELPER(READYTORUN_HELPER_Dbl2UInt,                  CORINFO_HELP_DBL2UINT,                          )
 HELPER(READYTORUN_HELPER_Dbl2UIntOvf,               CORINFO_HELP_DBL2UINT_OVF,                      )
 HELPER(READYTORUN_HELPER_Dbl2ULng,                  CORINFO_HELP_DBL2ULNG,                          )
 HELPER(READYTORUN_HELPER_Dbl2ULngOvf,               CORINFO_HELP_DBL2ULNG_OVF,                      )
+HELPER(READYTORUN_HELPER_Lng2Flt,                   CORINFO_HELP_LNG2FLT,                           )
+HELPER(READYTORUN_HELPER_ULng2Flt,                  CORINFO_HELP_ULNG2FLT,                          )
 
 HELPER(READYTORUN_HELPER_FltRem,                    CORINFO_HELP_FLTREM,                            )
 HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_DBLREM,                            )
@@ -110,8 +109,6 @@ HELPER(READYTORUN_HELPER_CheckedWriteBarrier_ECX,   CORINFO_HELP_CHECKED_ASSIGN_
 HELPER(READYTORUN_HELPER_CheckedWriteBarrier_ESI,   CORINFO_HELP_CHECKED_ASSIGN_REF_ESI,            )
 HELPER(READYTORUN_HELPER_CheckedWriteBarrier_EDI,   CORINFO_HELP_CHECKED_ASSIGN_REF_EDI,            )
 HELPER(READYTORUN_HELPER_CheckedWriteBarrier_EBP,   CORINFO_HELP_CHECKED_ASSIGN_REF_EBP,            )
-
-HELPER(READYTORUN_HELPER_EndCatch,                  CORINFO_HELP_ENDCATCH,                          OPTIMIZEFORSIZE)
 #endif
 
 HELPER(READYTORUN_HELPER_PInvokeBegin,              CORINFO_HELP_JIT_PINVOKE_BEGIN,                 )
@@ -128,6 +125,12 @@ HELPER(READYTORUN_HELPER_StackProbe,                CORINFO_HELP_STACK_PROBE,   
 #endif
 
 HELPER(READYTORUN_HELPER_GetCurrentManagedThreadId, CORINFO_HELP_GETCURRENTMANAGEDTHREADID,         )
+
+HELPER(READYTORUN_HELPER_AllocContinuation,         CORINFO_HELP_ALLOC_CONTINUATION,                )
+HELPER(READYTORUN_HELPER_AllocContinuationClass,    CORINFO_HELP_ALLOC_CONTINUATION_CLASS,          )
+HELPER(READYTORUN_HELPER_AllocContinuationMethod,   CORINFO_HELP_ALLOC_CONTINUATION_METHOD,         )
+HELPER(READYTORUN_HELPER_InitClass,                 CORINFO_HELP_INITCLASS,                         )
+HELPER(READYTORUN_HELPER_InitInstClass,             CORINFO_HELP_INITINSTCLASS,                     )
 
 #undef HELPER
 #undef OPTIMIZEFORSPEED

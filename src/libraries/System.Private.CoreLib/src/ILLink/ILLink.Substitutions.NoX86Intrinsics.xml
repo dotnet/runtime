@@ -30,6 +30,9 @@
     <type fullname="System.Runtime.Intrinsics.X86.Avx10v1/V512">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Avx10v1/V512/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.Avx512BW">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
@@ -99,6 +102,18 @@
     <type fullname="System.Runtime.Intrinsics.X86.Fma/X64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Gfni">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Gfni/V256">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Gfni/V512">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Gfni/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.Lzcnt">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
@@ -109,6 +124,12 @@
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <type fullname="System.Runtime.Intrinsics.X86.Pclmulqdq/X64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Pclmulqdq/V256">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Pclmulqdq/V512">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <type fullname="System.Runtime.Intrinsics.X86.Popcnt">

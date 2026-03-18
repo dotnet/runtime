@@ -19,6 +19,7 @@ namespace NetCoreServer
         public async Task Invoke(HttpContext context)
         {
             PathString path = context.Request.Path;
+
             if (path.Equals(new PathString("/deflate.ashx")))
             {
                 await DeflateHandler.InvokeAsync(context);

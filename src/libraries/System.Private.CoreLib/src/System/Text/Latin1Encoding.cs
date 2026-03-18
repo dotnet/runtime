@@ -206,12 +206,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars!.Length - charIndex < charCount)
+            if (chars.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length)
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
@@ -268,12 +268,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (s!.Length - charIndex < charCount)
+            if (s.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length)
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
@@ -435,7 +435,7 @@ namespace System.Text
 
             if (bytes.Length == 0)
             {
-                return Array.Empty<char>();
+                return [];
             }
 
             // Since we're going to fill the entire char[] buffer, we could consider GC.AllocateUninitializedArray.

@@ -89,7 +89,9 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     break;
                 }
-                json.AppendFormat(@"""Key_{0}"":""{0}"",", i);
+                json.AppendFormat("""
+                    "Key_{0}":"{0}",
+                    """, i);
                 i++;
             }
             json.Remove(json.Length - 1, 1).Append("}");
@@ -131,15 +133,12 @@ namespace System.Text.Json.Serialization.Tests
             // We should have more than one write called due to the large byte count.
             if (Serializer.IsAsyncSerializer)
             {
-                Assert.InRange(stream.TestAsyncWriteCount, 1, int.MaxValue);
+                Assert.InRange(stream.TestAsyncWriteCount, 2, int.MaxValue);
             }
             else
             {
-                Assert.InRange(stream.TestWriteCount, 1, int.MaxValue);
+                Assert.InRange(stream.TestWriteCount, 2, int.MaxValue);
             }
-
-            // We don't auto-flush.
-            Assert.Equal(0, stream.TestFlushCount);
         }
 
         private async Task ReadAsync(TestStream stream)
@@ -155,7 +154,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.InRange(stream.TestRequestedReadBytesCount, 551368, int.MaxValue);
 
             // We should have more than one read called due to the large byte count.
-            Assert.InRange(stream.TestReadCount, 1, int.MaxValue);
+            Assert.InRange(stream.TestReadCount, 2, int.MaxValue);
 
             // We don't auto-flush.
             Assert.Equal(0, stream.TestFlushCount);

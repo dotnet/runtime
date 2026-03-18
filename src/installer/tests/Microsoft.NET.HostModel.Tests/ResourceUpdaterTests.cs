@@ -23,7 +23,7 @@ public class ResourceUpdaterTests
         public TempFile()
         {
             _path = Path.GetTempFileName();
-            Stream = new FileStream(_path, FileMode.Open);
+            Stream = new FileStream(_path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         }
 
         public void Dispose()
@@ -170,6 +170,25 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
+    void DisposeWithLeaveOpenDisposesPEReader()
+    {
+        using var tempFile = GetCurrentAssemblyMemoryStream();
+        PEReader? peReader = null;
+
+        using (var updater = new ResourceUpdater(tempFile.Stream, leaveOpen: true))
+        {
+            FieldInfo? readerField = typeof(ResourceUpdater).GetField("_reader", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(readerField);
+            peReader = Assert.IsType<PEReader>(readerField.GetValue(updater));
+            _ = peReader.PEHeaders;
+        }
+
+        Assert.NotNull(peReader);
+
+        Assert.Throws<ObjectDisposedException>(() => _ = peReader!.PEHeaders);
+    }
+
+    [Fact]
     void AddResourcesFromPEImage()
     {
         using var tempFile = CreateTestPEFileWithoutRsrc();
@@ -183,7 +202,7 @@ public class ResourceUpdaterTests
         tempFile.Stream.Seek(0, SeekOrigin.Begin);
 
         using (var modified = new PEReader(tempFile.Stream, PEStreamOptions.LeaveOpen))
-        using (var assembly = new PEReader(File.Open(Assembly.GetExecutingAssembly().Location, FileMode.Open, FileAccess.Read, FileShare.Read)))
+        using (var assembly = new PEReader(File.OpenRead(Assembly.GetExecutingAssembly().Location)))
         {
             var modifiedReader = new ResourceData(modified);
             var assemblyReader = new ResourceData(assembly);

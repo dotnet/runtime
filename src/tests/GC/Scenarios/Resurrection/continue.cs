@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
+using TestLibrary;
 namespace DefaultNamespace {
     using System;
     using System.Runtime.CompilerServices;
    
 
-    internal class Continue
+    public class Continue
     {
 // disabling unused variable warning
 #pragma warning disable 0414
@@ -76,7 +78,10 @@ namespace DefaultNamespace {
         }
 
 
-        public static int Main()
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
+        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             Console.WriteLine("Test should return with ExitCode 100 ...");

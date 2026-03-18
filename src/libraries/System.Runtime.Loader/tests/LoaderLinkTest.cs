@@ -13,7 +13,7 @@ namespace LoaderLinkTest
 {
     public class LoaderLinkTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void EnsureTypesLinked() // https://github.com/dotnet/runtime/issues/42207
         {
             string parentDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

@@ -46,7 +46,7 @@ struct AggregateInfo
     jitstd::vector<Replacement> Replacements;
     unsigned                    LclNum;
     // Unpromoted parts of the struct local.
-    StructSegments Unpromoted;
+    SegmentList Unpromoted;
     // Min offset in the struct local of the unpromoted part.
     unsigned UnpromotedMin = 0;
     // Max offset in the struct local of the unpromoted part.
@@ -98,7 +98,7 @@ class Promotion
     friend class PromotionLiveness;
     friend class ReplaceVisitor;
     friend class DecompositionPlan;
-    friend class StructSegments;
+    friend class SegmentList;
 
     void            ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                                         const jitstd::vector<Replacement>& replacements,
@@ -154,7 +154,7 @@ class Promotion
 
     static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
-
+    static bool     MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
@@ -274,9 +274,9 @@ public:
         return m_mayHaveForwardSub;
     }
 
-    void StartBlock(BasicBlock* block);
-    void EndBlock();
-    void StartStatement(Statement* stmt);
+    Statement* StartBlock(BasicBlock* block);
+    void       EndBlock();
+    void       StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
@@ -294,15 +294,18 @@ private:
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 
-    bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* callArg);
+    bool ReplaceStructLocal(GenTree* user, GenTree** use, GenTreeLclVarCommon* value);
+    bool ReplaceReturnedStructLocal(GenTreeOp* ret, GenTree** use, GenTreeLclVarCommon* value);
+    bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* callArg);
     bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
-    void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
-    bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
-    void ReplaceLocal(GenTree** use, GenTree* user);
-    void CheckForwardSubForLastUse(unsigned lclNum);
-    void WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size);
-    void WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
-    void MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
+    GenTreeFieldList* CreateFieldListForStructLocal(GenTreeLclVarCommon* value);
+    void              ReadBackAfterCall(GenTreeCall* call, GenTree* user);
+    bool              IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
+    void              ReplaceLocal(GenTree** use, GenTree* user);
+    void              CheckForwardSubForLastUse(unsigned lclNum);
+    void              WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size);
+    void              WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
+    void              MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
 
     void HandleStructStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,

@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, out TimeAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out TimeAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, out TimeAsn decoded)
         {
             try
             {
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, out TimeAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, out TimeAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

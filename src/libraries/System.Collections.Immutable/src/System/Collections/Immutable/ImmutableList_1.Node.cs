@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// A node in the AVL tree storing this set.
         /// </summary>
         [DebuggerDisplay("{_key}")]
-        internal sealed class Node : IBinaryTree<T>, IEnumerable<T>
+        internal sealed class Node : IEnumerable<T>
         {
             /// <summary>
             /// The default empty node.
@@ -121,29 +121,9 @@ namespace System.Collections.Immutable
             public Node? Left => _left;
 
             /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Left => _left;
-
-            /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
             public Node? Right => _right;
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Right => _right;
-
-            /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree<T>? IBinaryTree<T>.Left => _left;
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree<T>? IBinaryTree<T>.Right => _right;
 
             /// <summary>
             /// Gets the value represented by the current node.
@@ -260,7 +240,7 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
+            internal static Node NodeTreeFromList(IReadOnlyList<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(start >= 0, nameof(start));
@@ -597,7 +577,7 @@ namespace System.Collections.Immutable
                 var array = new T[this.Count];
                 this.CopyTo(array);
                 Array.Sort(array, comparison);
-                return NodeTreeFromList(array.AsOrderedCollection(), 0, this.Count);
+                return NodeTreeFromList(array.AsReadOnlyList(), 0, this.Count);
             }
 
             /// <summary>
@@ -636,7 +616,7 @@ namespace System.Collections.Immutable
                 var array = new T[this.Count];
                 this.CopyTo(array);
                 Array.Sort(array, index, count, comparer);
-                return NodeTreeFromList(array.AsOrderedCollection(), 0, this.Count);
+                return NodeTreeFromList(array.AsReadOnlyList(), 0, this.Count);
             }
 
             /// <summary>
@@ -811,31 +791,36 @@ namespace System.Collections.Immutable
             /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
             /// can be null for reference types.
             /// </param>
-            /// <param name="index">The zero-based starting index of the backward search.</param>
+            /// <param name="startIndex">The zero-based starting index of the backward search.</param>
             /// <param name="count">The number of elements in the section to search.</param>
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
             /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
-            /// and ends at <paramref name="index"/>, if found; otherwise, -1.
+            /// and ends at <paramref name="startIndex"/>, if found; otherwise, -1.
             /// </returns>
-            internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
+            internal int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
-                Requires.Range(index >= 0, nameof(index));
+                if (startIndex == 0 && count == 0)
+                {
+                    return -1;
+                }
+
+                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
-                Requires.Argument(index - count + 1 >= 0);
+                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
 
                 equalityComparer ??= EqualityComparer<T>.Default;
-                using (var enumerator = new Enumerator(this, startIndex: index, count: count, reversed: true))
+                using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count, reversed: true))
                 {
                     while (enumerator.MoveNext())
                     {
                         if (equalityComparer.Equals(item, enumerator.Current))
                         {
-                            return index;
+                            return startIndex;
                         }
 
-                        index--;
+                        startIndex--;
                     }
                 }
 
@@ -1253,9 +1238,15 @@ namespace System.Collections.Immutable
             internal int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
-                Requires.Range(startIndex >= 0, nameof(startIndex));
-                Requires.Range(count <= this.Count, nameof(count));
-                Requires.Range(startIndex - count + 1 >= 0, nameof(startIndex));
+
+                if (startIndex == 0 && count == 0)
+                {
+                    return -1;
+                }
+
+                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
+                Requires.Range(count >= 0 && count <= this.Count, nameof(count));
+                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count, reversed: true))
                 {
@@ -1578,7 +1569,7 @@ namespace System.Collections.Immutable
                     return other._root;
                 }
 
-                IOrderedCollection<T> list = keys.AsOrderedCollection();
+                IReadOnlyList<T> list = keys.AsReadOnlyList();
                 return NodeTreeFromList(list, 0, list.Count);
             }
 

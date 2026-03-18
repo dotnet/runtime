@@ -114,11 +114,21 @@ namespace System
             _stackTraceString = null;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void PrepareForForeignExceptionRaise();
+        [UnmanagedCallersOnly]
+        private static unsafe void InternalPreserveStackTrace(Exception* pException, Exception* pOutException)
+        {
+            try
+            {
+                pException->InternalPreserveStackTrace();
+            }
+            catch (Exception ex)
+            {
+                *pOutException = ex;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? GetFrozenStackTrace(Exception exception);
+        private static extern void PrepareForForeignExceptionRaise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
@@ -166,14 +176,14 @@ namespace System
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
-        private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
+        private readonly int _xcode = EXCEPTION_COMPLUS;             // Internal EE stuff
 #pragma warning restore CA1823, 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
         private int _HResult;       // HResult
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
-        private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
+        private const int EXCEPTION_COMPLUS = unchecked((int)0xe0434352);   // Win32 exception code for CLR exceptions
 
         private bool HasBeenThrown => _stackTrace != null;
 
@@ -226,9 +236,14 @@ namespace System
             }
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetFrozenStackTrace")]
+        private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace);
+
         internal DispatchState CaptureDispatchState()
         {
-            object? stackTrace = GetFrozenStackTrace(this);
+            Exception _this = this;
+            object? stackTrace = null;
+            GetFrozenStackTrace(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref stackTrace));
 
             return new DispatchState(stackTrace,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);
@@ -255,8 +270,73 @@ namespace System
             return true;
         }
 
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateRuntimeWrappedException(object* pThrownObject, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new System.Runtime.CompilerServices.RuntimeWrappedException(*pThrownObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateTypeInitializationException(char* pTypeName, Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                string? typeName = pTypeName is not null ? new string(pTypeName) : null;
+                Exception? innerException = pInnerException is not null ? *pInnerException : null;
+                *pResult = new TypeInitializationException(typeName, innerException);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+#if FEATURE_COMINTEROP
         // used by vm
-        internal string? GetHelpContext(out uint helpContext)
+        [UnmanagedCallersOnly]
+        internal static unsafe IntPtr GetDescriptionBstr(Exception* obj, Exception* pException)
+        {
+            try
+            {
+                string message = obj->Message;
+                if (string.IsNullOrEmpty(message))
+                    message = obj->GetClassName();
+
+                // Allocate the description BSTR.
+                return Marshal.StringToBSTR(message);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return IntPtr.Zero;
+            }
+        }
+
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe IntPtr GetSourceBstr(Exception* obj, Exception* pException)
+        {
+            try
+            {
+                string? source = obj->Source;
+
+                return Marshal.StringToBSTR(source);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return IntPtr.Zero;
+            }
+        }
+
+        private string? GetHelpContext(out uint helpContext)
         {
             helpContext = 0;
             string? helpFile = HelpLink;
@@ -280,6 +360,38 @@ namespace System
             }
 
             return helpFile;
+        }
+
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetHelpContextBstr(Exception* obj, IntPtr* bstr, uint* helpContext, Exception* pException)
+        {
+            *bstr = IntPtr.Zero;
+            try
+            {
+                string? helpFile = obj->GetHelpContext(out *helpContext);
+
+                *bstr = Marshal.StringToBSTR(helpFile);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateTargetInvocationException(Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                Exception? inner = pInnerException is not null ? *pInnerException : null;
+                *pResult = new System.Reflection.TargetInvocationException(inner);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }

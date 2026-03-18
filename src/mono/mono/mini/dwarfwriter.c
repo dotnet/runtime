@@ -25,11 +25,6 @@
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/abi-details.h>
 
-#ifndef HOST_WIN32
-#include <external/libunwind/include/remote/freebsd-elf32.h>
-#include <external/libunwind/include/remote/freebsd-elf64.h>
-#endif
-
 #include <mono/utils/freebsd-dwarf.h>
 
 #define DW_AT_MIPS_linkage_name 0x2007
@@ -1870,7 +1865,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		emit_uleb128 (w, need_loclist ? ABBREV_PARAM_LOCLIST : ABBREV_PARAM);
 		/* name */
-		if (pname[0] == '\0') {
+		if (!pname || pname[0] == '\0') {
 			sprintf (pname_buf, "param%d", i - sig->hasthis);
 			pname = pname_buf;
 		}

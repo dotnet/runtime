@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -145,8 +146,43 @@ namespace System.Reflection.Tests
             Assert.Fail("Expected to find MyAttribute");
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/119292", TestRuntimes.Mono)]
+        [MyEnumArray(MyTestEnum.Value, null, [], [MyTestEnum.Value, MyTestEnum.Value])]
+        public static void Test_CustomAttributeData_EnumArray()
+        {
+            MethodInfo m = (MethodInfo)MethodBase.GetCurrentMethod();
+            foreach (CustomAttributeData cad in m.CustomAttributes)
+            {
+                if (cad.AttributeType == typeof(MyEnumArrayAttribute))
+                {
+                    Assert.Equal(4, cad.ConstructorArguments.Count);
+                    Assert.Equal(typeof(MyTestEnum), cad.ConstructorArguments[0].ArgumentType);
+                    Assert.Equal((long)MyTestEnum.Value, cad.ConstructorArguments[0].Value);
+                    Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[1].ArgumentType);
+                    Assert.Null(cad.ConstructorArguments[1].Value);
+                    Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[2].ArgumentType);
+                    ReadOnlyCollection<CustomAttributeTypedArgument> emptyArrayValue = (ReadOnlyCollection<CustomAttributeTypedArgument>)cad.ConstructorArguments[2].Value;
+                    Assert.Equal(0, emptyArrayValue.Count);
+                    Assert.Equal(typeof(MyTestEnum[]), cad.ConstructorArguments[3].ArgumentType);
+                    ReadOnlyCollection<CustomAttributeTypedArgument> arrayValue = (ReadOnlyCollection<CustomAttributeTypedArgument>)cad.ConstructorArguments[3].Value;
+                    Assert.Equal(2, arrayValue.Count);
+                    Assert.Equal((long)MyTestEnum.Value, arrayValue[0].Value);
+                    Assert.Equal((long)MyTestEnum.Value, arrayValue[1].Value);
+                    return;
+                }
+            }
+
+            Assert.Fail("Expected to find MyEnumArrayAttribute");
+        }
+
         [Flags]
         private enum MyEnum { }
+
+        private enum MyTestEnum : long
+        {
+            Value = 0x1234567890
+        }
 
         private class MyAttribute : Attribute
         {
@@ -156,6 +192,22 @@ namespace System.Reflection.Tests
             internal MyAttribute(int i, int j) { }
 
             static MyAttribute() { }
+        }
+
+        private class MyEnumArrayAttribute : Attribute
+        {
+            internal MyEnumArrayAttribute(MyTestEnum value, MyTestEnum[] nullArrayValue, MyTestEnum[] emptyArrayValue, MyTestEnum[] arrayValue)
+            {
+                Value = value;
+                NullArrayValue = nullArrayValue;
+                EmptyArrayValue = emptyArrayValue;
+                ArrayValue = arrayValue;
+            }
+
+            public MyTestEnum Value { get; }
+            public MyTestEnum[] NullArrayValue { get; }
+            public MyTestEnum[] EmptyArrayValue { get; }
+            public MyTestEnum[] ArrayValue { get; }
         }
 
         [StructLayout(LayoutKind.Explicit)]

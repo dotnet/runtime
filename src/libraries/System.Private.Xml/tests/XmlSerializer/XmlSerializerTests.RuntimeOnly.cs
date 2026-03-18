@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Tests;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -904,14 +905,14 @@ public static partial class XmlSerializerTests
         // If there is no setter at all though, traditional XmlSerializer just doesn't include the property in the serialization.
         // Therefore, the following should work. Although the serialized output isn't really worth much.
         var noSetter = new TypeWithNoSetters(25);
-        var actualNoSetter = SerializeAndDeserialize<TypeWithNoSetters>(noSetter, "<?xml version=\"1.0\"?>\r\n<TypeWithNoSetters xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+        var actualNoSetter = SerializeAndDeserialize<TypeWithNoSetters>(noSetter, WithXmlHeader("<TypeWithNoSetters xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
         Assert.NotNull(actualNoSetter);
         Assert.StrictEqual(25, noSetter.NoSetter);
         Assert.StrictEqual(200, actualNoSetter.NoSetter); // 200 is what the default constructor sets it to.
 
         // But private setters aren't a problem if the class is ISerializable.
         var value = new TypeWithPrivateOrNoSettersButIsIXmlSerializable(32, 52);
-        var actual = SerializeAndDeserialize<TypeWithPrivateOrNoSettersButIsIXmlSerializable>(value, "<?xml version=\"1.0\"?>\r\n<TypeWithPrivateOrNoSettersButIsIXmlSerializable>\r\n  <PrivateSetter>32</PrivateSetter>\r\n  <NoSetter>52</NoSetter>\r\n</TypeWithPrivateOrNoSettersButIsIXmlSerializable>");
+        var actual = SerializeAndDeserialize<TypeWithPrivateOrNoSettersButIsIXmlSerializable>(value, WithXmlHeader("<TypeWithPrivateOrNoSettersButIsIXmlSerializable>\r\n  <PrivateSetter>32</PrivateSetter>\r\n  <NoSetter>52</NoSetter>\r\n</TypeWithPrivateOrNoSettersButIsIXmlSerializable>"));
         Assert.NotNull(actual);
         Assert.StrictEqual(value.PrivateSetter, actual.PrivateSetter);
         Assert.StrictEqual(value.NoSetter, actual.NoSetter);
@@ -982,6 +983,8 @@ public static partial class XmlSerializerTests
     <AlwaysNullNullableList xsi:nil=""true"" />
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.NotNull(actual);
+        // List fields with a setter - public or not - are always initialized to an empty list before populating them.
+        // So list fields that are not in the xml or are explicitly 'nil' will still be empty here if they have a setter.
         Assert.Empty(actual.PublicIntListField);
         Assert.Empty(actual.IntList);
         Assert.Empty(actual.StringList);
@@ -1039,7 +1042,7 @@ public static partial class XmlSerializerTests
     public static void Xml_HiddenMembersChangeMappings()
     {
         var baseValue = new BaseWithElementsAttributesPropertiesAndLists() { StringField = "BString", TextField = "BText", ListField = new () { "one", "two" }, ListProp = new () { "three" } };
-        var baseActual = SerializeAndDeserialize<BaseWithElementsAttributesPropertiesAndLists>(baseValue, "<?xml version=\"1.0\"?>\r\n<BaseWithElementsAttributesPropertiesAndLists xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" TextField=\"BText\">\r\n  <StringField>BString</StringField>\r\n  <ListField>\r\n    <string>one</string>\r\n    <string>two</string>\r\n  </ListField>\r\n  <ListProp>\r\n    <string>three</string>\r\n  </ListProp>\r\n</BaseWithElementsAttributesPropertiesAndLists>");
+        var baseActual = SerializeAndDeserialize<BaseWithElementsAttributesPropertiesAndLists>(baseValue, WithXmlHeader("<BaseWithElementsAttributesPropertiesAndLists xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" TextField=\"BText\">\r\n  <StringField>BString</StringField>\r\n  <ListField>\r\n    <string>one</string>\r\n    <string>two</string>\r\n  </ListField>\r\n  <ListProp>\r\n    <string>three</string>\r\n  </ListProp>\r\n</BaseWithElementsAttributesPropertiesAndLists>"));
         Assert.IsType<BaseWithElementsAttributesPropertiesAndLists>(baseActual);
         Assert.Equal(baseValue.StringField, baseActual.StringField);
         Assert.Equal(baseValue.TextField, baseActual.TextField);
@@ -1066,17 +1069,12 @@ public static partial class XmlSerializerTests
         ex = Record.Exception(() => { SerializeAndDeserialize<HideWithNewName>(value4, null); });
         AssertXmlMappingException(ex, "SerializationTypes.HideWithNewName", "StringField", "Member 'HideWithNewName.StringField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.StringField', but has different custom attributes.");
 
-        /* This scenario fails before .Net 10 because the process for xml mapping types incorrectly
-         * fails to account for hidden members. In this case, 'ListField' actually gets serialized as
-         * an 'XmlArray' instead of a series of 'XmlElement', because the hidden base-member is an 'XmlArray'.
-         * Let's just skip this scenario. It's live in .Net 10.
         // Funny tricks can be played with XmlArray/Element when it comes to Lists though.
         // Stuff kind of doesn't blow up, but hidden members still get left out.
         var value5 = new HideArrayWithElement() { ListField = new() { "ONE", "TWO", "THREE" } };
         ((BaseWithElementsAttributesPropertiesAndLists)value5).Copy(baseValue);
-        var actual5 = SerializeAndDeserialize<HideArrayWithElement>(value5,
-@"<?xml version=""1.0""?>
-<HideArrayWithElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" TextField=""BText"">
+        var actual5 = SerializeAndDeserialize<HideArrayWithElement>(value5, WithXmlHeader(
+@"<HideArrayWithElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" TextField=""BText"">
   <StringField>BString</StringField>
   <ListField>ONE</ListField>
   <ListField>TWO</ListField>
@@ -1084,7 +1082,7 @@ public static partial class XmlSerializerTests
   <ListProp>
     <string>three</string>
   </ListProp>
-</HideArrayWithElement>");
+</HideArrayWithElement>"));
         Assert.IsType<HideArrayWithElement>(actual5);
         Assert.Equal(value5.StringField, actual5.StringField);
         Assert.Equal(value5.TextField, actual5.TextField);
@@ -1092,7 +1090,6 @@ public static partial class XmlSerializerTests
         Assert.Equal(value5.ListField.ToArray(), actual5.ListField.ToArray());
         // Not only are the hidden values not serialized, but the serialzier doesn't even try to do it's empty list thing
         Assert.Null(((BaseWithElementsAttributesPropertiesAndLists)actual5).ListField);
-        */
 
         // But at the end of the day, you still can't get away with changing the name of the element
         var value6 = new HideArrayWithRenamedElement() { ListField = new() { "FOUR", "FIVE" } };
@@ -1635,6 +1632,116 @@ public static partial class XmlSerializerTests
         Assert.Equal(originalmapping.XsdTypeNamespace, newmapping.XsdTypeNamespace);
     }
 
+    public class DateAndTimeSchemaWrapper
+    {
+        public DateOnly DateValue;
+        public TimeOnly TimeValue;
+        [XmlElement(DataType = "time")] // Force xs:time via secondary primitive mapping
+        public TimeOnly TimeAsXsdTime;
+    }
+
+    [Fact]
+    public static void XmlSchema_DateOnly_TimeOnly_Primitives_And_Time_Override()
+    {
+        // Export the schema for the 'DateAndTimeSchemaWrapper' class above
+        var schemas = new XmlSchemas();
+        var exporter = new XmlSchemaExporter(schemas);
+        var importer = new XmlReflectionImporter();
+        var mapping = importer.ImportTypeMapping(typeof(DateAndTimeSchemaWrapper));
+        exporter.ExportTypeMapping(mapping);
+
+        // Compile schemas to ensure validity.
+        schemas.Compile((_, e) => Assert.Fail("Schema compile error: " + e.Message), true);
+
+        // Ensure the Urt schema (with dateOnly/timeOnly) came along with the DateAndTimeSchemaWrapper definition
+        const string urtNs = "http://microsoft.com/wsdl/types/";
+        XmlSchema? urtSchema = schemas.FirstOrDefault(s => s.TargetNamespace == urtNs);
+        Assert.NotNull(urtSchema);
+        XmlSchemaSimpleType dateOnly = Assert.Single(urtSchema.Items.OfType<XmlSchemaSimpleType>(), st => st.Name == "dateOnly");
+        XmlSchemaSimpleType timeOnly = Assert.Single(urtSchema.Items.OfType<XmlSchemaSimpleType>(), st => st.Name == "timeOnly");
+
+        // Validate dateOnly restriction over xs:date.
+        var dateRestriction = Assert.IsType<XmlSchemaSimpleTypeRestriction>(dateOnly.Content);
+        Assert.Equal("date", dateRestriction.BaseTypeName.Name);
+        Assert.Equal("http://www.w3.org/2001/XMLSchema", dateRestriction.BaseTypeName.Namespace);
+
+        // Validate timeOnly restriction over xs:time.
+        var timeRestriction = Assert.IsType<XmlSchemaSimpleTypeRestriction>(timeOnly.Content);
+        Assert.Equal("time", timeRestriction.BaseTypeName.Name);
+        Assert.Equal("http://www.w3.org/2001/XMLSchema", timeRestriction.BaseTypeName.Namespace);
+
+        // Locate wrapper complex type and verify its member element types.
+        XmlSchema? wrapperSchema = schemas.FirstOrDefault(s => s.Items.Cast<XmlSchemaObject>().Any(i => i is XmlSchemaComplexType ct && ct.Name == mapping.TypeName));
+        Assert.NotNull(wrapperSchema);
+        XmlSchemaComplexType wrapperType = (XmlSchemaComplexType)wrapperSchema!.Items.Cast<XmlSchemaObject>().First(i => i is XmlSchemaComplexType ct && ct.Name == mapping.TypeName);
+        var seq = Assert.IsType<XmlSchemaSequence>(wrapperType.Particle);
+        var elements = seq.Items.Cast<XmlSchemaElement>().ToDictionary(e => e.Name!);
+
+        Assert.True(elements.ContainsKey("DateValue"));
+        Assert.Equal("dateOnly", elements["DateValue"].SchemaTypeName.Name);
+        Assert.Equal(urtNs, elements["DateValue"].SchemaTypeName.Namespace);
+
+        Assert.True(elements.ContainsKey("TimeValue"));
+        Assert.Equal("timeOnly", elements["TimeValue"].SchemaTypeName.Name);
+        Assert.Equal(urtNs, elements["TimeValue"].SchemaTypeName.Namespace);
+
+        Assert.True(elements.ContainsKey("TimeAsXsdTime"));
+        Assert.Equal("time", elements["TimeAsXsdTime"].SchemaTypeName.Name);
+        Assert.Equal("http://www.w3.org/2001/XMLSchema", elements["TimeAsXsdTime"].SchemaTypeName.Namespace);
+    }
+
+    [Fact]
+    public static void XmlSchema_Import_DateOnly_TimeOnly_And_XsdTime()
+    {
+        // Use XmlSerializer exporter to emit the URT namespace schema (containing dateOnly/timeOnly simpleTypes),
+        // then author a small synthetic schema with global elements referencing those primitives and xs:time.
+        const string urtNs = "http://microsoft.com/wsdl/types/";
+        const string testNs = "http://tempuri.org/DateAndTimeSchemaImport";
+
+        var schemas = new XmlSchemas();
+        var exporter = new XmlSchemaExporter(schemas);
+        var reflectionImporter = new XmlReflectionImporter();
+
+        // Export a wrapper mapping that includes DateOnly/TimeOnly so exporter emits the URT schema once.
+        var wrapperMap = reflectionImporter.ImportTypeMapping(typeof(DateAndTimeSchemaWrapper));
+        exporter.ExportTypeMapping(wrapperMap);
+
+        // Now add a schema that defines global elements referencing the URT primitives (no manual primitive definitions here).
+        string globalsSchemaXml = $"""
+            <?xml version='1.0'?>
+            <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
+              <xs:import namespace='{urtNs}' />
+              <xs:element name='DateValue' type='urt:dateOnly' xmlns:urt='{urtNs}' />
+              <xs:element name='TimeValue' type='urt:timeOnly' xmlns:urt='{urtNs}' />
+              <xs:element name='TimeAsXsdTime' type='xs:time' />
+            </xs:schema>
+            """;
+
+        XmlSchema globalsSchema = XmlSchema.Read(new StringReader(globalsSchemaXml), null);
+        schemas.Add(globalsSchema);
+
+        // Compile all schemas via a set to resolve imports.
+        XmlSchemaSet set = new XmlSchemaSet();
+        foreach (XmlSchema schema in schemas)
+        {
+            using var ms = new MemoryStream();
+            schema.Write(ms);
+            ms.Position = 0;
+            set.Add(XmlSchema.Read(ms, null));
+        }
+        set.Compile();
+
+        // Feed compiled schemas back into importer.
+        var importer = new XmlSchemaImporter(schemas);
+        var dateMapping = importer.ImportTypeMapping(new XmlQualifiedName("DateValue", testNs));
+        var timeMapping = importer.ImportTypeMapping(new XmlQualifiedName("TimeValue", testNs));
+        var xsdTimeMapping = importer.ImportTypeMapping(new XmlQualifiedName("TimeAsXsdTime", testNs));
+
+        Assert.Equal(typeof(DateOnly).FullName, dateMapping.TypeFullName);
+        Assert.Equal(typeof(TimeOnly).FullName, timeMapping.TypeFullName);
+        Assert.Equal(typeof(DateTime).FullName, xsdTimeMapping.TypeFullName);
+    }
+
     [Fact]
     public static void  SoapAttributeTests()
     {
@@ -2013,6 +2120,53 @@ public static partial class XmlSerializerTests
             writeAccessors: default,
             validate: default,
             access: default));
+
+        string urtNs = "http://microsoft.com/wsdl/types/";
+        string testNs = "http://tempuri.org/DateAndTimeSchemaImport";
+        string schema1 = $"""
+            <?xml version='1.0'?>
+            <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
+                <xs:import namespace='{urtNs}' />
+                <xs:element name='DateValue' type='urt:dateOnly' xmlns:urt='{urtNs}' />
+                <xs:element name='TimeValue' type='urt:timeOnly' xmlns:urt='{urtNs}' />
+                <xs:element name='TimeAsXsdTime' type='xs:time' />
+            </xs:schema>
+            """;
+        string schema2 = $"""
+            <?xml version='1.0'?>
+            <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='http://microsoft.com/wsdl/types/' elementFormDefault='qualified'>
+                <xs:simpleType name='dateOnly'>
+                    <xs:restriction base='xs:date'>
+                        <xs:pattern value='([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' />
+                    </xs:restriction>
+                </xs:simpleType>
+                <xs:simpleType name='timeOnly'>
+                    <xs:restriction base='xs:time'>
+                        <xs:pattern value='([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?' />
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:schema>
+            """;
+
+        XmlSchemaSet set = new XmlSchemaSet();
+        set.Add(XmlSchema.Read(new StringReader(schema1), null));
+        set.Add(XmlSchema.Read(new StringReader(schema2), null));
+        set.Compile();
+
+        var schemas = new XmlSchemas();
+        foreach (XmlSchema s in set.Schemas())
+        {
+                schemas.Add(s);
+        }
+
+        var xsImporter = new XmlSchemaImporter(schemas);
+        var dateMapping = xsImporter.ImportTypeMapping(new XmlQualifiedName("DateValue", testNs));
+        var timeMapping = xsImporter.ImportTypeMapping(new XmlQualifiedName("TimeValue", testNs));
+        var xsdTimeMapping = xsImporter.ImportTypeMapping(new XmlQualifiedName("TimeAsXsdTime", testNs));
+        Assert.Equal(typeof(DateOnly).FullName, dateMapping.TypeFullName);
+        Assert.Equal(typeof(TimeOnly).FullName, timeMapping.TypeFullName);
+        // xs:time continues to map to DateTime
+        Assert.Equal(typeof(DateTime).FullName, xsdTimeMapping.TypeFullName);
     }
 
     [Fact]
@@ -2333,6 +2487,35 @@ public static partial class XmlSerializerTests
     {
         var cg = new MycodeGenerator();
         Assert.NotNull(cg);
+    }
+    
+    [Fact]
+    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
+    public static void Xml_FromMappings()
+    {
+        var types = new[] { typeof(Guid), typeof(List<string>) };
+        XmlReflectionImporter importer = new XmlReflectionImporter();
+        XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
+        for (int i = 0; i < types.Length; i++)
+        {
+            mappings[i] = importer.ImportTypeMapping(types[i]);
+        }
+        var serializers = XmlSerializer.FromMappings(mappings, typeof(object));
+        Xml_GuidAsRoot_Helper(serializers[0]);
+        Xml_ListGenericRoot_Helper(serializers[1]);
+    }
+
+    [Fact]
+    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
+    public static void Xml_ConstructorWithTypeMapping()
+    {
+        XmlTypeMapping mapping = null;
+        XmlSerializer serializer = null;
+        Assert.Throws<ArgumentNullException>(() => { new XmlSerializer(mapping); });
+
+        mapping = new XmlReflectionImporter(null, null).ImportTypeMapping(typeof(List<string>));
+        serializer = new XmlSerializer(mapping);
+        Xml_ListGenericRoot_Helper(serializer);
     }
 
     [Fact]
@@ -3171,7 +3354,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/1395")]
     public static void Xml_TypeWithReadOnlyMyCollectionProperty()
     {
         var value = new TypeWithReadOnlyMyCollectionProperty();
@@ -3341,7 +3523,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DerivedTypeWithDifferentOverrides()
     {
         DerivedTypeWithDifferentOverrides value = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
@@ -3354,7 +3535,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DerivedTypeWithDifferentOverrides2()
     {
         DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6", Name7 = "Name7" };

@@ -28,9 +28,10 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#ifndef HOST_WIN32
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#else
+#endif
+#ifdef HOST_WIN32
 #define sleep(t)                 Sleep((t) * 1000)
 #endif
 #include <glib.h>
@@ -488,7 +489,7 @@ add_type (MonoProfiler *prof, MonoType *type)
 	switch (type->type) {
 #if 0
 	case MONO_TYPE_SZARRAY: {
-		int eid = add_type (prof, m_class_get_byval_arg (type->data.klass));
+		int eid = add_type (prof, m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)));
 		if (eid == -1)
 			return -1;
 		int id = prof->id ++;

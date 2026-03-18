@@ -144,13 +144,13 @@ namespace System.Globalization
         private static CultureInfo InitializeUserDefaultCulture()
         {
             Interlocked.CompareExchange(ref s_userDefaultCulture, GetUserDefaultCulture(), null);
-            return s_userDefaultCulture!;
+            return s_userDefaultCulture;
         }
 
         private static CultureInfo InitializeUserDefaultUICulture()
         {
             Interlocked.CompareExchange(ref s_userDefaultUICulture, GetUserDefaultUICulture(), null);
-            return s_userDefaultUICulture!;
+            return s_userDefaultUICulture;
         }
 
         private static string GetCultureNotSupportedExceptionMessage() => GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported;
@@ -277,25 +277,20 @@ namespace System.Globalization
                 // When CultureInfo throws this exception, it may be because someone passed the form
                 // like "az-az" because it came out of an http accept lang. We should try a little
                 // parsing to perhaps fall back to "az" here and use *it* to create the neutral.
-                culture = null;
-                for (int idx = 0; idx < name.Length; idx++)
+                int idx = name.IndexOf('-');
+                if (idx >= 0)
                 {
-                    if ('-' == name[idx])
+                    try
                     {
-                        try
-                        {
-                            culture = new CultureInfo(name.Substring(0, idx));
-                            break;
-                        }
-                        catch (ArgumentException)
-                        {
-                            // throw the original exception so the name in the string will be right
-                            throw;
-                        }
+                        culture = new CultureInfo(name.Substring(0, idx));
+                    }
+                    catch (ArgumentException)
+                    {
+                        // throw the original exception so the name in the string will be right
+                        throw;
                     }
                 }
-
-                if (culture == null)
+                else
                 {
                     // nothing to save here; throw the original exception
                     throw;
@@ -377,7 +372,7 @@ namespace System.Globalization
                 {
                     Interlocked.CompareExchange(ref s_asyncLocalCurrentCulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentCulture), null);
                 }
-                s_asyncLocalCurrentCulture!.Value = value;
+                s_asyncLocalCurrentCulture.Value = value;
             }
         }
 
@@ -401,7 +396,7 @@ namespace System.Globalization
                 }
 
                 // this one will set s_currentThreadUICulture too
-                s_asyncLocalCurrentUICulture!.Value = value;
+                s_asyncLocalCurrentUICulture.Value = value;
             }
         }
 
@@ -1052,7 +1047,8 @@ namespace System.Globalization
 
             lock (nameTable)
             {
-                nameTable[name] = result;
+                // add only if it wasn't already added
+                nameTable.TryAdd(name, result);
             }
 
             return result;
@@ -1149,7 +1145,7 @@ namespace System.Globalization
         public static CultureInfo GetCultureInfoByIetfLanguageTag(string name)
         {
             // Disallow old zh-CHT/zh-CHS names
-            if (name == "zh-CHT" || name == "zh-CHS")
+            if (name is "zh-CHT" or "zh-CHS")
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_CultureIetfNotSupported, name));
             }

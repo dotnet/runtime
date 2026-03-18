@@ -164,4 +164,65 @@ namespace System.Reflection.Emit.Tests
             return name;
         }
     }
+
+    public static class ModifiedTypeHelpers
+    {
+        public class FunctionPointer : TypeDelegator
+        {
+            private readonly Type[] callingConventions;
+            private readonly Type returnType;
+            private readonly Type[] parameterTypes;
+            private readonly Type[] requiredModifiers;
+            private readonly Type[] optionalModifiers;
+
+            public FunctionPointer(
+                Type baseFunctionPointerType,
+                Type[]? conventions = null,
+                Type? customReturnType = null,
+                Type[]? customParameterTypes = null,
+                Type[]? fnPtrRequiredMods = null,
+                Type[]? fnPtrOptionalMods = null)
+                : base(baseFunctionPointerType)
+            {
+                callingConventions = conventions ?? [];
+                returnType = customReturnType ?? baseFunctionPointerType.GetFunctionPointerReturnType();
+                parameterTypes = customParameterTypes ?? baseFunctionPointerType.GetFunctionPointerParameterTypes();
+                requiredModifiers = fnPtrRequiredMods ?? [];
+                optionalModifiers = fnPtrOptionalMods ?? [];
+            }
+
+            public override Type[] GetFunctionPointerCallingConventions() => callingConventions;
+            public override Type GetFunctionPointerReturnType() => returnType;
+            public override Type[] GetFunctionPointerParameterTypes() => parameterTypes;
+            public override Type[] GetRequiredCustomModifiers() => requiredModifiers;
+            public override Type[] GetOptionalCustomModifiers() => optionalModifiers;
+        }
+
+        public class ModifiedType : TypeDelegator
+        {
+            private readonly Type[] requiredModifiers;
+            private readonly Type[] optionalModifiers;
+
+            public ModifiedType(Type delegatingType, Type[]? requiredMods = null, Type[]? optionalMods = null)
+                : base(delegatingType)
+            {
+                requiredModifiers = requiredMods ?? [];
+                optionalModifiers = optionalMods ?? [];
+            }
+
+            public override Type[] GetRequiredCustomModifiers() => requiredModifiers;
+            public override Type[] GetOptionalCustomModifiers() => optionalModifiers;
+        }
+    }
+
+    public unsafe class ClassWithFunctionPointers
+    {
+        public static delegate*<int, int, int> FuncManaged;
+        public static int Add(int a, int b) => a + b;
+        public static void Init() => FuncManaged = &Add;
+
+        public static delegate* unmanaged[Cdecl]<string, bool> FuncUnmanaged1;
+        public static delegate* unmanaged[Fastcall, SuppressGCTransition]<int, void> FuncUnmanaged2;
+        public static delegate* unmanaged[Swift]<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, string> FuncUnmanaged3;
+    }
 }

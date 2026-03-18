@@ -71,7 +71,8 @@ namespace System.Net.Sockets
 
                 // The socket was created successfully; enable IPV6_V6ONLY by default for normal AF_INET6 sockets.
                 // This fails on raw sockets so we just let them be in default state.
-                if (addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
+                // WASI is always IPv6-only when IPv6 is enabled.
+                if (!OperatingSystem.IsWasi() && addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
                 {
                     int on = 1;
                     error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
@@ -288,8 +289,13 @@ namespace System.Net.Sockets
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
-            int maxBuffers = buffers.Count - startIndex;
-            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            int maxBuffers = checked(buffers.Count - startIndex);
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and recvmsg in preview2
+                maxBuffers = Math.Max(maxBuffers, 1);
+            }
+            bool allocOnStack = (uint)maxBuffers <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
@@ -362,7 +368,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe long SendFile(SafeSocketHandle socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
+        private static long SendFile(SafeSocketHandle socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
         {
             long bytesSent;
             errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
@@ -376,7 +382,12 @@ namespace System.Net.Sockets
             Debug.Assert(socket.IsSocket);
 
             int maxBuffers = buffers.Count;
-            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and recvmsg in preview2
+                maxBuffers = Math.Max(maxBuffers, 1);
+            }
+            bool allocOnStack = (uint)maxBuffers <= IovStackThreshold;
 
             // When there are many buffers, reduce the number of pinned buffers based on available bytes.
             int available = int.MaxValue;
@@ -532,7 +543,13 @@ namespace System.Net.Sockets
             Debug.Assert(socket.IsSocket);
 
             int buffersCount = buffers.Count;
-            bool allocOnStack = buffersCount <= IovStackThreshold;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and sendmsg in preview2
+                buffersCount = Math.Max(buffersCount, 1);
+            }
+
+            bool allocOnStack = (uint)buffersCount <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[buffersCount];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffersCount];
             int iovCount = 0;
@@ -649,7 +666,7 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode) => TryStartConnect(socket, socketAddress, out errorCode, Span<byte>.Empty, false, out int _ );
+        public static bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode) => TryStartConnect(socket, socketAddress, out errorCode, Span<byte>.Empty, false, out int _ );
 
         public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode, Span<byte> data, bool tfo, out int sent)
         {
@@ -883,7 +900,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe bool TryCompleteReceiveMessageFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int receivedSocketAddressLength, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
+        public static bool TryCompleteReceiveMessageFrom(SafeSocketHandle socket, Span<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int receivedSocketAddressLength, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
         {
             try
             {
@@ -1056,6 +1073,8 @@ namespace System.Net.Sockets
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
         {
+            if (OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
+
             handle.IsNonBlocking = !shouldBlock;
             willBlock = shouldBlock;
             return SocketError.Success;
@@ -1098,7 +1117,7 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, ReadOnlySpan<byte> buffer)
+        public static SocketError Bind(SafeSocketHandle handle, ProtocolType socketProtocolType, ReadOnlySpan<byte> buffer)
         {
             Interop.Error err = Interop.Sys.Bind(handle, socketProtocolType, buffer);
 
@@ -1403,7 +1422,7 @@ namespace System.Net.Sockets
         {
             if (err == Interop.Error.SUCCESS)
             {
-                handle.TrackOption(optionLevel, optionName);
+                handle.TrackSocketOption(optionLevel, optionName);
                 return SocketError.Success;
             }
             return GetSocketErrorForErrorCode(err);
@@ -1740,7 +1759,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError Poll(SafeSocketHandle handle, int microseconds, SelectMode mode, out bool status)
+        public static SocketError Poll(SafeSocketHandle handle, int microseconds, SelectMode mode, out bool status)
         {
             Interop.PollEvents inEvent = Interop.PollEvents.POLLNONE;
             switch (mode)
@@ -1790,7 +1809,7 @@ namespace System.Net.Sockets
             }
 
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
-            if (count < StackThreshold)
+            if ((uint)count < StackThreshold)
             {
                 Interop.PollEvent* eventsOnStack = stackalloc Interop.PollEvent[count];
                 return SelectViaPoll(
@@ -2145,7 +2164,7 @@ namespace System.Net.Sockets
                 SocketError.Success;
         }
 
-        internal static unsafe SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
+        internal static SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
         {
             var res = new SafeSocketHandle(fileDescriptor, ownsHandle: true);
 

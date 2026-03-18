@@ -358,6 +358,41 @@ ep_provider_callback_data_free (EventPipeProviderCallbackData *provider_callback
 	ep_rt_object_free (provider_callback_data);
 }
 
+void
+eventpipe_collect_tracing_command_free_event_filter (EventPipeProviderEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	ep_rt_object_array_free (event_filter->event_ids);
+
+	ep_rt_object_free (event_filter);
+}
+
+void
+eventpipe_collect_tracing_command_free_tracepoint_sets (EventPipeProviderTracepointSet *tracepoint_sets, uint32_t tracepoint_sets_len)
+{
+	ep_return_void_if_nok (tracepoint_sets != NULL);
+
+	for (uint32_t i = 0; i < tracepoint_sets_len; ++i) {
+		ep_rt_utf8_string_free (tracepoint_sets[i].tracepoint_name);
+		ep_rt_object_array_free (tracepoint_sets[i].event_ids);
+	}
+
+	ep_rt_object_array_free (tracepoint_sets);
+}
+
+void
+eventpipe_collect_tracing_command_free_tracepoint_config (EventPipeProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	ep_rt_utf8_string_free (tracepoint_config->default_tracepoint_name);
+
+	eventpipe_collect_tracing_command_free_tracepoint_sets (tracepoint_config->non_default_tracepoints, tracepoint_config->non_default_tracepoints_length);
+
+	ep_rt_object_free (tracepoint_config);
+}
+
 /*
  * EventPipeProviderConfiguration.
  */
@@ -373,10 +408,16 @@ ep_provider_config_init (
 	EP_ASSERT (provider_config != NULL);
 	EP_ASSERT (provider_name != NULL);
 
-	provider_config->provider_name = provider_name;
+	provider_config->provider_name = ep_rt_utf8_string_dup (provider_name);
 	provider_config->keywords = keywords;
 	provider_config->logging_level = logging_level;
-	provider_config->filter_data = filter_data;
+	provider_config->filter_data = NULL;
+	if (filter_data != NULL)
+		provider_config->filter_data = ep_rt_utf8_string_dup (filter_data);
+
+	// Currently only supported through IPC Command
+	provider_config->event_filter = NULL;
+	provider_config->tracepoint_config = NULL;
 
 	// Runtime specific rundown provider configuration.
 	ep_rt_provider_config_init (provider_config);
@@ -387,7 +428,12 @@ ep_provider_config_init (
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 {
-	;
+	ep_return_void_if_nok (provider_config != NULL);
+
+	ep_rt_utf8_string_free (provider_config->provider_name);
+	ep_rt_utf8_string_free (provider_config->filter_data);
+	eventpipe_collect_tracing_command_free_event_filter (provider_config->event_filter);
+	eventpipe_collect_tracing_command_free_tracepoint_config (provider_config->tracepoint_config);
 }
 
 /*
@@ -469,13 +515,16 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 {
 	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
 		return false;
-	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS)
+	if (options->circular_buffer_size_in_mb <= 0 && ep_session_type_uses_buffer_manager (options->session_type))
 		return false;
 	if (options->providers == NULL || options->providers_len <= 0)
 		return false;
 	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
 		return false;
 	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
+		return false;
+	// More UserEvents specific checks can be added here.
+	if (options->session_type == EP_SESSION_TYPE_USEREVENTS && options->user_events_data_fd == -1)
 		return false;
 
 	return true;
@@ -491,7 +540,7 @@ enable (
 
 	EP_ASSERT (options != NULL);
 	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (options->session_type) || options->circular_buffer_size_in_mb > 0);
 	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;
@@ -515,7 +564,8 @@ enable (
 		options->providers,
 		options->providers_len,
 		options->sync_callback,
-		options->callback_additional_data);
+		options->callback_additional_data,
+		options->user_events_data_fd);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -560,7 +610,7 @@ ep_on_exit:
 	return session_id;
 
 ep_on_error:
-	ep_session_free (session);
+	ep_session_dec_ref (session);
 	session_id = 0;
 	ep_exit_error_handler ();
 }
@@ -601,7 +651,7 @@ disable_holding_lock (
 		// Disable session tracing.
 		config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false);
 
-		ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
+		ep_session_disable (session); // WriteAllBuffersToFile, disable user_events, and remove providers.
 
 		// Do rundown before fully stopping the session unless rundown wasn't requested
 		if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
@@ -624,13 +674,13 @@ disable_holding_lock (
 
 		ep_volatile_store_allow_write (ep_volatile_load_allow_write () & ~(ep_session_get_mask (session)));
 
-		// Remove the session from the array before calling ep_session_suspend_write_event. This way
+		// Remove the session from the array before calling ep_session_wait_for_inflight_thread_ops. This way
 		// we can guarantee that either the event write got the pointer and will complete
 		// the write successfully, or it gets NULL and will bail.
 		EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
 		ep_volatile_store_session (ep_session_get_index (session), NULL);
 
-		ep_session_suspend_write_event (session);
+		ep_session_wait_for_inflight_thread_ops (session);
 
 		bool ignored;
 		ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
@@ -641,7 +691,13 @@ disable_holding_lock (
 		// been emitted.
 		ep_session_write_sequence_point_unbuffered (session);
 
-		ep_session_free (session);
+		// The session is disabled but might still be referenced elsewhere.
+		// As a newly allocated session may inherit this session's index, close the session to
+		// ensure all buffers are freed and detach all threads EventPipeThreadSessionStates
+		// so threads won't write to the closed session mistaking it as the new session.
+		ep_session_close (session);
+
+		ep_session_dec_ref (session);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
 		// Allow delete deferred providers to accumulate to mitigate potential use-after-free should
@@ -763,6 +819,7 @@ write_event_2 (
 		EP_ASSERT (rundown_session != NULL);
 		EP_ASSERT (thread != NULL);
 
+		ep_thread_set_session_use_in_progress (current_thread, ep_session_get_index (rundown_session));
 		uint8_t *data = ep_event_payload_get_flat_data (payload);
 		if (thread != NULL && rundown_session != NULL && data != NULL) {
 			ep_session_write_event (
@@ -775,6 +832,7 @@ write_event_2 (
 				event_thread,
 				stack);
 		}
+		ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
 	} else {
 		for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 			if ((ep_volatile_load_allow_write () & ((uint64_t)1 << i)) == 0)
@@ -783,9 +841,9 @@ write_event_2 (
 			// Now that we know this session is probably live we pay the perf cost of the memory barriers
 			// Setting this flag lets a thread trying to do a concurrent disable that it is not safe to delete
 			// session ID i. The if check above also ensures that once the session is unpublished this thread
-			// will eventually stop ever storing ID i into the WriteInProgress flag. This is important to
-			// guarantee termination of the YIELD_WHILE loop in SuspendWriteEvents.
-			ep_thread_set_session_write_in_progress (current_thread, i);
+			// will eventually stop ever storing ID i into the session_use_in_progress flag. This is important to
+			// guarantee termination of the YIELD_WHILE loop in ep_session_wait_for_inflight_thread_ops.
+			ep_thread_set_session_use_in_progress (current_thread, i);
 			{
 				EventPipeSession *const session = ep_volatile_load_session (i);
 				// Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occurred in between
@@ -802,9 +860,9 @@ write_event_2 (
 						stack);
 				}
 			}
-			// Do not reference session past this point, we are signaling Disable() that it is safe to
+			// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to
 			// delete it
-			ep_thread_set_session_write_in_progress (current_thread, UINT32_MAX);
+			ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
 		}
 	}
 }
@@ -984,7 +1042,7 @@ ep_enable (
 	EventPipeSessionID sessionId = 0;
 
 	EventPipeSessionOptions options;
-	ep_session_options_init(
+	ep_session_options_init (
 		&options,
 		output_path,
 		circular_buffer_size_in_mb,
@@ -996,11 +1054,12 @@ ep_enable (
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
-		callback_additional_data);
+		callback_additional_data,
+		0);
 
-	sessionId = ep_enable_3(&options);
+	sessionId = ep_enable_3 (&options);
 
-	ep_session_options_fini(&options);
+	ep_session_options_fini (&options);
 
 	return sessionId;
 }
@@ -1031,9 +1090,9 @@ ep_enable_2 (
 		providers = ep_rt_object_array_alloc (EventPipeProviderConfiguration, providers_len);
 		ep_raise_error_if_nok (providers != NULL);
 
-		ep_provider_config_init (&providers [0], ep_rt_utf8_string_dup (ep_config_get_public_provider_name_utf8 ()), 0x4c14fccbd, EP_EVENT_LEVEL_VERBOSE, NULL);
-		ep_provider_config_init (&providers [1], ep_rt_utf8_string_dup (ep_config_get_private_provider_name_utf8 ()), 0x4002000b, EP_EVENT_LEVEL_VERBOSE, NULL);
-		ep_provider_config_init (&providers [2], ep_rt_utf8_string_dup (ep_config_get_sample_profiler_provider_name_utf8 ()), 0x0, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [0], ep_config_get_public_provider_name_utf8 (), 0x4c14fccbd, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [1], ep_config_get_private_provider_name_utf8 (), 0x4002000b, EP_EVENT_LEVEL_VERBOSE, NULL);
+		ep_provider_config_init (&providers [2], ep_config_get_sample_profiler_provider_name_utf8 (), 0x0, EP_EVENT_LEVEL_VERBOSE, NULL);
 	} else {
 		// Count number of providers to parse.
 		while (*providers_config_to_parse != '\0') {
@@ -1071,6 +1130,8 @@ ep_enable_2 (
 				args = get_next_config_value_as_utf8_string (&providers_config_to_parse);
 
 			ep_provider_config_init (&providers [current_provider++], provider_name, keyword_mask, level, args);
+			ep_rt_utf8_string_free (provider_name);
+			ep_rt_utf8_string_free (args);
 
 			if (!providers_config_to_parse)
 				break;
@@ -1098,11 +1159,8 @@ ep_enable_2 (
 ep_on_exit:
 
 	if (providers) {
-		for (int32_t i = 0; i < providers_len; ++i) {
+		for (int32_t i = 0; i < providers_len; ++i)
 			ep_provider_config_fini (&providers [i]);
-			ep_rt_utf8_string_free ((ep_char8_t *)providers [i].provider_name);
-			ep_rt_utf8_string_free ((ep_char8_t *)providers [i].filter_data);
-		}
 		ep_rt_object_array_free (providers);
 	}
 
@@ -1126,7 +1184,8 @@ ep_session_options_init (
 	bool stackwalk_requested,
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void* callback_additional_data)
+	void* callback_additional_data,
+	int user_events_data_fd)
 {
 	EP_ASSERT (options != NULL);
 
@@ -1141,6 +1200,7 @@ ep_session_options_init (
 	options->stream = stream;
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
+	options->user_events_data_fd = user_events_data_fd;
 }
 
 void
@@ -1430,7 +1490,12 @@ ep_init (void)
 	ep_rt_init_providers_and_events ();
 
 	// Set the sampling rate for the sample profiler.
+
+#ifndef PERFTRACING_DISABLE_THREADS
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 1000000; // 1 msec.
+#else // PERFTRACING_DISABLE_THREADS
+	const uint32_t default_profiler_sample_rate_in_nanoseconds = 5000000; // 5 msec.
+#endif // PERFTRACING_DISABLE_THREADS
 	ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
 	_ep_deferred_enable_session_ids = dn_vector_alloc_t (EventPipeSessionID);

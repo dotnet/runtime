@@ -1,7 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for Content, Environment.Exit, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestExecutionArguments>-unittest</CLRTestExecutionArguments>
+
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
   </PropertyGroup>
   <ItemGroup>
@@ -12,6 +17,9 @@
     <Compile Include="ReliabilityTest.cs" />
     <Compile Include="ReliabilityTestSet.cs" />
     <Compile Include="RFLogging.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\testmix_gc.config">

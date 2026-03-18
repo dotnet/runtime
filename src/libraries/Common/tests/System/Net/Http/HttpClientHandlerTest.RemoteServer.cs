@@ -166,6 +166,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108019", TestPlatforms.Browser)]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -898,7 +899,7 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
 
                         Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
-                        string bodyContent = System.Text.Json.JsonDocument.Parse(responseContent).RootElement.GetProperty("BodyContent").GetString();
+                        string bodyContent = System.Text.Json.JsonElement.Parse(responseContent).GetProperty("BodyContent").GetString();
                         Assert.Contains(stringContent.Substring(startingPosition), bodyContent);
                         if (startingPosition != 0)
                         {
@@ -1362,7 +1363,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
+        [ConditionalTheory(typeof(HttpClientHandler_RemoteServerTest), nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
             // Sync API supported only up to HTTP/1.1

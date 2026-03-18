@@ -26,6 +26,7 @@ The ECMA-335-II standard is amended by an addition of the following tables to th
     * [SourceLink](#source-link-c-and-vb-compilers)
     * [CompilationMetadataReferences](#compilation-metadata-references-c-and-vb-compilers)
     * [CompilationOptions](#compilation-options-c-and-vb-compilers)
+    * [TypeDefinitionDocument](#type-definition-document-c-and-vb-compilers)
 
 Debugging metadata tables may be embedded into type system metadata (and part of a PE file), or they may be stored separately in a metadata blob contained in a .pdb file. In the latter case additional information is included that connects the debugging metadata to the type system metadata.
 
@@ -80,6 +81,8 @@ The values for which _HashAlgorithm_ has defined meaning are listed in the follo
 |:-------------------------------------|:---------------------|
 | ff1816ec-aa5e-4d10-87f7-6f4963833460 | SHA-1 hash           |
 | 8829d00f-11b8-4213-878b-770e8597ac16 | SHA-256 hash         |
+| d99cfeb1-8c43-444a-8a6c-b61269d2a0bf | SHA-384 hash         |
+| ef2d1afc-6550-46d6-b14b-d70afe9a5566 | SHA-512 hash         |
 
 Otherwise, the meaning of _Language_, _HashAlgorithm_ and _Hash_ values is undefined and the reader can interpret them arbitrarily.
 
@@ -598,3 +601,22 @@ The order of the options in the list is insignificant.
 > The purpose of this data is to allow a tool to reconstruct the compilation the module was built from.
 > The source files for the compilation are expected to be recovered from the source server using [SourceLink](#source-link-c-and-vb-compilers) and/or from [sources embedded](#embedded-source-c-and-vb-compilers) in the PDB.
 > The metadata references for the compilation are expected to be recovered from a file indexing service (e.g. symbol server) using information in [Compilation Metadata References](#compilation-metadata-references-c-and-vb-compilers) record.
+
+##### Type Definition Document (C# and VB compilers)
+Parent: TypeDef
+
+Kind: {932E74BC-DBA9-4478-8D46-0F32A7BAB3D3}
+
+Stores document information for type definitions that would otherwise not have document information stored through other means, for example in the [MethodDebugInformation](#methoddebuginformation-table-0x31) table.
+
+The blob has the following structure:
+
+    Blob ::= (document-ordinal)*
+
+| terminal         | encoding                    | description                            |
+|:-----------------|:----------------------------|:---------------------------------------|
+| document-ordinal | compressed unsigned integer | row id of the Document table. |
+
+> The purpose of this data is to allow a tool navigate to the source of a type definition where there would
+> otherwise not be any data available. For example an empty class definition, or an enum, where there are
+> no methods to provide the data in the `MethodDebugInformation` table.

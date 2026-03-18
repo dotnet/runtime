@@ -31,9 +31,14 @@ add_custom_command(OUTPUT ${DUMMY_PROVIDER_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${EVENT_MANIFEST} ${GENERATE_SCRIPT})
 
+add_library(eventprovider_objects
+    OBJECT
+    ${DUMMY_PROVIDER_SOURCES}
+)
+
 add_library(eventprovider
     STATIC
-    ${DUMMY_PROVIDER_SOURCES}
+    $<TARGET_OBJECTS:eventprovider_objects>
 )
 
 set_target_properties(eventprovider PROPERTIES LINKER_LANGUAGE CXX)

@@ -21,16 +21,46 @@ namespace System.Runtime.CompilerServices
     // Wrapper for address of a object variable on stack
     internal unsafe ref struct ObjectHandleOnStack
     {
-        private void* _ptr;
+        private object* _ptr;
 
-        private ObjectHandleOnStack(void* pObject)
+        private ObjectHandleOnStack(object* pObject)
         {
             _ptr = pObject;
         }
 
         internal static ObjectHandleOnStack Create<T>(ref T o) where T : class?
         {
-            return new ObjectHandleOnStack(Unsafe.AsPointer(ref o));
+            return new ObjectHandleOnStack((object*)Unsafe.AsPointer(ref o));
+        }
+    }
+
+    internal ref struct ByteRef
+    {
+        private ref byte _ref;
+
+        internal ByteRef(ref byte byteReference)
+        {
+            _ref = ref byteReference;
+        }
+
+        internal ref byte Value => ref _ref;
+    }
+
+    // Wrapper for address of a byref to byte variable on stack
+    internal unsafe ref struct ByteRefOnStack
+    {
+        private readonly void* _pByteRef;
+        private ByteRefOnStack(void* pByteRef)
+        {
+            _pByteRef = pByteRef;
+        }
+
+        internal static ByteRefOnStack Create(ref ByteRef byteRef)
+        {
+            // This is valid because the ByteRef is ByRefLike (stack allocated)
+            // and the ByteRefOnStack is expected to have a shorter lifetime
+            // than the ByteRef instance.
+            return new ByteRefOnStack(Unsafe.AsPointer(ref byteRef));
         }
     }
 

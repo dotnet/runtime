@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfiguration _config;
         private readonly bool _shouldDisposeConfig;
+        private bool _initialLoadCompleted;
 
         /// <summary>
         /// Initializes a new instance from the source configuration.
@@ -21,7 +22,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source configuration.</param>
         public ChainedConfigurationProvider(ChainedConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             _config = source.Configuration ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             _shouldDisposeConfig = source.ShouldDisposeConfiguration;
@@ -60,7 +61,24 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads configuration values from the source represented by this <see cref="IConfigurationProvider"/>.
         /// </summary>
-        public void Load() { }
+        public void Load()
+        {
+            if (!_initialLoadCompleted)
+            {
+                // The initial load is a no-op since the chained configuration is expected to be already loaded by the
+                // time it is used as a source for another configuration. This way we avoid unnecessary change notifications.
+                _initialLoadCompleted = true;
+                return;
+            }
+
+            if (_config is IConfigurationRoot root)
+            {
+                foreach (IConfigurationProvider provider in root.Providers)
+                {
+                    provider.Load();
+                }
+            }
+        }
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on the data of this

@@ -378,6 +378,21 @@ export const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I2_URIGHT_SHIFT,
     SimdIntrinsic3.V128_I4_URIGHT_SHIFT,
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
+
+    SimdIntrinsic3.ShiftLeftD1,
+    SimdIntrinsic3.ShiftLeftD2,
+    SimdIntrinsic3.ShiftLeftD4,
+    SimdIntrinsic3.ShiftLeftD8,
+
+    SimdIntrinsic3.ShiftRightArithmeticD1,
+    SimdIntrinsic3.ShiftRightArithmeticD2,
+    SimdIntrinsic3.ShiftRightArithmeticD4,
+    SimdIntrinsic3.ShiftRightArithmeticD8,
+
+    SimdIntrinsic3.ShiftRightLogicalD1,
+    SimdIntrinsic3.ShiftRightLogicalD2,
+    SimdIntrinsic3.ShiftRightLogicalD4,
+    SimdIntrinsic3.ShiftRightLogicalD8,
 ]);
 
 export const simdExtractTable: { [intrinsic: number]: [laneCount: number, laneStoreOpcode: WasmOpcode] } = {
@@ -428,6 +443,11 @@ export const bitmaskTable: { [intrinsic: number]: WasmSimdOpcode } = {
     [SimdIntrinsic2.V128_I2_EXTRACT_MSB]: WasmSimdOpcode.i16x8_bitmask,
     [SimdIntrinsic2.V128_I4_EXTRACT_MSB]: WasmSimdOpcode.i32x4_bitmask,
     [SimdIntrinsic2.V128_I8_EXTRACT_MSB]: WasmSimdOpcode.i64x2_bitmask,
+
+    [SimdIntrinsic2.BitmaskD1]: WasmSimdOpcode.i8x16_bitmask,
+    [SimdIntrinsic2.BitmaskD2]: WasmSimdOpcode.i16x8_bitmask,
+    [SimdIntrinsic2.BitmaskD4]: WasmSimdOpcode.i32x4_bitmask,
+    [SimdIntrinsic2.BitmaskD8]: WasmSimdOpcode.i64x2_bitmask,
 };
 
 export const createScalarTable: { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {

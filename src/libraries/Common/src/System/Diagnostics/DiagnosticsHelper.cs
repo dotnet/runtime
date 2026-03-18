@@ -33,7 +33,7 @@ namespace System.Diagnostics
 
             int count = sortedTags.Count;
             int size = count / (sizeof(ulong) * 8) + 1;
-            BitMapper bitMapper = new BitMapper(size <= 100 ? stackalloc ulong[size] : new ulong[size]);
+            BitMapper bitMapper = new BitMapper((uint)size <= 100 ? stackalloc ulong[size] : new ulong[size]);
 
             if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
             {

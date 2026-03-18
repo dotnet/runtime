@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Pkcs
             scoped Span<byte> I;
             byte[]? IRented = null;
 
-            if (ILen <= 1024)
+            if ((uint)ILen <= 1024)
             {
                 I = stackalloc byte[ILen];
             }

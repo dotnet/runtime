@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -76,8 +76,6 @@
              Link="Common\System\Net\SocketAddressExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs"
-             Link="Common\System\Net\NetworkInformation\HostInformation.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
@@ -118,14 +116,17 @@
              Link="Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs"
              Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"
-             Link="Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
-             Link="Common\System\Net\SocketAddressPal.Unix.cs" />
+             Link="Common\System\Net\SocketAddressPal.Unix.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -162,16 +163,21 @@
              Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Browser.cs"
+             Link="Common\System\Net\SocketAddressPal.Browser.cs" />
+  </ItemGroup>
+
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Intrinsics" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

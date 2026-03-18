@@ -18,7 +18,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("ContractName")]
-        public void Ctor_ContractName(string contractName)
+        public void Ctor_ContractName(string? contractName)
         {
             var attribute = new ExportAttribute(contractName);
             Assert.Equal(contractName, attribute.ContractName);
@@ -28,7 +28,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(string))]
-        public void Ctor_ContractType(Type contractType)
+        public void Ctor_ContractType(Type? contractType)
         {
             var attribute = new ExportAttribute(contractType);
             Assert.Null(attribute.ContractName);
@@ -38,7 +38,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("ContractName", typeof(string))]
-        public void Ctor_ContractName_ContractType(string contractName, Type contractType)
+        public void Ctor_ContractName_ContractType(string? contractName, Type? contractType)
         {
             var attribute = new ExportAttribute(contractName, contractType);
             Assert.Equal(contractName, attribute.ContractName);

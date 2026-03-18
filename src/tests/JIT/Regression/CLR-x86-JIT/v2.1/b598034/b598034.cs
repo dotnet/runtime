@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b598034;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 public class Program
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

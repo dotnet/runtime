@@ -10,7 +10,7 @@ namespace System.ComponentModel.Design.Serialization.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Name")]
-        public void Ctor_Name(string name)
+        public void Ctor_Name(string? name)
         {
             var eventArgs = new ResolveNameEventArgs(name);
             Assert.Same(name, eventArgs.Name);
@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design.Serialization.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Value")]
-        public void Value_Set_GetReturnsExpected(object value)
+        public void Value_Set_GetReturnsExpected(object? value)
         {
             var eventArgs = new ResolveNameEventArgs("Name") { Value = value };
             Assert.Same(value, eventArgs.Value);

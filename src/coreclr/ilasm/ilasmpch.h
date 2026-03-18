@@ -23,6 +23,14 @@
 #include <stdarg.h>         // for vararg macros
 
 #include "mdfileformat.h"
-#include "stgpooli.h"
+#include "minipal/time.h"
+
+#ifdef _EXPORT
+#undef _EXPORT
+#endif
+
+#ifdef _IMPORT
+#undef _IMPORT
+#endif
 
 #endif

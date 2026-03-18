@@ -93,5 +93,9 @@ namespace System
                 return new ProcessCpuUsage { UserTime = new TimeSpan((long)userTime100Nanoseconds), PrivilegedTime = new TimeSpan((long)kernelTime100Nanoseconds) };
             }
         }
+
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static long TickCount64 => Interop.Sys.GetLowResolutionTimestamp();
     }
 }

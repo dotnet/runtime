@@ -21,6 +21,8 @@ namespace System.Net
     {
         private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
+
+        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
         private static bool UseManagedNtlm { get; } =
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
@@ -774,7 +776,8 @@ namespace System.Net
         {
             try
             {
-                return Interop.NetSecurityNative.IsNtlmInstalled();
+                _ = Interop.NetSecurityNative.IsNtlmInstalled();
+                return true;
             }
             catch (Exception e) when (e is EntryPointNotFoundException || e is DllNotFoundException || e is TypeInitializationException)
             {

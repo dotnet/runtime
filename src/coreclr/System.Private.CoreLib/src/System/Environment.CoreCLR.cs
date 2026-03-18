@@ -104,25 +104,19 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
-        private static partial int GetProcessorCount();
+        internal static partial int GetProcessorCount();
 
-        // Used by VM
-        internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
-
-        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
-        /// <value>A 32-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static extern int TickCount
+        [UnmanagedCallersOnly]
+        private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
-        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static extern long TickCount64
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            try
+            {
+                *pResult = SR.GetResourceString(new string(pKey));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }

@@ -1,14 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CrossHostArch Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$(BuildArchitecture)</CrossHostArch>
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
-    <UseAppHost>false</UseAppHost>
-    <!--
-      When building crossgen2, we don't have the live ref and runtime packs.
-      So even though we'll run against the live-built runtime,
-      we need to compile against the "Tool Current" runtime, which is the latest
-      that ships with the SDK that we build with.
-    -->
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <Import Project="crossgen2.props" />
 </Project>

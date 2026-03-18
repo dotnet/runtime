@@ -205,9 +205,7 @@ namespace System
 
         public abstract int Compare(string? x, string? y);
         public abstract bool Equals(string? x, string? y);
-#pragma warning disable CS8614 // Remove warning disable when nullable attributes are respected
         public abstract int GetHashCode(string obj);
-#pragma warning restore CS8614
     }
 
     [Serializable]
@@ -217,7 +215,9 @@ namespace System
         internal static readonly CultureAwareComparer InvariantCaseSensitiveInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
         internal static readonly CultureAwareComparer InvariantIgnoreCaseInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
 
-        private const CompareOptions ValidCompareMaskOffFlags = ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
+        private const CompareOptions ValidCompareMaskOffFlags =
+            ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType |
+              CompareOptions.IgnoreWidth | CompareOptions.NumericOrdering | CompareOptions.StringSort);
 
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
         private readonly CompareOptions _options;

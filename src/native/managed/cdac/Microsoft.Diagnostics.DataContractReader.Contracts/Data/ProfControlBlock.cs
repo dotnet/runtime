@@ -1,0 +1,20 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace Microsoft.Diagnostics.DataContractReader.Data;
+
+internal sealed class ProfControlBlock : IData<ProfControlBlock>
+{
+    static ProfControlBlock IData<ProfControlBlock>.Create(Target target, TargetPointer address)
+        => new ProfControlBlock(target, address);
+
+    public ProfControlBlock(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.ProfControlBlock);
+        GlobalEventMask = target.Read<ulong>(address + (ulong)type.Fields[nameof(GlobalEventMask)].Offset);
+        RejitOnAttachEnabled = target.Read<byte>(address + (ulong)type.Fields[nameof(RejitOnAttachEnabled)].Offset) != 0;
+    }
+
+    public ulong GlobalEventMask { get; init; }
+    public bool RejitOnAttachEnabled { get; init; }
+}

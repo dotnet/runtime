@@ -18,7 +18,7 @@ The hardware intrinsics operate on and produce both primitive types (`int`, `flo
 
 ### Platform-agnostic vector types
 
-The vector types supported by one or more target ISAs are supported across platforms, though they extent to which operations on them are available and accelerated is dependent on the target ISA. These are:
+The vector types supported by one or more target ISAs are supported across platforms, though the extent to which operations on them are available and accelerated is dependent on the target ISA. These are:
 
 * `Vector64<T>` - A 64-bit vector of type `T`. For example, a `Vector64<int>` would hold two 32-bit integers.
   * Note that `Vector64<T>` intrinsics are currently supported only on Arm64, and these are not supported for `double`. Support could be added for this, but would require additional handling.
@@ -51,7 +51,7 @@ The JIT depends on the VM and configuration settings to determine what target pl
 
 Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
 
-The [Intrinsic] attribute was added to eliminate the need to check each call-site. It [Intrinsic] attribute has a different meaning on each attribute target:
+The [Intrinsic] attribute was added to eliminate the need to check each call-site. It has a different meaning on each attribute target:
 
 * Method: call targets marked with [Intrinsic] will be checked by the JIT when importing call-sites. If the method's (namespace, class name, method name) triple matches a record in the Hardware Intrinsics Table, it will be recognized as an intrinsic call.
 
@@ -98,7 +98,7 @@ The register allocator has three main passes.
 
 The `LinearScan::buildNode` method is responsible for identifying all register references in the IR, and constructing the `RefPosition`s that represent those references, for each node. For hardware intrinsics it delegates this function to `LinearScan::buildHWIntrinsic()` and the `LinearScan::getKillSetForHWIntrinsic()` method is responsible for generating kill `RefPositions` for these nodes.
 
-The other thing to be aware of is that the calling convention for large vectors (256-bit vectors on x86, and 128-bit vectors on Arm64) does not preserve the upper half of the callee-save vector registers. As a result, this require some special modeling in the register allocator. See the places where `FEATURE_PARTIAL_SIMD_CALLEE_SAVE` appears in the code. This code, fortunately, requires little differentiation between the two platforms.
+The other thing to be aware of is that the calling convention for large vectors (256-bit vectors on x86, and 128-bit vectors on Arm64) does not preserve the upper half of the callee-save vector registers. As a result, this requires some special modeling in the register allocator. See the places where `FEATURE_PARTIAL_SIMD_CALLEE_SAVE` appears in the code. This code, fortunately, requires little differentiation between the two platforms.
 
 ## Code Generation
 

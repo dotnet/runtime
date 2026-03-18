@@ -159,7 +159,7 @@ namespace System.Net.Tests
         [InlineData(null, null)]
         [InlineData("", null)]
         [InlineData("\r \t \n", "")]
-        public async Task ContentType_SetNullEmptyOrWhitespace_ResetsContentType(string contentType, string expectedContentType)
+        public async Task ContentType_SetNullEmptyOrWhitespace_ResetsContentType(string? contentType, string? expectedContentType)
         {
             using (HttpListenerResponse response = await GetResponse())
             {
@@ -232,7 +232,7 @@ namespace System.Net.Tests
         [InlineData(null, null)]
         [InlineData("", null)]
         [InlineData("\r \t \n", "")]
-        public async Task RedirectLocation_SetNullOrEmpty_ResetsRedirectLocation(string redirectLocation, string expectedRedirectLocation)
+        public async Task RedirectLocation_SetNullOrEmpty_ResetsRedirectLocation(string? redirectLocation, string? expectedRedirectLocation)
         {
             using (HttpListenerResponse response = await GetResponse())
             {

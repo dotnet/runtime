@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -13,8 +12,6 @@ namespace System.Net.WebSockets
     internal sealed partial class ManagedWebSocket : WebSocket
     {
         private bool IsUnsolicitedPongKeepAlive => _keepAlivePingState is null;
-        private static bool IsValidSendState(WebSocketState state) => Array.IndexOf(s_validSendStates, state) != -1;
-        private static bool IsValidReceiveState(WebSocketState state) => Array.IndexOf(s_validReceiveStates, state) != -1;
 
         private void HeartBeat()
         {
@@ -32,15 +29,15 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            Observe(
+            LogExceptions(
                 TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
 
-        private ValueTask TrySendKeepAliveFrameAsync(MessageOpcode opcode, ReadOnlyMemory<byte>? payload = null)
+        private ValueTask TrySendKeepAliveFrameAsync(MessageOpcode opcode, ReadOnlyMemory<byte> payload = default)
         {
-            Debug.Assert(opcode is MessageOpcode.Pong || !IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping);
+            Debug.Assert((opcode is MessageOpcode.Pong) || (!IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping));
 
-            if (!IsValidSendState(_state))
+            if (!WebSocketStateHelper.IsValidSendState(_state))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Cannot send keep-alive frame in {nameof(_state)}={_state}");
 
@@ -48,9 +45,7 @@ namespace System.Net.WebSockets
                 return ValueTask.CompletedTask;
             }
 
-            payload ??= ReadOnlyMemory<byte>.Empty;
-
-            return SendFrameAsync(opcode, endOfMessage: true, disableCompression: true, payload.Value, CancellationToken.None);
+            return SendFrameAsync(opcode, endOfMessage: true, disableCompression: true, payload, CancellationToken.None);
         }
 
         private void KeepAlivePingHeartBeat()
@@ -76,7 +71,7 @@ namespace System.Net.WebSockets
 
                     if (_keepAlivePingState.PingSent)
                     {
-                        if (Environment.TickCount64 > _keepAlivePingState.PingTimeoutTimestamp)
+                        if (now > _keepAlivePingState.PingTimeoutTimestamp)
                         {
                             if (NetEventSource.Log.IsEnabled())
                             {
@@ -92,7 +87,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        if (Environment.TickCount64 > _keepAlivePingState.NextPingRequestTimestamp)
+                        if (now > _keepAlivePingState.NextPingRequestTimestamp)
                         {
                             _keepAlivePingState.OnNextPingRequestCore(); // we are holding the lock
                             shouldSendPing = true;
@@ -103,7 +98,7 @@ namespace System.Net.WebSockets
 
                 if (shouldSendPing)
                 {
-                    Observe(
+                    LogExceptions(
                         SendPingAsync(pingPayload));
                 }
             }
@@ -119,64 +114,12 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_keepAlivePingState != null);
 
-            byte[] pingPayloadBuffer = ArrayPool<byte>.Shared.Rent(sizeof(long));
+            byte[] pingPayloadBuffer = new byte[sizeof(long)];
             BinaryPrimitives.WriteInt64BigEndian(pingPayloadBuffer, pingPayload);
-            try
-            {
-                await TrySendKeepAliveFrameAsync(MessageOpcode.Ping, pingPayloadBuffer.AsMemory(0, sizeof(long))).ConfigureAwait(false);
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.KeepAlivePingSent(this, pingPayload);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(pingPayloadBuffer);
-            }
-        }
+            await TrySendKeepAliveFrameAsync(MessageOpcode.Ping, pingPayloadBuffer).ConfigureAwait(false);
 
-        // "Observe" either a ValueTask result, or any exception, ignoring it
-        // to prevent the unobserved exception event from being raised.
-        private void Observe(ValueTask t)
-        {
-            if (t.IsCompletedSuccessfully)
-            {
-                t.GetAwaiter().GetResult();
-            }
-            else
-            {
-                Observe(t.AsTask());
-            }
-        }
-
-        // "Observe" any exception, ignoring it to prevent the unobserved task
-        // exception event from being raised.
-        private void Observe(Task t)
-        {
-            if (t.IsCompleted)
-            {
-                if (t.IsFaulted)
-                {
-                    LogFaulted(t, this);
-                }
-            }
-            else
-            {
-                t.ContinueWith(
-                    LogFaulted,
-                    this,
-                    CancellationToken.None,
-                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
-
-            static void LogFaulted(Task task, object? thisObj)
-            {
-                Debug.Assert(task.IsFaulted);
-
-                // accessing exception to observe it regardless of whether the tracing is enabled
-                Exception e = task.Exception!.InnerException!;
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(thisObj, e);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.KeepAlivePingSent(this, pingPayload);
         }
 
         private sealed class KeepAlivePingState

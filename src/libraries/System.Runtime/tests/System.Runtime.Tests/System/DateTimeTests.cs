@@ -15,6 +15,55 @@ namespace System.Tests
     public class DateTimeTests
     {
         [Fact]
+        public static void ParseExact_GenitiveMonthNames()
+        {
+            // Create a German culture with explicitly defined genitive month names
+            var culture = new CultureInfo("de-DE");
+            culture.DateTimeFormat.AbbreviatedMonthGenitiveNames = new[] { "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez.", "" };
+            culture.DateTimeFormat.MonthGenitiveNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember.", "" };
+            culture.DateTimeFormat.DayNames = new[] { "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag" };
+            culture.DateTimeFormat.DateSeparator = ".";
+            // Regular month names (non-genitive)
+            culture.DateTimeFormat.AbbreviatedMonthNames = new[] { "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "" };
+            culture.DateTimeFormat.MonthNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember", "" };
+            // Test cases for abbreviated month names (MMM)
+            // Case 1: Format without day specifier - should use regular month name
+            DateTime result;
+            bool success = DateTime.TryParseExact("Dez.20", "MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Case 2: Format with day-of-month specifier - should use genitive month name
+            success = DateTime.TryParseExact("Dez.20 01", "MMM.yy dd", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 3: Format with day-of-month specifier before month - should use genitive month name
+            success = DateTime.TryParseExact("01 Dez.20", "d MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 4: Format with day-of-week specifier - should use regular month name
+            success = DateTime.TryParseExact("Dienstag Dez.20", "dddd MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Test cases for full month names (MMMM)
+            // Case 5: Format without day specifier - should use regular month name
+            success = DateTime.TryParseExact("Dezember.20", "MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Case 6: Format with day-of-month specifier - should use genitive month name
+            success = DateTime.TryParseExact("Dezember.20 01", "MMMM.yy dd", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 7: Format with day-of-month specifier before month - should use genitive month name
+            success = DateTime.TryParseExact("01 Dezember.20", "d MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 8: Format with day-of-week specifier - should use regular month name
+            success = DateTime.TryParseExact("Dienstag Dezember.20", "dddd MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+        }
+
+        [Fact]
         public static void MaxValue()
         {
             VerifyDateTime(DateTime.MaxValue, 9999, 12, 31, 23, 59, 59, 999, DateTimeKind.Unspecified);
@@ -1228,7 +1277,7 @@ namespace System.Tests
 
         private static bool IsNotOSXOrBrowser => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
 
-        [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
+        [ConditionalTheory(typeof(DateTimeTests), nameof(IsNotOSXOrBrowser))]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]
@@ -1290,7 +1339,7 @@ namespace System.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public static void TryParse_NullOrEmptyString_ReturnsFalse(string input)
+        public static void TryParse_NullOrEmptyString_ReturnsFalse(string? input)
         {
             Assert.False(DateTime.TryParse(input, out DateTime result));
             Assert.False(DateTime.TryParse(input, new MyFormatter(), DateTimeStyles.None, out result));
@@ -1945,13 +1994,16 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void InvalidDateTimeStyles()
+        [Theory]
+        [InlineData(DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AssumeLocal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AssumeUniversal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AdjustToUniversal)]
+        public static void InvalidDateTimeStyles(DateTimeStyles style)
         {
             string strDateTime = "Thursday, August 31, 2006 1:14";
             string[] formats = new string[] { "f" };
             IFormatProvider provider = new CultureInfo("en-US");
-            DateTimeStyles style = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
             AssertExtensions.Throws<ArgumentException>("style", () => DateTime.ParseExact(strDateTime, formats, provider, style));
         }
 
@@ -1982,7 +2034,10 @@ namespace System.Tests
             yield return new object[] { "#2020-5-7T09:37:00.0000000+00:00#\0", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
             yield return new object[] { "2020-5-7T09:37:00.0000000+00:00", CultureInfo.InvariantCulture, TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2020, 5, 7, 9, 37, 0, DateTimeKind.Utc), TimeZoneInfo.Local) };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            // On Apple platforms, the handling  calendars relies on native Apple APIs (NSCalendar).
+            // These APIs can cause differences in behavior when parsing or formatting dates compared to other platforms.
+            // Specifically, the way Apple handles calendar identifiers and date formats for cultures like "he-IL" may lead to variations in the output.
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 DateTime today = DateTime.Today;
                 var hebrewCulture = new CultureInfo("he-IL");
@@ -2003,7 +2058,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
@@ -2165,6 +2219,23 @@ namespace System.Tests
             yield return new object[] { "9/8/2017 10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { " 9 / 8 / 2017    10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { "   9   /   8   /   2017    10  :   11  :   12  AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
+
+            // RoundtripKind: preserves the UTC kind when parsing UTC strings (indicated by 'Z')
+            yield return new object[] { "2017-10-11T01:23:45Z", "yyyy-MM-dd'T'HH:mm:ssK", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, new DateTime(2017, 10, 11, 1, 23, 45, DateTimeKind.Utc) };
+            yield return new object[] { "2017-10-11T01:23:45.678Z", "yyyy-MM-dd'T'HH:mm:ss.fffK", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, new DateTime(2017, 10, 11, 1, 23, 45, 678, DateTimeKind.Utc) };
+            yield return new object[] { "2017-10-11T01:23:45.6789012Z", "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, null }; // roundtrip format
+
+            // AssumeLocal: interprets date/time as local when no timezone is specified
+            yield return new object[] { "2017-10-11 01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, new DateTime(2017, 10, 11, 1, 23, 45, DateTimeKind.Local) };
+            yield return new object[] { "9/8/2017 10:11:12 AM", "M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, new DateTime(2017, 9, 8, 10, 11, 12, DateTimeKind.Local) };
+
+            // NoCurrentDateDefault: uses 0001-01-01 instead of current date when date components are missing
+            yield return new object[] { "10:30:45", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 10, 30, 45) };
+            yield return new object[] { "3:45 PM", "h:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 15, 45, 0) };
+
+            // AllowInnerWhite (standalone): allows white space to appear in the middle of the string
+            yield return new object[] { "2017 - 10 - 11  01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 10, 11, 1, 23, 45) };
+            yield return new object[] { "9 / 8 / 2017  10 : 11 : 12", "M/d/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 9, 8, 10, 11, 12) };
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
@@ -2464,7 +2535,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
         public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
@@ -2652,6 +2722,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void GetObjectData_Invoke_ReturnsExpected()
         {
             ISerializable serializable = new DateTime(10, DateTimeKind.Utc);
@@ -2687,6 +2758,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public void TestParseTimeOnlyStringWithAssumeUtcOption()
+        {
+            DateTime utcNow1 = DateTime.UtcNow;
+            DateTime dt = DateTime.Parse("13:30", null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            DateTime utcNow2 = DateTime.UtcNow;
+
+            // Ensure the parsed date part is in UTC.
+            Assert.InRange(dt.Date, utcNow1.Date, utcNow2.Date);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void TestTimeSynchronizationWithTheSystem()
         {
@@ -2702,8 +2784,8 @@ namespace System.Tests
             DateTime dt = DateTime.UtcNow;
             GetSystemTime(out st1);
 
-            DateTime systemDateTimeNow1  = new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMillisecond, DateTimeKind.Utc);
-            DateTime systemDateTimeNow2  = new DateTime(st1.wYear, st1.wMonth, st1.wDay, st1.wHour, st1.wMinute, st1.wSecond, st1.wMillisecond, DateTimeKind.Utc);
+            DateTime systemDateTimeNow1 = new DateTime(st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMillisecond, DateTimeKind.Utc);
+            DateTime systemDateTimeNow2 = new DateTime(st1.wYear, st1.wMonth, st1.wDay, st1.wHour, st1.wMinute, st1.wSecond, st1.wMillisecond, DateTimeKind.Utc);
 
             // Usually GetSystemTime and DateTime.UtcNow calls doesn't take one second to execute, if this is not the case then
             // the thread was sleeping for awhile and we cannot test reliably on that case.
@@ -2714,6 +2796,44 @@ namespace System.Tests
                 diff = dt - systemDateTimeNow1;
                 Assert.True(diff < TimeSpan.FromSeconds(1), $"Reported DateTime.UtcNow {dt} is shifted by more than one second then the system time {systemDateTimeNow1}");
             }
+        }
+
+        [Fact]
+        public void TestFractionSpecifier()
+        {
+            DateTime date = new DateTime(2008, 8, 29, 7, 27, 15, 18);
+            CultureInfo ci = CultureInfo.InvariantCulture;
+
+            // Test using .F format https://learn.microsoft.com/dotnet/standard/base-types/custom-date-and-time-format-strings#F_Specifier
+            string pattern = "yyyy-MM-ddThh:mm:ss.F";
+            string formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out DateTime parsedDate));
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+            pattern = "yyyy-MM-ddThh:mm.F:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, "yyyy-MM-ddThh:mm.F:ss", ci, DateTimeStyles.None, out parsedDate));
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 18))); // 18 milliseconds fraction difference
+
+            pattern = "yyyy-MM-ddThh:mm:ss.FF";
+            formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15.01", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+            pattern = "yyyy-MM-ddThh.FF:mm:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate.AddTicks((long)(TimeSpan.TicksPerMillisecond * 8))); // 8 milliseconds fraction difference
+
+            pattern = "yyyy-MM-ddThh:mm:ss.FFF";
+            formatted = date.ToString(pattern, ci);
+            Assert.Equal("2008-08-29T07:27:15.018", formatted);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate);
+            pattern = "yyyy-MM-ddThh.FFF:mm:ss";
+            formatted = date.ToString(pattern, ci);
+            Assert.True(DateTime.TryParseExact(formatted, pattern, ci, DateTimeStyles.None, out parsedDate), $"Failed to parse '{formatted}' using the pattern '{pattern}'.");
+            Assert.Equal(date, parsedDate);
         }
 
         [DllImport("Kernel32.dll")]
@@ -2985,6 +3105,115 @@ namespace System.Tests
                     }
                 break;
             }
+        }
+
+        [Fact]
+        public void TestParsingWithAmPrefixPm()
+        {
+            var culture = new CultureInfo("en-US");
+            DateTime dt = new DateTime(2023, 4, 17, 14, 30, 0);
+
+            // AM designator is a prefix of PM designator
+            culture.DateTimeFormat.AMDesignator = "aM";
+            culture.DateTimeFormat.PMDesignator = "aMP";
+
+            string formatted = dt.ToString("hh:mm tt", culture);
+            Assert.Equal("02:30 aMP", formatted);
+
+            DateTime parsedDateTime = DateTime.ParseExact(formatted, "hh:mm tt", culture);
+            Assert.Equal(dt.TimeOfDay, parsedDateTime.TimeOfDay);
+        }
+
+        // Tests for ISO 8601 24:00 support (end of day)
+        [Theory]
+        [InlineData("2007-04-05T24:00:00.0000000", 2007, 4, 6, 0, 0, 0)]  // Basic case
+        [InlineData("2023-12-31T24:00:00.0000000", 2024, 1, 1, 0, 0, 0)]  // Year boundary
+        [InlineData("2020-02-29T24:00:00.0000000", 2020, 3, 1, 0, 0, 0)]  // Leap year
+        [InlineData("2023-02-28T24:00:00.0000000", 2023, 3, 1, 0, 0, 0)]  // Non-leap year, Feb boundary
+        [InlineData("2023-01-31T24:00:00.0000000", 2023, 2, 1, 0, 0, 0)]  // Month boundary (31 days)
+        [InlineData("2023-04-30T24:00:00.0000000", 2023, 5, 1, 0, 0, 0)]  // Month boundary (30 days)
+        public void ParseExact_Hour24_Success(string input, int expectedYear, int expectedMonth, int expectedDay, int expectedHour, int expectedMinute, int expectedSecond)
+        {
+            DateTime result = DateTime.ParseExact(input, "o", null);
+            Assert.Equal(expectedYear, result.Year);
+            Assert.Equal(expectedMonth, result.Month);
+            Assert.Equal(expectedDay, result.Day);
+            Assert.Equal(expectedHour, result.Hour);
+            Assert.Equal(expectedMinute, result.Minute);
+            Assert.Equal(expectedSecond, result.Second);
+        }
+
+        [Fact]
+        public void ParseExact_Hour24_WithUTC_Success()
+        {
+            // Test with UTC timezone marker
+            DateTime result = DateTime.ParseExact("2007-04-05T24:00:00.0000000Z", "o", null);
+            // When Z is specified, the result should be Local time (converted from UTC)
+            // The date should have advanced to 2007-04-06 at midnight UTC
+            DateTime utcResult = result.ToUniversalTime();
+            Assert.Equal(2007, utcResult.Year);
+            Assert.Equal(4, utcResult.Month);
+            Assert.Equal(6, utcResult.Day);
+            Assert.Equal(0, utcResult.Hour);
+            Assert.Equal(0, utcResult.Minute);
+            Assert.Equal(0, utcResult.Second);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01.0000000")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00.0000000")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        [InlineData("2007-04-05T24:01:01.0000000")]  // Non-zero minutes and seconds
+        [InlineData("9999-12-31T24:00:00.0000000")]  // Would overflow (9999-12-31 + 1 day)
+        public void ParseExact_Hour24_Invalid_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input, "o", null));
+        }
+
+        [Fact]
+        public void Parse_Hour24_BasicTest()
+        {
+            // Test basic Parse method (not just ParseExact) - this uses ParseISO8601
+            DateTime result = DateTime.Parse("2007-04-05T24:00:00.0000000", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:00")]  // No fraction
+        [InlineData("2023-12-31T24:00:00")]  // Year boundary
+        [InlineData("2020-02-29T24:00:00")]  // Leap year
+        public void Parse_Hour24_ISO8601Format_Success(string input)
+        {
+            // These use the ParseISO8601 code path
+            DateTime result = DateTime.Parse(input, CultureInfo.InvariantCulture);
+            // Verify the date advanced by one day
+            DateTime original = DateTime.Parse(input.Replace("24:00:00", "00:00:00"), CultureInfo.InvariantCulture);
+            Assert.Equal(original.AddDays(1), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        public void Parse_Hour24_ISO8601Format_Invalid_ThrowsFormatException(string input)
+        {
+            // These use the ParseISO8601 code path and should fail
+            Assert.Throws<FormatException>(() => DateTime.Parse(input, CultureInfo.InvariantCulture));
+        }
+
+        [Fact]
+        public void TryParse_Hour24_Success()
+        {
+            bool success = DateTime.TryParseExact("2007-04-05T24:00:00.0000000", "o", null, DateTimeStyles.None, out DateTime result);
+            Assert.True(success);
+            Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Fact]
+        public void TryParse_Hour24_Invalid_ReturnsFalse()
+        {
+            bool success = DateTime.TryParseExact("2007-04-05T24:00:01.0000000", "o", null, DateTimeStyles.None, out DateTime result);
+            Assert.False(success);
         }
     }
 }

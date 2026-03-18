@@ -2,19 +2,19 @@
 
 namespace Mono.Linker.Tests.Cases.Basic
 {
-	class UnusedEventGetsRemoved
-	{
-		public static void Main ()
-		{
-			var tmp = new Foo ();
-		}
+    class UnusedEventGetsRemoved
+    {
+        public static void Main()
+        {
+            var tmp = new Foo();
+        }
 
-		[KeptMember (".ctor()")]
-		public class Foo
-		{
-			public delegate void CustomDelegate ();
+        [KeptMember(".ctor()")]
+        public class Foo
+        {
+            public delegate void CustomDelegate();
 
-			public event CustomDelegate Bar;
-		}
-	}
+            public event CustomDelegate Bar;
+        }
+    }
 }

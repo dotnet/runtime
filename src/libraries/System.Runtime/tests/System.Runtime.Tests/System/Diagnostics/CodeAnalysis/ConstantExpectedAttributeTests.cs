@@ -22,7 +22,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(10000)]
         [InlineData(0.5f)]
         [InlineData(null)]
-        public void TestSetMin(object min)
+        public void TestSetMin(object? min)
         {
             var attr = new ConstantExpectedAttribute
             {
@@ -38,7 +38,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(10000)]
         [InlineData(0.5f)]
         [InlineData(null)]
-        public void TestSetMax(object max)
+        public void TestSetMax(object? max)
         {
             var attr = new ConstantExpectedAttribute
             {
@@ -55,7 +55,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(null, null)]
         [InlineData(10, 0)]
         [InlineData(10, "https://dot.net")]
-        public void TestSetMinAndMax(object min, object max)
+        public void TestSetMinAndMax(object? min, object? max)
         {
             var attr = new ConstantExpectedAttribute
             {

@@ -54,6 +54,8 @@
 #include <mono/metadata/components.h>
 #include <mono/mini/debugger-agent-external.h>
 
+#include <minipal/descriptorlimit.h>
+
 #include "mini.h"
 #include <mono/jit/jit.h>
 #include "aot-compiler.h"
@@ -68,9 +70,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#ifdef HAVE_SYS_RESOURCE_H
-#   include <sys/resource.h>
-#endif
 
 static FILE *mini_stats_fd;
 
@@ -1746,7 +1745,7 @@ parse_qualified_method_name (char *method_name)
  * Process the command line options in \p argv as done by the runtime executable.
  * This should be called before \c mono_jit_init.
  */
-void
+int
 mono_jit_parse_options (int argc, char * argv[])
 {
 	ERROR_DECL (error);
@@ -1782,6 +1781,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			debug_opt ->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
+#ifdef HOST_WASI
+			mono_wasm_enable_debugging (-1);
+			mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+#endif
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
 			MonoDebugOptions *debug_opt  = mini_get_debug_options ();
 			debug_opt ->soft_breakpoints = TRUE;
@@ -1857,6 +1860,8 @@ mono_jit_parse_options (int argc, char * argv[])
 
 	/* Free the copy */
 	g_free (argv);
+
+	return i;
 }
 
 static void
@@ -1866,27 +1871,6 @@ mono_set_use_smp (int use_smp)
 	if (!use_smp) {
 		unsigned long proc_mask = 1;
 		sched_setaffinity (getpid(), sizeof (unsigned long), (const cpu_set_t *)&proc_mask);
-	}
-#endif
-}
-
-static void
-increase_descriptor_limit (void)
-{
-#if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
-	struct rlimit limit;
-
-	if (getrlimit (RLIMIT_NOFILE, &limit) == 0) {
-		// Set our soft limit for file descriptors to be the same
-		// as the max limit.
-		limit.rlim_cur = limit.rlim_max;
-#ifdef __APPLE__
-		// Based on compatibility note in setrlimit(2) manpage for OSX,
-		// trim the limit to OPEN_MAX.
-		if (limit.rlim_cur > OPEN_MAX)
-			limit.rlim_cur = OPEN_MAX;
-#endif
-		setrlimit (RLIMIT_NOFILE, &limit);
 	}
 #endif
 }
@@ -2018,7 +2002,7 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-	increase_descriptor_limit ();
+	minipal_increase_descriptor_limit ();
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);

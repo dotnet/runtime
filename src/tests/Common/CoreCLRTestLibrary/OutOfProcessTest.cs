@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using CoreclrTestLib;
 using Xunit;
 
 namespace TestLibrary
@@ -47,7 +46,7 @@ namespace TestLibrary
             && !OperatingSystem.IsTvOS()
             && !OperatingSystem.IsAndroid()
             && !OperatingSystem.IsBrowser()
-            && !OperatingSystem.IsOSPlatform("Wasi");
+            && !OperatingSystem.IsWasi();
 
         public static void RunOutOfProcessTest(string assemblyPath, string testPathPrefix)
         {

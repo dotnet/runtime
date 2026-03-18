@@ -19,8 +19,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [InlineData("hello", "hello", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", "HELLo", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", null, "fr-FR", CompareOptions.IgnoreCase, 1, 1)]
@@ -33,7 +32,7 @@ namespace System.Globalization.Tests
         [InlineData("abc", "ABC", "en-US", CompareOptions.OrdinalIgnoreCase, 0, 0)]
         [InlineData("Cot\u00E9", "cot\u00E9", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("cot\u00E9", "c\u00F4te", "fr-FR", CompareOptions.None, 1, -1)]
-        public static void Compare(string x, string y, string cultureName, CompareOptions options, int expectedNls, int expectedICU)
+        public static void Compare(string? x, string? y, string cultureName, CompareOptions options, int expectedNls, int expectedICU)
         {
             int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedICU;
             StringComparer comparer = new CultureInfo(cultureName).CompareInfo.GetStringComparer(options);

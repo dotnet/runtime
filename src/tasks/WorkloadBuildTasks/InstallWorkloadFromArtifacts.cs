@@ -232,7 +232,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     Path.Combine(req.TargetPath, "dotnet"),
                                                     $"workload install --skip-manifest-update --skip-sign-check --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {ExtraWorkloadInstallCommandArguments} {req.WorkloadId}",
                                                     workingDir: _tempDir,
-                                                    envVars: new Dictionary<string, string> () {
+                                                    envVars: new Dictionary<string, string>() {
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
@@ -287,6 +287,12 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+
+            if (!Directory.Exists(outputDir))
+            {
+                Log.LogMessage($"Could not find {name} directory at {outputDir}. Creating it..");
+                Directory.CreateDirectory(outputDir);
+            }
 
             // If we one sub entry, it's workload manifest version and we should install into it (aka workload sets)
             string[] outputSubEntries = Directory.GetFileSystemEntries(outputDir);

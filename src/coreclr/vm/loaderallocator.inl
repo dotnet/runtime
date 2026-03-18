@@ -24,9 +24,9 @@ inline bool LoaderAllocator::IsExposedObjectLive()
     return !ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle);
 }
 
-inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain)
+inline void GlobalLoaderAllocator::Init()
 {
-    LoaderAllocator::Init(pDomain, m_ExecutableHeapInstance);
+    LoaderAllocator::Init(m_ExecutableHeapInstance);
 }
 
 inline BOOL LoaderAllocatorID::Equals(LoaderAllocatorID *pId)
@@ -52,7 +52,7 @@ inline void LoaderAllocatorID::AddDomainAssembly(DomainAssembly* pAssembly)
     // Link domain assembly together
     if (m_pDomainAssembly != NULL)
     {
-        pAssembly->SetNextDomainAssemblyInSameALC(m_pDomainAssembly);
+        pAssembly->GetAssembly()->SetNextAssemblyInSameALC(m_pDomainAssembly);
     }
     m_pDomainAssembly = pAssembly;
 }

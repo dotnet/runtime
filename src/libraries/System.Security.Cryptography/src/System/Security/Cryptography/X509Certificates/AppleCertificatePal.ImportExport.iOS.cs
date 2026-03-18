@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
                         using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                         {
                             // Permit trailing data after the PKCS12.
-                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+                            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
                             PfxAsn.Decode(ref reader, manager.Memory, out _);
                         }
 
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                         {
-                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+                            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
 
                             ContentInfoAsn.Decode(ref reader, manager.Memory, out ContentInfoAsn contentInfo);
 

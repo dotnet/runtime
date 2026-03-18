@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -19,6 +22,119 @@ namespace System.Reflection.Metadata
     [Collection(nameof(DisableParallelization))]
     public class ApplyUpdateTest
     {
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120547", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        void DeleteMemberTest()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.ReflectionDeleteMember).Assembly;
+
+                var type_ReflectionDeleteMember = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember");
+                var type_ReflectionDeleteMember_Derived = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember_Derived");
+                var type_ReflectionDeleteMember_Derived2 = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember_Derived2");
+                var type_IReflectionDeleteMember = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.IReflectionDeleteMember");
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                Assert.Equal(
+                [
+                    "get_P1 : ReflectionDeleteMember",
+                    "set_P1 : ReflectionDeleteMember",
+                    "M1 : ReflectionDeleteMember",
+                    "get_P2 : ReflectionDeleteMember",
+                    "M2 : ReflectionDeleteMember",
+                    "get_P3 : ReflectionDeleteMember",
+                    "set_P3 : ReflectionDeleteMember",
+                    "M3 : ReflectionDeleteMember",
+                    "add_E1 : ReflectionDeleteMember",
+                    "remove_E1 : ReflectionDeleteMember",
+                    "GetType : Object",
+                    "ToString : Object",
+                    "Equals : Object",
+                    "GetHashCode : Object",
+                    ".ctor(0) : ReflectionDeleteMember",
+                    "P1 : ReflectionDeleteMember",
+                    "P2 : ReflectionDeleteMember",
+                    "P3 : ReflectionDeleteMember",
+                    "E1 : ReflectionDeleteMember",
+                    "F1 : ReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember));
+
+                Assert.Equal(
+                [
+                    "get_P1 : ReflectionDeleteMember_Derived",
+                    "set_P1 : ReflectionDeleteMember_Derived",
+                    "M1 : ReflectionDeleteMember_Derived",
+                    "get_P2 : ReflectionDeleteMember_Derived",
+                    "M2 : ReflectionDeleteMember_Derived",
+                    "get_P3 : ReflectionDeleteMember",
+                    "set_P3 : ReflectionDeleteMember",
+                    "M3 : ReflectionDeleteMember",
+                    "add_E1 : ReflectionDeleteMember",
+                    "remove_E1 : ReflectionDeleteMember",
+                    "GetType : Object",
+                    "ToString : Object",
+                    "Equals : Object",
+                    "GetHashCode : Object",
+                    ".ctor(0) : ReflectionDeleteMember_Derived",
+                    "P1 : ReflectionDeleteMember_Derived",
+                    "P2 : ReflectionDeleteMember_Derived",
+                    "P3 : ReflectionDeleteMember",
+                    "E1 : ReflectionDeleteMember",
+                    "F1 : ReflectionDeleteMember_Derived",
+                    "F1 : ReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember_Derived));
+
+                Assert.Equal(
+                [
+                    "get_P1 : ReflectionDeleteMember_Derived2",
+                    "set_P1 : ReflectionDeleteMember_Derived2",
+                    "M1 : ReflectionDeleteMember_Derived2",
+                    "get_P2 : ReflectionDeleteMember_Derived2",
+                    "M2 : ReflectionDeleteMember_Derived2",
+                    "get_P3 : ReflectionDeleteMember",
+                    "set_P3 : ReflectionDeleteMember",
+                    "M3 : ReflectionDeleteMember",
+                    "add_E1 : ReflectionDeleteMember",
+                    "remove_E1 : ReflectionDeleteMember",
+                    "GetType : Object",
+                    "ToString : Object",
+                    "Equals : Object",
+                    "GetHashCode : Object",
+                    ".ctor(0) : ReflectionDeleteMember_Derived2",
+                    "P1 : ReflectionDeleteMember_Derived2",
+                    "P2 : ReflectionDeleteMember_Derived2",
+                    "P3 : ReflectionDeleteMember",
+                    "E1 : ReflectionDeleteMember",
+                    "F1 : ReflectionDeleteMember_Derived",
+                    "F1 : ReflectionDeleteMember",
+                ], Inspect(type_ReflectionDeleteMember_Derived2));
+
+                Assert.Equal(
+                [
+                    "get_P1 : IReflectionDeleteMember",
+                    "set_P1 : IReflectionDeleteMember",
+                    "get_P2 : IReflectionDeleteMember",
+                    "M1 : IReflectionDeleteMember",
+                    "M2 : IReflectionDeleteMember",
+                    "add_E1 : IReflectionDeleteMember",
+                    "remove_E1 : IReflectionDeleteMember",
+                    "add_E2 : IReflectionDeleteMember",
+                    "remove_E2 : IReflectionDeleteMember",
+                    "P1 : IReflectionDeleteMember",
+                    "P2 : IReflectionDeleteMember",
+                    "E1 : IReflectionDeleteMember",
+                    "E2 : IReflectionDeleteMember",
+                ], Inspect(type_IReflectionDeleteMember));
+            });
+
+            static IEnumerable<string> Inspect(Type type)
+                => type.GetMembers().Select(m => (m is ConstructorInfo ctor ? $"{ctor.Name}({ctor.GetParameters().Length})" : m.Name) + " : " + m.DeclaringType!.Name);
+        }
+
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void StaticMethodBodyUpdate()
@@ -43,7 +159,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void LambdaBodyChange()
         {
             ApplyUpdateUtil.TestCase(static () =>
@@ -70,7 +186,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void LambdaCapturesThis()
         {
             // Tests that changes to the body of a lambda that captures 'this' is supported.
@@ -98,7 +214,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void FirstCallAfterUpdate()
         {
             /* Tests that updating a method that has not been called before works correctly and that
@@ -202,7 +318,7 @@ namespace System.Reflection.Metadata
 
                 Type preUpdateTy = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
                 Assert.NotNull(preUpdateTy);
-                
+
                 // before the update the type has a MyDeleteAttribute on it
                 Attribute[] cattrs = Attribute.GetCustomAttributes(preUpdateTy, attrType);
                 Assert.NotNull(cattrs);
@@ -323,7 +439,46 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76702", TestRuntimes.CoreCLR)]
+        // FieldRVA update tests are not supported on the Mono runtime.
+        //[ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        void TestAddFieldRVA()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.AddFieldRVA).Assembly;
+
+                {
+                    var lrosLen = ApplyUpdate.Test.AddFieldRVA.LocalReadOnlySpan();
+                    Assert.Equal(-1, lrosLen);
+                    var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
+                    Assert.Equal(-1, mfaLen);
+                    // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
+                    // Assert.Equal(-1, mfaLen);
+                    var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
+                    Assert.Equal(1, utf8ros.Length);
+                    var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
+                    Assert.Equal("0", strlit);
+                }
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                {
+                    var lrosLen = ApplyUpdate.Test.AddFieldRVA.LocalReadOnlySpan();
+                    Assert.Equal(3, lrosLen);
+                    var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
+                    Assert.Equal(4, mfaLen);
+                    // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
+                    // Assert.Equal(5, mfaLen);
+                    var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
+                    Assert.Equal(6, utf8ros.Length);
+                    var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
+                    Assert.Equal("1234567", strlit);
+                }
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116624", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddInstanceField()
         {
@@ -355,7 +510,7 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal (6, x2.GetIntArrayLength());
                 Assert.Equal (7, x2.GetIntArrayElt (3));
-                
+
                 // now check that reflection can get/set the new fields
                 var fi = x2.GetType().GetField("NewStructField");
 
@@ -425,7 +580,7 @@ namespace System.Reflection.Metadata
                 // token is in that range.  If more code is added, revise this test.
 
                 Assert.True ((addedEventToken & 0x00ffffff) < 4);
-                
+
                 fi = x2.GetType().GetField("AddedDateTime");
                 Assert.NotNull(fi);
                 var dt = DateTime.Now;
@@ -815,7 +970,7 @@ namespace System.Reflection.Metadata
                     Assert.NotNull(parm.ParameterType);
                     Assert.Equal(parmPos, parm.Position);
                     Assert.NotNull(parm.Name);
-                    
+
                     var cas = parm.GetCustomAttributes(false);
                     foreach (var ca in cas) {
                         Assert.NotNull (ca);
@@ -868,7 +1023,7 @@ namespace System.Reflection.Metadata
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<double>();
 
                 Assert.Equal (0.0, y.GetField());
-                
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 // there are two updates - the first adds the fields, the second one updates the
@@ -899,7 +1054,7 @@ namespace System.Reflection.Metadata
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(45.0);
 
                 Assert.Equal (0.0, y.GetIt());
-                
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 var fi = x.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -951,7 +1106,7 @@ namespace System.Reflection.Metadata
                 Assert.Equal("abcd", x.ExistingMethod("abcd"));
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
-            
+
                 InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => x.ExistingMethod("spqr"));
 
                 Assert.Equal("spqr", exn.Message);
@@ -1003,5 +1158,24 @@ namespace System.Reflection.Metadata
                 Assert.Equal("x800", pars[0].Name);
             });
         }
-    }       
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsRemoteExecutorSupportedAndFeatureCapable), nameof(ApplyUpdateUtil.IsNotMonoRuntime))]
+        void TestDisableMetadataUpdate()
+        {
+            RemoteInvokeOptions options = null;
+            ApplyUpdateUtil.AddRemoteInvokeOptions(ref options);
+            RemoteExecutor.Invoke(static () => { Assert.True(MetadataUpdater.IsSupported); }, options).Dispose();
+
+            options.StartInfo.EnvironmentVariables[ApplyUpdateUtil.DotNetModifiableAssembliesSwitch] = ApplyUpdateUtil.DotNetModifiableAssembliesDisabledValue;
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(MetadataUpdater.IsSupported);
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+                var metadataDelta = new byte[20];
+                var ilDelta = new byte[20];
+                Assert.Throws<InvalidOperationException>(() =>
+                    MetadataUpdater.ApplyUpdate(assm, metadataDelta, ilDelta, ReadOnlySpan<byte>.Empty));
+            }, options).Dispose();
+        }
+    }
 }

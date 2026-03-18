@@ -53,6 +53,9 @@ namespace AppWithCustomEntryPoints
         {
             functionPointerCallCount++;
             PrintFunctionPointerCallLog(nameof(ThrowException), arg, size);
+
+            // Disable core dumps - test is intentionally crashing
+            Utilities.CoreDump.Disable();
             throw new InvalidOperationException(nameof(ThrowException));
         }
 

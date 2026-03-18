@@ -46,6 +46,36 @@ namespace System.Net.WebSockets
         public virtual System.Threading.Tasks.ValueTask SendAsync(System.ReadOnlyMemory<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, System.Net.WebSockets.WebSocketMessageFlags messageFlags, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected static void ThrowOnInvalidState(System.Net.WebSockets.WebSocketState state, params System.Net.WebSockets.WebSocketState[] validStates) { }
     }
+    public partial class WebSocketStream : System.IO.Stream
+    {
+        private protected WebSocketStream() { }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public static System.Net.WebSockets.WebSocketStream Create(WebSocket webSocket, WebSocketMessageType writeMessageType, bool ownsWebSocket = false) { throw null; }
+        public static System.Net.WebSockets.WebSocketStream Create(WebSocket webSocket, WebSocketMessageType writeMessageType, TimeSpan closeTimeout) { throw null; }
+        public static System.Net.WebSockets.WebSocketStream CreateWritableMessageStream(WebSocket webSocket, WebSocketMessageType writeMessageType) { throw null; }
+        public static System.Net.WebSockets.WebSocketStream CreateReadableMessageStream(WebSocket webSocket) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(IAsyncResult asyncResult) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public System.Net.WebSockets.WebSocket WebSocket { get { throw null; } }
+        public override void Write(byte[] buffer, int offset, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+    }
     public enum WebSocketCloseStatus
     {
         NormalClosure = 1000,

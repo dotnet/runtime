@@ -17,8 +17,6 @@ namespace System.Diagnostics.Metrics
         public double MaxRelativeError { get; set; } = 0.001;
     }
 
-
-
     // This histogram ensures that the quantiles reported from the histogram are within some bounded % error of the correct
     // value. More mathematically, if we have a set of measurements where quantile X = Y, the histogram should always report a
     // value Y` where Y*(1-E) <= Y` <= Y*(1+E). E is our allowable error, so if E = 0.01 then the reported value Y` is

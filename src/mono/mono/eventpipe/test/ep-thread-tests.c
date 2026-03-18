@@ -399,7 +399,8 @@ test_thread_session_state (void)
 			provider_config,
 			1,
 			NULL,
-			NULL);
+			NULL,
+			0);
 	EP_LOCK_EXIT (section1)
 
 	if (!session) {
@@ -446,7 +447,7 @@ ep_on_exit:
 		ep_thread_delete_session_state (thread, session);
 		ep_rt_spin_lock_release (ep_thread_get_rt_lock_ref (thread));
 	}
-	ep_session_free (session);
+	ep_session_dec_ref (session);
 	ep_provider_config_fini (provider_config);
 	ep_thread_release (thread);
 	return result;

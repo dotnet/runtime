@@ -294,7 +294,7 @@ namespace System.Tests
         [InlineData((sbyte)2, "Two")]
         [InlineData(sbyte.MaxValue, "Max")]
         [InlineData((sbyte)3, null)]
-        public void GetName_InvokeSByteEnum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeSByteEnum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(SByteEnum), value, expected);
             if (!(value is SByteEnum enumValue))
@@ -314,7 +314,7 @@ namespace System.Tests
         [InlineData((byte)2, "Two")]
         [InlineData(byte.MaxValue, "Max")]
         [InlineData((byte)3, null)]
-        public void GetName_InvokeByteEnum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeByteEnum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(ByteEnum), value, expected);
             if (!(value is ByteEnum enumValue))
@@ -334,7 +334,7 @@ namespace System.Tests
         [InlineData((short)2, "Two")]
         [InlineData(short.MaxValue, "Max")]
         [InlineData((short)3, null)]
-        public void GetName_InvokeInt16Enum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeInt16Enum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(Int16Enum), value, expected);
             if (!(value is Int16Enum enumValue))
@@ -354,7 +354,7 @@ namespace System.Tests
         [InlineData((ushort)2, "Two")]
         [InlineData(ushort.MaxValue, "Max")]
         [InlineData((ushort)3, null)]
-        public void GetName_InvokeUInt16Enum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeUInt16Enum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(UInt16Enum), value, expected);
             if (!(value is UInt16Enum enumValue))
@@ -374,7 +374,7 @@ namespace System.Tests
         [InlineData(2, "Two")]
         [InlineData(int.MaxValue, "Max")]
         [InlineData(3, null)]
-        public void GetName_InvokeInt32Enum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeInt32Enum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(Int32Enum), value, expected);
             if (!(value is Int32Enum enumValue))
@@ -394,7 +394,7 @@ namespace System.Tests
         [InlineData((uint)2, "Two")]
         [InlineData(uint.MaxValue, "Max")]
         [InlineData((uint)3, null)]
-        public void GetName_InvokeUInt32Enum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeUInt32Enum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(UInt32Enum), value, expected);
             if (!(value is UInt32Enum enumValue))
@@ -414,7 +414,7 @@ namespace System.Tests
         [InlineData((long)2, "Two")]
         [InlineData(long.MaxValue, "Max")]
         [InlineData((long)3, null)]
-        public void GetName_InvokeInt64Enum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeInt64Enum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(Int64Enum), value, expected);
             if (!(value is Int64Enum enumValue))
@@ -434,7 +434,7 @@ namespace System.Tests
         [InlineData(2UL, "Two")]
         [InlineData(ulong.MaxValue, "Max")]
         [InlineData(3UL, null)]
-        public void GetName_InvokeUInt64Enum_ReturnsExpected(object value, string expected)
+        public void GetName_InvokeUInt64Enum_ReturnsExpected(object value, string? expected)
         {
             TestGetName(typeof(UInt64Enum), value, expected);
             if (!(value is UInt64Enum enumValue))
@@ -524,7 +524,7 @@ namespace System.Tests
         [InlineData(typeof(SByteEnum), unchecked((int)(0xffffff80u)), "Min")]
         [InlineData(typeof(SByteEnum), (char)1, "One")]
         [InlineData(typeof(SByteEnum), SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
-        public static void GetName_NonIntegralTypes_ReturnsExpected(Type enumType, object value, string expected)
+        public static void GetName_NonIntegralTypes_ReturnsExpected(Type enumType, object value, string? expected)
         {
             // Despite what MSDN says, GetName() does not require passing in the exact integral type.
             // For the purposes of comparison:
@@ -937,6 +937,12 @@ namespace System.Tests
                 // Char
                 yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
                 yield return new object[] { s_charEnumType, (char)2, Enum.Parse(s_charEnumType, "Value2") };
+
+                // IntPtr
+                yield return new object[] { s_intPtrEnumType, (nint)1, Enum.ToObject(s_intPtrEnumType, 1) };
+
+                // UIntPtr
+                yield return new object[] { s_uintPtrEnumType, (nuint)1, Enum.ToObject(s_uintPtrEnumType, 1) };
             }
         }
 
@@ -982,8 +988,6 @@ namespace System.Tests
             {
                 yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
                 yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
-                yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
-                yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
             }
         }
 

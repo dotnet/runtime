@@ -496,7 +496,7 @@ class Tests
 	}
 
 	private static void f<T>(int i) {
-		if(i==42) f<S<T>>(i);
+		if (i==42) f<S<T>>(i);
 	}
 
 	// This cannot be made to work with full-aot, since there it is impossible to

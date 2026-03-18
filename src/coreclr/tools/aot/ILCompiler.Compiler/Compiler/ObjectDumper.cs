@@ -16,6 +16,8 @@ namespace ILCompiler
         void IObjectDumper.DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData) => DumpObjectNode(factory, node, objectData);
         protected abstract void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData);
 
+        public virtual void ReportFoldedNode(NodeFactory factory, ObjectNode originalNode, ISymbolNode targetNode) { }
+
         protected static string GetObjectNodeName(ObjectNode node)
         {
             string name = node.GetType().Name;

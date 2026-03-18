@@ -80,6 +80,11 @@ namespace Microsoft.Interop
         public int NativeIndex { get; init; } = UnsetIndex;
         public bool IsExplicitThis { get; init; }
 
+        public bool PositionsEqual(TypePositionInfo other)
+        {
+            return ManagedIndex == other.ManagedIndex && NativeIndex == other.NativeIndex;
+        }
+
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
             var (byValueContentsMarshalKind, inLocation, outLocation) = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation);
@@ -91,7 +96,7 @@ namespace Microsoft.Interop
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation),
                 ScopedKind = paramSymbol.ScopedKind,
-                IsExplicitThis = ((ParameterSyntax)paramSymbol.DeclaringSyntaxReferences[0].GetSyntax()).Modifiers.Any(SyntaxKind.ThisKeyword)
+                IsExplicitThis = ((ParameterSyntax?)paramSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax())?.Modifiers.Any(SyntaxKind.ThisKeyword) ?? false
             };
 
             return typeInfo;

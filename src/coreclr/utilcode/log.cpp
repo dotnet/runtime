@@ -17,6 +17,7 @@
 
 #include "log.h"
 #include "utilcode.h"
+#include <dn-stdio.h>
 
 #ifdef LOGGING
 
@@ -32,8 +33,8 @@
 
 static          DWORD        LogFlags                    = 0;
 static          CQuickWSTR   szLogFileName;
-static          HANDLE       LogFileHandle               = INVALID_HANDLE_VALUE;
-static volatile HANDLE       LogFileMutex                = 0;
+static          FILE* LogFileHandle = NULL;
+static minipal_mutex* volatile LogFileMutex              = nullptr;
 static          DWORD        LogFacilityMask             = LF_ALL;
 static          DWORD        LogFacilityMask2            = 0;
 static          DWORD        LogVMLevel                  = LL_INFO100;
@@ -85,20 +86,13 @@ VOID InitLogging()
     if ((LogFlags & LOG_ENABLE) &&
         (LogFlags & LOG_ENABLE_FILE_LOGGING) &&
         (szLogFileName.Size() > 0) &&
-        (LogFileHandle == INVALID_HANDLE_VALUE))
+        (LogFileHandle == NULL))
     {
-        DWORD fdwCreate = (LogFlags & LOG_ENABLE_APPEND_FILE) ? OPEN_ALWAYS : CREATE_ALWAYS;
-        LogFileHandle = WszCreateFile(
-            szLogFileName.Ptr(),
-            GENERIC_WRITE,
-            FILE_SHARE_READ,
-            NULL,
-            fdwCreate,
-            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
-            NULL);
+        const WCHAR* mode = (LogFlags & LOG_ENABLE_APPEND_FILE) ? W("ab+") : W("wb+");
+        int err = fopen_lp(&LogFileHandle, szLogFileName.Ptr(), mode);
 
             // Some other logging may be going on, try again with another file name
-        if (LogFileHandle == INVALID_HANDLE_VALUE && u16_strlen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
+        if ((err != 0) && u16_strlen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
             WCHAR* ptr = szLogFileName.Ptr() + u16_strlen(szLogFileName.Ptr()) + 1;
             ptr[-1] = W('.');
@@ -107,41 +101,19 @@ VOID InitLogging()
 
             for(int i = 0; i < 10; i++)
             {
-                LogFileHandle = WszCreateFile(
-                    szLogFileName.Ptr(),
-                    GENERIC_WRITE,
-                    FILE_SHARE_READ,
-                    NULL,
-                    fdwCreate,
-                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
-                    NULL);
-                if (LogFileHandle != INVALID_HANDLE_VALUE)
+                err = fopen_lp(&LogFileHandle, szLogFileName.Ptr(), mode);
+
+                if (err == 0)
                     break;
                 *ptr = *ptr + 1;
             }
-            if (LogFileHandle == INVALID_HANDLE_VALUE) {
-                int ret = WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
-                const char *msg = "Could not open log file, logging to ";
-                DWORD msgLen = (DWORD)strlen(msg);
-                CQuickSTR buff;
-                if (SUCCEEDED(buff.ReSizeNoThrow(ret + msgLen)))
-                {
-                    strcpy_s(buff.Ptr(), buff.Size(), msg);
-                    WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
-                    msg = buff.Ptr();
-                }
-                else
-                {
-                    msg = "Could not open log file";
-                }
-                DWORD       written;
-                WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), msg, (DWORD)strlen(msg), &written, 0);
+            if (err != 0) {
+                MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8LogFileName, szLogFileName.Ptr());
+                printf("Could not open log file, logging to %s\n", u8LogFileName);
             }
         }
-        if (LogFileHandle != INVALID_HANDLE_VALUE)
+        if (LogFileHandle != NULL)
         {
-            if (LogFlags & LOG_ENABLE_APPEND_FILE)
-                SetFilePointer(LogFileHandle, 0, NULL, FILE_END);
             LogSpew( LF_ALWAYS, FATALERROR, "************************ New Output *****************\n" );
         }
     }
@@ -156,11 +128,9 @@ VOID EnterLogLock()
     // rather hard to care about this, as we LOG all over the place.
     CONTRACT_VIOLATION(TakesLockViolation);
 
-    if(LogFileMutex != 0)
+    if (LogFileMutex != nullptr)
     {
-        DWORD status;
-        status = WaitForSingleObjectEx(LogFileMutex, INFINITE, FALSE);
-        _ASSERTE(WAIT_OBJECT_0 == status);
+        minipal_mutex_enter(LogFileMutex);
     }
 }
 
@@ -169,11 +139,9 @@ VOID LeaveLogLock()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if(LogFileMutex != 0)
+    if (LogFileMutex != nullptr)
     {
-        BOOL success;
-        success = ReleaseMutex(LogFileMutex);
-        _ASSERTE(success);
+        minipal_mutex_leave(LogFileMutex);
     }
 }
 
@@ -185,11 +153,14 @@ VOID InitializeLogging()
     if (bLoggingInitialized)
         return;
 
-    HANDLE mutex = CreateMutex(NULL, FALSE, NULL);
-    _ASSERTE(mutex != 0);
-    if (InterlockedCompareExchangeT(&LogFileMutex, mutex, 0) != 0)
+    minipal_mutex* mutex = new minipal_mutex;
+    bool success = minipal_mutex_init(mutex);
+    _ASSERTE(success);
+
+    if (InterlockedCompareExchangeT(&LogFileMutex, mutex, nullptr) != nullptr)
     {
-        CloseHandle(mutex);
+        minipal_mutex_destroy(mutex);
+        delete mutex;
     }
 
     EnterLogLock();
@@ -204,12 +175,12 @@ VOID InitializeLogging()
 VOID FlushLogging() {
     STATIC_CONTRACT_NOTHROW;
 
-    if (LogFileHandle != INVALID_HANDLE_VALUE)
+    if (LogFileHandle != NULL)
     {
         // We must take the lock, as an OS deadlock can occur between
-        // FlushFileBuffers and WriteFile.
+        // fflush and fwrite.
         EnterLogLock();
-        FlushFileBuffers( LogFileHandle );
+        fflush( LogFileHandle );
         LeaveLogLock();
     }
 }
@@ -218,11 +189,11 @@ VOID ShutdownLogging()
 {
     STATIC_CONTRACT_NOTHROW;
 
-    if (LogFileHandle != INVALID_HANDLE_VALUE) {
+    if (LogFileHandle != NULL) {
         LogSpew( LF_ALWAYS, FATALERROR, "Logging shutting down\n");
-        CloseHandle( LogFileHandle );
+        fclose( LogFileHandle );
     }
-    LogFileHandle = INVALID_HANDLE_VALUE;
+    LogFileHandle = NULL;
     bLoggingInitialized = false;
 }
 
@@ -260,7 +231,6 @@ bool Logging2On(DWORD facility2, DWORD level) {
 //
 VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -275,7 +245,6 @@ VOID LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
 
 VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -290,7 +259,6 @@ VOID LogSpew2Valist(DWORD facility2, DWORD level, const char *fmt, va_list args)
 
 VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 {
-    SCAN_IGNORE_FAULT;  // calls to new (nothrow) in logging code are OK
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -318,7 +286,6 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     char *  pBuffer      = &rgchBuffer[0];
     DWORD       buflen       = 0;
-    DWORD       written;
 
     static bool needsPrefix = true;
 
@@ -362,20 +329,19 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     pBuffer = pBuffer2;
 #endif // TARGET_UNIX
 
-    if (LogFlags & LOG_ENABLE_FILE_LOGGING && LogFileHandle != INVALID_HANDLE_VALUE)
+    if (LogFlags & LOG_ENABLE_FILE_LOGGING && LogFileHandle != NULL)
     {
-        WriteFile(LogFileHandle, pBuffer, buflen, &written, NULL);
+        fwrite(pBuffer, 1, buflen, LogFileHandle);
         if (LogFlags & LOG_ENABLE_FLUSH_FILE) {
-            FlushFileBuffers( LogFileHandle );
+            fflush(LogFileHandle);
         }
     }
 
     if (LogFlags & LOG_ENABLE_CONSOLE_LOGGING)
     {
-        WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), pBuffer, buflen, &written, 0);
-        //<TODO>@TODO ...Unnecessary to flush console?</TODO>
+        minipal_log_write_info(pBuffer);
         if (LogFlags & LOG_ENABLE_FLUSH_FILE)
-            FlushFileBuffers( GetStdHandle(STD_OUTPUT_HANDLE) );
+            minipal_log_sync_info();
     }
 
     if (LogFlags & LOG_ENABLE_DEBUGGER_LOGGING)
@@ -415,6 +381,5 @@ VOID LogSpewAlways (const char *fmt, ... )
     LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
     va_end(args);
 }
-
 #endif // LOGGING
 

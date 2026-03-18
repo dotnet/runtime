@@ -48,7 +48,7 @@ namespace System.Reflection
         /// </exception>
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
-            ArgumentNullException.ThrowIfNull(constructor, nameof(constructor));
+            ArgumentNullException.ThrowIfNull(constructor);
 
             if (constructor is not RuntimeConstructorInfo runtimeConstructor)
             {
@@ -396,11 +396,11 @@ namespace System.Reflection
                     {
                         Debug.Assert(copyOfParameters[i] != null);
                         Debug.Assert(((RuntimeType)copyOfParameters[i]!.GetType()).IsNullableOfT);
-                        dest![i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
+                        dest[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                     }
                     else
                     {
-                        dest![i] = copyOfParameters[i];
+                        dest[i] = copyOfParameters[i];
                     }
                 }
             }

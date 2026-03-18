@@ -33,6 +33,12 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
+#include "string.h"
+#include "sstring.h"
+#include "array.h"
+#include "eepolicy.h"
+#include <minipal/cpuid.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -78,29 +84,26 @@ FCIMPLEND
 
 // Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
 // Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
-FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
+extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    ASSERT(pExceptionObjectUnsafe != NULL);
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(exception.Get() != NULL);
 
     struct
     {
         StackTraceArray stackTrace;
         EXCEPTIONREF refException = NULL;
         PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers / AssemblyLoadContexts
-        OBJECTREF result = NULL;
     } gc;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    GCPROTECT_BEGIN(gc);
 
     // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
+    gc.refException = (EXCEPTIONREF)exception.Get();
 
     gc.refException->GetStackTrace(gc.stackTrace, &gc.keepAliveArray);
 
@@ -108,44 +111,18 @@ FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObject
 
     if (gc.keepAliveArray != NULL)
     {
-        gc.result = gc.keepAliveArray;
+        ret.Set(gc.keepAliveArray);
     }
     else
     {
-        gc.result = gc.stackTrace.Get();
+        ret.Set(gc.stackTrace.Get());
     }
+    GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.result);
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-
-BSTR BStrFromString(STRINGREF s)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    WCHAR *wz;
-    int cch;
-    BSTR bstr;
-
-    if (s == NULL)
-        return NULL;
-
-    s->RefInterpretGetStringValuesDangerousForGC(&wz, &cch);
-
-    bstr = SysAllocString(wz);
-    if (bstr == NULL)
-        COMPlusThrowOM();
-
-    return bstr;
-}
 
 static BSTR GetExceptionDescription(OBJECTREF objException)
 {
@@ -160,30 +137,11 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
 
     BSTR bstrDescription;
 
-    STRINGREF MessageString = NULL;
-    GCPROTECT_BEGIN(MessageString)
     GCPROTECT_BEGIN(objException)
     {
-        // read Exception.Message property
-        MethodDescCallSite getMessage(METHOD__EXCEPTION__GET_MESSAGE, &objException);
-
-        ARG_SLOT GetMessageArgs[] = { ObjToArgSlot(objException)};
-        MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
-
-        // if the message string is empty then use the exception classname.
-        if (MessageString == NULL || MessageString->GetStringLength() == 0) {
-            // call GetClassName
-            MethodDescCallSite getClassName(METHOD__EXCEPTION__GET_CLASS_NAME, &objException);
-            ARG_SLOT GetClassNameArgs[] = { ObjToArgSlot(objException)};
-            MessageString = getClassName.Call_RetSTRINGREF(GetClassNameArgs);
-            _ASSERTE(MessageString != NULL && MessageString->GetStringLength() != 0);
-        }
-
-        // Allocate the description BSTR.
-        int DescriptionLen = MessageString->GetStringLength();
-        bstrDescription = SysAllocStringLen(MessageString->GetBuffer(), DescriptionLen);
+        UnmanagedCallersOnlyCaller getDescriptionBstr(METHOD__EXCEPTION__GET_DESCRIPTION_BSTR);
+        bstrDescription = getDescriptionBstr.InvokeThrowing_Ret<BSTR>(&objException);
     }
-    GCPROTECT_END();
     GCPROTECT_END();
 
     return bstrDescription;
@@ -199,19 +157,17 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
+    
+    BSTR bstrSource;
 
-    STRINGREF refRetVal;
     GCPROTECT_BEGIN(objException)
-
-    // read Exception.Source property
-    MethodDescCallSite getSource(METHOD__EXCEPTION__GET_SOURCE, &objException);
-
-    ARG_SLOT GetSourceArgs[] = { ObjToArgSlot(objException)};
-
-    refRetVal = getSource.Call_RetSTRINGREF(GetSourceArgs);
-
+    {
+        UnmanagedCallersOnlyCaller getSourceBstr(METHOD__EXCEPTION__GET_SOURCE_BSTR);
+        bstrSource = getSourceBstr.InvokeThrowing_Ret<BSTR>(&objException);
+    }
     GCPROTECT_END();
-    return BStrFromString(refRetVal);
+
+    return bstrSource;
 }
 
 static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD *pdwHelpContext)
@@ -228,20 +184,11 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
     }
     CONTRACTL_END;
 
-    *pdwHelpContext = 0;
-
-    GCPROTECT_BEGIN(objException);
-
-    // call managed code to parse help context
-    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
-
-    ARG_SLOT GetHelpContextArgs[] =
+    GCPROTECT_BEGIN(objException)
     {
-        ObjToArgSlot(objException),
-        PtrToArgSlot(pdwHelpContext)
-    };
-    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
-
+        UnmanagedCallersOnlyCaller getHelpContextBstr(METHOD__EXCEPTION__GET_HELP_CONTEXT_BSTR);
+        getHelpContextBstr.InvokeThrowing(&objException, pbstrHelpFile, pdwHelpContext);
+    }
     GCPROTECT_END();
 }
 
@@ -380,21 +327,21 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
 
     switch(kind) {
     case ExceptionMessageKind::ThreadAbort:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_ABORT);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_THREAD_ABORT);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was being aborted.");
         }
         break;
 
     case ExceptionMessageKind::ThreadInterrupted:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_INTERRUPTED);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_THREAD_INTERRUPTED);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was interrupted from a waiting state.");
         }
         break;
 
     case ExceptionMessageKind::OutOfMemory:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_OUT_OF_MEMORY);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_OUT_OF_MEMORY);
         if (FAILED(hr)) {
             wszFallbackString = W("Insufficient memory to continue the execution of the program.");
         }
@@ -450,7 +397,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
     // The managed stack trace classes always return typical method definition,
     // so we don't need to bother providing exact instantiation.
     MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
-    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    retMethodInfo.Set(pMDTypical->AllocateStubMethodInfo());
     _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
 
     END_QCALL;
@@ -484,33 +431,43 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee)
 {
     QCALL_CONTRACT;
 
-#if defined(HOST_X86) || defined(HOST_AMD64)
-    if (length > 0x100)
-    {
-        // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
-        // on misaligned blocks. Workaround this issue by aligning the blocks passed to memset upfront.
+    BEGIN_QCALL;
 
-        *(uint64_t*)dst = 0;
-        *((uint64_t*)dst + 1) = 0;
-        *((uint64_t*)dst + 2) = 0;
-        *((uint64_t*)dst + 3) = 0;
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowMethodAccessException(&accessContext, callee);
 
-        void* end = (uint8_t*)dst + length;
-        *((uint64_t*)end - 1) = 0;
-        *((uint64_t*)end - 2) = 0;
-        *((uint64_t*)end - 3) = 0;
-        *((uint64_t*)end - 4) = 0;
+    END_QCALL;
+}
 
-        dst = ALIGN_UP((uint8_t*)dst + 1, 32);
-        length = ALIGN_DOWN((uint8_t*)end - 1, 32) - (uint8_t*)dst;
-    }
-#endif
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee)
+{
+    QCALL_CONTRACT;
 
-    memset(dst, 0, length);
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowFieldAccessException(&accessContext, callee);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
+
+    END_QCALL;
 }
 
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
@@ -519,17 +476,8 @@ FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byt
 
     if (dst != src && byteCount != 0)
         InlinedMemmoveGCRefsHelper(dst, src, byteCount);
-
-    FC_GC_POLL();
 }
 FCIMPLEND
-
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
-{
-    QCALL_CONTRACT;
-
-    memmove(dst, src, length);
-}
 
 //
 // GCInterface
@@ -546,8 +494,6 @@ FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
 FCIMPLEND
@@ -555,8 +501,6 @@ FCIMPLEND
 FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
 
@@ -588,8 +532,6 @@ FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
     return result;
 }
@@ -598,8 +540,6 @@ FCIMPLEND
 FCIMPL0(int, GCInterface::GetGcLatencyMode)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
     return result;
@@ -610,8 +550,6 @@ FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 FCIMPLEND
@@ -619,8 +557,6 @@ FCIMPLEND
 FCIMPL0(int, GCInterface::GetLOHCompactionMode)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetLOHCompactionMode();
     return result;
@@ -631,8 +567,6 @@ FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     GCHeapUtilities::GetGCHeap()->SetLOHCompactionMode(newLOHCompactionyMode);
 }
 FCIMPLEND
@@ -642,8 +576,6 @@ FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Perc
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFullGCNotification(gen2Percentage, lohPercentage));
 }
 FCIMPLEND
@@ -652,7 +584,6 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->CancelFullGCNotification());
 }
 FCIMPLEND
@@ -693,22 +624,16 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     return result;
 }
 
-/*================================GetGeneration=================================
+/*================================GetGenerationInternal=================================
 **Action: Returns the generation in which args->obj is found.
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
-**Exceptions: ArgumentException if args->obj is null.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGeneration, Object* objUNSAFE)
+FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
-
-    if (objUNSAFE == NULL)
-        FCThrowArgumentNull(W("obj"));
-
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
-    FC_GC_POLL_RET();
-    return result;
+    _ASSERTE(objUNSAFE != NULL);
+    return (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
 }
 FCIMPLEND
 
@@ -726,8 +651,6 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
     _ASSERTE(segment_size < SIZE_T_MAX && large_segment_size < SIZE_T_MAX);
     if (segment_size < large_segment_size)
         segment_size = large_segment_size;
-
-    FC_GC_POLL_RET();
     return (UINT64) segment_size;
 }
 FCIMPLEND
@@ -746,9 +669,7 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
     _ASSERTE(generation >= 0);
 
     //We don't need to check the top end because the GC will take care of that.
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
 }
 FCIMPLEND
 
@@ -831,7 +752,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory()
 **Arguments: args->generation:  The maximum generation to collect
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure)
 {
     QCALL_CONTRACT;
 
@@ -843,7 +764,7 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     //We don't need to check the top end because the GC will take care of that.
 
     GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, mode);
+    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, lowMemoryPressure, mode);
 
     END_QCALL;
 }
@@ -905,6 +826,20 @@ FCIMPL0(int, GCInterface::GetMaxGeneration)
 }
 FCIMPLEND
 
+/*===============================IsServerGC===============================
+**Action: Returns true if the garbage collector is a server GC
+**Returns: True if server GC, false otherwise
+**Arguments: None
+**Exceptions: None
+==============================================================================*/
+FCIMPL0(FC_BOOL_RET, GCInterface::IsServerGC)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(GCHeapUtilities::IsServerHeap());
+}
+FCIMPLEND
+
 /*===============================GetAllocatedBytesForCurrentThread===============================
 **Action: Computes the allocated bytes so far on the current thread
 **Returns: The allocated bytes so far on the current thread
@@ -917,7 +852,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -926,34 +861,30 @@ FCIMPLEND
 
 /*===============================AllocateNewArray===============================
 **Action: Allocates a new array object. Allows passing extra flags
-**Returns: The allocated array.
-**Arguments: elementTypeHandle -> type of the element,
-**           length -> number of elements,
-**           zeroingOptional -> whether caller prefers to skip clearing the content of the array, if possible.
+**Arguments: typeHandlePtr -> TypeHandle pointer of array,
+**           length -> Number of elements,
+**           flags -> Flags that impact allocated memory,
+**           ret -> The allocated array.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
-FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 length, INT32 flags)
+extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-    } CONTRACTL_END;
+    QCALL_CONTRACT;
+    _ASSERTE(typeHandlePtr != NULL);
 
-    OBJECTREF pRet = NULL;
-    TypeHandle arrayType = TypeHandle::FromPtr(arrayTypeHandle);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    GCX_COOP();
+
+    TypeHandle typeHandle = TypeHandle::FromPtr(typeHandlePtr);
+    _ASSERTE(typeHandle.IsArray());
 
     //Only the following flags are used by GC.cs, so we'll just assert it here.
     _ASSERTE((flags & ~(GC_ALLOC_ZEROING_OPTIONAL | GC_ALLOC_PINNED_OBJECT_HEAP)) == 0);
+    ret.Set(AllocateSzArray(typeHandle, length, (GC_ALLOC_FLAGS)flags));
 
-    pRet = AllocateSzArray(arrayType, length, (GC_ALLOC_FLAGS)flags);
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
-
 
 FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
 {
@@ -1084,14 +1015,8 @@ FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
 {
     FCALL_CONTRACT;
 
-    // Checked by the caller
-    _ASSERTE(obj != NULL);
-
-    if (!obj->GetMethodTable ()->HasFinalizer())
-        return;
-
+    _ASSERTE(obj->GetMethodTable ()->HasFinalizer());
     GCHeapUtilities::GetGCHeap()->SetFinalizationRun(obj);
-    FC_GC_POLL();
 }
 FCIMPLEND
 
@@ -1410,7 +1335,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1446,7 +1371,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1459,7 +1384,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     {
         // Ignore failures
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -1477,6 +1402,252 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
     GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_non_blocking);
 }
 
+//
+// EnvironmentNative
+//
+extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    // The exit code for the process is communicated in one of two ways.  If the
+    // entrypoint returns an 'int' we take that.  Otherwise we take a latched
+    // process exit code.  This can be modified by the app via setting
+    // Environment's ExitCode property.
+    SetLatchedExitCode(exitcode);
+
+    ForceEEShutdown();
+
+    END_QCALL;
+}
+
+FCIMPL1(VOID,EnvironmentNative::SetExitCode,INT32 exitcode)
+{
+    FCALL_CONTRACT;
+
+    // The exit code for the process is communicated in one of two ways.  If the
+    // entrypoint returns an 'int' we take that.  Otherwise we take a latched
+    // process exit code.  This can be modified by the app via setting
+    // Environment's ExitCode property.
+    SetLatchedExitCode(exitcode);
+}
+FCIMPLEND
+
+FCIMPL0(INT32, EnvironmentNative::GetExitCode)
+{
+    FCALL_CONTRACT;
+
+    // Return whatever has been latched so far.  This is uninitialized to 0.
+    return GetLatchedExitCode();
+}
+FCIMPLEND
+
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
+{
+    QCALL_CONTRACT;
+
+    INT32 processorCount = 0;
+
+    BEGIN_QCALL;
+
+    processorCount = GetCurrentProcessCpuCount();
+
+    END_QCALL;
+
+    return processorCount;
+}
+
+struct FindFailFastCallerStruct {
+    StackCrawlMark* pStackMark;
+    UINT_PTR        retAddress;
+};
+
+// This method is called by the GetMethod function and will crawl backward
+//  up the stack for integer methods.
+static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data) {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    FindFailFastCallerStruct* pFindCaller = (FindFailFastCallerStruct*) data;
+
+    // The check here is between the address of a local variable
+    // (the stack mark) and a pointer to the EIP for a frame
+    // (which is actually the pointer to the return address to the
+    // function from the previous frame). So we'll actually notice
+    // which frame the stack mark was in one frame later. This is
+    // fine since we only implement LookForMyCaller.
+    _ASSERTE(*pFindCaller->pStackMark == LookForMyCaller);
+    if (!frame->IsInCalleesFrames(pFindCaller->pStackMark))
+        return SWA_CONTINUE;
+
+    pFindCaller->retAddress = GetControlPC(frame->GetRegisterSet());
+    return SWA_ABORT;
+}
+
+static thread_local int8_t alreadyFailing = 0;
+
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    FindFailFastCallerStruct findCallerData;
+    findCallerData.pStackMark = mark;
+    findCallerData.retAddress = 0;
+    GetThread()->StackWalkFrames(FindFailFastCallerCallback, &findCallerData, FUNCTIONSONLY | QUICKUNWIND);
+
+    if (message == NULL || message[0] == W('\0'))
+    {
+        OutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
+    }
+    else
+    {
+        OutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
+        OutputDebugString(message);
+        OutputDebugString(W("\r\n"));
+    }
+
+    LPCWSTR argExceptionString = NULL;
+    StackSString msg;
+    // Because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while formatting the exception message or the stack trace.
+    // Only collect exception string if this is the first attempt to fail fast on this thread.
+    alreadyFailing++;
+    if (alreadyFailing != 1)
+    {
+        argExceptionString = W("Environment.FailFast called recursively.");
+    }
+    else if (exception.Get() != NULL)
+    {
+        GetExceptionMessage(exception.Get(), msg);
+        argExceptionString = msg.GetUnicode();
+    }
+
+    Thread *pThread = GetThread();
+
+#ifndef TARGET_UNIX
+    // If we have the exception object, then try to setup
+    // the watson bucket if it has any details.
+    // On CoreCLR, Watson may not be enabled. Thus, we should
+    // skip this, if required.
+    if (IsWatsonEnabled())
+    {
+        if ((exception.Get() == NULL) || !SetupWatsonBucketsForFailFast((EXCEPTIONREF)exception.Get()))
+        {
+            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
+            _ASSERTE(pUEWatsonBucketTracker != NULL);
+            pUEWatsonBucketTracker->SaveIpForWatsonBucket(findCallerData.retAddress);
+            pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::FatalError, pThread, NULL);
+            if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
+            {
+                pUEWatsonBucketTracker->ClearWatsonBucketDetails();
+            }
+        }
+    }
+#endif // !TARGET_UNIX
+
+    // stash the user-provided exception object. this will be used as
+    // the inner exception object to the FatalExecutionEngineException.
+    if (exception.Get() != NULL)
+        pThread->SetLastThrownObject(exception.Get());
+
+    EEPolicy::HandleFatalError(COR_E_FAILFAST, findCallerData.retAddress, message, NULL, errorSource, argExceptionString);
+
+    END_QCALL;
+}
+
+//
+// ObjectNative
+//
+extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    INT32 idx = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(objHandle.Get() != NULL);
+    idx = objHandle.Get()->GetHashCodeEx();
+
+    END_QCALL;
+
+    return idx;
+}
+
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    if (obj == NULL)
+        return 0;
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    return objRef->TryGetHashCode();
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
+{
+    FCALL_CONTRACT;
+
+    // Should be ensured by caller
+    _ASSERTE(pThisRef != NULL);
+    _ASSERTE(pCompareRef != NULL);
+    _ASSERTE(pThisRef->GetMethodTable() == pCompareRef->GetMethodTable());
+
+    MethodTable *pThisMT = pThisRef->GetMethodTable();
+
+    // Compare the contents
+    BOOL ret = memcmp(
+        pThisRef->GetData(),
+        pCompareRef->GetData(),
+        pThisMT->GetNumInstanceFieldBytes()) == 0;
+
+    FC_RETURN_BOOL(ret);
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF refClone = objHandle.Get();
+    _ASSERTE(refClone != NULL); // Should be handled at managed side
+    MethodTable* pMT = refClone->GetMethodTable();
+
+    // assert that String has overloaded the Clone() method
+    _ASSERTE(pMT != g_pStringClass);
+
+    if (pMT->IsArray())
+    {
+        objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
+    }
+    else
+    {
+        // We don't need to call the <cinit> because we know
+        //  that it has been called....(It was called before this was created)
+        objHandle.Set(AllocateObject(pMT));
+    }
+
+    END_QCALL;
+}
+
+//
 //
 // COMInterlocked
 //
@@ -1562,13 +1733,6 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
-{
-    QCALL_CONTRACT;
-
-    FlushProcessWriteBuffers();
-}
-
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {
     CONTRACTL{
@@ -1591,7 +1755,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
     // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+    if (NonVirtualEntry2MethodDesc(actual) == NonVirtualEntry2MethodDesc(base))
     {
         return FALSE;
     }
@@ -1823,6 +1987,30 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 }
 FCIMPLEND
 
+FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
+{
+    FCALL_CONTRACT;
+
+    return mt->GetMethodTableMatchingParentClass(parent);
+}
+FCIMPLEND
+
+FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
+{
+    FCALL_CONTRACT;
+
+    return mt->GetInstantiation()[0].AsMethodTable();
+}
+FCIMPLEND
+
+FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *mt)
+{
+    FCALL_CONTRACT;
+
+    return mt->GetLoaderAllocatorObjectHandle();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
@@ -1858,11 +2046,6 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     {
         ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
     }
-    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
-    {
-        // do not allow type T to be cast to Nullable<T>
-        ret = FALSE;
-    }
     else
     {
         ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
@@ -1873,71 +2056,56 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     return ret;
 }
 
-static MethodTable * g_pStreamMT;
-static WORD g_slotBeginRead, g_slotEndRead;
-static WORD g_slotBeginWrite, g_slotEndWrite;
-
-static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd)
 {
-    CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (INT32)TypeHandle::FromPtr(typeHnd).GetSignatureCorElementType();
+}
+
+static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(streamMT != NULL);
+        PRECONDITION(pMT != NULL);
     } CONTRACTL_END;
 
     PCODE actual = pMT->GetRestoredSlot(slot);
-    PCODE base = g_pStreamMT->GetRestoredSlot(slot);
+    PCODE base = streamMT->GetRestoredSlot(slot);
+
+    // If the PCODEs match, then there is no override.
     if (actual == base)
         return false;
 
-    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-    // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-        return false;
-
-    return true;
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare
+    // the actual MethodDescs to detect match reliably.
+    return NonVirtualEntry2MethodDesc(actual) != NonVirtualEntry2MethodDesc(base);
 }
 
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
+extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
 
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
+    BOOL readOverride = FALSE;
+    BOOL writeOverride = FALSE;
 
-    if (g_pStreamMT == NULL || g_slotBeginRead == 0 || g_slotEndRead == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
-        g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
+    BEGIN_QCALL;
 
-    MethodTable * pMT = stream->GetMethodTable();
+    MethodTable* pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+    WORD slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
+    WORD slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
+    WORD slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
+    WORD slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
 
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead));
+    // Check the current MethodTable for Stream overrides and set state on the MethodTable.
+    readOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginRead) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndRead);
+    writeOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginWrite) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndWrite);
+    pMT->GetAuxiliaryDataForWrite()->SetStreamOverrideState(readOverride, writeOverride);
+
+    END_QCALL;
+
+    return isRead ? readOverride : writeOverride;
 }
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
-{
-    FCALL_CONTRACT;
-
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
-
-    if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
-        g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    MethodTable * pMT = stream->GetMethodTable();
-
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite));
-}
-FCIMPLEND

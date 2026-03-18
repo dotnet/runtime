@@ -1,15 +1,48 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation : Aes
     {
+        private FixedMemoryKeyBox? _keyBox;
+
+        private FixedMemoryKeyBox GetKey()
+        {
+            if (_keyBox is null)
+            {
+                GenerateKey();
+                Debug.Assert(_keyBox is not null);
+            }
+
+            return _keyBox;
+        }
+
+        public override byte[] Key
+        {
+            get => GetKey().UseKey("", static (_, key) => key.ToArray());
+            set => SetKey(value);
+        }
+
+        public override int KeySize
+        {
+            get => base.KeySize;
+            set
+            {
+                base.KeySize = value;
+                _keyBox?.Dispose();
+                _keyBox = null;
+            }
+        }
+
         public sealed override ICryptoTransform CreateDecryptor()
         {
-            return CreateTransform(Key, IV, encrypting: false);
+            return GetKey().UseKey(
+                this,
+                static (instance, key) => instance.CreateTransform(key, instance.IV, encrypting: false));
         }
 
         public sealed override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
@@ -19,7 +52,9 @@ namespace System.Security.Cryptography
 
         public sealed override ICryptoTransform CreateEncryptor()
         {
-            return CreateTransform(Key, IV, encrypting: true);
+            return GetKey().UseKey(
+                this,
+                static (instance, key) => instance.CreateTransform(key, instance.IV, encrypting: true));
         }
 
         public sealed override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
@@ -34,12 +69,27 @@ namespace System.Security.Cryptography
 
         public sealed override void GenerateKey()
         {
-            Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
+            Span<byte> key = stackalloc byte[KeySize / BitsPerByte];
+            RandomNumberGenerator.Fill(key);
+            SetKeyCore(key);
         }
 
         protected sealed override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                _keyBox?.Dispose();
+                _keyBox = null;
+            }
+
             base.Dispose(disposing);
+        }
+
+        protected override void SetKeyCore(ReadOnlySpan<byte> key)
+        {
+            KeySizeValue = checked(BitsPerByte * key.Length);
+            _keyBox?.Dispose();
+            _keyBox = new FixedMemoryKeyBox(key);
         }
 
         protected override bool TryDecryptEcbCore(
@@ -48,14 +98,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.ECB,
-                Key,
-                iv: default,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: false);
+            ILiteSymmetricCipher cipher = GetKey().UseKey(
+                BlockSize / BitsPerByte,
+                static (blockSizeBytes, key) => CreateLiteCipher(
+                    CipherMode.ECB,
+                    key,
+                    iv: default,
+                    blockSize: blockSizeBytes,
+                    paddingSize: blockSizeBytes,
+                    0, /*feedback size */
+                    encrypting: false));
 
             using (cipher)
             {
@@ -69,14 +121,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.ECB,
-                Key,
-                iv: default,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: true);
+            ILiteSymmetricCipher cipher = GetKey().UseKey(
+                BlockSize / BitsPerByte,
+                static (blockSizeBytes, key) => CreateLiteCipher(
+                    CipherMode.ECB,
+                    key,
+                    iv: default,
+                    blockSize: blockSizeBytes,
+                    paddingSize: blockSizeBytes,
+                    0, /*feedback size */
+                    encrypting: true));
 
             using (cipher)
             {
@@ -91,14 +145,17 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.CBC,
-                Key,
+            ILiteSymmetricCipher cipher = GetKey().UseKey(
                 iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: true);
+                BlockSize / BitsPerByte,
+                static (iv, blockSizeBytes, key) => CreateLiteCipher(
+                    CipherMode.CBC,
+                    key,
+                    iv,
+                    blockSize: blockSizeBytes,
+                    paddingSize: blockSizeBytes,
+                    0, /*feedback size */
+                    encrypting: true));
 
             using (cipher)
             {
@@ -113,14 +170,17 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.CBC,
-                Key,
+            ILiteSymmetricCipher cipher = GetKey().UseKey(
                 iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: false);
+                BlockSize / BitsPerByte,
+                static (iv, blockSizeBytes, key) => CreateLiteCipher(
+                    CipherMode.CBC,
+                    key,
+                    iv,
+                    blockSize: blockSizeBytes,
+                    paddingSize: blockSizeBytes,
+                    0, /*feedback size */
+                    encrypting: false));
 
             using (cipher)
             {
@@ -138,14 +198,17 @@ namespace System.Security.Cryptography
         {
             ValidateCFBFeedbackSize(feedbackSizeInBits);
 
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.CFB,
-                Key,
-                iv: iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: feedbackSizeInBits / BitsPerByte,
-                feedbackSizeInBits / BitsPerByte,
-                encrypting: false);
+            ILiteSymmetricCipher cipher = GetKey().UseKey(
+                iv,
+                (BlockSizeBytes: BlockSize / BitsPerByte, FeedbackSizeBytes: feedbackSizeInBits / BitsPerByte),
+                static (iv, state, key) => CreateLiteCipher(
+                    CipherMode.CFB,
+                    key,
+                    iv: iv,
+                    blockSize: state.BlockSizeBytes,
+                    paddingSize: state.FeedbackSizeBytes,
+                    state.FeedbackSizeBytes,
+                    encrypting: false));
 
             using (cipher)
             {
@@ -163,14 +226,17 @@ namespace System.Security.Cryptography
         {
             ValidateCFBFeedbackSize(feedbackSizeInBits);
 
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.CFB,
-                Key,
+            ILiteSymmetricCipher cipher = GetKey().UseKey(
                 iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: feedbackSizeInBits / BitsPerByte,
-                feedbackSizeInBits / BitsPerByte,
-                encrypting: true);
+                (BlockSizeBytes: BlockSize / BitsPerByte, FeedbackSizeBytes: feedbackSizeInBits / BitsPerByte),
+                static (iv, state, key) => CreateLiteCipher(
+                    CipherMode.CFB,
+                    key,
+                    iv,
+                    blockSize: state.BlockSizeBytes,
+                    paddingSize: state.FeedbackSizeBytes,
+                    state.FeedbackSizeBytes,
+                    encrypting: true));
 
             using (cipher)
             {
@@ -182,6 +248,11 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(rgbKey);
 
+            return CreateTransform(new ReadOnlySpan<byte>(rgbKey), rgbIV, encrypting);
+        }
+
+        private UniversalCryptoTransform CreateTransform(ReadOnlySpan<byte> rgbKey, byte[]? rgbIV, bool encrypting)
+        {
             // note: rbgIV is guaranteed to be cloned before this method, so no need to clone it again
 
             long keySize = rgbKey.Length * (long)BitsPerByte;

@@ -7,8 +7,6 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Speech.Internal.SapiInterop;
 using System.Speech.Synthesis.TtsEngine;
 
-#pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
-
 namespace System.Speech.Internal.Synthesis
 {
     [ComVisible(true)]

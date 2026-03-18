@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles
             => IsAdmin_IsNotNano_RemoteExecutorIsSupported && WindowsTestFileShare.CanShareFiles;
 
-        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalFact(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
+        [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(ProcessWindowStyle.Normal, true)]
         [InlineData(ProcessWindowStyle.Normal, false)]

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Broadcast")]
     public class EnableBroadcastTest
     {
         [Fact]

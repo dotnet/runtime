@@ -127,7 +127,7 @@ namespace System.Text
         }
 
         [StructLayout(LayoutKind.Explicit, Pack = 2)]
-        internal unsafe struct CodePageIndex
+        internal struct CodePageIndex
         {
             [FieldOffset(0)]
             internal char CodePageName;     // WORD[16]
@@ -162,7 +162,7 @@ namespace System.Text
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal unsafe struct CodePageHeader
+        internal struct CodePageHeader
         {
             [FieldOffset(0)]
             internal char CodePageName;     // WORD[16]
@@ -247,7 +247,7 @@ namespace System.Text
         }
 
         // We need to load tables for our code page
-        private unsafe void LoadCodePageTables()
+        private void LoadCodePageTables()
         {
             if (!FindCodePage(dataTableCodePage))
             {
@@ -359,7 +359,7 @@ namespace System.Text
         }
 
         // We have a managed code page entry, so load our tables
-        protected abstract unsafe void LoadManagedCodePage();
+        protected abstract void LoadManagedCodePage();
 
         // Allocate memory to load our code page
         protected unsafe byte* GetNativeMemory(int iSize)
@@ -375,7 +375,7 @@ namespace System.Text
             return (byte*)safeNativeMemoryHandle.DangerousGetHandle();
         }
 
-        protected abstract unsafe void ReadBestFitTable();
+        protected abstract void ReadBestFitTable();
 
         internal char[] GetBestFitUnicodeToBytesData()
         {
@@ -403,7 +403,7 @@ namespace System.Text
         // invalid. We detect that by validating the memory section handle then re-initializing the memory
         // section by calling LoadManagedCodePage() method and eventually the mapped file handle and
         // the memory section pointer will get finalized one more time.
-        internal unsafe void CheckMemorySection()
+        internal void CheckMemorySection()
         {
             if (safeNativeMemoryHandle != null && safeNativeMemoryHandle.DangerousGetHandle() == IntPtr.Zero)
             {

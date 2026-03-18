@@ -1,9 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- PlatformDetection.IsPreciseGcSupported false on mono -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="singlinkgen.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

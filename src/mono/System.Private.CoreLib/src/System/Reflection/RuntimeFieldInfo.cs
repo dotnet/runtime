@@ -69,6 +69,8 @@ namespace System.Reflection
             return GetDeclaringTypeInternal().GetRuntimeModule();
         }
 
+        public override bool IsCollectible => false;
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern override object UnsafeGetValue(object obj);
 

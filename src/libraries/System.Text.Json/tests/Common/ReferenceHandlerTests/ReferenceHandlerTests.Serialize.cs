@@ -133,7 +133,7 @@ namespace System.Text.Json.Serialization.Tests
                 ["$string"] = "Hello world"
             };
             string json = await Serializer.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world""}", json);
+            Assert.Equal("""{"$id":"1","\u0024string":"Hello world"}""", json);
 
             //$ Key in dictionary holding complex type.
             dictionary = new Dictionary<string, object>
@@ -141,7 +141,7 @@ namespace System.Text.Json.Serialization.Tests
                 ["$object"] = new ClassWithExtensionData { Hello = "World" }
             };
             json = await Serializer.SerializeWrapper(dictionary, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
+            Assert.Equal("""{"$id":"1","\u0024object":{"$id":"2","Hello":"World"}}""", json);
 
             //$ Key in ExtensionData dictionary
             var poco = new ClassWithExtensionData
@@ -156,7 +156,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
             json = await Serializer.SerializeWrapper(poco, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
+            Assert.Equal("""{"$id":"1","\u0024string":"Hello world","\u0024object":{"$id":"2","Hello":"World"}}""", json);
 
             //TODO:
             //Extend the scenarios to also cover CLR and F# properties with a leading $.
@@ -217,12 +217,56 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = await Serializer.SerializeWrapper(list, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$ref"":""2""}]}", json);
+            Assert.Equal("""{"$id":"1","$values":[{"$id":"2"},{"$ref":"2"}]}""", json);
 
             List<ClassIncorrectHashCode> listCopy = await Serializer.DeserializeWrapper<List<ClassIncorrectHashCode>>(json, s_serializerOptionsPreserve);
             // Make sure that our DefaultReferenceResolver calls the ReferenceEqualityComparer that implements RuntimeHelpers.GetHashCode, and never object.GetHashCode,
             // otherwise objects would not be correctly identified when searching for them in the dictionary.
             Assert.Same(listCopy[0], listCopy[1]);
+        }
+
+        [Fact]
+        public async Task Preserve_DerivedType_InArray()
+        {
+            var worker = new OfficeWorker
+            {
+                Office = new Office
+                {
+                    Dummy = new()
+                }
+            };
+
+            worker.Office.Staff = [worker, new RemoteWorker()];
+
+            string json = await Serializer.SerializeWrapper(worker, s_serializerOptionsPreserve);
+            Assert.Equal("""{"$id":"1","Office":{"$id":"2","Staff":[{"$ref":"1"},{"$id":"3","$type":"remote"}],"Dummy":{"$id":"4"}}}""", json);
+
+            worker.Office.Staff = [worker];
+
+            json = await Serializer.SerializeWrapper(worker, s_serializerOptionsPreserve);
+            Assert.Equal("""{"$id":"1","Office":{"$id":"2","Staff":[{"$ref":"1"}],"Dummy":{"$id":"3"}}}""", json);
+        }
+
+        [JsonDerivedType(typeof(OfficeWorker), "office")]
+        [JsonDerivedType(typeof(RemoteWorker), "remote")]
+        public abstract class EmployeeLocation
+        {
+        }
+
+        public class OfficeWorker : EmployeeLocation
+        {
+            public Office Office { get; set; }
+        }
+
+        public class RemoteWorker : EmployeeLocation
+        {
+        }
+
+        public class Office
+        {
+            public EmployeeLocation[] Staff { get; set; }
+
+            public EmptyClass Dummy { get; set; }
         }
     }
 }

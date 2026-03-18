@@ -3,6 +3,15 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="DecompressionHandlerTrimmedTest.cs" />
+    <TestConsoleAppSourceFiles Include="MetricsHandlerTrimmedTest.cs" >
+      <DisabledFeatureSwitches>System.Diagnostics.Metrics.Meter.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DiagnosticsHandlerTrimmedTest.cs">
+      <DisabledFeatureSwitches>System.Net.Http.EnableActivityPropagation</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="QuicTrimmedTest.cs">
+      <DisabledFeatureSwitches>System.Net.SocketsHttpHandler.Http3Support</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

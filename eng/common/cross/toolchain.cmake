@@ -3,15 +3,22 @@ set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 # reset platform variables (e.g. cmake 3.25 sets LINUX=1)
 unset(LINUX)
 unset(FREEBSD)
+unset(OPENBSD)
 unset(ILLUMOS)
 unset(ANDROID)
 unset(TIZEN)
 unset(HAIKU)
 
 set(TARGET_ARCH_NAME $ENV{TARGET_BUILD_ARCH})
+
+file(GLOB OPENBSD_PROBE "${CROSS_ROOTFS}/etc/signify/openbsd-*.pub")
+
 if(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
   set(CMAKE_SYSTEM_NAME FreeBSD)
   set(FREEBSD 1)
+elseif(OPENBSD_PROBE)
+  set(CMAKE_SYSTEM_NAME OpenBSD)
+  set(OPENBSD 1)
 elseif(EXISTS ${CROSS_ROOTFS}/usr/platform/i86pc)
   set(CMAKE_SYSTEM_NAME SunOS)
   set(ILLUMOS 1)
@@ -53,6 +60,8 @@ elseif(TARGET_ARCH_NAME STREQUAL "arm64")
     endif()
   elseif(FREEBSD)
     set(triple "aarch64-unknown-freebsd12")
+  elseif(OPENBSD)
+    set(triple "aarch64-unknown-openbsd")
   endif()
 elseif(TARGET_ARCH_NAME STREQUAL "armel")
   set(CMAKE_SYSTEM_PROCESSOR armv7l)
@@ -66,6 +75,13 @@ elseif(TARGET_ARCH_NAME STREQUAL "armv6")
     set(TOOLCHAIN "armv6-alpine-linux-musleabihf")
   else()
     set(TOOLCHAIN "arm-linux-gnueabihf")
+  endif()
+elseif(TARGET_ARCH_NAME STREQUAL "loongarch64")
+  set(CMAKE_SYSTEM_PROCESSOR "loongarch64")
+  if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/loongarch64-alpine-linux-musl)
+    set(TOOLCHAIN "loongarch64-alpine-linux-musl")
+  else()
+    set(TOOLCHAIN "loongarch64-linux-gnu")
   endif()
 elseif(TARGET_ARCH_NAME STREQUAL "ppc64le")
   set(CMAKE_SYSTEM_PROCESSOR ppc64le)
@@ -102,6 +118,8 @@ elseif(TARGET_ARCH_NAME STREQUAL "x64")
     endif()
   elseif(FREEBSD)
     set(triple "x86_64-unknown-freebsd12")
+  elseif(OPENBSD)
+    set(triple "x86_64-unknown-openbsd")
   elseif(ILLUMOS)
     set(TOOLCHAIN "x86_64-illumos")
   elseif(HAIKU)
@@ -118,7 +136,7 @@ elseif(TARGET_ARCH_NAME STREQUAL "x86")
     set(TIZEN_TOOLCHAIN "i586-tizen-linux-gnu")
   endif()
 else()
-  message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only arm, arm64, armel, armv6, ppc64le, riscv64, s390x, x64 and x86 are supported!")
+  message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only arm, arm64, armel, armv6, loongarch64, ppc64le, riscv64, s390x, x64 and x86 are supported!")
 endif()
 
 if(DEFINED ENV{TOOLCHAIN})
@@ -148,6 +166,25 @@ if(TIZEN)
   include_directories(SYSTEM ${TIZEN_TOOLCHAIN_PATH}/include/c++/${TIZEN_TOOLCHAIN})
 endif()
 
+function(locate_toolchain_exec exec var)
+    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
+    string(TOUPPER ${exec} EXEC_UPPERCASE)
+    if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
+        set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
+        return()
+    endif()
+
+    find_program(EXEC_LOCATION_${exec}
+        NAMES
+        "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
+        "${TOOLSET_PREFIX}${exec}")
+
+    if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
+        message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
+    endif()
+    set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
+endfunction()
+
 if(ANDROID)
     if(TARGET_ARCH_NAME STREQUAL "arm")
         set(ANDROID_ABI armeabi-v7a)
@@ -167,7 +204,7 @@ if(ANDROID)
 
     # include official NDK toolchain script
     include(${CROSS_ROOTFS}/../build/cmake/android.toolchain.cmake)
-elseif(FREEBSD)
+elseif(FREEBSD OR OPENBSD)
     # we cross-compile by instructing clang
     set(CMAKE_C_COMPILER_TARGET ${triple})
     set(CMAKE_CXX_COMPILER_TARGET ${triple})
@@ -178,65 +215,23 @@ elseif(FREEBSD)
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
 elseif(ILLUMOS)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
+    set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
+    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
+    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
     include_directories(SYSTEM ${CROSS_ROOTFS}/include)
 
-    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
-    function(locate_toolchain_exec exec var)
-        string(TOUPPER ${exec} EXEC_UPPERCASE)
-        if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
-            set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
-            return()
-        endif()
-
-        find_program(EXEC_LOCATION_${exec}
-            NAMES
-            "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
-            "${TOOLSET_PREFIX}${exec}")
-
-        if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-            message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
-        endif()
-        set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
-    endfunction()
-
-    set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
-
     locate_toolchain_exec(gcc CMAKE_C_COMPILER)
     locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
-
-    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
-    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 elseif(HAIKU)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
     set(CMAKE_PROGRAM_PATH "${CMAKE_PROGRAM_PATH};${CROSS_ROOTFS}/cross-tools-x86_64/bin")
-
-    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
-    function(locate_toolchain_exec exec var)
-        string(TOUPPER ${exec} EXEC_UPPERCASE)
-        if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
-            set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
-            return()
-        endif()
-
-        find_program(EXEC_LOCATION_${exec}
-            NAMES
-            "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
-            "${TOOLSET_PREFIX}${exec}")
-
-        if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-            message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
-        endif()
-        set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
-    endfunction()
-
     set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
+    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
+    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
     locate_toolchain_exec(gcc CMAKE_C_COMPILER)
     locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
-
-    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
-    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
     # let CMake set up the correct search paths
     include(Platform/Haiku)
@@ -307,7 +302,7 @@ endif()
 
 # Specify compile options
 
-if((TARGET_ARCH_NAME MATCHES "^(arm|arm64|armel|armv6|ppc64le|riscv64|s390x|x64|x86)$" AND NOT ANDROID AND NOT FREEBSD) OR ILLUMOS OR HAIKU)
+if((TARGET_ARCH_NAME MATCHES "^(arm|arm64|armel|armv6|loongarch64|ppc64le|riscv64|s390x|x64|x86)$" AND NOT ANDROID AND NOT FREEBSD AND NOT OPENBSD) OR ILLUMOS OR HAIKU)
   set(CMAKE_C_COMPILER_TARGET ${TOOLCHAIN})
   set(CMAKE_CXX_COMPILER_TARGET ${TOOLCHAIN})
   set(CMAKE_ASM_COMPILER_TARGET ${TOOLCHAIN})

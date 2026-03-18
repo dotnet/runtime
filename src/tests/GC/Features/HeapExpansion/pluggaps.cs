@@ -2,26 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
 This test fragments the heap with ~50 byte holes, then allocates ~50 byte objects to plug them
 */
 
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Xunit;
+using TestLibrary;
 
 public class Test_pluggaps
 {
     public static List<GCHandle> gchList = new List<GCHandle>();
     public static List<byte[]> bList = new List<byte[]>();
 
-    public static int Main()
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    [Fact]
+    public static void TestEntryPoint()
     {
-
         Console.WriteLine("Beginning phase 1");
         GCUtil.AllocWithGaps();
 
         Console.WriteLine("phase 1 complete");
-
 
         // losing all live references to the unpinned byte arrays
         // this will fragment the heap with ~50 byte holes
@@ -44,7 +47,5 @@ public class Test_pluggaps
 
         GC.KeepAlive(gchList);
         GC.KeepAlive(bList);
-
-        return 100;
     }
 }

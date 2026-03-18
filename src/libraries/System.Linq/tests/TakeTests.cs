@@ -157,7 +157,7 @@ namespace System.Linq.Tests
         public void RunOnce()
         {
             var source = new[] { 2, 5, 9, 1 };
-            int[] expected = { 2, 5, 9 };
+            int[] expected = [2, 5, 9];
 
             Assert.Equal(expected, source.RunOnce().Take(3));
 
@@ -669,7 +669,7 @@ namespace System.Linq.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [Theory]
         [InlineData(1000)]
         [InlineData(1000000)]
         [InlineData(int.MaxValue)]
@@ -897,7 +897,7 @@ namespace System.Linq.Tests
                 },
                 5);
 
-            IEnumerator<int> iterator0 = source[0].Take(count).GetEnumerator();
+            using IEnumerator<int> iterator0 = source[0].Take(count).GetEnumerator();
             int iteratorCount0 = Math.Min(sourceCount, Math.Max(0, count));
             Assert.All(Enumerable.Range(0, iteratorCount0), _ => Assert.True(iterator0.MoveNext()));
 
@@ -910,7 +910,7 @@ namespace System.Linq.Tests
             Assert.Equal(isItertorNotEmpty0, isIteratorDisposed[0]);
 
             int end = Math.Max(0, count);
-            IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
+            using IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator1.MoveNext()));
             Assert.False(iterator1.MoveNext());
             // When startIndex end and endIndex are both not from end and startIndex >= endIndex, Take(Range) returns an empty array.
@@ -920,19 +920,19 @@ namespace System.Linq.Tests
             int startIndexFromEnd = Math.Max(sourceCount, end);
             int endIndexFromEnd = Math.Max(0, sourceCount - end);
 
-            IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
+            using IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator2.MoveNext()));
             Assert.False(iterator2.MoveNext());
             // When startIndex is ^0, Take(Range) returns an empty array.
             bool isIteratorNotEmpty2 = startIndexFromEnd != 0;
             Assert.Equal(isIteratorNotEmpty2, isIteratorDisposed[2]);
 
-            IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
+            using IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator3.MoveNext()));
             Assert.False(iterator3.MoveNext());
             Assert.True(isIteratorDisposed[3]);
 
-            IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
+            using IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator4.MoveNext()));
             Assert.False(iterator4.MoveNext());
             // When startIndex is ^0,
@@ -986,13 +986,13 @@ namespace System.Linq.Tests
         [Fact]
         public void OutOfBoundNoException()
         {
-            Func<int[]> source = () => new[] { 1, 2, 3, 4, 5 };
+            Func<int[]> source = () => [1, 2, 3, 4, 5];
 
             Assert.Equal(source(), source().Take(0..6));
             Assert.Equal(source(), source().Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], source().Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], source().Take(^int.MaxValue..4));
             Assert.Equal(source(), source().Take(^10..6));
             Assert.Equal(source(), source().Take(^int.MaxValue..6));
             Assert.Equal(source(), source().Take(^10..int.MaxValue));
@@ -1007,8 +1007,8 @@ namespace System.Linq.Tests
             Assert.Empty(source().Take(int.MaxValue..^6));
             Assert.Empty(source().Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, source().Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], source().Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], source().Take(^int.MaxValue..^1));
             Assert.Empty(source().Take(^0..^6));
             Assert.Empty(source().Take(^1..^6));
             Assert.Empty(source().Take(^6..^6));
@@ -1028,8 +1028,8 @@ namespace System.Linq.Tests
             Assert.Equal(source, ForceNotCollection(source).Take(0..6));
             Assert.Equal(source, ForceNotCollection(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^int.MaxValue..4));
             Assert.Equal(source, ForceNotCollection(source).Take(^10..6));
             Assert.Equal(source, ForceNotCollection(source).Take(^int.MaxValue..6));
             Assert.Equal(source, ForceNotCollection(source).Take(^10..int.MaxValue));
@@ -1044,8 +1044,8 @@ namespace System.Linq.Tests
             Assert.Empty(ForceNotCollection(source).Take(int.MaxValue..^6));
             Assert.Empty(ForceNotCollection(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ForceNotCollection(source).Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], ForceNotCollection(source).Take(^int.MaxValue..^1));
             Assert.Empty(ForceNotCollection(source).Take(^0..^6));
             Assert.Empty(ForceNotCollection(source).Take(^1..^6));
             Assert.Empty(ForceNotCollection(source).Take(^6..^6));
@@ -1065,8 +1065,8 @@ namespace System.Linq.Tests
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(0..6));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^int.MaxValue..4));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(^10..6));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(^int.MaxValue..6));
             Assert.Equal(source, ListPartitionOrEmpty(source).Take(^10..int.MaxValue));
@@ -1081,8 +1081,8 @@ namespace System.Linq.Tests
             Assert.Empty(ListPartitionOrEmpty(source).Take(int.MaxValue..^6));
             Assert.Empty(ListPartitionOrEmpty(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], ListPartitionOrEmpty(source).Take(^int.MaxValue..^1));
             Assert.Empty(ListPartitionOrEmpty(source).Take(^0..^6));
             Assert.Empty(ListPartitionOrEmpty(source).Take(^1..^6));
             Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^6));
@@ -1102,8 +1102,8 @@ namespace System.Linq.Tests
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(0..6));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..4));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^10..4));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..4));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^10..6));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..6));
             Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^10..int.MaxValue));
@@ -1118,8 +1118,8 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(int.MaxValue..^6));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^1));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^10..^1));
+            Assert.Equal([1, 2, 3, 4], EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^1));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^0..^6));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^1..^6));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^6));
@@ -1137,26 +1137,26 @@ namespace System.Linq.Tests
             var source1 = new List<int>() { 0, 1, 2, 3, 4 };
             var query1 = source1.Take(3);
             source1.RemoveAt(0);
-            source1.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query1);
+            source1.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query1);
 
             var source2 = new List<int>() { 0, 1, 2, 3, 4 };
             var query2 = source2.Take(0..3);
             source2.RemoveAt(0);
-            source2.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query2);
+            source2.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query2);
 
             var source3 = new List<int>() { 0, 1, 2, 3, 4 };
             var query3 = source3.Take(^6..3);
             source3.RemoveAt(0);
-            source3.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query3);
+            source3.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query3);
 
             var source4 = new List<int>() { 0, 1, 2, 3, 4 };
             var query4 = source4.Take(^6..^3);
             source4.RemoveAt(0);
-            source4.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query4);
+            source4.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query4);
         }
 
         [Fact]
@@ -1165,32 +1165,32 @@ namespace System.Linq.Tests
             var source1 = new List<int>() { 0, 1, 2, 3, 4 };
             var query1 = ForceNotCollection(source1).Select(i => i).Take(3);
             source1.RemoveAt(0);
-            source1.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query1);
+            source1.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query1);
 
             var source2 = new List<int>() { 0, 1, 2, 3, 4 };
             var query2 = ForceNotCollection(source2).Select(i => i).Take(0..3);
             source2.RemoveAt(0);
-            source2.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query2);
+            source2.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query2);
 
             var source3 = new List<int>() { 0, 1, 2, 3, 4 };
             var query3 = ForceNotCollection(source3).Select(i => i).Take(^6..3);
             source3.RemoveAt(0);
-            source3.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query3);
+            source3.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query3);
 
             var source4 = new List<int>() { 0, 1, 2, 3, 4 };
             var query4 = ForceNotCollection(source4).Select(i => i).Take(^6..^3);
             source4.RemoveAt(0);
-            source4.InsertRange(2, new[] { -1, -2 });
-            Assert.Equal(new[] { 1, 2, -1 }, query4);
+            source4.InsertRange(2, [-1, -2]);
+            Assert.Equal([1, 2, -1], query4);
         }
 
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable()
         {
-            Func<int[]> source = () => new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            Func<int[]> source = () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source()[^9..5], source().Take(^9..5));
@@ -1236,7 +1236,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable_NotList()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source[^9..5], ForceNotCollection(source).Take(^9..5));
@@ -1282,7 +1282,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable_ListPartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source[^9..5], ListPartitionOrEmpty(source).Take(^9..5));
@@ -1328,7 +1328,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_ConsistencyWithCountable_EnumerablePartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             // Multiple elements in the middle.
             Assert.Equal(source[^9..5], EnumerablePartitionOrEmpty(source).Take(^9..5));
@@ -1374,7 +1374,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException()
         {
-            Func<int[]> source = () => new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            Func<int[]> source = () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(source().Take(3..2));
             Assert.Empty(source().Take(6..^5));
@@ -1385,7 +1385,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException_NotList()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(ForceNotCollection(source).Take(3..2));
             Assert.Empty(ForceNotCollection(source).Take(6..^5));
@@ -1396,7 +1396,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException_ListPartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(ListPartitionOrEmpty(source).Take(3..2));
             Assert.Empty(ListPartitionOrEmpty(source).Take(6..^5));
@@ -1407,7 +1407,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_DoNotThrowException_EnumerablePartition()
         {
-            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..2));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^5));
@@ -1418,7 +1418,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException()
         {
-            Func<int[]> source = () => new int[] { };
+            Func<int[]> source = () => [];
 
             // Multiple elements in the middle.
             Assert.Empty(source().Take(^9..5));
@@ -1470,7 +1470,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException_NotList()
         {
-            int[] source = { };
+            int[] source = [];
 
             // Multiple elements in the middle.
             Assert.Empty(ForceNotCollection(source).Take(^9..5));
@@ -1522,7 +1522,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException_ListPartition()
         {
-            int[] source = { };
+            int[] source = [];
 
             // Multiple elements in the middle.
             Assert.Empty(ListPartitionOrEmpty(source).Take(^9..5));
@@ -1574,7 +1574,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_DoNotThrowException_EnumerablePartition()
         {
-            int[] source = { };
+            int[] source = [];
 
             // Multiple elements in the middle.
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^9..5));
@@ -1623,7 +1623,7 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [Fact]
         public void SkipTakeOnIListIsIList()
         {
             IList<int> list = new ReadOnlyCollection<int>(Enumerable.Range(0, 100).ToList());

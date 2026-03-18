@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -66,6 +67,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // when loaded by CoreCLR
             dataBuilder.EmitReloc(_delayLoadHelper,
                 factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, factory.Target.CodeDelta);
+
+            if (Table.EntrySize == (factory.Target.PointerSize * 2))
+            {
+                dataBuilder.EmitNaturalInt(0);
+            }
+            else
+            {
+                Debug.Assert(Table.EntrySize == factory.Target.PointerSize);
+            }
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)

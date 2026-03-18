@@ -22,7 +22,7 @@ namespace System.ComponentModel.Tests
         [InlineData("")]
         [InlineData("typeName")]
         [InlineData("System.Int32")]
-        public void Ctor_String(string typeName)
+        public void Ctor_String(string? typeName)
         {
             var attribute = new LicenseProviderAttribute(typeName);
             Assert.Equal(typeName == null ? null : Type.GetType(typeName), attribute.LicenseProvider);
@@ -34,7 +34,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData(typeof(int))]
         [InlineData(typeof(DesignerAttribute))]
-        public void Ctor_Type(Type type)
+        public void Ctor_Type(Type? type)
         {
             var attribute = new LicenseProviderAttribute(type);
             Assert.Same(type, attribute.LicenseProvider);

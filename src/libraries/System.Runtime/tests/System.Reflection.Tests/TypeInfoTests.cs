@@ -76,7 +76,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_field), true, typeof(string), false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_readonlyField), true, typeof(string), false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_volatileField), true, typeof(string), false)]
-        public void DeclaredFields(Type type, string name, bool exists, Type fieldType, bool isPrivate)
+        public void DeclaredFields(Type type, string name, bool exists, Type? fieldType, bool isPrivate)
         {
             IEnumerable<string> fields = type.GetTypeInfo().DeclaredFields.Select(fieldInfo => fieldInfo.Name);
             FieldInfo declaredFieldInfo = type.GetTypeInfo().GetDeclaredField(name);
@@ -395,7 +395,7 @@ namespace System.Reflection.Tests
         [InlineData(10, nameof(IntEnum.Enum10))]
         [InlineData(45, nameof(IntEnum.Enum45))]
         [InlineData(8, null)]
-        public void GetEnumName(object value, string expected)
+        public void GetEnumName(object value, string? expected)
         {
             Assert.Equal(expected, typeof(IntEnum).GetTypeInfo().GetEnumName(value));
         }
@@ -595,7 +595,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(uint[]), typeof(int[]), true)]
         [InlineData(typeof(IList<int>), typeof(int[]), true)]
         [InlineData(typeof(IList<uint>), typeof(int[]), true)]
-        public void IsAssignable(Type type, Type c, bool expected)
+        public void IsAssignable(Type type, Type? c, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c));
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c?.GetTypeInfo()));
@@ -611,7 +611,6 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67568", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
@@ -940,6 +939,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(MembersClass), new Type[] { typeof(TI_NonGenericInterface1), typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(TI_NonGenericInterface2), new Type[0])]
+        [InlineData(typeof(IntEnum), new Type[] { typeof(IComparable), typeof(ISpanFormattable), typeof(IFormattable), typeof(IConvertible) })]
         public void GetInterfaces(Type type, Type[] expected)
         {
             Assert.Equal(expected.OrderBy(t => t.Name), type.GetTypeInfo().GetInterfaces().OrderBy(t => t.Name));
@@ -1113,7 +1113,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_BaseClass), null)]
         [InlineData(typeof(string[]), typeof(string))]
         [InlineData(typeof(int[]), typeof(int))]
-        public void GetElementType(Type type, Type expected)
+        public void GetElementType(Type type, Type? expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().GetElementType());
         }
@@ -1317,6 +1317,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void FullName_FunctionPointers_ReturnsExpected()
+        {
+            Assert.Null(typeof(delegate*<void>).FullName);
+            Assert.Null(typeof(delegate*<void>*).FullName);
+            Assert.Null(typeof(delegate*<void>**).FullName);
+        }
+
+        [Fact]
         public void Guid()
         {
             Assert.Equal(new Guid("FD80F123-BEDD-4492-B50A-5D46AE94DD4E"), typeof(TypeInfoTests).GetTypeInfo().GUID);
@@ -1487,6 +1495,14 @@ namespace System.Reflection.Tests
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
+        }
+
+        [Fact]
+        public static void Namespace_FunctionPointers_ReturnsNull()
+        {
+            Assert.Null(typeof(delegate*<void>).Namespace);
+            Assert.Null(typeof(delegate*<void>*).Namespace);
+            Assert.Null(typeof(delegate*<void>**).Namespace);
         }
 
         [Theory]
@@ -1683,7 +1699,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69244", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
         {
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;

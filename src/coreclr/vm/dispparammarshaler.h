@@ -196,8 +196,8 @@ private:
 class DispParamCustomMarshaler : public DispParamMarshaler
 {
 public:
-    DispParamCustomMarshaler(CustomMarshalerHelper *pCMHelper, VARTYPE vt) :
-    m_pCMHelper(pCMHelper),
+    DispParamCustomMarshaler(CustomMarshalerInfo *pCMHelper, VARTYPE vt) :
+    m_pCMInfo(pCMHelper),
     m_vt(vt)
     {
         WRAPPER_NO_CONTRACT;
@@ -215,8 +215,8 @@ public:
     virtual void CleanUpManaged(OBJECTREF *pObj);
 
 private:
-    CustomMarshalerHelper*  m_pCMHelper;
-    VARTYPE                 m_vt;
+    CustomMarshalerInfo* m_pCMInfo;
+    VARTYPE              m_vt;
 };
 
 #endif // _DISPPARAMMARSHALER_H

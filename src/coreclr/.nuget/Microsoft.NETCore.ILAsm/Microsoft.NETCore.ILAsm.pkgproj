@@ -11,7 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinary Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" />
+    <NativeBinary Condition="'$(PackCrossComponent)' != 'true'" Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" />
+    <NativeBinary Condition="'$(PackCrossComponent)' == 'true'" Include="$(RuntimeBinDir)$(BuildArchitecture)/ilasm$(ExeSuffix)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

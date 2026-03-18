@@ -9,6 +9,8 @@ using System.Runtime;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Xunit;
+using TestLibrary;
 
 namespace b424916
 {
@@ -48,7 +50,9 @@ namespace b424916
     public class Test
     {
 
-        public static int Main()
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             Node head = new Node();
@@ -61,8 +65,6 @@ namespace b424916
                 GC.KeepAlive(head);
 
             }
-
-            return 100;
         }
     }
 }

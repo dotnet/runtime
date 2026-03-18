@@ -716,10 +716,8 @@ namespace System.Xml.Schema
                 _context.CheckRequiredAttribute = false;
                 CheckRequiredAttributes(currentElementDecl);
             }
-            if (schemaInfo != null)
-            { //set validity depending on whether all required attributes were validated successfully
-                schemaInfo.Validity = _context.Validity;
-            }
+            //set validity depending on whether all required attributes were validated successfully
+            schemaInfo?.Validity = _context.Validity;
         }
 
         public void ValidateText(string elementValue)
@@ -950,7 +948,7 @@ namespace System.Xml.Schema
                         ContentValidator.AddParticleToExpected(element!, _schemaSet, expected, true);
                     }
 
-                    return (expected.ToArray(typeof(XmlSchemaParticle)) as XmlSchemaParticle[])!;
+                    return ToArray(expected);
                 }
             }
             if (_context.ElementDecl != null)
@@ -958,11 +956,17 @@ namespace System.Xml.Schema
                 ArrayList? expected = _context.ElementDecl.ContentValidator!.ExpectedParticles(_context, false, _schemaSet);
                 if (expected != null)
                 {
-                    return (expected.ToArray(typeof(XmlSchemaParticle)) as XmlSchemaParticle[])!;
+                    return ToArray(expected);
                 }
             }
 
             return Array.Empty<XmlSchemaParticle>();
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "ToArray is called for known reference types only.")]
+            static XmlSchemaParticle[] ToArray(ArrayList expected)
+            {
+                return (expected.ToArray(typeof(XmlSchemaParticle)) as XmlSchemaParticle[])!;
+            }
         }
 
         public XmlSchemaAttribute[] GetExpectedAttributes()
@@ -986,7 +990,7 @@ namespace System.Xml.Schema
                     AddXsiAttributes(attList);
                 }
 
-                return (attList.ToArray(typeof(XmlSchemaAttribute)) as XmlSchemaAttribute[])!;
+                return ToArray(attList);
             }
             else if (_currentState == ValidatorState.Start)
             {
@@ -1000,6 +1004,12 @@ namespace System.Xml.Schema
                 }
             }
             return Array.Empty<XmlSchemaAttribute>();
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "ToArray is called for known reference types only.")]
+            static XmlSchemaAttribute[] ToArray(ArrayList attList)
+            {
+                return (attList.ToArray(typeof(XmlSchemaAttribute)) as XmlSchemaAttribute[])!;
+            }
         }
 
         internal void GetUnspecifiedDefaultAttributes(ArrayList defaultAttributes, bool createNodeData)
@@ -2072,10 +2082,7 @@ namespace System.Xml.Schema
 
         private void ClearPSVI()
         {
-            if (_textValue != null)
-            {
-                _textValue.Length = 0;
-            }
+            _textValue?.Length = 0;
 
             _attPresence.Clear(); //Clear attributes hashtable for every element
             _wildID = null; //clear it for every element

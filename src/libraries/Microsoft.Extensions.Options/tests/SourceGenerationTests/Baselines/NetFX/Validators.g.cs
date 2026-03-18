@@ -15,12 +15,16 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
     public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ThirdModelNoNamespace options)
     {
         global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+        #if NET
+        var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModelNoNamespace", null, null);
+        #else
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+        #endif
         var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
         var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
         context.MemberName = "P5";
-        context.DisplayName = string.IsNullOrEmpty(name) ? "ThirdModelNoNamespace.P5" : $"{name}.P5";
+        context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
         if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -43,12 +47,16 @@ partial class FirstValidatorNoNamespace
     public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FirstModelNoNamespace options)
     {
         global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+        #if NET
+        var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModelNoNamespace", null, null);
+        #else
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+        #endif
         var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
         var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
         context.MemberName = "P1";
-        context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModelNoNamespace.P1" : $"{name}.P1";
+        context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
         if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -58,12 +66,12 @@ partial class FirstValidatorNoNamespace
 
         if (options.P2 is not null)
         {
-            (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V1.Validate(string.IsNullOrEmpty(name) ? "FirstModelNoNamespace.P2" : $"{name}.P2", options.P2));
+            (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V1.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2));
         }
 
         if (options.P3 is not null)
         {
-            (builder ??= new()).AddResult(global::__ThirdModelNoNamespaceValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModelNoNamespace.P3" : $"{name}.P3", options.P3));
+            (builder ??= new()).AddResult(global::__ThirdModelNoNamespaceValidator__.Validate(string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3", options.P3));
         }
 
         return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -81,12 +89,16 @@ partial class SecondValidatorNoNamespace
     public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SecondModelNoNamespace options)
     {
         global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+        #if NET
+        var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModelNoNamespace", null, null);
+        #else
         var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+        #endif
         var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
         var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
         context.MemberName = "P4";
-        context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModelNoNamespace.P4" : $"{name}.P4";
+        context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
         validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
         if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
@@ -111,12 +123,16 @@ namespace CustomAttr
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::CustomAttr.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
@@ -124,7 +140,7 @@ namespace CustomAttr
             }
 
             context.MemberName = "P2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A4);
@@ -152,12 +168,16 @@ namespace Enumeration
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
@@ -184,12 +204,16 @@ namespace Enumeration
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Value";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "ThirdModel.Value" : $"{name}.Value";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Value" : $"{name}.Value";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A5);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Value, context, validationResults, validationAttributes))
             {
@@ -214,7 +238,11 @@ namespace Enumeration
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
 
             if (options.P1 is not null)
             {
@@ -223,11 +251,11 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P1[{count}]" : $"{name}.P1[{count}]", o));
+                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P1[{count}]" : $"{name}.P1[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"FirstModel.P1[{count}] is null" : $"{name}.P1[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"P1[{count}] is null" : $"{name}.P1[{count}] is null");
                     }
                     count++;
                 }
@@ -240,11 +268,11 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V2.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P2[{count}]" : $"{name}.P2[{count}]", o));
+                        (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V2.Validate(string.IsNullOrEmpty(name) ? $"P2[{count}]" : $"{name}.P2[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"FirstModel.P2[{count}] is null" : $"{name}.P2[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"P2[{count}] is null" : $"{name}.P2[{count}] is null");
                     }
                     count++;
                 }
@@ -257,7 +285,7 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P3[{count}]" : $"{name}.P3[{count}]", o));
+                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P3[{count}]" : $"{name}.P3[{count}]", o));
                     }
                     count++;
                 }
@@ -268,7 +296,7 @@ namespace Enumeration
                 var count = 0;
                 foreach (var o in options.P4)
                 {
-                    (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P4[{count++}] is null" : $"{name}.P4[{count++}] is null", o));
+                    (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P4[{count++}]" : $"{name}.P4[{count++}]", o));
                 }
             }
 
@@ -279,7 +307,7 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P5[{count}]" : $"{name}.P5[{count}]", o.Value));
+                        (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P5[{count}]" : $"{name}.P5[{count}]", o.Value));
                     }
                     count++;
                 }
@@ -292,7 +320,7 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P51[{count}]" : $"{name}.P51[{count}]", o.Value));
+                        (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P51[{count}]" : $"{name}.P51[{count}]", o.Value));
                     }
                     count++;
                 }
@@ -305,11 +333,11 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P6[{count}]" : $"{name}.P6[{count}]", o));
+                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P6[{count}]" : $"{name}.P6[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"FirstModel.P6[{count}] is null" : $"{name}.P6[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"P6[{count}] is null" : $"{name}.P6[{count}] is null");
                     }
                     count++;
                 }
@@ -321,11 +349,11 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P7[{count}]" : $"{name}.P7[{count}]", o));
+                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P7[{count}]" : $"{name}.P7[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"FirstModel.P7[{count}] is null" : $"{name}.P7[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"P7[{count}] is null" : $"{name}.P7[{count}] is null");
                     }
                     count++;
                 }
@@ -338,11 +366,11 @@ namespace Enumeration
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P8[{count}]" : $"{name}.P8[{count}]", o));
+                        (builder ??= new()).AddResult(global::Enumeration.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P8[{count}]" : $"{name}.P8[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"FirstModel.P8[{count}] is null" : $"{name}.P8[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"P8[{count}] is null" : $"{name}.P8[{count}] is null");
                     }
                     count++;
                 }
@@ -366,12 +394,16 @@ namespace Enumeration
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
@@ -397,12 +429,16 @@ namespace FileScopedNamespace
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FileScopedNamespace.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -428,12 +464,16 @@ namespace FunnyStrings
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FunnyStrings.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A6);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
@@ -459,12 +499,16 @@ namespace Generics
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Generics.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
@@ -490,12 +534,16 @@ namespace Generics
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Generics.FirstModel<T> options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -505,7 +553,7 @@ namespace Generics
 
             if (options.P3 is not null)
             {
-                (builder ??= new()).AddResult(global::Generics.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P3" : $"{name}.P3", options.P3));
+                (builder ??= new()).AddResult(global::Generics.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3", options.P3));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -526,12 +574,16 @@ namespace MultiModelValidator
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::MultiModelValidator.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -541,7 +593,7 @@ namespace MultiModelValidator
 
             if (options.P2 is not null)
             {
-                (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V3.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2));
+                (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V3.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -556,12 +608,16 @@ namespace MultiModelValidator
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::MultiModelValidator.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
@@ -588,12 +644,16 @@ namespace Nested
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "ThirdModel.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
@@ -621,12 +681,16 @@ namespace Nested
             public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
             {
                 global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+                #if NET
+                var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+                #else
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                #endif
                 var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
                 var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                 context.MemberName = "P5";
-                context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P5" : $"{name}.P5";
+                context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
                 if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -657,12 +721,16 @@ namespace Nested
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.FirstModel options)
                 {
                     global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+                    #if NET
+                    var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+                    #else
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                    #endif
                     var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
                     var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                     context.MemberName = "P1";
-                    context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+                    context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
                     if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -672,14 +740,14 @@ namespace Nested
 
                     if (options.P2 is not null)
                     {
-                        (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V4.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2));
+                        (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V4.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2));
                     }
 
-                    (builder ??= new()).AddResult(global::Nested.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P3" : $"{name}.P3", options.P3));
+                    (builder ??= new()).AddResult(global::Nested.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3", options.P3));
 
                     if (options.P4 is not null)
                     {
-                        (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V5.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P4" : $"{name}.P4", options.P4));
+                        (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V5.Validate(string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4", options.P4));
                     }
 
                     return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -704,12 +772,16 @@ namespace Nested
             public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
             {
                 global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+                #if NET
+                var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+                #else
                 var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                #endif
                 var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
                 var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                 context.MemberName = "P5";
-                context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P5" : $"{name}.P5";
+                context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                 validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
                 if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -740,12 +812,16 @@ namespace Nested
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
                 {
                     global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+                    #if NET
+                    var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+                    #else
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                    #endif
                     var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
                     var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                     context.MemberName = "P5";
-                    context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P5" : $"{name}.P5";
+                    context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
                     if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -777,12 +853,16 @@ namespace Nested
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
                 {
                     global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+                    #if NET
+                    var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+                    #else
                     var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                    #endif
                     var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
                     var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
                     context.MemberName = "P5";
-                    context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P5" : $"{name}.P5";
+                    context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
                     validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
                     if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -810,12 +890,16 @@ namespace RandomMembers
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RandomMembers.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -842,12 +926,16 @@ namespace RecordTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "ThirdModel.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P6, context, validationResults, validationAttributes))
@@ -873,12 +961,16 @@ namespace RecordTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -888,15 +980,15 @@ namespace RecordTypes
 
             if (options.P2 is not null)
             {
-                (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V6.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2));
+                (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V6.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2));
             }
 
             if (options.P3 is not null)
             {
-                (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V7.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P3" : $"{name}.P3", options.P3));
+                (builder ??= new()).AddResult(global::__OptionValidationStaticInstances.__Validators.V7.Validate(string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3", options.P3));
             }
 
-            (builder ??= new()).AddResult(global::RecordTypes.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P4" : $"{name}.P4", options.P4));
+            (builder ??= new()).AddResult(global::RecordTypes.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4", options.P4));
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
         }
@@ -916,12 +1008,16 @@ namespace RecordTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -947,12 +1043,16 @@ namespace RecordTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -979,12 +1079,16 @@ namespace RepeatedTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
             {
@@ -993,7 +1097,7 @@ namespace RepeatedTypes
 
             if (options.P4 is not null)
             {
-                (builder ??= new()).AddResult(global::RepeatedTypes.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "SecondModel.P4" : $"{name}.P4", options.P4));
+                (builder ??= new()).AddResult(global::RepeatedTypes.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4", options.P4));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1015,12 +1119,16 @@ namespace RepeatedTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.ThirdModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ThirdModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "ThirdModel.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P5, context, validationResults, validationAttributes))
@@ -1046,12 +1154,16 @@ namespace RepeatedTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
@@ -1060,11 +1172,11 @@ namespace RepeatedTypes
 
             if (options.P1 is not null)
             {
-                (builder ??= new()).AddResult(global::RepeatedTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1", options.P1));
+                (builder ??= new()).AddResult(global::RepeatedTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1", options.P1));
             }
 
             context.MemberName = "P2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1075,11 +1187,11 @@ namespace RepeatedTypes
 
             if (options.P2 is not null)
             {
-                (builder ??= new()).AddResult(global::RepeatedTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2));
+                (builder ??= new()).AddResult(global::RepeatedTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2));
             }
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1090,7 +1202,7 @@ namespace RepeatedTypes
 
             if (options.P3 is not null)
             {
-                (builder ??= new()).AddResult(global::RepeatedTypes.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P3" : $"{name}.P3", options.P3));
+                (builder ??= new()).AddResult(global::RepeatedTypes.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3", options.P3));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1112,12 +1224,16 @@ namespace SelfValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
             {
@@ -1125,7 +1241,7 @@ namespace SelfValidation
             }
 
             context.MemberName = "Validate";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.Validate" : $"{name}.Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Validate" : $"{name}.Validate";
             (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1146,12 +1262,16 @@ namespace SelfValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
@@ -1159,7 +1279,7 @@ namespace SelfValidation
             }
 
             context.MemberName = "P2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1170,11 +1290,11 @@ namespace SelfValidation
 
             if (options.P2 is not null)
             {
-                (builder ??= new()).AddResult(global::SelfValidation.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2));
+                (builder ??= new()).AddResult(global::SelfValidation.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2));
             }
 
             context.MemberName = "Validate";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.Validate" : $"{name}.Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Validate" : $"{name}.Validate";
             (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1195,10 +1315,14 @@ namespace SelfValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SelfValidateOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SelfValidateOptions", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
 
             context.MemberName = "Validate";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SelfValidateOptions.Validate" : $"{name}.Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Validate" : $"{name}.Validate";
             (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1220,12 +1344,16 @@ namespace TestClasses.OptionsValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDouble options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelDouble", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RangeAttributeModelDouble.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1251,12 +1379,16 @@ namespace TestClasses.OptionsValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RequiredAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RequiredAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RequiredAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1282,12 +1414,16 @@ namespace TestClasses.OptionsValidation
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.TypeWithoutOptionsValidator options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "TypeWithoutOptionsValidator", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "TypeWithoutOptionsValidator.Val1" : $"{name}.Val1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val1" : $"{name}.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
@@ -1295,7 +1431,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "TypeWithoutOptionsValidator.Val2" : $"{name}.Val2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val2" : $"{name}.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A8);
@@ -1306,7 +1442,7 @@ namespace TestClasses.OptionsValidation
 
             if (options.YetAnotherComplexVal is not null)
             {
-                (builder ??= new()).AddResult(global::TestClasses.OptionsValidation.__RangeAttributeModelDoubleValidator__.Validate(string.IsNullOrEmpty(name) ? "TypeWithoutOptionsValidator.YetAnotherComplexVal" : $"{name}.YetAnotherComplexVal", options.YetAnotherComplexVal));
+                (builder ??= new()).AddResult(global::TestClasses.OptionsValidation.__RangeAttributeModelDoubleValidator__.Validate(string.IsNullOrEmpty(name) ? "YetAnotherComplexVal" : $"{name}.YetAnotherComplexVal", options.YetAnotherComplexVal));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1327,12 +1463,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.AttributePropertyModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "AttributePropertyModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "AttributePropertyModel.Val1" : $"{name}.Val1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val1" : $"{name}.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A9);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
@@ -1340,7 +1480,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "AttributePropertyModel.Val2" : $"{name}.Val2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val2" : $"{name}.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A10);
@@ -1367,16 +1507,20 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.ComplexModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "ComplexModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
 
             if (options.ComplexVal is not null)
             {
-                (builder ??= new()).AddResult(global::TestClasses.OptionsValidation.__RequiredAttributeModelValidator__.Validate(string.IsNullOrEmpty(name) ? "ComplexModel.ComplexVal" : $"{name}.ComplexVal", options.ComplexVal));
+                (builder ??= new()).AddResult(global::TestClasses.OptionsValidation.__RequiredAttributeModelValidator__.Validate(string.IsNullOrEmpty(name) ? "ComplexVal" : $"{name}.ComplexVal", options.ComplexVal));
             }
 
             if (options.ValWithoutOptionsValidator is not null)
             {
-                (builder ??= new()).AddResult(global::TestClasses.OptionsValidation.__TypeWithoutOptionsValidatorValidator__.Validate(string.IsNullOrEmpty(name) ? "ComplexModel.ValWithoutOptionsValidator" : $"{name}.ValWithoutOptionsValidator", options.ValWithoutOptionsValidator));
+                (builder ??= new()).AddResult(global::TestClasses.OptionsValidation.__TypeWithoutOptionsValidatorValidator__.Validate(string.IsNullOrEmpty(name) ? "ValWithoutOptionsValidator" : $"{name}.ValWithoutOptionsValidator", options.ValWithoutOptionsValidator));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -1397,12 +1541,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.CustomTypeCustomValidationAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "CustomTypeCustomValidationAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "CustomTypeCustomValidationAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A11);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1427,12 +1575,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.CustomValidationAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "CustomValidationAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "CustomValidationAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A12);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1457,12 +1609,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.DataTypeAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "DataTypeAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "DataTypeAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A13);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1487,12 +1643,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.DerivedModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "DerivedModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "DerivedVal";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "DerivedModel.DerivedVal" : $"{name}.DerivedVal";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "DerivedVal" : $"{name}.DerivedVal";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.DerivedVal, context, validationResults, validationAttributes))
             {
@@ -1500,7 +1660,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "VirtualValWithAttr";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "DerivedModel.VirtualValWithAttr" : $"{name}.VirtualValWithAttr";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "VirtualValWithAttr" : $"{name}.VirtualValWithAttr";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1510,7 +1670,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "DerivedModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1537,12 +1697,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.EmailAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "EmailAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "EmailAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A14);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1567,12 +1731,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.LeafModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "LeafModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "VirtualValWithoutAttr";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "LeafModel.VirtualValWithoutAttr" : $"{name}.VirtualValWithoutAttr";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "VirtualValWithoutAttr" : $"{name}.VirtualValWithoutAttr";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.VirtualValWithoutAttr, context, validationResults, validationAttributes))
             {
@@ -1580,7 +1748,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "DerivedVal";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "LeafModel.DerivedVal" : $"{name}.DerivedVal";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "DerivedVal" : $"{name}.DerivedVal";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1590,7 +1758,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "LeafModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -1617,12 +1785,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.MultipleAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "MultipleAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "Val1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MultipleAttributeModel.Val1" : $"{name}.Val1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val1" : $"{name}.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A15);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
@@ -1631,7 +1803,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MultipleAttributeModel.Val2" : $"{name}.Val2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val2" : $"{name}.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
@@ -1641,7 +1813,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MultipleAttributeModel.Val3" : $"{name}.Val3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val3" : $"{name}.Val3";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A17);
@@ -1651,7 +1823,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "Val4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MultipleAttributeModel.Val4" : $"{name}.Val4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val4" : $"{name}.Val4";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A18);
@@ -1678,12 +1850,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.OptionsUsingRangeWithTimeSpan options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "OptionsUsingRangeWithTimeSpan", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
             {
@@ -1691,7 +1867,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "P2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P2" : $"{name}.P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
@@ -1701,7 +1877,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
@@ -1711,7 +1887,7 @@ namespace TestClasses.OptionsValidation
             }
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingRangeWithTimeSpan.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A19);
@@ -1738,12 +1914,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDate options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelDate", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RangeAttributeModelDate.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A8);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1768,12 +1948,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDouble options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelDouble", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RangeAttributeModelDouble.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1798,12 +1982,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelInt options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RangeAttributeModelInt", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RangeAttributeModelInt.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A16);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1828,12 +2016,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RegularExpressionAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RegularExpressionAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RegularExpressionAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A20);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1858,12 +2050,16 @@ namespace TestClasses.OptionsValidation
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RequiredAttributeModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RequiredAttributeModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RequiredAttributeModel.Val" : $"{name}.Val";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val" : $"{name}.Val";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val, context, validationResults, validationAttributes))
             {
@@ -1889,12 +2085,16 @@ namespace ValueTypes
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValueTypes.SecondModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "SecondModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "SecondModel.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P4, context, validationResults, validationAttributes))
@@ -1920,12 +2120,16 @@ namespace ValueTypes
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValueTypes.FirstModel options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "P1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "FirstModel.P1" : $"{name}.P1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P1" : $"{name}.P1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P1, context, validationResults, validationAttributes))
@@ -1935,14 +2139,14 @@ namespace ValueTypes
 
             if (options.P2 is not null)
             {
-                (builder ??= new()).AddResult(global::ValueTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P2" : $"{name}.P2", options.P2.Value));
+                (builder ??= new()).AddResult(global::ValueTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2", options.P2.Value));
             }
 
-            (builder ??= new()).AddResult(global::ValueTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P3" : $"{name}.P3", options.P3));
+            (builder ??= new()).AddResult(global::ValueTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3", options.P3));
 
             if (options.P4 is not null)
             {
-                (builder ??= new()).AddResult(global::ValueTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "FirstModel.P4" : $"{name}.P4", options.P4.Value));
+                (builder ??= new()).AddResult(global::ValueTypes.__SecondModelValidator__.Validate(string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4", options.P4.Value));
             }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
@@ -2211,7 +2415,7 @@ namespace __OptionValidationGeneratedAttributes
                 {
                     convertedValue = ConvertValue(value, formatProvider);
                 }
-                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                 {
                     return false;
                 }

@@ -137,7 +137,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
         public ReflectPropertyDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentClass,
             string name,
             Type type,
             Type receiverType,
@@ -158,7 +158,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
         public ReflectPropertyDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentClass,
             PropertyDescriptor oldReflectPropertyDescriptor,
             Attribute[] attributes)
             : base(oldReflectPropertyDescriptor, attributes)
@@ -951,7 +951,7 @@ namespace System.ComponentModel
         internal void OnINotifyPropertyChanged(object? component, PropertyChangedEventArgs e)
         {
             if (string.IsNullOrEmpty(e.PropertyName) ||
-                string.Compare(e.PropertyName, Name, true, CultureInfo.InvariantCulture) == 0)
+                string.Equals(e.PropertyName, Name, StringComparison.InvariantCultureIgnoreCase))
             {
                 OnValueChanged(component, e);
             }

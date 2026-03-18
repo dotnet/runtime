@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestExecutionArguments>2</CLRTestExecutionArguments>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,5 +12,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Collect_Optimized.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

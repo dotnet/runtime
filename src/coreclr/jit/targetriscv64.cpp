@@ -20,8 +20,8 @@ const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 const regNumber intArgRegs [] = {REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7};
 const regMaskTP intArgMasks[] = {RBM_A0, RBM_A1, RBM_A2, RBM_A3, RBM_A4, RBM_A5, RBM_A6, RBM_A7};
 
-const regNumber fltArgRegs [] = {REG_FLTARG_0, REG_FLTARG_1, REG_FLTARG_2, REG_FLTARG_3, REG_FLTARG_4, REG_FLTARG_5, REG_FLTARG_6, REG_FLTARG_7 };
-const regMaskTP fltArgMasks[] = {RBM_FLTARG_0, RBM_FLTARG_1, RBM_FLTARG_2, RBM_FLTARG_3, RBM_FLTARG_4, RBM_FLTARG_5, RBM_FLTARG_6, RBM_FLTARG_7 };
+const regNumber fltArgRegs [] = {REG_FA0, REG_FA1, REG_FA2, REG_FA3, REG_FA4, REG_FA5, REG_FA6, REG_FA7 };
+const regMaskTP fltArgMasks[] = {RBM_FA0, RBM_FA1, RBM_FA2, RBM_FA3, RBM_FA4, RBM_FA5, RBM_FA6, RBM_FA7 };
 // clang-format on
 
 //-----------------------------------------------------------------------------
@@ -62,13 +62,15 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
 
     unsigned intFields = 0, floatFields = 0;
     unsigned passedSize;
+    bool     passedByRef = false;
 
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
         if (passedSize > MAX_PASS_MULTIREG_BYTES)
         {
-            passedSize = TARGET_POINTER_SIZE; // pass by reference
+            passedByRef = true;
+            passedSize  = TARGET_POINTER_SIZE;
         }
         else if (!structLayout->IsBlockLayout())
         {
@@ -83,7 +85,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                     floatFields += (unsigned)varTypeIsFloating(type);
                     INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
                 }
-                intFields = lowering->numLoweredElements - floatFields;
+                intFields = static_cast<unsigned>(lowering->numLoweredElements) - floatFields;
                 assert(debugIntFields == intFields);
             }
         }
@@ -113,7 +115,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             assert(varTypeIsFloating(type));
 
             ABIPassingSegment seg = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, passedSize);
-            return ABIPassingInformation::FromSegment(comp, seg);
+            return ABIPassingInformation::FromSegmentByValue(comp, seg);
         }
         else
         {
@@ -151,7 +153,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             if (passedSize <= TARGET_POINTER_SIZE)
             {
                 ABIPassingSegment seg = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, passedSize);
-                return ABIPassingInformation::FromSegment(comp, seg);
+                return ABIPassingInformation::FromSegment(comp, passedByRef, seg);
             }
             else
             {
@@ -168,7 +170,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
         else
         {
-            return ABIPassingInformation::FromSegment(comp, passOnStack(0, passedSize));
+            return ABIPassingInformation::FromSegment(comp, passedByRef, passOnStack(0, passedSize));
         }
     }
 }

@@ -85,9 +85,7 @@ internal sealed class TimeSpanAttribute : ValidationAttribute
     /// <param name="min">Minimum represented as time span string.</param>
     public TimeSpanAttribute(string min)
     {
-        _ = ThrowHelper.IfNullOrWhitespace(min);
-
-        _min = min;
+        _min = ThrowIfNullOrWhitespace(min);
         _max = null;
     }
 
@@ -98,11 +96,20 @@ internal sealed class TimeSpanAttribute : ValidationAttribute
     /// <param name="max">Maximum represented as time span string.</param>
     public TimeSpanAttribute(string min, string max)
     {
-        _ = ThrowHelper.IfNullOrWhitespace(min);
-        _ = ThrowHelper.IfNullOrWhitespace(max);
+        _min = ThrowIfNullOrWhitespace(min);
+        _max = ThrowIfNullOrWhitespace(max);
+    }
 
-        _min = min;
-        _max = max;
+    private static string ThrowIfNullOrWhitespace(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw value is null ?
+                new ArgumentNullException(nameof(value)) :
+                new ArgumentException("Value cannot be empty or whitespace.", nameof(value));
+        }
+
+        return value;
     }
 
     /// <summary>

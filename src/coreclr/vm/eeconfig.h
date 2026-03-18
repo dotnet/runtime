@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// EEConfig.H
-//
 
+// EEConfig.H
 //
 // Fetched configuration data from the registry (should we Jit, run GC checks ...)
 //
-//
-
-
 
 #ifndef EECONFIG_H
 #define EECONFIG_H
@@ -17,6 +13,7 @@ class MethodDesc;
 
 #include "shash.h"
 #include "corhost.h"
+#include <minipal/debugger.h>
 
 #ifdef _DEBUG
 class TypeNamesList
@@ -46,6 +43,15 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
+enum ClrModifiableAssemblies {
+    /* modifiable assemblies are implicitly disabled */
+    MODIFIABLE_ASSM_UNSET = 0,
+    /* modifiable assemblies are explicitly disabled */
+    MODIFIABLE_ASSM_NONE = 1,
+    /* assemblies with the Debug flag are modifiable */
+    MODIFIABLE_ASSM_DEBUG = 2,
+};
+
 enum ParseCtl {
     parseAll,               // parse entire config file
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
@@ -67,7 +73,6 @@ public:
     DWORD         SpinLimitProcFactor(void)       const {LIMITED_METHOD_CONTRACT;  return dwSpinLimitProcFactor; }
     DWORD         SpinLimitConstant(void)         const {LIMITED_METHOD_CONTRACT;  return dwSpinLimitConstant; }
     DWORD         SpinRetryCount(void)            const {LIMITED_METHOD_CONTRACT;  return dwSpinRetryCount; }
-    DWORD         MonitorSpinCount(void)          const {LIMITED_METHOD_CONTRACT;  return dwMonitorSpinCount; }
 
     // Jit-config
 
@@ -90,7 +95,12 @@ public:
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
+    DWORD TieredCompilation_DefaultTier() const 
+    {
+        LIMITED_METHOD_CONTRACT;
+        return tieredCompilation_DefaultTier;
+    }
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
@@ -126,6 +136,10 @@ public:
         return RegexOrExactMatch(pszGDBJitElfDump, methodName);
     }
 #endif // FEATURE_GDBJIT && _DEBUG
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    bool UseCachedInterfaceDispatch() const { LIMITED_METHOD_CONTRACT; return fUseCachedInterfaceDispatch; }
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
 
 #if defined(FEATURE_GDBJIT_FRAME)
     inline bool ShouldEmitDebugFrame(void) const {LIMITED_METHOD_CONTRACT; return fGDBJitEmitDebugFrame;}
@@ -269,13 +283,7 @@ public:
 
     bool IsJitVerificationDisabled(void)    const {LIMITED_METHOD_CONTRACT;  return fJitVerificationDisable; }
 
-#ifdef FEATURE_EH_FUNCLETS
     bool SuppressLockViolationsOnReentryFromOS() const {LIMITED_METHOD_CONTRACT;  return fSuppressLockViolationsOnReentryFromOS; }
-#endif
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    bool IsStubLinkerUnwindInfoVerificationOn() const { LIMITED_METHOD_CONTRACT; return fStubLinkerUnwindInfoVerificationOn; }
-#endif
 
 #endif // _DEBUG
 
@@ -302,14 +310,6 @@ public:
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // Because the large object heap is 8 byte aligned, we want to put
-    // arrays of doubles there more agressively than normal objects.
-    // This is the threshold for this.  It is the number of doubles,
-    // not the number of bytes in the array.
-    unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
-#endif
-
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
     // held locks in DAC builds. This is determined by an environment variable.
@@ -324,9 +324,6 @@ public:
     unsigned SuspendDeadlockTimeout() const
     {LIMITED_METHOD_CONTRACT; return m_SuspendDeadlockTimeout; }
 
-    // Verifier
-    bool    IsVerifierOff()                 const {LIMITED_METHOD_CONTRACT;  return fVerifierOff; }
-
     inline bool fAssertOnBadImageFormat() const
     {LIMITED_METHOD_CONTRACT;  return m_fAssertOnBadImageFormat; }
 
@@ -335,9 +332,6 @@ public:
 
     inline bool SuppressChecks() const
     {LIMITED_METHOD_CONTRACT;  return fSuppressChecks; }
-
-    inline bool EnableFullDebug() const
-    {LIMITED_METHOD_CONTRACT;  return fEnableFullDebug; }
 
 #endif
 #ifdef ENABLE_STARTUP_DELAY
@@ -389,6 +383,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
+    bool    GetCheckDoubleReporting()       const {LIMITED_METHOD_CONTRACT; return fCheckDoubleReporting; }
 #ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
@@ -396,6 +391,12 @@ public:
     bool    SkipGCCoverage(LPCUTF8 assemblyName) const {WRAPPER_NO_CONTRACT; return (pSkipGCCoverageList != NULL
                                                                                     && pSkipGCCoverageList->IsInList(assemblyName));}
 #endif
+
+    bool IsWriteBarrierCopyEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fIsWriteBarrierCopyEnabled;
+    }
 
 #ifdef _DEBUG
     inline DWORD FastGCStressLevel() const
@@ -417,9 +418,8 @@ public:
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
-    bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
-    bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
-    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
+    bool    StressLog()                            const { LIMITED_METHOD_CONTRACT; return fStressLog; }
+    ClrModifiableAssemblies ModifiableAssemblies() const { LIMITED_METHOD_CONTRACT; return modifiableAssemblies; }
 
     // Optimizations to improve working set
 
@@ -449,6 +449,13 @@ public:
 
 #endif
 
+    bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
+
+#ifdef FEATURE_INTERPRETER
+    bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
+#endif
+    bool    EnableHWIntrinsic()            const { LIMITED_METHOD_CONTRACT; return enableHWIntrinsic; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
@@ -461,6 +468,7 @@ private: //----------------------------------------------------------------
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
     bool fDisableOptimizedThreadStaticAccess; // Disable OptimizedThreadStatic access
+    bool fIsWriteBarrierCopyEnabled; // Is the GC write barrier copy enabled?
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
@@ -508,8 +516,6 @@ private: //----------------------------------------------------------------
 
     unsigned m_SuspendThreadDeadlockTimeoutMs;  // Used in Thread::SuspendThread()
     unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime.
-
-    bool fEnableFullDebug;
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
@@ -520,26 +526,13 @@ private: //----------------------------------------------------------------
     bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    unsigned int DoubleArrayToLargeObjectHeapThreshold;  // double arrays of more than this number of elems go in large object heap
-#endif
-
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly
                                         // at load time.
     bool fJitVerificationDisable;       // Turn off jit verification (for testing purposes only)
 
-
-    // Verifier
-    bool fVerifierOff;
-
-#ifdef FEATURE_EH_FUNCLETS
     bool fSuppressLockViolationsOnReentryFromOS;
-#endif
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    bool fStubLinkerUnwindInfoVerificationOn;
-#endif
 #endif // _DEBUG
 #ifdef ENABLE_STARTUP_DELAY
     int iStartupDelayMS; //Adds sleep to startup.
@@ -552,7 +545,6 @@ private: //----------------------------------------------------------------
     DWORD dwSpinLimitProcFactor;
     DWORD dwSpinLimitConstant;
     DWORD dwSpinRetryCount;
-    DWORD dwMonitorSpinCount;
 
 #ifdef VERIFY_HEAP
     int  iGCHeapVerify;
@@ -572,6 +564,8 @@ private: //----------------------------------------------------------------
     bool iGCAllowVeryLargeObjects;
 #endif // HOST_64BIT
 
+    bool fCheckDoubleReporting;
+
     bool fGCBreakOnOOM;
 
 #ifdef _DEBUG
@@ -587,8 +581,7 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pReadyToRunExcludeList;
 
     bool fStressLog;
-    bool fForceEnc;
-    bool fDebugAssembliesModifiable;
+    ClrModifiableAssemblies modifiableAssemblies;
 
 #ifdef _DEBUG
     // interop logging
@@ -619,6 +612,7 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
+    DWORD tieredCompilation_DefaultTier;
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
@@ -628,6 +622,12 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_READYTORUN)
     bool fReadyToRun;
+#endif
+
+    bool enableHWIntrinsic;
+
+#ifdef FEATURE_INTERPRETER
+    bool enableInterpreter;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -649,6 +649,13 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_GDBJIT_FRAME)
     bool fGDBJitEmitDebugFrame;
 #endif
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+    bool fUseCachedInterfaceDispatch;
+#endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
+    bool runtimeAsync; // True if the runtime supports async methods
+
 public:
 
     enum BitForMask {
@@ -720,7 +727,7 @@ public:
             _ASSERTE(str);                                              \
         }                                                               \
         else if (!(str)) {                                              \
-            if (IsDebuggerPresent()) DebugBreak();                      \
+            if (minipal_is_native_debugger_present()) DebugBreak();                      \
         }                                                               \
     } while(0)
 

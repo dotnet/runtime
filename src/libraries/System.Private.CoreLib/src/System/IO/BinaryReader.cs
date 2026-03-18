@@ -397,7 +397,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[count];
@@ -438,7 +438,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<byte>();
+                return [];
             }
 
             byte[] result = new byte[count];
@@ -451,6 +451,22 @@ namespace System.IO
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Reads bytes from the current stream and advances the position within the stream until the <paramref name="buffer" /> is filled.
+        /// </summary>
+        /// <remarks>
+        /// When <paramref name="buffer"/> is empty, this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">An I/O error occurred.</exception>
+        /// <exception cref="EndOfStreamException">The end of the stream is reached before filling the <paramref name="buffer" />.</exception>
+        public virtual void ReadExactly(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+            _stream.ReadExactly(buffer);
         }
 
         private ReadOnlySpan<byte> InternalRead(Span<byte> buffer)
@@ -487,7 +503,7 @@ namespace System.IO
             {
                 case 0:
                     // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
-                    int n = _stream.Read(Array.Empty<byte>(), 0, 0);
+                    int n = _stream.Read([], 0, 0);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();

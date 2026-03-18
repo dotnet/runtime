@@ -88,11 +88,9 @@ namespace System.Linq
             /// <typeparam name="TResult">The type of the mapped items.</typeparam>
             /// <param name="selector">The selector used to map each item.</param>
             public virtual IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
-#if OPTIMIZE_FOR_SIZE
-                new IEnumerableSelectIterator<TSource, TResult>(this, selector);
-#else
-                new IteratorSelectIterator<TSource, TResult>(this, selector);
-#endif
+                !IsSizeOptimized
+                ? new IteratorSelectIterator<TSource, TResult>(this, selector)
+                : new IEnumerableSelectIterator<TSource, TResult>(this, selector);
 
 
             /// <summary>

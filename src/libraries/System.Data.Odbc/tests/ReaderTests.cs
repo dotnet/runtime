@@ -8,7 +8,6 @@ namespace System.Data.Odbc.Tests
 {
     public class ReaderTests : IntegrationTestBase
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void EmptyReader()
         {
@@ -43,7 +42,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void GetValues()
         {
@@ -77,7 +75,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void GetValueFailsWithBigIntWithBackwardsCompatibility()
         {
@@ -113,7 +110,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void GetDataTypeName()
         {
@@ -140,7 +136,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void GetFieldTypeIsNotSupportedInSqlite()
         {
@@ -172,7 +167,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void IsDbNullIsNotSupportedInSqlite()
         {
@@ -204,7 +198,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void InvalidRowIndex()
         {
@@ -237,7 +230,6 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void InvalidRowName()
         {

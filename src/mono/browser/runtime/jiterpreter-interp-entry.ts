@@ -3,9 +3,11 @@
 
 import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert } from "./globals";
+import { mono_assert } from "./globals";
 import {
-    setI32, getU32_unaligned, _zero_region
+    setI32, getU32_unaligned, _zero_region,
+    malloc,
+    free
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
@@ -136,7 +138,7 @@ class TrampolineInfo {
             this.traceName = subName;
         } finally {
             if (namePtr)
-                Module._free(<any>namePtr);
+                free(<any>namePtr);
         }
     }
 
@@ -165,7 +167,7 @@ export function mono_jiterp_free_method_data_interp_entry (imethod: number) {
 // FIXME: move this counter into C and make it thread safe
 export function mono_interp_record_interp_entry (imethod: number) {
     // clear the unbox bit
-    imethod = imethod & ~0x1;
+    imethod = (imethod & ~0x1) >>> 0;
 
     const info = infoTable[imethod];
     // This shouldn't happen but it's not worth crashing over
@@ -196,6 +198,10 @@ export function mono_interp_jit_wasm_entry_trampoline (
     // HACK
     if (argumentCount > maxInlineArgs)
         return 0;
+
+    imethod = imethod >>> 0;
+    method = method as any >>> 0 as any;
+    pParamTypes = pParamTypes as any >>> 0 as any;
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
@@ -263,10 +269,9 @@ function flush_wasm_entry_trampoline_jit_queue () {
 
     // If the function signature contains types that need stackval_from_data, that'll use
     //  some constant slots, so make some extra space
-    const constantSlots = (4 * jitQueue.length) + 1;
     let builder = trampBuilder;
     if (!builder) {
-        trampBuilder = builder = new WasmBuilder(constantSlots);
+        trampBuilder = builder = new WasmBuilder();
 
         builder.defineType(
             "unbox",
@@ -301,7 +306,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
             WasmValtype.void, true
         );
     } else
-        builder.clear(constantSlots);
+        builder.clear();
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         return;
@@ -403,7 +408,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
         if (trace > 0)
             mono_log_info(`jit queue generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
-        const traceModule = new WebAssembly.Module(buffer);
+        const traceModule = new WebAssembly.Module(buffer as BufferSource);
         const wasmImports = builder.getWasmImports();
 
         const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
@@ -446,10 +451,10 @@ function flush_wasm_entry_trampoline_jit_queue () {
                     builder.endSection();
             } catch {
                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                ;
+
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)
@@ -554,7 +559,7 @@ function generate_wasm_body (
     // FIXME: Pre-allocate these buffers and their constant slots at the start before we
     //  generate function bodies, so that even if we run out of constant slots for MonoType we
     //  will always have put the buffers in a constant slot. This will be necessary for thread safety
-    const scratchBuffer = <any>Module._malloc(sizeOfJiterpEntryData);
+    const scratchBuffer = <any>malloc(sizeOfJiterpEntryData);
     _zero_region(scratchBuffer, sizeOfJiterpEntryData);
 
     // Initialize the parameter count in the data blob. This is used to calculate the new value of sp

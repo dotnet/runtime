@@ -33,6 +33,11 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(TestClassWithObjectIReadOnlyCollectionT), TestClassWithObjectIReadOnlyCollectionT.s_data };
                 yield return new object[] { typeof(TestClassWithObjectIReadOnlyListT), TestClassWithObjectIReadOnlyListT.s_data };
                 yield return new object[] { typeof(TestClassWithObjectISetT), TestClassWithObjectISetT.s_data };
+
+#if NET
+                yield return new object[] { typeof(TestClassWithObjectIReadOnlySetT), TestClassWithObjectIReadOnlySetT.s_data };
+#endif
+
                 yield return new object[] { typeof(TestClassWithStringArray), TestClassWithStringArray.s_data };
                 yield return new object[] { typeof(TestClassWithGenericList), TestClassWithGenericList.s_data };
                 yield return new object[] { typeof(TestClassWithGenericIEnumerable), TestClassWithGenericIEnumerable.s_data };
@@ -44,6 +49,11 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(TestClassWithGenericIReadOnlyCollectionT), TestClassWithGenericIReadOnlyCollectionT.s_data };
                 yield return new object[] { typeof(TestClassWithGenericIReadOnlyListT), TestClassWithGenericIReadOnlyListT.s_data };
                 yield return new object[] { typeof(TestClassWithGenericISetT), TestClassWithGenericISetT.s_data };
+
+#if NET
+                yield return new object[] { typeof(TestClassWithGenericIReadOnlySetT), TestClassWithGenericIReadOnlySetT.s_data };
+#endif
+
                 yield return new object[] { typeof(TestClassWithStringToPrimitiveDictionary), TestClassWithStringToPrimitiveDictionary.s_data };
                 yield return new object[] { typeof(TestClassWithObjectIEnumerableConstructibleTypes), TestClassWithObjectIEnumerableConstructibleTypes.s_data };
                 yield return new object[] { typeof(TestClassWithObjectImmutableTypes), TestClassWithObjectImmutableTypes.s_data };
@@ -79,6 +89,11 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithObjectIReadOnlyCollectionT() };
                 yield return new object[] { new TestClassWithObjectIReadOnlyListT() };
                 yield return new object[] { new TestClassWithObjectISetT() };
+
+#if NET
+                yield return new object[] { new TestClassWithObjectIReadOnlySetT() };
+#endif
+
                 yield return new object[] { new TestClassWithStringArray() };
                 yield return new object[] { new TestClassWithGenericList() };
                 yield return new object[] { new TestClassWithGenericIEnumerable() };
@@ -90,6 +105,11 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithGenericIReadOnlyCollectionT() };
                 yield return new object[] { new TestClassWithGenericIReadOnlyListT() };
                 yield return new object[] { new TestClassWithGenericISetT() };
+
+#if NET
+                yield return new object[] { new TestClassWithGenericIReadOnlySetT() };
+#endif
+
                 yield return new object[] { new TestClassWithStringToPrimitiveDictionary() };
                 yield return new object[] { new TestClassWithObjectIEnumerableConstructibleTypes() };
                 yield return new object[] { new TestClassWithObjectImmutableTypes() };
@@ -100,5 +120,45 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new ClassWithComplexObjects() };
             }
         }
+
+        public static IEnumerable<object[]> DuplicatePropertyJsonPayloads => field ??=
+        [
+            [$$"""{"p0":0,"p0":42}"""],
+            [$$"""{"p0":0,"p1":1,"p1":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p2":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p3":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p4":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p5":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p6":42}"""],
+
+            [$$"""{"p0":0,"p1":1,"p0":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p0":42}"""],
+
+            // First occurrence escaped
+            [$$"""{"p0":0,"p\u0031":1,"p1":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p\u0036":6,"p6":42}"""],
+            [$$"""{"p\u0030":0,"p1":1,"p0":42}"""],
+            [$$"""{"p\u0030":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p0":42}"""],
+
+            // Last occurrence escaped
+            [$$"""{"p0":0,"p1":1,"p\u0031":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0036":42}"""],
+            [$$"""{"p0":0,"p1":1,"p\u0030":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0030":42}"""],
+
+            // Both occurrences escaped
+            [$$"""{"p0":0,"p\u0031":1,"p\u0031":42}"""],
+            [$$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p\u0036":6,"p\u0036":42}"""],
+            [$$"""{"p\u0030":0,"p1":1,"p\u0030":42}"""],
+            [$$"""{"p\u0030":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0030":42}"""],
+
+            [$$"""{"A":[],"A":1}"""],
+            [$$"""{"A":{"A":1},"A":1}"""],
+            [$$"""{"A":{"B":1},"A":1}"""],
+
+            // No error
+            [$$"""{"A":{"A":1} }""", true],
+            [$$"""{"A":{"B":1},"B":1}""", true],
+        ];
     }
 }

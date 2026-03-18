@@ -8,51 +8,53 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 #if RootAllLibrary
-[assembly: TypeForwardedTo (typeof (RootAllLibrary_ExportedType))]
+[assembly: TypeForwardedTo(typeof(RootAllLibrary_ExportedType))]
 #endif
 
 namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
 {
-	public class RootAllLibrary
-	{
-		public static void Public ()
-		{
-		}
+    public class RootAllLibrary
+    {
+        public static void Public()
+        {
+        }
 
-		private static void Private ()
-		{
-		}
+        private static void Private()
+        {
+        }
 
-		private class NestedType
-		{
-		}
+        private class NestedType
+        {
+        }
 
-		public static void RemovedBranch ()
-		{
-			if (SubstitutedProperty)
-				RootAllLibrary_OptionalDependency.Use ();
-		}
+        public static void RemovedBranch()
+        {
+            if (SubstitutedProperty)
+                RootAllLibrary_OptionalDependency.Use();
+        }
 
-		// Substituted to false in RootAllLibrary_Substitutions.xml
-		static bool SubstitutedProperty {
-			get {
-				RequiresUnreferencedCode ();
-				return true;
-			}
-		}
+        // Substituted to false in RootAllLibrary_Substitutions.xml
+        static bool SubstitutedProperty
+        {
+            get
+            {
+                RequiresUnreferencedCode();
+                return true;
+            }
+        }
 
-		[RequiresUnreferencedCode (nameof (RequiresUnreferencedCode))]
-		static void RequiresUnreferencedCode ()
-		{
-		}
+        [RequiresUnreferencedCode(nameof(RequiresUnreferencedCode))]
+        static void RequiresUnreferencedCode()
+        {
+        }
 
-		[RootAllLibrary_RemovedAttribute]
-		class TypeWithRemovedAttribute
-		{
-		}
-	}
+        [RootAllLibrary_RemovedAttribute]
+        class TypeWithRemovedAttribute
+        {
+        }
+    }
 
-	class NonPublicType
-	{
-	}
+    class NonPublicType
+    {
+    }
 }

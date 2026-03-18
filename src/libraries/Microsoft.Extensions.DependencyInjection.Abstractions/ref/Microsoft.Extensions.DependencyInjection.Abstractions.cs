@@ -32,8 +32,10 @@ namespace Microsoft.Extensions.DependencyInjection
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter)]
     public partial class FromKeyedServicesAttribute : System.Attribute
     {
-        public FromKeyedServicesAttribute(object key) { }
-        public object Key { get { throw null; } }
+        public FromKeyedServicesAttribute() { }
+        public FromKeyedServicesAttribute(object? key) { }
+        public object? Key { get { throw null; } }
+        public Microsoft.Extensions.DependencyInjection.ServiceKeyLookupMode LookupMode { get { throw null; } }
     }
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
@@ -73,7 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static object AnyKey { get { throw null; } }
     }
     public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
-    public delegate T ObjectFactory<T>(System.IServiceProvider serviceProvider, object?[]? arguments);
+    public delegate T ObjectFactory<out T>(System.IServiceProvider serviceProvider, object?[]? arguments);
     public partial class ServiceCollection : Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
         public ServiceCollection() { }
@@ -153,6 +155,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public object? ImplementationInstance { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? ImplementationType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, "ServiceKey")]
         public bool IsKeyedService { get { throw null; } }
         public System.Func<System.IServiceProvider, object?, object>? KeyedImplementationFactory { get { throw null; } }
         public object? KeyedImplementationInstance { get { throw null; } }
@@ -206,6 +209,12 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ServiceKeyAttribute() { }
     }
+    public enum ServiceKeyLookupMode
+    {
+        InheritKey = 0,
+        NullKey = 1,
+        ExplicitKey = 2,
+    }
     public enum ServiceLifetime
     {
         Singleton = 0,
@@ -218,6 +227,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static System.Collections.Generic.IEnumerable<object?> GetKeyedServices(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> GetKeyedServices<T>(this System.IServiceProvider provider, object? serviceKey) { throw null; }
         public static T? GetKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) { throw null; }
+        public static object? GetKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static object GetRequiredKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static T GetRequiredKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) where T : notnull { throw null; }
     }

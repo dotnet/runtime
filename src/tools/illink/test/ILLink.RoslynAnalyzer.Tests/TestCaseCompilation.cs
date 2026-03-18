@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -12,93 +13,130 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	internal static class TestCaseCompilation
-	{
-		private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers =
-			ImmutableArray.Create<DiagnosticAnalyzer> (
-				new RequiresDynamicCodeAnalyzer (),
-				new COMAnalyzer (),
-				new RequiresAssemblyFilesAnalyzer (),
-				new RequiresUnreferencedCodeAnalyzer (),
-				new DynamicallyAccessedMembersAnalyzer ());
+    internal static class TestCaseCompilation
+    {
+        private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers = CreateSupportedDiagnosticAnalyzers();
 
-		public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation (
-			string src,
-			bool consoleApplication,
-			(string, string)[]? globalAnalyzerOptions = null,
-			IEnumerable<MetadataReference>? additionalReferences = null,
-			IEnumerable<SyntaxTree>? additionalSources = null,
-			IEnumerable<AdditionalText>? additionalFiles = null)
-			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+        private static ImmutableArray<DiagnosticAnalyzer> CreateSupportedDiagnosticAnalyzers()
+        {
+            var builder = ImmutableArray.CreateBuilder<DiagnosticAnalyzer>();
+            builder.Add(new RequiresDynamicCodeAnalyzer());
+            builder.Add(new COMAnalyzer());
+            builder.Add(new RequiresAssemblyFilesAnalyzer());
+            builder.Add(new RequiresUnreferencedCodeAnalyzer());
+            builder.Add(new DynamicallyAccessedMembersAnalyzer());
+#if DEBUG
+            builder.Add(new RequiresUnsafeAnalyzer());
+#endif
+            return builder.ToImmutable();
+        }
 
-		public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation (
-			SyntaxTree src,
-			bool consoleApplication,
-			(string, string)[]? globalAnalyzerOptions = null,
-			IEnumerable<MetadataReference>? additionalReferences = null,
-			IEnumerable<SyntaxTree>? additionalSources = null,
-			IEnumerable<AdditionalText>? additionalFiles = null)
-		{
-			var mdRef = MetadataReference.CreateFromFile (typeof (Mono.Linker.Tests.Cases.Expectations.Metadata.BaseMetadataAttribute).Assembly.Location);
-			additionalReferences ??= Array.Empty<MetadataReference> ();
-			var sources = new List<SyntaxTree> () { src };
-			sources.AddRange (additionalSources ?? Array.Empty<SyntaxTree> ());
-			var comp = CSharpCompilation.Create (
-				assemblyName: Guid.NewGuid ().ToString ("N"),
-				syntaxTrees: sources,
-				references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
-				new CSharpCompilationOptions (consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
-			var analyzerOptions = new AnalyzerOptions (
-				additionalFiles: additionalFiles?.ToImmutableArray () ?? ImmutableArray<AdditionalText>.Empty,
-				new SimpleAnalyzerOptions (globalAnalyzerOptions));
+        public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
+            string src,
+            bool consoleApplication,
+            (string, string)[]? globalAnalyzerOptions = null,
+            IEnumerable<MetadataReference>? additionalReferences = null,
+            IEnumerable<SyntaxTree>? additionalSources = null,
+            IEnumerable<AdditionalText>? additionalFiles = null,
+            bool allowUnsafe = false)
+            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)),consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles, allowUnsafe);
 
-			var exceptionDiagnostics = new List<Diagnostic> ();
+        public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
+            SyntaxTree src,
+            bool consoleApplication,
+            (string, string)[]? globalAnalyzerOptions = null,
+            IEnumerable<MetadataReference>? additionalReferences = null,
+            IEnumerable<SyntaxTree>? additionalSources = null,
+            IEnumerable<AdditionalText>? additionalFiles = null,
+            bool allowUnsafe = false)
+        {
+            var mdRef = MetadataReference.CreateFromFile(typeof(Mono.Linker.Tests.Cases.Expectations.Metadata.BaseMetadataAttribute).Assembly.Location);
+            additionalReferences ??= Array.Empty<MetadataReference>();
+            var sources = new List<SyntaxTree>() { src };
+            sources.AddRange(additionalSources ?? Array.Empty<SyntaxTree>());
+            TestCaseUtils.GetDirectoryPaths(out string rootSourceDirectory);
+            var testDir = Path.GetDirectoryName(rootSourceDirectory)!;
+            var srcDir = Path.Combine(Path.GetDirectoryName(testDir)!, "src");
+            var sharedDir = Path.Combine(srcDir, "ILLink.Shared");
+            var commonSourcePaths = new List<string>()
+            {
+                Path.Combine(testDir,
+                    "Mono.Linker.Tests.Cases.Expectations",
+                    "Support",
+                    "DynamicallyAccessedMembersAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresUnreferencedCodeAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresDynamicCodeAttribute.cs"),
+            };
 
-			var compWithAnalyzerOptions = new CompilationWithAnalyzersOptions (
-				analyzerOptions,
-				(Exception exception, DiagnosticAnalyzer diagnosticAnalyzer, Diagnostic diagnostic) => {
-					exceptionDiagnostics.Add (diagnostic);
-				},
-				concurrentAnalysis: true,
-				logAnalyzerExecutionTime: false);
+            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), new CSharpParseOptions(languageVersion: LanguageVersion.Preview), path: p)));
+            var comp = CSharpCompilation.Create(
+                assemblyName: "test",
+                syntaxTrees: sources,
+                references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
+                new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
+                    allowUnsafe: allowUnsafe,
+                    specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
+                    {
+                        // Allow the polyfilled DynamicallyAccessedMembersAttribute to take precedence over the one in corelib.
+                        { "CS0436", ReportDiagnostic.Suppress },
+                        // Suppress assembly reference version mismatch warnings. The linker test assemblies are built against
+                        // NetCoreAppToolCurrent, but during test execution we recompile individual test files against the live
+                        // libraries along with a reference to one of the already-built linker test assemblies.
+                        { "CS1701", ReportDiagnostic.Suppress },
+                        { "CS1702", ReportDiagnostic.Suppress }
+                    }));
+            var analyzerOptions = new AnalyzerOptions(
+                additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,
+                new SimpleAnalyzerOptions(globalAnalyzerOptions));
 
-			return (new CompilationWithAnalyzers (comp, SupportedDiagnosticAnalyzers, compWithAnalyzerOptions), comp.GetSemanticModel (src), exceptionDiagnostics);
-		}
+            var exceptionDiagnostics = new List<Diagnostic>();
 
-		sealed class SimpleAnalyzerOptions : AnalyzerConfigOptionsProvider
-		{
-			public SimpleAnalyzerOptions ((string, string)[]? globalOptions)
-			{
-				globalOptions ??= Array.Empty<(string, string)> ();
-				GlobalOptions = new SimpleAnalyzerConfigOptions (ImmutableDictionary.CreateRange (
-					StringComparer.OrdinalIgnoreCase,
-					globalOptions.Select (x => new KeyValuePair<string, string> (x.Item1, x.Item2))));
-			}
+            var compWithAnalyzerOptions = new CompilationWithAnalyzersOptions(
+                analyzerOptions,
+                (Exception exception, DiagnosticAnalyzer diagnosticAnalyzer, Diagnostic diagnostic) =>
+                {
+                    exceptionDiagnostics.Add(diagnostic);
+                },
+                concurrentAnalysis: true,
+                logAnalyzerExecutionTime: false);
 
-			public override AnalyzerConfigOptions GlobalOptions { get; }
+            return (new CompilationWithAnalyzers(comp, SupportedDiagnosticAnalyzers, compWithAnalyzerOptions), comp.GetSemanticModel(src), exceptionDiagnostics);
+        }
 
-			public override AnalyzerConfigOptions GetOptions (SyntaxTree tree)
-				=> SimpleAnalyzerConfigOptions.Empty;
+        sealed class SimpleAnalyzerOptions : AnalyzerConfigOptionsProvider
+        {
+            public SimpleAnalyzerOptions((string, string)[]? globalOptions)
+            {
+                globalOptions ??= Array.Empty<(string, string)>();
+                GlobalOptions = new SimpleAnalyzerConfigOptions(ImmutableDictionary.CreateRange(
+                    StringComparer.OrdinalIgnoreCase,
+                    globalOptions.Select(x => new KeyValuePair<string, string>(x.Item1, x.Item2))));
+            }
 
-			public override AnalyzerConfigOptions GetOptions (AdditionalText textFile)
-				=> SimpleAnalyzerConfigOptions.Empty;
+            public override AnalyzerConfigOptions GlobalOptions { get; }
 
-			sealed class SimpleAnalyzerConfigOptions : AnalyzerConfigOptions
-			{
-				public static readonly SimpleAnalyzerConfigOptions Empty = new SimpleAnalyzerConfigOptions (ImmutableDictionary<string, string>.Empty);
+            public override AnalyzerConfigOptions GetOptions(SyntaxTree tree)
+                => SimpleAnalyzerConfigOptions.Empty;
 
-				private readonly ImmutableDictionary<string, string> _dict;
-				public SimpleAnalyzerConfigOptions (ImmutableDictionary<string, string> dict)
-				{
-					_dict = dict;
-				}
+            public override AnalyzerConfigOptions GetOptions(AdditionalText textFile)
+                => SimpleAnalyzerConfigOptions.Empty;
 
-				// Suppress warning about missing nullable attributes
+            sealed class SimpleAnalyzerConfigOptions : AnalyzerConfigOptions
+            {
+                public static readonly SimpleAnalyzerConfigOptions Empty = new SimpleAnalyzerConfigOptions(ImmutableDictionary<string, string>.Empty);
+
+                private readonly ImmutableDictionary<string, string> _dict;
+                public SimpleAnalyzerConfigOptions(ImmutableDictionary<string, string> dict)
+                {
+                    _dict = dict;
+                }
+
+                // Suppress warning about missing nullable attributes
 #pragma warning disable 8765
-				public override bool TryGetValue (string key, out string? value)
-					=> _dict.TryGetValue (key, out value);
+                public override bool TryGetValue(string key, out string? value)
+                    => _dict.TryGetValue(key, out value);
 #pragma warning restore 8765
-			}
-		}
-	}
+            }
+        }
+    }
 }

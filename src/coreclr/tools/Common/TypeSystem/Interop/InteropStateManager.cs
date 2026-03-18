@@ -182,7 +182,7 @@ namespace Internal.TypeSystem
 
         public FieldDesc GetPInvokeLazyFixupField(MethodDesc method, MethodSignature nativeSig)
         {
-            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(new (method, nativeSig));
+            return _pInvokeLazyFixupFieldHashtable.GetOrCreateValue(new(method, nativeSig));
         }
 
         public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)
@@ -481,9 +481,9 @@ namespace Internal.TypeSystem
                 return new PInvokeLazyFixupField(_owningType, key.Method, key.NativeSignature);
             }
 
-            private readonly DefType _owningType;
+            private readonly MetadataType _owningType;
 
-            public PInvokeLazyFixupFieldHashtable(DefType owningType)
+            public PInvokeLazyFixupFieldHashtable(MetadataType owningType)
             {
                 _owningType = owningType;
             }

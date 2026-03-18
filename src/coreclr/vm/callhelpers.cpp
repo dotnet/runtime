@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*
  *    CallHelpers.CPP: helpers to call managed code
- *
-
  */
 
 #include "common.h"
@@ -11,10 +10,6 @@
 
 // To include declaration of "AppDomainTransitionExceptionFilter"
 #include "excep.h"
-
-// To include declaration of "SignatureNative"
-#include "runtimehandles.h"
-
 #include "invokeutil.h"
 #include "argdestination.h"
 
@@ -24,7 +19,7 @@
 
 void AssertMulticoreJitAllowedModule(PCODE pTarget)
 {
-    MethodDesc* pMethod = Entry2MethodDesc(pTarget, NULL);
+    MethodDesc* pMethod = NonVirtualEntry2MethodDesc(pTarget);
 
     Module * pModule = pMethod->GetModule();
 
@@ -33,15 +28,12 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 
 #endif
 
-// For X86, INSTALL_COMPLUS_EXCEPTION_HANDLER grants us sufficient protection to call into
-// managed code.
-//
-// But on 64-bit, the personality routine will not pop frames or trackers as exceptions unwind
+// The personality routine will not pop frames or trackers as exceptions unwind
 // out of managed code.  Instead, we rely on explicit cleanup like CLRException::HandlerState::CleanupTry
 // or UMThunkUnwindFrameChainHandler.
 //
-// So all callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
-// and get the platform-appropriate exception handling.
+// All callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
+// to get proper exception handling.
 
 //*******************************************************************************
 void CallDescrWorkerWithHandler(
@@ -97,17 +89,11 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     curThread = GetThread();
 
-    static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
+    static_assert(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
-#ifndef FEATURE_INTERPRETER
-    // When the interpreter is used, this mayb be called from preemptive code.
-    _ASSERTE(curThread->PreemptiveGCDisabled());  // Jitted code expects to be in cooperative mode
-#endif
-
-    // If the current thread owns spinlock or unbreakable lock, it cannot call managed code.
-    _ASSERTE(!curThread->HasUnbreakableLock() &&
-             (curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
+    // If the current thread owns spinlock it cannot call managed code.
+    _ASSERTE((curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
 #ifdef TARGET_ARM
     _ASSERTE(IsThumbCode(pCallDescrData->pTarget));
@@ -190,11 +176,11 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 // Helper for VM->managed calls with simple signatures.
-void * DispatchCallSimple(
-                    SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy,
-                    PCODE pTargetAddress,
-                    DWORD dwDispatchCallSimpleFlags)
+void* DispatchCallSimple(
+    SIZE_T *pSrc,
+    DWORD numStackSlotsToCopy,
+    PCODE pTargetAddress,
+    DWORD dwDispatchCallSimpleFlags)
 {
     CONTRACTL
     {
@@ -233,6 +219,18 @@ void * DispatchCallSimple(
 #endif
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
+
+#ifdef TARGET_WASM
+    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
+    callDescrData.hasRetBuff = false;
+    LPVOID pOrigSrc = callDescrData.pSrc;
+    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
+    for (int i = 0; i < numStackSlotsToCopy; i++)
+    {
+        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
+    }
+#endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -279,11 +277,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
 #endif // CALLDESCR_REGTYPEMAP
 
 //*******************************************************************************
-#ifdef FEATURE_INTERPRETER
-void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue, bool transitionToPreemptive)
-#else
 void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue)
-#endif
 {
     //
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -339,10 +333,8 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-#ifndef FEATURE_INTERPRETER
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT));
-        _ASSERTE(!(m_methodSig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE));
-#endif
+        _ASSERTE(!m_methodSig.HasGenericContextArg());
 
 #ifdef DEBUGGING_SUPPORTED
         if (CORDebuggerTraceCall())
@@ -412,37 +404,12 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
             *((LPVOID*)(pTransitionBlock + m_argIt.GetRetBuffArgOffset())) = ArgSlotToPtr(pArguments[arg++]);
         }
 #ifdef FEATURE_HFA
-#ifdef FEATURE_INTERPRETER
-        // Something is necessary for HFA's, but what's below (in the FEATURE_INTERPRETER ifdef)
-        // doesn't seem to do the proper test.  It fires,
-        // incorrectly, for a one-word struct that *doesn't* have a ret buff.  So we'll try this, instead:
-        // We're here because it doesn't have a ret buff.  If it would, except that the struct being returned
-        // is an HFA, *then* assume the invoker made this slot a ret buff pointer.
-        // It's an HFA if the return type is a struct, but it has a non-zero FP return size.
-        // (If it were an HFA, but had a ret buff because it was varargs, then we wouldn't be here.
-        // Also this test won't work for float enums.
-        else if (m_methodSig.GetReturnType() == ELEMENT_TYPE_VALUETYPE
-                  && m_argIt.GetFPReturnSize() > 0)
-#else  // FEATURE_INTERPRETER
         else if (ELEMENT_TYPE_VALUETYPE == m_methodSig.GetReturnTypeNormalized())
-#endif // FEATURE_INTERPRETER
         {
             pvRetBuff = ArgSlotToPtr(pArguments[arg++]);
         }
 #endif // FEATURE_HFA
 
-
-#ifdef FEATURE_INTERPRETER
-        if (m_argIt.IsVarArg())
-        {
-            *((LPVOID*)(pTransitionBlock + m_argIt.GetVASigCookieOffset())) = ArgSlotToPtr(pArguments[arg++]);
-        }
-
-        if (m_argIt.HasParamType())
-        {
-            *((LPVOID*)(pTransitionBlock + m_argIt.GetParamTypeArgOffset())) = ArgSlotToPtr(pArguments[arg++]);
-        }
-#endif
 
         int ofs;
         for (; TransitionBlock::InvalidOffset != (ofs = m_argIt.GetNextOffset()); arg++)
@@ -572,18 +539,13 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
+#ifdef TARGET_WASM
+    callDescrData.nArgsSize = nStackBytes;
+    callDescrData.hasRetBuff = false;
+    _ASSERTE(!m_argIt.HasRetBuffArg());
+#endif // TARGET_WASM
 
-#ifdef FEATURE_INTERPRETER
-    if (transitionToPreemptive)
-    {
-        GCPreemp transitionIfILStub(transitionToPreemptive);
-        CallDescrWorkerInternal(&callDescrData);
-    }
-    else
-#endif // FEATURE_INTERPRETER
-    {
-        CallDescrWorkerWithHandler(&callDescrData);
-    }
+    CallDescrWorkerWithHandler(&callDescrData);
 
 #ifdef FEATURE_HFA
     if (pvRetBuff != NULL)
@@ -632,7 +594,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     MethodTable *pMT = ref->GetMethodTable();
 
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     if (!pMT->HasDefaultConstructor())
     {

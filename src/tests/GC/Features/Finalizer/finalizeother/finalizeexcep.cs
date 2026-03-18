@@ -5,6 +5,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
+using TestLibrary;
 
 public class Test_finalizeexcep {
 
@@ -43,7 +45,9 @@ public class Test_finalizeexcep {
         }
     }
 
-    public static int Main() {
+    [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint() {
 
         CreateObj temp= new CreateObj();
         temp.RunTest();

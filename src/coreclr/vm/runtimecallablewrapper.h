@@ -34,7 +34,7 @@
 //  Cast operations: requires a QI, unless a QI for that interface was done previously
 //
 //  Threading : apartment model COM objects have thread affinity
-//              choices: COM+ can guarantee thread affinity by making sure
+//              choices: CLR can guarantee thread affinity by making sure
 //                       the calls are always made on the right thread
 //              Advantanges: avoid an extra marshalling
 //              Dis.Advt.  : need to make sure legacy apartment semantics are preserved
@@ -62,11 +62,10 @@
 #include "vars.hpp"
 #include "spinlock.h"
 #include "interoputil.h"
-#include "mngstdinterfaces.h"
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
-#include "comcache.h"
+#include "cdacdata.h"
 
 class Object;
 class ComCallWrapper;
@@ -100,9 +99,6 @@ struct RCW
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
 
-    // List of RCW instances that have been freed since the last RCW cleanup.
-    static SLIST_HEADER s_RCWStandbyList;
-
     // Simple read-only iterator for all cached interface pointers.
     class CachedInterfaceEntryIterator
     {
@@ -124,7 +120,7 @@ struct RCW
 
             if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
                 return FALSE;
-    
+
             // stop incrementing m_InlineCacheIndex once we reach INTERFACE_ENTRY_CACHE_SIZE
             if (++m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
                 return TRUE;
@@ -162,9 +158,6 @@ struct RCW
         ZeroMemory(this, sizeof(*this));
     }
 
-    // Deletes all items in code:s_RCWStandbyList.
-    static void FlushStandbyList();
-
     // Create a new wrapper for given IUnk, IDispatch
     static RCW* CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
 
@@ -175,9 +168,8 @@ struct RCW
     enum MarshalingType
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
-         MarshalingType_Inhibit = 1,      /* This value is same as the MarshalingType.Inhibit*/
-         MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
-         MarshalingType_Standard = 3      /* This value is same as the MarshalingType.Standard*/
+         MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller. [cDAC] [BuiltInCOM]: Contract depends on this value. */
      };
 
     //-------------------------------------------------
@@ -197,27 +189,6 @@ struct RCW
     // called during GC to do minor cleanup and schedule the ips to be
     // released
     void MinorCleanup();
-
-    //-----------------------------------------------------
-    // The amount of GC pressure we apply has one of a few possible values.
-    // We save space in the RCW structure by tracking this instead of the
-    // actual value.
-    enum GCPressureSize
-    {
-        GCPressureSize_None         = 0,
-        GCPressureSize_ProcessLocal = 1,
-        GCPressureSize_MachineLocal = 2,
-        GCPressureSize_Remote       = 3,
-        GCPressureSize_COUNT        = 4
-    };
-
-    //---------------------------------------------------
-    // Add memory pressure to the GC representing the native cost
-    void AddMemoryPressure(GCPressureSize pressureSize);
-
-    //---------------------------------------------------
-    // Remove memory pressure from the GC representing the native cost
-    void RemoveMemoryPressure();
 
     //-----------------------------------------------------
     // AddRef
@@ -452,12 +423,6 @@ struct RCW
         return CachedInterfaceEntryIterator(dac_cast<PTR_RCW>(this));
     }
 
-    //---------------------------------------------------------------------
-    // Returns true iff pItfMT is a "standard managed" interface, such as
-    // IEnumerator, and the RCW supports the interface through classic COM
-    // interop mechanisms.
-    bool SupportsMngStdInterface(MethodTable *pItfMT);
-
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
     IUnknown *GetRawIUnknown_NoAddRef_NoThrow()
@@ -497,20 +462,11 @@ struct RCW
 
         if (InterlockedDecrement(&m_cbUseCount) == 0)
         {
-            // this was the final decrement, go ahead and delete/recycle the RCW
-            {
-                GCX_PREEMP();
-                m_UnkEntry.Free();
-            }
+            // this was the final decrement, go ahead and delete the RCW
+            GCX_PREEMP();
+            m_UnkEntry.Free();
 
-            if (g_fEEShutDown)
-            {
-                delete this;
-            }
-            else
-            {
-                InterlockedPushEntrySList(&RCW::s_RCWStandbyList, (PSLIST_ENTRY)this);
-            }
+            delete this;
         }
     }
 
@@ -561,11 +517,8 @@ public:
             DWORD       m_fURTContained:1;         // this RCW represents a COM object contained by a managed object
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
 
-            static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
-            DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
-
-            // Reserve 2 bits for marshaling behavior
-            DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
+            // Reserve 2 bits for marshaling type
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object. [cDAC] [BuiltInCOM]: Contract depends on the bit position of this field within m_dwFlags.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
@@ -573,9 +526,6 @@ public:
     m_Flags;
 
     static_assert(sizeof(RCWFlags) == 4, "Flags don't fit in 4 bytes, there's too many of them");
-
-    // GC pressure sizes in bytes
-    static const int s_rGCPressureTable[GCPressureSize_COUNT];
 
     // Tracks concurrent access to this RCW to prevent using RCW instances that have already been released
     LONG                m_cbUseCount;
@@ -592,6 +542,7 @@ private :
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
+    friend struct ::cdac_data<RCW>;
 
 private :
     static RCW* CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -631,6 +582,17 @@ private :
     }
 };
 
+template<>
+struct cdac_data<RCW>
+{
+    static constexpr size_t NextCleanupBucket = offsetof(RCW, m_pNextCleanupBucket);
+    static constexpr size_t NextRCW = offsetof(RCW, m_pNextRCW);
+    static constexpr size_t Flags = offsetof(RCW, m_Flags);
+    static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
+    static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
+    static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
+};
+
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
 {
     LIMITED_METHOD_CONTRACT;
@@ -656,7 +618,7 @@ inline RCW::CreationFlags RCW::CreationFlagsFromObjForComIPFlags(ObjFromComIP::f
 {
     LIMITED_METHOD_CONTRACT;
 
-    static_assert_no_msg(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
+    static_assert(CF_NeedUniqueObject     == ObjFromComIP::UNIQUE_OBJECT);
 
     RCW::CreationFlags result = (RCW::CreationFlags)(dwFlags &
                                         (ObjFromComIP::UNIQUE_OBJECT));
@@ -749,7 +711,7 @@ protected :
 private:
     //-------------------------------------------------------------
     // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-    // create a COM+ instance that aggregates a COM instance
+    // create a CLR instance that aggregates a COM instance
     OBJECTREF CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged);
 
     //--------------------------------------------------------------
@@ -1321,11 +1283,12 @@ class RCWCleanupList
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif // DACCESS_COMPILE
+    friend struct ::cdac_data<RCWCleanupList>;
 
 public:
     RCWCleanupList()
         : m_pFirstBucket(NULL), m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
-          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)         
+          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1406,6 +1369,12 @@ private:
 
     // Fast check for whether threads should help cleanup wrappers in their contexts
     BOOL                m_doCleanupInContexts;
+};
+
+template<>
+struct cdac_data<RCWCleanupList>
+{
+    static constexpr size_t FirstBucket = offsetof(RCWCleanupList, m_pFirstBucket);
 };
 
 FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)

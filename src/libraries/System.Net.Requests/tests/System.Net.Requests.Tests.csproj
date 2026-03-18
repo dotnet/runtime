@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
-    <NoWarn>$(NoWarn);SYSLIB0014;SYSLIB0057</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>

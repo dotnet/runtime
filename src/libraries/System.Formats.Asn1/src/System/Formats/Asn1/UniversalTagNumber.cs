@@ -4,7 +4,7 @@
 namespace System.Formats.Asn1
 {
     /// <summary>
-    ///   Tag assignments for the UNIVERSAL class in ITU-T X.680.
+    ///   Specifies tag assignments for the UNIVERSAL class in ITU-T X.680.
     /// </summary>
     // ITU-T-REC.X.680-201508 sec 8.6
     public enum UniversalTagNumber

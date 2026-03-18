@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -35,6 +36,8 @@ namespace Microsoft.Interop
     {
         protected MarshallingInfo()
         { }
+
+        public virtual IEnumerable<TypePositionInfo> ElementDependencies => [];
     }
 
     /// <summary>
@@ -46,16 +49,6 @@ namespace Microsoft.Interop
 
         private NoMarshallingInfo() { }
     }
-
-    /// <summary>
-    /// Marshalling information is lacking because of support not because it is
-    /// unknown or non-existent.
-    /// </summary>
-    /// <remarks>
-    /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaller.
-    /// </remarks>
-    public record MissingSupportMarshallingInfo : MarshallingInfo;
 
     /// <summary>
     /// Character encoding enumeration.
@@ -127,19 +120,40 @@ namespace Microsoft.Interop
         CountInfo ElementCountInfo,
         ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
             EntryPointType,
-            Marshallers);
+            Marshallers)
+    {
+        public override IEnumerable<TypePositionInfo> ElementDependencies
+        {
+            get
+            {
+                return field ??= GetElementDependencies().ToImmutableArray();
 
-    /// <summary>
-    /// Marshalling information is lacking because of support not because it is
-    /// unknown or non-existent. Includes information about element types in case
-    /// we need to rehydrate the marshalling info into an attribute for the fallback marshaller.
-    /// </summary>
-    /// <remarks>
-    /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaller.
-    /// </remarks>
-    public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
+                IEnumerable<TypePositionInfo> GetElementDependencies()
+                {
+                    if (ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
+                    {
+                        // Do not include dependent elements with no managed or native index.
+                        // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
+                        if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                        {
+                            yield return nestedCountElement;
+                        }
+                    }
 
+                    foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Marshallers.Modes)
+                    {
+                        foreach (TypePositionInfo nestedElement in mode.Value.CollectionElementMarshallingInfo.ElementDependencies)
+                        {
+                            if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                            {
+                                yield return nestedElement;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Marshal an exception based on the same rules as the built-in COM system based on the unmanaged type of the native return marshaller.

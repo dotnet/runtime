@@ -12,6 +12,7 @@ using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.CorConstants;
+using Internal;
 
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -391,7 +392,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return 37 + (_parameterTypes == null ?
                 _returnType.GetHashCode() :
-                TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
+                VersionResilientHashCode.GenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
         }
 
         public bool HasThis() { return _hasThis; }
@@ -441,6 +442,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private bool _hasThis;
         private bool _hasParamType;
+        private bool _hasAsyncContinuation;
         private bool _extraFunctionPointerArg;
         private ArgIteratorData _argData;
         private bool[] _forcedByRefParams;
@@ -453,6 +455,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool HasThis => _hasThis;
         public bool IsVarArg => _argData.IsVarArg();
         public bool HasParamType => _hasParamType;
+        public bool HasAsyncContinuation => _hasAsyncContinuation;
         public int NumFixedArgs => _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0);
 
         // Argument iteration.
@@ -509,7 +512,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             TypeSystemContext context,
             ArgIteratorData argData, 
             CallingConventions callConv, 
-            bool hasParamType, 
+            bool hasParamType,
+            bool hasAsyncContinuation,
             bool extraFunctionPointerArg, 
             bool[] forcedByRefParams, 
             bool skipFirstArg, 
@@ -520,6 +524,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _argData = argData;
             _hasThis = callConv == CallingConventions.ManagedInstance;
             _hasParamType = hasParamType;
+            _hasAsyncContinuation = hasAsyncContinuation;
             _extraFunctionPointerArg = extraFunctionPointerArg;
             _forcedByRefParams = forcedByRefParams;
             _skipFirstArg = skipFirstArg;
@@ -731,6 +736,60 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        public int GetAsyncContinuationArgOffset()
+        {
+            Debug.Assert(HasAsyncContinuation);
+
+            if (_transitionBlock.IsX86)
+            {
+                // x86 is special as always
+                if (!_SIZE_OF_ARG_STACK_COMPUTED)
+                    ForceSigWalk();
+
+                switch (_asyncContinuationLoc)
+                {
+                    case AsyncContinuationLocation.Ecx:
+                        return _transitionBlock.OffsetOfArgumentRegisters + TransitionBlock.X86Constants.OffsetOfEcx;
+                    case AsyncContinuationLocation.Edx:
+                        return _transitionBlock.OffsetOfArgumentRegisters + TransitionBlock.X86Constants.OffsetOfEdx;
+                    default:
+                        break;
+                }
+
+                // If the async continuation is a stack arg, then it comes last unless
+                // there also is a param type arg on the stack, in which case it comes
+                // before it.
+                if (HasParamType && _paramTypeLoc == ParamTypeLocation.Stack)
+                {
+                    return _transitionBlock.SizeOfTransitionBlock + _transitionBlock.PointerSize;
+                }
+
+                return _transitionBlock.SizeOfTransitionBlock;
+            }
+            else
+            {
+                // The hidden arg is after this, retbuf and param type arguments by default.
+                int ret = _transitionBlock.OffsetOfArgumentRegisters;
+
+                if (HasThis)
+                {
+                    ret += _transitionBlock.PointerSize;
+                }
+
+                if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
+                {
+                    ret += _transitionBlock.PointerSize;
+                }
+
+                if (HasParamType)
+                {
+                    ret += _transitionBlock.PointerSize;
+                }
+
+                return ret;
+            }
+        }
+
         //------------------------------------------------------------
         // Each time this is called, this returns a byte offset of the next
         // argument from the TransitionBlock* pointer. This offset can be positive *or* negative.
@@ -764,6 +823,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         numRegistersUsed++;
                     }
+
+                    if (HasAsyncContinuation)
+                    {
+                        numRegistersUsed++;
+                    }
                 }
 
                 if (!_transitionBlock.IsX86 && IsVarArg)
@@ -778,27 +842,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                         }
-
-#if FEATURE_INTERPRETER
-                        switch (_interpreterCallingConvention)
-                        {
-                            case CallingConventions.StdCall:
-                                _numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                                _ofsStack = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * _transitionBlock.PointerSize + initialArgOffset;
-                                break;
-
-                            case CallingConventions.ManagedStatic:
-                            case CallingConventions.ManagedInstance:
-                                _numRegistersUsed = numRegistersUsed;
-                                // DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
-                                _ofsStack= (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
-                                break;
-
-                            default:
-                                Environment.FailFast("Unsupported calling convention.");
-                                break;
-                        }
-#endif
                         _x86NumRegistersUsed = numRegistersUsed;
                         _x86OfsStack = (int)(_transitionBlock.OffsetOfArgs + SizeOfArgStack());
                         break;
@@ -867,14 +910,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             switch (_transitionBlock.Architecture)
             {
                 case TargetArchitecture.X86:
-#if FEATURE_INTERPRETER
-                    if (_interpreterCallingConvention != CallingConventions.ManagedStatic && _interpreterCallingConvention != CallingConventions.ManagedInstance)
-                    {
-                        argOfs = _curOfs;
-                        _curOfs += ArchitectureConstants.StackElemSize(argSize);
-                        return argOfs;
-                    }
-#endif
                     if (_transitionBlock.IsArgumentInRegister(ref _x86NumRegistersUsed, argType, _argTypeHandle))
                     {
                         return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * _transitionBlock.PointerSize;
@@ -1515,23 +1550,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                 }
 
-#if FEATURE_INTERPRETER
-                switch (_interpreterCallingConvention)
-                {
-                    case CallingConventions.StdCall:
-                        numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                        break;
-
-                    case CallingConventions.ManagedStatic:
-                    case CallingConventions.ManagedInstance:
-                        break;
-
-                    default:
-                        Environment.FailFast("Unsupported calling convention.");
-                        break;
-                }
-#endif // FEATURE_INTERPRETER
-
                 int nArgs = NumFixedArgs;
                 for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
                 {
@@ -1551,6 +1569,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             throw new NotSupportedException();
                         }
+                    }
+                }
+
+                // On x86, async continuation comes before param type in allocation order
+                if (HasAsyncContinuation)
+                {
+                    if (numRegistersUsed < _transitionBlock.NumArgumentRegisters)
+                    {
+                        numRegistersUsed++;
+                        _asyncContinuationLoc = (numRegistersUsed == 1) ?
+                            AsyncContinuationLocation.Ecx : AsyncContinuationLocation.Edx;
+                    }
+                    else
+                    {
+                        nSizeOfArgStack += _transitionBlock.PointerSize;
+                        _asyncContinuationLoc = AsyncContinuationLocation.Stack;
                     }
                 }
 
@@ -1899,6 +1933,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 PARAM_TYPE_REGISTER_STACK       = 0x0010,
                 PARAM_TYPE_REGISTER_ECX         = 0x0020,
                 PARAM_TYPE_REGISTER_EDX         = 0x0030,*/
+
+        private enum AsyncContinuationLocation
+        {
+            Stack,
+            Ecx,
+            Edx
+        }
+
+        private AsyncContinuationLocation _asyncContinuationLoc;
+        /* X86: ASYNC_CONTINUATION_REGISTER_MASK   = 0x00C0,
+                ASYNC_CONTINUATION_REGISTER_STACK  = 0x0040,
+                ASYNC_CONTINUATION_REGISTER_ECX    = 0x0080,
+                ASYNC_CONTINUATION_REGISTER_EDX    = 0x00C0,*/
 
         //        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
 

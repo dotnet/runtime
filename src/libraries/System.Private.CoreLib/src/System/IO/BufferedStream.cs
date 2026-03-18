@@ -1078,7 +1078,8 @@ namespace System.IO
                 {
                     // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
                     totalUserBytes = _writePos + buffer.Length;
-                    useBuffer = (totalUserBytes + buffer.Length < (_bufferSize + _bufferSize));
+                    // Allow current totalUserBytes up to int.MaxValue by using uint arithmetic operation for totalUserBytes + buffer.Length
+                    useBuffer = ((uint)totalUserBytes + buffer.Length < (_bufferSize + _bufferSize));
                 }
 
                 if (useBuffer)
@@ -1166,9 +1167,12 @@ namespace System.IO
                 EnsureBufferAllocated();
             }
 
-            // We should not be flushing here, but only writing to the underlying stream, but previous version flushed, so we keep this.
             if (_writePos >= _bufferSize - 1)
-                FlushWrite();
+            {
+                Debug.Assert(_stream != null);
+                _stream.Write(_buffer!, 0, _writePos);
+                _writePos = 0;
+            }
 
             _buffer![_writePos++] = value;
 

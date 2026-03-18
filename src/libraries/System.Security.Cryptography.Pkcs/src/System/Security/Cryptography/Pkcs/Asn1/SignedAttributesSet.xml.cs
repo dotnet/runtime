@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out SignedAttributesSet decoded);
                 reader.ThrowIfNotEmpty();
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignedAttributesSet decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out SignedAttributesSet decoded)
         {
             try
             {
@@ -86,11 +86,11 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignedAttributesSet decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out SignedAttributesSet decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            AsnValueReader collectionReader;
+            ValueAsnReader collectionReader;
 
             if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {

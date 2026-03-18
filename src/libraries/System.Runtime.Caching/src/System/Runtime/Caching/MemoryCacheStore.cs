@@ -27,8 +27,9 @@ namespace System.Runtime.Caching
         private readonly MemoryCache _cache;
         private readonly Counters _perfCounters;
 #if NET
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
-        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+        private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
         private static bool _countersSupported => true;
 #endif
@@ -278,7 +279,7 @@ namespace System.Runtime.Caching
 
                 // MemoryCacheStatistics has been disposed, and therefore nobody should be using
                 // _insertBlock except for potential threads in WaitInsertBlock (which won't care if we call Close).
-                Debug.Assert(_useInsertBlock == false, "_useInsertBlock == false");
+                Debug.Assert(!_useInsertBlock, "_useInsertBlock == false");
                 _insertBlock.Close();
 
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.
@@ -341,10 +342,7 @@ namespace System.Runtime.Caching
                 if (_disposed == 0)
                 {
                     existingEntry = _entries[key] as MemoryCacheEntry;
-                    if (existingEntry != null)
-                    {
-                        existingEntry.State = EntryState.RemovingFromCache;
-                    }
+                    existingEntry?.State = EntryState.RemovingFromCache;
                     entry.State = EntryState.AddingToCache;
                     added = true;
                     _entries[key] = entry;

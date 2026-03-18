@@ -36,38 +36,20 @@ namespace System.Reflection.TypeLoading.Ecma
         }
         private bool _typeDefTableFullyFilled; // Only gets set true if EnsureTypeDefTableFullyFilled() fills the table. False negative just means some unnecessary work is done.
 
-        internal MetadataTable<RoDefinitionType, EcmaModule> TypeRefTable
-        {
-            get
-            {
-                return _lazyTypeRefTable ??
-                    Interlocked.CompareExchange(ref _lazyTypeRefTable, CreateTable<RoDefinitionType>(TableIndex.TypeRef), null) ??
-                    _lazyTypeRefTable;
-            }
-        }
-        private volatile MetadataTable<RoDefinitionType, EcmaModule>? _lazyTypeRefTable;
+        internal MetadataTable<RoDefinitionType, EcmaModule> TypeRefTable =>
+            field ??
+            Interlocked.CompareExchange(ref field, CreateTable<RoDefinitionType>(TableIndex.TypeRef), null) ??
+            field;
 
-        internal MetadataTable<EcmaGenericParameterType, EcmaModule> GenericParamTable
-        {
-            get
-            {
-                return _lazyGenericParamTable ??
-                    Interlocked.CompareExchange(ref _lazyGenericParamTable, CreateTable<EcmaGenericParameterType>(TableIndex.GenericParam), null) ??
-                    _lazyGenericParamTable;
-            }
-        }
-        private volatile MetadataTable<EcmaGenericParameterType, EcmaModule>? _lazyGenericParamTable;
+        internal MetadataTable<EcmaGenericParameterType, EcmaModule> GenericParamTable =>
+            field ??
+            Interlocked.CompareExchange(ref field, CreateTable<EcmaGenericParameterType>(TableIndex.GenericParam), null) ??
+            field;
 
-        internal MetadataTable<RoAssembly, EcmaModule> AssemblyRefTable
-        {
-            get
-            {
-                return _lazyAssemblyRefTable ??
-                    Interlocked.CompareExchange(ref _lazyAssemblyRefTable, CreateTable<RoAssembly>(TableIndex.AssemblyRef), null) ??
-                    _lazyAssemblyRefTable;
-            }
-        }
-        private volatile MetadataTable<RoAssembly, EcmaModule>? _lazyAssemblyRefTable;
+        internal MetadataTable<RoAssembly, EcmaModule> AssemblyRefTable =>
+            field ??
+            Interlocked.CompareExchange(ref field, CreateTable<RoAssembly>(TableIndex.AssemblyRef), null) ??
+            field;
 
         private MetadataTable<T, EcmaModule> CreateTable<T>(TableIndex tableIndex) where T : class
         {

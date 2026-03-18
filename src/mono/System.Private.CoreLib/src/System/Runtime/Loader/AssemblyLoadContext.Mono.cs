@@ -140,26 +140,26 @@ namespace System.Runtime.Loader
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 
-        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
+        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchAssemblyLoadContext)
         {
             AssemblyLoadContext context;
             // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchManagedAssemblyLoadContext == IntPtr.Zero)
+            if (gchAssemblyLoadContext == IntPtr.Zero)
                 context = Default;
             else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
             return context;
         }
 
-        private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
+        private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchAssemblyLoadContext, ref IntPtr dll)
         {
-            AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchAssemblyLoadContext);
             dll = context.LoadUnmanagedDll(unmanagedDllName);
         }
 
-        private static void MonoResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
+        private static void MonoResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchAssemblyLoadContext, ref IntPtr dll)
         {
-            AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchAssemblyLoadContext);
             dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 

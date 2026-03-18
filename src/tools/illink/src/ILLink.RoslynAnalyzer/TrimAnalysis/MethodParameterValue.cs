@@ -7,20 +7,20 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal partial record MethodParameterValue
-	{
-		public MethodParameterValue (ParameterProxy parameter)
-			: this (parameter, FlowAnnotations.GetMethodParameterAnnotation (parameter)) { }
+    internal partial record MethodParameterValue
+    {
+        public MethodParameterValue(ParameterProxy parameter)
+            : this(parameter, FlowAnnotations.GetMethodParameterAnnotation(parameter)) { }
 
-		public MethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			Parameter = parameter;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-			StaticType = parameter.ParameterType;
-		}
+        public MethodParameterValue(ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            Parameter = parameter;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+            StaticType = parameter.ParameterType;
+        }
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public IMethodSymbol MethodSymbol => Parameter.Method.Method;
-	}
+        public IMethodSymbol MethodSymbol => Parameter.Method.Method;
+    }
 }

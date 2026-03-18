@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: debugger.h
 //
-
-//
-// Header file for Runtime Controller classes of the COM+ Debugging Services.
-//
+// Header file for Runtime Controller classes of the CLR Debugging Services.
 //*****************************************************************************
 
 #ifndef DEBUGGER_H_
@@ -157,7 +155,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
@@ -182,8 +179,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
         {
             return;
@@ -279,7 +274,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternal(false, true);
@@ -287,7 +281,6 @@ public:
 
     DEBUG_NOINLINE GCHolderEEInterface(bool bConditional)
     {
-        SCAN_SCOPE_BEGIN;
         if (bConditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -298,8 +291,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         this->LeaveInternal();
     };
 };
@@ -388,13 +379,9 @@ inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pCurrentContextPointers) &&
          ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pCurrentContextPointers + sizeof(T_KNONVOLATILE_CONTEXT_POINTERS))) )
-#else
-    if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pContext) &&
-         ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pContext + sizeof(T_CONTEXT))) )
-#endif
+
         return NULL;
 
     // (Microsoft 2/9/07 - putting this in an else clause confuses gcc for some reason, so I've moved
@@ -451,7 +438,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -465,61 +452,25 @@ class DebuggerModule
     BOOL ClassLoadCallbacksEnabled(void);
     void EnableClassLoadCallbacks(BOOL f);
 
-    AppDomain* GetAppDomain();
-
     Module * GetRuntimeModule();
 
-
-    // <TODO> (8/12/2002)
-    // Currently we create a new DebuggerModules for each appdomain a shared
-    // module lives in. We then pretend there aren't any shared modules.
-    // This is bad. We need to move away from this.
-    // Once we stop lying, then every module will be it's own PrimaryModule. :)
-    //
-    // Currently, Module* is 1:n w/ DebuggerModule.
-    // We add a notion of PrimaryModule so that:
-    // Module* is 1:1 w/ DebuggerModule::GetPrimaryModule();
-    // This should help transition towards exposing shared modules.
-    // If the Runtime module is shared, then this gives a common DM.
-    // If the runtime module is not shared, then this is an identity function.
-    //
-    // The runtime has the notion of "DomainAssembly", which is 1:1 with DebuggerModule
-    // and thus 1:1 with CordbModule.  The CordbModule hash table on the RS now uses
-    // the DomainAssembly as the key instead of DebuggerModule.  This is a temporary
-    // workaround to facilitate the removal of DebuggerModule.
-    // </TODO>
-    DebuggerModule * GetPrimaryModule();
     DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pRuntimeDomainAssembly;
     }
 
-    // Called by DebuggerModuleTable to set our primary module
-    void SetPrimaryModule(DebuggerModule * pPrimary);
-
     void SetCanChangeJitFlags(bool fCanChangeJitFlags);
 
   private:
     BOOL            m_enableClassLoadCallbacks;
 
-    // First step in moving away from hiding shared modules.
-    DebuggerModule* m_pPrimaryModule;
-
     PTR_Module     m_pRuntimeModule;
     PTR_DomainAssembly m_pRuntimeDomainAssembly;
-
-    AppDomain*     m_pAppDomain;
-
-    bool m_fHasOptimizedCode;
-
-    void PickPrimaryModule();
 
     // Can we change jit flags on the module?
     // This is true during the Module creation
     bool           m_fCanChangeJitFlags;
-
-
 };
 
 /* ------------------------------------------------------------------------ *
@@ -1109,12 +1060,13 @@ public:
     // correct IL offset if this code happens to be instrumented
     ULONG32 TranslateToInstIL(const InstrumentedILOffsetMapping * pMapping, ULONG32 offOrig, bool fOrigToInst);
 
-
+private:
     // We don't always have a debugger module. (Ex: we're tracking debug info,
     // but no debugger's attached). So this may return NULL alot.
     // If we can, we should use the RuntimeModule when ever possible.
-    DebuggerModule* GetPrimaryModule();
+    DebuggerModule* GetModule();
 
+public:
     // We always have a runtime module.
     Module * GetRuntimeModule();
 
@@ -1158,8 +1110,8 @@ protected:
 //     different part of the address space (not on the heap).
 // ------------------------------------------------------------------------ */
 
-constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=112;
-constexpr uint64_t EXPECTED_CHUNKSIZE=128;
+constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=120; // sizeof (SharedPatchBypassBuffer)
+constexpr uint64_t EXPECTED_CHUNKSIZE=256; // This must be a power of 2.  It represents the size of DebuggerHeapExecutableMemoryChunk, can be the sizeof (DataChunk) or sizeof (BookkeepingChunk). Changes to DBG_MAX_EXECUTABLE_ALLOC_SIZE can affect this number.  Currently we require 136 bytes, and so the closest power of 2 is 256.
 constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
 constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
 constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
@@ -1361,9 +1313,7 @@ private:
 
 class DebuggerJitInfo;
 
-#if defined(FEATURE_EH_FUNCLETS)
 const int PARENT_METHOD_INDEX     = -1;
-#endif // FEATURE_EH_FUNCLETS
 
 class CodeRegionInfo
 {
@@ -1642,10 +1592,8 @@ public:
     // The version number of this jitted code
     SIZE_T                   m_encVersion;
 
-#if defined(FEATURE_EH_FUNCLETS)
     DWORD                   *m_rgFunclet;
     int                      m_funcletCount;
-#endif // FEATURE_EH_FUNCLETS
 
 #ifndef DACCESS_COMPILE
 
@@ -1672,9 +1620,7 @@ public:
 
     private:
         SIZE_T m_ilOffset;
-#ifdef FEATURE_EH_FUNCLETS
         int m_funcletIndex;
-#endif
     };
 
     struct NativeOffset
@@ -1721,10 +1667,8 @@ public:
     SIZE_T MapSpecialToNative(CorDebugMappingResult mapping,
                               SIZE_T which,
                               BOOL *pfAccurate);
-#if defined(FEATURE_EH_FUNCLETS)
     void   MapSpecialToNative(int funcletIndex, DWORD* pPrologEndOffset, DWORD* pEpilogStartOffset);
     SIZE_T MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcletIndexFrom, EHRangeTree* pEHRT, BOOL* pExact);
-#endif // FEATURE_EH_FUNCLETS
 
     // MapNativeOffsetToIL Takes a given nativeOffset, and maps it back
     //      to the corresponding IL offset, which it returns.  If mapping indicates
@@ -1738,7 +1682,6 @@ public:
 
     void Init(TADDR newAddress);
 
-#if defined(FEATURE_EH_FUNCLETS)
     enum GetFuncletIndexMode
     {
         GFIM_BYOFFSET,
@@ -1749,7 +1692,6 @@ public:
     DWORD GetFuncletOffsetByIndex(int index);
     int   GetFuncletIndex(CORDB_ADDRESS offset, GetFuncletIndexMode mode);
     int   GetFuncletCount() {return m_funcletCount;}
-#endif // FEATURE_EH_FUNCLETS
 
     void SetVars(ULONG32 cVars, ICorDebugInfo::NativeVarInfo *pVars);
     void SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
@@ -1906,7 +1848,7 @@ extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, bool fIsInPlaceSingleStep, PRD_TYPE opcode);
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, DWORD64 flag, PRD_TYPE opcode);
 #else
 #error Platform not supported
 #endif
@@ -1920,7 +1862,6 @@ extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size
 // Forward declare some parameter marshalling structs
 struct ShouldAttachDebuggerParams;
 struct EnsureDebuggerAttachedParams;
-struct SendMDANotificationParams;
 class DebuggerSteppingInfo;
 
 // class Debugger:  This class implements DebugInterface to provide
@@ -1990,9 +1931,6 @@ public:
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 
-    // Helper on startup to notify debugger
-    void RaiseStartupNotification();
-
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
@@ -2017,34 +1955,28 @@ public:
                     LPCWSTR pszModuleName,
                     DWORD dwModuleName,
                     Assembly *pAssembly,
-                    AppDomain *pAppDomain,
                     DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
     DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
 
-
-    void UnloadModule(Module* pRuntimeModule,
-                      AppDomain *pAppDomain);
+    void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);
 
     void RemoveModuleReferences(Module * pModule);
 
 
-    void SendUpdateModuleSymsEventAndBlock(Module * pRuntimeModule, AppDomain * pAppDomain);
-    void SendRawUpdateModuleSymsEvent(Module * pRuntimeModule, AppDomain * pAppDomain);
+    void SendUpdateModuleSymsEventAndBlock(Module * pRuntimeModule);
+    void SendRawUpdateModuleSymsEvent(Module * pRuntimeModule);
 
     BOOL LoadClass(TypeHandle th,
                    mdTypeDef classMetadataToken,
-                   Module* classModule,
-                   AppDomain *pAppDomain);
+                   Module* classModule);
     void UnloadClass(mdTypeDef classMetadataToken,
-                     Module* classModule,
-                     AppDomain *pAppDomain);
+                     Module* classModule);
 
     void SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
                                    DebuggerModule *classModule,
                                    Assembly *pAssembly,
-                                   AppDomain *pAppDomain,
                                    BOOL fIsLoadEvent);
     BOOL SendSystemClassLoadUnloadEvent (mdTypeDef classMetadataToken,
                                          Module *classModule,
@@ -2153,6 +2085,7 @@ public:
     HRESULT GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap,
                                  COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
+#ifdef DEBUG
     HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -2160,6 +2093,7 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset);
+#endif // DEBUG
 
     PRD_TYPE GetPatchedOpcode(CORDB_ADDRESS_TYPE *ip);
     BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode);
@@ -2198,7 +2132,7 @@ public:
 
     DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
     DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
-    DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
+    DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
 
@@ -2348,10 +2282,12 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
+#ifdef FEATURE_CODE_VERSIONING
 private:
     HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
 
 public:
+#endif // FEATURE_CODE_VERSIONING
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
@@ -2390,10 +2326,6 @@ public:
         SString *   pCategory,
         SString *   pMessage);
 
-
-    // Helper function to send MDA notification
-    void SendRawMDANotification(SendMDANotificationParams * params);
-    static void SendMDANotificationOnHelperThreadProxy(SendMDANotificationParams * params);
 
     // Returns a bitfield reflecting the managed debugging state at the time of
     // the jit attach.
@@ -2572,16 +2504,6 @@ public:
     // send a custom debugger notification to the RS
     void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
 
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    );
-
 
     void EnableLogMessages (bool fOnOff) {LIMITED_METHOD_CONTRACT;  m_LoggingEnabled = fOnOff;}
     bool GetILOffsetFromNative (MethodDesc *PFD, const BYTE *pbAddr,
@@ -2650,6 +2572,10 @@ public:
     bool ThisIsHelperThread(void);
 
     HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor);
+#ifndef DACCESS_COMPILE
+    void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count);
+    void ExternalMethodFixupNextStep(PCODE address);
+#endif
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -2659,14 +2585,7 @@ public:
     BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
 
-    HRESULT AddAppDomainToIPC (AppDomain *pAppDomain);
-    HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain);
-    HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain);
-
-    void SendCreateAppDomainEvent(AppDomain * pAppDomain);
-
-    // Notify the debugger that an assembly has been loaded
-    void LoadAssembly(DomainAssembly * pDomainAssembly);
+    void AppDomainCreated(AppDomain * pAppDomain);
 
     // Notify the debugger that an assembly has been unloaded
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
@@ -2746,6 +2665,7 @@ public:
 #ifndef DACCESS_COMPILE
     virtual void OnMethodEnter(void * pIP);
     virtual DWORD* GetJMCFlagAddr(Module * pModule);
+    virtual bool IsMethodEnterEnabled();
 #endif
 
     // GetJMCFlagAddr provides a unique flag for each module. UpdateModuleJMCFlag
@@ -2806,21 +2726,11 @@ private:
         // AppDomain, Thread, are already initialized
     }
 
-    void InitIPCEvent(DebuggerIPCEvent *ipce,
-                      DebuggerIPCEventType type,
-                      Thread *pThread,
-                      AppDomain* pAppDomain)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        InitIPCEvent(ipce, type, pThread, VMPTR_AppDomain::MakePtr(pAppDomain));
-    }
-
+public:
     // Let this function to figure out the unique Id that we will use for Thread.
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type,
-                      Thread *pThread,
-                      VMPTR_AppDomain vmAppDomain)
+                      Thread *pThread)
     {
         CONTRACTL
         {
@@ -2834,10 +2744,11 @@ private:
         ipce->hr = S_OK;
         ipce->processId = m_processId;
         ipce->threadId = pThread ? pThread->GetOSThreadId() : 0;
-        ipce->vmAppDomain = vmAppDomain;
+        ipce->vmAppDomain = VMPTR_AppDomain::MakePtr(AppDomain::GetCurrentDomain());
         ipce->vmThread.SetRawPtr(pThread);
     }
 
+private:
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type)
     {
@@ -2848,16 +2759,9 @@ private:
                  (type == DB_IPCE_TEST_RWLOCK));
 
         Thread *pThread = g_pEEInterface->GetThread();
-        AppDomain *pAppDomain = NULL;
-        if (pThread)
-        {
-            pAppDomain = AppDomain::GetCurrentDomain();
-        }
-
         InitIPCEvent(ipce,
                      type,
-                     pThread,
-                     VMPTR_AppDomain::MakePtr(pAppDomain));
+                     pThread);
     }
 #endif // DACCESS_COMPILE
 
@@ -2900,9 +2804,6 @@ private:
     DebuggerLaunchSetting GetDbgJITDebugLaunchSetting();
 
 public:
-    HRESULT InitAppDomainIPC(void);
-    HRESULT TerminateAppDomainIPC(void);
-
     bool ResumeThreads(AppDomain* pAppDomain);
 
     void ProcessAnyPendingEvals(Thread *pThread);
@@ -2983,7 +2884,6 @@ private:
     Volatile<BOOL>        m_jitAttachInProgress;
     BOOL                  m_launchingDebugger;
     BOOL                  m_LoggingEnabled;
-    AppDomainEnumerationIPCBlock    *m_pAppDomainCB;
 
     LONG                  m_dClassLoadCallbackCount;
 
@@ -3096,7 +2996,7 @@ private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
-    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool fHasActivePatchSkip = false, bool fClearSetIP = false);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 
@@ -3193,7 +3093,7 @@ public:
         DebuggerHeap* pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
         _ASSERTE(pHeap != NULL); // should already exist
 
-        PREFIX_ASSUME( iCurSize >= 0 );
+        _ASSERTE( iCurSize >= 0 );
         S_UINT32 iNewSize = S_UINT32( iCurSize ) + S_UINT32( GrowSize(iCurSize) );
         if( iNewSize.IsOverflow() )
         {
@@ -3368,24 +3268,15 @@ public:
 
     void AddModule(DebuggerModule *module);
 
-    void RemoveModule(Module* module, AppDomain *pAppDomain);
-
+    void RemoveModule(Module* module);
 
     void Clear();
 
-    //
-    // RemoveModules removes any module loaded into the given appdomain from the hash.  This is used when we send an
-    // ExitAppdomain event to ensure that there are no leftover modules in the hash. This can happen when we have shared
-    // modules that aren't properly accounted for in the CLR. We miss sending UnloadModule events for those modules, so
-    // we clean them up with this method.
-    //
-    void RemoveModules(AppDomain *pAppDomain);
 #endif // #ifndef DACCESS_COMPILE
 
     DebuggerModule *GetModule(Module* module);
 
     // We should never look for a NULL Module *
-    DebuggerModule *GetModule(Module* module, AppDomain* pAppDomain);
     DebuggerModule *GetFirstModule(HASHFIND *info);
     DebuggerModule *GetNextModule(HASHFIND *info);
 };
@@ -3885,7 +3776,7 @@ HANDLE OpenWin32EventOrThrow(
 #define SENDIPCEVENT_RAW_END SENDIPCEVENT_RAW_END_EX
 
 // Suspend-aware SENDIPCEVENT macros:
-// Check whether __thread has been suspended by the debugger via SetDebugState().
+// Check whether thread has been suspended by the debugger via SetDebugState().
 // If this thread has been suspended, it shouldn't send any event to the RS because the
 // debugger may not be expecting it.  Instead, just leave the lock and retry.
 // When we leave, we'll enter coop mode first and get suspended if a suspension is in progress.
@@ -4038,6 +3929,8 @@ HANDLE OpenWin32EventOrThrow(
 // Returns true if the specified IL offset has a special meaning (eg. prolog, etc.)
 bool DbgIsSpecialILOffset(DWORD offset);
 
+#if defined(TARGET_WINDOWS) && !defined(TARGET_X86)
 void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
+#endif
 
 #endif /* DEBUGGER_H_ */

@@ -131,7 +131,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData("name", "http://www.w3.org/2000/xmlns/", "value", "version")]
         [InlineData("type", "ns", "value", "version")]
         [InlineData("name", "http://www.w3.org/2001/XMLSchema-instance", "value", "version")]
-        public void TryParseAttribute_Invoke_ReturnsFalse(string name, string ns, string value, string version)
+        public void TryParseAttribute_Invoke_ReturnsFalse(string? name, string? ns, string? value, string? version)
         {
             var document = new InlineCategoriesDocumentSubclass();
             Assert.False(document.TryParseAttributeEntryPoint(name, ns, value, version));
@@ -146,7 +146,7 @@ namespace System.ServiceModel.Syndication.Tests
 
         [Theory]
         [MemberData(nameof(TryParseElement_TestData))]
-        public void TryParseElement_Invoke_ReturnsFalse(XmlReader reader, string version)
+        public void TryParseElement_Invoke_ReturnsFalse(XmlReader reader, string? version)
         {
             var document = new InlineCategoriesDocumentSubclass();
             Assert.False(document.TryParseElementEntryPoint(reader, version));
@@ -156,7 +156,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string? version)
         {
             var document = new InlineCategoriesDocumentSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => document.WriteAttributeExtensionsEntryPoint(writer, version));
@@ -178,7 +178,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteElementExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteElementExtensions_Invoke_ReturnsExpected(string? version)
         {
             var document = new InlineCategoriesDocumentSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => document.WriteElementExtensionsEntryPoint(writer, version));

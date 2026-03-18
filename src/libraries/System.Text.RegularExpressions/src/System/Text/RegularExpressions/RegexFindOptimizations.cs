@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
 using System.Buffers;
+#endif
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -10,28 +12,55 @@ namespace System.Text.RegularExpressions
     /// <summary>Contains state and provides operations related to finding the next location a match could possibly begin.</summary>
     internal sealed class RegexFindOptimizations
     {
-        /// <summary>True if the input should be processed right-to-left rather than left-to-right.</summary>
-        private readonly bool _rightToLeft;
         /// <summary>Lookup table used for optimizing ASCII when doing set queries.</summary>
         private readonly uint[]?[]? _asciiLookups;
 
-        public RegexFindOptimizations(RegexNode root, RegexOptions options)
+        public static RegexFindOptimizations Create(RegexNode root, RegexOptions options)
         {
-            _rightToLeft = (options & RegexOptions.RightToLeft) != 0;
+            RegexFindOptimizations opts = new(root, options, isLeadingPartial: false);
+
+            if ((options & RegexOptions.RightToLeft) == 0 &&
+                !opts.IsUseful &&
+                RegexPrefixAnalyzer.FindLeadingPositiveLookahead(root) is RegexNode positiveLookahead)
+            {
+                RegexFindOptimizations positiveLookaheadOpts = new(positiveLookahead.Child(0), options, isLeadingPartial: true);
+
+                // Fixups to incorporate relevant information from the original optimizations.
+                // - If the original has a larger minimum length than the lookahead, use it. Lookaheads don't currently factor into
+                //   the computation of the minimum as it complicates the logic due to them possibly overlapping with other portions.
+                // - Use whatever max came from the original, if any. We shouldn't have computed a max for the lookahead because
+                //   it's partial.
+                positiveLookaheadOpts.MinRequiredLength = Math.Max(opts.MinRequiredLength, positiveLookaheadOpts.MinRequiredLength);
+                positiveLookaheadOpts.MaxPossibleLength = opts.MaxPossibleLength;
+
+                opts = positiveLookaheadOpts;
+            }
+
+            return opts;
+        }
+
+        /// <summary>Creates optimization information for searching with the pattern represented by <paramref name="root"/>.</summary>
+        /// <param name="root">The root of the pattern node tree.</param>
+        /// <param name="options">Options used when creating the regex.</param>
+        /// <param name="isLeadingPartial">true if <paramref name="root"/> may not represent the whole pattern, only a leading node in it.</param>
+        private RegexFindOptimizations(RegexNode root, RegexOptions options, bool isLeadingPartial)
+        {
+            bool rightToLeft = (options & RegexOptions.RightToLeft) != 0;
+            Debug.Assert(!isLeadingPartial || !rightToLeft, "RightToLeft unexpected when isLeadingPartial");
 
             MinRequiredLength = root.ComputeMinLength();
 
             // Compute any anchor starting the expression.  If there is one, we won't need to search for anything,
             // as we can just match at that single location.
             LeadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(root);
-            if (_rightToLeft && LeadingAnchor == RegexNodeKind.Bol)
+            if (rightToLeft && LeadingAnchor == RegexNodeKind.Bol)
             {
                 // Filter out Bol for RightToLeft, as we don't currently optimize for it.
                 LeadingAnchor = RegexNodeKind.Unknown;
             }
             if (LeadingAnchor is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.EndZ or RegexNodeKind.End)
             {
-                FindMode = (LeadingAnchor, _rightToLeft) switch
+                FindMode = (LeadingAnchor, rightToLeft) switch
                 {
                     (RegexNodeKind.Beginning, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning,
                     (RegexNodeKind.Beginning, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning,
@@ -47,7 +76,8 @@ namespace System.Text.RegularExpressions
 
             // Compute any anchor trailing the expression.  If there is one, and we can also compute a fixed length
             // for the whole expression, we can use that to quickly jump to the right location in the input.
-            if (!_rightToLeft) // haven't added FindNextStartingPositionMode trailing anchor support for RTL
+            if (!rightToLeft && // haven't added FindNextStartingPositionMode trailing anchor support for RTL
+                !isLeadingPartial) // trailing anchors in a partial root aren't relevant
             {
                 TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
                 if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
@@ -70,7 +100,7 @@ namespace System.Text.RegularExpressions
             if (prefix.Length > 1)
             {
                 LeadingPrefix = prefix;
-                FindMode = _rightToLeft ?
+                FindMode = rightToLeft ?
                     FindNextStartingPositionMode.LeadingString_RightToLeft :
                     FindNextStartingPositionMode.LeadingString_LeftToRight;
                 return;
@@ -89,7 +119,7 @@ namespace System.Text.RegularExpressions
             // more expensive; someone who wants to pay to do more work can specify Compiled.  So for the interpreter
             // we focus only on creating a set for the first character.  Same for right-to-left, which is used very
             // rarely and thus we don't need to invest in special-casing it.
-            if (_rightToLeft)
+            if (rightToLeft)
             {
                 // Determine a set for anything that can possibly start the expression.
                 if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)
@@ -140,31 +170,16 @@ namespace System.Text.RegularExpressions
 
             // We're now left-to-right only and looking for multiple prefixes and/or sets.
 
-            // If there are multiple leading strings, we can search for any of them.
-            if (!interpreter) // this works in the interpreter, but we avoid it due to additional cost during construction
+            // If there are multiple case-insensitive leading strings, we can search for any of them.
+            if (!interpreter && // this works in the interpreter, but we avoid it due to additional cost during construction
+                RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
             {
-                if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
-                {
-                    LeadingPrefixes = caseInsensitivePrefixes;
-                    FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
+                LeadingPrefixes = caseInsensitivePrefixes;
+                FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
 #if SYSTEM_TEXT_REGULAREXPRESSIONS
-                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
+                LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
 #endif
-                    return;
-                }
-
-                // TODO: While some benchmarks benefit from this significantly, others regressed a bit (in particular those with few
-                //       matches). Before enabling this, we need to investigate the performance impact on real-world scenarios,
-                //       and see if there are ways to reduce the impact.
-                //if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) is { Length: > 1 } caseSensitivePrefixes)
-                //{
-                //    LeadingPrefixes = caseSensitivePrefixes;
-                //    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
-#if SYSTEM_TEXT_REGULAREXPRESSIONS
-                //    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
-#endif
-                //    return;
-                //}
+                return;
             }
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
@@ -196,6 +211,21 @@ namespace System.Text.RegularExpressions
                 // Sort the sets by "quality", such that whatever set is first is the one deemed most efficient to use.
                 // In some searches, we may use multiple sets, so we want the subsequent ones to also be the efficiency runners-up.
                 RegexPrefixAnalyzer.SortFixedDistanceSetsByQuality(fixedDistanceSets);
+
+                // If the best FixedDistanceSet is composed of high-frequency characters, IndexOfAny on
+                // those characters would be a poor filter. Check for case-sensitive leading prefixes and
+                // prefer multi-string search via SearchValues if available.
+                if (!interpreter &&
+                    HasHighFrequencyChars(fixedDistanceSets[0]) &&
+                    RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) is { Length: > 1 } caseSensitivePrefixes)
+                {
+                    LeadingPrefixes = caseSensitivePrefixes;
+                    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
+#endif
+                    return;
+                }
 
                 // If there is no literal after the loop, use whatever set we got.
                 // If there is a literal after the loop, consider it to be better than a negated set and better than a set with many characters.
@@ -253,21 +283,21 @@ namespace System.Text.RegularExpressions
         public FindNextStartingPositionMode FindMode { get; } = FindNextStartingPositionMode.NoSearch;
 
         /// <summary>Gets the leading anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
-        public RegexNodeKind LeadingAnchor { get; }
+        public RegexNodeKind LeadingAnchor { get; private set; }
 
         /// <summary>Gets the trailing anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
         public RegexNodeKind TrailingAnchor { get; }
 
         /// <summary>Gets the minimum required length an input need be to match the pattern.</summary>
         /// <remarks>0 is a valid minimum length.  This value may also be the max (and hence fixed) length of the expression.</remarks>
-        public int MinRequiredLength { get; }
+        public int MinRequiredLength { get; private set; }
 
         /// <summary>The maximum possible length an input could be to match the pattern.</summary>
         /// <remarks>
         /// This is currently only set when <see cref="TrailingAnchor"/> is found to be an end anchor.
         /// That can be expanded in the future as needed.
         /// </remarks>
-        public int? MaxPossibleLength { get; }
+        public int? MaxPossibleLength { get; private set; }
 
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
         public string LeadingPrefix { get; } = string.Empty;
@@ -327,7 +357,7 @@ namespace System.Text.RegularExpressions
                     bool invalidChars = chars is not { Length: 1 } || fixedDistanceSets[i].Negated;
 
                     // If the current set ends a sequence (or we've walked off the end), see whether
-                    // what we've gathered constitues a valid string, and if it's better than the
+                    // what we've gathered constitutes a valid string, and if it's better than the
                     // best we've already seen, store it.  Regardless, reset the sequence in order
                     // to continue analyzing.
                     if (invalidChars ||
@@ -837,6 +867,50 @@ namespace System.Text.RegularExpressions
             }
         }
 #endif
+
+        /// <summary>
+        /// Determines whether the characters in the best <see cref="FixedDistanceSet"/> are frequent enough in typical text
+        /// that IndexOfAny with those characters would be a poor filter. When the best set's characters are common,
+        /// multi-string search via SearchValues is preferred because IndexOfAny would match too many
+        /// positions. When the characters are rare, IndexOfAny is an excellent filter and is preferred.
+        /// </summary>
+        private static bool HasHighFrequencyChars(FixedDistanceSet set)
+        {
+            // Negated sets match most characters (e.g. [^a]), so they are inherently high frequency.
+            if (set.Negated)
+            {
+                return true;
+            }
+
+            // Sets without extracted chars can't be frequency-analyzed.
+            // Single-char sets use IndexOf which has much higher throughput than multi-string search,
+            // so we never consider them "high frequency" regardless of which character it is.
+            if (set.Chars is not { Length: > 1 } chars)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<float> frequency = RegexPrefixAnalyzer.Frequency;
+            float totalFrequency = 0;
+
+            foreach (char c in chars)
+            {
+                if (c >= frequency.Length)
+                {
+                    return false;
+                }
+
+                totalFrequency += frequency[c];
+            }
+
+            // If the average frequency of the set's chars exceeds this threshold, the characters
+            // are common enough that IndexOfAny would match many positions, making SearchValues<string>
+            // the better choice. Common characters like lowercase letters have frequencies above this
+            // threshold, while less frequent characters like uppercase letters fall below it, so
+            // IndexOfAny with rare characters is already an effective filter and is preferred.
+            const float HighFrequencyThreshold = 0.6f;
+            return totalFrequency >= HighFrequencyThreshold * chars.Length;
+        }
     }
 
     /// <summary>Mode to use for searching for the next location of a possible match.</summary>

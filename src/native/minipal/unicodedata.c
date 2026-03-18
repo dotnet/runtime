@@ -288,6 +288,7 @@ static const UnicodeDataRec UnicodeData[] =
     { 0x198, UPPER_CASE, 0x199 },
     { 0x199, LOWER_CASE, 0x198 },
     { 0x19A, LOWER_CASE, 0x23D },
+    { 0x19B, LOWER_CASE, 0xA7DC },
     { 0x19C, UPPER_CASE, 0x26F },
     { 0x19D, UPPER_CASE, 0x272 },
     { 0x19E, LOWER_CASE, 0x220 },
@@ -464,6 +465,7 @@ static const UnicodeDataRec UnicodeData[] =
     { 0x260, LOWER_CASE, 0x193 },
     { 0x261, LOWER_CASE, 0xA7AC },
     { 0x263, LOWER_CASE, 0x194 },
+    { 0x264, LOWER_CASE, 0xA7CB },
     { 0x265, LOWER_CASE, 0xA78D },
     { 0x266, LOWER_CASE, 0xA7AA },
     { 0x268, LOWER_CASE, 0x197 },
@@ -1169,6 +1171,8 @@ static const UnicodeDataRec UnicodeData[] =
     { 0x1C86, LOWER_CASE, 0x42A },
     { 0x1C87, LOWER_CASE, 0x462 },
     { 0x1C88, LOWER_CASE, 0xA64A },
+    { 0x1C89, UPPER_CASE, 0x1C8A },
+    { 0x1C8A, LOWER_CASE, 0x1C89 },
     { 0x1C90, UPPER_CASE, 0x10D0 },
     { 0x1C91, UPPER_CASE, 0x10D1 },
     { 0x1C92, UPPER_CASE, 0x10D2 },
@@ -2240,12 +2244,18 @@ static const UnicodeDataRec UnicodeData[] =
     { 0xA7C8, LOWER_CASE, 0xA7C7 },
     { 0xA7C9, UPPER_CASE, 0xA7CA },
     { 0xA7CA, LOWER_CASE, 0xA7C9 },
+    { 0xA7CB, UPPER_CASE, 0x264 },
+    { 0xA7CC, UPPER_CASE, 0xA7CD },
+    { 0xA7CD, LOWER_CASE, 0xA7CC },
     { 0xA7D0, UPPER_CASE, 0xA7D1 },
     { 0xA7D1, LOWER_CASE, 0xA7D0 },
     { 0xA7D6, UPPER_CASE, 0xA7D7 },
     { 0xA7D7, LOWER_CASE, 0xA7D6 },
     { 0xA7D8, UPPER_CASE, 0xA7D9 },
     { 0xA7D9, LOWER_CASE, 0xA7D8 },
+    { 0xA7DA, UPPER_CASE, 0xA7DB },
+    { 0xA7DB, LOWER_CASE, 0xA7DA },
+    { 0xA7DC, UPPER_CASE, 0x19B },
     { 0xA7F5, UPPER_CASE, 0xA7F6 },
     { 0xA7F6, LOWER_CASE, 0xA7F5 },
     { 0xAB53, LOWER_CASE, 0xA7B3 },
@@ -2383,7 +2393,7 @@ static const UnicodeDataRec UnicodeData[] =
     { 0xFF5A, LOWER_CASE, 0xFF3A },
 };
 
-#define UNICODE_DATA_SIZE 2359
+#define UNICODE_DATA_SIZE 2369
 
 static int LIBC_CALLBACK UnicodeDataComp(const void *opposingCode, const void *elem)
 {

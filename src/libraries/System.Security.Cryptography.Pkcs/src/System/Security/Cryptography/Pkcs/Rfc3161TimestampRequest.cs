@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.DER);
                 int localBytesRead = reader.PeekEncodedValue().Length;
 
                 Rfc3161TimeStampResp.Decode(ref reader, source, out resp);
@@ -169,10 +169,7 @@ namespace System.Security.Cryptography.Pkcs
             bool requestSignerCertificates = false,
             X509ExtensionCollection? extensions = null)
         {
-            if (signerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(signerInfo);
 
             // https://tools.ietf.org/html/rfc3161, Appendix A.
             //
@@ -180,7 +177,7 @@ namespace System.Security.Cryptography.Pkcs
             // hash of the value of signature field within SignerInfo for the
             // signedData being time-stamped.
             return CreateFromData(
-                signerInfo.GetSignature(),
+                signerInfo.GetSignatureMemory().Span,
                 hashAlgorithm,
                 requestedPolicyId,
                 nonce,
@@ -356,7 +353,7 @@ namespace System.Security.Cryptography.Pkcs
                 // Since nothing says BER, assume DER only.
                 const AsnEncodingRules RuleSet = AsnEncodingRules.DER;
 
-                AsnValueReader reader = new AsnValueReader(encodedBytes.Span, RuleSet);
+                ValueAsnReader reader = new ValueAsnReader(encodedBytes.Span, RuleSet);
                 ReadOnlySpan<byte> firstElement = reader.PeekEncodedValue();
 
                 Rfc3161TimeStampReq.Decode(ref reader, encodedBytes, out Rfc3161TimeStampReq req);

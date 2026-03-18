@@ -54,10 +54,7 @@ namespace System.Threading.RateLimiting
         public static PartitionedRateLimiter<TResource> CreateChained<TResource>(
             params PartitionedRateLimiter<TResource>[] limiters)
         {
-            if (limiters is null)
-            {
-                throw new ArgumentNullException(nameof(limiters));
-            }
+            ArgumentNullException.ThrowIfNull(limiters);
             if (limiters.Length == 0)
             {
                 throw new ArgumentException("Must pass in at least 1 limiter.", nameof(limiters));

@@ -34,6 +34,13 @@ namespace System.Text.Json.Serialization
                 PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase;
                 NumberHandling = JsonNumberHandling.AllowReadingFromString;
             }
+            else if (defaults is JsonSerializerDefaults.Strict)
+            {
+                UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+                AllowDuplicateProperties = false;
+                RespectNullableAnnotations = true;
+                RespectRequiredConstructorParameters = true;
+            }
             else if (defaults is not JsonSerializerDefaults.General)
             {
                 throw new ArgumentOutOfRangeException(nameof(defaults));
@@ -116,6 +123,11 @@ namespace System.Text.Json.Serialization
         public JsonCommentHandling ReadCommentHandling { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.ReferenceHandler"/> when set.
+        /// </summary>
+        public JsonKnownReferenceHandler ReferenceHandler { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.RespectNullableAnnotations"/> when set.
         /// </summary>
         public bool RespectNullableAnnotations { get; set; }
@@ -165,5 +177,10 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.NewLine"/> when set.
         /// </summary>
         public string? NewLine { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowDuplicateProperties"/> when set.
+        /// </summary>
+        public bool AllowDuplicateProperties { get; set; }
     }
 }

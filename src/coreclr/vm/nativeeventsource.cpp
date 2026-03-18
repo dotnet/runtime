@@ -205,4 +205,25 @@ extern "C" void QCALLTYPE NativeRuntimeEventSource_LogContentionStop(uint8_t Con
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwWaitHandleWaitStart(WaitSource, reinterpret_cast<const void*>(AssociatedObjectID), ClrInstanceID);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwWaitHandleWaitStop(ClrInstanceID);
+
+    END_QCALL;
+}
+
+
 #endif // FEATURE_PERFTRACING

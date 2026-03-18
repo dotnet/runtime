@@ -213,7 +213,7 @@ ds_ipc_poll (
 			handles [i] = poll_handles_data [i].ipc->overlap.hEvent;
 			if (handles [i] == INVALID_HANDLE_VALUE) {
 				// Invalid handle, wait will fail. Signal error
-				poll_handles_data [i].events = DS_IPC_POLL_EVENTS_ERR;
+				poll_handles_data [i].events = IPC_POLL_EVENTS_ERR;
 			}
 		} else {
 			// CLIENT
@@ -238,7 +238,7 @@ ds_ipc_poll (
 						handles [i] = poll_handles_data [i].stream->overlap.hEvent;
 						break;
 					case ERROR_PIPE_NOT_CONNECTED:
-						poll_handles_data [i].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
+						poll_handles_data [i].events = (uint8_t)IPC_POLL_EVENTS_HANGUP;
 						result = -1;
 						ep_raise_error ();
 					default:
@@ -288,7 +288,7 @@ ds_ipc_poll (
 		// check if we abandoned something
 		DWORD abandonedIndex = wait - WAIT_ABANDONED_0;
 		if (abandonedIndex > 0 || abandonedIndex < (poll_handles_data_len - 1)) {
-			poll_handles_data [abandonedIndex].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
+			poll_handles_data [abandonedIndex].events = (uint8_t)IPC_POLL_EVENTS_HANGUP;
 			result = -1;
 			ep_raise_error ();
 		} else {
@@ -325,20 +325,20 @@ ds_ipc_poll (
 		if (!success) {
 			DWORD error = GetLastError();
 			if (error == ERROR_PIPE_NOT_CONNECTED || error == ERROR_BROKEN_PIPE) {
-				poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_HANGUP;
+				poll_handles_data [index].events = (uint8_t)IPC_POLL_EVENTS_HANGUP;
 			} else {
 				if (callback)
 					callback ("Client connection error", error);
-				poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_ERR;
+				poll_handles_data [index].events = (uint8_t)IPC_POLL_EVENTS_ERR;
 				result = -1;
 				ep_raise_error ();
 			}
 		} else {
-			poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
+			poll_handles_data [index].events = (uint8_t)IPC_POLL_EVENTS_SIGNALED;
 		}
 	} else {
 		// SERVER
-		poll_handles_data [index].events = (uint8_t)DS_IPC_POLL_EVENTS_SIGNALED;
+		poll_handles_data [index].events = (uint8_t)IPC_POLL_EVENTS_SIGNALED;
 	}
 
 	result = 1;
@@ -694,7 +694,7 @@ ipc_stream_read_func (
 		DWORD error = GetLastError ();
 		if (error == ERROR_IO_PENDING) {
 			// if we're waiting infinitely, only make one syscall
-			if (timeout_ms == DS_IPC_TIMEOUT_INFINITE) {
+			if (timeout_ms == IPC_TIMEOUT_INFINITE) {
 				DS_ENTER_BLOCKING_PAL_SECTION;
 				success = GetOverlappedResult (
 					ipc_stream->pipe,   // pipe
@@ -765,7 +765,7 @@ ipc_stream_write_func (
 		DWORD error = GetLastError ();
 		if (error == ERROR_IO_PENDING) {
 			// if we're waiting infinitely, only make one syscall
-			if (timeout_ms == DS_IPC_TIMEOUT_INFINITE) {
+			if (timeout_ms == IPC_TIMEOUT_INFINITE) {
 				DS_ENTER_BLOCKING_PAL_SECTION;
 				success = GetOverlappedResult (
 					ipc_stream->pipe,   // pipe
@@ -834,12 +834,24 @@ ipc_stream_close_func (void *object)
 	return ds_ipc_stream_close (ipc_stream, NULL);
 }
 
+static
+IpcPollEvents
+ipc_stream_poll_func (
+	void *object,
+	uint32_t timeout_ms)
+{
+	EP_ASSERT (!"ipc_stream_poll_func needs to be implemented for NamedPipes");
+	// TODO: Implement ipc_stream_poll_func for NamedPipes
+	return IPC_POLL_EVENTS_UNKNOWN;
+}
+
 static IpcStreamVtable ipc_stream_vtable = {
 	ipc_stream_free_func,
 	ipc_stream_read_func,
 	ipc_stream_write_func,
 	ipc_stream_flush_func,
-	ipc_stream_close_func };
+	ipc_stream_close_func,
+	ipc_stream_poll_func };
 
 static
 DiagnosticsIpcStream *
@@ -904,6 +916,15 @@ ds_ipc_stream_read (
 		bytes_to_read,
 		bytes_read,
 		timeout_ms);
+}
+
+bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd)
+{
+	// Not Supported
+	return false;
 }
 
 bool

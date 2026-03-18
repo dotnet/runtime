@@ -197,8 +197,7 @@ namespace System.ComponentModel.Composition
                 // The composition produced a single composition error. The root cause is provided below.
                 writer.AppendFormat(
                      CultureInfo.CurrentCulture,
-                     SR.CompositionException_SingleErrorWithSinglePath,
-                     pathCount);
+                     SR.CompositionException_SingleErrorWithSinglePath);
             }
 
             writer.Append(' ');

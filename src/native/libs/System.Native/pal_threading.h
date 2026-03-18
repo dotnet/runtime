@@ -7,6 +7,7 @@
 #include "pal_types.h"
 
 typedef struct LowLevelMonitor LowLevelMonitor;
+typedef struct LowLevelCrossProcessMutex LowLevelCrossProcessMutex;
 
 PALEXPORT LowLevelMonitor *SystemNative_LowLevelMonitor_Create(void);
 

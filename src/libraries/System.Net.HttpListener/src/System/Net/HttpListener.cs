@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public sealed unsafe partial class HttpListener : IDisposable
+    public sealed partial class HttpListener : IDisposable
     {
         public delegate ExtendedProtectionPolicy ExtendedProtectionSelector(HttpListenerRequest request);
 
@@ -113,11 +113,11 @@ namespace System.Net
             {
                 CheckDisposed();
                 int i;
-                if (string.Compare(uriPrefix, 0, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+                if (uriPrefix.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
                 {
                     i = 7;
                 }
-                else if (string.Compare(uriPrefix, 0, "https://", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (uriPrefix.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 {
                     i = 8;
                 }

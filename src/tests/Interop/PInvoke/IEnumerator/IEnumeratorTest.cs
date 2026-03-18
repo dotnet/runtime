@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
 
+using IEnumVARIANT = System.Runtime.InteropServices.ComTypes.IEnumVARIANT;
+
 namespace PInvokeTests
 {
     static class IEnumeratorNative
@@ -43,20 +45,25 @@ namespace PInvokeTests
     [SkipOnMono("PInvoke IEnumerator/IEnumerable marshalling not supported on Mono")]
     public static class IEnumeratorTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestNativeToManaged()
         {
             AssertExtensions.CollectionEqual(Enumerable.Range(1, 10), EnumeratorAsEnumerable(IEnumeratorNative.GetIntegerEnumerator(1, 10)));
             AssertExtensions.CollectionEqual(Enumerable.Range(1, 10), IEnumeratorNative.GetIntegerEnumeration(1, 10).OfType<int>());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestManagedToNative()
         {
             IEnumeratorNative.VerifyIntegerEnumerator(Enumerable.Range(1, 10).GetEnumerator(), 1, 10);
             IEnumeratorNative.VerifyIntegerEnumeration(Enumerable.Range(1, 10), 1, 10);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestNativeRoundTrip()
         {
@@ -64,11 +71,32 @@ namespace PInvokeTests
             Assert.Equal(nativeEnumerator, IEnumeratorNative.PassThroughEnumerator(nativeEnumerator));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestManagedRoundTrip()
         {
             IEnumerator managedEnumerator = Enumerable.Range(1, 10).GetEnumerator();
             Assert.Equal(managedEnumerator, IEnumeratorNative.PassThroughEnumerator(managedEnumerator));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: COM", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [Fact]
+        [Xunit.SkipOnCoreClrAttribute("Depends on COM behavior that is not correct in interpreter", RuntimeTestModes.InterpreterActive)]
+        public static void TestSupportForICustomAdapter()
+        {
+            {
+                IEnumerable nativeEnumerable = IEnumeratorNative.GetIntegerEnumeration(1, 10);
+                Assert.True(nativeEnumerable is ICustomAdapter);
+                Assert.True(Marshal.IsComObject(((ICustomAdapter)nativeEnumerable).GetUnderlyingObject()));
+                IEnumerator nativeEnumerator = nativeEnumerable.GetEnumerator();
+                Assert.True(nativeEnumerator is ICustomAdapter);
+                Assert.True(((ICustomAdapter)nativeEnumerator).GetUnderlyingObject() is IEnumVARIANT);
+            }
+            {
+                IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
+                Assert.True(nativeEnumerator is ICustomAdapter);
+                Assert.True(((ICustomAdapter)nativeEnumerator).GetUnderlyingObject() is IEnumVARIANT);
+            }
         }
 
         private static IEnumerable<int> EnumeratorAsEnumerable(IEnumerator enumerator)

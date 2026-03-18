@@ -200,11 +200,11 @@ internal static class ThrowHelper
         }
     }
 
-    public static void ValidateTimeSpan(string argumentName, TimeSpan value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    public static void ValidateTimeSpan(string argumentName, TimeSpan value)
     {
         if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
         {
-            throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_timeout_use_gt_zero, propertyName));
+            throw new ArgumentOutOfRangeException(argumentName, value, SR.net_quic_timeout_use_gt_zero);
         }
     }
 
@@ -213,28 +213,6 @@ internal static class ThrowHelper
         if (value is null)
         {
             throw new ArgumentNullException(argumentName, SR.Format(resourceName, propertyName));
-        }
-    }
-
-    public static void ObserveException(this Task task)
-    {
-        if (task.IsCompleted)
-        {
-            ObserveExceptionCore(task);
-        }
-        else
-        {
-            task.ContinueWith(static (t) => ObserveExceptionCore(t), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-        }
-
-        static void ObserveExceptionCore(Task task)
-        {
-            Debug.Assert(task.IsCompleted);
-            if (task.IsFaulted)
-            {
-                // Access Exception to avoid TaskScheduler.UnobservedTaskException firing.
-                Exception? e = task.Exception!.InnerException;
-            }
         }
     }
 }

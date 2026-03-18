@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
+using TestLibrary;
 
 public class Test_GetTotalAllocatedBytes 
 {
@@ -109,7 +111,7 @@ public class Test_GetTotalAllocatedBytes
             object lck = new object();
 
             tsk = Task.Run(() => {
-                while (running)
+                for (int i = 0; i < 1000; i++)
                 {
                     Thread thd = new Thread(() => {
                         lock (lck)
@@ -120,11 +122,14 @@ public class Test_GetTotalAllocatedBytes
 
                     thd.Start();
                     thd.Join();
+
+                    if (!running)
+                        break;
                 }
             });
 
             Counts previous = default(Counts);
-            for (int i = 0; i < 1000; ++i)
+            for (int i = 0; i < 100; ++i)
             {
                 lock (lck)
                 {
@@ -171,12 +176,14 @@ public class Test_GetTotalAllocatedBytes
             thr.Join();
     }
 
-    public static int Main() 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121482", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsArm))]
+    [Fact]
+    public static void TestEntryPoint() 
     {
         TestSingleThreaded();
         TestSingleThreadedLOH();
         TestAnotherThread();
         TestLohSohConcurrently();
-        return 100;
     }
 }

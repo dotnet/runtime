@@ -16,6 +16,10 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// Provides stateless methods for decoding .NET Remoting Binary Format (NRBF) encoded data.
 /// </summary>
+/// <remarks>
+/// NrbfDecoder is an implementation of an NRBF reader, but its behaviors don't strictly follow BinaryFormatter's implementation.
+/// You shouldn't use the output of NrbfDecoder to determine whether a call to BinaryFormatter would be safe.
+/// </remarks>
 public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
@@ -30,35 +34,29 @@ public static class NrbfDecoder
     private static ReadOnlySpan<byte> HeaderSuffix => [1, 0, 0, 0, 0, 0, 0, 0];
 
     /// <summary>
-    /// Checks if given buffer starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
+    /// Checks if the given buffer starts with the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
-    /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the buffer starts with the NRBF payload header; otherwise, <see langword="false" />.</returns>
     public static bool StartsWithPayloadHeader(ReadOnlySpan<byte> bytes)
         => bytes.Length >= SerializedStreamHeaderRecord.Size
         && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
         && bytes.Slice(SerializedStreamHeaderRecord.Size - HeaderSuffix.Length, HeaderSuffix.Length).SequenceEqual(HeaderSuffix);
 
     /// <summary>
-    /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
+    /// Checks if the given stream starts with the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="stream">The stream to inspect. The stream must be both readable and seekable.</param>
-    /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the stream starts with the NRBF payload header; otherwise, <see langword="false" />.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
     /// <exception cref="IOException">An I/O error occurred.</exception>
-    /// <remarks><para>When this method returns, <paramref name="stream" /> will be restored to its original position.</para></remarks>
+    /// <remarks>When this method returns, <paramref name="stream" /> is restored to its original position.</remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(stream);
-#else
-        if (stream is null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
-#endif
+
         if (!stream.CanSeek)
         {
             throw new ArgumentException(SR.Argument_NonSeekableStream, nameof(stream));
@@ -99,20 +97,20 @@ public static class NrbfDecoder
     /// </param>
     /// <returns>A <see cref="SerializationRecord"/> that represents the root object.
     /// It can be either <see cref="PrimitiveTypeRecord{T}"/>,
-    /// a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.</returns>
+    /// a <see cref="ClassRecord"/>, or an <see cref="ArrayRecord"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
-    /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
+    /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encountered invalid NRBF data.</exception>
     /// <exception cref="IOException">An I/O error occurred.</exception>
     /// <exception cref="NotSupportedException">
-    /// Reading from <paramref name="payload"/> encounters not supported records.
-    /// For example, arrays with non-zero offset or not supported record types
+    /// Reading from <paramref name="payload"/> encountered unsupported records,
+    /// for example, arrays with non-zero offset or unsupported record types
     /// (<see cref="SerializationRecordType.ClassWithMembers"/>, <see cref="SerializationRecordType.SystemClassWithMembers"/>,
-    /// <see cref="SerializationRecordType.MethodCall"/> or <see cref="SerializationRecordType.MethodReturn"/>).
+    /// <see cref="SerializationRecordType.MethodCall"/>, or <see cref="SerializationRecordType.MethodReturn"/>).
     /// </exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
-    /// encounters an invalid UTF8 sequence.</exception>
-    /// <exception cref="EndOfStreamException">The end of the stream is reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
+    /// encountered an invalid UTF8 sequence.</exception>
+    /// <exception cref="EndOfStreamException">The end of the stream was reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
     public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Decode(payload, out _, options, leaveOpen);
 
@@ -129,14 +127,7 @@ public static class NrbfDecoder
     /// <inheritdoc cref="Decode(Stream, PayloadOptions?, bool)"/>
     public static SerializationRecord Decode(Stream payload, out IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(payload);
-#else
-        if (payload is null)
-        {
-            throw new ArgumentNullException(nameof(payload));
-        }
-#endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
         try

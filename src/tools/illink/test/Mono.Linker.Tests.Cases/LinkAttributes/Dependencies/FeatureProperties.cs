@@ -6,17 +6,17 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes.Dependencies
 {
-	public class FeatureProperties
-	{
-		[FeatureSwitchDefinition ("FeatureSwitch")]
-		public static bool FeatureSwitchDefinition => Removed ();
+    public class FeatureProperties
+    {
+        [FeatureSwitchDefinition("FeatureSwitch")]
+        public static bool FeatureSwitchDefinition => Removed();
 
-		[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
-		public static bool FeatureGuard => Removed ();
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        public static bool FeatureGuard => Removed();
 
-		[FeatureSwitchDefinition ("StubbedFeatureSwitch")]
-		public static bool StubbedFeatureSwitch => Removed ();
+        [FeatureSwitchDefinition("StubbedFeatureSwitch")]
+        public static bool StubbedFeatureSwitch => Removed();
 
-		static bool Removed () => true;
-	}
+        static bool Removed() => true;
+    }
 }

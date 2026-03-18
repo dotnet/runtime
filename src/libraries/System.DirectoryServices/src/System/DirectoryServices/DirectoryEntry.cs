@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 
 namespace System.DirectoryServices
@@ -227,10 +228,7 @@ namespace System.DirectoryServices
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _objectSecurity = value;
                 _objectSecurityInitialized = true;
@@ -481,9 +479,7 @@ namespace System.DirectoryServices
                 }
 
                 // the new option is available, set it so we get the new PutEx behavior that will allow multiple changes
-                Variant value = default;
-                value.varType = 11; //VT_BOOL
-                value.boolvalue = -1;
+                ComVariant value = ComVariant.Create(true);
                 ((UnsafeNativeMethods.IAdsObjectOptions2)_adsObject).SetOption(8, value);
 
                 allowMultipleChange = true;

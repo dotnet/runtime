@@ -10,7 +10,7 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("Tool", "Version")]
-        public void TestConstructor(string tool, string version)
+        public void TestConstructor(string? tool, string? version)
         {
             GeneratedCodeAttribute gca = new GeneratedCodeAttribute(tool, version);
 

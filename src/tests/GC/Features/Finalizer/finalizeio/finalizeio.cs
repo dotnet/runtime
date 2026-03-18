@@ -6,6 +6,8 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using Xunit;
+using TestLibrary;
 
 public class Test_finalizeio {
 
@@ -51,7 +53,9 @@ public class Test_finalizeio {
         }
     }
 
-    public static int Main() {
+    [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint() {
         CreateObj temp = new CreateObj();
 
         using (StreamWriter writer = File.CreateText("temp.txt"))

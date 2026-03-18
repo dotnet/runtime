@@ -250,13 +250,6 @@ namespace System.Globalization
                     break;
 
                 default:
-#if TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid && !AreEraNamesEmpty())
-                    {
-                        // we don't want to have this overwritten because JS already loaded it
-                        break;
-                    }
-#endif
                     // Most calendars are just "A.D."
                     this.saEraNames = Invariant.saEraNames;
                     break;

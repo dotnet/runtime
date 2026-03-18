@@ -9,13 +9,14 @@ using System.Xml.XPath;
 
 namespace System.Xml
 {
+    [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     internal sealed class DataDocumentXPathNavigator : XPathNavigator, IHasXmlNode
     {
         private readonly XPathNodePointer _curNode; //pointer to remember the current node position
         private XmlDataDocument _doc;     //pointer to remember the root -- can only be XmlDataDocument for DataDocumentXPathNavigator
         private readonly XPathNodePointer _temp;
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataDocumentXPathNavigator(XmlDataDocument doc, XmlNode node)
         {
             _curNode = new XPathNodePointer(this, doc, node);
@@ -23,7 +24,6 @@ namespace System.Xml
             _doc = doc;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private DataDocumentXPathNavigator(DataDocumentXPathNavigator other)
         {
             _curNode = other._curNode.Clone(this);
@@ -31,8 +31,6 @@ namespace System.Xml
             _doc = other._doc;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XPathNavigator Clone() => new DataDocumentXPathNavigator(this);
 
         internal XPathNodePointer CurNode => _curNode;
@@ -51,8 +49,6 @@ namespace System.Xml
 
         public override string Value
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
             get
             {
                 XPathNodeType xnt = _curNode.NodeType;
@@ -71,9 +67,7 @@ namespace System.Xml
         // Attributes
         public override bool HasAttributes => _curNode.AttributeCount > 0;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
-        public override string GetAttribute(string localName, string namespaceURI)
+       public override string GetAttribute(string localName, string namespaceURI)
         {
             if (_curNode.NodeType != XPathNodeType.Element)
             {
@@ -84,22 +78,16 @@ namespace System.Xml
             return _temp.MoveToAttribute(localName, namespaceURI) ? _temp.Value! : string.Empty;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override string GetNamespace(string name) => _curNode.GetNamespace(name);
 
         public override bool MoveToNamespace(string name) =>
             _curNode.NodeType != XPathNodeType.Element ?
                 false : _curNode.MoveToNamespace(name);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope) =>
             _curNode.NodeType != XPathNodeType.Element ?
                 false : _curNode.MoveToFirstNamespace(namespaceScope);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope) =>
             _curNode.NodeType != XPathNodeType.Namespace ?
                 false : _curNode.MoveToNextNamespace(namespaceScope);
@@ -172,12 +160,8 @@ namespace System.Xml
 
         //the function is only called for XPathNodeList enumerate nodes and
         // shouldn't be promoted to frequently use because it will cause foliation
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         XmlNode IHasXmlNode.GetNode() => _curNode.Node!;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlNodeOrder ComparePosition(XPathNavigator? other)
         {
             if (other == null)

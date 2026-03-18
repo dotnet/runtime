@@ -20,5 +20,4 @@
   <ItemGroup>
     <UnmanagedEntryPointsAssembly Include="ReferencedAssembly1" />
   </ItemGroup>
-
 </Project>

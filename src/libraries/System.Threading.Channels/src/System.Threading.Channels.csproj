@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -25,6 +25,7 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
     <Compile Include="System\Threading\Channels\Channel_2.cs" />
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
+    <Compile Include="System\Threading\Channels\RendezvousChannel.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
@@ -37,6 +38,7 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.netstandard.cs" />
     <Compile Include="System\Threading\Channels\TaskCompletionSource.cs" />
   </ItemGroup>
 
@@ -44,20 +46,21 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" />
     <Compile Include="System\Threading\Channels\Channel.netcoreapp.cs" />
     <Compile Include="System\Threading\Channels\ChannelOptions.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.netcoreapp.cs" />
     <Compile Include="System\Threading\Channels\UnboundedPriorityChannel.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
-    <Compile Include="System\Threading\Channels\ChannelClosedException.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netstandard21.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">

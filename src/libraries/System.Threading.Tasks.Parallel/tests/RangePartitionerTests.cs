@@ -9,14 +9,14 @@ namespace System.Threading.Tasks.Tests
 {
     public static class RangePartitionerTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunPartitionerStaticTest_SingleChunking()
         {
             CountdownEvent cde = new CountdownEvent(2);
             Action[] actions = new Action[256];
 
             // The thinking here is that we'll put enough "filler" into this array to
-            // insure that "natural" chunk size is greater than 2.  Without the
+            // ensure that "natural" chunk size is greater than 2.  Without the
             // NoBuffering option, the Parallel.ForEach below is certain to deadlock.
             // Somewhere a Signal() is going to be after a Wait() in the same chunk, and
             // the loop will deadlock.
@@ -40,7 +40,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test proper range coverage
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RangePartitionerCoverageTest()
         {
             RangePartitionerCoverageTest_HelperInt(0, 1, -1);
@@ -82,7 +82,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that chunk sizes are being honored
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RangePartitionerChunkTest()
         {
             RangePartitionerChunkTest_HelperInt(0, 10, 1);

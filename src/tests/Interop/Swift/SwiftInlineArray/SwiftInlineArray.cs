@@ -6,7 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public class SwiftInlineArray
 {
     private const string SwiftLib = "libSwiftInlineArray.dylib";
@@ -17,7 +19,7 @@ public class SwiftInlineArray
         private byte _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc02a0SiAA2F0V_tF")]
     private static extern nint SwiftFunc0(F0 a0);
 
@@ -73,7 +75,7 @@ public class SwiftInlineArray
         private int _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc12a0SiAA2F1V_tF")]
     private static extern nint SwiftFunc1(F1 a0);
 
@@ -104,7 +106,7 @@ public class SwiftInlineArray
         private ulong _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc22a0SiAA2F2V_tF")]
     private static extern nint SwiftFunc2(F2 a0);
 
@@ -133,7 +135,7 @@ public class SwiftInlineArray
         private byte _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc32a0SiAA2F3V_tF")]
     private static extern nint SwiftFunc3(F3 a0);
 
@@ -148,6 +150,33 @@ public class SwiftInlineArray
 
         long result = SwiftFunc3(a0);
         Assert.Equal(-5808468912223652740, result);
+        Console.WriteLine("OK");
+    }
+
+    [InlineArray(2)]
+    struct F4
+    {
+        private static int _staticField1 = 1;
+        private uint _element0;
+        private static int _staticField2 = 2;
+    }
+
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc42a0SiAA2F4V_tF")]
+    private static extern nint SwiftFunc4(F4 a0);
+
+    [Fact]
+    public static unsafe void TestFuncWithStaticFields()
+    {
+        F4 a0 = default;
+        uint* ptr = (uint*)&a0;
+
+        ptr[0] = (uint)4043602764;
+        ptr[1] = (uint)1067483684;
+
+
+        long result = SwiftFunc4(a0);
+        Assert.Equal(8068158586497914580, result);
         Console.WriteLine("OK");
     }
 }

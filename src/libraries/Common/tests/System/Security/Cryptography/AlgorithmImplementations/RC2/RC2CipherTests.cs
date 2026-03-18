@@ -402,5 +402,34 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
             string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
             Assert.Equal(ExpectedOutput, decrypted);
         }
+
+        [Fact]
+        public static void SetKey_Sanity()
+        {
+            using (RC2 one = RC2Factory.Create())
+            using (RC2 two = RC2Factory.Create())
+            {
+                byte[] key = new byte[one.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+                one.SetKey(key);
+                two.Key = key;
+                two.IV = one.IV;
+
+                using (ICryptoTransform e1 = one.CreateEncryptor())
+                using (ICryptoTransform e2 = two.CreateEncryptor())
+                using (ICryptoTransform d1 = one.CreateDecryptor())
+                using (ICryptoTransform d2 = two.CreateDecryptor())
+                {
+                    byte[] c1 = e1.TransformFinalBlock(key, 0, key.Length);
+                    byte[] c2 = e2.TransformFinalBlock(key, 0, key.Length);
+                    Assert.Equal(c1, c2);
+
+                    byte[] p1 = d1.TransformFinalBlock(c1, 0, c1.Length);
+                    byte[] p2 = d2.TransformFinalBlock(c2, 0, c2.Length);
+                    Assert.Equal(p1, p2);
+                    Assert.Equal(key, p1);
+                }
+            }
+        }
     }
 }

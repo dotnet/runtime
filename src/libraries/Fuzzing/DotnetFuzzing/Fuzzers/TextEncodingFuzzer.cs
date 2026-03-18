@@ -84,7 +84,7 @@ internal sealed class TextEncodingFuzzer : IFuzzer
 
         using PooledBoundedMemory<char> chars = PooledBoundedMemory<char>.Rent(charCount, PoisonPagePlacement.After);
         using PooledBoundedMemory<char> chars2 = PooledBoundedMemory<char>.Rent(charCount, PoisonPagePlacement.After);
-        
+
         // *4 for worst case scenario (*2 for char->byte + *2 for encoding)
         // +2 is for possible Base64 padding with UTF7Encoding.
         using PooledBoundedMemory<byte> bytes = PooledBoundedMemory<byte>.Rent(charCount * 4 + 2, PoisonPagePlacement.After);
@@ -153,14 +153,13 @@ internal sealed class TextEncodingFuzzer : IFuzzer
     private static void TestWithConvert(ReadOnlySpan<byte> input, Encoding encoding, int blockSize)
     {
         Decoder decoder = encoding.GetDecoder();
-        Encoder encoder = encoding.GetEncoder();
 
         int charCount = decoder.GetCharCount(input, flush: true);
 
         using PooledBoundedMemory<char> chars = PooledBoundedMemory<char>.Rent(charCount, PoisonPagePlacement.After);
         using PooledBoundedMemory<char> chars2 = PooledBoundedMemory<char>.Rent(charCount, PoisonPagePlacement.After);
 
-        decoder.Reset();        
+        decoder.Reset();
         int charsUsedTotal = 0;
         int i = 0;
 

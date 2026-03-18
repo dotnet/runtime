@@ -89,11 +89,6 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    InitializeProcessData(
-        void
-        );
-
-    PAL_ERROR
     InitializeProcessCommandLine(
         LPWSTR lpwstrCmdLine,
         LPWSTR lpwstrFullPath

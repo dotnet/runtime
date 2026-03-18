@@ -73,16 +73,6 @@ public:
         return static_cast<IMetaModelCommonRO*>(&m_pStgdb->m_MiniMd);
     }
 
-    __checkReturn
-    STDMETHODIMP SetOptimizeAccessForSpeed(// return hresult
-        BOOL    fOptSpeed)
-    {
-        // If there is any optional work we can avoid (for example, because we have
-        // traded space for speed) this is the place to turn it off or on.
-
-        return S_OK;
-    }
-
     //*****************************************************************************
     // return the count of entries of a given kind in a scope
     // For example, pass in mdtMethodDef will tell you how many MethodDef
@@ -203,7 +193,7 @@ public:
     STDMETHODIMP FindMethodDef(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmd);                  // [OUT] matching memberdef
 
@@ -245,7 +235,7 @@ public:
     __checkReturn
     STDMETHODIMP GetNameAndSigOfMethodDef(
         mdMethodDef      methoddef,     // [IN] given memberdef
-        PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
 
@@ -440,7 +430,7 @@ public:
     __checkReturn
     STDMETHODIMP GetNameAndSigOfMemberRef(  // return name here
         mdMemberRef      memberref,         // given memberref
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
 
@@ -700,7 +690,7 @@ public:
     STDMETHODIMP ConvertTextSigToComSig(    // Return hresult.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found
         LPCSTR      pSignature,             // [IN] class file format signature
-        CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
+        CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
         ULONG       *pcbCount);             // [OUT] the result size of signature
 
     __checkReturn
@@ -739,7 +729,7 @@ public:
     STDMETHODIMP FindMethodDefUsingCompare(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         PSIGCOMPARE pSignatureCompare,      // [IN] Routine to compare signatures
         void*       pSignatureArgs,         // [IN] Additional info to supply the compare function
@@ -782,32 +772,8 @@ public:
     {
         return (DWORD)m_pStgdb->m_MiniMd.m_Schema.m_minor |
                ((DWORD)m_pStgdb->m_MiniMd.m_Schema.m_major << 16);
-    };
-
-    __checkReturn
-    STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
-        BOOL    fVerified)
-    {
-        m_pStgdb->m_MiniMd.SetVerifiedByTrustedSource(fVerified);
-        return S_OK;
     }
 
-    STDMETHODIMP GetRvaOffsetData(// S_OK or error
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount)            // [OUT] Number of records in FieldRVA table.
-    {
-        return m_pStgdb->m_MiniMd.GetRvaOffsetData(
-            pFirstMethodRvaOffset,
-            pMethodDefRecordSize,
-            pMethodDefCount,
-            pFirstFieldRvaOffset,
-            pFieldRvaRecordSize,
-            pFieldRvaCount);
-    }
 };  // class MDInternalRW
 
 #endif //FEATURE_METADATA_INTERNAL_APIS

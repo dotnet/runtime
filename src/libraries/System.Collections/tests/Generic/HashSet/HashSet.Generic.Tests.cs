@@ -907,5 +907,49 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        #region UnionWith
+
+        public static IEnumerable<object[]> UnionWith_HashSet_TestData()
+        {
+            foreach (int count in new[] { 0, 1, 75 })
+            {
+                foreach (bool destinationEmpty in new[] { true, false })
+                {
+                    foreach (bool sourceSparseFilled in new[] { true, false })
+                    {
+                        yield return new object[] { count, destinationEmpty, sourceSparseFilled };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UnionWith_HashSet_TestData))]
+        public void HashSet_Generic_UnionWith_HashSet(int count, bool destinationEmpty, bool sourceSparseFilled)
+        {
+            HashSet<T> source = (HashSet<T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
+
+            if (sourceSparseFilled)
+            {
+                List<T> sourceElements = source.ToList();
+                foreach (int i in NonSquares(count))
+                    source.Remove(sourceElements[i]);
+            }
+
+            HashSet<T> destination = destinationEmpty
+                ? new HashSet<T>(source.Comparer)
+                : (HashSet<T>)GenericISetFactory(1);
+
+            HashSet<T> expected = new HashSet<T>(destination, source.Comparer);
+            foreach (T item in source)
+                expected.Add(item);
+
+            destination.UnionWith(source);
+
+            Assert.True(expected.SetEquals(destination));
+        }
+
+        #endregion
     }
 }

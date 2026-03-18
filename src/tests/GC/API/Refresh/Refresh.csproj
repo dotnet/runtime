@@ -5,6 +5,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

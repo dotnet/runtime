@@ -8,6 +8,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public static class Program
 {
@@ -27,7 +28,7 @@ public static class Program
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.IsReflectionEmitSupported))]
     public static void DynamicMethodsWithRethrow()
     {
         try

@@ -71,9 +71,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseInt(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseInt(value, section.Path);
+                    }
                 }
             }
             else if (type == typeof(string))
@@ -82,7 +85,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                return section.Value;
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
+                {
+                    return value;
+                }
             }
             else if (type == typeof(float))
             {
@@ -90,9 +96,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseFloat(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseFloat(value, section.Path);
+                    }
                 }
             }
             else if (type == typeof(double))
@@ -101,13 +110,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseDouble(value, section.Path);
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        return ParseDouble(value, section.Path);
+                    }
                 }
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
         public static bool HasValueOrChildren(IConfiguration configuration)
@@ -154,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
@@ -166,7 +190,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
@@ -178,7 +202,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
         #endregion Core binding extensions.

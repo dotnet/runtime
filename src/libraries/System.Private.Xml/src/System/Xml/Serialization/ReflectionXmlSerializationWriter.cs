@@ -12,6 +12,8 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+    [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
     internal sealed class ReflectionXmlSerializationWriter : XmlSerializationWriter
     {
         private readonly XmlMapping _mapping;
@@ -22,7 +24,7 @@ namespace System.Xml.Serialization
 
             if (!xmlMapping.IsWriteable || !xmlMapping.GenerateSerializer)
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
+                throw new ArgumentException(SR.XmlInternalError);
             }
 
             if (xmlMapping is XmlTypeMapping || xmlMapping is XmlMembersMapping)
@@ -31,11 +33,10 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
+                throw new ArgumentException(SR.XmlInternalError);
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
             TypeScope scope = _mapping.Scope!;
@@ -55,7 +56,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteObjectOfTypeElement")]
         public void WriteObject(object? o)
         {
             XmlMapping xmlMapping = _mapping;
@@ -69,13 +69,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls GenerateTypeElement")]
         private void WriteObjectOfTypeElement(object? o, XmlTypeMapping mapping)
         {
             GenerateTypeElement(o, mapping);
         }
 
-        [RequiresUnreferencedCode("calls WriteReferencedElements")]
         private void GenerateTypeElement(object? o, XmlTypeMapping xmlMapping)
         {
             ElementAccessor element = xmlMapping.Accessor;
@@ -116,7 +114,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteElements")]
         private void WriteMember(object? o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc memberTypeDesc, bool writeAccessors)
         {
             if (memberTypeDesc.IsArrayLike &&
@@ -130,7 +127,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteArrayItems")]
         private void WriteArray(object o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc)
         {
             if (elements.Length == 0 && text == null)
@@ -154,7 +150,6 @@ namespace System.Xml.Serialization
             WriteArrayItems(elements, text, choice, o, choiceSource);
         }
 
-        [RequiresUnreferencedCode("calls WriteElements")]
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o, object? choiceSources)
         {
             var arr = o as IList;
@@ -186,7 +181,7 @@ namespace System.Xml.Serialization
                 }
             }
         }
-        [RequiresUnreferencedCode("calls CreateUnknownTypeException")]
+
         private void WriteElements(object? o, object? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, bool writeAccessors, bool isNullable)
         {
             if (elements.Length == 0 && text == null)
@@ -393,7 +388,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WritePotentiallyReferencingElement")]
         private void WriteElement(object? o, ElementAccessor element, bool writeAccessor)
         {
             string name = writeAccessor ? element.Name : element.Mapping!.TypeName!;
@@ -533,17 +527,14 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteStructMethod")]
         private XmlSerializationWriteCallback CreateXmlSerializationWriteCallback(TypeMapping mapping, string name, string? ns, bool isNullable)
         {
             if (mapping is StructMapping structMapping)
             {
-                return Wrapper;
-                [RequiresUnreferencedCode("calls WriteStructMethod")]
-                void Wrapper(object o)
+                return (o) =>
                 {
                     WriteStructMethod(structMapping, name, ns, o, isNullable, needType: false);
-                }
+                };
             }
             else if (mapping is EnumMapping enumMapping)
             {
@@ -588,7 +579,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteTypedPrimitive")]
         private void WriteStructMethod(StructMapping mapping, string n, string? ns, object? o, bool isNullable, bool needType)
         {
             if (mapping.IsSoap && mapping.TypeDesc!.IsRoot) return;
@@ -735,7 +725,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Calls GetType on object")]
         private static object? GetMemberValue(object o, string memberName)
         {
             MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveGetInfo(o.GetType(), memberName);
@@ -743,7 +732,6 @@ namespace System.Xml.Serialization
             return memberValue;
         }
 
-        [RequiresUnreferencedCode("calls WriteMember")]
         private bool WriteEnumAndArrayTypes(object o, string n, string? ns)
         {
             Type objType = o.GetType();
@@ -990,7 +978,6 @@ namespace System.Xml.Serialization
             return -1;
         }
 
-        [RequiresUnreferencedCode("calls WriteStructMethod")]
         private bool WriteDerivedTypes(StructMapping mapping, string n, string? ns, object o, bool isNullable)
         {
             Type t = o.GetType();
@@ -1191,6 +1178,16 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
                     }
                 }
+                else if (o is DateOnly)
+                {
+                    stringValue = FromDateOnly((DateOnly)o);
+                    return true;
+                }
+                else if (o is TimeOnly)
+                {
+                    stringValue = FromTimeOnly((TimeOnly)o);
+                    return true;
+                }
                 else if (typeDesc == ReflectionXmlSerializationReader.QnameTypeDesc)
                 {
                     stringValue = FromXmlQualifiedName((XmlQualifiedName?)o);
@@ -1264,7 +1261,6 @@ namespace System.Xml.Serialization
             return stringValue;
         }
 
-        [RequiresUnreferencedCode("calls WritePotentiallyReferencingElement")]
         private void GenerateMembersElement(object o, XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -1417,9 +1413,9 @@ namespace System.Xml.Serialization
         }
     }
 
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
     internal static class ReflectionXmlSerializationHelper
     {
-        [RequiresUnreferencedCode("Reflects over base members")]
         public static MemberInfo? GetMember(Type declaringType, string memberName, bool throwOnNotFound)
         {
             MemberInfo[] memberInfos = declaringType.GetMember(memberName);
@@ -1467,7 +1463,6 @@ namespace System.Xml.Serialization
             return memberInfo;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public static MemberInfo GetEffectiveGetInfo(Type declaringType, string memberName)
         {
             MemberInfo memberInfo = GetMember(declaringType, memberName, true)!;
@@ -1495,7 +1490,6 @@ namespace System.Xml.Serialization
             return memberInfo;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public static MemberInfo GetEffectiveSetInfo(Type declaringType, string memberName)
         {
             MemberInfo memberInfo = GetMember(declaringType, memberName, true)!;

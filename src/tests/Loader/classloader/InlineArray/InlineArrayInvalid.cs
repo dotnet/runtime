@@ -7,9 +7,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public unsafe class Validate
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void Explicit_Fails()
     {
@@ -22,6 +24,49 @@ public unsafe class Validate
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [Fact]
+    public static void ExplicitSize_FailsInSequential()
+    {
+        Console.WriteLine($"{nameof(ExplicitSize_FailsInSequential)}...");
+
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSize); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return new ExplicitSize();
+        });
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [Fact]
+    public static void ExplicitSize_FailsInAuto()
+    {
+        Console.WriteLine($"{nameof(ExplicitSize_FailsInAuto)}...");
+
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSizeAuto); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return sizeof(ExplicitSizeAuto);
+        });
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [Fact]
+    public static void ExplicitSize_FailsInGeneric()
+    {
+        Console.WriteLine($"{nameof(ExplicitSize_FailsInGeneric)}...");
+
+        Assert.Throws<TypeLoadException>(() => { var t = typeof(ExplicitSizeGeneric<long>); });
+
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            return new ExplicitSizeGeneric<int>();
+        });
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void ZeroLength_Fails()
     {
@@ -44,6 +89,7 @@ public unsafe class Validate
         public long field;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void TooLarge_Fails()
     {
@@ -60,6 +106,7 @@ public unsafe class Validate
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void NegativeLength_Fails()
     {
@@ -76,6 +123,7 @@ public unsafe class Validate
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void NoFields_Fails()
     {
@@ -88,6 +136,7 @@ public unsafe class Validate
         });
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86327", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void TwoFields_Fails()
     {

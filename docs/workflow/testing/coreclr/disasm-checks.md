@@ -84,11 +84,12 @@ Functionality that has been added or moved to SuperFileCheck:
 - `<check-prefix>-FULL-LINE:` - same as using FileCheck's `<check-prefix>:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 - `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 # Test Run Limitations
-1. Disasm checks will not run if these environment variables are set:
+1. Disasm checks will not work if these environment variables are set. The infrastructure need to be updated to skip disasm checks when these environment variables are present.
 - `DOTNET_JitStress`
 - `DOTNET_JitStressRegs`
 - `DOTNET_TailcallStress`
 - `DOTNET_TieredPGO`
+- `DOTNET_EnableHWIntrinsic=0`
 2. Disasm checks will not run under GCStress test modes.
 3. Disasm checks will not run under heap-verify test modes.
 4. Disasm checks will not run under cross-gen2 test modes.

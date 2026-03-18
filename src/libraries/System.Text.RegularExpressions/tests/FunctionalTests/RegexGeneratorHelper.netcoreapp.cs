@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -21,6 +22,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public static class RegexGeneratorHelper
     {
         private static readonly CSharpParseOptions s_previewParseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview).WithDocumentationMode(DocumentationMode.Diagnose);
@@ -67,7 +69,7 @@ namespace System.Text.RegularExpressions.Tests
             throw new InvalidOperationException();
         }
 
-        private static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
+        internal static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
             string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()

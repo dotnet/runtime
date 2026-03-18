@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -179,7 +180,7 @@ internal static partial class Interop
                 message = buffer;
             }
 
-            return Marshal.PtrToStringUTF8((IntPtr)message)!;
+            return Utf8StringMarshaller.ConvertToManaged(message)!;
         }
 
 #if SERIAL_PORTS

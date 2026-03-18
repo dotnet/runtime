@@ -4,6 +4,9 @@
 
 //Disable tailcall if the caller is marked no-inline.
 //Test expects Foo() to catch the exception thrown by Bar(). 
+
+namespace b158861;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -31,6 +34,7 @@ public class My
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

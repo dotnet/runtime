@@ -36,7 +36,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("PropertyName")]
-        public void EventName_Set_Get_ReturnsExpected(string value)
+        public void EventName_Set_Get_ReturnsExpected(string? value)
         {
             var propertyReference = new CodePropertyReferenceExpression();
             propertyReference.PropertyName = value;

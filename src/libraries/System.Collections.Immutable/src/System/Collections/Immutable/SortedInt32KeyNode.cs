@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
     /// the comparer's <see cref="IComparer{T}.Compare"/> implementation.
     /// </remarks>
     [DebuggerDisplay("{_key} = {_value}")]
-    internal sealed partial class SortedInt32KeyNode<TValue> : IBinaryTree
+    internal sealed partial class SortedInt32KeyNode<TValue>
     {
         /// <summary>
         /// The default empty node.
@@ -113,24 +113,6 @@ namespace System.Collections.Immutable
         /// Gets the right branch of this node.
         /// </summary>
         public SortedInt32KeyNode<TValue>? Right { get { return _right; } }
-
-        /// <summary>
-        /// Gets the left branch of this node.
-        /// </summary>
-        IBinaryTree? IBinaryTree.Left { get { return _left; } }
-
-        /// <summary>
-        /// Gets the right branch of this node.
-        /// </summary>
-        IBinaryTree? IBinaryTree.Right { get { return _right; } }
-
-        /// <summary>
-        /// Gets the number of elements contained by this node and below.
-        /// </summary>
-        int IBinaryTree.Count
-        {
-            get { throw new NotSupportedException(); }
-        }
 
         /// <summary>
         /// Gets the value represented by the current node.

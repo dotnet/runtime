@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
-//
 //*****************************************************************************
 // EventReporter.cpp
 //
 // A utility to log an entry in event log.
 //
 //*****************************************************************************
-
 
 #include "common.h"
 #include "utilcode.h"
@@ -52,7 +49,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     InlineSString<256> ssMessage;
 
-    if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_APPLICATION))
+    if(!ssMessage.LoadResource(IDS_ER_APPLICATION))
         m_Description.Append(W("Application: "));
     else
     {
@@ -71,7 +68,7 @@ EventReporter::EventReporter(EventReporterType type)
     else
     {
         ssMessage.Clear();
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNKNOWN))
+        if(!ssMessage.LoadResource(IDS_ER_UNKNOWN))
             m_Description.Append(W("unknown\n"));
         else
         {
@@ -81,7 +78,7 @@ EventReporter::EventReporter(EventReporterType type)
     }
 
     ssMessage.Clear();
-    if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_FRAMEWORK_VERSION))
+    if(!ssMessage.LoadResource(IDS_ER_FRAMEWORK_VERSION))
         m_Description.Append(W("CoreCLR Version: "));
     else
     {
@@ -99,7 +96,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     switch(m_eventType) {
     case ERT_UnhandledException:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTION))
+        if(!ssMessage.LoadResource(IDS_ER_UNHANDLEDEXCEPTION))
             m_Description.Append(W("Description: The process was terminated due to an unhandled exception."));
         else
         {
@@ -109,7 +106,7 @@ EventReporter::EventReporter(EventReporterType type)
         break;
 
     case ERT_ManagedFailFast:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFAST))
+        if(!ssMessage.LoadResource(IDS_ER_MANAGEDFAILFAST))
             m_Description.Append(W("Description: The application requested process termination through System.Environment.FailFast."));
         else
         {
@@ -119,7 +116,7 @@ EventReporter::EventReporter(EventReporterType type)
         break;
 
     case ERT_UnmanagedFailFast:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFAST))
+        if(!ssMessage.LoadResource(IDS_ER_UNMANAGEDFAILFAST))
             m_Description.Append(W("Description: The process was terminated due to an internal error in the .NET Runtime "));
         else
         {
@@ -129,7 +126,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_StackOverflow:
         // Fetch the localized Stack Overflow Error text or fall back on a hardcoded variant if things get dire.
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_STACK_OVERFLOW))
+        if(!ssMessage.LoadResource(IDS_ER_STACK_OVERFLOW))
             m_Description.Append(W("Description: The process was terminated due to a stack overflow."));
         else
         {
@@ -139,7 +136,7 @@ EventReporter::EventReporter(EventReporterType type)
         break;
 
     case ERT_CodeContractFailed:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_CODECONTRACT_FAILED))
+        if(!ssMessage.LoadResource(IDS_ER_CODECONTRACT_FAILED))
             m_Description.Append(W("Description: The application encountered a bug.  A managed code contract (precondition, postcondition, object invariant, or assert) failed."));
         else
         {
@@ -202,7 +199,7 @@ void EventReporter::AddDescription(SString& s)
     if (m_eventType == ERT_ManagedFailFast)
     {
         SmallStackSString ssMessage;
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFASTMSG))
+        if(!ssMessage.LoadResource(IDS_ER_MANAGEDFAILFASTMSG))
             m_Description.Append(W("Message: "));
         else
         {
@@ -212,7 +209,7 @@ void EventReporter::AddDescription(SString& s)
     else if (m_eventType == ERT_UnhandledException)
     {
         SmallStackSString ssMessage;
-        if (!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONMSG))
+        if (!ssMessage.LoadResource(IDS_ER_UNHANDLEDEXCEPTIONMSG))
         {
             m_Description.Append(W("Exception Info: "));
         }
@@ -224,7 +221,7 @@ void EventReporter::AddDescription(SString& s)
     else if (m_eventType == ERT_CodeContractFailed)
     {
         SmallStackSString ssMessage;
-        if (!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_CODECONTRACT_DETAILMSG))
+        if (!ssMessage.LoadResource(IDS_ER_CODECONTRACT_DETAILMSG))
             m_Description.Append(W("Contract details: "));
         else
             m_Description.Append(ssMessage);
@@ -254,7 +251,7 @@ void EventReporter::BeginStackTrace()
     CONTRACTL_END;
     _ASSERTE (m_eventType == ERT_UnhandledException || m_eventType == ERT_ManagedFailFast || m_eventType == ERT_CodeContractFailed);
     InlineSString<80> ssMessage;
-    if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_STACK))
+    if(!ssMessage.LoadResource(IDS_ER_STACK))
         m_Description.Append(W("Stack:\n"));
     else
     {
@@ -292,7 +289,7 @@ void EventReporter::AddStackTrace(SString& s)
         {
             // Load the truncation message
             StackSString truncate;
-            if (!truncate.LoadResource(CCompRC::Optional, IDS_ER_MESSAGE_TRUNCATE))
+            if (!truncate.LoadResource(IDS_ER_MESSAGE_TRUNCATE))
             {
                 truncate.Set(W("The remainder of the message was truncated."));
             }
@@ -348,7 +345,7 @@ void EventReporter::AddFailFastStackTrace(SString& s)
 
     _ASSERTE(m_eventType == ERT_ManagedFailFast);
     InlineSString<80> ssMessage;
-    if (!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTION))
+    if (!ssMessage.LoadResource(IDS_ER_UNHANDLEDEXCEPTION))
     {
         m_Description.Append(W("Exception stack:\n"));
     }
@@ -466,7 +463,7 @@ BOOL ShouldLogInEventLog()
     CONTRACTL_END;
 
     // If the process is being debugged, don't log
-    if ((CORDebuggerAttached() || IsDebuggerPresent())
+    if ((CORDebuggerAttached() || minipal_is_native_debugger_present())
 #ifdef _DEBUG
         // Allow debug to be able to break in
         &&
@@ -549,7 +546,7 @@ void LogCallstackForEventReporterWorker(EventReporter& reporter)
     Thread* pThread = GetThread();
     SmallStackSString WordAt;
 
-    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    if (!WordAt.LoadResource(IDS_ER_WORDAT))
     {
         WordAt.Set(W("   at"));
     }
@@ -632,7 +629,6 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
 
     DebugStackTrace::GetStackFramesData stackFramesData;
     stackFramesData.pDomain = NULL;
-    stackFramesData.skip = 0;
     stackFramesData.NumFramesRequested = 0;
 
     DebugStackTrace::GetStackFramesFromException(&(gc.exObj), &stackFramesData);
@@ -692,7 +688,7 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         {
             // We are reporting an exception.  If we throw while working on this, it is not fatal.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         reporter.Report();
     }

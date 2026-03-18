@@ -80,7 +80,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void Initialize()
+        public void Initialize()
         {
             slot.Type = MarshalerType.None;
 #if FEATURE_WASM_MANAGED_THREADS

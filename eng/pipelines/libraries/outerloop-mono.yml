@@ -10,6 +10,7 @@ schedules:
 
 variables:
   - template: variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -66,7 +67,7 @@ extends:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     scenarios:
-                    - WasmTestOnV8
+                    - WasmTestOnChrome
                     testScope: outerloop
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: Mono_$(_BuildConfig)

@@ -61,10 +61,10 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// <summary>
         /// Unwind code parsing is based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/unwindamd64.cpp">src\jit\unwindamd64.cpp</a> DumpUnwindInfo
         /// </summary>
-        public UnwindCode(byte[] image, ref int frameOffset, ref int offset)
+        public UnwindCode(NativeReader imageReader, ref int frameOffset, ref int offset)
         {
-            CodeOffset = NativeReader.ReadByte(image, ref offset);
-            byte op = NativeReader.ReadByte(image, ref offset);
+            CodeOffset = imageReader.ReadByte(ref offset);
+            byte op = imageReader.ReadByte(ref offset);
             UnwindOp = (UnwindOpCodes)(op & 15);
             OpInfo = (byte)(op >> 4);
 
@@ -83,13 +83,13 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     if (OpInfo == 0)
                     {
                         OpInfoStr += "Scaled small";
-                        NextFrameOffset = 8 * NativeReader.ReadUInt16(image, ref offset);
+                        NextFrameOffset = 8 * imageReader.ReadUInt16(ref offset);
                     }
                     else if (OpInfo == 1)
                     {
                         OpInfoStr += "Unscaled large";
-                        uint nextOffset = NativeReader.ReadUInt16(image, ref offset);
-                        NextFrameOffset = (int)((uint)(NativeReader.ReadUInt16(image, ref offset) << 16) | nextOffset);
+                        uint nextOffset = imageReader.ReadUInt16(ref offset);
+                        NextFrameOffset = (int)((uint)(imageReader.ReadUInt16(ref offset) << 16) | nextOffset);
                     }
                     else
                     {
@@ -104,43 +104,43 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     OpInfoStr = $"Unused({OpInfo})";
                     break;
                 case UnwindOpCodes.UWOP_SET_FPREG_LARGE:
+                {
+                    OpInfoStr = $"Unused({OpInfo})";
+                    uint nextOffset = imageReader.ReadUInt16(ref offset);
+                    nextOffset = ((uint)(imageReader.ReadUInt16(ref offset) << 16) | nextOffset);
+                    NextFrameOffset = (int)nextOffset * 16;
+                    if ((NextFrameOffset & 0xF0000000) != 0)
                     {
-                        OpInfoStr = $"Unused({OpInfo})";
-                        uint nextOffset = NativeReader.ReadUInt16(image, ref offset);
-                        nextOffset = ((uint)(NativeReader.ReadUInt16(image, ref offset) << 16) | nextOffset);
-                        NextFrameOffset = (int)nextOffset * 16;
-                        if ((NextFrameOffset & 0xF0000000) != 0)
-                        {
-                            throw new BadImageFormatException("Warning: Illegal unwindInfo unscaled offset: too large");
-                        }
+                        throw new BadImageFormatException("Warning: Illegal unwindInfo unscaled offset: too large");
                     }
-                    break;
+                }
+                break;
                 case UnwindOpCodes.UWOP_SAVE_NONVOL:
-                    {
-                        OpInfoStr = $"{(Registers)OpInfo}({OpInfo})";
-                        NextFrameOffset = NativeReader.ReadUInt16(image, ref offset) * 8;
-                    }
-                    break;
+                {
+                    OpInfoStr = $"{(Registers)OpInfo}({OpInfo})";
+                    NextFrameOffset = imageReader.ReadUInt16(ref offset) * 8;
+                }
+                break;
                 case UnwindOpCodes.UWOP_SAVE_NONVOL_FAR:
-                    {
-                        OpInfoStr = $"{(Registers)OpInfo}({OpInfo})";
-                        uint nextOffset = NativeReader.ReadUInt16(image, ref offset);
-                        NextFrameOffset = (int)((uint)(NativeReader.ReadUInt16(image, ref offset) << 16) | nextOffset);
-                    }
-                    break;
+                {
+                    OpInfoStr = $"{(Registers)OpInfo}({OpInfo})";
+                    uint nextOffset = imageReader.ReadUInt16(ref offset);
+                    NextFrameOffset = (int)((uint)(imageReader.ReadUInt16(ref offset) << 16) | nextOffset);
+                }
+                break;
                 case UnwindOpCodes.UWOP_SAVE_XMM128:
-                    {
-                        OpInfoStr = $"XMM{OpInfo}({OpInfo})";
-                        NextFrameOffset = (int)NativeReader.ReadUInt16(image, ref offset) * 16;
-                    }
-                    break;
+                {
+                    OpInfoStr = $"XMM{OpInfo}({OpInfo})";
+                    NextFrameOffset = (int)imageReader.ReadUInt16(ref offset) * 16;
+                }
+                break;
                 case UnwindOpCodes.UWOP_SAVE_XMM128_FAR:
-                    {
-                        OpInfoStr = $"XMM{OpInfo}({OpInfo})";
-                        uint nextOffset = NativeReader.ReadUInt16(image, ref offset);
-                        NextFrameOffset = (int)((uint)(NativeReader.ReadUInt16(image, ref offset) << 16) | nextOffset);
-                    }
-                    break;
+                {
+                    OpInfoStr = $"XMM{OpInfo}({OpInfo})";
+                    uint nextOffset = imageReader.ReadUInt16(ref offset);
+                    NextFrameOffset = (int)((uint)(imageReader.ReadUInt16(ref offset) << 16) | nextOffset);
+                }
+                break;
                 default:
                     throw new NotImplementedException(UnwindOp.ToString());
             }
@@ -172,14 +172,14 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// <summary>
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapcode.cpp">ZapUnwindData::Save</a>
         /// </summary>
-        public UnwindInfo(byte[] image, int offset)
+        public UnwindInfo(NativeReader imageReader, int offset)
         {
-            byte versionAndFlags = NativeReader.ReadByte(image, ref offset);
+            byte versionAndFlags = imageReader.ReadByte(ref offset);
             Version = (byte)(versionAndFlags & 7);
             Flags = (byte)(versionAndFlags >> 3);
-            SizeOfProlog = NativeReader.ReadByte(image, ref offset);
-            CountOfUnwindCodes = NativeReader.ReadByte(image, ref offset);
-            byte frameRegisterAndOffset = NativeReader.ReadByte(image, ref offset);
+            SizeOfProlog = imageReader.ReadByte(ref offset);
+            CountOfUnwindCodes = imageReader.ReadByte(ref offset);
+            byte frameRegisterAndOffset = imageReader.ReadByte(ref offset);
             FrameRegister = (Registers)(frameRegisterAndOffset & 15);
             FrameOffset = (byte)(frameRegisterAndOffset >> 4);
 
@@ -190,7 +190,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             int endOffset = offset + sizeOfUnwindCodes;
             while (offset < endOffset)
             {
-                UnwindCode unwindCode = new UnwindCode(image, ref frameOffset, ref offset);
+                UnwindCode unwindCode = new UnwindCode(imageReader, ref frameOffset, ref offset);
                 CodeOffsetToUnwindCodeIndex.Add(unwindCode.CodeOffset, UnwindCodes.Count);
                 UnwindCodes.Add(unwindCode);
             }
@@ -201,7 +201,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             // Personality routine RVA must be at 4-aligned address
             offset += alignmentPad;
-            PersonalityRoutineRVA = NativeReader.ReadUInt32(image, ref offset);
+            PersonalityRoutineRVA = imageReader.ReadUInt32(ref offset);
         }
 
         public override string ToString()

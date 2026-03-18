@@ -1,11 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
+    <Compile Include="Adler32Tests.cs" />
+    <Compile Include="Crc32ParameterSetTests.cs" />
     <Compile Include="Crc32Tests.cs" />
+    <Compile Include="Crc32Tests_Parameterized.cs" />
+    <Compile Include="Crc32Tests_ParameterSet_Crc32.cs" />
+    <Compile Include="Crc32Tests_ParameterSet_Crc32C.cs" />
+    <Compile Include="Crc32Tests_ParameterSet_Custom.cs" />
+    <Compile Include="Crc64ParameterSetTests.cs" />
     <Compile Include="Crc64Tests.cs" />
+    <Compile Include="Crc64Tests_Parameterized.cs" />
+    <Compile Include="Crc64Tests_Parameterized_Crc64.cs" />
+    <Compile Include="Crc64Tests_Parameterized_Custom.cs" />
+    <Compile Include="Crc64Tests_Parameterized_Nvme.cs" />
     <Compile Include="NonCryptoHashBaseTests.cs" />
     <Compile Include="NonCryptoHashTestDriver.cs" />
     <Compile Include="XxHash128Tests.cs" />
@@ -20,10 +33,9 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.IO.Hashing.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
-  </ItemGroup>
+
 </Project>

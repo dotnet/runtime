@@ -15,7 +15,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 using static Microsoft.Interop.UnitTests.TestUtils;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.Interop.Analyzers.ComInterfaceGeneratorDiagnosticsAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -865,6 +865,24 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithArguments(SR.InVariantShouldBeRef));
             test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task VerifyInvalidExceptionToUnmanagedMarshallerTypeDiagnostic()
+        {
+            string code = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface(ExceptionToUnmanagedMarshaller = typeof(string[]))]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                public partial interface {|#0:I|}
+                {
+                    void Method();
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(code, new DiagnosticResult(GeneratorDiagnostics.InvalidExceptionToUnmanagedMarshallerType).WithLocation(0));
         }
     }
 }

@@ -136,6 +136,30 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => c.Compare("42", 84));
             Assert.Equal(1, c.Compare("42", null));
             Assert.Throws<ArgumentException>(() => c.Compare(42, "84"));
+
+            c = StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering);
+            if (PlatformDetection.IsNumericComparisonSupported)
+            {
+                Assert.Equal(-1, c.Compare("2", "10"));
+                if (PlatformDetection.IsNlsGlobalization)
+                {
+                    Assert.NotEqual(0, c.Compare("2", "02"));
+                    Assert.NotEqual(c.GetHashCode("2"), c.GetHashCode("02"));
+                    Assert.False(c.Equals("2", "02"));
+                }
+                else
+                {
+                    Assert.Equal(0, c.Compare("2", "02"));
+                    Assert.Equal(c.GetHashCode("2"), c.GetHashCode("02"));
+                    Assert.True(c.Equals("2", "02"));
+                }
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => c.Compare("2", "10"));
+                Assert.Throws<PlatformNotSupportedException>(() => c.GetHashCode("42"));
+                Assert.Throws<PlatformNotSupportedException>(() => c.Equals("2", "42"));
+            }
         }
 
         [Fact]
@@ -201,12 +225,20 @@ namespace System.Tests
             RunTest(GetNonRandomizedComparer("WrappedAroundStringComparerOrdinalIgnoreCase"), null, default);
             RunTest(new CustomStringComparer(), null, default); // not an inbox comparer
             RunTest(ci_enUS.GetStringComparer(CompareOptions.None), ci_enUS, CompareOptions.None);
+            if (PlatformDetection.IsNumericComparisonSupported)
+            {
+                RunTest(ci_enUS.GetStringComparer(CompareOptions.NumericOrdering), ci_enUS, CompareOptions.NumericOrdering);
+            }
             RunTest(ci_enUS.GetStringComparer(CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType), ci_enUS, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType);
             RunTest(ci_enUS.GetStringComparer(CompareOptions.Ordinal), null, default); // not linguistic
             RunTest(ci_enUS.GetStringComparer(CompareOptions.OrdinalIgnoreCase), null, default); // not linguistic
             RunTest(StringComparer.Create(CultureInfo.InvariantCulture, false), ci_inv, CompareOptions.None);
             RunTest(StringComparer.Create(CultureInfo.InvariantCulture, true), ci_inv, CompareOptions.IgnoreCase);
             RunTest(StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.IgnoreSymbols), ci_inv, CompareOptions.IgnoreSymbols);
+            if (PlatformDetection.IsNumericComparisonSupported)
+            {
+                RunTest(StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering), ci_inv, CompareOptions.NumericOrdering);
+            }
 
             // Then, make sure that this API works with common collection types
 

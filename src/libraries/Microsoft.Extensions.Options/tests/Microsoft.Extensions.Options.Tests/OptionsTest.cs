@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IStartupValidator)));
         }
 
-        public static TheoryData Configure_GetsNullableOptionsFromConfiguration_Data
+        public static TheoryData<IDictionary<string, string>, IDictionary<string, object>> Configure_GetsNullableOptionsFromConfiguration_Data
         {
             get
             {
@@ -254,7 +254,7 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Collection(expectedValues, assertions.ToArray());
         }
 
-        public static TheoryData Configure_GetsEnumOptionsFromConfiguration_Data
+        public static TheoryData<IDictionary<string, string>, IDictionary<string, object>> Configure_GetsEnumOptionsFromConfiguration_Data
         {
             get
             {

@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class ServiceProviderCallSite : ServiceCallSite
     {
-        public ServiceProviderCallSite() : base(ResultCache.None(typeof(IServiceProvider)))
+        public ServiceProviderCallSite() : base(ResultCache.None(typeof(IServiceProvider)), null)
         {
         }
 

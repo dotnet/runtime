@@ -20,15 +20,13 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.StubHelpers;
 
 namespace Microsoft.Win32
 {
     internal static unsafe partial class OAVariantLib
     {
         #region Constants
-
-        // Constants for VariantChangeType from OleAuto.h
-        public const int LocalBool = 0x10;
 
         private static readonly Dictionary<Type, VarEnum> ClassTypes = new Dictionary<Type, VarEnum>
         {
@@ -61,11 +59,8 @@ namespace Microsoft.Win32
          * Variant and the types that CLR supports explicitly in the
          * CLR Variant class.
          */
-        internal static object? ChangeType(object source, Type targetClass, short options, CultureInfo culture)
+        internal static object? ChangeType(object source, Type targetClass, CultureInfo culture)
         {
-            ArgumentNullException.ThrowIfNull(targetClass);
-            ArgumentNullException.ThrowIfNull(culture);
-
             object? result = null;
 
             if (Variant.IsSystemDrawingColor(targetClass))
@@ -73,8 +68,7 @@ namespace Microsoft.Win32
                 if (source is int || source is uint)
                 {
                     uint sourceData = source is int ? (uint)(int)source : (uint)source;
-                    // Int32/UInt32 can be converted to System.Drawing.Color
-                    Variant.ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
+                    result = ColorMarshaler.ConvertToManaged((int)sourceData);
                     Debug.Assert(result != null);
                     return result;
                 }
@@ -88,7 +82,12 @@ namespace Microsoft.Win32
             ComVariant vOp = ToOAVariant(source);
             ComVariant ret = default;
 
-            int hr = Interop.OleAut32.VariantChangeTypeEx(&ret, &vOp, culture.LCID, options, (ushort)vt);
+            // Constants for VariantChangeTypeEx from OleAuto.h
+            const int VARIANT_LOCALBOOL = 0x10;
+
+            // Specify the VARIANT_LOCALBOOL flag to have BOOL values converted to local language rather
+            // than 0 or -1.
+            int hr = Interop.OleAut32.VariantChangeTypeEx(&ret, &vOp, culture.LCID, VARIANT_LOCALBOOL, (ushort)vt);
 
             using (vOp)
             using (ret)
@@ -151,18 +150,9 @@ namespace Microsoft.Win32
                 null => default,
                 Missing => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 DBNull => ComVariant.Null,
-                _ => GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
+                _ => Variant.GetIUnknownOrIDispatchFromObject(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
         }
-
-        private static ComVariant GetComIPFromObjectRef(object? obj)
-        {
-            IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch);
-            return ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
-        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
         private static object? FromOAVariant(ComVariant input) =>
             input.VarType switch

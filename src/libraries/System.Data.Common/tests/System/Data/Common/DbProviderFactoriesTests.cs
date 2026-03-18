@@ -41,50 +41,62 @@ namespace System.Data.Common
         public void GetFactoryWithInvariantNameTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory)));
             DbProviderFactory factory = DbProviderFactories.GetFactory("System.Data.SqlClient");
             Assert.NotNull(factory);
             Assert.Equal(typeof(System.Data.SqlClient.SqlClientFactory), factory.GetType());
             Assert.Equal(System.Data.SqlClient.SqlClientFactory.Instance, factory);
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void GetFactoryWithDbConnectionTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' and 'SqlConnection' are obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory)));
             DbProviderFactory factory = DbProviderFactories.GetFactory(new System.Data.SqlClient.SqlConnection());
             Assert.NotNull(factory);
             Assert.Equal(typeof(System.Data.SqlClient.SqlClientFactory), factory.GetType());
             Assert.Equal(System.Data.SqlClient.SqlClientFactory.Instance, factory);
+#pragma warning restore CS0618 // 'SqlClientFactory' and 'SqlConnection' are obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void GetFactoryWithDataRowTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=> DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory)));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void RegisterFactoryWithTypeNameTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory).AssemblyQualifiedName));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void RegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory)));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void RegisterFactoryWithInstanceTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", System.Data.SqlClient.SqlClientFactory.Instance));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
@@ -92,7 +104,9 @@ namespace System.Data.Common
         {
             ClearRegisteredFactories();
             Assert.Throws<ArgumentException>(() => DbProviderFactories.GetFactory("System.Data.SqlClient"));
+#pragma warning disable CS0618 // 'SqlConnection' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             Assert.Throws<ArgumentException>(() => DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlConnection)));
+#pragma warning restore CS0618 // 'SqlConnection' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
@@ -100,14 +114,18 @@ namespace System.Data.Common
         {
             ClearRegisteredFactories();
             Assert.Throws<ArgumentException>(() => DbProviderFactories.GetFactory("System.Data.SqlClient"));
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             Assert.Throws<ArgumentException>(() => DbProviderFactories.RegisterFactory(string.Empty, typeof(System.Data.SqlClient.SqlClientFactory)));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void RegisterFactoryWithAssemblyQualifiedNameTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory).AssemblyQualifiedName));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
@@ -118,7 +136,9 @@ namespace System.Data.Common
             DataTable providerTable = DbProviderFactories.GetFactoryClasses();
             Assert.Equal(0, providerTable.Rows.Count);
             // register the connection type which is the wrong type. Registraton should succeed, as type registration/checking is deferred.
+#pragma warning disable CS0618 // 'SqlConnection' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlConnection).AssemblyQualifiedName);
+#pragma warning restore CS0618 // 'SqlConnection' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             providerTable = DbProviderFactories.GetFactoryClasses();
             Assert.Equal(1, providerTable.Rows.Count);
             // obtaining the factory will kick in the checks of the registered type name, which will cause exceptions. The checks were deferred till the GetFactory() call.
@@ -130,7 +150,9 @@ namespace System.Data.Common
         public void UnregisterFactoryTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", System.Data.SqlClient.SqlClientFactory.Instance));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             Assert.True(DbProviderFactories.UnregisterFactory("System.Data.SqlClient"));
             DataTable providerTable = DbProviderFactories.GetFactoryClasses();
             Assert.Equal(0, providerTable.Rows.Count);
@@ -141,18 +163,22 @@ namespace System.Data.Common
         {
             ClearRegisteredFactories();
             Assert.False(DbProviderFactories.TryGetFactory("System.Data.SqlClient", out DbProviderFactory f));
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(() => DbProviderFactories.RegisterFactory("System.Data.SqlClient", System.Data.SqlClient.SqlClientFactory.Instance));
             Assert.True(DbProviderFactories.TryGetFactory("System.Data.SqlClient", out DbProviderFactory factory));
             Assert.NotNull(factory);
             Assert.Equal(typeof(System.Data.SqlClient.SqlClientFactory), factory.GetType());
             Assert.Equal(System.Data.SqlClient.SqlClientFactory.Instance, factory);
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
 
         [Fact]
         public void ReplaceFactoryWithRegisterFactoryWithTypeTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(()=>DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory)));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(TestProviderFactory));
             DataTable providerTable = DbProviderFactories.GetFactoryClasses();
             Assert.Equal(1, providerTable.Rows.Count);
@@ -166,7 +192,9 @@ namespace System.Data.Common
         public void GetProviderInvariantNamesTest()
         {
             ClearRegisteredFactories();
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             RegisterSqlClientAndTestRegistration(() => DbProviderFactories.RegisterFactory("System.Data.SqlClient", typeof(System.Data.SqlClient.SqlClientFactory)));
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             DbProviderFactories.RegisterFactory("System.Data.Common.TestProvider", typeof(TestProviderFactory));
             DataTable providerTable = DbProviderFactories.GetFactoryClasses();
             Assert.Equal(2, providerTable.Rows.Count);
@@ -199,8 +227,10 @@ namespace System.Data.Common
             Assert.Equal(1, providerTable.Rows.Count);
             DbProviderFactory factory = DbProviderFactories.GetFactory(providerTable.Rows[0]);
             Assert.NotNull(factory);
+#pragma warning disable CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
             Assert.Equal(typeof(System.Data.SqlClient.SqlClientFactory), factory.GetType());
             Assert.Equal(System.Data.SqlClient.SqlClientFactory.Instance, factory);
+#pragma warning restore CS0618 // 'SqlClientFactory' is obsolete: 'Use the Microsoft.Data.SqlClient package instead.
         }
     }
 }

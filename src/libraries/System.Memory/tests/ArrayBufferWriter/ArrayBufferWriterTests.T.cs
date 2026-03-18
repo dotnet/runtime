@@ -398,8 +398,8 @@ namespace System.Buffers.Tests
         {
             var output = new ArrayBufferWriter<T>();
             WriteData(output, 2);
-            Assert.Throws<ArgumentException>(() => output.GetSpan(-1));
-            Assert.Throws<ArgumentException>(() => output.GetMemory(-1));
+            AssertExtensions.Throws<ArgumentException>("sizeHint", () => output.GetSpan(-1));
+            AssertExtensions.Throws<ArgumentException>("sizeHint", () => output.GetMemory(-1));
         }
 
         [Fact]

@@ -18,8 +18,8 @@ namespace System.IO.Pipelines.Tests
         }
 
         private static Func<DisposeTrackingBufferPool> CustomPoolFunc = () => new DisposeTrackingBufferPool();
-        public static TheoryData<MemoryPool<byte>?, int, bool, bool> TestData =>
-            new TheoryData<MemoryPool<byte>?, int, bool, bool>
+        public static TheoryData<DisposeTrackingBufferPool?, int, bool, bool> TestData =>
+            new TheoryData<DisposeTrackingBufferPool?, int, bool, bool>
             {
                 // pool, bufferSize, isSingleSegment, isFromCustomPool
                 { default, 1, true, false },

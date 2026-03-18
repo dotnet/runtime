@@ -6,7 +6,6 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <DefineConstants>$(DefineConstants);NETWORKINFORMATION_TEST</DefineConstants>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
-    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Xunit;
+using TestLibrary;
 
 public class Test_GetGCMemoryInfo
 {
@@ -90,7 +92,9 @@ public class Test_GetGCMemoryInfo
         return listByteArray;
     }
 
-    public static int Main()
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37950", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint()
     {
         // We will keep executing the test in case of a failure to see if we have multiple failures.
         bool isTestSucceeded = true;

@@ -57,7 +57,7 @@ namespace System.Web.Tests
         [Theory]
         [InlineData(null, null)]
         [MemberData(nameof(HtmlAttributeEncodeData))]
-        public void HtmlAttributeEncode(string expected, string input)
+        public void HtmlAttributeEncode(string? expected, string? input)
         {
             Assert.Equal(expected, HttpUtility.HtmlAttributeEncode(input));
         }
@@ -74,7 +74,7 @@ namespace System.Web.Tests
         [Theory]
         [InlineData("", null)]
         [MemberData(nameof(HtmlAttributeEncodeData))]
-        public void HtmlAttributeEncode_TextWriter(string expected, string input)
+        public void HtmlAttributeEncode_TextWriter(string expected, string? input)
         {
             var sw = new StringWriter();
             HttpUtility.HtmlAttributeEncode(input, sw);
@@ -261,7 +261,7 @@ namespace System.Web.Tests
         [InlineData(2, "2")]
         [InlineData("", "")]
         [InlineData(null, null)]
-        public void HtmlEncode(object decoded, string encoded)
+        public void HtmlEncode(object? decoded, string? encoded)
         {
             if (decoded is string s)
             {
@@ -635,7 +635,7 @@ namespace System.Web.Tests
         [Theory]
         [InlineData(null, null)]
         [MemberData(nameof(UrlEncodeData))]
-        public void UrlEncode(string decoded, string encoded)
+        public void UrlEncode(string? decoded, string? encoded)
         {
             Assert.Equal(encoded, HttpUtility.UrlEncode(decoded));
         }
@@ -781,7 +781,7 @@ namespace System.Web.Tests
         [InlineData("mailto:user@example.net", "mailto:user@example.net")]
         [InlineData("http://example\u200E.net/", "http://example%e2%80%8e.net/")]
         [InlineData("http://ex ample\u200E.net/", "http://ex%20ample%e2%80%8e.net/")]
-        public void UrlPathEncode(string decoded, string encoded)
+        public void UrlPathEncode(string? decoded, string? encoded)
         {
             Assert.Equal(encoded, HttpUtility.UrlPathEncode(decoded));
         }

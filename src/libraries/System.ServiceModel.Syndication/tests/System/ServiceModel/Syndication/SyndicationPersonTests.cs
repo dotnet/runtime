@@ -26,7 +26,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("email")]
-        public void Ctor_String(string email)
+        public void Ctor_String(string? email)
         {
             var person = new SyndicationPerson(email);
             Assert.Empty(person.AttributeExtensions);
@@ -40,7 +40,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null, null, null)]
         [InlineData("", "", "")]
         [InlineData("email", "name", "uri")]
-        public void Ctor_String_String_String(string email, string name, string uri)
+        public void Ctor_String_String_String(string? email, string? name, string? uri)
         {
             var person = new SyndicationPerson(email, name, uri);
             Assert.Empty(person.AttributeExtensions);
@@ -130,7 +130,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData("name", "http://www.w3.org/2000/xmlns/", "value", "version")]
         [InlineData("type", "ns", "value", "version")]
         [InlineData("name", "http://www.w3.org/2001/XMLSchema-instance", "value", "version")]
-        public void TryParseAttribute_Invoke_ReturnsFalse(string name, string ns, string value, string version)
+        public void TryParseAttribute_Invoke_ReturnsFalse(string? name, string? ns, string? value, string? version)
         {
             var person = new SyndicationPersonSubclass();
             Assert.False(person.TryParseAttributeEntryPoint(name, ns, value, version));
@@ -145,7 +145,7 @@ namespace System.ServiceModel.Syndication.Tests
 
         [Theory]
         [MemberData(nameof(TryParseElement_TestData))]
-        public void TryParseElement_Invoke_ReturnsFalse(XmlReader reader, string version)
+        public void TryParseElement_Invoke_ReturnsFalse(XmlReader reader, string? version)
         {
             var person = new SyndicationPersonSubclass();
             Assert.False(person.TryParseElementEntryPoint(reader, version));
@@ -155,7 +155,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string? version)
         {
             var person = new SyndicationPersonSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => person.WriteAttributeExtensionsEntryPoint(writer, version));
@@ -177,7 +177,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteElementExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteElementExtensions_Invoke_ReturnsExpected(string? version)
         {
             var person = new SyndicationPersonSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => person.WriteElementExtensionsEntryPoint(writer, version));

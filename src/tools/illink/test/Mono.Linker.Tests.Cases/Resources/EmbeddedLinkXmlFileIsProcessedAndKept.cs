@@ -3,21 +3,21 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Resources
 {
-	[IgnoreDescriptors (false)]
-	[StripDescriptors (false)]
+    [IgnoreDescriptors(false)]
+    [StripDescriptors(false)]
 
-	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessedAndKept.xml", "ILLink.Descriptors.xml")]
-	[KeptResource ("ILLink.Descriptors.xml")]
-	public class EmbeddedLinkXmlFileIsProcessedAndKept
-	{
-		public static void Main ()
-		{
-		}
+    [SetupCompileResource("Dependencies/EmbeddedLinkXmlFileIsProcessedAndKept.xml", "ILLink.Descriptors.xml")]
+    [KeptResource("ILLink.Descriptors.xml")]
+    public class EmbeddedLinkXmlFileIsProcessedAndKept
+    {
+        public static void Main()
+        {
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		public class Unused
-		{
-		}
-	}
+        [Kept]
+        [KeptMember(".ctor()")]
+        public class Unused
+        {
+        }
+    }
 }

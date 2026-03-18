@@ -44,13 +44,13 @@ namespace System.Linq.Tests
         [Fact]
         public void SkipExcessive()
         {
-            Assert.Equal(Enumerable.Empty<int>(), NumberRangeGuaranteedNotCollectionType(0, 20).Skip(42));
+            Assert.Equal([], NumberRangeGuaranteedNotCollectionType(0, 20).Skip(42));
         }
 
         [Fact]
         public void SkipExcessiveIList()
         {
-            Assert.Equal(Enumerable.Empty<int>(), NumberRangeGuaranteedNotCollectionType(0, 20).ToList().Skip(42));
+            Assert.Equal([], NumberRangeGuaranteedNotCollectionType(0, 20).ToList().Skip(42));
         }
 
         [Fact]
@@ -381,12 +381,42 @@ namespace System.Linq.Tests
                 current: () => 0,
                 dispose: () => state = -1);
 
-            IEnumerator<int> iterator = source.Skip(count).GetEnumerator();
+            using IEnumerator<int> iterator = source.Skip(count).GetEnumerator();
             int iteratorCount = Math.Max(0, sourceCount - Math.Max(0, count));
             Assert.All(Enumerable.Range(0, iteratorCount), _ => Assert.True(iterator.MoveNext()));
 
             Assert.False(iterator.MoveNext());
             Assert.Equal(-1, state);
+        }
+
+        [Fact]
+        public void SkipMoreThanCountFollowedByOperators()
+        {
+            int[] items = [2, 3];
+
+            foreach (IEnumerable<int> source in CreateSources([1]))
+            {
+                Assert.Equal(items, source.Skip(2).Concat(items).ToArray());
+                Assert.Equal(items, source.Skip(2).Concat(items).ToList());
+                Assert.Equal(items, source.Skip(2).Append(2).Append(3).ToArray());
+                Assert.Equal(items, source.Skip(2).Append(2).Append(3).ToList());
+                Assert.Equal(items, items.Concat(source.Skip(2)).ToArray());
+                Assert.Equal(items, items.Concat(source.Skip(2)).ToList());
+                Assert.Empty(source.Skip(2).Select(x => x * 2).ToArray());
+                Assert.Empty(source.Skip(2).Select(x => x * 2).ToList());
+                Assert.Empty(source.Skip(2).Where(x => x > 0).ToArray());
+                Assert.Empty(source.Skip(2).Where(x => x > 0).ToList());
+                Assert.Empty(source.Skip(2).Take(10).ToArray());
+                Assert.Empty(source.Skip(2).Take(10).ToList());
+                Assert.Empty(source.Skip(2).Skip(1).ToArray());
+                Assert.Empty(source.Skip(2).Skip(1).ToList());
+                Assert.Empty(source.Skip(2).Distinct().ToArray());
+                Assert.Empty(source.Skip(2).Distinct().ToList());
+                Assert.Empty(source.Skip(2).OrderBy(x => x).ToArray());
+                Assert.Empty(source.Skip(2).OrderBy(x => x).ToList());
+                Assert.False(source.Skip(2).Contains(1));
+                Assert.False(source.Skip(2).Contains(2));
+            }
         }
     }
 }

@@ -76,8 +76,8 @@
 
 %token VALUE_ VALUETYPE_ NATIVE_ INSTANCE_ SPECIALNAME_ FORWARDER_
 %token STATIC_ PUBLIC_ PRIVATE_ FAMILY_ FINAL_ SYNCHRONIZED_ INTERFACE_ SEALED_ NESTED_
-%token ABSTRACT_ AUTO_ SEQUENTIAL_ EXPLICIT_ ANSI_ UNICODE_ AUTOCHAR_ IMPORT_ ENUM_
-%token VIRTUAL_ NOINLINING_ AGGRESSIVEINLINING_ NOOPTIMIZATION_ AGGRESSIVEOPTIMIZATION_ UNMANAGEDEXP_ BEFOREFIELDINIT_
+%token ABSTRACT_ AUTO_ SEQUENTIAL_ EXPLICIT_ EXTENDED_ ANSI_ UNICODE_ AUTOCHAR_ IMPORT_ ENUM_
+%token VIRTUAL_ NOINLINING_ AGGRESSIVEINLINING_ NOOPTIMIZATION_ AGGRESSIVEOPTIMIZATION_ UNMANAGEDEXP_ BEFOREFIELDINIT_ ASYNC_
 %token STRICT_ RETARGETABLE_ WINDOWSRUNTIME_ NOPLATFORM_
 %token METHOD_ FIELD_ PINNED_ MODREQ_ MODOPT_ SERIALIZABLE_ PROPERTY_ TYPE_
 %token ASSEMBLY_ FAMANDASSEM_ FAMORASSEM_ PRIVATESCOPE_ HIDEBYSIG_ NEWSLOT_ RTSPECIALNAME_ PINVOKEIMPL_
@@ -210,14 +210,7 @@ decl                    : classHead '{' classDecls '}'                          
                         | secDecl
                         | customAttrDecl
                         | _SUBSYSTEM int32                                      {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer overflow/underflow
-#endif
                                                                                   PASM->m_dwSubsystem = $2;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
                                                                                 }
                         | _CORFLAGS int32                                       { PASM->m_dwComImageFlags = $2; }
                         | _FILE ALIGNMENT_ int32                                { PASM->m_dwFileAlignment = $3;
@@ -251,6 +244,23 @@ languageDecl            : _LANGUAGE SQSTRING                                    
                         ;
 /*  Basic tokens  */
 id                      : ID                                  { $$ = $1; }
+                        /* Allow methodImpl attributes to be used as identifiers */
+                        | NATIVE_                             { $$ = newString("native"); }
+                        | CIL_                                { $$ = newString("cil"); }
+                        | OPTIL_                              { $$ = newString("optil"); }
+                        | MANAGED_                            { $$ = newString("managed"); }
+                        | UNMANAGED_                          { $$ = newString("unmanaged"); }
+                        | FORWARDREF_                         { $$ = newString("forwardref"); }
+                        | PRESERVESIG_                        { $$ = newString("preservesig"); }
+                        | RUNTIME_                            { $$ = newString("runtime"); }
+                        | INTERNALCALL_                       { $$ = newString("internalcall"); }
+                        | SYNCHRONIZED_                       { $$ = newString("synchronized"); }
+                        | NOINLINING_                         { $$ = newString("noinlining"); }
+                        | AGGRESSIVEINLINING_                 { $$ = newString("aggressiveinlining"); }
+                        | NOOPTIMIZATION_                     { $$ = newString("nooptimization"); }
+                        | AGGRESSIVEOPTIMIZATION_             { $$ = newString("aggressiveoptimization"); }
+                        | ASYNC_                              { $$ = newString("async"); }
+                        | EXTENDED_                           { $$ = newString("extended"); }
                         | SQSTRING                            { $$ = $1; }
                         ;
 
@@ -435,6 +445,7 @@ classAttr               : /* EMPTY */                       { $$ = (CorRegTypeAt
                         | classAttr AUTO_                   { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdAutoLayout); }
                         | classAttr SEQUENTIAL_             { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdSequentialLayout); }
                         | classAttr EXPLICIT_               { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdExplicitLayout); }
+                        | classAttr EXTENDED_               { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdExtendedLayout); }
                         | classAttr ANSI_                   { $$ = (CorRegTypeAttr) (($1 & ~tdStringFormatMask) | tdAnsiClass); }
                         | classAttr UNICODE_                { $$ = (CorRegTypeAttr) (($1 & ~tdStringFormatMask) | tdUnicodeClass); }
                         | classAttr AUTOCHAR_               { $$ = (CorRegTypeAttr) (($1 & ~tdStringFormatMask) | tdAutoClass); }
@@ -864,6 +875,7 @@ implAttr                : /* EMPTY */                       { $$ = (CorMethodImp
                         | implAttr AGGRESSIVEINLINING_      { $$ = (CorMethodImpl) ($1 | miAggressiveInlining); }
                         | implAttr NOOPTIMIZATION_          { $$ = (CorMethodImpl) ($1 | miNoOptimization); }
                         | implAttr AGGRESSIVEOPTIMIZATION_  { $$ = (CorMethodImpl) ($1 | miAggressiveOptimization); }
+                        | implAttr ASYNC_                   { $$ = (CorMethodImpl) ($1 | miAsync); }
                         | implAttr FLAGS_ '(' int32 ')'     { $$ = (CorMethodImpl) ($4); }
                         ;
 

@@ -10,6 +10,7 @@
 
 #include "ex.h"
 #include "pedecoder.h"
+#include "cordecoderhelpers.h"
 #include "mdcommon.h"
 #include "nibblemapmacros.h"
 
@@ -497,7 +498,6 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
         CHECK(section != NULL);
 
         CHECK(CheckBounds(VAL32(section->VirtualAddress),
-                          // AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment)),
                           (UINT)VAL32(section->Misc.VirtualSize),
                           rva, size));
         if(!IsMapped())
@@ -776,9 +776,17 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
 
     while (section < sectionEnd)
     {
-        if (rva < (VAL32(section->VirtualAddress)
-                   + AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment))))
+        // The RVA should be within a section's virtual address range. 
+        if (rva < (VAL32(section->VirtualAddress) + VAL32(section->Misc.VirtualSize)))
         {
+            if (!IsMapped())
+            {
+                // On flat images (!IsMapped()), the RVA should also be within the section's raw data range.
+                if (rva >= (VAL32(section->VirtualAddress) + VAL32(section->SizeOfRawData)))
+                {
+                    return NULL;
+                }
+            }
             if (rva < VAL32(section->VirtualAddress))
                 RETURN NULL;
             else
@@ -847,7 +855,6 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         offset = rva;
     else
     {
-        // !!! check for case where rva is in padded portion of segment
         offset = RvaToOffset(rva);
     }
 
@@ -1018,7 +1025,7 @@ CHECK PEDecoder::CheckCorHeader() const
 
     //CHECK(((ULONGLONG)pCor & 0x3)==0);
 
-    // If the file is COM+ 1.0, which by definition has nothing the runtime can
+    // If the file is CLR 1.0, which by definition has nothing the runtime can
     // use, or if the file requires a newer version of this engine than us,
     // it cannot be run by this engine.
     if (!possiblyCompositeR2R)
@@ -1164,150 +1171,41 @@ CHECK PEDecoder::CheckCorHeader() const
 
 
 
-// This function exists to provide compatibility between two different native image
-// (NGEN) formats. In particular, the manifest metadata blob and the full metadata
-// blob swapped locations from 3.5RTM to 3.5SP1. The logic here is to look at the
-// runtime version embedded in the native image, to determine which format it is.
-IMAGE_DATA_DIRECTORY *PEDecoder::GetMetaDataHelper(METADATA_SECTION_TYPE type) const
-{
-    CONTRACT(IMAGE_DATA_DIRECTORY *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckCorHeader());
-        PRECONDITION(type == METADATA_SECTION_FULL);
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDirRet = &GetCorHeader()->MetaData;
-
-    RETURN pDirRet;
-}
-
 PTR_CVOID PEDecoder::GetMetadata(COUNT_T *pSize) const
 {
-    CONTRACT(PTR_CVOID)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckCorHeader());
-        PRECONDITION(CheckPointer(pSize, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = GetMetaDataHelper(METADATA_SECTION_FULL);
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    return CorDecoderHelpers::GetMetadata(*this, pSize);
 }
 
 const void *PEDecoder::GetResources(COUNT_T *pSize) const
 {
-    CONTRACT(const void *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckCorHeader());
-        PRECONDITION(CheckPointer(pSize, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->Resources;
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RETURN (void *)GetDirectoryData(pDir);
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetResources(*this, pSize);
 }
 
 CHECK PEDecoder::CheckResource(COUNT_T offset) const
 {
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckCorHeader());
-    }
-    CONTRACT_CHECK_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->Resources;
-
-    CHECK(CheckOverflow(VAL32(pDir->VirtualAddress), offset));
-
-    RVA rva = VAL32(pDir->VirtualAddress) + offset;
-
-    // Make sure we have at least enough data for a length
-    CHECK(CheckRva(rva, sizeof(DWORD)));
-
-    // Make sure resource is within resource section
-    CHECK(CheckBounds(VAL32(pDir->VirtualAddress), VAL32(pDir->Size),
-                      rva + sizeof(DWORD), GET_UNALIGNED_VAL32((LPVOID)GetRvaData(rva))));
-
-    CHECK_OK;
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::CheckResource(*this, offset);
 }
 
 const void *PEDecoder::GetResource(COUNT_T offset, COUNT_T *pSize) const
 {
-    CONTRACT(const void *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckCorHeader());
-        PRECONDITION(CheckPointer(pSize, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->Resources;
-
-    // 403571: Prefix complained correctly about need to always perform rva check
-    if (CheckResource(offset) == FALSE)
-        return NULL;
-
-    void * resourceBlob = (void *)GetRvaData(VAL32(pDir->VirtualAddress) + offset);
-    // Holds if CheckResource(offset) == TRUE
-    PREFIX_ASSUME(resourceBlob != NULL);
-
-     if (pSize != NULL)
-        *pSize = GET_UNALIGNED_VAL32(resourceBlob);
-
-    RETURN (const void *) ((BYTE*)resourceBlob+sizeof(DWORD));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetResource(*this, offset, pSize);
 }
 
 BOOL PEDecoder::HasManagedEntryPoint() const
 {
-    CONTRACTL {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckCorHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    ULONG flags = GetCorHeader()->Flags;
-    return (!(flags & VAL32(COMIMAGE_FLAGS_NATIVE_ENTRYPOINT)) &&
-            (!IsNilToken(GetEntryPointToken())));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::HasManagedEntryPoint(*this);
 }
 
 ULONG PEDecoder::GetEntryPointToken() const
 {
-    CONTRACT(ULONG)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckCorHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    RETURN VAL32(IMAGE_COR20_HEADER_FIELD(*GetCorHeader(), EntryPointToken));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetEntryPointToken(*this);
 }
 
 IMAGE_COR_VTABLEFIXUP *PEDecoder::GetVTableFixups(COUNT_T *pCount) const
@@ -1461,7 +1359,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import directory entry
     PIMAGE_DATA_DIRECTORY pDirEntryImport = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT);
     CHECK(pDirEntryImport != NULL);
-    PREFIX_ASSUME(pDirEntryImport != NULL);
+    _ASSERTE(pDirEntryImport != NULL);
 
     // There should be space for 2 entries. (mscoree and NULL)
     CHECK(VAL32(pDirEntryImport->Size) >= (2 * sizeof(IMAGE_IMPORT_DESCRIPTOR)));
@@ -1469,7 +1367,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     // Get the import data
     PIMAGE_IMPORT_DESCRIPTOR pID = (PIMAGE_IMPORT_DESCRIPTOR) GetDirectoryData(pDirEntryImport);
     CHECK(pID != NULL);
-    PREFIX_ASSUME(pID != NULL);
+    _ASSERTE(pID != NULL);
 
     // Entry 0: ILT, Name, IAT must be be non-null.  Forwarder, DateTime should be NULL.
     CHECK( IMAGE_IMPORT_DESC_FIELD(pID[0], Characteristics) != 0
@@ -1528,7 +1426,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 #define DLL_NAME "_CorDllMain"
 #define EXE_NAME "_CorExeMain"
 
-    static_assert_no_msg(sizeof(DLL_NAME) == sizeof(EXE_NAME));
+    static_assert(sizeof(DLL_NAME) == sizeof(EXE_NAME));
 
     // Check if we have enough space to hold 2 bytes +
     // _CorExeMain or _CorDllMain and a NULL char
@@ -1587,23 +1485,13 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
 
         UINT16 *pRelocEntry = (UINT16 *) (pReloc + 1);
         UINT16 *pRelocEntryEnd = (UINT16 *) ((BYTE *) pReloc + VAL32(pReloc->SizeOfBlock));
-        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_IA64))
-        {
-            // Exactly 2 Reloc records, both IMAGE_REL_BASED_DIR64
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+2*sizeof(UINT16)));
+
+        // Only one Reloc record is expected
+        CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
+        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
             CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            pRelocEntry++;
-            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-        }
         else
-        {
-            // Only one Reloc record is expected
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
-            if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            else
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
-        }
+            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
 
         while (++pRelocEntry < pRelocEntryEnd)
         {
@@ -1641,7 +1529,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
         static const BYTE s_DllOrExeMain[] = JMP_DWORD_PTR_DS_OPCODE;
 
         // 403570: prefix complained about stub being possibly NULL.
-        // Unsure here. PREFIX_ASSUME might be also correct as indices are
+        // Unsure here. _ASSERTE might be also correct as indices are
         // verified in the above CHECK statement.
         CHECK(stub != NULL);
         CHECK(memcmp(stub, s_DllOrExeMain, JMP_DWORD_PTR_DS_OPCODE_SIZE) == 0);
@@ -2142,114 +2030,10 @@ PTR_VOID PEDecoder::GetExport(LPCSTR exportName) const
 // properly DACized and have other dependencies on the rest of the CLR.
 //
 
-typedef DPTR(COR_ILMETHOD_TINY) PTR_COR_ILMETHOD_TINY;
-typedef DPTR(COR_ILMETHOD_FAT) PTR_COR_ILMETHOD_FAT;
-typedef DPTR(COR_ILMETHOD_SECT_SMALL) PTR_COR_ILMETHOD_SECT_SMALL;
-typedef DPTR(COR_ILMETHOD_SECT_FAT) PTR_COR_ILMETHOD_SECT_FAT;
-
 CHECK PEDecoder::CheckILMethod(RVA rva)
 {
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_CHECK_END;
-
-    //
-    // Incrementally validate that the entire IL method body is within the bounds of the image
-    //
-
-    // We need to have at least the tiny header
-    CHECK(CheckRva(rva, sizeof(IMAGE_COR_ILMETHOD_TINY)));
-
-    TADDR pIL = GetRvaData(rva);
-
-    PTR_COR_ILMETHOD_TINY pMethodTiny = PTR_COR_ILMETHOD_TINY(pIL);
-
-    if (pMethodTiny->IsTiny())
-    {
-        // Tiny header has no optional sections - we are done.
-        CHECK(CheckRva(rva, sizeof(IMAGE_COR_ILMETHOD_TINY) + pMethodTiny->GetCodeSize()));
-        CHECK_OK;
-    }
-
-    //
-    // Fat header
-    //
-
-    CHECK(CheckRva(rva, sizeof(IMAGE_COR_ILMETHOD_FAT)));
-
-    PTR_COR_ILMETHOD_FAT pMethodFat = PTR_COR_ILMETHOD_FAT(pIL);
-
-    CHECK(pMethodFat->IsFat());
-
-    S_UINT32 codeEnd = S_UINT32(4) * S_UINT32(pMethodFat->GetSize()) + S_UINT32(pMethodFat->GetCodeSize());
-    CHECK(!codeEnd.IsOverflow());
-
-    // Check minimal size of the header
-    CHECK(pMethodFat->GetSize() >= (sizeof(COR_ILMETHOD_FAT) / 4));
-
-    CHECK(CheckRva(rva, codeEnd.Value()));
-
-    if (!pMethodFat->More())
-    {
-        CHECK_OK;
-    }
-
-    // DACized copy of code:COR_ILMETHOD_FAT::GetSect
-    TADDR pSect = AlignUp(pIL + codeEnd.Value(), 4);
-
-    //
-    // Optional sections following the code
-    //
-
-    while (true)
-    {
-        CHECK(CheckRva(rva, UINT32(pSect - pIL) + sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL)));
-
-        PTR_COR_ILMETHOD_SECT_SMALL pSectSmall = PTR_COR_ILMETHOD_SECT_SMALL(pSect);
-
-        UINT32 sectSize;
-
-        if (pSectSmall->IsSmall())
-        {
-            sectSize = pSectSmall->DataSize;
-
-            // Workaround for bug in shipped compilers - see comment in code:COR_ILMETHOD_SECT::DataSize
-            if ((pSectSmall->Kind & CorILMethod_Sect_KindMask) == CorILMethod_Sect_EHTable)
-                sectSize = COR_ILMETHOD_SECT_EH_SMALL::Size(sectSize / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
-        }
-        else
-        {
-            CHECK(CheckRva(rva, UINT32(pSect - pIL) + sizeof(IMAGE_COR_ILMETHOD_SECT_FAT)));
-
-            PTR_COR_ILMETHOD_SECT_FAT pSectFat = PTR_COR_ILMETHOD_SECT_FAT(pSect);
-
-            sectSize = pSectFat->GetDataSize();
-
-            // Workaround for bug in shipped compilers - see comment in code:COR_ILMETHOD_SECT::DataSize
-            if ((pSectSmall->Kind & CorILMethod_Sect_KindMask) == CorILMethod_Sect_EHTable)
-                sectSize = COR_ILMETHOD_SECT_EH_FAT::Size(sectSize / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
-        }
-
-        // Section has to be non-empty to avoid infinite loop below
-        CHECK(sectSize > 0);
-
-        S_UINT32 sectEnd = S_UINT32(UINT32(pSect - pIL)) + S_UINT32(sectSize);
-        CHECK(!sectEnd.IsOverflow());
-
-        CHECK(CheckRva(rva, sectEnd.Value()));
-
-        if (!pSectSmall->More())
-        {
-            CHECK_OK;
-        }
-
-        // DACized copy of code:COR_ILMETHOD_FAT::Next
-        pSect = AlignUp(pIL + sectEnd.Value(), 4);
-    }
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::CheckILMethod(*this, rva);
 }
 
 //
@@ -2346,41 +2130,9 @@ SIZE_T PEDecoder::ComputeILMethodSize(TADDR pIL)
 //
 PTR_IMAGE_DEBUG_DIRECTORY PEDecoder::GetDebugDirectoryEntry(UINT index) const
 {
-    CONTRACT(PTR_IMAGE_DEBUG_DIRECTORY)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    if (!HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG))
-    {
-        RETURN NULL;
-    }
-
-    // Get a pointer to the contents and size of the debug directory
-    // Also validates (in CHK builds) that this is all within one section, which the
-    // caller should have already validated if they don't trust the context of this PE file.
-    COUNT_T cbDebugDir;
-    TADDR taDebugDir = GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_DEBUG, &cbDebugDir);
-
-    // Check if the specified directory entry exists (based on the size of the directory)
-    // Note that the directory size should be an even multiple of the entry size, but we
-    // just round-down because we need to be resiliant (without asserting) to corrupted /
-    // fuzzed PE files.
-    UINT cNumEntries = cbDebugDir / sizeof(IMAGE_DEBUG_DIRECTORY);
-    if (index >= cNumEntries)
-    {
-        RETURN NULL;    // index out of range
-    }
-
-    // Get the debug directory entry at the specified index.
-    PTR_IMAGE_DEBUG_DIRECTORY pDebugEntry = dac_cast<PTR_IMAGE_DEBUG_DIRECTORY>(taDebugDir);
-    pDebugEntry += index;   // offset from the first entry to the requested entry
-    RETURN pDebugEntry;
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    return CorDecoderHelpers::GetDebugDirectoryEntry(*this, index);
 }
 
 
@@ -2509,7 +2261,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
-		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
@@ -2585,12 +2336,14 @@ ErrExit:
 #endif // _DEBUG
 
 //
-//  MethodSectionIterator class is used to iterate hot (or) cold method section in an ngen image.
-//  Also used to iterate over jitted methods in the code heap
+//  MethodSectionIterator class is used to iterate hot (or) cold method sections
+//  over jitted methods in the code heap
 //
-MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
-                                             const void *codeTable, SIZE_T codeTableSize)
+MethodSectionIterator::MethodSectionIterator(void *code, SIZE_T codeSize,
+                                             void *codeTable, SIZE_T codeTableSize)
 {
+    using namespace NibbleMap;
+
     //For DAC builds,we'll read the table one DWORD at a time.  Note that m_code IS
     //NOT a host pointer.
     m_codeTableStart = PTR_DWORD(TADDR(codeTable));
@@ -2605,6 +2358,11 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
     {
         m_dword = *m_codeTable++;
         m_index = 0;
+        while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+        {
+            m_dword = *m_codeTable++;
+            m_code += BYTES_PER_DWORD;
+        }
     }
     else
     {
@@ -2614,6 +2372,8 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
 
 BOOL MethodSectionIterator::Next()
 {
+    using namespace NibbleMap;
+
     while (m_codeTable < m_codeTableEnd || m_index < (int)NIBBLES_PER_DWORD)
     {
         while (m_index++ < (int)NIBBLES_PER_DWORD)
@@ -2624,7 +2384,7 @@ BOOL MethodSectionIterator::Next()
             if (nibble != 0)
             {
                 // We have found a method start
-                m_current = m_code + ((nibble-1)*CODE_ALIGN);
+                m_current = m_code + ((nibble-1) << LOG2_CODE_ALIGN);
                 m_code += BYTES_PER_BUCKET;
                 return TRUE;
             }
@@ -2636,6 +2396,11 @@ BOOL MethodSectionIterator::Next()
         {
             m_dword = *m_codeTable++;
             m_index = 0;
+            while(m_codeTable < m_codeTableEnd && (IsPointer(m_dword) || m_dword == 0))
+            {
+                m_dword = *m_codeTable++;
+                m_code += BYTES_PER_DWORD;
+            }
         }
     }
     return FALSE;

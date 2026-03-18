@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
         [InlineData("hello")]
         [InlineData(" \t")]
         [InlineData(null)]
-        public void TargetHost_Get_Set_Succeeds(string expected)
+        public void TargetHost_Get_Set_Succeeds(string? expected)
         {
             Assert.Null(_clientOptions.TargetHost);
             _clientOptions.TargetHost = expected;
@@ -109,7 +109,9 @@ namespace System.Net.Security.Tests
             _serverOptions.ServerCertificate = null;
 
             Assert.Null(_serverOptions.ServerCertificate);
+#pragma warning disable SYSLIB0057
             X509Certificate cert = new X509Certificate2(stackalloc byte[0]);
+#pragma warning restore SYSLIB0057
             _serverOptions.ServerCertificate = cert;
 
             Assert.Equal(cert, _serverOptions.ServerCertificate);

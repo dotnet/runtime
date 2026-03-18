@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 
-namespace Test
+namespace dev11_132534
 {
     public static class IntValues
     {

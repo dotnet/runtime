@@ -440,5 +440,128 @@ namespace NativeExports
             *numValues = newStrings.Count;
             return res;
         }
+
+        // Null array edge case methods for LibraryImportGenerator tests
+        [UnmanagedCallersOnly(EntryPoint = "null_array_blittable_byval")]
+        public static int NullArrayBlittableByVal(int* array, int length)
+        {
+            if (array == null)
+            {
+                return -1;
+            }
+
+            // If not null, sum the array elements
+            int sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += array[i];
+            }
+            return sum;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_blittable_in")]
+        public static int NullArrayBlittableIn(int** array, int length)
+        {
+            if (*array == null)
+            {
+                return -1;
+            }
+
+            // If not null, sum the array elements
+            int sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += (*array)[i];
+            }
+            return sum;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_blittable_ref")]
+        public static int NullArrayBlittableRef(int** array, int length)
+        {
+            if (*array == null)
+            {
+                return -1;
+            }
+
+            // If not null, sum the array elements
+            int sum = 0;
+            for (int i = 0; i < length; i++)
+            {
+                sum += (*array)[i];
+            }
+            return sum;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_blittable_out")]
+        public static int NullArrayBlittableOut(int length, int** array)
+        {
+            // Always set the output array to null for testing purposes
+            *array = null;
+            return 0;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_nonblittable_byval")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static byte NullArrayNonBlittableByVal([DNNE.C99Type("struct bool_struct*")] BoolStructMarshaller.BoolStructNative* array, int length)
+        {
+            if (array == null)
+            {
+                return 0; // false
+            }
+
+            // If not null, check if all members are true
+            for (int i = 0; i < length; i++)
+            {
+                BoolStruct managed = BoolStructMarshaller.ConvertToManaged(array[i]);
+                if (!managed.b1 || !managed.b2 || !managed.b3)
+                {
+                    return 0; // false
+                }
+            }
+            return 1; // true
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_nonblittable_in")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static byte NullArrayNonBlittableIn([DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** array, int length)
+        {
+            if (*array == null)
+            {
+                return 0; // false
+            }
+
+            // If not null, check if all members are true
+            for (int i = 0; i < length; i++)
+            {
+                BoolStruct managed = BoolStructMarshaller.ConvertToManaged((*array)[i]);
+                if (!managed.b1 || !managed.b2 || !managed.b3)
+                {
+                    return 0; // false
+                }
+            }
+            return 1; // true
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_nonblittable_ref")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NullArrayNonBlittableRef([DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** array, int length)
+        {
+            // For testing purposes, just check if array is null and leave it as is
+            if (*array == null)
+            {
+                return;
+            }
+
+            // If not null, we could do some operation, but for null testing we'll just return
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "null_array_nonblittable_out")]
+        [DNNE.C99DeclCode("struct bool_struct;")]
+        public static void NullArrayNonBlittableOut(int length, [DNNE.C99Type("struct bool_struct**")] BoolStructMarshaller.BoolStructNative** array)
+        {
+            // Always set the output array to null for testing purposes
+            *array = null;
+        }
     }
 }

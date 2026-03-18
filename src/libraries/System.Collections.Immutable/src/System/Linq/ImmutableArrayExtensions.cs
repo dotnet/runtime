@@ -28,7 +28,7 @@ namespace System.Linq
             // LINQ Select/Where have optimized treatment for arrays.
             // They also do not modify the source arrays or expose them to modifications.
             // Therefore we will just apply Select/Where to the underlying this.array array.
-            return immutableArray.array!.Select(selector);
+            return immutableArray.array.Select(selector);
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace System.Linq
             // LINQ Select/Where have optimized treatment for arrays.
             // They also do not modify the source arrays or expose them to modifications.
             // Therefore we will just apply Select/Where to the underlying this.array array.
-            return immutableArray.array!.Where(predicate);
+            return immutableArray.array.Where(predicate);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Linq
             immutableArray.ThrowNullRefIfNotInitialized();
             Requires.NotNull(predicate, nameof(predicate));
 
-            foreach (T v in immutableArray.array!)
+            foreach (T v in immutableArray.array)
             {
                 if (predicate(v))
                 {
@@ -137,7 +137,7 @@ namespace System.Linq
             immutableArray.ThrowNullRefIfNotInitialized();
             Requires.NotNull(predicate, nameof(predicate));
 
-            foreach (T v in immutableArray.array!)
+            foreach (T v in immutableArray.array)
             {
                 if (!predicate(v))
                 {
@@ -171,7 +171,7 @@ namespace System.Linq
 
             for (int i = 0; i < immutableArray.Length; i++)
             {
-                if (!comparer.Equals(immutableArray.array![i], items.array![i]))
+                if (!comparer.Equals(immutableArray.array[i], items.array[i]))
                 {
                     return false;
                 }
@@ -187,28 +187,39 @@ namespace System.Linq
         /// <typeparam name="TBase">The type of element contained by the collection.</typeparam>
         public static bool SequenceEqual<TDerived, TBase>(this ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer = null) where TDerived : TBase
         {
-            Requires.NotNull(items, nameof(items));
-
-            comparer ??= EqualityComparer<TBase>.Default;
-
-            int i = 0;
-            int n = immutableArray.Length;
-            foreach (TDerived item in items)
+            if (items is ICollection<TBase> itemsCol)
             {
-                if (i == n)
-                {
-                    return false;
-                }
-
-                if (!comparer.Equals(immutableArray[i], item))
-                {
-                    return false;
-                }
-
-                i++;
+                immutableArray.ThrowNullRefIfNotInitialized();
+                return Enumerable.SequenceEqual(immutableArray.array, itemsCol, comparer);
             }
 
-            return i == n;
+            return Enumerate(immutableArray, items, comparer);
+
+            static bool Enumerate(ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer)
+            {
+                Requires.NotNull(items, nameof(items));
+
+                comparer ??= EqualityComparer<TBase>.Default;
+
+                int i = 0;
+                int n = immutableArray.Length;
+                foreach (TDerived item in items)
+                {
+                    if (i == n)
+                    {
+                        return false;
+                    }
+
+                    if (!comparer.Equals(immutableArray[i], item))
+                    {
+                        return false;
+                    }
+
+                    i++;
+                }
+
+                return i == n;
+            }
         }
 
         /// <summary>
@@ -429,7 +440,7 @@ namespace System.Linq
         public static T? LastOrDefault<T>(this ImmutableArray<T> immutableArray)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
-            return immutableArray.array!.LastOrDefault()!;
+            return immutableArray.array.LastOrDefault()!;
         }
 
         /// <summary>
@@ -459,7 +470,7 @@ namespace System.Linq
         public static T Single<T>(this ImmutableArray<T> immutableArray)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
-            return immutableArray.array!.Single();
+            return immutableArray.array.Single();
         }
 
         /// <summary>
@@ -504,7 +515,7 @@ namespace System.Linq
         public static T? SingleOrDefault<T>(this ImmutableArray<T> immutableArray)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
-            return immutableArray.array!.SingleOrDefault()!;
+            return immutableArray.array.SingleOrDefault()!;
         }
 
         /// <summary>
@@ -618,7 +629,7 @@ namespace System.Linq
         public static T[] ToArray<T>(this ImmutableArray<T> immutableArray)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
-            if (immutableArray.array!.Length == 0)
+            if (immutableArray.array.Length == 0)
             {
                 return ImmutableArray<T>.Empty.array!;
             }

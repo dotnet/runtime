@@ -129,9 +129,6 @@
         mov         x1, xip1                                        // Second parameter to target function
         blr         xip0
 
-        // We cannot make the label public as that tricks DIA stackwalker into thinking
-        // it's the beginning of a method. For this reason we export an auxiliary variable
-        // holding the address instead.
 ALTERNATE_ENTRY ReturnFrom\FunctionName
 
         // Move the result (the target address) to x12 so it doesn't get overridden when we restore the
@@ -161,9 +158,5 @@ ALTERNATE_ENTRY ReturnFrom\FunctionName
 
     .endm
 
-    // To enable proper step-in behavior in the debugger, we need to have two instances
-    // of the thunk. For the first one, the debugger steps into the call in the function,
-    // for the other, it steps over it.
-    UNIVERSAL_TRANSITION UniversalTransition
-    UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
+    UNIVERSAL_TRANSITION UniversalTransitionTailCall
 

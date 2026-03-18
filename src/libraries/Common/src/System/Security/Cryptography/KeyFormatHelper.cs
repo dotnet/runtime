@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
             try
             {
                 // X.509 SubjectPublicKeyInfo is described as DER.
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.DER);
                 read = reader.PeekEncodedValue().Length;
                 SubjectPublicKeyInfoAsn.Decode(ref reader, source, out spki);
             }
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
             try
             {
                 // X.509 SubjectPublicKeyInfo is described as DER.
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.DER);
                 read = reader.PeekEncodedValue().Length;
                 SubjectPublicKeyInfoAsn.Decode(ref reader, source, out spki);
             }
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
                 int read = reader.PeekEncodedValue().Length;
                 PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
                 int read = reader.PeekEncodedValue().Length;
                 PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 

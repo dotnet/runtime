@@ -60,7 +60,7 @@ namespace System.Buffers
             {
                 // No need for events with the empty array.  Our pool is effectively infinite
                 // and we'll never allocate for rents and never store for returns.
-                return Array.Empty<T>();
+                return [];
             }
 
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
@@ -149,7 +149,7 @@ namespace System.Buffers
                 log.BufferReturned(bufferId, array.Length, Id);
                 if (!haveBucket)
                 {
-                    log.BufferDropped(bufferId, array.Length, Id, ArrayPoolEventSource.NoBucketId, ArrayPoolEventSource.BufferDroppedReason.Full);
+                    log.BufferDropped(bufferId, array.Length, Id, ArrayPoolEventSource.NoBucketId, ArrayPoolEventSource.BufferDroppedReason.OverMaximumSize);
                 }
             }
         }

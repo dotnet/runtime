@@ -32,22 +32,14 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 CObjectType CorUnix::otSemaphore(
                 otiSemaphore,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 sizeof(SemaphoreImmutableData),
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
-                0,      // Should be SEMAPHORE_ALL_ACCESS; currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
-                CObjectType::ThreadReleaseAltersSignalCount,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseAltersSignalCount
                 );
 
 CAllowedObjectTypes aotSempahore(otiSemaphore);

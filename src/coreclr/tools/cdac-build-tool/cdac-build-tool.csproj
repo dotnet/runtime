@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
     <AssemblyName>cdac-build-tool</AssemblyName>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputPath>$(RuntimeBinDir)/cdac-build-tool</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -18,15 +18,5 @@
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <BaselineManifestResourcePrefix>Microsoft.DotNet.Diagnostics.DataContract.Baseline:</BaselineManifestResourcePrefix>
-  </PropertyGroup>
-  <ItemGroup>
-      <EmbeddedResource Include="Resources/contract-descriptor.c.in" WithCulture="false" />
-      <!-- embed baseline specs with manifest resource names like Microsoft.DotNet.Diagnostics.DataContract.Baseline:net9.0/osx-arm64.jsonc -->
-      <!-- TODO: [cdac] - make sure we use / not \ on windows, too. -->
-      <EmbeddedResource Include="$(RepoRoot)docs\design\datacontracts\data\**\*.jsonc" LogicalName="$(BaselineManifestResourcePrefix)%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" />
   </ItemGroup>
 </Project>

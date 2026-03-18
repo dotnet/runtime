@@ -15,6 +15,7 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,6 +49,9 @@
     </Compile>
     <Compile Include="..\ILCompiler.Compiler\Compiler\JitHelper.cs">
       <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs">
+      <Link>ObjectWriter\WasmNative</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
@@ -88,6 +92,9 @@
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
       <Link>JitInterface\SwiftPhysicalLowering.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\WasmLowering.cs">
+      <Link>JitInterface\WasmLowering.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>
     </Compile>
@@ -98,5 +105,9 @@
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />
 
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\CallGraphNode.cs" Link="Compiler\PettisHansenSort\CallGraphNode.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\DisjointSetForest.cs" Link="Compiler\PettisHansenSort\DisjointSetForest.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\PettisHansen.cs" Link="Compiler\PettisHansenSort\PettisHansen.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\FileLayoutOptimizer.cs" Link="Compiler\FileLayoutOptimizer.cs" />
   </ItemGroup>
 </Project>

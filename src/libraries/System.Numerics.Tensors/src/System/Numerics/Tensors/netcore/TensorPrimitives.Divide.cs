@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -25,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IDivisionOperators<T, T, T> =>
+            where T : IDivisionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, DivideOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, DivideOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise division of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -44,8 +50,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : IDivisionOperators<T, T, T> =>
+            where T : IDivisionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, DivideOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, DivideOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise division of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a scalar.</param>
@@ -63,14 +76,22 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Divide<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IDivisionOperators<T, T, T> =>
+            where T : IDivisionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, DivideOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeScalarSpanIntoSpan<T, DivideOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x / y</summary>
         internal readonly struct DivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float)
-                                            || typeof(T) == typeof(double);
+                                            || typeof(T) == typeof(double)
+                                            || (Vector256.IsHardwareAccelerated && IsInt32Like<T>());
             public static T Invoke(T x, T y) => x / y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;

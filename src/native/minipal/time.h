@@ -12,10 +12,13 @@ extern "C"
 #endif // __cplusplus
 
     // Returns current count of high resolution monotonically increasing timer ticks
-    int64_t minipal_hires_ticks();
+    int64_t minipal_hires_ticks(void);
 
     // Returns the frequency of high resolution timer ticks in Hz
-    int64_t minipal_hires_tick_frequency();
+    int64_t minipal_hires_tick_frequency(void);
+
+    // Returns a low-precision monotonically increasing timer in milliseconds
+    int64_t minipal_lowres_ticks(void);
 
     // Delays execution of current thread by `usecs` microseconds.
     // The delay is best-effort and may take longer than desired.
@@ -24,6 +27,9 @@ extern "C"
     // If not NULL, `usecsSinceYield` keeps track of busy-waiting time, so that
     // the containing algorithm could handle cases when busy-waiting time is too high.
     void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield);
+
+    // Return system time in Windows FILETIME precision (100ns since 01 January 1601).
+    uint64_t minipal_get_system_time(void);
 
 #ifdef __cplusplus
 }

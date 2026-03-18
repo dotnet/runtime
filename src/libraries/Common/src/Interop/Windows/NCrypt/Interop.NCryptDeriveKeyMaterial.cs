@@ -238,7 +238,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe byte[] DeriveKeyMaterialTruncate(
+        internal static byte[] DeriveKeyMaterialTruncate(
             SafeNCryptSecretHandle secretAgreement,
             SecretAgreementFlags flags)
         {

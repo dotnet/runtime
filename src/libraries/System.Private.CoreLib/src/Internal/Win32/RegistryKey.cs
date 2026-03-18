@@ -143,7 +143,7 @@ namespace Internal.Win32
             return names.ToArray();
         }
 
-        public unsafe string[] GetValueNames()
+        public string[] GetValueNames()
         {
             var names = new List<string>();
 
@@ -326,7 +326,7 @@ namespace Internal.Win32
 
                                 if (type == Interop.Advapi32.RegistryValues.REG_MULTI_SZ)
                                 {
-                                    string[] strings = Array.Empty<string>();
+                                    string[] strings = [];
                                     int count = 0;
 
                                     while (chars.Length > 1 || (chars.Length == 1 && chars[0] != '\0'))

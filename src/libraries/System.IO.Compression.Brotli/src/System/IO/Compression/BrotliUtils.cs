@@ -11,7 +11,6 @@ namespace System.IO.Compression
         public const int Quality_Min = 0;
         public const int Quality_Default = 4;
         public const int Quality_Max = 11;
-        public const int MaxInputSize = int.MaxValue - 515; // 515 is the max compressed extra bytes
 
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
             compressionLevel switch
@@ -20,7 +19,7 @@ namespace System.IO.Compression
                 CompressionLevel.Fastest => 1,
                 CompressionLevel.Optimal => Quality_Default,
                 CompressionLevel.SmallestSize => Quality_Max,
-                _ => throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(compressionLevel))
+                _ => throw new ArgumentOutOfRangeException(nameof(compressionLevel), compressionLevel, SR.ArgumentOutOfRange_Enum)
             };
     }
 }

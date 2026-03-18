@@ -61,6 +61,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107339", TestPlatforms.Wasi)]
         public void TryGetAddrInfo_LocalHost(bool justAddresses)
         {
             SocketError error = NameResolutionPal.TryGetAddrInfo("localhost", justAddresses, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
@@ -77,6 +78,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107339", TestPlatforms.Wasi)]
         public void TryGetAddrInfo_EmptyHost(bool justAddresses)
         {
             SocketError error = NameResolutionPal.TryGetAddrInfo("", justAddresses, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
@@ -151,6 +153,7 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI has no getnameinfo")]
         public void TryGetNameInfo_LocalHost_IPv4()
         {
             SocketError error;
@@ -160,7 +163,8 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
-        [ConditionalFact(nameof(Ipv6LocalHostNameLookupNotBrokenByNrpRule))]
+        [ConditionalFact(typeof(NameResolutionPalTests), nameof(Ipv6LocalHostNameLookupNotBrokenByNrpRule))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI has no getnameinfo")]
         public void TryGetNameInfo_LocalHost_IPv6()
         {
             SocketError error;
@@ -176,6 +180,7 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI has no getnameinfo")]
         public void TryGetAddrInfo_LocalHost_TryGetNameInfo()
         {
             SocketError error = NameResolutionPal.TryGetAddrInfo("localhost", justAddresses: false, AddressFamily.Unspecified, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
@@ -247,6 +252,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI has no getnameinfo")]
         public void TryGetNameInfo_LocalHost_IPv4_TryGetAddrInfo(bool justAddresses)
         {
             string name = NameResolutionPal.TryGetNameInfo(new IPAddress(new byte[] { 127, 0, 0, 1 }), out SocketError error, out _);
@@ -259,9 +265,10 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(addresses);
         }
 
-        [ConditionalTheory(nameof(Ipv6LocalHostNameLookupNotBrokenByNrpRule))]
+        [ConditionalTheory(typeof(NameResolutionPalTests), nameof(Ipv6LocalHostNameLookupNotBrokenByNrpRule))]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI has no getnameinfo")]
         public void TryGetNameInfo_LocalHost_IPv6_TryGetAddrInfo(bool justAddresses)
         {
             SocketError error;

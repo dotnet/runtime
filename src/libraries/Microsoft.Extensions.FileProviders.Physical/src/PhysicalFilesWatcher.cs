@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             if (fileSystemWatcher != null)
             {
 #if NET
-                if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
                 }
@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <exception cref="ArgumentNullException"><paramref name="filter" /> is <see langword="null"/>.</exception>
         public IChangeToken CreateFileChangeToken(string filter)
         {
-            ThrowHelper.ThrowIfNull(filter);
+            ArgumentNullException.ThrowIfNull(filter);
 
             filter = NormalizePath(filter);
 
@@ -153,23 +153,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialized, ref _timerLock, _timerFactory);
             }
 
-            IChangeToken changeToken;
-#if NET
-            bool isWildCard = pattern.Contains('*');
-#else
-            bool isWildCard = pattern.IndexOf('*') != -1;
-#endif
-            if (isWildCard || IsDirectoryPath(pattern))
-            {
-                changeToken = GetOrAddWildcardChangeToken(pattern);
-            }
-            else
-            {
-                changeToken = GetOrAddFilePathChangeToken(pattern);
-            }
-
-            return changeToken;
+            return pattern.Contains('*') || IsDirectoryPath(pattern)
+                ? GetOrAddWildcardChangeToken(pattern)
+                // get rid of \. in Windows and ./ in UNIX's at the start of path file
+                : GetOrAddFilePathChangeToken(RemoveRelativePathSegment(pattern));
         }
+
+        private static string RemoveRelativePathSegment(string pattern) =>
+            // The pattern has already been normalized to unix directory separators
+            pattern.StartsWith("./", StringComparison.Ordinal) ? pattern.Substring(2) : pattern;
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
@@ -270,6 +262,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -306,6 +299,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -315,6 +309,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -328,6 +323,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -354,6 +350,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -394,6 +391,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -415,6 +413,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]

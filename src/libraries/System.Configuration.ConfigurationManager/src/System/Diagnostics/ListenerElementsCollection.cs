@@ -106,7 +106,7 @@ namespace System.Diagnostics
             _properties.Add(s_propOutputOpts);
         }
 
-        public StringDictionary Attributes => _attributes ?? new StringDictionary();
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
         [ConfigurationProperty("filter")]
         public FilterElement Filter => (FilterElement)this[s_propFilter];

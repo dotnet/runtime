@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(typeof(string), new Type[] { typeof(string), typeof(int), typeof(TestClass) }, "System.String MethodName(System.String, Int32, System.Reflection.Emit.Tests.TestClass)")]
         [InlineData(typeof(string), new Type[] { typeof(GenericClass<>) }, "System.String MethodName(System.Reflection.Emit.Tests.GenericClass`1[T])")]
         [InlineData(null, null, "Void MethodName()")]
-        public void ToStringTest(Type returnType, Type[] parameterTypes, string expected)
+        public void ToStringTest(Type? returnType, Type[]? parameterTypes, string expected)
         {
             DynamicMethod method = new DynamicMethod("MethodName", returnType, parameterTypes, typeof(TestClass).GetTypeInfo().Module);
             Assert.Equal(expected, method.ToString());

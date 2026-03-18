@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out ECDomainParameters decoded);
                 reader.ThrowIfNotEmpty();
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
         {
             try
             {
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

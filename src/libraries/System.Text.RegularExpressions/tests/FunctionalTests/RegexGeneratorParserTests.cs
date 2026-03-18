@@ -3,8 +3,10 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Globalization;
@@ -396,6 +398,26 @@ namespace System.Text.RegularExpressions.Tests
             ");
 
             Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            // SYSLIB1044 (LimitedSourceGeneration) is emitted for case-insensitive backreferences.
+            string code = """
+                #pragma warning disable SYSLIB1044
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("(a)\\1", RegexOptions.IgnoreCase)]
+                    private static partial Regex Method();
+                }
+                """;
+
+            (Compilation comp, GeneratorDriverRunResult result) = await RegexGeneratorHelper.RunGeneratorCore(code);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, comp);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1044");
+            Assert.True(diagnostic.IsSuppressed);
         }
 
         [Fact]

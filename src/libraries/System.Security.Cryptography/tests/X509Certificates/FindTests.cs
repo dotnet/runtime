@@ -958,6 +958,238 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestFindByKeyUsage(false, matchCriteria);
         }
 
+        [Theory]
+        [MemberData(nameof(ThumbprintDigestAlgorithms))]
+        public static void FindByThumbprint_ByAlgorithm(HashAlgorithmName hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+                string thumbprintHex = Convert.ToHexString(thumbprint);
+
+                X509Certificate2Collection coll = [cert, unrelated];
+                X509Certificate2 found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprint));
+                Assert.Same(cert, found);
+
+                found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHex));
+                Assert.Same(cert, found);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ThumbprintDigestAlgorithms))]
+        public static void FindByThumbprint_ByAlgorithm_IncludesDuplicates(HashAlgorithmName hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+                string thumbprintHex = Convert.ToHexString(thumbprint);
+
+                X509Certificate2Collection coll = [cert, unrelated, cert];
+                X509Certificate2Collection found = coll.FindByThumbprint(hashAlgorithm, thumbprint);
+                Assert.Equal([cert, cert], found);
+
+                found = coll.FindByThumbprint(hashAlgorithm, thumbprintHex);
+                Assert.Equal([cert, cert], found);
+
+                found = coll.FindByThumbprint(hashAlgorithm, thumbprintHex.AsSpan());
+                Assert.Equal([cert, cert], found);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ThumbprintDigestAlgorithms))]
+        public static void FindByThumbprint_ByAlgorithm_TrailingData(HashAlgorithmName hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+
+                ReadOnlySpan<byte> thumbprintTrailing = [..thumbprint, 0xF0, 0x0D];
+                string thumbprintHexTrailing = Convert.ToHexString(thumbprintTrailing);
+
+                X509Certificate2Collection coll = [cert, unrelated];
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintHexTrailing));
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintHexTrailing.AsSpan()));
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintTrailing));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ThumbprintDigestAlgorithms))]
+        public static void FindByThumbprint_ByAlgorithm_PrependedData(HashAlgorithmName hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+
+                ReadOnlySpan<byte> thumbprintPrepended = [0xF0, 0x0D, ..thumbprint];
+                string thumbprintHexPrepended = Convert.ToHexString(thumbprintPrepended);
+
+                X509Certificate2Collection coll = [cert, unrelated];
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintHexPrepended));
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintHexPrepended.AsSpan()));
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintPrepended));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ThumbprintDigestAlgorithms))]
+        public static void FindByThumbprint_ByAlgorithm_Truncated(HashAlgorithmName hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+
+                ReadOnlySpan<byte> thumbprintTruncated = thumbprint.AsSpan(0..^1);
+                string thumbprintHexTruncated = Convert.ToHexString(thumbprintTruncated);
+
+                X509Certificate2Collection coll = [cert, unrelated];
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintHexTruncated));
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintHexTruncated.AsSpan()));
+                Assert.Empty(coll.FindByThumbprint(hashAlgorithm, thumbprintTruncated));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ThumbprintDigestAlgorithms))]
+        public static void FindByThumbprint_ByAlgorithm_CaseInsensitive(HashAlgorithmName hashAlgorithm)
+        {
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+
+                string thumbprintHexUpper = Convert.ToHexString(thumbprint);
+                string thumbprintHexLower = Convert.ToHexStringLower(thumbprint);
+
+                AssertExtensions.GreaterThanOrEqualTo(thumbprintHexLower.AsSpan().IndexOfAnyExceptInRange('0', '9'), 0);
+
+                X509Certificate2Collection coll = [cert, unrelated];
+                X509Certificate2 found;
+                found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHexLower));
+                Assert.Equal(found, cert);
+                found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHexUpper));
+                Assert.Equal(found, cert);
+                found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHexLower.AsSpan()));
+                Assert.Equal(found, cert);
+                found = Assert.Single(coll.FindByThumbprint(hashAlgorithm, thumbprintHexUpper.AsSpan()));
+                Assert.Equal(found, cert);
+            }
+        }
+
+        [Fact]
+        public static void FindByThumbprint_ByAlgorithm_ArgValidation_HashAlgorithm()
+        {
+            const string Thumbprint = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+            X509Certificate2Collection coll = [];
+            AssertExtensions.Throws<ArgumentNullException>(
+                "hashAlgorithm",
+                () => coll.FindByThumbprint(default, Thumbprint));
+
+            AssertExtensions.Throws<ArgumentException>(
+                "hashAlgorithm",
+                () => coll.FindByThumbprint(new HashAlgorithmName(""), Thumbprint));
+        }
+
+        [Fact]
+        public static void FindByThumbprint_ByAlgorithm_ArgValidation_ThumbprintHex()
+        {
+            X509Certificate2Collection coll = [];
+            AssertExtensions.Throws<ArgumentNullException>(
+                "thumbprintHex",
+                () => coll.FindByThumbprint(HashAlgorithmName.SHA256, (string)null));
+        }
+
+        [Fact]
+        public static void FindByThumbprint_ByAlgorithm_ArgValidation_ThumbprintHexInvalidLength()
+        {
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+                string thumbprintHexOdd = Convert.ToHexString(thumbprint)[..^1];
+                X509Certificate2Collection coll = [cert, unrelated];
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "thumbprintHex",
+                    () => coll.FindByThumbprint(hashAlgorithm, thumbprintHexOdd));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "thumbprintHex",
+                    () => coll.FindByThumbprint(hashAlgorithm, thumbprintHexOdd.AsSpan()));
+            }
+        }
+
+        [Theory]
+        [InlineData("not a thumbprint")]
+        [InlineData("0xF00D")]
+        [InlineData("F0 0D")]
+        public static void FindByThumbprint_ByAlgorithm_ArgValidation_ThumbprintIsNotHex(string thumbprint)
+        {
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            {
+                X509Certificate2Collection coll = [cert];
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "thumbprintHex",
+                    () => coll.FindByThumbprint(hashAlgorithm, thumbprint));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "thumbprintHex",
+                    () => coll.FindByThumbprint(hashAlgorithm, thumbprint.AsSpan()));
+            }
+        }
+
+        [Fact]
+        public static void FindByThumbprint_ByAlgorithm_LargeHashInput()
+        {
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA512;
+
+            using (X509Certificate2 cert = new(TestData.CertWithTemplateData))
+            using (X509Certificate2 unrelated = new(TestData.CertWithPolicies))
+            {
+                X509Certificate2Collection coll = [cert, unrelated];
+                byte[] thumbprint = CryptographicOperations.HashData(hashAlgorithm, cert.RawDataMemory.Span);
+
+                // Ensures we exercise code paths that use heap buffers instead of the stack.
+                byte[] bigThumbprint = [..thumbprint, ..new byte[2048]];
+                string bigThumbprintHex = Convert.ToHexString(bigThumbprint);
+
+                Assert.Empty(coll.FindByThumbprint(HashAlgorithmName.SHA512, bigThumbprint));
+                Assert.Empty(coll.FindByThumbprint(HashAlgorithmName.SHA512, bigThumbprintHex));
+                Assert.Empty(coll.FindByThumbprint(HashAlgorithmName.SHA512, bigThumbprintHex.AsSpan()));
+            }
+        }
+
+        public static IEnumerable<object[]> ThumbprintDigestAlgorithms
+        {
+            get
+            {
+                yield return new object[] { HashAlgorithmName.MD5 };
+                yield return new object[] { HashAlgorithmName.SHA1 };
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+
+                if (PlatformDetection.SupportsSha3)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA3_256 };
+                    yield return new object[] { HashAlgorithmName.SHA3_384 };
+                    yield return new object[] { HashAlgorithmName.SHA3_512 };
+                }
+            }
+        }
+
         private static void TestFindByKeyUsage(bool shouldMatch, object matchCriteria)
         {
             using (var noKeyUsages = new X509Certificate2(TestData.MsCertificate))

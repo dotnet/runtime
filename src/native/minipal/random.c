@@ -1,20 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "minipalconfig.h"
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <assert.h>
-#include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#if HAVE_BCRYPT_H
+#include <windows.h>
+#include <bcrypt.h>
+#else
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#if HAVE_GETRANDOM
+#include <sys/random.h>
+#endif
+#endif
 #if defined(__APPLE__) && __APPLE__
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
-#include "minipalconfig.h"
 #include "random.h"
 
 /*
@@ -29,6 +38,9 @@ void minipal_get_non_cryptographically_secure_random_bytes(uint8_t* buffer, int3
 
 #if HAVE_ARC4RANDOM_BUF
     arc4random_buf(buffer, (size_t)bufferLength);
+#elif HAVE_BCRYPT_H
+    // Fall back to the secure version
+    minipal_get_cryptographically_secure_random_bytes(buffer, bufferLength);
 #else
     long num = 0;
     static bool sInitializedMRand;
@@ -69,11 +81,11 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     assert(buffer != NULL);
 
 #ifdef __EMSCRIPTEN__
-    extern int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength);
+    extern int32_t SystemJS_RandomBytes(uint8_t* buffer, int32_t bufferLength);
     static bool sMissingBrowserCrypto;
     if (!sMissingBrowserCrypto)
     {
-        int32_t bff = mono_wasm_browser_entropy(buffer, bufferLength);
+        int32_t bff = SystemJS_RandomBytes(buffer, bufferLength);
         if (bff == -1)
             sMissingBrowserCrypto = true;
         else
@@ -86,8 +98,50 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     {
         return 0;
     }
+#elif HAVE_BCRYPT_H
+    NTSTATUS status = BCryptGenRandom(NULL, buffer, (ULONG)bufferLength, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    return BCRYPT_SUCCESS(status) ? 0 : -1;
 #else
 
+#if HAVE_GETRANDOM
+    // Try getrandom() first - it's faster than /dev/urandom as it avoids file descriptor overhead.
+    // getrandom() was added in Linux 3.17 (2014) and glibc 2.25 (2017).
+    static volatile bool sMissingGetrandom;
+
+    if (!sMissingGetrandom)
+    {
+        int32_t offset = 0;
+        while (offset != bufferLength)
+        {
+            ssize_t n = getrandom(buffer + offset, (size_t)(bufferLength - offset), 0);
+            if (n == -1)
+            {
+                if (errno == EINTR)
+                {
+                    continue;
+                }
+                // ENOSYS: syscall not available (old kernel or blocked by seccomp)
+                // EPERM: operation not permitted (some container environments)
+                // Fall back to /dev/urandom for these errors
+                if (errno == ENOSYS || errno == EPERM)
+                {
+                    sMissingGetrandom = true;
+                    break;
+                }
+                return -1;
+            }
+
+            offset += (int32_t)n;
+        }
+
+        if (offset == bufferLength)
+        {
+            return 0;
+        }
+    }
+#endif
+
+    // Fallback to /dev/urandom
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;
 

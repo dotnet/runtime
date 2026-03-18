@@ -21,7 +21,7 @@ namespace System
         // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method) : base(target, method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method) : base(target, method)
         {
         }
 
@@ -35,7 +35,7 @@ namespace System
                 return d1 is null;
             }
 
-            return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
+            return ReferenceEquals(d2, d1) || d2.Equals(d1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,7 +50,7 @@ namespace System
                 return d1 is not null;
             }
 
-            return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
+            return !ReferenceEquals(d2, d1) && !d2.Equals(d1);
         }
     }
 #pragma warning restore CS0660, CS0661

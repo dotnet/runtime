@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 // The chain should have 3 members
                 Assert.Equal(3, chain.ChainElements.Count);
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
-                Assert.True(valid, "Source chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
                 Assert.Equal(3, chain.ChainElements.Count);
 
                 using (var chainHolder2 = new ChainHolder(chain.ChainContext))
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
-                    Assert.True(valid, "Cloned chain built validly");
+                    Assert.True(valid, $"Chain built validly but failed with '{chain2.AllStatusFlags()}'.");
                 }
             }
         }
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 valid = chain.Build(sampleCert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
 
                 Assert.Equal(1, chain.ChainElements.Count);
                 chainHolder.DisposeChainElements();
@@ -528,7 +528,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(cert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
             }
         }
 
@@ -577,7 +577,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(cert);
-                Assert.True(valid, "Chain built validly");
+                Assert.True(valid, $"Chain built validly but failed with '{chain.AllStatusFlags()}'.");
             }
         }
 
@@ -609,7 +609,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
+        [ConditionalFact(typeof(ChainTests), nameof(TrustsMicrosoftDotComRoot))]
         public static void BuildChain_FailOnlyApplicationPolicy()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
@@ -656,7 +656,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
+        [ConditionalFact(typeof(ChainTests), nameof(TrustsMicrosoftDotComRoot))]
         [OuterLoop("Modifies user certificate store", ~TestPlatforms.Browser)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
@@ -933,8 +933,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Chain building on Android fails with an empty subject")]
-        public static void ChainWithEmptySubject()
+        public static void ChainWithEmptySubjectAndCritialSan()
         {
             using (var cert = new X509Certificate2(TestData.EmptySubjectCertificate))
             using (var issuer = new X509Certificate2(TestData.EmptySubjectIssuerCertificate))

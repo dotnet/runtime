@@ -5,3 +5,4 @@
 // ------------------------------------------------------------------------------
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.Logging.ILoggingBuilder))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.Logging.ProviderAliasAttribute))]

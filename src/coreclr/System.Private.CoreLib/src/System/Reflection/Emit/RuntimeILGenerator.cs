@@ -536,17 +536,23 @@ namespace System.Reflection.Emit
             // If there is a non-void return type, push one.
             if (returnType != typeof(void))
                 stackchange++;
+
             // Pop off arguments if any.
             if (parameterTypes != null)
                 stackchange -= parameterTypes.Length;
+
             // Pop off vararg arguments.
             if (optionalParameterTypes != null)
                 stackchange -= optionalParameterTypes.Length;
-            // Pop the this parameter if the method has a this parameter.
-            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis)
+
+            // Pop the this parameter if the method has an implicit this parameter.
+            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis &&
+                (callingConvention & CallingConventions.ExplicitThis) == 0)
                 stackchange--;
+
             // Pop the native function pointer.
             stackchange--;
+
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             RecordTokenFixup();
@@ -652,6 +658,10 @@ namespace System.Reflection.Emit
             {
                 Debug.Assert(opcode.Equals(OpCodes.Calli),
                                 "Unexpected opcode encountered for StackBehaviour VarPop.");
+
+                // If there is a non-void return type, push one.
+                if (signature.ReturnType is Type retType && retType != typeof(void))
+                    stackchange++;
                 // Pop the arguments..
                 stackchange -= signature.ArgumentCount;
                 // Pop native function pointer off the stack.

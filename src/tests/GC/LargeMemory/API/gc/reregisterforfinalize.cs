@@ -17,7 +17,7 @@ public sealed class ReRegisterForFinalizeTest {
         lo = new LargeObject(size, true);
         GC.ReRegisterForFinalize(lo);
     }
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void DestroyLargeObject() {
         lo = null;
@@ -34,7 +34,7 @@ public sealed class ReRegisterForFinalizeTest {
             Console.WriteLine(e);
             return false;
         }
-        
+
         DestroyLargeObject();
         GC.Collect();
         GC.WaitForPendingFinalizers();

@@ -5,11 +5,11 @@ using System;
 
 namespace Mono.Linker
 {
-	public class ConsoleLogger : ILogger
-	{
-		public void LogMessage (MessageContainer message)
-		{
-			Console.WriteLine (message.ToString ());
-		}
-	}
+    public class ConsoleLogger : ILogger
+    {
+        public void LogMessage(MessageContainer message)
+        {
+            Console.WriteLine(message.ToString());
+        }
+    }
 }

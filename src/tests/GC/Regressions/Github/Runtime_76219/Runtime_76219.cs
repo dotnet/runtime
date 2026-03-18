@@ -3,11 +3,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
+using TestLibrary;
 
 public class Runtime_76219
 {
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public static int Main()
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/78899", TestRuntimes.CoreCLR)]
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -19,7 +23,6 @@ public class Runtime_76219
             GC.WaitForPendingFinalizers();
             GC.Collect();
         }
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.Synchronized | MethodImplOptions.NoInlining)]

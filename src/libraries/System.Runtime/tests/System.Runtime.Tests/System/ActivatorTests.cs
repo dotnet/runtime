@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Runtime.Remoting;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -94,6 +95,28 @@ namespace System.Tests
             Assert.Equal(-1, c2.Property);
         }
 
+        // Add attribute to avoid unused field warning
+        [StructLayout(LayoutKind.Sequential)]
+        ref struct RSNoCtor
+        {
+            public int Value;
+        }
+
+        ref struct RSCtor
+        {
+            public int Value;
+            public RSCtor() => Value = 10;
+        }
+
+        [Fact]
+        public void CreateInstance_ByRefTypeAsGenericParameter_Success()
+        {
+            Assert.Equal(0, Activator.CreateInstance<Span<int>>().Length);
+            Assert.Equal(0, Activator.CreateInstance<ReadOnlySpan<string>>().Length);
+            Assert.Equal(0, Activator.CreateInstance<RSNoCtor>().Value);
+            Assert.Equal(10, Activator.CreateInstance<RSCtor>().Value);
+        }
+
         [Fact]
         public void CreateInstance_PublicOnlyTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException()
         {
@@ -105,6 +128,105 @@ namespace System.Tests
 
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor)));
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: false));
+        }
+
+        [Fact]
+        public void CreateInstance_WithCustomBinder_ThrowsMissingMethodException()
+        {
+            // MissingMethodException not caused by a binder must not contain an inner exception.
+            var mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: false));
+            Assert.Contains("System.Tests.ActivatorTests+TypeWithPrivateDefaultConstructor", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithoutDefaultCtor)));
+            Assert.Contains("System.Tests.ActivatorTests+TypeWithoutDefaultCtor", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            // MissingMethodException caused by a binder must be wrapped.
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new MissingMethodException("Hello, World!!") },
+                null, null, null
+            ));
+            Assert.Contains("System.Object", mme.Message);
+            Assert.NotNull(mme.InnerException);
+            Assert.IsType<MissingMethodException>(mme.InnerException);
+            Assert.Equal("Hello, World!!", mme.InnerException.Message);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new MissingMethodException("good-bye...") },
+                null, null, null
+            ));
+            Assert.Contains("System.Random", mme.Message);
+            Assert.NotNull(mme.InnerException);
+            Assert.IsType<MissingMethodException>(mme.InnerException);
+            Assert.Equal("good-bye...", mme.InnerException.Message);
+
+            // Any other exceptions will not be caught.
+            Assert.Throws<Exception>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new Exception() },
+                null, null, null
+            ));
+            Assert.Throws<ArgumentNullException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new ArgumentNullException() },
+                null, null, null
+            ));
+            Assert.Throws<FileNotFoundException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new FileNotFoundException() },
+                null, null, null
+            ));
+            Assert.Throws<InvalidOperationException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => throw new InvalidOperationException() },
+                null, null, null
+            ));
+
+            // MissingMethodException must not contain an inner exception when BindToMethod returns null.
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(object), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => null },
+                null, null, null
+            ));
+            Assert.Contains("System.Object", mme.Message);
+            Assert.Null(mme.InnerException);
+
+            mme = Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(
+                typeof(Random), BindingFlags.CreateInstance,
+                new CustomBinder() { BindToMethodAction = () => null },
+                null, null, null
+            ));
+            Assert.Contains("System.Random", mme.Message);
+            Assert.Null(mme.InnerException);
+        }
+
+        class CustomBinder : Binder
+        {
+            public required Func<MethodBase?> BindToMethodAction { get; init; }
+
+            public override MethodBase BindToMethod(BindingFlags bindingAttr, MethodBase[] match, ref object?[] args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? names, out object? state)
+            {
+                state = null;
+                return this.BindToMethodAction()!;
+            }
+
+            public override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? culture)
+                => throw new NotImplementedException();
+
+            public override object ChangeType(object value, Type type, CultureInfo? culture)
+                => throw new NotImplementedException();
+
+            public override void ReorderArgumentArray(ref object?[] args, object state)
+                => throw new NotImplementedException();
+
+            public override MethodBase? SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+                => throw new NotImplementedException();
+
+            public override PropertyInfo? SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type? returnType, Type[]? indexes, ParameterModifier[]? modifiers)
+                => throw new NotImplementedException();
         }
 
         [Fact]
@@ -219,15 +341,13 @@ namespace System.Tests
         [Theory]
         [InlineData(typeof(TypedReference))]
         [InlineData(typeof(RuntimeArgumentHandle))]
+        [InlineData(typeof(Span<int>))]
+        [InlineData(typeof(ReadOnlySpan<string>))]
+        [InlineData(typeof(RSNoCtor))]
+        [InlineData(typeof(RSCtor))]
         public void CreateInstance_BoxedByRefType_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type));
-        }
-
-        [Fact]
-        public void CreateInstance_Span_ThrowsNotSupportedException()
-        {
-            CreateInstance_BoxedByRefType_ThrowsNotSupportedException(typeof(Span<int>));
         }
 
         [Fact]

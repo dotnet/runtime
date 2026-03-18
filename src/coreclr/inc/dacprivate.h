@@ -226,9 +226,13 @@ struct MSLAYOUT DacpThreadLocalModuleData
     CLRDATA_ADDRESS pNonGCStaticDataStart = 0;
 };
 
-
 struct MSLAYOUT DacpModuleData
 {
+    enum TransientFlags
+    {
+        IsEditAndContinue = 0x00000208, // Flags for .NET Framework (0x00000200) and .NET Core (0x00000008)
+    };
+
     CLRDATA_ADDRESS Address = 0;
     CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS ilBase = 0;
@@ -425,11 +429,11 @@ enum DacpAppDomainDataStage {
     STAGE_CLOSED
 };
 
-// Information about a BaseDomain (AppDomain, SharedDomain or SystemDomain).
+// Information about an AppDomain or SystemDomain.
 // For types other than AppDomain, some fields (like dwID, DomainLocalBlock, etc.) will be 0/null.
 struct MSLAYOUT DacpAppDomainData
 {
-    // The pointer to the BaseDomain (not necessarily an AppDomain).
+    // The pointer to the AppDomain or SystemDomain.
     // It's useful to keep this around in the structure
     CLRDATA_ADDRESS AppDomainPtr = 0;
     CLRDATA_ADDRESS AppSecDesc = 0;
@@ -455,7 +459,7 @@ struct MSLAYOUT DacpAssemblyData
     CLRDATA_ADDRESS AssemblyPtr = 0; //useful to have
     CLRDATA_ADDRESS ClassLoader = 0;
     CLRDATA_ADDRESS ParentDomain = 0;
-    CLRDATA_ADDRESS BaseDomainPtr = 0;
+    CLRDATA_ADDRESS DomainPtr = 0;
     CLRDATA_ADDRESS AssemblySecDesc = 0;
     BOOL isDynamic = FALSE;
     UINT ModuleCount = FALSE;
@@ -463,9 +467,9 @@ struct MSLAYOUT DacpAssemblyData
     BOOL isDomainNeutral = FALSE; // Always false, preserved for backward compatibility
     DWORD dwLocationFlags = 0;
 
-    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr, CLRDATA_ADDRESS baseDomainPtr)
+    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr, CLRDATA_ADDRESS domainPtr)
     {
-        return sos->GetAssemblyData(baseDomainPtr, addr, this);
+        return sos->GetAssemblyData(domainPtr, addr, this);
     }
 
     HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr)
@@ -623,7 +627,7 @@ struct MSLAYOUT DacpTieredVersionData
 };
 
 // for JITType
-enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT};
+enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT,TYPE_INTERPRETER};
 
 struct MSLAYOUT DacpCodeHeaderData
 {
@@ -967,7 +971,7 @@ struct MSLAYOUT DACEHInfo
     CLRDATA_ADDRESS tryEndOffset = 0;
     CLRDATA_ADDRESS handlerStartOffset = 0;
     CLRDATA_ADDRESS handlerEndOffset = 0;
-    BOOL isDuplicateClause = FALSE;
+    BOOL isDuplicateClause = FALSE;     // unused
     CLRDATA_ADDRESS filterOffset = 0;   // valid when clauseType is EHFilter
     BOOL isCatchAllHandler = FALSE;     // valid when clauseType is EHTyped
     CLRDATA_ADDRESS moduleAddr = 0;     // when == 0 mtCatch contains a MethodTable, when != 0 tokCatch contains a type token
@@ -1039,8 +1043,6 @@ struct MSLAYOUT DacpJitCodeHeapInfo
 
     DacpJitCodeHeapInfo() : codeHeapType(0), LoaderHeap(0) {}
 };
-
-#include "static_assert.h"
 
 /* DAC datastructures are frozen as of dev11 shipping.  Do NOT add fields, remove fields, or change the fields of
  * these structs in any way.  The correct way to get new data out of the runtime is to create a new struct and

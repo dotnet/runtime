@@ -181,8 +181,7 @@ namespace System.Linq.Expressions.Tests
 
         public void Accept(ILInstructionVisitor visitor)
         {
-            if (visitor == null)
-                throw new ArgumentNullException("argument 'visitor' can not be null");
+            ArgumentNullException.ThrowIfNull(visitor);
 
             foreach (ILInstruction instruction in this)
             {

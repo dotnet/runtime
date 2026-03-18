@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
-
+using ILCompiler.ReadyToRun.TypeSystem;
+using Internal;
 using Internal.NativeFormat;
 using Internal.ReadyToRunConstants;
 using Internal.Text;
@@ -66,8 +67,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.All))
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
+                if (inlinees.Length == 0)
+                {
+                    continue;
+                }
                 MethodDesc inliner = methodNode.Method;
-                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetTypicalMethodDefinition();
+                if (inliner.IsCompilerGeneratedILBodyForAsync())
+                {
+                    // Async thunks are restricted from inlining. https://github.com/dotnet/runtime/issues/124665
+                    continue;
+                }
+                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
                 if (inlinerDefinition.IsNonVersionable())
                 {
@@ -139,16 +149,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 EcmaMethod inlinee = inlineeWithInliners.Key;
                 int inlineeRid = MetadataTokens.GetRowNumber(inlinee.Handle);
                 int hashCode;
-                
+
                 if (AllowCrossModuleInlines)
                 {
                     // CrossModuleInlineInfo format
-                    hashCode = ReadyToRunHashCode.MethodHashCode(inlinee);
+                    hashCode = inlinee.GetHashCode();
                 }
                 else
                 {
                     // InliningInfo2 format
-                    hashCode = ReadyToRunHashCode.ModuleNameHashCode(inlinee.Module);
+                    hashCode = VersionResilientHashCode.ModuleNameHashCode(inlinee.Module);
                     hashCode ^= inlineeRid;
                 }
 

@@ -845,10 +845,12 @@ void mono_threads_join_unlock (void);
 
 #ifdef HOST_WASM
 typedef void (*background_job_cb)(void);
+typedef gsize (*ds_job_cb)(void* data);
 #ifdef DISABLE_THREADS
-void mono_main_thread_schedule_background_job (background_job_cb cb);
+void SystemJS_ScheduleBackgroundJob (background_job_cb cb);
+void mono_schedule_ds_job (ds_job_cb cb, void* data);
 #else
-void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
+void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
 #endif
 
@@ -857,13 +859,13 @@ void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId targ
 void
 mono_win32_enter_alertable_wait (THREAD_INFO_TYPE *info);
 
-void
+gboolean
 mono_win32_leave_alertable_wait (THREAD_INFO_TYPE *info);
 
 void
 mono_win32_enter_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
 
-void
+gboolean
 mono_win32_leave_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle);
 
 void

@@ -14,7 +14,6 @@ namespace Wasm.Build.Tests
     public class ToolCommand : IDisposable
     {
         private bool isDisposed = false;
-        private readonly object _lock = new object();
         private string _label;
         protected ITestOutputHelper _testOutput;
 
@@ -95,53 +94,66 @@ namespace Wasm.Build.Tests
 
         public virtual void Dispose()
         {
-            lock (_lock)
+            if (isDisposed)
+                return;
+            if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
-                if (isDisposed)
-                    return;
-                if (CurrentProcess is not null && !CurrentProcess.HasExited)
-                {
-                    CurrentProcess.Kill(entireProcessTree: true);
-                    CurrentProcess.Dispose();
-                    CurrentProcess = null;
-                }
-                isDisposed = true;
+                CurrentProcess.Kill(entireProcessTree: true);
+                CurrentProcess.Dispose();
+                CurrentProcess = null;
             }
+            isDisposed = true;
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
+
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
-            
-            void HandleDataReceived(DataReceivedEventArgs e, DataReceivedEventHandler? additionalHandler)
+            DataReceivedEventHandler errorHandler = (s, e) =>
             {
                 if (e.Data == null || isDisposed)
                     return;
 
-                lock (_lock)
-                {
-                    if (e.Data == null || isDisposed)
-                        return;
+                string msg = $"[{_label}] {e.Data}";
+                output.Add(msg);
+                _testOutput.WriteLine(msg);
+                ErrorDataReceived?.Invoke(s, e);
+            };
 
-                    string msg = $"[{_label}] {e.Data}";
-                    output.Add(msg);
-                    TryWriteToTestOutput(msg, output);
-                    additionalHandler?.Invoke(this, e);
-                }
-            }
+            DataReceivedEventHandler outputHandler = (s, e) =>
+            {
+                if (e.Data == null || isDisposed)
+                    return;
 
-            DataReceivedEventHandler errorHandler = (s, e) => HandleDataReceived(e, ErrorDataReceived);
-            DataReceivedEventHandler outputHandler = (s, e) => HandleDataReceived(e, OutputDataReceived);
+                string msg = $"[{_label}] {e.Data}";
+                output.Add(msg);
+                _testOutput.WriteLine(msg);
+                OutputDataReceived?.Invoke(s, e);
+            };
 
             CurrentProcess.ErrorDataReceived += errorHandler;
             CurrentProcess.OutputDataReceived += outputHandler;
 
-            var completionTask = CurrentProcess.StartAndWaitForExitAsync();
-            CurrentProcess.BeginOutputReadLine();
-            CurrentProcess.BeginErrorReadLine();
-            await completionTask;
+            try
+            {
+                var completionTask = CurrentProcess.StartAndWaitForExitAsync();
+                CurrentProcess.BeginOutputReadLine();
+                CurrentProcess.BeginErrorReadLine();
+                await completionTask;
+            }
+            catch (Exception ex)
+            {
+                // If process start (inside of StartAndWaitForExitAsync) fails,
+                // the `Process` object is in a state "don't touch me"
+                // (calling almost everything results in "No process associated with this object"),
+                // therefore we just set it to null to avoid hiding the root exception.
+                CurrentProcess = null;
+
+                _testOutput.WriteLine($"[{_label}] Exception running command: {ex}");
+                throw;
+            }
 
             CurrentProcess.ErrorDataReceived -= errorHandler;
             CurrentProcess.OutputDataReceived -= outputHandler;
@@ -152,20 +164,6 @@ namespace Wasm.Build.Tests
                 CurrentProcess.StartInfo,
                 CurrentProcess.ExitCode,
                 string.Join(System.Environment.NewLine, output));
-        }
-
-        private void TryWriteToTestOutput(string message, List<string> output)
-        {
-            try
-            {
-                _testOutput.WriteLine(message);
-            }
-            catch (InvalidOperationException)
-            {
-                // Test context may have expired, continue without logging to test output
-                // Add a marker to the output buffer so we know this happened
-                output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
-            }
         }
 
         private Process CreateProcess(string executable, string args)
@@ -180,7 +178,6 @@ namespace Wasm.Build.Tests
                 UseShellExecute = false
             };
 
-            psi.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
 
             // runtime repo sets this, which interferes with the tests

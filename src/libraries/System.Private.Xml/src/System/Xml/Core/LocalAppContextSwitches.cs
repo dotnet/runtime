@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using SwitchesHelpers = System.LocalAppContextSwitches;
 
@@ -38,6 +39,16 @@ namespace System.Xml
             }
         }
 
+        private static int s_allowXsdTimeToTimeOnlyWithOffsetLoss;
+        public static bool AllowXsdTimeToTimeOnlyWithOffsetLoss
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", ref s_allowXsdTimeToTimeOnlyWithOffsetLoss);
+            }
+        }
+
         private static int s_limitXPathComplexity;
         public static bool LimitXPathComplexity
         {
@@ -59,12 +70,23 @@ namespace System.Xml
         }
 
         private static int s_isNetworkingEnabledByDefault;
+        [FeatureSwitchDefinition("System.Xml.XmlResolver.IsNetworkingEnabledByDefault")]
         public static bool IsNetworkingEnabledByDefault
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault);
+            }
+        }
+
+        private static int s_ignoreObsoleteMembers;
+        public static bool IgnoreObsoleteMembers
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreObsoleteMembers", ref s_ignoreObsoleteMembers);
             }
         }
     }

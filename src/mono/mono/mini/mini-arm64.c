@@ -4203,7 +4203,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				guint32 val;
 
 				arm_ldrx (code, ARMREG_IP1, info_var->inst_basereg, GTMREG_TO_INT (info_var->inst_offset));
-				/* Add the bp_tramp_offset */
 				val = (bp_tramp_offset * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [bp_tramp_offset], which is either 0 or the address of the bp trampoline */
 				code = emit_ldrx (code, ARMREG_IP1, ARMREG_IP1, val);
@@ -5058,7 +5057,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 			/* Atomic */
 		case OP_MEMORY_BARRIER:
-			arm_dmb (code, ARM_DMB_ISH);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_ACQ)
+				arm_dmb (code, ARM_DMB_ISHLD);
+			else
+				arm_dmb (code, ARM_DMB_ISH);
 			break;
 		case OP_ATOMIC_ADD_I4: {
 			guint8 *buf [16];
@@ -6964,7 +6966,7 @@ mono_arch_get_seq_point_info (guint8 *code)
 		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 
-		info = g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size) * sizeof(guint8*));
+		info = g_malloc0 (sizeof (SeqPointInfo) + ji->code_size * sizeof(guint8*));
 
 		info->ss_tramp_addr = &ss_trampoline;
 

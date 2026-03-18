@@ -6,7 +6,6 @@ using Xunit;
 namespace System.IO.Tests
 {
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class Junctions : BaseSymbolicLinks
     {
         private DirectoryInfo CreateJunction(string junctionPath, string targetPath)

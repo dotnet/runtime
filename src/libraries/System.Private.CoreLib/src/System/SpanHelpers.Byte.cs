@@ -754,7 +754,7 @@ namespace System
             return (int)(offset + 7);
         }
 
-        // Optimized byte-based SequenceEquals. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
+        // Optimized byte-based SequenceEqual. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
         // where the length can exceed 2Gb once scaled by sizeof(T).
         [Intrinsic] // Unrolled for constant length
         public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)

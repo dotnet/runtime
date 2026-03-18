@@ -10,38 +10,12 @@
 #include "stdafx.h"
 #include "winbase.h"
 
-#include "metadataexports.h"
-
 #include "winbase.h"
 #include "corpriv.h"
 #include "corsym.h"
 
 #include "pedecoder.h"
-#include "stgpool.h"
-
-//---------------------------------------------------------------------------------------
-// Update an existing metadata importer with a buffer
-//
-// Arguments:
-//     pUnk - IUnknoown of importer to update.
-//     pData - local buffer containing new metadata
-//     cbData - size of buffer in bytes.
-//     dwReOpenFlags - metadata flags to pass for reopening.
-//
-// Returns:
-//     S_OK on success. Else failure.
-//
-// Notes:
-//    This will call code:MDReOpenMetaDataWithMemoryEx from the metadata engine.
-STDAPI ReOpenMetaDataWithMemoryEx(
-    void        *pUnk,
-    LPCVOID     pData,
-    ULONG       cbData,
-    DWORD       dwReOpenFlags)
-{
-    HRESULT hr = MDReOpenMetaDataWithMemoryEx(pUnk,pData, cbData, dwReOpenFlags);
-    return hr;
-}
+#include "memorystreams.h"
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
@@ -53,7 +27,7 @@ CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
     VMPTR_DomainAssembly    vmDomainAssembly)
-: CordbBase(pProcess, vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly), enumCordbModule),
+: CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
@@ -76,7 +50,7 @@ CordbModule::CordbModule(
 
     // Fill out properties via DAC.
     ModuleInfo modInfo;
-    pProcess->GetDAC()->GetModuleData(vmModule, &modInfo); // throws
+    IfFailThrow(pProcess->GetDAC()->GetModuleData(vmModule, &modInfo)); // throws
 
     m_PEBuffer.Init(modInfo.pPEBaseAddress, modInfo.nPESize);
 
@@ -88,15 +62,15 @@ CordbModule::CordbModule(
     {
         DomainAssemblyInfo dfInfo;
 
-        pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
+        IfFailThrow(pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo)); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
+        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
     }
     else
     {
-        // Not yet implemented
-        m_pAppDomain = pProcess->GetSharedAppDomain();
+        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG
@@ -143,10 +117,10 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
-    GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-        m_pAssembly->GetDomainAssemblyPtr(),
+    IfFailThrow(GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
+        m_pAppDomain->GetADToken(),
         DbgAssertModuleDeletedCallback,
-        this);
+        this));
 }
 #endif // _DEBUG
 
@@ -249,7 +223,7 @@ IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** p
 
     TargetBuffer bufferPdb;
     IDacDbiInterface::SymbolFormat symFormat;
-    GetProcess()->GetDAC()->GetSymbolsBuffer(m_vmModule, &bufferPdb, &symFormat);
+    IfFailThrow(GetProcess()->GetDAC()->GetSymbolsBuffer(m_vmModule, &bufferPdb, &symFormat));
     if (bufferPdb.IsEmpty())
     {
         // No in-memory PDB. Common case.
@@ -319,8 +293,6 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
     // from debugger, if we have one.
     if (m_pIMImport == NULL)
     {
-        bool isILMetaDataForNGENImage;  // Not currently used for anything.
-
         // The process's LookupMetaData will ping the debugger's ICorDebugMetaDataLocator iface.
         CordbProcess * pProcess = GetProcess();
         RSLockHolder processLockHolder(pProcess->GetProcessLock());
@@ -331,7 +303,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
         // Since we've already done everything possible from the Module anyhow, just call the
         // stuff that talks to the debugger.
         // Don't do anything with the ptr returned here, since it's really m_pInternalMetaDataImport.
-        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, isILMetaDataForNGENImage, this);
+        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, this);
     }
 
     // If we still can't get it, throw.
@@ -527,7 +499,7 @@ void CordbModule::RefreshMetaData()
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
         TADDR remoteMDInternalRWAddr = (TADDR)NULL;
-        GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr);
+        IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
         if (remoteMDInternalRWAddr != (TADDR)NULL)
         {
             // we should only be doing this once to initialize, we don't support reopen with this technique
@@ -555,7 +527,7 @@ void CordbModule::RefreshMetaData()
     if(!m_fForceMetaDataSerialize) // case 1 and 2
     {
         LOG((LF_CORDB,LL_INFO10000, "CM::RM !m_fForceMetaDataSerialize case\n"));
-        GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData); // throws
+        IfFailThrow(GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData)); // throws
     }
     else if (GetProcess()->GetShim() == NULL) // case 3 won't work on a dump so don't try
     {
@@ -781,57 +753,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
     // on the datatarget to map the metadata here.  Note that this must also work for minidumps where the
     // metadata isn't necessarily in the dump image.
 
-    // Get filename. There are 2 filenames to choose from:
-    // - ngen (if applicable).
-    // - non-ngen (aka "normal").
-    // By loading metadata out of the same OS file as loaded into the debuggee space, the OS can share those pages.
-    const WCHAR * szFullPathName = NULL;
-    bool fDebuggerLoadingNgen = false;
-    bool fDebuggeeLoadedNgen = false;
-    szFullPathName = GetNGenImagePath();
-
-    if(szFullPathName != NULL)
-    {
-        fDebuggeeLoadedNgen = true;
-        fDebuggerLoadingNgen = true;
-
-#ifndef TARGET_UNIX
-        // NGEN images are large and we shouldn't load them if they won't be shared, therefore fail the NGEN mapping and
-        // fallback to IL image if the debugger doesn't have the image loaded already.
-        // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
-        // opportunity. Its an acceptable loss from an imperfect heuristic.
-        if (NULL == GetModuleHandle(szFullPathName))
-#endif
-        {
-            szFullPathName = NULL;
-            fDebuggerLoadingNgen = false;
-        }
-
-    }
-
-    // If we don't have or decided not to load the NGEN image, check to see if IL image is available
-    if (!fDebuggerLoadingNgen)
-    {
-        szFullPathName = GetModulePath();
-    }
-
-    // If we are doing live debugging we shouldn't use metadata from an IL image because it doesn't match closely enough.
-    // In particular the RVAs for IL code headers are different between the two images which will cause all IL code and
-    // local var signature lookups to fail. With further work we could compensate for the RVAs by computing
-    // the image layout differences and adjusting the returned RVAs, but there may be other differences that need to be accounted
-    // for as well. If we did go that route we should do a binary diff across a variety of NGEN/IL image metadata blobs to
-    // get a concrete understanding of the format differences.
-    //
-    // This check should really be 'Are we OK with only getting the functionality level of mini-dump debugging?' but since we
-    // don't know the debugger's intent we guess whether or not we are doing dump debugging by checking if we are shimmed. Once
-    // the shim supports live debugging we should probably just stop automatically falling back to IL image and let the debugger
-    // decide via the ICorDebugMetadataLocator interface.
-    if(fDebuggeeLoadedNgen && !fDebuggerLoadingNgen && GetProcess()->GetShim()!=NULL)
-    {
-        // The IL image might be there, but we shouldn't use it for live debugging
-        return CORDBG_E_MISSING_METADATA;
-    }
-
+    const WCHAR * szFullPathName = GetModulePath();
 
     // @dbgtodo  metadata  - This is really a CreateFile() call which we can't do. We must offload this to
     // the data target for the dump-debugging scenarios.
@@ -840,20 +762,6 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
     // then the metadata engine will convert it to a "write" underneath us.
     // We want "read" so that we can let the OS share the pages.
     DWORD dwOpenFlags = 0;
-
-    // If we know we're never going to need to write (i.e. never do EnC), then we should indicate
-    // that to metadata by telling it this interface will always be read-only.  By passing read-only,
-    // the metadata library will then also share the VM space for the image when the same image is
-    // opened multiple times for multiple AppDomains.
-    // We don't currently have a way to tell absolutely whether this module will support EnC, but we
-    // know that NGen modules NEVER support EnC, and NGen is the common case that eats up a lot of VM.
-    // So we'll use the heuristic of opening the metadata for all ngen images as read-only.  Ideally
-    // we'd go even further here (perhaps even changing metadata to map only the region of the file it
-    // needs).
-    if (fDebuggerLoadingNgen)
-    {
-        dwOpenFlags = ofReadOnly | ofTrustedImage;
-    }
 
     // This is the only place we ever validate that the file matches, because we're potentially
     // loading the file from disk ourselves.  We're doing this without giving the debugger a chance
@@ -884,17 +792,18 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         // target memory back to the debugger.
         DWORD dwImageTimeStamp = 0;
         DWORD dwImageSize = 0;
-        bool isNGEN = false; // unused
         StringCopyHolder filePath;
 
 
         _ASSERTE(!m_vmPEFile.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
-        if (!this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+        bool _mdFileInfoResult;
+        IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                          dwImageTimeStamp,
                                                                          dwImageSize,
-                                                                         isNGEN,
-                                                                         &filePath))
+                                                                         &filePath,
+                                                                         &_mdFileInfoResult));
+        if (!_mdFileInfoResult)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't get metadata info for file \"%s\"\n", pszFullPathName));
             return CORDBG_E_MISSING_METADATA;
@@ -1131,7 +1040,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     // Now tell our current IMetaDataImport object to re-initialize by swapping in the new memory block.
     // This allows us to keep manipulating metadata objects on other threads without crashing.
     // This will also invalidate an existing associated Internal MetaData.
-    hr = ReOpenMetaDataWithMemoryEx(m_pIMImport, pLocalMetaDataPtr, dwMetaDataSize, ofTakeOwnership );
+    hr = MDReOpenMetaDataWithMemory(m_pIMImport, pLocalMetaDataPtr, dwMetaDataSize, ofTakeOwnership );
     IfFailThrow(hr);
 
     // Success.  MetaData now owns the metadata memory
@@ -1275,29 +1184,18 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
         {
             DWORD dwImageTimeStamp = 0; // unused
             DWORD dwImageSize = 0;      // unused
-            bool isNGEN = false;
             StringCopyHolder filePath;
 
             _ASSERTE(!m_vmPEFile.IsNull());
-            if (this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+            bool _mdFileInfoResult;
+            IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                              dwImageTimeStamp,
                                                                              dwImageSize,
-                                                                             isNGEN,
-                                                                             &filePath))
+                                                                             &filePath,
+                                                                             &_mdFileInfoResult));
+            if (_mdFileInfoResult)
             {
                 _ASSERTE(filePath.IsSet());
-
-                // Unfortunately, metadata lookup preferentially takes the ngen image - so in this case,
-                //  we need to go back and get the IL image's name instead.
-                if ((isNGEN) &&
-                    (this->GetProcess()->GetDAC()->GetILImageInfoFromNgenPEFile(m_vmPEFile,
-                                                                                dwImageTimeStamp,
-                                                                                dwImageSize,
-                                                                                &filePath)))
-                {
-                    _ASSERTE(filePath.IsSet());
-                }
-
                 hr = CopyOutString(filePath, cchName, pcchName, szName);
             }
         }
@@ -1383,7 +1281,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
             // Tempting to use the metadata-scope name, but that's a regression from Whidbey. For manifest modules,
             // the metadata scope name is not initialized with the string the user supplied to create the
             // dynamic assembly. So we call into the runtime to use CLR heuristics to get a more accurate name.
-            m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer);
+            IfFailThrow(m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer));
             _ASSERTE(buffer.IsSet());
             szTempName = buffer;
             // Note that we considered returning S_FALSE for fabricated names like this, but that's a breaking
@@ -1416,7 +1314,8 @@ const WCHAR * CordbModule::GetModulePath()
     if (!m_strModulePath.IsSet())
     {
         IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-        pDac->GetModulePath(m_vmModule, &m_strModulePath); // throws
+        BOOL fNonEmpty;
+        IfFailThrow(pDac->GetModulePath(m_vmModule, &m_strModulePath, &fNonEmpty)); // throws
         _ASSERTE(m_strModulePath.IsSet());
     }
 
@@ -1425,44 +1324,6 @@ const WCHAR * CordbModule::GetModulePath()
         return NULL;    // module has no filename
     }
     return m_strModulePath;
-}
-
-//---------------------------------------------------------------------------------------
-// Get and caches ngen image path.
-//
-// Returns:
-//    Null-terminated string to ngen image path.
-//    NULL if there is no ngen filename (eg, file is not ngenned).
-//    Throws on error (such as inability to read the path from the target).
-//
-// Notes:
-//    This can be used to get the path to find metadata. For ngenned images,
-//    the IL (and associated metadata) may not be loaded, so we may want to get the
-//    metadata out of the ngen image.
-const WCHAR * CordbModule::GetNGenImagePath()
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        // Lazily initialize.  Module filenames cannot change, and so once
-        // we've retrieved this successfully, it's stored for good.
-        if (!m_strNGenImagePath.IsSet())
-        {
-            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-            BOOL fNonEmpty = pDac->GetModuleNGenPath(m_vmModule, &m_strNGenImagePath); // throws
-            (void)fNonEmpty; //prevent "unused variable" error from GCC
-            _ASSERTE(m_strNGenImagePath.IsSet() && (m_strNGenImagePath.IsEmpty() == !fNonEmpty));
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr) ||
-        m_strNGenImagePath == NULL ||
-        m_strNGenImagePath.IsEmpty())
-    {
-        return NULL;    // module has no ngen filename
-    }
-    return m_strNGenImagePath;
 }
 
 // Implementation of ICorDebugModule::EnableJITDebugging
@@ -2055,7 +1916,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
 
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->ResolveTypeReference(&inData, &outData);
+            IfFailThrow(pProcess->GetDAC()->ResolveTypeReference(&inData, &outData));
         }
 
         CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmDomainAssembly);
@@ -2523,7 +2384,8 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
     if (!m_vmDomainAssembly.IsNull())
     {
         // Get DAC to do the real work to resolve the assembly
-        VMPTR_DomainAssembly vmDomainAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef);
+        VMPTR_DomainAssembly vmDomainAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef, &vmDomainAssembly));
 
         // now find the ICorDebugAssembly corresponding to it
         if (!vmDomainAssembly.IsNull() && m_pAppDomain != NULL)
@@ -2563,7 +2425,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         {
 #ifndef TARGET_UNIX
             // PDB format - use diasymreader.dll with COM activation
-            InlineSString<_MAX_PATH> ssBuf;
+            InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));
             IfFailThrow(FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
                                                ssBuf.GetUnicode(),
@@ -2729,10 +2591,10 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
         BOOL fAllowJitOpts;
         BOOL fEnableEnC;
 
-        pProcess->GetDAC()->GetCompilerFlags (
+        IfFailThrow(pProcess->GetDAC()->GetCompilerFlags (
             GetRuntimeDomainAssembly(),
             &fAllowJitOpts,
-            &fEnableEnC);
+            &fEnableEnC));
 
         if (fEnableEnC)
         {
@@ -3404,7 +3266,7 @@ HRESULT CordbILCode::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBrea
 }
 
 
-
+#ifdef FEATURE_CODE_VERSIONING
 CordbReJitILCode::CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode) :
 CordbILCode(pFunction, TargetBuffer(), encVersion, mdSignatureNil, VmPtrToCookie(vmILCodeVersionNode)),
 m_cClauses(0),
@@ -3690,6 +3552,7 @@ HRESULT CordbReJitILCode::GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR
     }
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 // FindNativeInfoInILVariableArray
 // Linear search through an array of NativeVarInfos, to find the variable of index dwIndex, valid
@@ -4500,7 +4363,7 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
 
 int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 {
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     if (Is32BitInstruction(*(WORD*)ip))
         return 4;
     else
@@ -4872,8 +4735,6 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
     _ASSERTE(!"Invalid opcode!");
     return -1;
-#elif defined(TARGET_RISCV64)
-    return MAX_INSTRUCTION_LENGTH;
 #else
 #error Platform not implemented
 #endif
@@ -5250,7 +5111,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 
     if (pNativeCode == NULL)
     {
-        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(methodDesc, startAddress, &codeInfo);
+        IfFailThrow(GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL));
 
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,
@@ -5305,11 +5166,11 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
                                                                   GetAddress(),
                                                                   m_fCodeAvailable,
                                                                   &m_nativeVarData,
-                                                                  &m_sequencePoints);
+                                                                  &m_sequencePoints));
     }
 
 } // CordbNativeCode::LoadNativeInfo

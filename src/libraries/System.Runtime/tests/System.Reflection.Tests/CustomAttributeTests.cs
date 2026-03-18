@@ -275,5 +275,14 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(EnumForArrays[]), att.B3.GetType());
             Assert.Equal(EnumForArrays.Two, ((EnumForArrays[])att.B3)[0]);
         }
+
+        [Fact]
+        public void SystemObject_GetCustomAttributes_InheritanceConsistency()
+        {
+            Type objectType = typeof(object);
+            object[] attributesWithoutInherit = objectType.GetCustomAttributes(inherit: false);
+            object[] attributesWithInherit = objectType.GetCustomAttributes(inherit: true);
+            Assert.Equal(attributesWithoutInherit.Length, attributesWithInherit.Length);
+        }
     }
 }

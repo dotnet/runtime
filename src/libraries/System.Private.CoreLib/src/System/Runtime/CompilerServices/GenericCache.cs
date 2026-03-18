@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
     // NOTE: It is ok if TKey contains references, but we want it to be a struct,
     //       so that equality is devirtualized.
-    internal unsafe struct GenericCache<TKey, TValue>
+    internal struct GenericCache<TKey, TValue>
         where TKey : struct, IEquatable<TKey>
     {
         private struct Entry
@@ -57,11 +57,13 @@ namespace System.Runtime.CompilerServices
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
 
-        // nothing is ever stored into this, so we can use a static instance.
-        private static Entry[]? s_sentinelTable;
+        // The fields of this structure are known to coreclr, so if they are updated, you must also update object.h
 
         // The actual storage.
         private Entry[] _table;
+
+        // Sentinel table used to flush the cache
+        private Entry[] _sentinelTable;
 
         // when flushing, remember the last size.
         private int _lastFlushSize;
@@ -81,14 +83,14 @@ namespace System.Runtime.CompilerServices
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
-            s_sentinelTable ??= CreateCacheTable(2, throwOnFail: true);
+            _sentinelTable = CreateCacheTable(2, throwOnFail: true)!;
 
             _table =
 #if !DEBUG
             // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
             CreateCacheTable(initialCacheSize) ??
 #endif
-            s_sentinelTable!;
+            _sentinelTable;
             _lastFlushSize = initialCacheSize;
         }
 
@@ -139,9 +141,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGet(TKey key, out TValue? value)
         {
-            // table is always initialized and is not null.
-            Entry[] table = _table!;
-            int hash = key!.GetHashCode();
+            Entry[] table = _table;
+            int hash = key.GetHashCode();
             int index = HashToBucket(table, hash);
             for (int i = 0; i < BUCKET_SIZE;)
             {
@@ -162,7 +163,7 @@ namespace System.Runtime.CompilerServices
                     value = pEntry._value;
 
                     // make sure the second read of 'version' happens after reading '_value'
-                    Interlocked.ReadMemoryBarrier();
+                    Volatile.ReadBarrier();
 
                     // mask the lower version bit to make it even.
                     // This way we can check if version is odd or changing in just one compare.
@@ -239,7 +240,7 @@ namespace System.Runtime.CompilerServices
         internal void TrySet(TKey key, TValue value)
         {
             int bucket;
-            int hash = key!.GetHashCode();
+            int hash = key.GetHashCode();
             Entry[] table;
 
             do
@@ -365,11 +366,13 @@ namespace System.Runtime.CompilerServices
 
         private static int CacheElementCount(Entry[] table)
         {
+            // Do not update this function without also updating the implementation of this in object.h in CoreCLR
             return table.Length - 1;
         }
 
         private void FlushCurrentCache()
         {
+            // Do not update this function without also updating the implementation of this in jithelpers.cpp in CoreCLR
             Entry[] table = _table;
             int lastSize = CacheElementCount(table);
             if (lastSize < _initialCacheSize)
@@ -380,7 +383,7 @@ namespace System.Runtime.CompilerServices
             // with the writing of the table
             _lastFlushSize = lastSize;
             // flushing is just replacing the table with a sentinel.
-            _table = s_sentinelTable!;
+            _table = _sentinelTable;
         }
 
         private bool MaybeReplaceCacheWithLarger(int size)

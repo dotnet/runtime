@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, out DssParms decoded);
                 reader.ThrowIfNotEmpty();
@@ -51,12 +51,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out DssParms decoded)
+        internal static void Decode(ref ValueAsnReader reader, out DssParms decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out DssParms decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, out DssParms decoded)
         {
             try
             {
@@ -68,10 +68,10 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out DssParms decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, out DssParms decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             decoded.P = sequenceReader.ReadInteger();
             decoded.Q = sequenceReader.ReadInteger();

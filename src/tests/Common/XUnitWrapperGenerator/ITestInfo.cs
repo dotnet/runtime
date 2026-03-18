@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -40,7 +41,13 @@ public sealed class BasicTestMethod : ITestInfo
                                                                .FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         DisplayNameForFiltering = $"{ContainingType}.{Method}({args})";
-        TestNameExpression = displayNameExpression ?? $"\"{externAlias}::{ContainingType}.{Method}({args})\"";
+
+        // Make arguments interpolated expressions to avoid issues with string arguments.
+        ImmutableArray<string> argumentsForName = arguments.IsDefaultOrEmpty
+            ? ImmutableArray<string>.Empty
+            : arguments.Select(arg => $"{{{arg}}}").ToImmutableArray();
+
+        TestNameExpression = displayNameExpression ?? $"$\"{externAlias}::{ContainingType}.{Method}({string.Join(", ", argumentsForName)})\"";
 
         if (method.IsStatic)
         {
@@ -140,10 +147,15 @@ public sealed class ConditionalTest : ITestInfo
 
         _innerTest = innerTest;
         _condition = condition;
-   }
+    }
 
     public ConditionalTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
         : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
+    {
+    }
+
+    public ConditionalTest(ITestInfo innerTest, string condition, Xunit.TestPlatforms platform)
+        : this(innerTest, $"{(condition.Length == 0 ? "true" : condition)} && ({GetPlatformConditionFromTestPlatform(platform)})")
     {
     }
 
@@ -169,7 +181,6 @@ public sealed class ConditionalTest : ITestInfo
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("string reason = string.Empty;");
             builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
@@ -199,6 +210,16 @@ public sealed class ConditionalTest : ITestInfo
     private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
     {
         List<string> platformCheckConditions = new();
+
+        if (platform == Xunit.TestPlatforms.Any)
+        {
+            return "true";
+        }
+
+        if (platform == 0)
+        {
+            return "false";
+        }
 
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
         {
@@ -240,6 +261,10 @@ public sealed class ConditionalTest : ITestInfo
         if (platform.HasFlag(Xunit.TestPlatforms.Browser))
         {
             platformCheckConditions.Add("global::System.OperatingSystem.IsBrowser()");
+        }
+        if (platform.HasFlag(Xunit.TestPlatforms.Wasi))
+        {
+            platformCheckConditions.Add("global::System.OperatingSystem.IsWasi()");
         }
         if (platform.HasFlag(Xunit.TestPlatforms.FreeBSD))
         {
@@ -491,8 +516,6 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($"string reason = {_filterLocalIdentifier}"
-                             + $".GetTestExclusionReason({test.TestNameExpression});");
             builder.AppendLine(GenerateSkippedTestReporting(test));
         }
         return builder;
@@ -505,7 +528,7 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
              + $" \"{skippedTest.ContainingType}\","
              + $" @\"{skippedTest.Method}\","
              + $" System.TimeSpan.Zero,"
-             + $" reason,"
+             + $" string.Empty,"
              + $" tempLogSw,"
              + $" statsCsvSw);";
     }

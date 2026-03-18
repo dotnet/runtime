@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime;
+using Xunit;
+using TestLibrary;
 
 //Testing what GC Latency Modes can be set, depending on what is the original GC setting
 public class InputValidation
@@ -12,7 +14,9 @@ public class InputValidation
     static bool server = false;
     static bool nonConcurrent = false;
 
-    public static int Main()
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/46666", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Detect on what config we are running
         if (!DetectInitialMode())

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Numerics.Tensors;
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
@@ -93,7 +92,7 @@ namespace System.Numerics.Tensors.Tests
             return null;
         }
 
-#if NETCOREAPP
+#if NET
         public delegate void AssertThrowsAction<T>(TensorSpan<T> span);
 
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.

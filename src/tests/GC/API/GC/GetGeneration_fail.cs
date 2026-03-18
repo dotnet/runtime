@@ -4,10 +4,14 @@
 // Tests GC.GetGeneration(null)..should throw exception: System.ArgumentNullException
 
 using System;
+using Xunit;
+using TestLibrary;
 
 public class Test_GetGeneration_fail
 {
-    public static int Main()
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint()
     {
         Object obj1 = new Object();
 

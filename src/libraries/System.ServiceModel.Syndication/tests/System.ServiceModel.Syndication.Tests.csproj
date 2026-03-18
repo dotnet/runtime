@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicScenarioTests.cs" />
@@ -11,6 +11,7 @@
     <Compile Include="System\ServiceModel\Syndication\SyndicationFeedFormatterTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationItemFormatterTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationFeedTests.cs" />
+    <Compile Include="System\ServiceModel\Syndication\Rfc822DateParsingTests.cs" />
     <Compile Include="Utils\CompareHelper.cs" />
     <Compile Include="Utils\ThrowingXmlReader.cs" />
     <Compile Include="Utils\XmlDiff.cs" />

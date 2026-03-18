@@ -329,11 +329,11 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
     GCPROTECT_BEGIN(pEventItfObj)
     GCPROTECT_BEGIN(pTCEProviderObj)
     {
-        // Create a COM+ object ref to wrap the event interface.
+        // Create a CLR object ref to wrap the event interface.
         GetObjectRefFromComIP((OBJECTREF*)&pEventItfObj, pUnk, NULL);
         IfNullThrow(pEventItfObj);
 
-        // Get the TCE provider COM+ object from the wrapper
+        // Get the TCE provider CLR object from the wrapper
         pTCEProviderObj = m_pOwnerWrap->GetObjectRef();
 
         for (int cEventMethod = 0; cEventMethod < m_NumEventMethods; cEventMethod++)
@@ -381,7 +381,7 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
         // The cookie is actually a connection cookie.
         ConnectionCookieHolder pConCookie = FindWithLock(dwCookie);
 
-        // Retrieve the COM+ object from the cookie which in fact is the object handle.
+        // Retrieve the CLR object from the cookie which in fact is the object handle.
         pEventItfObj = (COMOBJECTREF) ObjectFromHandle(pConCookie->m_hndEventProvObj);
         if (!pEventItfObj)
             COMPlusThrowHR(E_INVALIDARG);

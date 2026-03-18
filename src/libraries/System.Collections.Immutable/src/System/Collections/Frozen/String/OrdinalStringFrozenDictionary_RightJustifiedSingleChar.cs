@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Frozen
 {
-    internal sealed class OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue> : OrdinalStringFrozenDictionary<TValue>
+    internal sealed partial class OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue> : OrdinalStringFrozenDictionary<TValue>
     {
         internal OrdinalStringFrozenDictionary_RightJustifiedSingleChar(
             string[] keys,
@@ -20,7 +20,6 @@ namespace System.Collections.Frozen
 
         // See comment in OrdinalStringFrozenDictionary for why these overrides exist. Do not remove.
         private protected override ref readonly TValue GetValueRefOrNullRefCore(string key) => ref base.GetValueRefOrNullRefCore(key);
-        private protected override ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key) => ref base.GetValueRefOrNullRefCore(key);
 
         private protected override bool Equals(string? x, string? y) => string.Equals(x, y);
         private protected override bool Equals(ReadOnlySpan<char> x, string? y) => x.SequenceEqual(y.AsSpan());

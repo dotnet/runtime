@@ -21,6 +21,7 @@ internal static partial class Interop
             EAI_BADARG = 6,     // One or more input arguments were invalid.
             EAI_NOMORE = 7,     // No more entries are present in the list.
             EAI_MEMORY = 8,     // Out of memory.
+            EAI_SYSTEM = 9,     // Other system error; errno is set to indicate the error.
         }
 
         [StructLayout(LayoutKind.Sequential)]

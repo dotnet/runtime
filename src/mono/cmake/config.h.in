@@ -260,23 +260,9 @@
 /* Define to 1 if you have the `sigaction' function. */
 #cmakedefine HAVE_SIGACTION 1
 
-/* CLOCK_MONOTONIC */
-#cmakedefine HAVE_CLOCK_MONOTONIC 1
-
-/* CLOCK_MONOTONIC_COARSE */
-#cmakedefine HAVE_CLOCK_MONOTONIC_COARSE 1
 
 /* clockid_t */
 #cmakedefine HAVE_CLOCKID_T 1
-
-/* mach_absolute_time */
-#cmakedefine HAVE_MACH_ABSOLUTE_TIME 1
-
-/* gethrtime */
-#cmakedefine HAVE_GETHRTIME 1
-
-/* read_real_time */
-#cmakedefine HAVE_READ_REAL_TIME 1
 
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1
@@ -612,6 +598,9 @@
 /* byte order of target */
 #define TARGET_BYTE_ORDER @TARGET_BYTE_ORDER@
 
+/* default stack size for managed threads */
+#define MONO_DEFAULT_STACKSIZE @MONO_DEFAULT_STACKSIZE@
+
 /* wordsize of target */
 #define TARGET_SIZEOF_VOID_P @TARGET_SIZEOF_VOID_P@
 
@@ -753,7 +742,7 @@
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
 
-/* Enable WebCIL image loader */
+/* Enable Webcil image loader */
 #cmakedefine ENABLE_WEBCIL 1
 
 /* define if clockgettime exists */

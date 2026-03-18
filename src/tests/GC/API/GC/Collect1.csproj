@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -8,5 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Collect1.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

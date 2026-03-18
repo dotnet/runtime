@@ -4,6 +4,7 @@
 // Tests KeepAlive() in try...catch...finally
 
 using System;
+using Xunit;
 
 public class Test_keepalivetry
 {
@@ -19,7 +20,8 @@ public class Test_keepalivetry
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         Dummy[] obj = new Dummy[100];

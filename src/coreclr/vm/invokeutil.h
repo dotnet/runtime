@@ -63,11 +63,6 @@ public:
     //  exception into it.
     static OBJECTREF CreateTargetExcept(OBJECTREF* except);
 
-    // This is a special purpose Exception creation function.  It
-    //  creates the ReflectionClassLoadException placing the passed
-    //  classes array and exception array into it.
-    static OBJECTREF CreateClassLoadExcept(OBJECTREF* classes,OBJECTREF* except);
-
     // Validate that the field can be widened for Set
     static void ValidField(TypeHandle th, OBJECTREF* value);
 
@@ -138,9 +133,9 @@ public:
     // SetValidField
     // Given an target object, a value object and a field this method will set the field
     //  on the target object.  The field must be validate before calling this.
-    static void SetValidField(CorElementType fldType, TypeHandle fldTH, FieldDesc* pField, OBJECTREF* target, OBJECTREF* value, TypeHandle declaringType, CLR_BOOL *pIsClassInitialized);
+    static void SetValidField(CorElementType fldType, TypeHandle fldTH, FieldDesc* pField, OBJECTREF* target, OBJECTREF* value, TypeHandle declaringType, BOOL *pIsClassInitialized);
 
-    static OBJECTREF GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pIsClassInitialized);
+    static OBJECTREF GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, BOOL *pIsClassInitialized);
 
     // ValidateObjectTarget
     // This method will validate the Object/Target relationship

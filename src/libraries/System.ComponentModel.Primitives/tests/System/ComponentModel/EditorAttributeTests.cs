@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
         [InlineData("", null)]
         [InlineData("typeName", "")]
         [InlineData("typeName.dll", "baseTypeName")]
-        public void Ctor_String_String(string typeName, string baseTypeName)
+        public void Ctor_String_String(string typeName, string? baseTypeName)
         {
             var attribute = new EditorAttribute(typeName, baseTypeName);
             Assert.Equal(typeName, attribute.EditorTypeName);

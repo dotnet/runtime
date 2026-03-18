@@ -71,25 +71,21 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
         return;
     }
 
-    let port: MessagePort;
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
     worker.info = Object.assign({}, worker.info, message.info);
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
             // this one shot port from setupPreloadChannelToMainThread
-            port = message.port!;
-            port.postMessage({
+            message.port!.postMessage({
                 type: "pthread",
                 cmd: MainToWorkerMessageType.applyConfig,
                 config: JSON.stringify(runtimeHelpers.config),
                 monoThreadInfo: JSON.stringify(worker.info),
             });
-            port.close();
             break;
         case WorkerToMainMessageType.pthreadCreated:
-            port = message.port!;
-            thread = new ThreadImpl(pthreadId, worker, port);
+            thread = new ThreadImpl(pthreadId, worker, message.port!);
             worker.thread = thread;
             worker.info.isRunning = true;
             resolveThreadPromises(pthreadId, thread);

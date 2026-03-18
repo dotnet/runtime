@@ -468,6 +468,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	if (offset + size > image->raw_data_len)
 		return FALSE;
 	image->raw_metadata = image->raw_data + offset;
+	image->raw_metadata_len = size;
 
 	/* 24.2.1: Metadata root starts here */
 	ptr = image->raw_metadata;

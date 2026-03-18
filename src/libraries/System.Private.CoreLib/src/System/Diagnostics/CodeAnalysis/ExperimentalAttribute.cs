@@ -50,6 +50,15 @@ namespace System.Diagnostics.CodeAnalysis
         public string DiagnosticId { get; }
 
         /// <summary>
+        ///  Gets or sets an optional message associated with the experimental attribute.
+        /// </summary>
+        /// <value>The message that provides additional information about the experimental feature.</value>
+        /// <remarks>
+        ///  This message can be used to provide more context or guidance about the experimental feature.
+        /// </remarks>
+        public string? Message { get; set; }
+
+        /// <summary>
         ///  Gets or sets the URL for corresponding documentation.
         ///  The API accepts a format string instead of an actual URL, creating a generic URL that includes the diagnostic ID.
         /// </summary>

@@ -104,7 +104,7 @@ namespace System.Linq
                     return new List<TSource>(1) { _item };
                 }
 
-                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
+                List<TSource> list = count == -1 ? [] : new List<TSource>(count);
                 if (!_appending)
                 {
                     list.Add(_item);
@@ -124,10 +124,10 @@ namespace System.Linq
                 if (_source is Iterator<TSource> iterator)
                 {
                     int count = iterator.GetCount(onlyIfCheap);
-                    return count == -1 ? -1 : count + 1;
+                    return count == -1 ? -1 : checked(count + 1);
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + 1 : -1;
+                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + 1) : -1;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -176,6 +176,10 @@ namespace System.Linq
 
                 return base.TryGetElementAt(index, out found);
             }
+
+            public override bool Contains(TSource value) =>
+                EqualityComparer<TSource>.Default.Equals(_item, value) ||
+                _source.Contains(value);
         }
 
         private sealed partial class AppendPrependN<TSource>
@@ -257,7 +261,7 @@ namespace System.Linq
             public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
-                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
+                List<TSource> list = count == -1 ? [] : new List<TSource>(count);
 
                 _prepended?.Fill(SetCountAndGetSpan(list, _prependCount));
 
@@ -273,10 +277,26 @@ namespace System.Linq
                 if (_source is Iterator<TSource> iterator)
                 {
                     int count = iterator.GetCount(onlyIfCheap);
-                    return count == -1 ? -1 : count + _appendCount + _prependCount;
+                    return count == -1 ? -1 : checked(count + _appendCount + _prependCount);
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + _appendCount + _prependCount : -1;
+                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + _appendCount + _prependCount) : -1;
+            }
+
+            public override bool Contains(TSource value)
+            {
+                foreach (SingleLinkedNode<TSource>? head in (ReadOnlySpan<SingleLinkedNode<TSource>?>)[_appended, _prepended])
+                {
+                    for (SingleLinkedNode<TSource>? node = head; node is not null; node = node.Linked)
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(node.Item, value))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return _source.Contains(value);
             }
         }
     }

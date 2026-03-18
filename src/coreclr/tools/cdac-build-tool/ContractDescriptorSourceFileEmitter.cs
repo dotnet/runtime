@@ -10,25 +10,24 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public partial class ContractDescriptorSourceFileEmitter
 {
-    public const string TemplateResourceName = "Microsoft.DotNet.Diagnostics.DataContract.Resources.contract-descriptor.c.in";
     private const string JsonDescriptorKey = "jsonDescriptor";
     private const string JsonDescriptorSizeKey = "jsonDescriptorSize";
     private const string PointerDataCount = "pointerDataCount";
     private const string PlatformFlags = "platformFlags";
 
+    private readonly string _templateFilePath;
 
-    [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
-    private static partial Regex FindTemplatePlaceholderRegex();
-
-    internal static Stream GetTemplateStream()
+    public ContractDescriptorSourceFileEmitter(string templateFilePath)
     {
-        return typeof(ContractDescriptorSourceFileEmitter).Assembly.GetManifestResourceStream(TemplateResourceName)!;
+        _templateFilePath = templateFilePath;
     }
 
-    internal static string GetTemplateString()
+    [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
+    private static partial Regex FindTemplatePlaceholderRegex { get; }
+
+    private string GetTemplateString()
     {
-        using var reader = new StreamReader(GetTemplateStream(), System.Text.Encoding.UTF8);
-        return reader.ReadToEnd();
+        return File.ReadAllText(_templateFilePath);
     }
 
     public void SetPointerDataCount(int count)
@@ -45,20 +44,20 @@ public partial class ContractDescriptorSourceFileEmitter
     public void SetJsonDescriptor(string jsonDescriptor)
     {
         var count = jsonDescriptor.Length; // return the length before escaping
-        var escaped = CStringEscape().Replace(jsonDescriptor, "\\$1");
+        var escaped = CStringEscape.Replace(jsonDescriptor, "\\$1");
         Elements[JsonDescriptorKey] = escaped;
         Elements[JsonDescriptorSizeKey] = count.ToString();
     }
 
     [GeneratedRegex("(\")", RegexOptions.CultureInvariant)]
-    private static partial Regex CStringEscape();
+    private static partial Regex CStringEscape { get; }
 
     public Dictionary<string, string> Elements { get; } = new();
 
     public void Emit(TextWriter dest)
     {
         var template = GetTemplateString();
-        var matches = FindTemplatePlaceholderRegex().Matches(template);
+        var matches = FindTemplatePlaceholderRegex.Matches(template);
         var prevPos = 0;
         foreach (Match match in matches)
         {

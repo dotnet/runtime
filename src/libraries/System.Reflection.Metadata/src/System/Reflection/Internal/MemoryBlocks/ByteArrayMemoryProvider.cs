@@ -34,12 +34,6 @@ namespace System.Reflection.Internal
             return new ByteArrayMemoryBlock(this, start, size);
         }
 
-        public override Stream GetStream(out StreamConstraints constraints)
-        {
-            constraints = new StreamConstraints(null, 0, Size);
-            return new ImmutableMemoryStream(_array);
-        }
-
         internal unsafe byte* Pointer
         {
             get

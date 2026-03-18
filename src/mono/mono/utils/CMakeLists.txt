@@ -9,7 +9,7 @@ set(utils_win32_sources
 
 if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
-    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/Zi>)      # enable debugging information
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/Zi>)  # enable debugging information for ASM files
     add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/nologo>)  # Don't display the output header when building asm files
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
@@ -104,8 +104,6 @@ set(utils_common_sources
     mono-stack-unwinding.h
     hazard-pointer.c
     hazard-pointer.h
-    lifo-semaphore.c
-    lifo-semaphore.h
     lock-free-queue.c
     lock-free-queue.h
     lock-free-alloc.c
@@ -141,8 +139,6 @@ set(utils_common_sources
     mono-tls.h
     mono-tls-inline.h
     mono-tls.c
-    mono-utils-debug.c
-    mono-utils-debug.h
     mono-memory-model.h
     atomic.h
     atomic.c
@@ -157,9 +153,6 @@ set(utils_common_sources
     mono-conc-hashtable.c
     json.h
     json.c
-    mono-rand.c
-    mono-rand-windows.c
-    mono-rand.h
     memfuncs.c
     memfuncs.h
     parse.c
@@ -206,7 +199,7 @@ set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c;mono-wasm-pagemgr.c")
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 elseif(TARGET_WASI)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)
@@ -216,12 +209,6 @@ else()
 endif()
 
 set(utils_sources "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
-
-set(utils_sources
-    ${utils_sources}
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
 
 if(ENABLE_DTRACE)
     find_program(DTRACE dtrace)

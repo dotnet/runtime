@@ -37,28 +37,5 @@ namespace Internal.LowLevelLinq
                     yield return value;
             }
         }
-
-        public static IEnumerable<T> AsEnumerable<T>(this IEnumerable<T> source)
-        {
-            Debug.Assert(source != null);
-            return source;
-        }
-
-        public static int Count<T>(this IEnumerable<T> enumeration)
-        {
-            Debug.Assert(enumeration != null);
-
-            var collection = enumeration as ICollection<T>;
-            if (collection != null)
-                return collection.Count;
-
-            int i = 0;
-            foreach (T element in enumeration)
-            {
-                i++;
-            }
-
-            return i;
-        }
     }
 }

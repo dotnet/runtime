@@ -100,6 +100,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithObjectISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithObjectIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringArray))]
         [JsonSerializable(typeof(TestClassWithGenericList))]
         [JsonSerializable(typeof(TestClassWithGenericIEnumerable))]
@@ -111,6 +116,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithGenericISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithGenericIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringToPrimitiveDictionary))]
         [JsonSerializable(typeof(TestClassWithObjectIEnumerableConstructibleTypes))]
         [JsonSerializable(typeof(TestClassWithObjectImmutableTypes))]
@@ -135,6 +145,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LinkedList<object[]>))]
         [JsonSerializable(typeof(LinkedList<Base[]>))]
         [JsonSerializable(typeof(LinkedList<Base[][]>))]
+        [JsonSerializable(typeof(ClassWithConflictingRefProperty))]
+        [JsonSerializable(typeof(ClassWithConflictingIdProperty))]
+        [JsonSerializable(typeof(ClassWithIgnoredConflictingProperty))]
+        [JsonSerializable(typeof(ClassWithExtensionDataConflictingProperty))]
+        [JsonSerializable(typeof(EmployeeLocation))]
+        [JsonSerializable(typeof(EmployeeLocation[]))]
+        [JsonSerializable(typeof(OfficeWorker))]
+        [JsonSerializable(typeof(Office))]
+        [JsonSerializable(typeof(RemoteWorker))]
         internal sealed partial class ReferenceHandlerTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -238,6 +257,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithObjectISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithObjectIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringArray))]
         [JsonSerializable(typeof(TestClassWithGenericList))]
         [JsonSerializable(typeof(TestClassWithGenericIEnumerable))]
@@ -249,6 +273,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithGenericISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithGenericIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringToPrimitiveDictionary))]
         [JsonSerializable(typeof(TestClassWithObjectIEnumerableConstructibleTypes))]
         [JsonSerializable(typeof(TestClassWithObjectImmutableTypes))]
@@ -273,6 +302,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LinkedList<object[]>))]
         [JsonSerializable(typeof(LinkedList<Base[]>))]
         [JsonSerializable(typeof(LinkedList<Base[][]>))]
+        [JsonSerializable(typeof(ClassWithConflictingRefProperty))]
+        [JsonSerializable(typeof(ClassWithConflictingIdProperty))]
+        [JsonSerializable(typeof(ClassWithIgnoredConflictingProperty))]
+        [JsonSerializable(typeof(ClassWithExtensionDataConflictingProperty))]
+        [JsonSerializable(typeof(EmployeeLocation))]
+        [JsonSerializable(typeof(EmployeeLocation[]))]
+        [JsonSerializable(typeof(OfficeWorker))]
+        [JsonSerializable(typeof(Office))]
+        [JsonSerializable(typeof(RemoteWorker))]
         internal sealed partial class ReferenceHandlerTestsContext_Default : JsonSerializerContext
         {
         }

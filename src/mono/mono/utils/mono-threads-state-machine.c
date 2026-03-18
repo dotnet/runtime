@@ -737,7 +737,7 @@ retry_state_change:
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in state RUNNING with DO_BLOCKING");
 		if (thread_state_cas (&info->thread_state, build_thread_state (STATE_BLOCKING, suspend_count, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("DO_BLOCKING", info, raw_state, STATE_BLOCKING, no_safepoints, 0);
+		trace_state_change_with_func ("DO_BLOCKING", info, raw_state, STATE_BLOCKING, no_safepoints, 0, func);
 		return DoBlockingContinue;
 
 	case STATE_ASYNC_SUSPEND_REQUESTED:
@@ -745,7 +745,7 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in state ASYNC_SUSPEND_REQUESTED with DO_BLOCKING");
-		trace_state_change ("DO_BLOCKING", info, raw_state, cur_state, no_safepoints, 0);
+		trace_state_change_with_func ("DO_BLOCKING", info, raw_state, cur_state, no_safepoints, 0, func);
 		return DoBlockingPollAndRetry;
 /*
 STATE_ASYNC_SUSPENDED

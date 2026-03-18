@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public abstract class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
+    public abstract partial class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly Stream Null = new NullStream();
 
@@ -216,15 +216,16 @@ namespace System.IO
             // thread if it does a second IO request until the first one completes.
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task? semaphoreTask = null;
-            if (serializeAsynchronously)
+
+            // The synchronous path is emulating legacy behavior.
+            // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync();
             }
             else
             {
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44543
                 semaphore.Wait();
-#pragma warning restore CA1416
             }
 
             // Create the task to asynchronously do a Read.  This task serves both
@@ -447,14 +448,6 @@ namespace System.IO
             return totalRead;
         }
 
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool HasOverriddenBeginEndRead();
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool HasOverriddenBeginEndWrite();
-
         private Task<int> BeginEndReadAsync(byte[] buffer, int offset, int count)
         {
             if (!HasOverriddenBeginEndRead())
@@ -498,15 +491,16 @@ namespace System.IO
             // thread if it does a second IO request until the first one completes.
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task? semaphoreTask = null;
-            if (serializeAsynchronously)
+
+            // The synchronous path is emulating legacy behavior.
+            // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync(); // kick off the asynchronous wait, but don't block
             }
             else
             {
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44543
-                semaphore.Wait(); // synchronously wait here
-#pragma warning restore CA1416
+                semaphore.Wait();
             }
 
             // Create the task to asynchronously do a Write.  This task serves both

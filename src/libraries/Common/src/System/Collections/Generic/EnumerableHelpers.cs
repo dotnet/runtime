@@ -16,7 +16,7 @@ namespace System.Collections.Generic
 
         /// <summary>Gets an enumerator singleton for an empty collection.</summary>
         internal static IEnumerator<T> GetEmptyEnumerator<T>() =>
-            ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator();
+            ((IEnumerable<T>)[]).GetEnumerator();
 
         /// <summary>Converts an enumerable to an array using the same logic as List{T}.</summary>
         /// <param name="source">The enumerable to convert.</param>
@@ -29,7 +29,7 @@ namespace System.Collections.Generic
         {
             // Copied from Array.MaxLength in System.Private.CoreLib/src/libraries/System.Private.CoreLib/src/System/Array.cs
             const int ArrayMaxLength = 0X7FFFFFC7;
-#if NET6_0_OR_GREATER
+#if NET
             Debug.Assert(Array.MaxLength == ArrayMaxLength);
 #endif
             if (source is ICollection<T> ic)
@@ -89,7 +89,7 @@ namespace System.Collections.Generic
             }
 
             length = 0;
-            return Array.Empty<T>();
+            return [];
         }
     }
 }

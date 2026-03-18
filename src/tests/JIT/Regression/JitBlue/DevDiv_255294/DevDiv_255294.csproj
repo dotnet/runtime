@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for JitOptimizationSensitive -->
+    <CrossGenTest>false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/85663 -->
+    <!-- Needed for JitOptimizationSensitive and NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- Takes too long and there's little value -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <Optimize>True</Optimize>
@@ -11,5 +14,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

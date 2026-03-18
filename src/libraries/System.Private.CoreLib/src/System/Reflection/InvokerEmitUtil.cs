@@ -16,7 +16,7 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, Span<object?> arguments);
         internal delegate object? InvokeFunc_Obj4Args(object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
 
-        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
+        public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -83,7 +83,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method, bool backwardsCompat)
+        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method, bool backwardsCompat)
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -140,7 +140,7 @@ namespace System.Reflection
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat)
+        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat)
         {
             Debug.Assert(!method.ContainsGenericParameters);
 

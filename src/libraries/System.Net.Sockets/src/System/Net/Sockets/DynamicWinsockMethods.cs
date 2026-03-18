@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -11,28 +10,45 @@ namespace System.Net.Sockets
 {
     internal sealed class DynamicWinsockMethods
     {
-        // In practice there will never be more than four of these, so its not worth a complicated
-        // hash table structure.  Store them in a list and search through it.
-        private static readonly List<DynamicWinsockMethods> s_methodTable = new List<DynamicWinsockMethods>();
+        // In practice there will rarely be more than four of these, so it's not worth a complicated
+        // hash table structure. Store them in an array and search through it. The array is replaced
+        // copy-on-write under s_methodTableLock, so reads always see a consistent, immutable snapshot.
+        private static DynamicWinsockMethods[] s_methodTable = [];
+        private static readonly Lock s_methodTableLock = new();
+
+        private bool Matches(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType) =>
+            _addressFamily == addressFamily && _socketType == socketType && _protocolType == protocolType;
 
         public static DynamicWinsockMethods GetMethods(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
-            lock (s_methodTable)
+            foreach (DynamicWinsockMethods methods in s_methodTable)
             {
-                DynamicWinsockMethods methods;
-
-                for (int i = 0; i < s_methodTable.Count; i++)
+                if (methods.Matches(addressFamily, socketType, protocolType))
                 {
-                    methods = s_methodTable[i];
-                    if (methods._addressFamily == addressFamily && methods._socketType == socketType && methods._protocolType == protocolType)
+                    return methods;
+                }
+            }
+
+            return GetMethodsSlow(addressFamily, socketType, protocolType);
+        }
+
+        private static DynamicWinsockMethods GetMethodsSlow(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        {
+            lock (s_methodTableLock)
+            {
+                DynamicWinsockMethods[] methodTable = s_methodTable;
+                foreach (DynamicWinsockMethods methods in methodTable)
+                {
+                    if (methods.Matches(addressFamily, socketType, protocolType))
                     {
                         return methods;
                     }
                 }
 
-                methods = new DynamicWinsockMethods(addressFamily, socketType, protocolType);
-                s_methodTable.Add(methods);
-                return methods;
+                var newMethods = new DynamicWinsockMethods(addressFamily, socketType, protocolType);
+                s_methodTable = [.. methodTable, newMethods];
+
+                return newMethods;
             }
         }
 
@@ -86,7 +102,7 @@ namespace System.Net.Sockets
         internal unsafe AcceptExDelegate GetAcceptExDelegate(SafeSocketHandle socketHandle)
             => _acceptEx ?? CreateDelegate(ptr => new SocketDelegateHelper(ptr).AcceptEx, ref _acceptEx, socketHandle, "b5367df1cbac11cf95ca00805f48a192");
 
-        internal unsafe GetAcceptExSockaddrsDelegate GetGetAcceptExSockaddrsDelegate(SafeSocketHandle socketHandle)
+        internal GetAcceptExSockaddrsDelegate GetGetAcceptExSockaddrsDelegate(SafeSocketHandle socketHandle)
             => _getAcceptExSockaddrs ?? CreateDelegate<GetAcceptExSockaddrsDelegate>(ptr => new SocketDelegateHelper(ptr).GetAcceptExSockaddrs, ref _getAcceptExSockaddrs, socketHandle, "b5367df2cbac11cf95ca00805f48a192");
 
         internal unsafe ConnectExDelegate GetConnectExDelegate(SafeSocketHandle socketHandle)

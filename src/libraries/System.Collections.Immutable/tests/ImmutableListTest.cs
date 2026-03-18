@@ -206,7 +206,7 @@ namespace System.Collections.Immutable.Tests
 
             Assert.Equal(Enumerable.Range(1, expectedTotalSize), list);
 
-            list.Root.VerifyHeightIsWithinTolerance();
+            list.GetBinaryTreeProxy().VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
@@ -235,10 +235,10 @@ namespace System.Collections.Immutable.Tests
                 list.InsertRange(startPosition, values);
 
                 Assert.Equal(list, immutableList);
-                immutableList.Root.VerifyBalanced();
+                immutableList.GetBinaryTreeProxy().VerifyBalanced();
             }
 
-            immutableList.Root.VerifyHeightIsWithinTolerance();
+            immutableList.GetBinaryTreeProxy().VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
@@ -520,6 +520,31 @@ namespace System.Collections.Immutable.Tests
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
+        }
+
+        [Fact]
+        public void LastIndexOfMultipleMatches()
+        {
+            ImmutableList<string> list = ImmutableList.Create("NonMatch", "Match", "Match", "NonMatch");
+            Assert.Equal(2, list.LastIndexOf("Match", index: 3, count: 4, equalityComparer: null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf("Match", index: 4, count: 4, equalityComparer: null));
+        }
+
+        [Fact]
+        public void LastIndexOfConsistentWithImmutableArray()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf(1, list.Count, 1, equalityComparer: null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => array.LastIndexOf(1, array.Length, 1, equalityComparer: null));
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                int listResult = list.LastIndexOf(list[i], list.Count - 1, list.Count, equalityComparer: null);
+                int arrayResult = array.LastIndexOf(array[i], array.Length - 1, array.Length, equalityComparer: null);
+                Assert.Equal(arrayResult, listResult);
+            }
         }
 
         [Fact]
@@ -879,14 +904,14 @@ namespace System.Collections.Immutable.Tests
             return list.Sort(index, count, comparer).ToList();
         }
 
-        internal override IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
+        internal override ImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
         {
-            return list;
+            return new ImmutableListQuery<T>(list);
         }
 
         private static void VerifyBalanced<T>(ImmutableList<T> tree)
         {
-            tree.Root.VerifyBalanced();
+            tree.GetBinaryTreeProxy().VerifyBalanced();
         }
 
         private struct Person
@@ -906,6 +931,30 @@ namespace System.Collections.Immutable.Tests
             {
                 return obj.Name.GetHashCode();
             }
+        }
+
+        private sealed class ImmutableListQuery<T>(ImmutableList<T> list) : ImmutableListQueries<T>(list)
+        {
+            public override int BinarySearch(T item) => list.BinarySearch(item);
+            public override int BinarySearch(T item, IComparer<T>? comparer) => list.BinarySearch(item, comparer);
+            public override int BinarySearch(int index, int count, T item, IComparer<T>? comparer) => list.BinarySearch(index, count, item, comparer);
+            public override ImmutableList<TOutput> ConvertAll<TOutput>(Func<T, TOutput> converter) => list.ConvertAll(converter);
+            public override void CopyTo(T[] array) => list.CopyTo(array);
+            public override void CopyTo(T[] array, int arrayIndex) => list.CopyTo(array, arrayIndex);
+            public override void CopyTo(int index, T[] array, int arrayIndex, int count) => list.CopyTo(index, array, arrayIndex, count);
+            public override bool Exists(Predicate<T> match) => list.Exists(match);
+            public override T? Find(Predicate<T> match) => list.Find(match);
+            public override ImmutableList<T> FindAll(Predicate<T> match) => list.FindAll(match);
+            public override int FindIndex(Predicate<T> match) => list.FindIndex(match);
+            public override int FindIndex(int startIndex, Predicate<T> match) => list.FindIndex(startIndex, match);
+            public override int FindIndex(int startIndex, int count, Predicate<T> match) => list.FindIndex(startIndex, count, match);
+            public override T? FindLast(Predicate<T> match) => list.FindLast(match);
+            public override int FindLastIndex(Predicate<T> match) => list.FindLastIndex(match);
+            public override int FindLastIndex(int startIndex, Predicate<T> match) => list.FindLastIndex(startIndex, match);
+            public override int FindLastIndex(int startIndex, int count, Predicate<T> match) => list.FindLastIndex(startIndex, count, match);
+            public override void ForEach(Action<T> action) => list.ForEach(action);
+            public override ImmutableList<T> GetRange(int index, int count) => list.GetRange(index, count);
+            public override bool TrueForAll(Predicate<T> match) => list.TrueForAll(match);
         }
     }
 }

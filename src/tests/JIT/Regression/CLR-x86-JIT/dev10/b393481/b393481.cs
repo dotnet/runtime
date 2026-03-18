@@ -16,6 +16,7 @@ namespace TestAnonymousTypes
 
     public class Program
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

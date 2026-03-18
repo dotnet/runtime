@@ -65,6 +65,10 @@ struct EEHashTableIteration;
 
 class GCHeap;
 
+// Bucket array allocation helpers for EEHashTable.
+EEHashEntry_t** AllocateEEHashBuckets(DWORD dwNumBuckets);
+void FreeEEHashBuckets(EEHashEntry_t** pBuckets);
+
 // Generic hash table.
 
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
@@ -94,7 +98,7 @@ public:
     // A fast inlinable flavor of GetValue that can return false instead of the actual item
     // if there is race with updating of the hashtable. Callers of GetValueSpeculative
     // should fall back to the slow GetValue if GetValueSpeculative returns false.
-    // Assumes that we are in cooperative mode already. For performance-sensitive codepaths.
+    // Uses EBR internally for safe concurrent access. For performance-sensitive codepaths.
     BOOL            GetValueSpeculative(KeyType pKey, HashDatum *pData);
     BOOL            GetValueSpeculative(KeyType pKey, HashDatum *pData, DWORD hashValue);
 
@@ -140,7 +144,7 @@ protected:
     // A fast inlinable flavor of FindItem that can return null instead of the actual item
     // if there is race with updating of the hashtable. Callers of FindItemSpeculative
     // should fall back to the slow FindItem if FindItemSpeculative returns null.
-    // Assumes that we are in cooperative mode already. For performance-sensitive codepaths.
+    // Uses EBR internally for safe concurrent access. For performance-sensitive codepaths.
     EEHashEntry_t * FindItemSpeculative(KeyType pKey, DWORD hashValue);
 
     // Double buffer to fix the race condition of growhashtable (the update
@@ -349,21 +353,6 @@ public:
 };
 
 typedef EEHashTable<PtrPlusInt, EEPtrPlusIntHashTableHelper, FALSE> EEPtrPlusIntHashTable;
-
-// UTF8 string hash table. The UTF8 strings are NULL terminated.
-
-class EEUtf8HashTableHelper
-{
-public:
-    static EEHashEntry_t * AllocateEntry(LPCUTF8 pKey, BOOL bDeepCopy, AllocationHeap Heap);
-    static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t *pEntry, LPCUTF8 pKey);
-    static DWORD           Hash(LPCUTF8 pKey);
-    static LPCUTF8         GetKey(EEHashEntry_t *pEntry);
-};
-
-typedef EEHashTable<LPCUTF8, EEUtf8HashTableHelper, TRUE> EEUtf8StringHashTable;
-typedef DPTR(EEUtf8StringHashTable) PTR_EEUtf8StringHashTable;
 
 // Unicode String hash table - the keys are UNICODE strings which may
 // contain embedded nulls.  An EEStringData struct is used for the key

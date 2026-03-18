@@ -78,6 +78,16 @@ namespace Internal.TypeSystem
             /// True if the type transitively has a Vector<T> in it or is Vector<T>
             /// </summary>
             public const int IsVectorTOrHasVectorTFields = 0x1000;
+
+            /// <summary>
+            /// True if ContainsByRefs has been computed
+            /// </summary>
+            public const int ComputedContainsByRefs = 0x2000;
+
+            /// <summary>
+            /// True if the type contains byrefs
+            /// </summary>
+            public const int ContainsByRefs = 0x4000;
         }
 
         private sealed class StaticBlockInfo
@@ -110,6 +120,21 @@ namespace Internal.TypeSystem
                     ComputeTypeContainsGCPointers();
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsGCPointers);
+            }
+        }
+
+        /// <summary>
+        /// Does a type transitively have any fields which are byrefs
+        /// </summary>
+        public bool ContainsByRefs
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsByRefs))
+                {
+                    ComputeTypeContainsByRefs();
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsByRefs);
             }
         }
 
@@ -540,6 +565,20 @@ namespace Internal.TypeSystem
             if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsGCPointers(this))
             {
                 flagsToAdd |= FieldLayoutFlags.ContainsGCPointers;
+            }
+
+            _fieldLayoutFlags.AddFlags(flagsToAdd);
+        }
+
+        public void ComputeTypeContainsByRefs()
+        {
+            if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsByRefs))
+                return;
+
+            int flagsToAdd = FieldLayoutFlags.ComputedContainsByRefs;
+            if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsByRefs(this))
+            {
+                flagsToAdd |= FieldLayoutFlags.ContainsByRefs;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);

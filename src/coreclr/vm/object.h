@@ -3,7 +3,7 @@
 //
 // OBJECT.H
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 // See code:EEStartup#TableOfContents for overview
@@ -15,7 +15,6 @@
 #include "util.hpp"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "sstring.h"
 #include "daccess.h"
 #include "fcall.h"
@@ -26,34 +25,33 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 /*
  #ObjectModel
- * COM+ Internal Object Model
+ * CLR Internal Object Model
  *
  *
- * Object              - This is the common base part to all COM+ objects
+ * Object              - This is the common base part to all CLR objects
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
- *  +-- code:StringObject       - String objects are specialized objects for string
+ *  +-- StringObject       - String objects are specialized objects for string
  *  |                        storage/retrieval for higher performance (UCS-2 / UTF-16 data)
  *  |
- *  +-- code:Utf8StringObject       - String objects are specialized objects for string
- *  |                        storage/retrieval for higher performance (UTF-8 data)
+ *  +-- ReflectClassBaseObject    - The base object for the RuntimeType class
  *  |
- *  +-- BaseObjectWithCachedData - Object Plus one object field for caching.
- *  |       |
- *  |            +-  ReflectClassBaseObject    - The base object for the RuntimeType class
- *  |            +-  ReflectMethodObject       - The base object for the RuntimeMethodInfo class
- *  |            +-  ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  +-- ReflectMethodObject       - The base object for the RuntimeMethodInfo class
  *  |
- *  +-- code:ArrayBase          - Base portion of all arrays
+ *  +-- ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  |
+ *  +-- ArrayBase          - Base portion of all arrays
  *  |       |
- *  |       +-  I1Array    - Base type arrays
+ *  |       +-  I1Array    - Base type SZ arrays
  *  |       |   I2Array
  *  |       |   ...
  *  |       |
- *  |       +-  PtrArray   - Array of OBJECTREFs, different than base arrays because of pObjectClass
+ *  |       +-  PtrArray   - SZ Array of OBJECTREFs, different than base arrays because of pObjectClass
  *  |
- *  +-- code:AssemblyBaseObject - The base object for the class Assembly
+ *  +-- AssemblyBaseObject - The base object for the class Assembly
+ *  |
+ *  |   ...
  *
  *
  * PLEASE NOTE THE FOLLOWING WHEN ADDING A NEW OBJECT TYPE:
@@ -77,7 +75,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 class MethodTable;
 class Thread;
-class BaseDomain;
 class Assembly;
 class DomainAssembly;
 class AssemblyNative;
@@ -128,6 +125,8 @@ struct RCW;
 //
 class Object
 {
+    friend class CheckAsmOffsets;
+
   protected:
     PTR_MethodTable m_pMethTab;
 
@@ -265,90 +264,10 @@ class Object
     static DWORD ComputeHashCode();
     static DWORD GetGlobalNewHashCode();
 
+    inline INT32 TryGetHashCode();
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
-
-    // Synchronization
-#ifndef DACCESS_COMPILE
-
-    void EnterObjMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->EnterObjMonitor();
-    }
-
-    BOOL TryEnterObjMonitor(INT32 timeOut = 0)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->TryEnterObjMonitor(timeOut);
-    }
-
-    bool TryEnterObjMonitorSpinHelper();
-
-    FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelper(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->EnterObjMonitorHelper(pCurThread);
-    }
-
-    FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelperSpin(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->EnterObjMonitorHelperSpin(pCurThread);
-    }
-
-    BOOL LeaveObjMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitor();
-    }
-
-    // should be called only from unwind code; used in the
-    // case where EnterObjMonitor failed to allocate the
-    // sync-object.
-    BOOL LeaveObjMonitorAtException()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitorAtException();
-    }
-
-    FORCEINLINE AwareLock::LeaveHelperAction LeaveObjMonitorHelper(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitorHelper(pCurThread);
-    }
-
-    // Returns TRUE if the lock is owned and FALSE otherwise
-    // threadId is set to the ID (Thread::GetThreadId()) of the thread which owns the lock
-    // acquisitionCount is set to the number of times the lock needs to be released before
-    // it is unowned
-    BOOL GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisitionCount)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        return GetHeader()->GetThreadOwningMonitorLock(pThreadId, pAcquisitionCount);
-    }
-
-#endif // #ifndef DACCESS_COMPILE
-
-    BOOL Wait(INT32 timeOut)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->Wait(timeOut);
-    }
-
-    void Pulse()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->Pulse();
-    }
-
-    void PulseAll()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->PulseAll();
-    }
 
    PTR_VOID UnBox();      // if it is a value class, get the pointer to the first field
 
@@ -463,7 +382,7 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Object>;
 };
 
 template<>
@@ -494,8 +413,8 @@ inline void ClearObjectReference(OBJECTREF* dst)
 
 // CopyValueClass sets a value class field
 
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
+void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
+void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -513,7 +432,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 #include <pshpack4.h>
 
 
-// There are two basic kinds of array layouts in COM+
+// There are two basic kinds of array layouts in CLR
 //      ELEMENT_TYPE_ARRAY  - a multidimensional array with lower bounds on the dims
 //      ELMENNT_TYPE_SZARRAY - A zero based single dimensional array
 //
@@ -532,9 +451,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
-    friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-    friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
@@ -555,6 +471,14 @@ private:
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
+#ifndef DACCESS_COMPILE
+    void SetNumComponents(INT32 length)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_NumComponents = length;
+    }
+#endif // !DACCESS_COMPILE
+
     // Get the element type for the array, this works whether the element
     // type is stored in the array or not
     inline TypeHandle GetArrayElementTypeHandle() const;
@@ -639,7 +563,7 @@ public:
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayBase>;
 };
 
 #ifndef DACCESS_COMPILE
@@ -690,7 +614,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
@@ -908,7 +831,6 @@ class StringObject : public Object
     // characters and the null terminator you should pass in 5 and NOT 6.
     //========================================================================
     static STRINGREF NewString(int length);
-    static STRINGREF NewString(int length, BOOL bHasTrailByte);
     static STRINGREF NewString(const WCHAR *pwsz);
     static STRINGREF NewString(const WCHAR *pwsz, int length);
     static STRINGREF NewString(LPCUTF8 psz);
@@ -918,11 +840,6 @@ class StringObject : public Object
     static STRINGREF* GetEmptyStringRefPtr(void** pinnedString);
 
     static STRINGREF* InitEmptyStringRefPtr();
-
-    BOOL HasTrailByte();
-    BOOL GetTrailByte(BYTE *bTrailByte);
-    BOOL SetTrailByte(BYTE bTrailByte);
-    static BOOL CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR * strA, _In_z_ INT8 * strB, int aLength, int bLength, int *result);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This performs no range checking and relies on the caller to have done this.
@@ -951,7 +868,7 @@ private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StringObject>;
 };
 
 template<>
@@ -1012,19 +929,13 @@ inline STRINGREF* StringObject::GetEmptyStringRefPtr(void** pinnedString) {
     return refptr;
 }
 
-// This is used to account for the remoting cache on RuntimeType,
-// RuntimeMethodInfo, and RtFieldInfo.
-class BaseObjectWithCachedData : public Object
-{
-};
-
 // This is the Class version of the Reflection object.
 //  A Class has adddition information.
 //  For a ReflectClassBaseObject the m_pData is a pointer to a FieldDesc array that
 //      contains all of the final static primitives if its defined.
 //  m_cnt = the number of elements defined in the m_pData FieldDesc array.  -1 means
 //      this hasn't yet been defined.
-class ReflectClassBaseObject : public BaseObjectWithCachedData
+class ReflectClassBaseObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1104,7 +1015,7 @@ public:
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectMethodObject : public BaseObjectWithCachedData
+class ReflectMethodObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1148,7 +1059,7 @@ public:
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectFieldObject : public BaseObjectWithCachedData
+class ReflectFieldObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1219,90 +1130,43 @@ class ReflectModuleBaseObject : public Object
     }
 };
 
-NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pModule, OBJECTREF keepAlive);
-#define FC_RETURN_MODULE_OBJECT(pModule, refKeepAlive) FC_INNER_RETURN(ReflectModuleBaseObject*, GetRuntimeModuleHelper(__me, pModule, refKeepAlive))
-
-
-
-
-
 class ThreadBaseObject;
-class SynchronizationContextObject: public Object
+class ExecutionContextObject: public Object
 {
     friend class CoreLibBinder;
+
 private:
     // These field are also defined in the managed representation.  (SecurityContext.cs)If you
     // add or change these field you must also change the managed code so that
     // it matches these.  This is necessary so that the object is the proper
     // size.
-    CLR_BOOL _requireWaitNotification;
+    OBJECTREF m_localValues;
+    OBJECTREF m_localChangeNotifications;
+    CLR_BOOL m_isFlowSuppressed;
+
 public:
-    BOOL IsWaitNotificationRequired() const
+    bool IsFlowSuppressed() const
     {
         LIMITED_METHOD_CONTRACT;
-        return _requireWaitNotification;
+        return m_isFlowSuppressed;
     }
 };
-
-
-
-
 
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
-typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
-typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
+typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
-
-
-class CultureInfoBaseObject : public Object
-{
-    friend class CoreLibBinder;
-
-private:
-    OBJECTREF _compareInfo;
-    OBJECTREF _textInfo;
-    OBJECTREF _numInfo;
-    OBJECTREF _dateTimeInfo;
-    OBJECTREF _calendar;
-    OBJECTREF _cultureData;
-    OBJECTREF _consoleFallbackCulture;
-    STRINGREF _name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
-    STRINGREF _nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
-    STRINGREF _sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
-    CULTUREINFOBASEREF _parent;
-    CLR_BOOL _isReadOnly;
-    CLR_BOOL _isInherited;
-
-public:
-    CULTUREINFOBASEREF GetParent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _parent;
-    }// GetParent
-
-
-    STRINGREF GetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _name;
-    }// GetName
-
-}; // class CultureInfoBaseObject
 
 typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
-    friend class ThreadNative;
     friend class CoreLibBinder;
     friend class Object;
 
@@ -1318,6 +1182,10 @@ private:
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
     OBJECTREF     m_StartHelper;
+#ifdef TARGET_UNIX
+    OBJECTREF     m_WaitInfo;
+    OBJECTREF     m_joinEvent;
+#endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1332,6 +1200,11 @@ private:
 
     // Only used by managed code, see comment there
     bool          m_MayNeedResetForThreadPool;
+
+    // Set in unmanaged code and read in managed code.
+    bool          m_IsDead;
+
+    bool          m_IsThreadPool;
 
 protected:
     // the ctor and dtor can do no useful work.
@@ -1359,10 +1232,10 @@ public:
         return m_Name;
     }
 
-    OBJECTREF GetSynchronizationContext()
+    OBJECTREF GetExecutionContext()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_SynchronizationContext;
+        return m_ExecutionContext;
     }
 
     void      InitExisting();
@@ -1384,13 +1257,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_Priority;
     }
-};
 
-// MarshalByRefObjectBaseObject
-// This class is the base class for MarshalByRefObject
-//
-class MarshalByRefObjectBaseObject : public Object
-{
+    void SetIsDead()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_IsDead = true;
+    }
 };
 
 // AssemblyBaseObject
@@ -1408,7 +1280,7 @@ class AssemblyBaseObject : public Object
     OBJECTREF     m_pModuleEventHandler;   // Delegate for 'resolve module' event
     STRINGREF     m_fullname;              // Slot for storing assemblies fullname
     OBJECTREF     m_pSyncRoot;             // Pointer to loader allocator to keep collectible types alive, and to serve as the syncroot for assembly building in ref.emit
-    DomainAssembly* m_pAssembly;           // Pointer to the Assembly Structure
+    Assembly* m_pAssembly;                 // Pointer to the Assembly Structure
 
   protected:
     AssemblyBaseObject() { LIMITED_METHOD_CONTRACT; }
@@ -1416,16 +1288,10 @@ class AssemblyBaseObject : public Object
 
   public:
 
-    void SetAssembly(DomainAssembly* p)
+    void SetAssembly(Assembly* p)
     {
         LIMITED_METHOD_CONTRACT;
         m_pAssembly = p;
-    }
-
-    DomainAssembly* GetDomainAssembly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pAssembly;
     }
 
     Assembly* GetAssembly();
@@ -1436,8 +1302,6 @@ class AssemblyBaseObject : public Object
         SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
-#define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
@@ -1510,6 +1374,10 @@ public:
     uintptr_t m_taggedHandle;
 };
 
+
+typedef DPTR(class ContinuationObject) PTR_ContinuationObject;
+class ContinuationObject;
+
 #ifdef USE_CHECKED_OBJECTREFS
 
 typedef REF<ReflectModuleBaseObject> REFLECTMODULEBASEREF;
@@ -1527,6 +1395,10 @@ typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
+
+typedef REF<ThreadBaseObject> THREADBASEREF;
+
+typedef REF<ContinuationObject> CONTINUATIONREF;
 
 inline ARG_SLOT ObjToArgSlot(OBJECTREF objRef)
 {
@@ -1570,6 +1442,8 @@ typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
+typedef PTR_ThreadBaseObject THREADBASEREF;
+typedef PTR_ContinuationObject CONTINUATIONREF;
 
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
@@ -1586,7 +1460,6 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 #define ArgSlotToBool(s)  ((BOOL)(s))
 
 STRINGREF AllocateString(SString sstr);
-CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1595,7 +1468,7 @@ CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 //
 //
 //-------------------------------------------------------------
-class ComObject : public MarshalByRefObjectBaseObject
+class ComObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -2170,6 +2043,156 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 
 #endif // FEATURE_COLLECTIBLE_TYPES
 
+typedef DPTR(class GenericCacheStruct) PTR_GenericCacheStruct;
+class GenericCacheStruct
+{
+    friend class CoreLibBinder;
+    public:
+
+    ARRAYBASEREF GetTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _table;
+    }
+
+    int32_t CacheElementCount() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetTable()->GetNumComponents() - 1;
+    }
+
+    ARRAYBASEREF GetSentinelTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _sentinelTable;
+    }
+
+    void SetTable(ARRAYBASEREF table)
+    {
+        WRAPPER_NO_CONTRACT;
+        SetObjectReference((OBJECTREF*)&_table, (OBJECTREF)table);
+    }
+
+    void SetLastFlushSize(int32_t lastFlushSize)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _lastFlushSize = lastFlushSize;
+    }
+
+    int32_t GetInitialCacheSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _initialCacheSize;
+    }
+
+#ifdef DEBUG
+    static void ValidateLayout(MethodTable* pMTOfInstantiation);
+#endif
+
+    private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    ARRAYBASEREF _table;
+    ARRAYBASEREF _sentinelTable;
+    int32_t _lastFlushSize;
+    int32_t _initialCacheSize;
+    int32_t _maxCacheSize;
+};
+
+class ContinuationObject : public Object
+{
+    friend class CoreLibBinder;
+
+    public:
+    CorInfoContinuationFlags GetFlags() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (CorInfoContinuationFlags)Flags;
+    }
+
+    void SetFlags(CorInfoContinuationFlags flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Flags = (int32_t)flags;
+    }
+
+    void SetResumeInfo(void* resumeInfo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        ResumeInfo = resumeInfo;
+    }
+
+    void* GetResumeInfo() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ResumeInfo;
+    }
+
+    void SetState(int32_t state)
+    {
+        LIMITED_METHOD_CONTRACT;
+        State = state;
+    }
+
+    int32_t GetState() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return State;
+    }
+
+    PTR_BYTE GetResultStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION)
+        {
+            dataAddress += sizeof(void*);
+        }
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dataAddress;
+    }
+
+    PTR_OBJECTREF GetExceptionObjectStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE((GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION));
+
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
+#ifndef DACCESS_COMPILE
+    int32_t* GetFlagsAddress()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int32_t*)&Flags;
+    }
+#endif // DACCESS_COMPILE
+
+private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    CONTINUATIONREF Next;
+    void* ResumeInfo;
+    int32_t Flags;
+    int32_t State;
+};
+
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;
 #include "pshpack4.h"
@@ -2216,7 +2239,19 @@ public:
 
     void SetStackTrace(OBJECTREF stackTrace);
 
-    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const;
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const
+    {
+#ifdef DACCESS_COMPILE
+        return GetStackTrace(stackTrace, outKeepaliveArray, NULL);
+#else
+        return GetStackTrace(stackTrace, outKeepaliveArray, GetThread());
+#endif // DACCESS_COMPILE
+    }
+
+private:
+    static void GetStackTraceClone(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray);
+public:
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray, Thread *pCurrentThread) const;
 
     static void GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray);
 
@@ -2385,7 +2420,7 @@ private:
     INT32       _xcode;
     INT32       _HResult;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ExceptionObject>;
 };
 
 template<>
@@ -2401,43 +2436,7 @@ struct cdac_data<ExceptionObject>
     static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
-// Defined in Contracts.cs
-enum ContractFailureKind
-{
-    CONTRACT_FAILURE_PRECONDITION = 0,
-    CONTRACT_FAILURE_POSTCONDITION,
-    CONTRACT_FAILURE_POSTCONDITION_ON_EXCEPTION,
-    CONTRACT_FAILURE_INVARIANT,
-    CONTRACT_FAILURE_ASSERT,
-    CONTRACT_FAILURE_ASSUME,
-};
-
-typedef DPTR(class ContractExceptionObject) PTR_ContractExceptionObject;
-class ContractExceptionObject : public ExceptionObject
-{
-    friend class CoreLibBinder;
-
-public:
-    ContractFailureKind GetContractFailureKind()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return static_cast<ContractFailureKind>(_Kind);
-    }
-
-private:
-    // keep these in sync with ndp/clr/src/bcl/system/diagnostics/contracts/contractsbcl.cs
-    STRINGREF _UserMessage;
-    STRINGREF _Condition;
-    INT32 _Kind;
-};
 #include "poppack.h"
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<ContractExceptionObject> CONTRACTEXCEPTIONREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 //===============================================================================
 // #NullableFeature
@@ -2452,8 +2451,6 @@ typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
 // non-nullable case.
 //
 // To do this we need to
-//     * Modify the boxing helper code:JIT_Box (we don't need a special one because
-//           the JIT inlines the common case, so this only gets call in uncommon cases)
 //     * Make a new helper for the Unbox case (see code:JIT_Unbox_Nullable)
 //     * Plumb the JIT to ask for what kind of Boxing helper is needed
 //          (see code:CEEInfo.getBoxHelper, code:CEEInfo.getUnBoxHelper
@@ -2493,14 +2490,11 @@ public:
     static void CheckFieldOffsets(TypeHandle nullableType);
     static BOOL IsNullableType(TypeHandle nullableType);
     static BOOL IsNullableForType(TypeHandle nullableType, MethodTable* paramMT);
-    static BOOL IsNullableForTypeNoGC(TypeHandle nullableType, MethodTable* paramMT);
 
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
-
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
 
@@ -2520,7 +2514,6 @@ public:
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);
-    static BOOL IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT);
 
     CLR_BOOL* HasValueAddr(MethodTable* nullableMT);
     void* ValueAddr(MethodTable* nullableMT);

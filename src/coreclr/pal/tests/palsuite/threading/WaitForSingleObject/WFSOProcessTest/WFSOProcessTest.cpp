@@ -82,14 +82,6 @@ switch (dwWaitResult)
 				return FALSE;
     			}
 
-    // Got ownership of the abandoned process object.
-    case WAIT_ABANDONED:
-			{
-				Fail ( "Got ownership of the abandoned Process object.  Failing test.\n"
-	       			"GetLastError returned %d\n", GetLastError());
-				return FALSE;
-    			}
-
     //Error condition
     case WAIT_FAILED:
 			{

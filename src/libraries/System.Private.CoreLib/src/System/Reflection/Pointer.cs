@@ -40,7 +40,7 @@ namespace System.Reflection
             throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
         }
 
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is Pointer pointer)
             {
@@ -50,7 +50,7 @@ namespace System.Reflection
             return false;
         }
 
-        public override unsafe int GetHashCode() => ((nuint)_ptr).GetHashCode();
+        public override int GetHashCode() => ((nuint)_ptr).GetHashCode();
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {

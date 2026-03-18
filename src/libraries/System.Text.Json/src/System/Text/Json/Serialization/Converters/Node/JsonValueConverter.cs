@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -27,8 +27,23 @@ namespace System.Text.Json.Serialization.Converters
                 return null;
             }
 
-            JsonElement element = JsonElement.ParseValue(ref reader);
-            return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.String:
+                case JsonTokenType.False:
+                case JsonTokenType.True:
+                case JsonTokenType.Number:
+                    return ReadNonNullPrimitiveValue(ref reader, options.GetNodeOptions());
+                default:
+                    JsonElement element = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
+                    return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
+            }
+        }
+
+        internal static JsonValue ReadNonNullPrimitiveValue(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.False or JsonTokenType.True or JsonTokenType.Number);
+            return JsonValueOfJsonPrimitive.CreatePrimitiveValue(ref reader, options);
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();

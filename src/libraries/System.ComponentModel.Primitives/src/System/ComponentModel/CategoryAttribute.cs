@@ -12,21 +12,6 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public class CategoryAttribute : Attribute
     {
-        private static CategoryAttribute? s_action;
-        private static CategoryAttribute? s_appearance;
-        private static CategoryAttribute? s_asynchronous;
-        private static CategoryAttribute? s_behavior;
-        private static CategoryAttribute? s_data;
-        private static CategoryAttribute? s_design;
-        private static CategoryAttribute? s_dragDrop;
-        private static CategoryAttribute? s_defAttr;
-        private static CategoryAttribute? s_focus;
-        private static CategoryAttribute? s_format;
-        private static CategoryAttribute? s_key;
-        private static CategoryAttribute? s_layout;
-        private static CategoryAttribute? s_mouse;
-        private static CategoryAttribute? s_windowStyle;
-
         private volatile bool _localized;
 
         private readonly object _locker = new object();
@@ -39,114 +24,72 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the action category attribute.
         /// </summary>
-        public static CategoryAttribute Action
-        {
-            get => s_action ??= new CategoryAttribute(nameof(Action));
-        }
+        public static CategoryAttribute Action => field ??= new CategoryAttribute(nameof(Action));
 
         /// <summary>
         /// Gets the appearance category attribute.
         /// </summary>
-        public static CategoryAttribute Appearance
-        {
-            get => s_appearance ??= new CategoryAttribute(nameof(Appearance));
-        }
+        public static CategoryAttribute Appearance => field ??= new CategoryAttribute(nameof(Appearance));
 
         /// <summary>
         /// Gets the asynchronous category attribute.
         /// </summary>
-        public static CategoryAttribute Asynchronous
-        {
-            get => s_asynchronous ??= new CategoryAttribute(nameof(Asynchronous));
-        }
+        public static CategoryAttribute Asynchronous => field ??= new CategoryAttribute(nameof(Asynchronous));
 
         /// <summary>
         /// Gets the behavior category attribute.
         /// </summary>
-        public static CategoryAttribute Behavior
-        {
-            get => s_behavior ??= new CategoryAttribute(nameof(Behavior));
-        }
+        public static CategoryAttribute Behavior => field ??= new CategoryAttribute(nameof(Behavior));
 
         /// <summary>
         /// Gets the data category attribute.
         /// </summary>
-        public static CategoryAttribute Data
-        {
-            get => s_data ??= new CategoryAttribute(nameof(Data));
-        }
+        public static CategoryAttribute Data => field ??= new CategoryAttribute(nameof(Data));
 
         /// <summary>
         /// Gets the default category attribute.
         /// </summary>
-        public static CategoryAttribute Default
-        {
-            get => s_defAttr ??= new CategoryAttribute();
-        }
+        public static CategoryAttribute Default => field ??= new CategoryAttribute();
 
         /// <summary>
         /// Gets the design category attribute.
         /// </summary>
-        public static CategoryAttribute Design
-        {
-            get => s_design ??= new CategoryAttribute(nameof(Design));
-        }
+        public static CategoryAttribute Design => field ??= new CategoryAttribute(nameof(Design));
 
         /// <summary>
         /// Gets the drag and drop category attribute.
         /// </summary>
-        public static CategoryAttribute DragDrop
-        {
-            get => s_dragDrop ??= new CategoryAttribute(nameof(DragDrop));
-        }
+        public static CategoryAttribute DragDrop => field ??= new CategoryAttribute(nameof(DragDrop));
 
         /// <summary>
         /// Gets the focus category attribute.
         /// </summary>
-        public static CategoryAttribute Focus
-        {
-            get => s_focus ??= new CategoryAttribute(nameof(Focus));
-        }
+        public static CategoryAttribute Focus => field ??= new CategoryAttribute(nameof(Focus));
 
         /// <summary>
         /// Gets the format category attribute.
         /// </summary>
-        public static CategoryAttribute Format
-        {
-            get => s_format ??= new CategoryAttribute(nameof(Format));
-        }
+        public static CategoryAttribute Format => field ??= new CategoryAttribute(nameof(Format));
 
         /// <summary>
         /// Gets the keyboard category attribute.
         /// </summary>
-        public static CategoryAttribute Key
-        {
-            get => s_key ??= new CategoryAttribute(nameof(Key));
-        }
+        public static CategoryAttribute Key => field ??= new CategoryAttribute(nameof(Key));
 
         /// <summary>
         /// Gets the layout category attribute.
         /// </summary>
-        public static CategoryAttribute Layout
-        {
-            get => s_layout ??= new CategoryAttribute(nameof(Layout));
-        }
+        public static CategoryAttribute Layout => field ??= new CategoryAttribute(nameof(Layout));
 
         /// <summary>
         /// Gets the mouse category attribute.
         /// </summary>
-        public static CategoryAttribute Mouse
-        {
-            get => s_mouse ??= new CategoryAttribute(nameof(Mouse));
-        }
+        public static CategoryAttribute Mouse => field ??= new CategoryAttribute(nameof(Mouse));
 
         /// <summary>
         /// Gets the window style category attribute.
         /// </summary>
-        public static CategoryAttribute WindowStyle
-        {
-            get => s_windowStyle ??= new CategoryAttribute(nameof(WindowStyle));
-        }
+        public static CategoryAttribute WindowStyle => field ??= new CategoryAttribute(nameof(WindowStyle));
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/>

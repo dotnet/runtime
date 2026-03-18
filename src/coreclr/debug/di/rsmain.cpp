@@ -19,7 +19,6 @@
 #endif
 
 #include "corpriv.h"
-#include "../../dlls/mscorrc/resource.h"
 #include <limits.h>
 
 
@@ -71,11 +70,7 @@ const char * GetDebugCodeName(DWORD dwCode)
 // Per-thread state for Debug builds...
 //-----------------------------------------------------------------------------
 #ifdef RSCONTRACTS
-#ifndef __GNUC__
-__declspec(thread) DbgRSThread* DbgRSThread::t_pCurrent;
-#else // !__GNUC__
-__thread DbgRSThread* DbgRSThread::t_pCurrent;
-#endif // !__GNUC__
+thread_local DbgRSThread* DbgRSThread::t_pCurrent;
 
 LONG DbgRSThread::s_Total = 0;
 
@@ -456,7 +451,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
  * ------------------------------------------------------------------------- */
 extern void* GetClrModuleBase();
 
-// Do any initialization necessary for both CorPublish and CorDebug
+// Do any initialization necessary for CorDebug
 // This includes enabling logging and adding the SEDebug priv.
 void CordbCommonBase::InitializeCommon()
 {
@@ -1650,7 +1645,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                 break;
 
             default:
-                __assume(0);
+                UNREACHABLE();
         }
 
     #endif // FEATURE_INTEROP_DEBUGGING
@@ -1706,7 +1701,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
 
         UnlockProcessList();
 
-        PREFIX_ASSUME(pProcess != NULL);
+        _ASSERTE(pProcess != NULL);
 
         pProcess->ExternalAddRef();
         *ppProcess = (ICorDebugProcess *)pProcess;
@@ -2030,11 +2025,6 @@ void Cordb::EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled)
     }
 
     // Made it this far, we succeeded.
-}
-
-HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
-{
-    return CreateObject(CorDebugVersion_1_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, NULL, id, object);
 }
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -2496,7 +2486,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugModuleEnum * pModEnum, CordbAssembly *pA
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
             pPrevious = pElement;
@@ -2600,7 +2590,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugThreadEnum *pThreadEnum, CordbAppDomain 
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
 
@@ -2645,5 +2635,54 @@ Error:
     }
 
     return hr;
+}
+
+//-----------------------------------------------------------------------------
+// Helper to marshal a string object out through the ICorDebug interfaces
+// Parameters:
+//   pInputString - (in) the string to copy out
+//   cchName - (in) size of the output buffer in characters
+//   pcchName - (out) On success, number of characters in the output string (including null)
+//   szName - (out) caller allocated buffer to copy the string to. If NULL, only query length.
+// Returns:
+//   S_OK on success.
+// Notes:
+//   Copies as much as it can fit into the buffer and ensures null-termination.
+//   This is the common pattern for string-marshalling functions in ICorDebug.
+//-----------------------------------------------------------------------------
+HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
+{
+    _ASSERTE(pInputString != NULL);
+    ULONG32 len = (ULONG32) u16_strlen(pInputString) + 1;
+
+    if (cchName == 0)
+    {
+        // Query length
+        if ((szName != NULL) || (pcchName == NULL))
+        {
+            return E_INVALIDARG;
+        }
+        *pcchName = len;
+        return S_OK;
+    }
+    else
+    {
+        // Get data
+        if (szName == NULL)
+        {
+            return E_INVALIDARG;
+        }
+
+        // Just copy whatever we can fit into the buffer. If we truncate, that's ok.
+        // This will also guarantee that we null terminate.
+        wcsncpy_s(szName, cchName, pInputString, _TRUNCATE);
+
+        if (pcchName != 0)
+        {
+            *pcchName = len;
+        }
+
+        return S_OK;
+    }
 }
 

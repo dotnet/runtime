@@ -9,9 +9,9 @@ namespace System.Runtime.InteropServices
 {
     public sealed partial class PosixSignalRegistration
     {
-        private static readonly Dictionary<int, HashSet<Token>> s_registrations = Initialize();
+        private static readonly Dictionary<int, List<Token>> s_registrations = Initialize();
 
-        private static unsafe Dictionary<int, HashSet<Token>> Initialize()
+        private static unsafe Dictionary<int, List<Token>> Initialize()
         {
             if (!Interop.Sys.InitializeTerminalAndSignalHandling())
             {
@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
 
             Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
 
-            return new Dictionary<int, HashSet<Token>>();
+            return new Dictionary<int, List<Token>>();
         }
 
         private static PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
@@ -36,9 +36,9 @@ namespace System.Runtime.InteropServices
 
             lock (s_registrations)
             {
-                if (!s_registrations.TryGetValue(signo, out HashSet<Token>? tokens))
+                if (!s_registrations.TryGetValue(signo, out List<Token>? tokens))
                 {
-                    s_registrations[signo] = tokens = new HashSet<Token>();
+                    s_registrations[signo] = tokens = new List<Token>();
                 }
 
                 if (tokens.Count == 0 &&
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
                 {
                     _token = null;
 
-                    if (s_registrations.TryGetValue(token.SigNo, out HashSet<Token>? tokens))
+                    if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
                     {
                         tokens.Remove(token);
                         if (tokens.Count == 0)
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
 
             lock (s_registrations)
             {
-                if (s_registrations.TryGetValue(signo, out HashSet<Token>? registrations))
+                if (s_registrations.TryGetValue(signo, out List<Token>? registrations))
                 {
                     tokens = new Token[registrations.Count];
                     registrations.CopyTo(tokens);
@@ -122,16 +122,19 @@ namespace System.Runtime.InteropServices
             {
                 (int signo, Token[] tokens) = ((int, Token[]))state!;
 
-                PosixSignalContext ctx = new(0);
-                foreach (Token token in tokens)
+                PosixSignalContext context = new(0);
+
+                // Iterate through the tokens in reverse order to match the order of registration.
+                for (int i = tokens.Length - 1; i >= 0; i--)
                 {
+                    Token token = tokens[i];
                     // Different values for PosixSignal map to the same signo.
                     // Match the PosixSignal value used when registering.
-                    ctx.Signal = token.Signal;
-                    token.Handler(ctx);
+                    context.Signal = token.Signal;
+                    token.Handler(context);
                 }
 
-                if (!ctx.Cancel)
+                if (!context.Cancel)
                 {
                     Interop.Sys.HandleNonCanceledPosixSignal(signo);
                 }

@@ -1542,7 +1542,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                             // multivalues attribute we can stop here.
                                             foundPartitionEntry = true;
 
-                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (dnString[10] == '0')
                                             {
                                                 // this server has the partition fully instantiated
                                                 ntdsaNames.Add(ntdsaName);
@@ -1648,7 +1648,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         // find the property name with the range info
                                         foreach (string property in res.Properties.PropertyNames)
                                         {
-                                            if (string.Compare(property, 0, PropertyManager.MsDSHasInstantiatedNCs, 0, PropertyManager.MsDSHasInstantiatedNCs.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (property.AsSpan().StartsWith(PropertyManager.MsDSHasInstantiatedNCs, StringComparison.OrdinalIgnoreCase))
                                             {
                                                 propertyName = property;
                                                 break;
@@ -1677,7 +1677,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         {
                                             foundPartitionEntry = true;
 
-                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (dnString[10] == '0')
                                             {
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)
@@ -1876,27 +1876,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2));
         }
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2, uint compareFlags)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2), compareFlags);
         }
 
@@ -1917,10 +1905,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //extract IPv6 port number if any
-            bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
+            bool isBrace = serverName.StartsWith('[');
             if (isBrace)
             {
-                if (serverName.EndsWith("]", StringComparison.Ordinal))
+                if (serverName.EndsWith(']'))
                 {
                     //[IPv6]
                     serverName = serverName.Substring(1, serverName.Length - 2); //2 for []
@@ -2266,6 +2254,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 return SidType.FakeObject;
             }
 
+            // Is the SID S-1-5-0-0-0-RID(sentinel SID)?
+            if (IsSentinelSID(pSid))
+            {
+                return SidType.FakeObject;
+            }
+
             return rid switch
             {
                 21 => SidType.RealObject, // Account SID
@@ -2323,6 +2317,59 @@ namespace System.DirectoryServices.ActiveDirectory
 
             Debug.Assert(pBytes != IntPtr.Zero);
             return pBytes;
+        }
+
+        //
+        // The sentinel SID were placed in the domain SID range S-1-5-21-X-Y-Z-R with R < 512 because the existing domain controllers would always filter those SIDs out at boundaries.
+        // That way, the sentinel SID which says the claims or compound data is safe to consume would be removed should the claims or compound PAC ever pass through a domain controller
+        // that did not know how to apply security checks. S-1-5-21-X-Y-Z-R means that the SID belongs to a domain(including the local account domain) unless X=Y=Z=0 in which
+        // case it's a sentinel SID, a special type of pseudo-object that can't be interpreted in isolation.
+        //
+        internal static bool IsSentinelSID(IntPtr pSid)
+        {
+            Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
+
+            IntPtr psubAuthorityCount = global::Interop.Advapi32.GetSidSubAuthorityCount(pSid);
+            int subAuthorityCount = Marshal.ReadByte(psubAuthorityCount);
+
+            //
+            // Sentinel SIDs are of format S-1-5-21-X-Y-Z-R, so if the subauthority count is not equal to 5
+            // (21-X-Y-Z-R), then it is not a sentinel SID.
+            //
+            if (subAuthorityCount != 5)
+            {
+                return false;
+            }
+
+            //
+            // If the rid is greater than equal to 512 then it is not a sentinel sid
+            //
+            int rid = GetLastRidFromSid(pSid);
+            if (rid >= 512)
+            {
+                return false;
+            }
+
+            // We  are going to check for X, Y and Z only hence starting the for loop
+            // with i = 1, and not reading sunAuthority-1 which is the RID
+            for (int i = 1; i < subAuthorityCount - 1; i++)
+            {
+                IntPtr pcurrentSubauthority = global::Interop.Advapi32.GetSidSubAuthority(pSid, i);
+                int currentSubauthority = Marshal.ReadInt32(pcurrentSubauthority);
+
+                //
+                // We return false as soon as we know the first subauthority is not 0
+                //
+                if (currentSubauthority != 0)
+                {
+                    return false;
+                }
+            }
+
+            //
+            // This means X=Y=Z=0
+            //
+            return true;
         }
     }
 }

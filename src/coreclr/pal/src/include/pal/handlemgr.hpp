@@ -22,10 +22,8 @@ Abstract:
 
 
 #include "corunix.hpp"
-#include "cs.hpp"
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
-
+#include <minipal/mutex.h>
 
 /* Pseudo handles constant for current thread and process */
 extern const HANDLE hPseudoCurrentProcess;
@@ -73,7 +71,7 @@ namespace CorUnix
         DWORD m_dwTableGrowthRate;
         HANDLE_TABLE_ENTRY* m_rghteHandleTable;
 
-        CRITICAL_SECTION m_csLock;
+        minipal_mutex m_mtxLock;
         bool m_fLockInitialized;
 
         bool ValidateHandle(HANDLE h);
@@ -96,7 +94,7 @@ namespace CorUnix
         {
             if (m_fLockInitialized)
             {
-                DeleteCriticalSection(&m_csLock);
+                minipal_mutex_destroy(&m_mtxLock);
             }
 
             if (NULL != m_rghteHandleTable)
@@ -139,7 +137,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalEnterCriticalSection(pThread, &m_csLock);
+            minipal_mutex_enter(&m_mtxLock);
         };
 
         void
@@ -147,7 +145,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalLeaveCriticalSection(pThread, &m_csLock);
+            minipal_mutex_leave(&m_mtxLock);
         };
     };
 

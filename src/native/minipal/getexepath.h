@@ -17,6 +17,9 @@
 #include <sys/sysctl.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#elif defined(__HAIKU__)
+#include <FindDirectory.h>
+#include <StorageDefs.h>
 #elif HAVE_GETAUXVAL
 #include <sys/auxv.h>
 #endif
@@ -25,8 +28,13 @@
 extern "C" {
 #endif
 
-// Returns the full path to the executable for the current process, resolving symbolic links.
-// The caller is responsible for releasing the buffer. Returns null on error.
+/**
+ * Get the full path to the executable for the current process.
+ * Resolves symbolic links. The caller is responsible for releasing the buffer.
+ *
+ * @return A pointer to a null-terminated string containing the executable path, 
+ *         or NULL if an error occurs.
+ */
 static inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)
@@ -57,6 +65,16 @@ static inline char* minipal_getexepath(void)
     }
 
     return realpath(path, NULL);
+#elif defined(__HAIKU__)
+    char path[B_PATH_NAME_LENGTH];
+    status_t status = find_path(B_APP_IMAGE_SYMBOL, B_FIND_PATH_IMAGE_PATH, NULL, path, B_PATH_NAME_LENGTH);
+    if (status != B_OK)
+    {
+        errno = status;
+        return NULL;
+    }
+
+    return realpath(path, NULL);
 #elif defined(_WIN32)
     char path[MAX_PATH];
     if (GetModuleFileNameA(NULL, path, MAX_PATH) == 0)
@@ -66,8 +84,8 @@ static inline char* minipal_getexepath(void)
 
     return strdup(path);
 #elif defined(TARGET_WASM)
-    // This is a packaging convention that our tooling should enforce.
-    return strdup("/managed");
+    const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+    return strdup(browserVirtualAppBase);
 #else
 #ifdef __linux__
     const char* symlinkEntrypointExecutable = "/proc/self/exe";

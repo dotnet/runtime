@@ -150,7 +150,7 @@ namespace System.Tests
         [InlineData(new char[] { '\u041F', '\u0420', '\u0418', '\u0412', '\u0415', '\u0422' }, 0, 6, "\u041F\u0420\u0418\u0412\u0415\u0422")]
         [InlineData(new char[0], 0, 0, "")]
         [InlineData(null, 0, 0, "")]
-        public static void Ctor_CharArray(char[] value, int startIndex, int length, string expected)
+        public static void Ctor_CharArray(char[]? value, int startIndex, int length, string expected)
         {
             if (value == null)
             {
@@ -319,7 +319,7 @@ namespace System.Tests
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // mini-stress test that likely runs for several seconds
         public static void Concat_String_ConcurrencySafe()
         {
@@ -1011,7 +1011,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void CompareToNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1035,24 +1034,29 @@ namespace System.Tests
                     var secondSpan = new ReadOnlySpan<char>(second);
                     Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
 
-                    // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
-                    // However, the sign will match, which is what defines correctness.
-                    Assert.Equal(
-                        Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
-                        Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
+                        // However, the sign will match, which is what defines correctness.
+                        Assert.Equal(
+                            Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
+                            Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
 
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1286,7 +1290,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1312,19 +1315,24 @@ namespace System.Tests
 
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
-                    // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        // Different behavior depending on OS
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1730,7 +1738,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EndsWith_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -2114,7 +2121,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -2549,7 +2556,7 @@ namespace System.Tests
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
         [InlineData("\0AAAAAAAAA", "\0BBBBBBBBBBBB", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EqualsTest(string s1, object obj, StringComparison comparisonType, bool expected)
+        public static void EqualsTest(string? s1, object? obj, StringComparison comparisonType, bool expected)
         {
             string s2 = obj as string;
             if (s1 != null)
@@ -2850,7 +2857,7 @@ namespace System.Tests
         [MemberData(nameof(Format_Invalid_FormatExceptionFromArgs_MemberData))]
         [InlineData(null, "{10000000}", new object[] { null })]
         [InlineData(null, "{0,10000000}", new string[] { null })]
-        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider provider, string format, object[] args)
+        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider? provider, string format, object[] args)
         {
             if (provider is null)
             {
@@ -3221,8 +3228,7 @@ namespace System.Tests
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                    Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
 
@@ -3230,8 +3236,7 @@ namespace System.Tests
 
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                    Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
             }
@@ -3800,7 +3805,7 @@ namespace System.Tests
         [InlineData("", true)]
         [InlineData("foo", false)]
         [InlineData("   ", false)]
-        public static void IsNullOrEmpty(string value, bool expected)
+        public static void IsNullOrEmpty(string? value, bool expected)
         {
             Assert.Equal(expected, string.IsNullOrEmpty(value));
 
@@ -3965,7 +3970,7 @@ namespace System.Tests
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$$Bar$$Baz")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
-        public static void Join_StringArray(string separator, string[] values, int startIndex, int count, string expected)
+        public static void Join_StringArray(string? separator, string[] values, int startIndex, int count, string expected)
         {
             if (startIndex + count == values.Length && count != 0)
             {
@@ -4887,7 +4892,7 @@ namespace System.Tests
         [InlineData("Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff", "1", "23", "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff")]
         [InlineData("11111111111111111111111", "1", "11", "1111111111111111111111111111111111111111111111")] //  Checks if we handle the max # of matches
         [InlineData("11111111111111111111111", "1", "", "")] // Checks if we handle the max # of matches
-        public static void Replace_String_String(string s, string oldValue, string newValue, string expected)
+        public static void Replace_String_String(string s, string oldValue, string? newValue, string expected)
         {
             Assert.Equal(expected, s.Replace(oldValue, newValue));
         }
@@ -4925,9 +4930,7 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                // "https://github.com/dotnet/runtime/issues/95473"
-                if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
-                    yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
+                yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
             }
 
             // CurrentCultureIgnoreCase
@@ -4999,7 +5002,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StartsWith_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -5422,7 +5424,6 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToLower_Culture()
         {
             foreach (object[] testdata in ToLower_Culture_TestData())
@@ -5940,7 +5941,6 @@ namespace System.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_Culture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
@@ -6149,7 +6149,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void Trim(string s, char[] trimChars, string expected)
+        public static void Trim(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6179,7 +6179,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimEnd(string s, char[] trimChars, string expected)
+        public static void TrimEnd(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6209,7 +6209,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimStart(string s, char[] trimChars, string expected)
+        public static void TrimStart(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -7155,7 +7155,7 @@ namespace System.Tests
                     yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                     yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
                 }
-                yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
+                yield return new object[] { "\ud801\udc29",     "\ud801\udc01", "en-US" };
             }
         }
 
@@ -7309,7 +7309,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112195", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -7721,8 +7721,8 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
-            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+            // Some platforms' ICUs do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsWasi && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
 
             if (supportsKCKD)
             {

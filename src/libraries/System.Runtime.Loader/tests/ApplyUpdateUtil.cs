@@ -11,6 +11,7 @@ namespace System.Reflection.Metadata
     public class ApplyUpdateUtil {
         internal const string DotNetModifiableAssembliesSwitch = "DOTNET_MODIFIABLE_ASSEMBLIES";
         internal const string DotNetModifiableAssembliesValue = "debug";
+        internal const string DotNetModifiableAssembliesDisabledValue = "none";
 
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
         ///
@@ -20,6 +21,9 @@ namespace System.Reflection.Metadata
         /// 3. The test assemblies are compiled with Debug information (this is configured by setting EmitDebugInformation in ApplyUpdate\Directory.Build.props)
         public static bool IsSupported => (IsModifiableAssembliesSet || IsRemoteExecutorSupported) &&
             (!IsMonoRuntime || IsSupportedMonoConfiguration);
+
+        /// true if RemoteExecutor is available and the runtime supports metadata updates.
+        public static bool IsRemoteExecutorSupportedAndFeatureCapable => IsSupported && IsRemoteExecutorSupported;
 
         /// true if the current runtime was not launched with the appropriate settings for applying
         /// updates (DOTNET_MODIFIABLE_ASSEMBLIES unset), but we can use the remote executor to
@@ -37,6 +41,8 @@ namespace System.Reflection.Metadata
         public static bool IsRemoteExecutorSupported => !RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) && RemoteExecutor.IsSupported;
 
         public static bool IsMonoRuntime => PlatformDetection.IsMonoRuntime;
+
+        public static bool IsNotMonoRuntime => !PlatformDetection.IsMonoRuntime;
 
         private static readonly Lazy<bool> s_isSupportedMonoConfiguration = new Lazy<bool>(CheckSupportedMonoConfiguration);
 

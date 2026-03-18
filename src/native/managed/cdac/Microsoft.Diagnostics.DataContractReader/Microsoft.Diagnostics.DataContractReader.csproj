@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Do not produce a public package. This ships as part of the runtime -->
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+  </ItemGroup>
+</Project>

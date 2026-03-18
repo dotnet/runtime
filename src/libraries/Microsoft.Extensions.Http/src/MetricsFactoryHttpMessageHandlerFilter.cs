@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NET8_0_OR_GREATER
+#if NET
 using System;
 using System.Diagnostics.Metrics;
 using System.Net.Http;
@@ -14,14 +14,14 @@ namespace Microsoft.Extensions.Http
 
         public MetricsFactoryHttpMessageHandlerFilter(IMeterFactory meterFactory)
         {
-            ThrowHelper.ThrowIfNull(meterFactory);
+            ArgumentNullException.ThrowIfNull(meterFactory);
 
             _meterFactory = meterFactory;
         }
 
         public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
         {
-            ThrowHelper.ThrowIfNull(next);
+            ArgumentNullException.ThrowIfNull(next);
 
             return (builder) =>
             {
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http
                     // Don't overwrite factory if one is already set.
                     httpClientHandler.MeterFactory ??= _meterFactory;
                 }
-                else if (!OperatingSystem.IsBrowser() && builder.PrimaryHandler is SocketsHttpHandler socketsHttpHandler)
+                else if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && builder.PrimaryHandler is SocketsHttpHandler socketsHttpHandler)
                 {
                     // Don't overwrite factory if one is already set.
                     socketsHttpHandler.MeterFactory ??= _meterFactory;

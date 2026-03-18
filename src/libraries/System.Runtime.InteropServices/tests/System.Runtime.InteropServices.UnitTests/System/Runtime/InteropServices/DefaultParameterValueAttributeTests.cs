@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
         [InlineData(5.0f)]
         [InlineData("ExpectedValue")]
         [InlineData(null)]
-        public static void Ctor_Value(object value)
+        public static void Ctor_Value(object? value)
         {
             var attribute = new DefaultParameterValueAttribute(value);
             Assert.Equal(value, attribute.Value);

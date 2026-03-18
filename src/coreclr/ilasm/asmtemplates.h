@@ -4,11 +4,6 @@
 #ifndef ASMTEMPLATES_H
 #define ASMTEMPLATES_H
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22008) // "Suppress PREfast warnings about integer overflow"
-#endif
-
 inline ULONG GrowBuffer(ULONG startingSize)
 {
     int toAdd = startingSize >> 1;
@@ -860,10 +855,6 @@ public:
         return NULL;
     };
 };
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #endif //ASMTEMPLATES_H
 

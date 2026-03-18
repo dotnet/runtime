@@ -240,6 +240,7 @@ public: // IDispatchTesting
         switch (excep)
         {
         case IDispatchTesting_Exception_Disp:
+        case IDispatchTesting_Exception_Disp_Legacy:
             return DISP_E_EXCEPTION;
         case IDispatchTesting_Exception_HResult:
             return HRESULT_FROM_WIN32(errorCode);
@@ -248,6 +249,13 @@ public: // IDispatchTesting
         default:
             return S_FALSE; // Return a success case to indicate failure to trigger a failure.
         }
+    }
+    virtual HRESULT STDMETHODCALLTYPE TriggerCustomMarshaler(
+        /*[in]*/ IUnknown* objIn,
+        /*[in,out]*/ IUnknown** objRef,
+        /*[out,retval]*/ IUnknown* pRetVal)
+    {
+        return E_NOTIMPL;
     }
     virtual HRESULT STDMETHODCALLTYPE DoubleHVAValues (
         /*[in,out]*/ HFA_4 *input,
@@ -457,11 +465,22 @@ private:
             args[1] = &currArg->intVal;
         }
 
-        hr = TriggerException(static_cast<IDispatchTesting_Exception>(*args[0]), *args[1]);
+        IDispatchTesting_Exception kind = static_cast<IDispatchTesting_Exception>(*args[0]);
+        hr = TriggerException(kind, *args[1]);
         if (hr == DISP_E_EXCEPTION)
         {
             *puArgErr = 1;
-            pExcepInfo->scode = HRESULT_FROM_WIN32(*args[1]);
+            if (kind == IDispatchTesting_Exception_Disp_Legacy)
+            {
+                pExcepInfo->wCode = *args[1]; // Legacy exception code
+                pExcepInfo->scode = 0;
+            }
+            else
+            {
+                assert(kind == IDispatchTesting_Exception_Disp);
+                pExcepInfo->wCode = 0;
+                pExcepInfo->scode = HRESULT_FROM_WIN32(*args[1]);
+            }
 
             WCHAR buffer[ARRAY_SIZE(W("4294967295"))];
             _snwprintf_s(buffer, ARRAY_SIZE(buffer), _TRUNCATE, W("%x"), *args[1]);

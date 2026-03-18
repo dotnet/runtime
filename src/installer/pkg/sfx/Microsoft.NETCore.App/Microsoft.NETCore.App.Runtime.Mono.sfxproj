@@ -1,0 +1,73 @@
+<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack">
+  <PropertyGroup>
+    <RuntimeFlavor>Mono</RuntimeFlavor>
+    <BuildNativeAOTRuntimePack>false</BuildNativeAOTRuntimePack>
+    <OutDirName>mono-pack</OutDirName>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <UseRidGraph>true</UseRidGraph>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SkipInstallerBuild>true</SkipInstallerBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
+    <IncludeDiaSymReaderNative Condition="'$(TargetOS)' == 'windows'">true</IncludeDiaSymReaderNative>
+    <IncludeStaticLibrariesInPack Condition="'$(TargetsMobile)' == 'true'">true</IncludeStaticLibrariesInPack>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
+    <IsShipping Condition="'$(TargetsMobile)' != 'true'">false</IsShipping>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(TargetsMobile)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsMobile)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.multithread</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
+    <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <Target Name="AddMonoRuntimeFiles" AfterTargets="AddRuntimeFilesToPackage">
+    <ItemGroup>
+      <MonoRuntimeFiles Include="@(MonoFrameworkReleaseFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.release.framework/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+
+      <MonoRuntimeFiles Include="@(MonoFrameworkDebugFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.debug.framework/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+
+      <MonoRuntimeFiles Include="@(MonoIncludeFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+
+      <MonoRuntimeFiles Include="@(MonoBuildFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/build/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+      <ReferenceCopyLocalPaths Include="@(MonoRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -101,6 +101,8 @@ public:
     static const SIZE_T CodeSize = 40;
 #elif defined(TARGET_RISCV64)
     static const SIZE_T CodeSize = 40;
+#elif defined(TARGET_WASM)
+    static const SIZE_T CodeSize = 0;
 #endif
 
 private:
@@ -148,7 +150,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
     PTR_CallCount GetRemainingCallCountCell() const;
     PCODE GetTargetForMethod() const;
@@ -189,9 +191,6 @@ private:
 
             // Stub is not active and will not become active, call counting complete, promoted, stub may be deleted
             Complete,
-
-            // Call counting is disabled, only used for the default code version to indicate that it is to be optimized
-            Disabled
         };
 
     private:
@@ -201,10 +200,7 @@ private:
         Stage m_stage;
 
     #ifndef DACCESS_COMPILE
-    private:
-        CallCountingInfo(NativeCodeVersion codeVersion);
     public:
-        static CallCountingInfo *CreateWithCallCountingDisabled(NativeCodeVersion codeVersion);
         CallCountingInfo(NativeCodeVersion codeVersion, CallCount callCountThreshold);
         ~CallCountingInfo();
     #endif
@@ -259,7 +255,7 @@ private:
     private:
         // LoaderHeap cannot be constructed when DACCESS_COMPILE is defined (at the time, its destructor was private). Working
         // around that by controlling creation/destruction using a pointer.
-        LoaderHeap *m_heap;
+        InterleavedLoaderHeap *m_heap;
         RangeList m_heapRangeList;
 
     public:
@@ -271,7 +267,7 @@ private:
         void Reset();
         const CallCountingStub *AllocateStub(CallCount *remainingCallCountCell, PCODE targetForMethod);
     private:
-        LoaderHeap *AllocateHeap();
+        InterleavedLoaderHeap *AllocateHeap();
     #endif // !DACCESS_COMPILE
 
     public:
@@ -351,13 +347,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-public:
-    bool IsCallCountingEnabled(NativeCodeVersion codeVersion);
-
 #ifndef DACCESS_COMPILE
-public:
-    void DisableCallCounting(NativeCodeVersion codeVersion);
-
 public:
     static bool SetCodeEntryPoint(
         NativeCodeVersion activeCodeVersion,

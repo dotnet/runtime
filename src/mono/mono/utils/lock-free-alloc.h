@@ -46,7 +46,7 @@ typedef struct {
 } MonoLockFreeAllocator;
 
 #ifdef HOST_WASM
-#define LOCK_FREE_ALLOC_SB_MAX_SIZE					(mono_opt_wasm_mmap ? 65536 : 16384)
+#define LOCK_FREE_ALLOC_SB_MAX_SIZE					16384 * 32
 #else
 #define LOCK_FREE_ALLOC_SB_MAX_SIZE					16384
 #endif

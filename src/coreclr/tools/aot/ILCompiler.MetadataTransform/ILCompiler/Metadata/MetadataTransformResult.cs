@@ -97,6 +97,13 @@ namespace ILCompiler.Metadata
             return rec as Method;
         }
 
+        public IEnumerable<KeyValuePair<Cts.MethodDesc, Method>> GetTransformedMethodDefinitions()
+        {
+            foreach (KeyValuePair<Cts.MethodDesc, MetadataRecord> entry in _transform._methods.Entries)
+                if (entry.Value is Method m)
+                    yield return new KeyValuePair<Cts.MethodDesc, Method>(entry.Key, m);
+        }
+
         /// <summary>
         /// Attempts to retrieve a <see cref="Field"/> record corresponding to the specified
         /// <paramref name="field"/>. Returns null if not found.

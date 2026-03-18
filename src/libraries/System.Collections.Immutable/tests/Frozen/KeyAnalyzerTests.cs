@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -220,14 +219,6 @@ namespace System.Collections.Frozen.Tests
             Assert.False(r.SubstringHashing);
             Assert.True(r.IgnoreCase);
             Assert.True(r.AllAsciiIfIgnoreCase);
-        }
-
-        [Fact]
-        public static void IsAllAscii()
-        {
-            Assert.True(KeyAnalyzer.IsAllAscii("abc".AsSpan()));
-            Assert.True(KeyAnalyzer.IsAllAscii("abcdefghij".AsSpan()));
-            Assert.False(KeyAnalyzer.IsAllAscii("abcdéfghij".AsSpan()));
         }
 
         [Fact]

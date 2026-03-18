@@ -8,30 +8,14 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class HttpClientSendReceiveTest_Http2 : SendReceiveTest_Http2
+    public abstract partial class SendReceiveTest_Http2Loopback
     {
-        public HttpClientSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseHttpClient => true;
-    }
-
-    public sealed class InvokerSendReceiveTest_Http2 : SendReceiveTest_Http2
-    {
-        public InvokerSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
-
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public abstract class SendReceiveTest_Http2 : ClientWebSocketTestBase
-    {
-        public SendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
+        #region HTTP/2-only loopback tests
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ReceiveNoThrowAfterSend_NoSsl()
         {
             var serverMessage = new byte[] { 4, 5, 6 };
@@ -40,7 +24,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
@@ -69,7 +53,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
         public async Task ReceiveNoThrowAfterSend_WithSsl()
         {
             var serverMessage = new byte[] { 4, 5, 6 };
@@ -78,7 +61,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
-                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersion = Net.HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
@@ -105,5 +88,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             }, new Http2Options() { WebSocketEndpoint = true });
         }
+
+        #endregion
     }
 }

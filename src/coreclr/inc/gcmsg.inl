@@ -41,11 +41,32 @@
         return "%d gc thread waiting... Done";
     }
 
-    static const char* gcDetailedStartMsg()
+#define GC_DETAILED_START_PREFIX "*GC* %d(gen0:%d)(%d)"
+#define GC_DETAILED_START_STRESSLOG "(alloced for %.3fms, g0 %zd (b: %zd, %zd/h) (%.3fmb/ms), g3 %zd (%.3fmb/ms), g4 %zd (%.3fmb/ms))(%s)(%d)(%d)"
+#define GC_DETAILED_START_DPRINTF_EXTRA "(heap size: %.3fmb max: %.3fmb)"
+
+    static const char* gcDetailedStartPrefix()
     {
         STATIC_CONTRACT_LEAF;
-        return "*GC* %d(gen0:%d)(%d)(alloced for %.3fms, g0 %zd (b: %zd, %zd/h) (%.3fmb/ms), g3 %zd (%.3fmb/ms), g4 %zd (%.3fmb/ms))(%s)(%d)(%d)(heap size: %.3fmb max: %.3fmb)";
+        return GC_DETAILED_START_PREFIX;
     }
+
+    static const char* gcDetailedStartMsg(bool compatibleWithStressLog)
+    {
+        STATIC_CONTRACT_LEAF;
+        if (compatibleWithStressLog)
+        {
+            return GC_DETAILED_START_PREFIX GC_DETAILED_START_STRESSLOG;
+        }
+        else
+        {
+            return GC_DETAILED_START_PREFIX GC_DETAILED_START_STRESSLOG GC_DETAILED_START_DPRINTF_EXTRA;
+        }
+    }
+
+#undef GC_DETAILED_START_PREFIX
+#undef GC_DETAILED_START_STRESSLOG
+#undef GC_DETAILED_START_DPRINTF_EXTRA
 
     static const char* gcDetailedEndMsg()
     {

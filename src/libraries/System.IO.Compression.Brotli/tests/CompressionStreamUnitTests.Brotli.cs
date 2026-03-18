@@ -46,14 +46,6 @@ namespace System.IO.Compression
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
 
-        [Theory]
-        [InlineData((CompressionLevel)(-1))]
-        [InlineData((CompressionLevel)4)]
-        public void Ctor_ArgumentValidation_InvalidCompressionLevel(CompressionLevel compressionLevel)
-        {
-            Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
-        }
-
         [Fact]
         public void InvalidQuality()
         {
@@ -78,9 +70,23 @@ namespace System.IO.Compression
         public void GetMaxCompressedSize_Basic()
         {
             Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(-1));
-            Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
-            Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, int.MaxValue);
-            Assert.Equal(1, BrotliEncoder.GetMaxCompressedLength(0));
+            Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(2_146_959_482));
+            Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2_146_959_481), 0, int.MaxValue); // 2_146_959_481 produces int.MaxValue
+            Assert.Equal(2, BrotliEncoder.GetMaxCompressedLength(0));
+        }
+
+        [Fact]
+        public void DestinationBufferWithSizeEqualToMaxCompressedLength_ShouldAlwaysSucceed()
+        {
+            byte[] source = new byte[256000];
+            var rng = new Random(1234);
+            rng.NextBytes(source);
+
+            int maxLength = BrotliEncoder.GetMaxCompressedLength(source.Length);
+            var resultBuffer = new byte[maxLength];
+
+            Assert.True(BrotliEncoder.TryCompress(source, resultBuffer, out int bytesWritten, quality: 5, window: 10));
+            Assert.True(maxLength >= bytesWritten);
         }
 
         [Fact]
@@ -93,11 +99,57 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
         }
 
+        [Fact]
+        public void InvalidBrotliCompressionWindowLog()
+        {
+            BrotliCompressionOptions options = new();
+
+            Assert.Equal(22, options.WindowLog); // default value
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = 9);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = 25);
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(22)]
+        [InlineData(24)]
+        public void BrotliCompressionWindowLog_RoundTrip(int windowLog)
+        {
+            byte[] testData = new byte[10000];
+            Random.Shared.NextBytes(testData);
+
+            // Compress with specific window size
+            byte[] compressed;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = new BrotliStream(ms, new BrotliCompressionOptions() { WindowLog = windowLog }, leaveOpen: true))
+                {
+                    compressor.Write(testData);
+                }
+                compressed = ms.ToArray();
+            }
+
+            // Decompress and verify
+            byte[] decompressed;
+            using (var ms = new MemoryStream(compressed))
+            using (var decompressor = new BrotliStream(ms, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                decompressor.CopyTo(resultStream);
+                decompressed = resultStream.ToArray();
+            }
+
+            Assert.Equal(testData.Length, decompressed.Length);
+            Assert.Equal<byte>(testData, decompressed);
+        }
+
         [Theory]
         [MemberData(nameof(UncompressedTestFilesBrotli))]
-        public async void BrotliCompressionQuality_SizeInOrder(string testFile)
+        public async Task BrotliCompressionQuality_SizeInOrder(string testFile)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
 
             async Task<long> GetLengthAsync(int compressionQuality)
             {

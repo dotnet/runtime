@@ -4,6 +4,8 @@
 // Tests GC.GetGeneration
 
 using System;
+using Xunit;
+using TestLibrary;
 
 public class GetGenerationTest
 {
@@ -117,7 +119,9 @@ public class GetGenerationTest
 
 
 
-    public static int Main()
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint()
     {
         GetGenerationTest t = new GetGenerationTest();
 

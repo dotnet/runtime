@@ -77,7 +77,7 @@ namespace System.Net
             _epl = epl;
             _secure = secure;
             _cert = cert;
-            if (secure == false)
+            if (!secure)
             {
                 _stream = new NetworkStream(sock, false);
             }

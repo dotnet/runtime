@@ -32,8 +32,6 @@ namespace System.Net.Quic.Tests
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
         public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/123216")]
-        public static bool IsNotAzureLinux3VM => !PlatformDetection.IsAzureLinux || PlatformDetection.IsInContainer;
 
         public static bool IsIPv6Available => Configuration.Sockets.IsIPv6LoopbackAvailable;
 
@@ -45,6 +43,18 @@ namespace System.Net.Quic.Tests
         public ITestOutputHelper _output;
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
+
+        static QuicTestBase()
+        {
+            // Opt in to run with OpenSSL version on MsQuic on older windows where Schannel
+            // version is not supported.
+            //
+            // This has to happen here in order to be called before QuicTestBase.IsSupported
+            if (PlatformDetection.IsWindows10OrLater && !QuicTestCollection.IsWindowsVersionWithSchannelSupport())
+            {
+                AppContext.SetSwitch("System.Net.Quic.AppLocalMsQuic", true);
+            }
+        }
 
         public QuicTestBase(ITestOutputHelper output)
         {

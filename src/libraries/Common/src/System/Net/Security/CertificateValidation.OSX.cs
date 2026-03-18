@@ -13,8 +13,9 @@ namespace System.Net.Security
     {
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
-        // WARNING: This function will do the verification using OpenSSL. If the intention is to use OS function, caller should use CertificatePal interface.
-        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool _ /*isServer*/, string? hostName, Span<byte> certificateBuffer)
+#pragma warning disable IDE0060
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, Span<byte> certificateBuffer)
+#pragma warning restore IDE0060
         {
             SslPolicyErrors errors = chain.Build(remoteCertificate) ?
                 SslPolicyErrors.None :
@@ -30,53 +31,19 @@ namespace System.Net.Security
                 return errors | SslPolicyErrors.RemoteCertificateNameMismatch;
             }
 
-            SafeX509Handle certHandle;
-            unsafe
+            bool match;
+
+            if (IPAddress.TryParse(hostName, out _))
             {
-                if (certificateBuffer.Length > 0)
-                {
-                    fixed (byte* pCert = certificateBuffer)
-                    {
-                        certHandle = Interop.Crypto.DecodeX509((IntPtr)pCert, certificateBuffer.Length);
-                    }
-                }
-                else
-                {
-                    // We dont't have DER encoded buffer.
-                    byte[] der = remoteCertificate.Export(X509ContentType.Cert);
-                    fixed (byte* pDer = der)
-                    {
-                        certHandle = Interop.Crypto.DecodeX509((IntPtr)pDer, der.Length);
-                    }
-                }
+                match = remoteCertificate.MatchesHostname(hostName);
+            }
+            else
+            {
+                string matchName = s_idnMapping.GetAscii(hostName);
+                match = remoteCertificate.MatchesHostname(matchName);
             }
 
-            int hostNameMatch;
-            using (certHandle)
-            {
-                IPAddress? hostnameAsIp;
-                if (IPAddress.TryParse(hostName, out hostnameAsIp))
-                {
-                    byte[] addressBytes = hostnameAsIp.GetAddressBytes();
-                    hostNameMatch = Interop.Crypto.CheckX509IpAddress(certHandle, addressBytes, addressBytes.Length, hostName, hostName.Length);
-                }
-                else
-                {
-                    // The IdnMapping converts Unicode input into the IDNA punycode sequence.
-                    // It also does host case normalization.  The bypass logic would be something
-                    // like "all characters being within [a-z0-9.-]+"
-                    string matchName = s_idnMapping.GetAscii(hostName);
-                    hostNameMatch = Interop.Crypto.CheckX509Hostname(certHandle, matchName, matchName.Length);
-
-                    if (hostNameMatch < 0)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-                }
-            }
-
-            Debug.Assert(hostNameMatch == 0 || hostNameMatch == 1, $"Expected 0 or 1 from CheckX509Hostname, got {hostNameMatch}");
-            return hostNameMatch == 1 ?
+            return match ?
                 errors :
                 errors | SslPolicyErrors.RemoteCertificateNameMismatch;
         }

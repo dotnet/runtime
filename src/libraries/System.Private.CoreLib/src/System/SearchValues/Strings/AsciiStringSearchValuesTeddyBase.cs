@@ -91,7 +91,7 @@ namespace System.Buffers
     //
     // For an alternative description of the algorithm, see
     // https://github.com/BurntSushi/aho-corasick/blob/8d735471fc12f0ca570cead8e17342274fae6331/src/packed/teddy/README.md
-    // Has an O(i * m) worst-case, with the expected time closer to O(n) for good bucket distributions.
+    // Has an O(i * m) worst-case, with the expected time closer to O(i) for good bucket distributions.
     internal abstract class AsciiStringSearchValuesTeddyBase<TBucketized, TStartCaseSensitivity, TCaseSensitivity> : StringSearchValuesRabinKarp<TCaseSensitivity>
         where TBucketized : struct, SearchValues.IRuntimeConst
         where TStartCaseSensitivity : struct, ICaseSensitivity  // Refers to the characters being matched by Teddy
@@ -109,7 +109,7 @@ namespace System.Buffers
         // We may have up to 8 buckets.
         // If we have <= 8 strings, the buckets will be the strings themselves, and TBucketized.Value will be false.
         // If we have more than 8, the buckets will be string[], and TBucketized.Value will be true.
-        private readonly EightObjects _buckets;
+        private readonly InlineArray8<object?> _buckets;
 
         private readonly Vector512<byte>
             _n0Low, _n0High,
@@ -154,7 +154,7 @@ namespace System.Buffers
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN2)
+            if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN2)
             {
                 return IndexOfAnyN2Avx512(span);
             }
@@ -174,7 +174,7 @@ namespace System.Buffers
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN3)
+            if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN3)
             {
                 return IndexOfAnyN3Avx512(span);
             }
@@ -296,7 +296,7 @@ namespace System.Buffers
             goto ContinueLoop;
         }
 
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private int IndexOfAnyN2Avx512(ReadOnlySpan<char> span)
         {
             // See comments in 'IndexOfAnyN3Vector128' below.
@@ -476,7 +476,7 @@ namespace System.Buffers
             goto ContinueLoop;
         }
 
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private int IndexOfAnyN3Avx512(ReadOnlySpan<char> span)
         {
             // See comments in 'IndexOfAnyN3Vector128' above.

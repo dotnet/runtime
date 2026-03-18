@@ -56,7 +56,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.False(proxy.Disposed);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
@@ -116,10 +115,10 @@ namespace System.Net.Http.Functional.Tests
         public static bool IsSocketsHttpHandlerAndRemoteExecutorSupported => !HttpClientHandlerTestBase.IsWinHttpHandler && RemoteExecutor.IsSupported;
 
         [OuterLoop("Uses external servers")]
-        [ConditionalFact(nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
-        public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
+        public async Task Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
-            RemoteExecutor.Invoke(async (useVersionString) =>
+            await RemoteExecutor.Invoke(async (useVersionString) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
@@ -134,7 +133,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString()).DisposeAsync();
         }
 
         const string BasicAuth = "Basic";
@@ -309,7 +308,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(HttpClientHandlerTestBase.IsWinHttpHandler))]
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(HttpClientHandlerTestBase.IsWinHttpHandler))]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

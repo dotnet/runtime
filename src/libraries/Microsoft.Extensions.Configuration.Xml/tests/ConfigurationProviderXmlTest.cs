@@ -68,6 +68,8 @@ Section3:
             return (provider, () => provider.Load(TestStreamHelpers.StringToStream(xml)));
         }
 
+        protected override bool SupportNullValues => false;
+
         private void SectionToXml(StringBuilder xmlBuilder, string sectionName, TestSection section)
         {
             xmlBuilder.AppendLine($"<{sectionName}>");

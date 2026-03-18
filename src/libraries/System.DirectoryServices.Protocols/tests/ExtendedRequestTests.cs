@@ -20,7 +20,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("RequestName")]
-        public void Ctor_RequestName(string requestName)
+        public void Ctor_RequestName(string? requestName)
         {
             var request = new ExtendedRequest(requestName);
             Assert.Empty(request.Controls);
@@ -32,7 +32,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("RequestName", new byte[] { 1, 2, 3 })]
-        public void Ctor_RequestName_RequestValue(string requestName, byte[] requestValue)
+        public void Ctor_RequestName_RequestValue(string? requestName, byte[]? requestValue)
         {
             var request = new ExtendedRequest(requestName, requestValue);
             Assert.Empty(request.Controls);

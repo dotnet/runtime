@@ -10,7 +10,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData("", null)]
         [InlineData("Name", "Value")]
-        public void Ctor_Name_Value(string name, string value)
+        public void Ctor_Name_Value(string name, string? value)
         {
             var attribute = new PartMetadataAttribute(name, value);
             Assert.Equal(name, attribute.Name);

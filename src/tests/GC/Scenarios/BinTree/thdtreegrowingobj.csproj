@@ -1,12 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test leaves threads running at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="thdtreegrowingobj.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="bintree.csproj" />

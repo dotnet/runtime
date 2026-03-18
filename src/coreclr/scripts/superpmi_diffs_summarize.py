@@ -18,16 +18,15 @@ import html
 import os
 import re
 from coreclr_arguments import *
+from jitutil import run_command
 
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-diff_summary_dir", required=True, help="Path to diff summary directory")
 parser.add_argument("-arch", required=True, help="Architecture")
 parser.add_argument("-platform", required=True, help="OS platform")
-parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
-
-target_windows = True
-
+parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, metricdiff, all)")
+parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 
 def setup_args(args):
     """ Setup the args.
@@ -59,24 +58,13 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "type",
-                        lambda type: type in ["asmdiffs", "tpdiff", "all"],
+                        lambda type: type in ["asmdiffs", "tpdiff", "metricdiff", "all"],
                         "Invalid type \"{}\"".format)
 
-    do_asmdiffs = False
-    do_tpdiff = False
-    if coreclr_args.type == 'asmdiffs':
-        do_asmdiffs = True
-    if coreclr_args.type == 'tpdiff':
-        do_tpdiff = True
-    if coreclr_args.type == 'all':
-        do_asmdiffs = True
-        do_tpdiff = True
-
-    if coreclr_args.platform.lower() != "windows" and do_asmdiffs:
-        print("asmdiffs currently only implemented for windows")
-        sys.exit(1)
-
-    target_windows = coreclr_args.platform.lower() == "windows"
+    coreclr_args.verify(args,
+                        "source_directory",
+                        os.path.isdir,
+                        "source_directory doesn't exist")
 
     return coreclr_args
 
@@ -100,10 +88,11 @@ def append_diff_file(f, file_name, full_file_path):
     # What platform is this file summarizing? We parse the filename itself, which is of the form:
     #   superpmi_asmdiffs_summary_<platform>_<arch>.md
     #   superpmi_tpdiff_summary_<platform>_<arch>.md
+    #   superpmi_metricdiff_summary_<platform>_<arch>.md
 
     diff_os = "unknown"
     diff_arch = "unknown"
-    match_obj = re.search(r'^superpmi_(tpdiff|asmdiffs)_summary_(.*)_(.*).md', file_name)
+    match_obj = re.search(r'^superpmi_(tpdiff|asmdiffs|metricdiff)_summary_([^_]+)_([^_]+)\.md$', file_name)
     if match_obj is not None:
         diff_os = match_obj.group(2)
         diff_arch = match_obj.group(3)
@@ -139,19 +128,60 @@ def main(main_args):
     diff_summary_dir = coreclr_args.diff_summary_dir
     arch = coreclr_args.arch
     platform_name = coreclr_args.platform.lower()
+    source_directory = coreclr_args.source_directory
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_metricdiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'metricdiff':
+        do_metricdiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_metricdiff = True
 
-    # Consolidate all superpmi_asmdiffs_summary_*.md and superpmi_tpdiff_summary_*.md
-    # into overall_<asmdiffs|tpdiff>_summary_<os>_<architecture>.md.
+    superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
+    python_path = sys.executable
+
+    # First summarize all .JSON to a .md for each (diff_type, target_os, target_arch).
+    per_diff_target = {}
+    for dir_path, _, file_names in os.walk(diff_summary_dir):
+        for file_name in sorted(file_names):
+            match = re.search("superpmi_(.*)_summary_(.*)-(.*)-(\\d+)\\.json", file_name)
+            if match:
+                diff_type = match.group(1)
+                target_os = match.group(2)
+                target_arch = match.group(3)
+                if (diff_type, target_os, target_arch) not in per_diff_target:
+                    per_diff_target[(diff_type, target_os, target_arch)] = []
+
+                per_diff_target[(diff_type, target_os, target_arch)].append(os.path.join(dir_path, file_name))
+
+    superpmi_script = os.path.join(superpmi_scripts_directory, "superpmi.py")
+    for (diff_type, target_os, target_arch), json_files in per_diff_target.items():
+        output_path = os.path.join(diff_summary_dir, "superpmi_{}_summary_{}_{}.md".format(diff_type, target_os, target_arch))
+        args = [
+            python_path,
+            superpmi_script,
+            "summarize",
+            "-summary_type", diff_type,
+            "-output_long_summary_path", output_path,
+            "-summaries"
+            ]
+        args.extend(json_files)
+        print("Invoking {}".format(" ".join(args)))
+        _, _, return_code = run_command(args, source_directory)
+
+        if return_code != 0:
+            print("'{}' failed with '{}'".format(superpmi_script, return_code))
+            return return_code
+
+    # Consolidate all superpmi_asmdiffs_summary_*.json and superpmi_tpdiff_summary_*.json
+    # into overall_<N>_<asmdiffs|tpdiff|metricdiff>_summary_<os>_<architecture>.md.
     # (Don't name it "superpmi_xxx.md" or we might consolidate it into itself.)
     # If there are no summary files found, add a "No diffs found" text to be explicit about that.
     #
@@ -160,7 +190,11 @@ def main(main_args):
     # We should create a job that depends on all the diff jobs, downloads all the .md file artifacts,
     # and consolidates everything together in one file.
 
-    final_md_path = os.path.join(diff_summary_dir, "overall_{}_summary_{}_{}.md".format(coreclr_args.type, platform_name, arch))
+    # Use a numeric prefix so tabs sort in the desired order on the AzDO Extensions page:
+    # asmdiffs first, tpdiff second, metricdiff last.
+    type_sort_prefix = {"asmdiffs": "1", "tpdiff": "2", "metricdiff": "3"}
+    prefix = type_sort_prefix.get(coreclr_args.type, "0")
+    final_md_path = os.path.join(diff_summary_dir, "overall_{}_{}_summary_{}_{}.md".format(prefix, coreclr_args.type, platform_name, arch))
     print("Consolidating final {}".format(final_md_path))
     with open(final_md_path, "a") as f:
 
@@ -170,7 +204,7 @@ def main(main_args):
             any_asmdiffs_found = False
             for dirpath, _, files in os.walk(diff_summary_dir):
                 for file_name in files:
-                    if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md") and "_short_" not in file_name:
+                    if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md"):
                         full_file_path = os.path.join(dirpath, file_name)
                         if append_diff_file(f, file_name, full_file_path):
                             any_asmdiffs_found = True
@@ -194,6 +228,21 @@ def main(main_args):
 
             if not any_tpdiff_found:
                 f.write("No throughput diffs found\n")
+
+        if do_metricdiff:
+            f.write("# JIT metric diffs on {} {}\n\n".format(platform_name, arch))
+            f.write("The following shows the impact on JIT metrics.\n\n")
+
+            any_metricdiff_found = False
+            for dirpath, _, files in os.walk(diff_summary_dir):
+                for file_name in files:
+                    if file_name.startswith("superpmi_metricdiff") and file_name.endswith(".md"):
+                        full_file_path = os.path.join(dirpath, file_name)
+                        if append_diff_file(f, file_name, full_file_path):
+                            any_metricdiff_found = True
+
+            if not any_metricdiff_found:
+                f.write("No metric diffs found\n")
 
     with open(final_md_path, "r") as f:
         print(f.read())

@@ -42,6 +42,15 @@ namespace Microsoft.Interop
         DiagnosticInfo CreateDiagnosticInfo(DiagnosticDescriptor descriptor, GeneratorDiagnostic diagnostic);
     }
 
+    public class NoneSignatureDiagnosticLocations : ISignatureDiagnosticLocations
+    {
+        public static readonly NoneSignatureDiagnosticLocations Instance = new();
+        public DiagnosticInfo CreateDiagnosticInfo(DiagnosticDescriptor descriptor, GeneratorDiagnostic diagnostic)
+        {
+            return diagnostic.ToDiagnosticInfo(descriptor, Location.None, string.Empty);
+        }
+    }
+
     public sealed record MethodSignatureDiagnosticLocations(string MethodIdentifier, ImmutableArray<Location> ManagedParameterLocations, Location FallbackLocation) : ISignatureDiagnosticLocations
     {
         public MethodSignatureDiagnosticLocations(MethodDeclarationSyntax syntax)

@@ -424,14 +424,6 @@ function create_core_overlay {
     fi
     cp -f -v "$testDependenciesDir/"xunit* "$coreOverlayDir/" 2>/dev/null
     cp -n -v "$testDependenciesDir/"* "$coreOverlayDir/" 2>/dev/null
-    if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
-        # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
-        rm -f "$coreOverlayDir/mscorlib.ni.dll"
-    fi
-    if [ -f "$coreOverlayDir/System.Private.CoreLib.ni.dll" ]; then
-        # Test dependencies come from a Windows build, and System.Private.CoreLib.ni.dll would be the one from Windows
-        rm -f "$coreOverlayDir/System.Private.CoreLib.ni.dll"
-    fi
     copy_test_native_bin_to_test_root $coreOverlayDir
 }
 
@@ -452,7 +444,7 @@ function precompile_overlay_assemblies {
     if [[ "$doCrossgen" == 1 ]]; then
         local overlayDir=$CORE_ROOT
 
-        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -type f )
+        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -type f )
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}
@@ -495,10 +487,6 @@ function copy_test_native_bin_to_test_root {
     if [ -z "$testNativeBinDir" ]; then
         exit_with_error "$errorSource" "--testNativeBinDir is required."
     fi
-    testNativeBinDir=$testNativeBinDir/src
-    if [ ! -d "$testNativeBinDir" ]; then
-        exit_with_error "$errorSource" "Directory specified by --testNativeBinDir does not exist: $testNativeBinDir"
-    fi
 
     # Copy native test components from the native test build into the respective test directory in the test root directory
     find "$testNativeBinDir" -type f -iname "*.$libExtension" |
@@ -530,7 +518,7 @@ function read_array {
             theArray[${#theArray[@]}]=$line
         fi
     done < "$1"
-    echo ${theArray[@]}
+    echo "${theArray[@]}"
 }
 
 function load_unsupported_tests {
@@ -670,8 +658,6 @@ function print_info_from_core_file {
         gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
     fi
 }
-
-
 
 function inspect_and_delete_core_files {
     # This function prints some basic information from core files in the current
@@ -1069,10 +1055,6 @@ do
             ;;
         --jitforcerelocs)
             export DOTNET_ForceRelocs=1
-            ;;
-        --link=*)
-            export ILLINK=${i#*=}
-            export DoLink=true
             ;;
         --tieredcompilation)
             export DOTNET_TieredCompilation=1

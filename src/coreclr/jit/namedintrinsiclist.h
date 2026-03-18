@@ -15,6 +15,7 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_ArgumentNullException_ThrowIfNull,
 
+    NI_System_Enum_Equals,
     NI_System_Enum_HasFlag,
 
     NI_System_BitConverter_DoubleToInt64Bits,
@@ -47,11 +48,15 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Max,
     NI_System_Math_MaxMagnitude,
     NI_System_Math_MaxMagnitudeNumber,
+    NI_System_Math_MaxNative,
     NI_System_Math_MaxNumber,
+    NI_System_Math_MaxUnsigned,
     NI_System_Math_Min,
     NI_System_Math_MinMagnitude,
     NI_System_Math_MinMagnitudeNumber,
+    NI_System_Math_MinNative,
     NI_System_Math_MinNumber,
+    NI_System_Math_MinUnsigned,
     NI_System_Math_MultiplyAddEstimate,
     NI_System_Math_Pow,
     NI_System_Math_ReciprocalEstimate,
@@ -75,8 +80,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
+    NI_System_Threading_Thread_FastPollGC,
     NI_System_Threading_Volatile_Read,
     NI_System_Threading_Volatile_Write,
+    NI_System_Threading_Volatile_ReadBarrier,
+    NI_System_Threading_Volatile_WriteBarrier,
     NI_System_Type_get_IsEnum,
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
@@ -114,6 +122,16 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation,
+
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait,
+
+    NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
@@ -143,7 +161,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_Exchange,
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
-    NI_System_Threading_Interlocked_ReadMemoryBarrier,
+
+    NI_System_Threading_Tasks_Task_ConfigureAwait,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
@@ -161,18 +180,6 @@ enum NamedIntrinsic : unsigned short
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_HW_INTRINSIC_END,
-
-    NI_SIMD_AS_HWINTRINSIC_START,
-#if defined(TARGET_XARCH)
-#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
-    NI_##classId##_##id,
-#include "simdashwintrinsiclistxarch.h"
-#elif defined(TARGET_ARM64)
-#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
-    NI_##classId##_##id,
-#include "simdashwintrinsiclistarm64.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
-    NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
 #if defined(FEATURE_SIMD)
@@ -218,7 +225,9 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_InitBlock,
     NI_SRCS_UNSAFE_InitBlockUnaligned,
     NI_SRCS_UNSAFE_IsAddressGreaterThan,
+    NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo,
     NI_SRCS_UNSAFE_IsAddressLessThan,
+    NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo,
     NI_SRCS_UNSAFE_IsNullRef,
     NI_SRCS_UNSAFE_NullRef,
     NI_SRCS_UNSAFE_Read,
@@ -250,6 +259,13 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
+
+    //
+    // Enumeration Intrinsics
+    //
+    NI_System_SZArrayHelper_GetEnumerator,
+    NI_System_Array_T_GetEnumerator,
+    NI_System_Collections_Generic_IEnumerable_GetEnumerator,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

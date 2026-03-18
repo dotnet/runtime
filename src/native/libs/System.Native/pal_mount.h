@@ -29,15 +29,12 @@ typedef void (*MountPointFound)(void* context, const char* name);
 PALEXPORT int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi);
 
 /**
- * Gets the format information about the given mount point.
- * We separate format info from space info because format information is given back differently per-platform
- * so keep the space information simple (above) and do all the platform logic here.
- * Ubuntu (and most Linux systems) will provide the mount point format as a long int in statfs while
- * OS X and BSD-like systems will provide the information in a char buffer.
- * Since C# is much better at enum and string handling, pass either the char buffer or the long type
- * back, depending on what the platform gives us, and let C# reason on it in an easy way.
+ * Gets the file system type about the given path.
+ * Returns 0 on success, and -1 (with errno set) on failure.
+ * If the platform supports returning a string representation it is stored in formatNameBuffer and formatType is set to -1.
+ * Otherwise the formatType is set the platform specific magic constant for the file system type.
  */
-PALEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
+PALEXPORT int32_t SystemNative_GetFileSystemTypeNameForMountPoint(
     const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType);
 
 /**

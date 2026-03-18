@@ -27,8 +27,6 @@ namespace System.Net.Security.Tests
             _serverStream = new SslStream(serverNet, false, ServerCertCallback);
         }
 
-        public static bool IsNotWindows7 => !PlatformDetection.IsWindows7;
-
         protected abstract Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols = null);
         protected abstract Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols = null);
 
@@ -88,13 +86,14 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
                     AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
-                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10 &&
+                if (PlatformDetection.IsWindows &&
 #pragma warning disable 0618
                     clientProtocols.GetValueOrDefault() != SslProtocols.Default &&
                     serverProtocols.GetValueOrDefault() != SslProtocols.Default)
 #pragma warning restore 0618
                 {
                     Assert.True(
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                         (_clientStream.SslProtocol == SslProtocols.Tls11 && _clientStream.HashAlgorithm == HashAlgorithmType.Sha1) ||
 #pragma warning restore SYSLIB0039
@@ -102,11 +101,12 @@ namespace System.Net.Security.Tests
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
                         _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
                 }
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [Theory]
 #pragma warning disable 0618
         [InlineData(null, SslProtocols.Ssl2)]
         [InlineData(SslProtocols.None, SslProtocols.Ssl2)]
@@ -151,15 +151,6 @@ namespace System.Net.Security.Tests
                 case SslPolicyErrors.RemoteCertificateChainErrors:
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
                     return true;
-                case SslPolicyErrors.RemoteCertificateNotAvailable:
-                    // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
-                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
-                    // The behavior to send the Trusted Issuers List by default is off.
-                    //
-                    // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
-                    // by the server using certificates from the Trusted Root Authorities certificate store.
-                    // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
-                    return PlatformDetection.IsWindows7 && !Capability.IsTrustedRootCertificateInstalled();
                 default:
                     return false;
             }

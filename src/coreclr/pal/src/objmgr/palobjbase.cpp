@@ -17,7 +17,6 @@ Abstract:
 --*/
 
 #include "palobjbase.hpp"
-#include "pal/malloc.hpp"
 #include "pal/dbgmsg.h"
 
 SET_DEFAULT_DEBUG_CHANNEL(PAL);
@@ -287,7 +286,7 @@ CPalObjectBase::ReleaseReference(
 
     if (0 == lRefCount)
     {
-        bool fCleanupSharedState = ReleaseObjectDestructionLock(pthr, TRUE);
+        ReleaseObjectDestructionLock(pthr, TRUE);
 
         //
         // We need to do two things with the calling thread data here:
@@ -308,8 +307,7 @@ CPalObjectBase::ReleaseReference(
             (*m_pot->GetObjectCleanupRoutine())(
                 pthr,
                 static_cast<IPalObject*>(this),
-                FALSE,
-                fCleanupSharedState
+                FALSE
                 );
         }
 
@@ -323,7 +321,7 @@ CPalObjectBase::ReleaseReference(
             (*m_pot->GetProcessLocalDataCleanupRoutine())(pthr, static_cast<IPalObject*>(this));
         }
 
-        InternalDelete(this);
+        delete this;
 
         pthr->ReleaseThreadReference();
     }

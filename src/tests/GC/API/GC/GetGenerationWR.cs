@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
+using TestLibrary;
 
 public class Dummy
 {
@@ -48,7 +50,9 @@ public class CreateObj
     }
 
 
-    public static int Main()
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [Fact]
+    public static int TestEntryPoint()
     {
         CreateObj temp = new CreateObj();
 

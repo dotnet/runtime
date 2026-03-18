@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -104,6 +105,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array containing the specified items.</returns>
+        [OverloadResolutionPriority(-1)]
         public static ImmutableArray<T> Create<T>(Span<T> items)
         {
             return Create((ReadOnlySpan<T>)items);
@@ -126,6 +128,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of element in the list.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array containing the specified items.</returns>
+        [OverloadResolutionPriority(-1)]
         public static ImmutableArray<T> ToImmutableArray<T>(this Span<T> items)
         {
             return Create((ReadOnlySpan<T>)items);
@@ -213,7 +216,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
             Requires.Range(start >= 0 && start <= items.Length, nameof(start));
-            Requires.Range(length >= 0 && start + length <= items.Length, nameof(length));
+            Requires.Range(length >= 0 && length <= items.Length - start, nameof(length));
 
             if (length == 0)
             {
@@ -222,11 +225,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new T[length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = items[start + i];
-            }
-
+            Array.Copy(items, start, array, 0, length);
             return new ImmutableArray<T>(array);
         }
 
@@ -244,7 +243,7 @@ namespace System.Collections.Immutable
         public static ImmutableArray<T> Create<T>(ImmutableArray<T> items, int start, int length)
         {
             Requires.Range(start >= 0 && start <= items.Length, nameof(start));
-            Requires.Range(length >= 0 && start + length <= items.Length, nameof(length));
+            Requires.Range(length >= 0 && length <= items.Length - start, nameof(length));
 
             if (length == 0)
             {
@@ -308,7 +307,7 @@ namespace System.Collections.Immutable
             int itemsLength = items.Length;
 
             Requires.Range(start >= 0 && start <= itemsLength, nameof(start));
-            Requires.Range(length >= 0 && start + length <= itemsLength, nameof(length));
+            Requires.Range(length >= 0 && length <= itemsLength - start, nameof(length));
             Requires.NotNull(selector, nameof(selector));
 
             if (length == 0)
@@ -337,7 +336,7 @@ namespace System.Collections.Immutable
         /// the source array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, Func<TSource, TArg, TResult> selector, TArg arg)
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {
@@ -373,14 +372,14 @@ namespace System.Collections.Immutable
         /// included in the resulting array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, int start, int length, Func<TSource, TArg, TResult> selector, TArg arg)
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {
             int itemsLength = items.Length;
 
             Requires.Range(start >= 0 && start <= itemsLength, nameof(start));
-            Requires.Range(length >= 0 && start + length <= itemsLength, nameof(length));
+            Requires.Range(length >= 0 && length <= itemsLength - start, nameof(length));
             Requires.NotNull(selector, nameof(selector));
 
             if (length == 0)

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
@@ -8,10 +9,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LIbrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
-    <ProjectReference Include="$(LIbrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
-    <ProjectReference Include="$(LIbrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
-    <ProjectReference Include="$(LIbrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
+
 </Project>

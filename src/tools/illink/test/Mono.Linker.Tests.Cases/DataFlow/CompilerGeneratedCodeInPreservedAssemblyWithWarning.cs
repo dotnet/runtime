@@ -7,60 +7,59 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// Similar to CompilerGeneratedCodeInPreservedAssembly, but with warnings
-	// produced while marking the compiler generated code.
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
-	[SetupLinkerDescriptorFile ("CompilerGeneratedCodeInPreservedAssembly.xml")]
-	class CompilerGeneratedCodeInPreservedAssemblyWithWarning
-	{
-		[ExpectedWarning ("IL2026", "--" + nameof (Inner) + "." + nameof (Inner.WithLocalFunctionInner) + "--")]
-		[ExpectedWarning ("IL2026", "--" + nameof (WithLocalFunction) + "--")]
-		public static void Main ()
-		{
-			Inner.WithLocalFunctionInner ();
-			WithLocalFunction ();
-		}
+    // Similar to CompilerGeneratedCodeInPreservedAssembly, but with warnings
+    // produced while marking the compiler generated code.
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    [SetupLinkerArgument("--enable-opt", "ipconstprop")]
+    [SetupLinkerDescriptorFile("CompilerGeneratedCodeInPreservedAssembly.xml")]
+    class CompilerGeneratedCodeInPreservedAssemblyWithWarning
+    {
+        [ExpectedWarning("IL2026", "--" + nameof(Inner) + "." + nameof(Inner.WithLocalFunctionInner) + "--")]
+        [ExpectedWarning("IL2026", "--" + nameof(WithLocalFunction) + "--")]
+        public static void Main()
+        {
+            Inner.WithLocalFunctionInner();
+            WithLocalFunction();
+        }
 
-		// The compiler generated state will see the modified body,
-		// and will not associate the local function with the user method.
-		// Generic argument warnings from the local function will not be suppressed
-		// by RUC on the user method.
+        // The compiler generated state will see the modified body,
+        // and will not associate the local function with the user method.
+        // This is a repro for a bug where generic argument warnings from the local
+        // function was not suppressed by RUC on the user method.
+        // The bug has been fixed so this should produce no warnings
 
-		class Inner
-		{
-			[RequiresUnreferencedCode ("--" + nameof (Inner) + "." + nameof (WithLocalFunctionInner) + "--")]
-			public static void WithLocalFunctionInner ()
-			{
-				if (AlwaysFalse) {
-					LocalWithWarning<int> ();
-				}
+        class Inner
+        {
+            [RequiresUnreferencedCode("--" + nameof(Inner) + "." + nameof(WithLocalFunctionInner) + "--")]
+            public static void WithLocalFunctionInner()
+            {
+                if (AlwaysFalse)
+                {
+                    LocalWithWarning<int>();
+                }
 
-				[ExpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/2937")]
-				void LocalWithWarning<T> ()
-				{
-					// Warning!
-					RequiresAllOnT<T> ();
-				}
-			}
-		}
+                void LocalWithWarning<T>()
+                {
+                    RequiresAllOnT<T>();
+                }
+            }
+        }
 
-		[RequiresUnreferencedCode ("--" + nameof (WithLocalFunction) + "--")]
-		public static void WithLocalFunction ()
-		{
-			if (AlwaysFalse) {
-				LocalWithWarning<int> ();
-			}
+        [RequiresUnreferencedCode("--" + nameof(WithLocalFunction) + "--")]
+        public static void WithLocalFunction()
+        {
+            if (AlwaysFalse)
+            {
+                LocalWithWarning<int>();
+            }
 
-			[ExpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/2937")]
-			void LocalWithWarning<T> ()
-			{
-				// No warning
-				RequiresAllOnT<T> ();
-			}
-		}
-		public static bool AlwaysFalse => false;
-		static void RequiresAllOnT<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> () { }
-	}
+            void LocalWithWarning<T>()
+            {
+                RequiresAllOnT<T>();
+            }
+        }
+        public static bool AlwaysFalse => false;
+        static void RequiresAllOnT<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>() { }
+    }
 }

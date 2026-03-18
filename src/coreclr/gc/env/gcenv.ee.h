@@ -39,6 +39,8 @@ public:
     // Promote refcounted handle callback
     static bool RefCountedHandleCallbacks(Object * pObject);
 
+    static void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args);
+
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
     static void SyncBlockCacheDemote(int max_gen);
@@ -96,6 +98,8 @@ public:
     static void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved);
 
     static void LogErrorToHost(const char *message);
+
+    static uint64_t GetThreadOSThreadId(Thread* thread);
 };
 
 #endif // __GCENV_EE_H__

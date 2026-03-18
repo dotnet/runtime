@@ -14,7 +14,7 @@ namespace System.Collections.Immutable.Tests
         protected static readonly Func<IList, object, object> ContainsFunc = (l, v) => l.Contains(v);
         protected static readonly Func<IList, object, object> RemoveFunc = (l, v) => { l.Remove(v); return l.Count; };
 
-        internal abstract IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list);
+        internal abstract ImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list);
 
         [Fact]
         public void CopyToEmptyTest()
@@ -29,7 +29,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CopyToTest()
         {
-            IImmutableListQueries<int> listQuery = this.GetListQuery(ImmutableList.Create(1, 2));
+            ImmutableListQueries<int> listQuery = this.GetListQuery(ImmutableList.Create(1, 2));
             var list = (IEnumerable<int>)listQuery;
 
             var array = new int[2];
@@ -174,6 +174,21 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(-1, this.GetListQuery(ImmutableList<int>.Empty).FindLastIndex(0, n => true));
             Assert.Equal(-1, this.GetListQuery(ImmutableList<int>.Empty).FindLastIndex(0, 0, n => true));
 
+            ImmutableList<int> singleElementList = ImmutableList.Create(10);
+            Assert.Equal(0, this.GetListQuery(singleElementList).FindLastIndex(0, 1, n => n == 10));
+            Assert.Equal(-1, this.GetListQuery(singleElementList).FindLastIndex(0, 1, n => n == 99));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(singleElementList).FindLastIndex(1, n => n == 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(singleElementList).FindLastIndex(1, 1, n => n == 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(singleElementList).FindLastIndex(0, 2, n => n == 10));
+
+            ImmutableList<int> multipleElementList = ImmutableList.Create(1, 2, 3, 4);
+            Assert.Equal(2, this.GetListQuery(multipleElementList).FindLastIndex(3, 4, n => n == 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(multipleElementList).FindLastIndex(2, 4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, 1, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, 4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(multipleElementList).FindLastIndex(3, 5, n => n == 1));
+
             // Create a list with contents: 100,101,102,103,104,100,101,102,103,104
             ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));
             List<int> bclList = list.ToList();
@@ -219,6 +234,14 @@ namespace System.Collections.Immutable.Tests
                     }
                 }
             }
+        }
+
+        [Fact]
+        public void FindLastIndexTestMultipleMatches()
+        {
+            ImmutableList<string> list = ImmutableList.Create("NonMatch", "Match", "Match", "NonMatch");
+            Assert.Equal(2, this.GetListQuery(list).FindLastIndex(3, 4, n => n == "Match"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => this.GetListQuery(list).FindLastIndex(4, 4, n => n == "Match"));
         }
 
         [Fact]
@@ -397,7 +420,7 @@ namespace System.Collections.Immutable.Tests
         public void BinarySearch()
         {
             var basis = new List<int>(Enumerable.Range(1, 50).Select(n => n * 2));
-            IImmutableListQueries<int> query = this.GetListQuery(basis.ToImmutableList());
+            ImmutableListQueries<int> query = this.GetListQuery(basis.ToImmutableList());
             for (int value = basis.First() - 1; value <= basis.Last() + 1; value++)
             {
                 int expected = basis.BinarySearch(value);
@@ -436,7 +459,7 @@ namespace System.Collections.Immutable.Tests
             int max = inputData[sortedIndex + sortedLength - 1];
 
             var basis = new List<int>(inputData);
-            IImmutableListQueries<int> query = this.GetListQuery(inputData.ToImmutableList());
+            ImmutableListQueries<int> query = this.GetListQuery(inputData.ToImmutableList());
             for (int value = min - 1; value <= max + 1; value++)
             {
                 for (int index = sortedIndex; index < sortedIndex + sortedLength; index++) // make sure the index we pass in is always within the sorted range in the list.

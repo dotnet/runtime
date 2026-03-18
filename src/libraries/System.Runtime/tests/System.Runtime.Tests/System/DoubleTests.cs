@@ -59,7 +59,7 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, -1)]
         [InlineData(double.PositiveInfinity, double.PositiveInfinity, 0)]
         [InlineData(double.PositiveInfinity, double.NegativeInfinity, 1)]
-        public static void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(double d1, object? value, int expected)
         {
             if (value is double d2)
             {
@@ -131,7 +131,7 @@ namespace System.Tests
         [InlineData(double.NaN, -double.NaN, true)]
         [InlineData(789.0, 789.0f, false)]
         [InlineData(789.0, "789", false)]
-        public static void EqualsTest(double d1, object value, bool expected)
+        public static void EqualsTest(double d1, object? value, bool expected)
         {
             if (value is double d2)
             {

@@ -78,6 +78,19 @@ namespace System.Buffers.Text.Tests
                     yield return bad;
                 }
 
+                // Tests for ISO 8601 24:00 support (end of day)
+                // Valid 24:00 cases - should advance to next day at 00:00
+                yield return new ParserTestData<DateTimeOffset>("2007-04-05T24:00:00.0000000Z", new DateTimeOffset(2007, 4, 6, 0, 0, 0, TimeSpan.Zero), 'O', expectedSuccess: true) { ExpectedBytesConsumed = 28 };
+                yield return new ParserTestData<DateTimeOffset>("2007-04-05T24:00:00.0000000+00:00", new DateTimeOffset(2007, 4, 6, 0, 0, 0, TimeSpan.Zero), 'O', expectedSuccess: true) { ExpectedBytesConsumed = 33 };
+                yield return new ParserTestData<DateTimeOffset>("2023-12-31T24:00:00.0000000Z", new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), 'O', expectedSuccess: true) { ExpectedBytesConsumed = 28 };
+                yield return new ParserTestData<DateTimeOffset>("2020-02-29T24:00:00.0000000-05:00", new DateTimeOffset(2020, 3, 1, 0, 0, 0, new TimeSpan(-5, 0, 0)), 'O', expectedSuccess: true) { ExpectedBytesConsumed = 33 };
+
+                // Invalid 24:00 cases - non-zero minute, second, or fraction
+                yield return new ParserTestData<DateTimeOffset>("2007-04-05T24:00:01.0000000Z", default, 'O', expectedSuccess: false);
+                yield return new ParserTestData<DateTimeOffset>("2007-04-05T24:01:00.0000000Z", default, 'O', expectedSuccess: false);
+                yield return new ParserTestData<DateTimeOffset>("2007-04-05T24:00:00.0000001Z", default, 'O', expectedSuccess: false);
+                yield return new ParserTestData<DateTimeOffset>("9999-12-31T24:00:00.0000000Z", default, 'O', expectedSuccess: false); // Would overflow
+
                 foreach (ParserTestData<DateTimeOffset> testData in DateTimeOffsetFormatterTestData.ToParserTheoryDataCollection())
                 {
                     bool roundTrippable = testData.FormatSymbol == 'O';

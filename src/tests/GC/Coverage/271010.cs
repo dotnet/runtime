@@ -2,15 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* DESCRIPTION: regression test for VSWhidbey 271010
+using TestLibrary;
  *              Should throw OOM
  */
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_271010 {
 
-    public static int Main() {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", TestRuntimes.CoreCLR)]
+    [Fact]
+    public static int TestEntryPoint() {
 
         int[][] otherarray;
 

@@ -1,0 +1,15 @@
+using System;
+using System.Threading.Tasks;
+
+public class TestClass {
+    static void WriteTestOutput(string output) => Console.WriteLine($"TestOutput -> {output}");
+
+    public static async Task<int> Main(string[] args)
+    {
+        int count = args == null ? 0 : args.Length;
+        WriteTestOutput($"args#: {args?.Length}");
+        foreach (var arg in args ?? Array.Empty<string>())
+            WriteTestOutput($"arg: {arg}");
+        return await Task.FromResult(42 + count);
+    }
+}

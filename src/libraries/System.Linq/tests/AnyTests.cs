@@ -36,11 +36,11 @@ namespace System.Linq.Tests
                 bool expected = count > 0;
                 foreach (IEnumerable<int> source in CreateSources(new int[count]))
                 {
-                    yield return new object[] { source, expected };
-                    yield return new object[] { source.Select(i => i), expected };
-                    yield return new object[] { source.Where(i => true), expected };
+                    yield return [source, expected];
+                    yield return [source.Select(i => i), expected];
+                    yield return [source.Where(i => true), expected];
 
-                    yield return new object[] { source.Where(i => false), false };
+                    yield return [source.Where(i => false), false];
                 }
             }
         }
@@ -54,9 +54,9 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> TestDataForGroupBy()
         {
-            yield return new object[] { Array.Empty<int>().GroupBy(num => num), false };
-            yield return new object[] { new int[2] { 1, 2 }.GroupBy(num => num), true };
-            yield return new object[] { new int[5] { 1, 2, 1, 3, 2 }.GroupBy(n => n, (k, v) => v), true };
+            yield return [Array.Empty<int>().GroupBy(num => num), false];
+            yield return [new int[2] { 1, 2 }.GroupBy(num => num), true];
+            yield return [new int[5] { 1, 2, 1, 3, 2 }.GroupBy(n => n, (k, v) => v), true];
         }
 
         [Theory, MemberData(nameof(TestDataForGroupBy))]
@@ -68,22 +68,22 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> TestDataWithPredicate()
         {
-            yield return new object[] { new int[0], null, false };
-            yield return new object[] { new int[] { 3 }, null, true };
+            yield return [new int[0], null, false];
+            yield return [new int[] { 3 }, null, true];
 
             Func<int, bool> isEvenFunc = IsEven;
-            yield return new object[] { new int[0], isEvenFunc, false };
-            yield return new object[] { new int[] { 4 }, isEvenFunc, true };
-            yield return new object[] { new int[] { 5 }, isEvenFunc, false };
-            yield return new object[] { new int[] { 5, 9, 3, 7, 4 }, isEvenFunc, true };
-            yield return new object[] { new int[] { 5, 8, 9, 3, 7, 11 }, isEvenFunc, true };
+            yield return [new int[0], isEvenFunc, false];
+            yield return [new int[] { 4 }, isEvenFunc, true];
+            yield return [new int[] { 5 }, isEvenFunc, false];
+            yield return [new int[] { 5, 9, 3, 7, 4 }, isEvenFunc, true];
+            yield return [new int[] { 5, 8, 9, 3, 7, 11 }, isEvenFunc, true];
 
             int[] range = Enumerable.Range(1, 10).ToArray();
-            yield return new object[] { range, (Func<int, bool>)(i => i > 10), false };
+            yield return [range, (Func<int, bool>)(i => i > 10), false];
             for (int j = 0; j <= 9; j++)
             {
                 int k = j; // Local copy for iterator
-                yield return new object[] { range, (Func<int, bool>)(i => i > k), true };
+                yield return [range, (Func<int, bool>)(i => i > k), true];
             }
         }
 
@@ -123,7 +123,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullObjectsInArray_Included()
         {
-            int?[] source = { null, null, null, null };
+            int?[] source = [null, null, null, null];
             Assert.All(CreateSources(source), source =>
             {
                 Assert.True(source.Any());

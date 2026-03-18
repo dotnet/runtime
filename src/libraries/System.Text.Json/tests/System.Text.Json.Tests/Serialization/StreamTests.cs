@@ -18,6 +18,11 @@ namespace System.Text.Json.Serialization.Tests
         public StreamTests_Sync() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
+    public sealed class PipeTests_Async : StreamTests
+    {
+        public PipeTests_Async() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
     public abstract partial class StreamTests
     {
         /// <summary>

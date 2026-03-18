@@ -527,19 +527,19 @@ namespace System.Runtime.InteropServices.Tests
             CollectionsMarshal.SetCount(list, 3);
             Assert.Equal(3, list.Count);
             Assert.Throws<ArgumentOutOfRangeException>(() => list[3]);
-            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3 });
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3 }.AsSpan());
             Assert.True(Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
 
             // make sure that size increase preserves content and doesn't clear
             CollectionsMarshal.SetCount(list, 5);
-            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3, 4, 5 });
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3, 4, 5 }.AsSpan());
             Assert.True(Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
 
             // make sure that reallocations preserve content
             int newCount = list.Capacity * 2;
             CollectionsMarshal.SetCount(list, newCount);
             Assert.Equal(newCount, list.Count);
-            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 }.AsSpan());
             Assert.True(!Unsafe.AreSame(ref intRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list))));
 
             List<string> listReference = new() { "a", "b", "c", "d", "e" };
@@ -547,12 +547,12 @@ namespace System.Runtime.InteropServices.Tests
             CollectionsMarshal.SetCount(listReference, 3);
 
             // verify that reference types aren't cleared
-            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" }.AsSpan());
             Assert.True(Unsafe.AreSame(ref stringRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference))));
             CollectionsMarshal.SetCount(listReference, 5);
 
             // verify that removed reference types are cleared
-            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c", null, null });
+            AssertExtensions.SequenceEqual(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c", null, null }.AsSpan());
             Assert.True(Unsafe.AreSame(ref stringRef, ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(listReference))));
         }
     }

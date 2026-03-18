@@ -1,8 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <CLRTestExecutionArguments>1000 40 191919</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- This test requires precise GC -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="dynamo.cs" />
@@ -10,5 +17,8 @@
     <Compile Include="dynamonode.cs" />
     <Compile Include="randomnode.cs" />
     <Compile Include="staticnode.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

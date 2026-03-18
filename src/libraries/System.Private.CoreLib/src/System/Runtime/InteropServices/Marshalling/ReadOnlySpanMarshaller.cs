@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Supports marshalling from managed into unmanaged in a call from unmanaged code to managed code.
         /// </summary>
-        public static unsafe class UnmanagedToManagedOut
+        public static class UnmanagedToManagedOut
         {
             /// <summary>
             /// Allocates the space to store the unmanaged elements.
@@ -69,7 +69,12 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <param name="numElements">The number of elements that will be copied into the memory block.</param>
             /// <returns>A span over the unmanaged memory that can contain the specified number of elements.</returns>
             public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-                => new Span<TUnmanagedElement>(unmanaged, numElements);
+            {
+                if (unmanaged == null)
+                    return [];
+
+                return new Span<TUnmanagedElement>(unmanaged, numElements);
+            }
         }
 
         /// <summary>
@@ -81,7 +86,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Gets the size of the caller-allocated buffer to allocate.
             /// </summary>
             // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
-            public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
+            public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
             private ReadOnlySpan<T> _managedArray;
             private TUnmanagedElement* _allocatedMemory;
@@ -201,6 +206,9 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <returns>A span over unmanaged values of the array.</returns>
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
+                if (_unmanagedArray is null)
+                    return [];
+
                 return new ReadOnlySpan<TUnmanagedElement>(_unmanagedArray, numElements);
             }
 

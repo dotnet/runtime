@@ -131,6 +131,16 @@ mono_arch_fregname (int reg) {
 static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
+	if (!ppc_is_imm16(soffset)) {
+		ppc_addis (code, ppc_r12, sreg, ppc_ha(soffset));
+		sreg = ppc_r12;
+	}
+
+	if (!ppc_is_imm16(doffset)) {
+		ppc_addis (code, ppc_r11, dreg, ppc_ha(doffset));
+		dreg = ppc_r11;
+	}
+
 	/* unrolled, use the counter in big */
 	if (size > sizeof (target_mgreg_t) * 5) {
 		long shifted = size / TARGET_SIZEOF_VOID_P;
@@ -806,7 +816,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	}
 #else
 	/* For POWER5/6 with ICACHE_SNOOPing only one icbi in the range is required.
-	 * The sync is required to insure that the store queue is completely empty.
+	 * The sync is required to ensure that the store queue is completely empty.
 	 * While the icbi performs no cache operations, icbi/isync is required to
 	 * kill local prefetch.
 	 */

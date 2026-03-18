@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                ArgumentNullException.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 _hashAlgorithm = value;
             }

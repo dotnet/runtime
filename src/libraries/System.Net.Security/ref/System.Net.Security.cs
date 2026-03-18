@@ -36,7 +36,7 @@ namespace System.Net.Security
         [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId="SYSLIB0040", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         NoEncryption = 2,
     }
-    public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    public delegate System.Security.Cryptography.X509Certificates.X509Certificate? LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
     public sealed partial class NegotiateAuthentication : System.IDisposable
     {
         public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationClientOptions clientOptions) { }
@@ -51,14 +51,14 @@ namespace System.Net.Security
         public System.Net.Security.ProtectionLevel ProtectionLevel { get { throw null; } }
         public System.Security.Principal.IIdentity RemoteIdentity { get { throw null; } }
         public string? TargetName { get { throw null; } }
+        public void ComputeIntegrityCheck(System.ReadOnlySpan<byte> message, System.Buffers.IBufferWriter<byte> signatureWriter) { }
         public void Dispose() { }
         public byte[]? GetOutgoingBlob(System.ReadOnlySpan<byte> incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
         public string? GetOutgoingBlob(string? incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
         public System.Net.Security.NegotiateAuthenticationStatusCode Unwrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, out bool wasEncrypted) { throw null; }
         public System.Net.Security.NegotiateAuthenticationStatusCode UnwrapInPlace(System.Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted) { throw null; }
-        public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
-        public void ComputeIntegrityCheck(System.ReadOnlySpan<byte> message, System.Buffers.IBufferWriter<byte> signatureWriter) { }
         public bool VerifyIntegrityCheck(System.ReadOnlySpan<byte> message, System.ReadOnlySpan<byte> signature) { throw null; }
+        public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
     }
     public partial class NegotiateAuthenticationClientOptions
     {
@@ -201,6 +201,8 @@ namespace System.Net.Security
     {
         public SslClientAuthenticationOptions() { }
         public bool AllowRenegotiation { get { throw null; } set { } }
+        public bool AllowRsaPkcs1Padding { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public bool AllowRsaPssPadding { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public bool AllowTlsResume { get { throw null; } set { } }
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol>? ApplicationProtocols { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
@@ -226,6 +228,8 @@ namespace System.Net.Security
     {
         public SslServerAuthenticationOptions() { }
         public bool AllowRenegotiation { get { throw null; } set { } }
+        public bool AllowRsaPkcs1Padding { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public bool AllowRsaPssPadding { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux"), System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public bool AllowTlsResume { get { throw null; } set { } }
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol>? ApplicationProtocols { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
@@ -251,16 +255,22 @@ namespace System.Net.Security
         public override bool CanTimeout { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
         public virtual bool CheckCertRevocationStatus { get { throw null; } }
+        [System.ObsoleteAttribute("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId="SYSLIB0058", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual System.Security.Authentication.CipherAlgorithmType CipherAlgorithm { get { throw null; } }
+        [System.ObsoleteAttribute("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId="SYSLIB0058", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual int CipherStrength { get { throw null; } }
+        [System.ObsoleteAttribute("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId="SYSLIB0058", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual System.Security.Authentication.HashAlgorithmType HashAlgorithm { get { throw null; } }
+        [System.ObsoleteAttribute("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId="SYSLIB0058", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual int HashStrength { get { throw null; } }
         public override bool IsAuthenticated { get { throw null; } }
         public override bool IsEncrypted { get { throw null; } }
         public override bool IsMutuallyAuthenticated { get { throw null; } }
         public override bool IsServer { get { throw null; } }
         public override bool IsSigned { get { throw null; } }
+        [System.ObsoleteAttribute("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId="SYSLIB0058", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual System.Security.Authentication.ExchangeAlgorithmType KeyExchangeAlgorithm { get { throw null; } }
+        [System.ObsoleteAttribute("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId="SYSLIB0058", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual int KeyExchangeStrength { get { throw null; } }
         public override long Length { get { throw null; } }
         public virtual System.Security.Cryptography.X509Certificates.X509Certificate? LocalCertificate { get { throw null; } }
@@ -313,6 +323,7 @@ namespace System.Net.Security
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public virtual System.Threading.Tasks.Task NegotiateClientCertificateAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override int ReadByte() { throw null; }
@@ -321,8 +332,10 @@ namespace System.Net.Security
         public virtual System.Threading.Tasks.Task ShutdownAsync() { throw null; }
         public void Write(byte[] buffer) { }
         public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override void WriteByte(byte value) { }
     }
     public partial class SslStreamCertificateContext
     {

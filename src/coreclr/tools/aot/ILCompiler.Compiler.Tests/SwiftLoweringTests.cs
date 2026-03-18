@@ -45,7 +45,8 @@ namespace ILCompiler.Compiler.Tests
             var testModule = context.GetModuleForSimpleName("ILCompiler.Compiler.Tests.Assets");
             foreach (var type in testModule.GetAllTypes())
             {
-                if (type is EcmaType { Namespace: "ILCompiler.Compiler.Tests.Assets.SwiftTypes", IsValueType: true } ecmaType
+                if (type is EcmaType { IsValueType: true } ecmaType
+                    && ecmaType.Namespace.SequenceEqual("ILCompiler.Compiler.Tests.Assets.SwiftTypes"u8)
                     && ecmaType.GetDecodedCustomAttribute("ILCompiler.Compiler.Tests.Assets.SwiftTypes", "ExpectedLoweringAttribute") is { } expectedLoweringAttribute)
                 {
                     // By default, we assume that our lowered representation is meant to be naturally aligned.
@@ -96,7 +97,7 @@ namespace ILCompiler.Compiler.Tests
                             }
                         }
                     }
-                    yield return new object[] { type.Name, type, expected };
+                    yield return new object[] { type.GetName(), type, expected };
                 }
             }
         }

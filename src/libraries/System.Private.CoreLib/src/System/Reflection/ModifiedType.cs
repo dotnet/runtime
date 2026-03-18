@@ -79,7 +79,7 @@ namespace System.Reflection
         public override Type GetGenericTypeDefinition() => _unmodifiedType.GetGenericTypeDefinition();
         public override bool IsGenericType => _unmodifiedType.IsGenericType;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
             => throw new NotSupportedException(SR.NotSupported_ModifiedType);
@@ -172,8 +172,10 @@ namespace System.Reflection
         public override bool IsEnum => _unmodifiedType.IsEnum;
         protected override bool IsPrimitiveImpl() => _unmodifiedType.IsPrimitive;
         protected override bool IsByRefImpl() => _unmodifiedType.IsByRef;
+        public override bool IsGenericParameter => _unmodifiedType.IsGenericParameter;
         public override bool IsGenericTypeParameter => _unmodifiedType.IsGenericTypeParameter;
         public override bool IsGenericMethodParameter => _unmodifiedType.IsGenericMethodParameter;
+        public override int GenericParameterPosition => _unmodifiedType.GenericParameterPosition;
         protected override bool IsPointerImpl() => _unmodifiedType.IsPointer;
         protected override bool IsValueTypeImpl() => _unmodifiedType.IsValueType;
         protected override bool IsCOMObjectImpl() => _unmodifiedType.IsCOMObject;

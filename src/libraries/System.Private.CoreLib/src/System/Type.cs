@@ -33,7 +33,7 @@ namespace System
             {
 #if !MONO
                 if (this is RuntimeType rt)
-                    return rt.IsInterface;
+                    return rt.IsActualInterface;
 #endif
                 return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
             }
@@ -76,11 +76,11 @@ namespace System
 
         [Intrinsic]
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : EmptyTypes;
+        public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : [];
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual Type[] GetOptionalCustomModifiers() => EmptyTypes;
-        public virtual Type[] GetRequiredCustomModifiers() => EmptyTypes;
+        public virtual Type[] GetOptionalCustomModifiers() => [];
+        public virtual Type[] GetRequiredCustomModifiers() => [];
 
         public virtual int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public virtual GenericParameterAttributes GenericParameterAttributes => throw new NotSupportedException();
@@ -153,7 +153,7 @@ namespace System
         public ConstructorInfo? TypeInitializer
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, EmptyTypes, null);
+            get => GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, CallingConventions.Any, [], null);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -351,6 +351,22 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, DefaultLookup, null, types, modifiers);
 
+        /// <summary>
+        /// Searches for the specified method whose parameters match the specified generic parameter count and argument types, using the specified binding constraints.
+        /// </summary>
+        /// <param name="name">The string containing the name of the method to get.</param>
+        /// <param name="genericParameterCount">The number of generic type parameters of the method.</param>
+        /// <param name="bindingAttr">
+        /// A bitwise combination of the enumeration values that specify how the search is conducted.
+        /// -or-
+        /// Default to return null.
+        /// </param>
+        /// <param name="types">
+        ///  An array of <see cref="Type"/> objects representing the number, order, and type of the parameters for the method to get.
+        /// -or-
+        /// An empty array of <see cref="Type"/> objects (as provided by the <see cref="EmptyTypes"/> field) to get a method that takes no parameters.
+        /// </param>
+        /// <returns>An object representing the method that matches the specified generic parameter count, argument types, and binding constraints, if found; otherwise, <see langword="null" />.</returns>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Type[] types) => GetMethod(name, genericParameterCount, bindingAttr, null, types, null);
 
@@ -561,15 +577,15 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, CultureInfo? culture) => InvokeMember(name, invokeAttr, binder, target, args, null, culture, null);
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public abstract object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -583,7 +599,7 @@ namespace System
 
         public virtual InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o == null ? false : IsAssignableFrom(o.GetType());
+        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o != null && IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
@@ -629,13 +645,169 @@ namespace System
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
 
+        /// <summary>
+        /// Creates a function pointer signature type with the specified return type, parameter types and calling conventions.
+        /// </summary>
+        /// <param name="returnType">The return type of the function pointer.</param>
+        /// <param name="parameterTypes">An array of types representing the parameters of the function pointer.</param>
+        /// <param name="isUnmanaged"><see langword="true"/> if the function pointer uses unmanaged calling conventions; otherwise, <see langword="false"/>.</param>
+        /// <param name="callingConventions">An array of types representing the calling conventions applied to the function pointer.</param>
+        /// <returns>A <see cref="Type"/> object representing the constructed function pointer signature.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="returnType"/>, any supplied parameter type
+        /// or any supplied calling convention is <see langword="null"/>.
+        /// </exception>
+        public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
+        {
+            ArgumentNullException.ThrowIfNull(returnType);
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
+
+            foreach (Type? paramType in parameterTypes)
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+            bool builtInCallConv = false;
+            for (int i = 0; i < callingConventions.Length; i++)
+            {
+                Type? callConv = callingConventions[i];
+                ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
+                string? fullName = callConv.FullName;
+
+                if (callConv.HasElementType ||
+                    callConv.ContainsGenericParameters ||
+                    fullName == null ||
+                    !fullName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                {
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_InvalidCallingConvention, fullName), nameof(callingConventions));
+                }
+
+                if (i == 0 && callingConventions.Length == 1)
+                {
+                    builtInCallConv = fullName is
+                        "System.Runtime.CompilerServices.CallConvCdecl" or
+                        "System.Runtime.CompilerServices.CallConvFastcall" or
+                        "System.Runtime.CompilerServices.CallConvStdcall" or
+                        "System.Runtime.CompilerServices.CallConvThiscall";
+                }
+            }
+
+            if (!isUnmanaged && callingConventions.Length >= 1)
+                throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
+
+            int callConvIndex = 0;
+            if (returnType.GetOptionalCustomModifiers() is Type[] retTypeModOpts)
+            {
+                foreach (Type modopt in retTypeModOpts)
+                {
+                    string? typeName = modopt.FullName;
+
+                    if (typeName is not null && typeName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                    {
+                        if (builtInCallConv)
+                            throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
+                        if (callConvIndex >= callingConventions.Length || modopt != callingConventions[callConvIndex])
+                            throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
+                        callConvIndex++;
+                    }
+                }
+            }
+
+            if (callConvIndex > 0 && callConvIndex != callingConventions.Length)
+                throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
+            if (callConvIndex <= 0 && isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
+            {
+                // Newer or multiple calling conventions specified -> encoded as modopts
+                returnType = MakeModifiedSignatureType(
+                    returnType,
+                    requiredCustomModifiers: [],
+                    optionalCustomModifiers: callingConventions);
+            }
+
+            return new SignatureFunctionPointerType(
+                returnType,
+                parameterTypes,
+                isUnmanaged,
+                callingConventions);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Type"/> object that represents a function pointer type
+        /// with the specified parameter types. The return type is represented by the
+        /// current <see cref="Type"/> instance.
+        /// </summary>
+        /// <param name="parameterTypes">An array of <see cref="Type"/> objects that represent the parameter types of
+        /// the function pointer. If <see langword="null"/>, an empty parameter list
+        /// is assumed.
+        /// </param>
+        /// <param name="isUnmanaged">
+        /// <see langword="true"/> to create an unmanaged function pointer type; otherwise,
+        /// <see langword="false"/> to create a managed function pointer type.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Type"/> object that represents the function pointer type whose
+        /// return type is the current <see cref="Type"/> and whose parameter types are
+        /// specified by <paramref name="parameterTypes"/>.
+        /// </returns>
+        public virtual Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
+        /// <summary>
+        /// Creates a <see cref="Type"/> that represents <paramref name="type"/> with the specified
+        /// required and optional custom modifiers applied to its signature.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to modify. This parameter cannot be <see langword="null"/>.</param>
+        /// <param name="requiredCustomModifiers">
+        /// An array of <see cref="Type"/> objects that represent required custom modifiers
+        /// (<c>modreq</c>) to apply to the returned type.
+        /// If <see langword="null"/>, no required custom modifiers are applied.
+        /// </param>
+        /// <param name="optionalCustomModifiers">
+        /// An array of <see cref="Type"/> objects that represent optional custom modifiers
+        /// (<c>modopt</c>) to apply to the returned type.
+        /// If <see langword="null"/>, no optional custom modifiers are applied.
+        /// </param>
+        /// <returns>A new <see cref="Type"/> instance that represents the specified <paramref name="type"/>
+        /// with the given required and optional custom modifiers.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="type"/>
+        /// or any specified modifier type is <see langword="null"/>.
+        /// </exception>
+        public static Type MakeModifiedSignatureType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            requiredCustomModifiers = (requiredCustomModifiers != null) ? (Type[])requiredCustomModifiers.Clone() : [];
+            optionalCustomModifiers = (optionalCustomModifiers != null) ? (Type[])optionalCustomModifiers.Clone() : [];
+
+            foreach (Type modReq in requiredCustomModifiers)
+                ArgumentNullException.ThrowIfNull(modReq, nameof(requiredCustomModifiers));
+
+            foreach (Type modOpt in optionalCustomModifiers)
+                ArgumentNullException.ThrowIfNull(modOpt, nameof(optionalCustomModifiers));
+
+            return new SignatureModifiedType(
+                type,
+                requiredCustomModifiers,
+                optionalCustomModifiers);
+        }
+
         public virtual Type MakePointerType() => throw new NotSupportedException();
 
-        public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
+        public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments)
+        {
+            ArgumentNullException.ThrowIfNull(genericTypeDefinition);
+            ArgumentNullException.ThrowIfNull(typeArguments);
+
+            if (!genericTypeDefinition.IsGenericTypeDefinition)
+                throw new ArgumentException(SR.Format(SR.Arg_NotGenericTypeDefinition, genericTypeDefinition), nameof(genericTypeDefinition));
+
+            return new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
+        }
 
         public static Type MakeGenericMethodParameter(int position)
         {
@@ -664,7 +836,7 @@ namespace System
 
         public override string ToString() => "Type: " + Name;  // Why do we add the "Type: " prefix?
 
-        public override bool Equals(object? o) => o == null ? false : Equals(o as Type);
+        public override bool Equals(object? o) => o != null && Equals(o as Type);
         public override int GetHashCode()
         {
             Type systemType = UnderlyingSystemType;
@@ -672,7 +844,7 @@ namespace System
                 return systemType.GetHashCode();
             return base.GetHashCode();
         }
-        public virtual bool Equals(Type? o) => o == null ? false : ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
+        public virtual bool Equals(Type? o) => o != null && ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
         [Intrinsic]
         public static bool operator ==(Type? left, Type? right)
@@ -698,15 +870,10 @@ namespace System
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
-        public static Binder DefaultBinder =>
-            s_defaultBinder ??
-            Interlocked.CompareExchange(ref s_defaultBinder, new DefaultBinder(), null) ??
-            s_defaultBinder;
-
-        private static Binder? s_defaultBinder;
+        public static Binder DefaultBinder => System.DefaultBinder.Instance;
 
         public static readonly char Delimiter = '.';
-        public static readonly Type[] EmptyTypes = Array.Empty<Type>();
+        public static readonly Type[] EmptyTypes = [];
         public static readonly object Missing = Reflection.Missing.Value;
 
         public static readonly MemberFilter FilterAttribute = FilterAttributeImpl!;
@@ -728,5 +895,12 @@ namespace System
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
             DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
+
+        internal const DynamicallyAccessedMemberTypes InvokeMemberMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors;
+
+        internal const string CallingConventionTypePrefix = "System.Runtime.CompilerServices.CallConv";
     }
 }

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -60,6 +61,11 @@ namespace System.Text.Json.Serialization.Tests
         public PolymorphicTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
     }
 
+    public class PolymorphicTests_PipeWithSmallBuffer : PolymorphicTests
+    {
+        public PolymorphicTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
+    }
+
     public abstract partial class PolymorphicTests : SerializerTests
     {
         public PolymorphicTests(JsonSerializerWrapper serializer) : base(serializer)
@@ -68,7 +74,9 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(1, "1")]
-        [InlineData("stringValue", @"""stringValue""")]
+        [InlineData("stringValue", """
+            "stringValue"
+            """)]
         [InlineData(true, "true")]
         [InlineData(null, "null")]
         [InlineData(new int[] { 1, 2, 3}, "[1,2,3]")]
@@ -80,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJson, json);
 
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<object> objectTypeInfo = (JsonTypeInfo<object>)options.GetTypeInfo(typeof(object));
+            JsonTypeInfo<object> objectTypeInfo = options.GetTypeInfo<object>();
             json = await Serializer.SerializeWrapper(value, objectTypeInfo);
             Assert.Equal(expectedJson, json);
         }
@@ -95,7 +103,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void ParseUntyped()
         {
-            object obj = JsonSerializer.Deserialize<object>(@"""hello""");
+            object obj = JsonSerializer.Deserialize<object>("""
+                "hello"
+                """);
             Assert.IsType<JsonElement>(obj);
             JsonElement element = (JsonElement)obj;
             Assert.Equal(JsonValueKind.String, element.ValueKind);
@@ -109,7 +119,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<object>(@"null");
             Assert.Null(obj);
 
-            obj = JsonSerializer.Deserialize<object>(@"[]");
+            obj = JsonSerializer.Deserialize<object>("[]");
             element = (JsonElement)obj;
             Assert.Equal(JsonValueKind.Array, element.ValueKind);
         }
@@ -117,10 +127,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ArrayAsRootObject()
         {
-            const string ExpectedJson = @"[1,true,{""City"":""MyCity""},null,""foo""]";
-            const string ReversedExpectedJson = @"[""foo"",null,{""City"":""MyCity""},true,1]";
+            const string ExpectedJson = """[1,true,{"City":"MyCity"},null,"foo"]""";
+            const string ReversedExpectedJson = """["foo",null,{"City":"MyCity"},true,1]""";
 
-            string[] expectedObjects = { @"""foo""", @"null", @"{""City"":""MyCity""}", @"true", @"1" };
+            string[] expectedObjects = { """
+                "foo"
+                """, @"null", """{"City":"MyCity"}""", @"true", @"1" };
 
             var address = new Address();
             address.Initialize();
@@ -324,15 +336,27 @@ namespace System.Text.Json.Serialization.Tests
 
             // Verify with actual type.
             string json = await Serializer.SerializeWrapper(obj);
-            Assert.Contains(@"""MyInt16"":1", json);
-            Assert.Contains(@"""MyBooleanTrue"":true", json);
-            Assert.Contains(@"""MyInt16Array"":[1]", json);
+            Assert.Contains("""
+                "MyInt16":1
+                """, json);
+            Assert.Contains("""
+                "MyBooleanTrue":true
+                """, json);
+            Assert.Contains("""
+                "MyInt16Array":[1]
+                """, json);
 
             // Verify with object type.
             json = await Serializer.SerializeWrapper<object>(obj);
-            Assert.Contains(@"""MyInt16"":1", json);
-            Assert.Contains(@"""MyBooleanTrue"":true", json);
-            Assert.Contains(@"""MyInt16Array"":[1]", json);
+            Assert.Contains("""
+                "MyInt16":1
+                """, json);
+            Assert.Contains("""
+                "MyBooleanTrue":true
+                """, json);
+            Assert.Contains("""
+                "MyInt16Array":[1]
+                """, json);
         }
 
         [Fact]
@@ -340,36 +364,103 @@ namespace System.Text.Json.Serialization.Tests
         {
             void Verify(string json)
             {
-                Assert.Contains(@"""Address"":{""City"":""MyCity""}", json);
-                Assert.Contains(@"""List"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""Array"":[""Hello"",""Again""]", json);
-                Assert.Contains(@"""IEnumerable"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IList"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""ICollection"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IEnumerableT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IListT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""ICollectionT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IReadOnlyCollectionT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IReadOnlyListT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""ISetT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""StackT"":[""World"",""Hello""]", json);
-                Assert.Contains(@"""QueueT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""HashSetT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""LinkedListT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""SortedSetT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""ImmutableArrayT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IImmutableListT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""IImmutableStackT"":[""World"",""Hello""]", json);
-                Assert.Contains(@"""IImmutableQueueT"":[""Hello"",""World""]", json);
-                Assert.True(json.Contains(@"""IImmutableSetT"":[""Hello"",""World""]") || json.Contains(@"""IImmutableSetT"":[""World"",""Hello""]"));
-                Assert.True(json.Contains(@"""ImmutableHashSetT"":[""Hello"",""World""]") || json.Contains(@"""ImmutableHashSetT"":[""World"",""Hello""]"));
-                Assert.Contains(@"""ImmutableListT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""ImmutableStackT"":[""World"",""Hello""]", json);
-                Assert.Contains(@"""ImmutableQueueT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""ImmutableSortedSetT"":[""Hello"",""World""]", json);
-                Assert.Contains(@"""NullableInt"":42", json);
-                Assert.Contains(@"""Object"":{}", json);
-                Assert.Contains(@"""NullableIntArray"":[null,42,null]", json);
+                Assert.Contains("""
+                    "Address":{"City":"MyCity"}
+                    """, json);
+                Assert.Contains("""
+                    "List":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "Array":["Hello","Again"]
+                    """, json);
+                Assert.Contains("""
+                    "IEnumerable":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IList":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "ICollection":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IEnumerableT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IListT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "ICollectionT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IReadOnlyCollectionT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IReadOnlyListT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "ISetT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IReadOnlySetT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "StackT":["World","Hello"]
+                    """, json);
+                Assert.Contains("""
+                    "QueueT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "HashSetT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "LinkedListT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "SortedSetT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "ImmutableArrayT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IImmutableListT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "IImmutableStackT":["World","Hello"]
+                    """, json);
+                Assert.Contains("""
+                    "IImmutableQueueT":["Hello","World"]
+                    """, json);
+                Assert.True(json.Contains("""
+                    "IImmutableSetT":["Hello","World"]
+                    """) || json.Contains("""
+                    "IImmutableSetT":["World","Hello"]
+                    """));
+                Assert.True(json.Contains("""
+                    "ImmutableHashSetT":["Hello","World"]
+                    """) || json.Contains("""
+                    "ImmutableHashSetT":["World","Hello"]
+                    """));
+                Assert.Contains("""
+                    "ImmutableListT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "ImmutableStackT":["World","Hello"]
+                    """, json);
+                Assert.Contains("""
+                    "ImmutableQueueT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "ImmutableSortedSetT":["Hello","World"]
+                    """, json);
+                Assert.Contains("""
+                    "NullableInt":42
+                    """, json);
+                Assert.Contains("""
+                    "Object":{}
+                    """, json);
+                Assert.Contains("""
+                    "NullableIntArray":[null,42,null]
+                    """, json);
             }
 
             // Sanity checks on test type.
@@ -396,12 +487,16 @@ namespace System.Text.Json.Serialization.Tests
             obj.NullableInt = null;
 
             string json = await Serializer.SerializeWrapper(obj);
-            Assert.Contains(@"""NullableInt"":null", json);
+            Assert.Contains("""
+                "NullableInt":null
+                """, json);
 
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.IgnoreNullValues = true;
             json = await Serializer.SerializeWrapper(obj, options);
-            Assert.DoesNotContain(@"""NullableInt"":null", json);
+            Assert.DoesNotContain("""
+                "NullableInt":null
+                """, json);
         }
 
         [Fact]
@@ -480,7 +575,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void PolymorphicInterface_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyClass>(@"{ ""Value"": ""A value"", ""Thing"": { ""Number"": 123 } }"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyClass>("""{ "Value": "A value", "Thing": { "Number": 123 } }"""));
         }
 
         [Fact]
@@ -499,19 +594,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void GenericDictionaryOfInterface_WithInvalidJson_ThrowsJsonException()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingDictionary>(@"{"""":1}"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingDictionary>("""{"":1}"""));
         }
 
         [Fact]
         public void GenericDictionaryOfInterface_WithValidJson_ThrowsNotSupportedException()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingDictionary>(@"{"""":{}}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingDictionary>("""{"":{}}"""));
         }
 
         [Fact]
         public async Task AnonymousType()
         {
-            const string Expected = @"{""x"":1,""y"":true}";
+            const string Expected = """{"x":1,"y":true}""";
             var value = new { x = 1, y = true };
 
             // Strongly-typed.
@@ -577,5 +672,102 @@ namespace System.Text.Json.Serialization.Tests
         class MyThingCollection : List<IThing> { }
 
         class MyThingDictionary : Dictionary<string, IThing> { }
+
+        [Theory]
+        [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtBase), typeof(PolymorphicTypeWithConflictingPropertyNameAtBase.Derived))]
+        [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtDerived), typeof(PolymorphicTypeWithConflictingPropertyNameAtDerived.Derived))]
+        public async Task PolymorphicTypesWithConflictingPropertyNames_ThrowsInvalidOperationException(Type baseType, Type derivedType)
+        {
+            InvalidOperationException ex;
+            object value = Activator.CreateInstance(derivedType);
+
+            ex = Assert.Throws<InvalidOperationException>(() => Serializer.GetTypeInfo(baseType));
+            ValidateException(ex);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value, baseType));
+            ValidateException(ex);
+
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper("{}", baseType));
+            ValidateException(ex);
+
+            void ValidateException(InvalidOperationException ex)
+            {
+                Assert.Contains($"The type '{derivedType}' contains property 'Type' that conflicts with an existing metadata property name.", ex.Message);
+            }
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithConflictingPropertyNameAtBase
+        {
+            public string Type { get; set; }
+
+            public class Derived : PolymorphicTypeWithConflictingPropertyNameAtBase
+            {
+                public string Name { get; set; }
+            }
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithConflictingPropertyNameAtDerived
+        {
+            public class Derived : PolymorphicTypeWithConflictingPropertyNameAtDerived
+            {
+                public string Type { get; set; }
+            }
+        }
+
+        [Fact]
+        public async Task PolymorphicTypeWithIgnoredConflictingPropertyName_Supported()
+        {
+            PolymorphicTypeWithIgnoredConflictingPropertyName value = new PolymorphicTypeWithIgnoredConflictingPropertyName.Derived();
+
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(PolymorphicTypeWithIgnoredConflictingPropertyName));
+            Assert.NotNull(typeInfo);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Type":"Derived"}""", json);
+
+            value = await Serializer.DeserializeWrapper<PolymorphicTypeWithIgnoredConflictingPropertyName>(json);
+            Assert.IsType<PolymorphicTypeWithIgnoredConflictingPropertyName.Derived>(value);
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithIgnoredConflictingPropertyName
+        {
+            [JsonIgnore]
+            public string Type { get; set; }
+
+            public class Derived : PolymorphicTypeWithIgnoredConflictingPropertyName;
+        }
+
+        [Fact]
+        public async Task PolymorphicTypeWithExtensionDataConflictingPropertyName_Supported()
+        {
+            PolymorphicTypeWithExtensionDataConflictingPropertyName value = new PolymorphicTypeWithExtensionDataConflictingPropertyName.Derived();
+
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(PolymorphicTypeWithIgnoredConflictingPropertyName));
+            Assert.NotNull(typeInfo);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Type":"Derived"}""", json);
+
+            value = await Serializer.DeserializeWrapper<PolymorphicTypeWithExtensionDataConflictingPropertyName>("""{"Type":"Derived","extraProp":null}""");
+            Assert.IsType<PolymorphicTypeWithExtensionDataConflictingPropertyName.Derived>(value);
+            Assert.Equal(1, value.Type.Count);
+            Assert.Contains("extraProp", value.Type);
+        }
+
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "Type")]
+        [JsonDerivedType(typeof(Derived), nameof(Derived))]
+        public abstract class PolymorphicTypeWithExtensionDataConflictingPropertyName
+        {
+            [JsonExtensionData]
+            public JsonObject Type { get; set; }
+
+            public class Derived : PolymorphicTypeWithExtensionDataConflictingPropertyName;
+        }
     }
 }

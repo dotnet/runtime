@@ -99,7 +99,7 @@ namespace System.Runtime.Caching
                 if (fcn == null)
                 {
 #if NET
-                    if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();
                     }
@@ -159,10 +159,7 @@ namespace System.Runtime.Caching
 
         public HostFileChangeMonitor(IList<string> filePaths)
         {
-            if (filePaths is null)
-            {
-                throw new ArgumentNullException(nameof(filePaths));
-            }
+            ArgumentNullException.ThrowIfNull(filePaths);
 
             if (filePaths.Count == 0)
             {
