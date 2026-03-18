@@ -39,7 +39,7 @@ then
   exit 1
 fi
 
-"$CORE_ROOT"/crossgen2/crossgen2 --map -r:"$CORE_ROOT"/*.dll -o:ObjCPInvokeR2R.dll IL_DLLS/ObjCPInvokeR2R.dll
+"$CORE_ROOT"/crossgen2/crossgen2 --map --inputbubble -r:"$CORE_ROOT"/*.dll -o:ObjCPInvokeR2R.dll IL_DLLS/ObjCPInvokeR2R.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]

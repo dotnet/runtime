@@ -13,14 +13,16 @@ using System.Runtime.InteropServices;
 /// </summary>
 public static class ObjCPInvokeR2RTest
 {
-    // Blittable objc_msgSend declarations — these should be precompiled by R2R
-    [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
+    // Blittable objc_msgSend declarations — these should be precompiled by R2R.
+    // The module path must be "/usr/lib/libobjc.dylib" to match the ObjC detection
+    // in ShouldCheckForPendingException (MarshalHelpers.cs).
+    [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
     private static extern IntPtr objc_msgSend(IntPtr receiver, IntPtr selector);
 
-    [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
+    [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
     private static extern IntPtr objc_msgSend_2(IntPtr receiver, IntPtr selector, IntPtr arg1);
 
-    [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
+    [DllImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
     private static extern void objc_msgSend_stret(IntPtr receiver, IntPtr selector);
 
     // This method references the P/Invoke declarations to ensure crossgen2 processes them
@@ -53,24 +55,45 @@ public static class ObjCPInvokeR2RTest
         string[] mapLines = File.ReadAllLines(mapFile);
         Console.WriteLine($"Map file has {mapLines.Length} lines");
 
-        // Search for objc_msgSend P/Invoke stub entries in the map
-        string[] objcLines = mapLines.Where(l => l.Contains("objc_msgSend")).ToArray();
+        // Search for objc_msgSend P/Invoke stubs that were actually compiled (MethodWithGCInfo).
+        // MethodFixupSignature entries are just metadata references that exist regardless
+        // of whether the stub was precompiled — only MethodWithGCInfo entries prove the
+        // P/Invoke IL stub was actually generated and compiled into the R2R image.
+        string[] compiledStubs = mapLines
+            .Where(l => l.Contains("objc_msgSend") && l.Contains("MethodWithGCInfo"))
+            .ToArray();
 
-        Console.WriteLine($"Found {objcLines.Length} lines containing objc_msgSend:");
-        foreach (string line in objcLines)
+        Console.WriteLine($"Found {compiledStubs.Length} compiled objc_msgSend stubs (MethodWithGCInfo):");
+        foreach (string line in compiledStubs)
         {
             Console.WriteLine($"  {line}");
         }
 
-        bool foundMsgSend = objcLines.Any(l => l.Contains("objc_msgSend"));
-        if (!foundMsgSend)
+        // Verify all three P/Invoke stubs are precompiled
+        string[] expectedStubs = new[]
         {
-            Console.WriteLine("FAILED: objc_msgSend P/Invoke stub not found in R2R map.");
-            Console.WriteLine("This means the P/Invoke was not precompiled by crossgen2.");
+            "__objc_msgSend ",    // 2-arg variant (trailing space to avoid partial match)
+            "__objc_msgSend_2 ",  // 3-arg variant
+            "__objc_msgSend_stret " // stret variant
+        };
+
+        bool allFound = true;
+        foreach (string expected in expectedStubs)
+        {
+            bool found = compiledStubs.Any(l => l.Contains(expected));
+            Console.WriteLine($"  {(found ? "OK" : "MISSING")}: {expected.Trim()}");
+            if (!found)
+                allFound = false;
+        }
+
+        if (!allFound)
+        {
+            Console.WriteLine("FAILED: Not all objc_msgSend P/Invoke stubs were precompiled.");
+            Console.WriteLine("This means R2R did not generate IL stubs for ObjC P/Invokes.");
             return 1;
         }
 
-        Console.WriteLine("PASSED: objc_msgSend P/Invoke stubs found in R2R map.");
+        Console.WriteLine("PASSED: All objc_msgSend P/Invoke stubs found as compiled methods in R2R map.");
         return 100;
     }
 }
