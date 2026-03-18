@@ -865,7 +865,7 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_WASM)
-// Set this to 1 to turn NYI_WASM into R2R unsupportedfailures instead of asserts.
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
 CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
 #endif // defined(TARGET_WASM)
 
