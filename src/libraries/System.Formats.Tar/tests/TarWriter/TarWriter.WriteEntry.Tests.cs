@@ -389,7 +389,7 @@ namespace System.Formats.Tar.Tests
             MemoryStream ms = new();
             using (TarWriter writer = new(ms, true))
             {
-                TarEntryType entryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                TarEntryType entryType = GetRegularFileEntryTypeForFormat(format);
                 entry = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
                 writer.WriteEntry(entry);
 
@@ -521,7 +521,7 @@ namespace System.Formats.Tar.Tests
         {
             foreach (var entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
             {
-                foreach (var entryType in new[] { entryFormat == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, TarEntryType.Directory, TarEntryType.SymbolicLink })
+                foreach (var entryType in new[] { GetRegularFileEntryTypeForFormat(entryFormat), TarEntryType.Directory, TarEntryType.SymbolicLink })
                 {
                     foreach (bool unseekableStream in new[] { false, true })
                     {

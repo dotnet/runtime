@@ -101,14 +101,9 @@ internal partial class MockDescriptors
             _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
             Types = GetTypes();
 
-            // Add dummy MethodDescSizeTable. Sizes will be incorrect, but we don't use it in tests.
-            MockMemorySpace.HeapFragment methodDescSizeTable = _allocator.Allocate(0x100, "MethodDescSizeTable");
-            Builder.AddHeapFragment(methodDescSizeTable);
-
             Globals = rtsBuilder.Globals.Concat(
             [
                 new(nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount),
-                new(nameof(Constants.Globals.MethodDescSizeTable), methodDescSizeTable.Address),
             ]).ToArray();
         }
 
@@ -126,6 +121,7 @@ internal partial class MockDescriptors
             types[DataType.NonVtableSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
             types[DataType.MethodImpl] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
             types[DataType.NativeCodeSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
+            types[DataType.AsyncMethodData] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
             types[DataType.ArrayMethodDesc] = new Target.TypeInfo() { Size = types[DataType.StoredSigMethodDesc].Size.Value };
             types[DataType.FCallMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
             types[DataType.PInvokeMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };

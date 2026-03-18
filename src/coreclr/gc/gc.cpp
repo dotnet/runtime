@@ -8129,7 +8129,7 @@ void gc_heap::fix_allocation_context_heaps (gc_alloc_context* gc_context, void*)
         alloc_hp_num %= gc_heap::n_heaps;
         acontext->set_alloc_heap (GCHeap::GetHeap (alloc_hp_num));
         gc_heap* hp = acontext->get_alloc_heap ()->pGenGCHeap;
-        hp->alloc_context_count++;
+        hp->alloc_context_count = hp->alloc_context_count + 1;
     }
 }
 
@@ -19223,7 +19223,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
             acontext->set_home_heap (GCHeap::GetHeap (home_hp_num));
             gc_heap* hp = acontext->get_home_heap ()->pGenGCHeap;
             acontext->set_alloc_heap (acontext->get_home_heap ());
-            hp->alloc_context_count++;
+            hp->alloc_context_count = hp->alloc_context_count + 1;
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
             uint16_t ideal_proc_no = 0;
@@ -19476,8 +19476,13 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                 {
                     final_alloc_hp_num = max_hp->heap_number;
 
-                    org_hp->alloc_context_count--;
-                    max_hp->alloc_context_count++;
+                    // update the alloc_context_count for the original and new heaps.
+                    // NOTE: at this time the alloc_context_count for these heaps could have changed due to racing threads,
+                    //       but we will update the counts based on what we observed, without trying to re-check or 
+                    //       synchronize, as this is just a heuristic to improve our balancing, and doesn't need to 
+                    //       be perfectly accurate.
+                    org_hp->alloc_context_count = org_hp->alloc_context_count - 1;
+                    max_hp->alloc_context_count = max_hp->alloc_context_count + 1;
 
                     acontext->set_alloc_heap (GCHeap::GetHeap (final_alloc_hp_num));
                     if (!gc_thread_no_affinitize_p)
@@ -24206,7 +24211,7 @@ void gc_heap::pm_full_gc_init_or_clear()
             // Although arguably we should just turn off PM then...
             //assert (settings.entry_memory_load >= high_memory_load_th);
             assert (settings.entry_memory_load > 0);
-            settings.gc_index += 1;
+            settings.gc_index = settings.gc_index + 1;
             do_pre_gc();
         }
     }
@@ -53401,6 +53406,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
     bool v6 = gcDacVars->minor_version_number >= 6;
+    bool v8 = gcDacVars->minor_version_number >= 8;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53432,7 +53438,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 4;
+    gcDacVars->minor_version_number = 8;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
@@ -53547,6 +53553,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
         gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
 #endif // MULTIPLE_HEAPS
 #endif // GC_DESCRIPTOR
+    }
+    if (v8)
+    {
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->g_totalCpuCount = &::g_totalCpuCount;
+#endif // MULTIPLE_HEAPS
     }
 }
 

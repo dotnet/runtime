@@ -13,7 +13,7 @@ namespace System.IO.MemoryMappedFiles
         private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, SafeFileHandle? fileHandle, long fileSize, out bool isRegularFile)
         {
             // if the length has already been fetched and it's more than 0 it's a regular file and there is no need for the FStat sys-call
-            isRegularFile = fileHandle is not null && (fileSize > 0 || IsRegularFile(fileHandle));
+            isRegularFile = fileHandle is not null && (fileSize > 0 || fileHandle.Type is FileHandleType.RegularFile);
 
             if (isRegularFile)
             {
@@ -32,12 +32,6 @@ namespace System.IO.MemoryMappedFiles
                 {
                     throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
                 }
-            }
-
-            static bool IsRegularFile(SafeFileHandle fileHandle)
-            {
-                Interop.CheckIo(Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus status));
-                return (status.Mode & Interop.Sys.FileTypes.S_IFREG) != 0;
             }
         }
 

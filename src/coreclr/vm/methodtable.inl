@@ -316,7 +316,11 @@ inline DWORD MethodTable::GetRank()
     if (GetFlag(enum_flag_Category_IfArrayThenSzArray))
         return 1;  // ELEMENT_TYPE_SZARRAY
     else
-        return dac_cast<PTR_ArrayClass>(GetClass())->GetRank();
+    {
+        // Multidim array: BaseSize = ARRAYBASE_BASESIZE + Rank * sizeof(DWORD) * 2
+        DWORD boundsSize = GetBaseSize() - ARRAYBASE_BASESIZE;
+        return boundsSize / (sizeof(DWORD) * 2);
+    }
 }
 
 //==========================================================================================

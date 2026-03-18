@@ -2214,7 +2214,7 @@ bool Liveness<TLiveness>::RemoveDeadStore(GenTree**           pTree,
         {
             JITDUMP("removing stmt with no side effects\n");
 
-            // No side effects - remove the whole statement from the block->bbStmtList.
+            // No side effects - remove the whole statement from the block's statement list.
             m_compiler->fgRemoveStmt(m_compiler->compCurBB, m_compiler->compCurStmt);
 
             // Since we removed it do not process the rest (i.e. "data") of the statement

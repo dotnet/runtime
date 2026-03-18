@@ -428,10 +428,10 @@ namespace System.Diagnostics
         private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo)
         {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
-            //    * The handles are duplicated as non-inheritable before they are passed to CreateProcess so
-            //      that the child process can not close them
+            //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
+            //      that the child process can use them
             //    * CreateProcess allows you to redirect all or none of the standard IO handles, so we use
-            //      GetStdHandle for the handles that are not being redirected
+            //      Console.OpenStandard*Handle for the handles that are not being redirected
 
             var commandLine = new ValueStringBuilder(stackalloc char[256]);
             BuildCommandLine(startInfo, ref commandLine);
@@ -468,7 +468,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            childInputPipeHandle = new SafeFileHandle(Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE), false);
+                            childInputPipeHandle = Console.OpenStandardInputHandle();
                         }
 
                         if (startInfo.RedirectStandardOutput)
@@ -477,7 +477,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            childOutputPipeHandle = new SafeFileHandle(Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE), false);
+                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
                         }
 
                         if (startInfo.RedirectStandardError)
@@ -486,7 +486,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            childErrorPipeHandle = new SafeFileHandle(Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE), false);
+                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
                         }
 
                         startupInfo.hStdInput = childInputPipeHandle.DangerousGetHandle();
@@ -800,15 +800,6 @@ namespace System.Diagnostics
             }
         }
 
-        private static void CreatePipeWithSecurityAttributes(out SafeFileHandle hReadPipe, out SafeFileHandle hWritePipe, ref Interop.Kernel32.SECURITY_ATTRIBUTES lpPipeAttributes, int nSize)
-        {
-            bool ret = Interop.Kernel32.CreatePipe(out hReadPipe, out hWritePipe, ref lpPipeAttributes, nSize);
-            if (!ret || hReadPipe.IsInvalid || hWritePipe.IsInvalid)
-            {
-                throw new Win32Exception();
-            }
-        }
-
         // Using synchronous Anonymous pipes for process input/output redirection means we would end up
         // wasting a worker threadpool thread per pipe instance. Overlapped pipe IO is desirable, since
         // it will take advantage of the NT IO completion port infrastructure. But we can't really use
@@ -818,47 +809,31 @@ namespace System.Diagnostics
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
         private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributesParent = default;
-            securityAttributesParent.bInheritHandle = Interop.BOOL.TRUE;
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
 
-            SafeFileHandle? hTmp = null;
-            try
+            // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
+            // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
+            parentHandle = parentInputs ? writeHandle : readHandle;
+            SafeFileHandle hTmpChild = parentInputs ? readHandle : writeHandle;
+
+            // Duplicate the child handle to be inheritable so that the child process
+            // has access. The original non-inheritable handle is closed afterwards.
+            IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
+            if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
+                                                 hTmpChild,
+                                                 currentProcHandle,
+                                                 out childHandle,
+                                                 0,
+                                                 bInheritHandle: true,
+                                                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
             {
-                if (parentInputs)
-                {
-                    CreatePipeWithSecurityAttributes(out childHandle, out hTmp, ref securityAttributesParent, 0);
-                }
-                else
-                {
-                    CreatePipeWithSecurityAttributes(out hTmp,
-                                                          out childHandle,
-                                                          ref securityAttributesParent,
-                                                          0);
-                }
-                // Duplicate the parent handle to be non-inheritable so that the child process
-                // doesn't have access. This is done for correctness sake, exact reason is unclear.
-                // One potential theory is that child process can do something brain dead like
-                // closing the parent end of the pipe and there by getting into a blocking situation
-                // as parent will not be draining the pipe at the other end anymore.
-                IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
-                if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
-                                                     hTmp,
-                                                     currentProcHandle,
-                                                     out parentHandle,
-                                                     0,
-                                                     false,
-                                                     Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
-                {
-                    throw new Win32Exception();
-                }
+                int lastError = Marshal.GetLastWin32Error();
+                parentHandle.Dispose();
+                hTmpChild.Dispose();
+                throw new Win32Exception(lastError);
             }
-            finally
-            {
-                if (hTmp != null && !hTmp.IsInvalid)
-                {
-                    hTmp.Dispose();
-                }
-            }
+
+            hTmpChild.Dispose();
         }
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)

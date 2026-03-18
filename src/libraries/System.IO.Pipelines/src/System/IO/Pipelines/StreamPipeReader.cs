@@ -106,9 +106,12 @@ namespace System.IO.Pipelines
 
             long consumedBytes = BufferSegment.GetLength(returnStart, _readIndex, consumedSegment, consumedIndex);
 
-            _bufferedBytes -= consumedBytes;
+            if (consumedBytes < 0 || consumedBytes > _bufferedBytes)
+            {
+                ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
+            }
 
-            Debug.Assert(_bufferedBytes >= 0);
+            _bufferedBytes -= consumedBytes;
 
             _examinedEverything = false;
 
@@ -354,6 +357,11 @@ namespace System.IO.Pipelines
                         {
                             AdvanceTo(segment, segment.End, segment, segment.End);
                         }
+                        else if (_readTail != null)
+                        {
+                            // All buffered segments were successfully written - advance past them
+                            AdvanceTo(_readTail, _readTail.End, _readTail, _readTail.End);
+                        }
                     }
 
                     await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
@@ -409,6 +417,11 @@ namespace System.IO.Pipelines
                         if (segment != null)
                         {
                             AdvanceTo(segment, segment.End, segment, segment.End);
+                        }
+                        else if (_readTail != null)
+                        {
+                            // All buffered segments were successfully written - advance past them
+                            AdvanceTo(_readTail, _readTail.End, _readTail, _readTail.End);
                         }
                     }
 
