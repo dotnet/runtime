@@ -244,12 +244,121 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal DateTimeOffset GenTime;
         internal System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy? Accuracy;
         internal bool Ordering;
-        internal ReadOnlySpan<byte> Nonce;
-        internal bool HasNonce;
-        internal ReadOnlySpan<byte> Tsa;
-        internal bool HasTsa;
-        internal ReadOnlySpan<byte> Extensions;
-        internal bool HasExtensions;
+
+        internal ReadOnlySpan<byte> Nonce
+        {
+            get;
+            set
+            {
+                HasNonce = true;
+                field = value;
+            }
+        }
+
+        internal bool HasNonce { get; private set; }
+
+        internal ReadOnlySpan<byte> Tsa
+        {
+            get;
+            set
+            {
+                HasTsa = true;
+                field = value;
+            }
+        }
+
+        internal bool HasTsa { get; private set; }
+
+        internal ReadOnlySpan<byte> Extensions
+        {
+            get;
+            set
+            {
+                HasExtensions = true;
+                field = value;
+            }
+        }
+
+        internal bool HasExtensions { get; private set; }
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            writer.WriteInteger(Version);
+            try
+            {
+                writer.WriteObjectIdentifier(Policy);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            MessageImprint.Encode(writer);
+            writer.WriteInteger(SerialNumber);
+            writer.WriteGeneralizedTime(GenTime, false);
+
+            if (Accuracy.HasValue)
+            {
+                Accuracy.Value.Encode(writer);
+            }
+
+
+            // DEFAULT value handler for Ordering.
+            {
+                const int AsnBoolDerEncodeSize = 3;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
+                tmp.WriteBoolean(Ordering);
+
+                if (!tmp.EncodedValueEquals(SharedRfc3161TstInfo.DefaultOrdering))
+                {
+                    tmp.CopyTo(writer);
+                }
+            }
+
+
+            if (HasNonce)
+            {
+                writer.WriteInteger(Nonce);
+            }
+
+
+            if (HasTsa)
+            {
+                writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+
+                try
+                {
+                    writer.WriteEncodedValue(Tsa);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+                writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            }
+
+
+            if (HasExtensions)
+            {
+
+                try
+                {
+                    writer.WriteEncodedValue(Extensions);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+            }
+
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRfc3161TstInfo decoded)
         {

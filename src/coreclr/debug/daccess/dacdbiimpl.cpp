@@ -6094,8 +6094,18 @@ HRESULT DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pCon
                 // that has context available for stackwalking (SP and PC)
                 // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame, CLRToCOMMethodFrame
                 Frame *frame = pThread->GetFrame();
+
                 while (frame != NULL && frame != FRAME_TOP)
                 {
+#ifdef FEATURE_INTERPRETER
+                    if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+                    {
+                        PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(frame);
+                        pInterpreterFrame->SetContextToInterpMethodContextFrame(&tmpContext);
+                        CopyMemory(pContextBuffer, &tmpContext, sizeof(*pContextBuffer));
+                        return S_OK;
+                    }
+#endif // FEATURE_INTERPRETER
                     frame->UpdateRegDisplay(&tmpRd);
                     if (GetRegdisplaySP(&tmpRd) != 0 && GetControlPC(&tmpRd) != 0)
                     {
@@ -6107,7 +6117,7 @@ HRESULT DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pCon
                                                                           // DT_CONTEXT_CONTROL already includes the frame register for X86 and ARM64 architectures
     #endif
                         ;
-                        return hr;
+                        return S_OK;
                     }
                     frame = frame->Next();
                 }
