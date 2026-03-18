@@ -148,7 +148,6 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG
     hHandle = NULL;
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
     cPendingCount = 0;
-    pPendingTable = new T_RUNTIME_FUNCTION[cPendingMaxCount];
 }
 
 /****************************************************************************/
@@ -164,7 +163,6 @@ UnwindInfoTable::~UnwindInfoTable()
     // It would be cleaner if we could take the lock (we did not have to be GC_NOTRIGGER)
     UnRegister();
     delete[] pTable;
-    delete[] pPendingTable;
 }
 
 /*****************************************************************************/
@@ -332,8 +330,7 @@ void UnwindInfoTable::FlushPendingEntries()
 
     // Fast path: if all pending entries can be appended in order with room to spare,
     // we can just append and call RtlGrowFunctionTable.
-    if (cDeletedEntries == 0
-        && cTableCurCount + localPendingCount <= cTableMaxCount
+    if (cTableCurCount + localPendingCount <= cTableMaxCount
         && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < localPending[0].BeginAddress))
     {
         memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
@@ -432,22 +429,6 @@ void UnwindInfoTable::FlushPendingEntries()
     STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
         entryPoint, baseAddress, relativeEntryPoint);
 
-    // First check the pending buffer under the pending lock.
-    // Use swap-remove since the buffer doesn't need to stay sorted.
-    {
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
-        for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
-        {
-            if (unwindInfo->pPendingTable[i].BeginAddress <= relativeEntryPoint &&
-                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pPendingTable[i], unwindInfo->iRangeStart))
-            {
-                unwindInfo->pPendingTable[i] = unwindInfo->pPendingTable[--unwindInfo->cPendingCount];
-                STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
-                return;
-            }
-        }
-    }
-
     // Not found in pending buffer — check the main (published) table under publish lock.
     {
         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
@@ -460,6 +441,22 @@ void UnwindInfoTable::FlushPendingEntries()
                     unwindInfo->cDeletedEntries++;
                 unwindInfo->pTable[i].UnwindData = 0;        // Mark the entry for deletion
                 STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed entry 0x%x\n", i);
+                return;
+            }
+        }
+    }
+
+    // Check the pending buffer under the pending lock.
+    // Use swap-remove since the buffer doesn't need to stay sorted.
+    {
+        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
+        {
+            if (unwindInfo->pPendingTable[i].BeginAddress <= relativeEntryPoint &&
+                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pPendingTable[i], unwindInfo->iRangeStart))
+            {
+                unwindInfo->pPendingTable[i] = unwindInfo->pPendingTable[--unwindInfo->cPendingCount];
+                STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
                 return;
             }
         }

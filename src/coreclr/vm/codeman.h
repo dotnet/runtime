@@ -631,9 +631,9 @@ private:
     // Pending buffer for out-of-order entries that haven't been published to the OS yet.
     // These entries are accumulated and batch-merged into pTable to amortize the cost of
     // RtlDeleteGrowableFunctionTable + RtlAddGrowableFunctionTable.
-    T_RUNTIME_FUNCTION* pPendingTable;
-    ULONG               cPendingCount;
     static const ULONG  cPendingMaxCount = 32;
+    T_RUNTIME_FUNCTION  pPendingTable[cPendingMaxCount];
+    ULONG               cPendingCount;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
