@@ -66,7 +66,7 @@ namespace System.Text.Json.Nodes
         public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
             where T : default
         {
-            if (typeof(T) == typeof(JsonElement))
+            if (typeof(T) == typeof(JsonElement) || typeof(T) == typeof(JsonElement?) || typeof(T) == typeof(object))
             {
                 value = (T)(object)JsonWriterHelper.WriteString(_value.Span, static serialized => JsonElement.Parse(serialized));
                 return true;
@@ -150,7 +150,7 @@ namespace System.Text.Json.Nodes
         public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
             where T : default
         {
-            if (typeof(T) == typeof(JsonElement))
+            if (typeof(T) == typeof(JsonElement) || typeof(T) == typeof(JsonElement?) || typeof(T) == typeof(object))
             {
                 value = (T)(object)JsonElement.Parse(_value ? JsonConstants.TrueValue : JsonConstants.FalseValue);
                 return true;
@@ -197,7 +197,7 @@ namespace System.Text.Json.Nodes
         public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
             where T : default
         {
-            if (typeof(T) == typeof(JsonElement))
+            if (typeof(T) == typeof(JsonElement) || typeof(T) == typeof(JsonElement?) || typeof(T) == typeof(object))
             {
                 value = (T)(object)JsonElement.Parse(_value);
                 return true;
