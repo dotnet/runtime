@@ -2290,7 +2290,7 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
     MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
     if (pMD->IsAsyncThunkMethod())
     {
-        MethodDesc* pOtherMD = pMD->GetAsyncOtherVariant();
+        MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
         _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
 
         LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));

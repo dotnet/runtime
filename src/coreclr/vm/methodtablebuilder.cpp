@@ -3338,7 +3338,6 @@ MethodTableBuilder::EnumerateClassMethods()
         // Create a new bmtMDMethod representing this method and add it to the
         // declared method list.
         //
-        bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
             if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
@@ -3391,8 +3390,6 @@ MethodTableBuilder::EnumerateClassMethods()
                         pNewMethod->SetAsyncMethodFlags(AsyncMethodFlags::None);
                     }
                 }
-
-                pDeclaredMethod = pNewMethod;
             }
             else
             {
@@ -3486,9 +3483,6 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncFlags,
                     asyncVariantType,
                     implType);
-
-                pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
-                pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
 
 #ifdef FEATURE_COMINTEROP
                 // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
@@ -5546,8 +5540,8 @@ MethodTableBuilder::PlaceVirtualMethods()
     }
 }
 
-// Given an interface map entry, and a name+signature, compute the method on the interface
-// that the name+signature corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
+// Given an interface map entry, and a name+signature+variantLookup, compute the method on the interface
+// that the name+signature+variantLookup corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
 // Always returns the first match that it finds. Affects the ambiguities in code:#ProcessInexactMethodImpls_Ambiguities
 MethodTableBuilder::bmtMethodHandle
 MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, AsyncVariantLookup variantLookup, bool searchForStaticMethods)
@@ -5587,9 +5581,11 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
         }
     }
 
-    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant && !declMethod.IsNull())
+    if (variantLookup != AsyncVariantLookup::Ordinary && !declMethod.IsNull())
     {
         bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
+        _ASSERTE(!declRTMethod->GetMethodDesc()->IsAsyncVariantMethod());
+
         // Other variant may not exist. For example we return Task and the base is generic and returns T.
         // Then we return Null.
         declMethod = {};
@@ -5600,7 +5596,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
-                (slotDeclMethod->GetMethodDesc()->IsAsyncVariantMethod() != declRTMethod->GetMethodDesc()->IsAsyncVariantMethod()))
+                (slotDeclMethod->GetMethodDesc()->AsyncVariantKind() == variantLookup))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -5676,9 +5672,9 @@ MethodTableBuilder::ProcessInexactMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
-            AsyncVariantLookup::MatchingAsyncVariant :
-            AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = it->IsAsyncVariant() ?
+            AsyncVariantLookup::Async :
+            AsyncVariantLookup::Ordinary;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -5821,9 +5817,9 @@ MethodTableBuilder::ProcessMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
-            AsyncVariantLookup::MatchingAsyncVariant :
-            AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = it->IsAsyncVariant() ?
+            AsyncVariantLookup::Async :
+            AsyncVariantLookup::Ordinary;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -6008,7 +6004,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig, asyncVariantOfDeclToFind);
                             }
 
-                            if (declMethod.IsNull() && asyncVariantOfDeclToFind == AsyncVariantLookup::AsyncOtherVariant)
+                            if (declMethod.IsNull() && asyncVariantOfDeclToFind == AsyncVariantLookup::Async)
                             {
                                 // when implementing/overriding, we may see a Task-returning method
                                 // which matches a T-returning method in the interface/base, which would not have variants.
@@ -6150,11 +6146,14 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                         FALSE,
                         iPass == 0 ? &newVisited : NULL))
                     {
-                        if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
+                        // We should find the ordinary variant first.
+                        _ASSERTE(pCurMD->AsyncVariantKind() == AsyncVariantLookup::Ordinary);
+
+                        if (variantLookup != AsyncVariantLookup::Ordinary)
                         {
-                            if (pCurMD->HasAsyncOtherVariant())
+                            if (pCurMD->ReturnsTaskOrValueTask())
                             {
-                                pCurMD = pCurMD->GetAsyncOtherVariant();
+                                pCurMD = pCurMD->GetAsyncVariant();
                             }
                             else
                             {

@@ -25,7 +25,7 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         return false;
     }
 
-    MethodDesc *pAsyncOtherVariant = this->GetAsyncOtherVariant();
+    MethodDesc *pAsyncOtherVariant = IsAsyncVariantMethod() ? this->GetOrdinaryVariant() : this->GetAsyncVariant();
     _ASSERTE(!IsWrapperStub() && !pAsyncOtherVariant->IsWrapperStub());
 
     MetaSig msig(this);

@@ -95,7 +95,7 @@ enum class AsyncMethodFlags
     //   Example: "Task<int> Foo();"  ===> "int Foo();"
     //   Example: "ValueTask Bar();"  ===> "void Bar();"
     //
-    // It is possible to get from one variant to another via GetAsyncOtherVariant.
+    // It is possible to get from one variant to another via GetAsyncVariant/GetOrdinaryVariant.
     //
     // NOTE: Not all AsyncCall methods are "variants" from a pair.
     //       Methods that are explicitly declared as MethodImpl.Async in metadata while
@@ -265,8 +265,8 @@ using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
 enum class AsyncVariantLookup
 {
-    MatchingAsyncVariant = 0,
-    AsyncOtherVariant
+    Ordinary = 0,
+    Async
 };
 
 enum class MethodReturnKind
@@ -1701,25 +1701,42 @@ public:
                                                         BOOL forceBoxedEntryPoint,
                                                         Instantiation methodInst,
                                                         BOOL allowInstParam,
+                                                        AsyncVariantLookup variantLookup,
                                                         BOOL forceRemotableMethod = FALSE,
                                                         BOOL allowCreate = TRUE,
-                                                        AsyncVariantLookup variantLookup = AsyncVariantLookup::MatchingAsyncVariant,
                                                         ClassLoadLevel level = CLASS_LOADED);
 
-    // Normalize methoddesc for reflection
-    static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc *pMethod,
-                                                                     TypeHandle instType,
-                                                                     Instantiation methodInst);
-
-    inline bool HasAsyncOtherVariant() const
+    // Common Case: same async variant kind as pPrimaryMD
+    static MethodDesc* FindOrCreateAssociatedMethodDesc(MethodDesc* pPrimaryMD,
+                                                        MethodTable* pExactMT,
+                                                        BOOL forceBoxedEntryPoint,
+                                                        Instantiation methodInst,
+                                                        BOOL allowInstParam,
+                                                        BOOL forceRemotableMethod = FALSE,
+                                                        BOOL allowCreate = TRUE,
+                                                        ClassLoadLevel level = CLASS_LOADED)
     {
-        return IsAsyncVariantMethod() || ReturnsTaskOrValueTask();
+        return FindOrCreateAssociatedMethodDesc(
+            pPrimaryMD,
+            pExactMT,
+            forceBoxedEntryPoint,
+            methodInst,
+            allowInstParam,
+            pPrimaryMD->AsyncVariantKind(),
+            forceRemotableMethod,
+            allowCreate,
+            level);
     }
 
-    MethodDesc* GetAsyncOtherVariant(BOOL allowInstParam = TRUE)
+    // Normalize methoddesc for reflection
+    static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc* pMethod,
+        TypeHandle instType,
+        Instantiation methodInst);
+
+    MethodDesc* GetOrdinaryVariant(BOOL allowInstParam = TRUE)
     {
-        _ASSERTE(HasAsyncOtherVariant());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+        _ASSERT(IsAsyncVariantMethod());
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Ordinary, FALSE, TRUE);
     }
 
     MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
@@ -1731,7 +1748,7 @@ public:
     MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
     {
         _ASSERT(!IsAsyncVariantMethod());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, TRUE);
     }
 
     // same as above, but with allowCreate = FALSE
@@ -1739,7 +1756,7 @@ public:
     MethodDesc* GetAsyncVariantNoCreate(BOOL allowInstParam = TRUE)
     {
         _ASSERT(!IsAsyncVariantMethod());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, FALSE);
     }
 
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
@@ -2015,6 +2032,21 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
+    }
+
+    inline AsyncVariantLookup AsyncVariantKind() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (HasAsyncMethodData())
+        {
+            AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+            if (hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant))
+            {
+                return AsyncVariantLookup::Async;
+            }
+        }
+
+        return AsyncVariantLookup::Ordinary;
     }
 
     // Is this an Async variant method for a method that
