@@ -333,7 +333,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         string k = tuple.Item2;
                         PendingCreationWatcher w = tuple.Item3;
 
-                        dict.TryRemove(k, out _);
+                        // Only remove our specific entry, not a newer one that may have been added.
+                        if (dict.TryRemove(k, out PendingCreationWatcher? removed) && removed != w)
+                        {
+                            // We removed a newer entry by accident; put it back (best effort).
+                            dict.TryAdd(k, removed);
+                        }
+
                         Task.Factory.StartNew(
                             static watcher => ((PendingCreationWatcher)watcher!).Dispose(),
                             w,
@@ -688,6 +694,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             public readonly CancellationTokenSource Cts = new();
             private FileSystemWatcher? _watcher;
+            private int _disposed;
 
             public PendingCreationWatcher(string existingDirectory)
             {
@@ -705,6 +712,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             public void Dispose()
             {
+                if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                {
+                    return;
+                }
+
                 Interlocked.Exchange(ref _watcher, null)?.Dispose();
                 Cts.Cancel();
                 Cts.Dispose();
