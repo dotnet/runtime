@@ -28,9 +28,12 @@
     <Compile Include="System\Formats\Tar\PaxGlobalExtendedAttributesTarEntry.cs" />
     <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarEntryType.cs" />
+    <Compile Include="System\Formats\Tar\TarExtractOptions.cs" />
     <Compile Include="System\Formats\Tar\TarFile.cs" />
     <Compile Include="System\Formats\Tar\TarReader.cs" />
+    <Compile Include="System\Formats\Tar\TarLinkStrategy.cs" />
     <Compile Include="System\Formats\Tar\TarWriter.cs" />
+    <Compile Include="System\Formats\Tar\TarWriterOptions.cs" />
     <Compile Include="System\Formats\Tar\SubReadStream.cs" />
     <Compile Include="System\Formats\Tar\SeekableSubReadStream.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />

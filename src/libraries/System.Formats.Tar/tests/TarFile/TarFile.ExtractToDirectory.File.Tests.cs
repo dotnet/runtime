@@ -370,11 +370,15 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void HardLinkExtractionRoundtrip(TarEntryFormat format)
+        [InlineData(TarEntryFormat.V7, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarLinkStrategy.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.CopyContents)]
+        public void HardLinkExtractionRoundtrip(TarEntryFormat format, TarLinkStrategy linkStrategy)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -390,8 +394,9 @@ namespace System.Formats.Tar.Tests
 
             // Create archive file.
             string archivePath = Path.Join(root.Path, "archive.tar");
+            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkStrategy = linkStrategy };
             using (FileStream archiveStream = File.Create(archivePath))
-            using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false))
+            using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: false))
             {
                 writer.WriteEntry(sourceDir1, "dir1");
                 writer.WriteEntry(sourceFile1, "dir1/file.txt");
@@ -404,10 +409,63 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(destination);
             TarFile.ExtractToDirectory(archivePath, destination, overwriteFiles: false);
 
-            // Verify extracted files are hard linked
+            // Verify extracted files
             string targetFile1 = Path.Join(destination, "dir1", "file.txt");
             string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
-            AssertPathsAreHardLinked(targetFile1, targetFile2);
+            if (linkStrategy == TarLinkStrategy.PreserveLink)
+            {
+                AssertPathsAreHardLinked(targetFile1, targetFile2);
+            }
+            else
+            {
+                Assert.True(File.Exists(targetFile1));
+                Assert.True(File.Exists(targetFile2));
+                Assert.Equal("test content", File.ReadAllText(targetFile1));
+                Assert.Equal("test content", File.ReadAllText(targetFile2));
+            }
+        }
+
+        [Fact]
+        public void HardLinkExtraction_CopyContents()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            // Create archive with hard link preservation.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkStrategy = TarLinkStrategy.PreserveLink };
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, writerOptions, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            // Extract archive with CopyContents strategy.
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkStrategy = TarLinkStrategy.CopyContents };
+            TarFile.ExtractToDirectory(archivePath, destination, extractOptions);
+
+            // Verify extracted files are independent copies.
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            Assert.True(File.Exists(targetFile1));
+            Assert.True(File.Exists(targetFile2));
+            Assert.Equal("test content", File.ReadAllText(targetFile1));
+            Assert.Equal("test content", File.ReadAllText(targetFile2));
+            AssertPathsAreNotHardLinked(targetFile1, targetFile2);
         }
     }
 }

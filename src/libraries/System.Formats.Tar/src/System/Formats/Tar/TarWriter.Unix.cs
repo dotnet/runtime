@@ -29,7 +29,7 @@ namespace System.Formats.Tar
             // Track files that have more than one hard link.
             // If we encounter the file again, we'll add a TarEntryType.HardLink.
             string? hardLinkTarget = null;
-            if ((fileType == Interop.Sys.FileTypes.S_IFREG) && status.HardLinkCount > 1)
+            if (_hardLinkStrategy == TarLinkStrategy.PreserveLink && (fileType == Interop.Sys.FileTypes.S_IFREG) && status.HardLinkCount > 1)
             {
                 _hardLinkTargets ??= new Dictionary<(long, long), string>();
 

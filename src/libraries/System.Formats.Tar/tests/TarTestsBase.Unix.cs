@@ -11,13 +11,18 @@ namespace System.Formats.Tar.Tests
         protected void AssertPathsAreHardLinked(string path1, string path2)
         {
             Assert.Equal(GetFileId(path1), GetFileId(path2));
+        }
 
-            static (long dev, long ino) GetFileId(string path)
-            {
-                Assert.Equal(0, Interop.Sys.LStat(path, out Interop.Sys.FileStatus status));
+        protected void AssertPathsAreNotHardLinked(string path1, string path2)
+        {
+            Assert.NotEqual(GetFileId(path1), GetFileId(path2));
+        }
 
-                return (status.Dev, status.Ino);
-            }
+        private static (long dev, long ino) GetFileId(string path)
+        {
+            Assert.Equal(0, Interop.Sys.LStat(path, out Interop.Sys.FileStatus status));
+
+            return (status.Dev, status.Ino);
         }
     }
 }

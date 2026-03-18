@@ -588,6 +588,15 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        public static IEnumerable<object[]> GetLinkStrategies()
+            => Enum.GetValues<TarLinkStrategy>().Select(s => new object[] { s });
+
+        public static IEnumerable<object[]> GetInvalidLinkStrategies()
+        {
+            yield return new object[] { (TarLinkStrategy)(-1) };
+            yield return new object[] { (TarLinkStrategy)99 };
+        }
+
         public static IEnumerable<object[]> GetFormatsAndFiles()
         {
             foreach (TarEntryType entryType in new[] { TarEntryType.V7RegularFile, TarEntryType.Directory })
@@ -927,6 +936,49 @@ namespace System.Formats.Tar.Tests
             }
 
             writer.WriteEntry(entry);
+        }
+
+        internal static TempDirectory CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions()
+        {
+            TempDirectory root = new TempDirectory();
+            try
+            {
+                string file1 = Path.Join(root.Path, "file.txt");
+                File.WriteAllText(file1, "content");
+                string file2 = Path.Join(root.Path, "linked.txt");
+                File.CreateHardLink(file2, file1);
+
+                return root;
+            }
+            catch
+            {
+                root.Dispose();
+                throw;
+            }
+        }
+
+        internal static void VerifyCreateFromDirectory_UsesWriterOptions(Stream archive, bool preserveLinks)
+        {
+            archive.Position = 0;
+            using TarReader reader = new TarReader(archive);
+
+            TarEntry entry1 = reader.GetNextEntry();
+            Assert.NotNull(entry1);
+
+            TarEntry entry2 = reader.GetNextEntry();
+            Assert.NotNull(entry2);
+
+            if (preserveLinks)
+            {
+                Assert.True(entry1.EntryType == TarEntryType.HardLink || entry2.EntryType == TarEntryType.HardLink);
+            }
+            else
+            {
+                Assert.Equal(TarEntryType.RegularFile, entry1.EntryType);
+                Assert.Equal(TarEntryType.RegularFile, entry2.EntryType);
+            }
+
+            Assert.Null(reader.GetNextEntry());
         }
     }
 }

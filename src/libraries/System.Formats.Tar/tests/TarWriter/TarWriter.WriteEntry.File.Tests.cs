@@ -208,11 +208,15 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void WriteEntry_HardLinks(TarEntryFormat format)
+        [InlineData(TarEntryFormat.V7, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarLinkStrategy.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.CopyContents)]
+        public void WriteEntry_HardLinks(TarEntryFormat format, TarLinkStrategy linkStrategy)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -228,7 +232,8 @@ namespace System.Formats.Tar.Tests
 
             // Write to archive. Place the second pair in different directories.
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
+            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkStrategy = linkStrategy };
+            using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
             {
                 writer.WriteEntry(file1, "file1.txt");
                 writer.WriteEntry(linked1, "linked1.txt");
@@ -247,26 +252,44 @@ namespace System.Formats.Tar.Tests
                 Assert.True(entry1.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
                 Assert.NotNull(entry1.DataStream);
 
-                // Hard link to first file
+                // Second entry: hard link or regular file depending on strategy
                 TarEntry entry2 = reader.GetNextEntry();
                 Assert.NotNull(entry2);
                 Assert.Equal("linked1.txt", entry2.Name);
-                Assert.Equal(TarEntryType.HardLink, entry2.EntryType);
-                Assert.Equal("file1.txt", entry2.LinkName);
-                Assert.Null(entry2.DataStream);
+                if (linkStrategy == TarLinkStrategy.PreserveLink)
+                {
+                    Assert.Equal(TarEntryType.HardLink, entry2.EntryType);
+                    Assert.Equal("file1.txt", entry2.LinkName);
+                    Assert.Null(entry2.DataStream);
+                }
+                else
+                {
+                    Assert.True(entry2.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
+                    Assert.NotNull(entry2.DataStream);
+                }
 
-                // Second file
+                // Third entry
                 TarEntry entry3 = reader.GetNextEntry();
+                Assert.NotNull(entry3);
                 Assert.Equal("dir1/file2.txt", entry3.Name);
                 Assert.True(entry3.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
                 Assert.NotNull(entry3.DataStream);
 
-                // Hard link to second file
+                // Fourth entry: hard link or regular file depending on strategy
                 TarEntry entry4 = reader.GetNextEntry();
+                Assert.NotNull(entry4);
                 Assert.Equal("dir2/linked2.txt", entry4.Name);
-                Assert.Equal(TarEntryType.HardLink, entry4.EntryType);
-                Assert.Equal("dir1/file2.txt", entry4.LinkName);
-                Assert.Null(entry4.DataStream);
+                if (linkStrategy == TarLinkStrategy.PreserveLink)
+                {
+                    Assert.Equal(TarEntryType.HardLink, entry4.EntryType);
+                    Assert.Equal("dir1/file2.txt", entry4.LinkName);
+                    Assert.Null(entry4.DataStream);
+                }
+                else
+                {
+                    Assert.True(entry4.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
+                    Assert.NotNull(entry4.DataStream);
+                }
 
                 Assert.Null(reader.GetNextEntry());
             }

@@ -46,7 +46,7 @@ namespace System.Formats.Tar
             // Track files that have more than one hard link.
             // If we encounter the file again, we'll add a TarEntryType.HardLink.
             string? hardLinkTarget = null;
-            if ((attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == 0 && fileInfo.nNumberOfLinks > 1)
+            if (_hardLinkStrategy == TarLinkStrategy.PreserveLink && (attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == 0 && fileInfo.nNumberOfLinks > 1)
             {
                 _hardLinkTargets ??= new Dictionary<(uint, ulong), string>();
 

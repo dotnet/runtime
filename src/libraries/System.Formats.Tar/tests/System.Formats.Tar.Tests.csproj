@@ -67,6 +67,8 @@
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Gnu.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.Async.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.cs" />
+    <Compile Include="TarExtractOptions.Tests.cs" />
+    <Compile Include="TarWriterOptions.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Gnu.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Pax.Tests.cs" />

@@ -204,7 +204,8 @@ namespace System.Formats.Tar
             {
                 throw new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
-            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite);
+            // HardLink entries are rejected above. hardLinkStrategy will not be used.
+            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite, TarLinkStrategy.PreserveLink);
         }
 
         /// <summary>
@@ -238,7 +239,8 @@ namespace System.Formats.Tar
             {
                 return Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }
-            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, cancellationToken);
+            // HardLink entries are rejected above. hardLinkStrategy will not be used.
+            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, TarLinkStrategy.PreserveLink, cancellationToken);
         }
 
         /// <summary>
@@ -300,7 +302,7 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarLinkStrategy hardLinkStrategy)
         {
             (string destinationFullPath, string? linkTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
@@ -313,12 +315,12 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, pendingModes);
-                ExtractToFileInternal(destinationFullPath, linkTargetPath, overwrite);
+                ExtractToFileInternal(destinationFullPath, linkTargetPath, overwrite, hardLinkStrategy);
             }
         }
 
         // Asynchronously extracts the current entry to a location relative to the specified directory.
-        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, CancellationToken cancellationToken)
+        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarLinkStrategy hardLinkStrategy, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -337,7 +339,7 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, pendingModes);
-                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, overwrite, cancellationToken);
+                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, overwrite, hardLinkStrategy, cancellationToken);
             }
         }
 
@@ -403,7 +405,7 @@ namespace System.Formats.Tar
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
-        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite)
+        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite, TarLinkStrategy hardLinkStrategy)
         {
             VerifyDestinationPath(filePath, overwrite);
 
@@ -413,12 +415,12 @@ namespace System.Formats.Tar
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath);
+                CreateNonRegularFile(filePath, linkTargetPath, hardLinkStrategy);
             }
         }
 
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
-        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
+        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, TarLinkStrategy hardLinkStrategy, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -432,12 +434,12 @@ namespace System.Formats.Tar
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath);
+                CreateNonRegularFile(filePath, linkTargetPath, hardLinkStrategy);
                 return Task.CompletedTask;
             }
         }
 
-        private void CreateNonRegularFile(string filePath, string? linkTargetPath)
+        private void CreateNonRegularFile(string filePath, string? linkTargetPath, TarLinkStrategy hardLinkStrategy)
         {
             Debug.Assert(EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile));
 
@@ -468,7 +470,15 @@ namespace System.Formats.Tar
 
                 case TarEntryType.HardLink:
                     Debug.Assert(!string.IsNullOrEmpty(linkTargetPath));
-                    ExtractAsHardLink(linkTargetPath, filePath);
+                    if (hardLinkStrategy == TarLinkStrategy.CopyContents)
+                    {
+                        // Overwrite is already handled by VerifyDestinationPath.
+                        File.Copy(linkTargetPath, filePath);
+                    }
+                    else
+                    {
+                        ExtractAsHardLink(linkTargetPath, filePath);
+                    }
                     break;
 
                 case TarEntryType.BlockDevice:
