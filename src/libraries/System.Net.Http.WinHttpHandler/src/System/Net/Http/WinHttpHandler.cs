@@ -1277,7 +1277,13 @@ namespace System.Net.Http
             SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri);
             SetRequestHandleCredentialsOptions(state);
             SetRequestHandleBufferingOptions(state.RequestHandle);
-            SetRequestHandleHttpProtocolOptions(state.RequestHandle, state.RequestMessage.Version);
+            bool forceVersion =
+#if NET
+                state.RequestMessage.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower;
+#else
+                false;
+#endif
+            SetRequestHandleHttpProtocolOptions(state.RequestHandle, state.RequestMessage.Version, forceVersion);
         }
 
         private static void SetRequestHandleProxyOptions(WinHttpRequestState state)
@@ -1517,7 +1523,7 @@ namespace System.Net.Http
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_RESPONSE_DRAIN_SIZE, ref optionData);
         }
 
-        private void SetRequestHandleHttpProtocolOptions(SafeWinHttpHandle requestHandle, Version requestVersion)
+        private void SetRequestHandleHttpProtocolOptions(SafeWinHttpHandle requestHandle, Version requestVersion, bool forceVersion)
         {
             Debug.Assert(requestHandle != null);
             uint optionData = (requestVersion == HttpVersion30) ? Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP3 :
@@ -1535,17 +1541,21 @@ namespace System.Net.Http
                 return;
             }
 
-            /*if (optionData != 0)
+            if (optionData != 0 && forceVersion)
             {
                 uint protocolRequired = 1;
-                if (!Interop.WinHttp.WinHttpSetOption(
+                if (Interop.WinHttp.WinHttpSetOption(
                     requestHandle,
                     Interop.WinHttp.WINHTTP_OPTION_HTTP_PROTOCOL_REQUIRED,
                     ref protocolRequired))
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP protocol required option set");
+                }
+                else
+                {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP protocol required option not supported");
                 }
-            }*/
+            }
         }
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, ref uint optionData)
