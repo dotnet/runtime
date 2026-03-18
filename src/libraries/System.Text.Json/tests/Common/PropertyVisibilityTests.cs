@@ -2252,6 +2252,29 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_OverridesGlobalJSO()
+        {
+            // Global JSO says WhenWritingDefault (ignores null strings AND zero ints),
+            // but the type-level attribute says WhenWritingNull (only ignores null strings).
+            // The type-level attribute should override the global setting.
+            var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
+            var obj = new ClassWithTypeLevelIgnore_WhenWritingNull
+            {
+                MyString = null,
+                MyInt = 0,
+                MyOtherString = null
+            };
+
+            string json = await Serializer.SerializeWrapper(obj, options);
+            // MyString and MyOtherString are null: both global (WhenWritingDefault) and type-level (WhenWritingNull) would ignore them.
+            Assert.DoesNotContain(@"""MyString"":", json);
+            Assert.DoesNotContain(@"""MyOtherString"":", json);
+            // MyInt is 0: the global WhenWritingDefault would ignore it, but the type-level WhenWritingNull should override,
+            // and WhenWritingNull doesn't apply to non-nullable value types so MyInt should still be serialized.
+            Assert.Contains(@"""MyInt"":0", json);
+        }
+
+        [Fact]
         public async Task JsonIgnoreCondition_LastOneWins()
         {
             string json = """{"MyString":"Random","MYSTRING":null}""";

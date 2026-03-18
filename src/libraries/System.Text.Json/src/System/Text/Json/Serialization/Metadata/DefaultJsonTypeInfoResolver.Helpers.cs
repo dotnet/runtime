@@ -240,11 +240,13 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException(SR.DefaultIgnoreConditionInvalid);
                 }
 
-                // WhenWritingNull is invalid for non-nullable value types; skip it in that case
-                // to match the behavior of JsonSerializerOptions.DefaultIgnoreCondition.
-                if (typeIgnoreCondition != JsonIgnoreCondition.WhenWritingNull || typeToConvert.IsNullableType())
+                if (typeIgnoreCondition is not null)
                 {
-                    ignoreCondition = typeIgnoreCondition;
+                    // WhenWritingNull is invalid for non-nullable value types; treat as Never in that case
+                    // so that the type-level annotation still overrides the global JSO DefaultIgnoreCondition.
+                    ignoreCondition = typeIgnoreCondition == JsonIgnoreCondition.WhenWritingNull && !typeToConvert.IsNullableType()
+                        ? JsonIgnoreCondition.Never
+                        : typeIgnoreCondition;
                 }
             }
 

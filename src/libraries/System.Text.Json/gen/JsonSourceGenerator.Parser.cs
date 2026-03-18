@@ -1255,14 +1255,13 @@ namespace System.Text.Json.SourceGeneration
                     out bool hasJsonRequiredAttribute);
 
                 // Fall back to the type-level [JsonIgnore] if no member-level attribute is specified.
-                // WhenWritingNull is invalid for non-nullable value types; skip it in that case
-                // to match the behavior of JsonSerializerOptions.DefaultIgnoreCondition.
+                // WhenWritingNull is invalid for non-nullable value types; treat as Never in that case
+                // so that the type-level annotation still overrides the global JSO DefaultIgnoreCondition.
                 if (ignoreCondition is null && typeIgnoreCondition is not null)
                 {
-                    if (typeIgnoreCondition != JsonIgnoreCondition.WhenWritingNull || memberType.IsNullableType())
-                    {
-                        ignoreCondition = typeIgnoreCondition;
-                    }
+                    ignoreCondition = typeIgnoreCondition == JsonIgnoreCondition.WhenWritingNull && !memberType.IsNullableType()
+                        ? JsonIgnoreCondition.Never
+                        : typeIgnoreCondition;
                 }
 
                 ProcessMember(
