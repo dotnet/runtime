@@ -27,7 +27,7 @@ namespace System.Net.Http
         private RequestQueue<Http2Connection?> _http2RequestQueue;
 
         private bool _http2Enabled;
-        private volatile bool _http2SessionAuthSeen;
+        private bool _http2SessionAuthSeen;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
