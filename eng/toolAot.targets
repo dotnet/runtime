@@ -3,6 +3,11 @@
 
   <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
     <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <!-- Apple platform settings for all NativeAOT-published components, including those that
+       set PublishAot directly (e.g. XUnitLogChecker) without going through AotOrSingleFile. -->
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
     <!--
       _IsApplePlatform is defined in the NativeAOT NuGet package targets which are imported after
       Directory.Build.targets, so it is not available here. Use PortableOS to detect Apple platforms.
