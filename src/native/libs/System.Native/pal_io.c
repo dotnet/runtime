@@ -201,7 +201,7 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
-// Validate that our UserFlags enum value are correct for the platform
+// Validate that our UserFlags enum values are correct for the platform
 #if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
 c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
 #endif
@@ -235,7 +235,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
     dst->BirthTimeNsec = 0;
 #endif
 
-#if HAVE_STAT_FLAGS
+#if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
     dst->UserFlags = (uint32_t)src->st_flags;
 #else
     dst->UserFlags = 0;
