@@ -178,7 +178,7 @@ namespace System.Diagnostics
             {
                 if (_signaled)
                 {
-                    int streamTimeout = milliseconds == Timeout.Infinite ? 300 : milliseconds;
+                    int streamTimeout = milliseconds == Timeout.Infinite ? StreamDrainDefaultTimeoutMs : milliseconds;
                     _output?.CancelDueToProcessExit(streamTimeout);
                     _error?.CancelDueToProcessExit(streamTimeout);
                 }

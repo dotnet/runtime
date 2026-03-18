@@ -83,6 +83,11 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
+        /// <summary>
+        /// Default timeout in milliseconds to wait for redirected streams to complete after the process exits.
+        /// </summary>
+        private const int StreamDrainDefaultTimeoutMs = 300;
+
         private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
@@ -1566,12 +1571,12 @@ namespace System.Diagnostics
             {
                 if (_output is not null)
                 {
-                    await _output.CancelDueToProcessExitAsync(300).ConfigureAwait(false);
+                    await _output.CancelDueToProcessExitAsync(StreamDrainDefaultTimeoutMs).ConfigureAwait(false);
                 }
 
                 if (_error is not null)
                 {
-                    await _error.CancelDueToProcessExitAsync(300).ConfigureAwait(false);
+                    await _error.CancelDueToProcessExitAsync(StreamDrainDefaultTimeoutMs).ConfigureAwait(false);
                 }
             }
         }
