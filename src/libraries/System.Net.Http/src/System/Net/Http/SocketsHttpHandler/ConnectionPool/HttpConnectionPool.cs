@@ -557,7 +557,7 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, bool isForHttp2, CancellationToken cancellationToken)
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
@@ -618,7 +618,7 @@ namespace System.Net.Http
                     SslStream? sslStream = stream as SslStream;
                     if (sslStream == null)
                     {
-                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request, isForHttp2), request, async, stream, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -710,16 +710,12 @@ namespace System.Net.Http
             }
         }
 
-        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request, bool isForHttp2)
         {
-            if (_http2Enabled)
+            // Even if a request could use HTTP/2, we may have chosen to establish an HTTP/1.1 connection
+            // for it instead (e.g. when _http2SessionAuthSeen is set for downgradeable requests).
+            if (_http2Enabled && isForHttp2)
             {
-                // Skip h2 ALPN for downgradeable requests if we've seen a session auth challenge.
-                if (_http2SessionAuthSeen && request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
-                {
-                    return _sslOptionsHttp11!;
-                }
-
                 if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
                     return _sslOptionsHttp2Only!;

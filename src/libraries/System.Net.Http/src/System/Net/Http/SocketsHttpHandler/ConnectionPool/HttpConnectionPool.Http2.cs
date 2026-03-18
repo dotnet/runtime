@@ -185,7 +185,7 @@ namespace System.Net.Http
             CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
-                (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+                (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, isForHttp2: true, cts.Token).ConfigureAwait(false);
 
                 if (IsSecure)
                 {
