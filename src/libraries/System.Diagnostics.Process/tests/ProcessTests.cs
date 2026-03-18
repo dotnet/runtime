@@ -250,6 +250,12 @@ namespace System.Diagnostics.Tests
 
                 SendSignal(signal, remoteHandle.Process.Id);
 
+                // https://github.com/dotnet/runtime/issues/125733
+                if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
+                {
+                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                }
+
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
                 if (OperatingSystem.IsWindows())
