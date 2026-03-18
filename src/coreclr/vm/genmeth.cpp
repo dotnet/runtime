@@ -788,7 +788,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         methodInst.IsEmpty() &&
         !forceBoxedEntryPoint &&
         !pDefMD->IsUnboxingStub() &&
-        pDefMD->AsyncVariantKind() == asyncVariantLookup)
+        pDefMD->MatchesAsyncVariantLookup(asyncVariantLookup))
     {
         // Make sure that pDefMD->GetMethodTable() and pExactMT are related types even
         // if we took the fast path.
@@ -819,7 +819,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
     if (pDefMD->HasClassOrMethodInstantiation() ||
         !methodInst.IsEmpty() ||
-        pDefMD->AsyncVariantKind() != asyncVariantLookup)
+        !pDefMD->MatchesAsyncVariantLookup(asyncVariantLookup))
     {
         // General checks related to generics: arity (if any) must match and generic method
         // instantiation (if any) must be well-formed.
@@ -848,7 +848,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         && (allowInstParam || !pMDescInCanonMT->RequiresInstArg())
         && (forceBoxedEntryPoint == pMDescInCanonMT->IsUnboxingStub())
         && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface() || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations())
-        && (pMDescInCanonMT->AsyncVariantKind() == asyncVariantLookup))
+        && (pMDescInCanonMT->MatchesAsyncVariantLookup(asyncVariantLookup)))
     {
         RETURN(pMDescInCanonMT);
     }

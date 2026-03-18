@@ -1722,7 +1722,7 @@ public:
             forceBoxedEntryPoint,
             methodInst,
             allowInstParam,
-            pPrimaryMD->AsyncVariantKind(),
+            pPrimaryMD->IsAsyncVariantMethod() ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary,
             forceRemotableMethod,
             allowCreate,
             level);
@@ -2034,19 +2034,11 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
     }
 
-    inline AsyncVariantLookup AsyncVariantKind() const
+    inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        if (HasAsyncMethodData())
-        {
-            AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
-            if (hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant))
-            {
-                return AsyncVariantLookup::Async;
-            }
-        }
 
-        return AsyncVariantLookup::Ordinary;
+        return IsAsyncVariantMethod() == (lookup == AsyncVariantLookup::Async);
     }
 
     // Is this an Async variant method for a method that

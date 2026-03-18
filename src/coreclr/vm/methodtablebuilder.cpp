@@ -5596,7 +5596,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
-                (slotDeclMethod->GetMethodDesc()->AsyncVariantKind() == variantLookup))
+                (slotDeclMethod->GetMethodDesc()->MatchesAsyncVariantLookup(variantLookup)))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -6147,7 +6147,7 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                         iPass == 0 ? &newVisited : NULL))
                     {
                         // We should find the ordinary variant first.
-                        _ASSERTE(pCurMD->AsyncVariantKind() == AsyncVariantLookup::Ordinary);
+                        _ASSERTE(pCurMD->MatchesAsyncVariantLookup(AsyncVariantLookup::Ordinary));
 
                         if (variantLookup != AsyncVariantLookup::Ordinary)
                         {
