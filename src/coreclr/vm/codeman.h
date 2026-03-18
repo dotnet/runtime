@@ -627,7 +627,6 @@ private:
     ULONG               cTableCurCount;
     ULONG               cTableMaxCount;
     int                 cDeletedEntries;    // Number of slots we removed.
-    bool                bRegistrationFailed; // Set once if initial OS registration failed; never cleared.
 
     // Pending buffer for out-of-order entries that haven't been published to the OS yet.
     // These entries are accumulated and batch-merged into pTable to amortize the cost of
