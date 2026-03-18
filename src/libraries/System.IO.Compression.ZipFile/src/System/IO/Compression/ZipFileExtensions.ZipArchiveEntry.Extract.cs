@@ -117,7 +117,7 @@ namespace System.IO.Compression
                 // For archives in Update mode, we have no way to check if the entry
                 // was opened for write, so we attempt to get the length and if it fails
                 // we just skip preallocation.
-                if (source.Archive.Mode != ZipArchiveMode.Create)
+                if (source.Archive is ZipArchive archive && archive.Mode != ZipArchiveMode.Create)
                 {
                     preallocationSize = source.Length;
                 }
