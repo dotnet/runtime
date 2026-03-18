@@ -1076,21 +1076,41 @@ namespace System
 
                 for (int iuSrc = bits.Length; --iuSrc >= 0;)
                 {
-                    nuint uCarry = bits[iuSrc];
-                    Span<nuint> base1E9 = base1E9Buffer.Slice(0, base1E9Written);
-                    for (int iuDst = 0; iuDst < base1E9.Length; iuDst++)
+                    if (nint.Size == 8)
                     {
-                        Debug.Assert(base1E9[iuDst] < PowersOf1e9.TenPowMaxPartial);
+                        // Process each 64-bit limb as two 32-bit halves (high then low).
+                        // This keeps each division as ulong / constant_uint which the JIT
+                        // optimizes to a fast multiply-by-reciprocal, avoiding expensive
+                        // 128÷64 software division through BigIntegerCalculator.DivRem.
+                        // Net effect: (base * 2^32 + hi) * 2^32 + lo = base * 2^64 + limb.
+                        ulong limb = (ulong)bits[iuSrc];
+                        NaiveDigit((uint)(limb >> 32), base1E9Buffer, ref base1E9Written);
+                        NaiveDigit((uint)limb, base1E9Buffer, ref base1E9Written);
+                    }
+                    else
+                    {
+                        NaiveDigit((uint)bits[iuSrc], base1E9Buffer, ref base1E9Written);
+                    }
+                }
+            }
 
-                        nuint hi = base1E9[iuDst];
-                        uCarry = BigIntegerCalculator.DivRem(hi, uCarry, PowersOf1e9.TenPowMaxPartial, out base1E9[iuDst]);
-                    }
-                    while (uCarry != 0)
-                    {
-                        (nuint quo, nuint rem) = Math.DivRem(uCarry, PowersOf1e9.TenPowMaxPartial);
-                        base1E9Buffer[base1E9Written++] = rem;
-                        uCarry = quo;
-                    }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void NaiveDigit(uint digit, Span<nuint> base1E9Buffer, ref int base1E9Written)
+            {
+                const uint divisor = (uint)PowersOf1e9.TenPowMaxPartial;
+
+                uint uCarry = digit;
+                for (int iuDst = 0; iuDst < base1E9Written; iuDst++)
+                {
+                    ulong value = ((ulong)(uint)base1E9Buffer[iuDst] << 32) | uCarry;
+                    ulong quo = value / divisor;
+                    base1E9Buffer[iuDst] = (nuint)(uint)(value - quo * divisor);
+                    uCarry = (uint)quo;
+                }
+                while (uCarry != 0)
+                {
+                    base1E9Buffer[base1E9Written++] = (nuint)(uCarry % divisor);
+                    uCarry /= divisor;
                 }
             }
         }
