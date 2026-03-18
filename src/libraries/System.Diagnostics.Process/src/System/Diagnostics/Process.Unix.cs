@@ -364,6 +364,9 @@ namespace System.Diagnostics
         /// With UseShellExecute option, we'll try the shell tools to launch it(e.g. "open fileName")
         /// </summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
+        /// <param name="stdinHandle">The child's stdin handle, or null if not redirecting.</param>
+        /// <param name="stdoutHandle">The child's stdout handle, or null if not redirecting.</param>
+        /// <param name="stderrHandle">The child's stderr handle, or null if not redirecting.</param>
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (PlatformDoesNotSupportProcessStartAndKill)
@@ -738,10 +741,17 @@ namespace System.Diagnostics
         }
 
         /// <summary>Creates an anonymous pipe, returning handles for the parent and child ends.</summary>
-        private static unsafe partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
+        private static partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
-            int* fds = stackalloc int[2];
-            int result = Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC);
+            Span<int> fds = stackalloc int[2];
+            int result;
+            unsafe
+            {
+                fixed (int* fdsPtr = fds)
+                {
+                    result = Interop.Sys.Pipe(fdsPtr, Interop.Sys.PipeFlags.O_CLOEXEC);
+                }
+            }
             if (result != 0)
             {
                 throw new Win32Exception();
