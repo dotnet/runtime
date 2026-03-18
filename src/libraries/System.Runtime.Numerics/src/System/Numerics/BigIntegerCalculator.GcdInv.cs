@@ -375,15 +375,41 @@ namespace System.Numerics
             }
             else
             {
-                Int128 xCarry = 0, yCarry = 0;
+                // Use Math.BigMul for widening multiplies instead of Int128
+                // which compiles to much cheaper native mul instructions.
+                // a,b,c,d are at most 31 bits, so each product fits in 95 bits.
+                ulong ua = (ulong)a, ub = (ulong)b, uc = (ulong)c, ud = (ulong)d;
+                long xCarry = 0, yCarry = 0;
                 for (int i = 0; i < length; i++)
                 {
-                    Int128 xDigit = a * (Int128)(ulong)x[i] - b * (Int128)(ulong)y[i] + xCarry;
-                    Int128 yDigit = d * (Int128)(ulong)y[i] - c * (Int128)(ulong)x[i] + yCarry;
-                    xCarry = xDigit >> 64;
-                    yCarry = yDigit >> 64;
-                    x[i] = unchecked((nuint)(ulong)xDigit);
-                    y[i] = unchecked((nuint)(ulong)yDigit);
+                    ulong xi = (ulong)x[i];
+                    ulong yi = (ulong)y[i];
+
+                    // xDigit = a*xi - b*yi + xCarry (fits in ~97 signed bits)
+                    ulong axi_hi = Math.BigMul(ua, xi, out ulong axi_lo);
+                    ulong byi_hi = Math.BigMul(ub, yi, out ulong byi_lo);
+
+                    ulong xlo = axi_lo - byi_lo;
+                    long xhi = (long)(axi_hi - byi_hi) - (axi_lo < byi_lo ? 1L : 0L);
+
+                    ulong xResultLo = xlo + unchecked((ulong)xCarry);
+                    xhi += (xCarry >> 63) + (xResultLo < xlo ? 1L : 0L);
+
+                    x[i] = unchecked((nuint)xResultLo);
+                    xCarry = xhi;
+
+                    // yDigit = d*yi - c*xi + yCarry
+                    ulong dyi_hi = Math.BigMul(ud, yi, out ulong dyi_lo);
+                    ulong cxi_hi = Math.BigMul(uc, xi, out ulong cxi_lo);
+
+                    ulong ylo = dyi_lo - cxi_lo;
+                    long yhi = (long)(dyi_hi - cxi_hi) - (dyi_lo < cxi_lo ? 1L : 0L);
+
+                    ulong yResultLo = ylo + unchecked((ulong)yCarry);
+                    yhi += (yCarry >> 63) + (yResultLo < ylo ? 1L : 0L);
+
+                    y[i] = unchecked((nuint)yResultLo);
+                    yCarry = yhi;
                 }
             }
 

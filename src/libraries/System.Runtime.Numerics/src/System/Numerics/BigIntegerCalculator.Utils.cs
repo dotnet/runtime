@@ -165,10 +165,39 @@ namespace System.Numerics
         {
             if (nint.Size == 8)
             {
-                UInt128 value = ((UInt128)(ulong)hi << 64) | (ulong)lo;
-                UInt128 digit = value / (ulong)divisor;
-                remainder = (nuint)(ulong)(value - digit * (ulong)divisor);
-                return (nuint)(ulong)digit;
+                // Compute (hi * 2^64 + lo) / divisor.
+                // hi < divisor is guaranteed, so quotient fits in 64 bits.
+                Debug.Assert((ulong)hi < (ulong)divisor);
+
+                if (hi == 0)
+                {
+                    (ulong q, ulong r) = Math.DivRem((ulong)lo, (ulong)divisor);
+                    remainder = (nuint)r;
+                    return (nuint)q;
+                }
+
+                // When divisor fits in 32 bits, split lo into two 32-bit halves
+                // and chain two native 64-bit divisions (avoids UInt128 overhead):
+                //   (hi  * 2^32 + lo_hi) / divisor → (q_hi, r1)   [fits: hi < divisor < 2^32]
+                //   (r1  * 2^32 + lo_lo) / divisor → (q_lo, r2)   [fits: r1 < divisor < 2^32]
+                if ((ulong)divisor <= uint.MaxValue)
+                {
+                    ulong lo_hi = (ulong)lo >> 32;
+                    ulong lo_lo = (ulong)lo & 0xFFFFFFFF;
+
+                    (ulong q_hi, ulong r1) = Math.DivRem(((ulong)hi << 32) | lo_hi, (ulong)divisor);
+                    (ulong q_lo, ulong r2) = Math.DivRem((r1 << 32) | lo_lo, (ulong)divisor);
+
+                    remainder = (nuint)r2;
+                    return (nuint)((q_hi << 32) | q_lo);
+                }
+
+                {
+                    UInt128 value = ((UInt128)(ulong)hi << 64) | (ulong)lo;
+                    UInt128 digit = value / (ulong)divisor;
+                    remainder = (nuint)(ulong)(value - digit * (ulong)divisor);
+                    return (nuint)(ulong)digit;
+                }
             }
             else
             {
