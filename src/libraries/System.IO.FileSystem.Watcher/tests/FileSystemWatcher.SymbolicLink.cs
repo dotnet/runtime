@@ -79,7 +79,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124847", TestPlatforms.OSX)]
         public void FileSystemWatcher_SymbolicLink_TargetsDirectory_Create_IncludeSubdirectories()
         {
             FileSystemWatcherTest.Execute(() =>
