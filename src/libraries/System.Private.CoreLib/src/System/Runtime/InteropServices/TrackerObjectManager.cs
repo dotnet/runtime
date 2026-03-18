@@ -61,7 +61,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr contextToken = GetContextToken();
 
-            List<object> objects = new List<object>();
+            List<ReferenceTrackerNativeObjectWrapper> wrappersToRemove = [];
+            List<object> objects = [];
 
             // Here we aren't part of a GC callback, so other threads can still be running
             // who are adding and removing from the collection. This means we can possibly race
@@ -85,8 +86,15 @@ namespace System.Runtime.InteropServices
                         // Separate the wrapper from the tracker runtime prior to
                         // passing them.
                         nativeObjectWrapper.DisconnectTracker();
+
+                        wrappersToRemove.Add(nativeObjectWrapper);
                     }
                 }
+
+                // Remove the native object wrappers from the cache
+                // so we don't return released wrappers to the user if the native COM object
+                // happens to be reused.
+                GlobalInstanceForTrackerSupport.RemoveWrappersFromCache(wrappersToRemove);
             }
 
             GlobalInstanceForTrackerSupport.ReleaseObjects(objects);
