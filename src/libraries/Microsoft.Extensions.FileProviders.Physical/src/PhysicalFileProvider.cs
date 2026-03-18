@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders
         private bool _disposed;
 
         /// <summary>
-        /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
+        /// Initializes a new instance of the <see cref="PhysicalFileProvider"/> class at the given root directory.
         /// </summary>
         /// <param name="root">The root directory. This should be an absolute path.</param>
         public PhysicalFileProvider(string root)
@@ -47,10 +47,10 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Initializes a new instance of a PhysicalFileProvider at the given root directory.
+        /// Initializes a new instance of the <see cref="PhysicalFileProvider"/> class at the given root directory.
         /// </summary>
         /// <param name="root">The root directory. This should be an absolute path.</param>
-        /// <param name="filters">Specifies which files or directories are excluded.</param>
+        /// <param name="filters">A bitwise combination of the enumeration values that specifies which files or directories are excluded.</param>
         public PhysicalFileProvider(string root, ExclusionFilters filters)
         {
             if (!Path.IsPathRooted(root))
@@ -207,7 +207,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Disposes the provider.
         /// </summary>
-        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
+        /// <param name="disposing"><see langword="true"/> if invoked from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)

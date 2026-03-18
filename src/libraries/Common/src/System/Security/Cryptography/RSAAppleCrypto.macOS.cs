@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
 
                         if (sequenceReader.PeekTag().Equals(Asn1Tag.Integer))
                         {
-                            AlgorithmIdentifierAsn ignored = default;
+                            ValueAlgorithmIdentifierAsn ignored = default;
                             RSAKeyFormatHelper.ReadRsaPublicKey(keyBlob, ignored, out key);
                         }
                         else
