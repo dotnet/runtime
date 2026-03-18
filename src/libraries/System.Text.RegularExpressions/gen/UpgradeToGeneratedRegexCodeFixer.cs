@@ -339,6 +339,10 @@ namespace System.Text.RegularExpressions.Generator
             // Add the member to the type.
             if (oldMember is null)
             {
+                // Prepend a blank line so the generated member is visually separated from preceding members.
+                newMember = newMember.WithLeadingTrivia(
+                    newMember.GetLeadingTrivia().Insert(0, SyntaxFactory.ElasticCarriageReturnLineFeed));
+
                 newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit is TypeDeclarationSyntax newTypeDeclaration ?
                     newTypeDeclaration.AddMembers((MemberDeclarationSyntax)newMember) :
                     ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMember }));

@@ -1073,6 +1073,7 @@ public partial class Program
 
     [GeneratedRegex(""a|b"")]
     private static partial Regex MyRegex { get; }
+
     [GeneratedRegex(""c|d"", RegexOptions.CultureInvariant)]
     private static partial Regex MyRegex1 { get; }
 }
