@@ -23,23 +23,46 @@ namespace ILCompiler.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(GetArchitectures))]
-        public void InstructionSetNamesAreUniquePerArchitecture(TargetArchitecture architecture)
+        public void HelpTextShowsNoDuplicateInstructionSetNames(TargetArchitecture architecture)
         {
-            var specifiableNames = InstructionSetFlags
+            // Simulate the exact logic used in ILCompilerRootCommand.PrintExtendedHelp
+            // and Crossgen2RootCommand.PrintExtendedHelp to produce the help text:
+            // DistinctBy on Name (case-insensitive), then filter by Specifiable.
+            var helpTextNames = InstructionSetFlags
                 .ArchitectureToValidInstructionSets(architecture)
+                .DistinctBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
                 .Where(i => i.Specifiable)
                 .Select(i => i.Name)
                 .ToList();
 
-            var distinctNames = specifiableNames
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            Assert.True(helpTextNames.Count > 0, $"Architecture {architecture} should have at least one specifiable instruction set.");
+            Assert.Equal(helpTextNames.Count, helpTextNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        }
 
-            // After deduplication, the distinct set should have fewer entries than the raw list
-            // (the generator produces duplicates by design), but the DistinctBy approach used
-            // in the help text must yield a clean, non-duplicate list.
-            Assert.Equal(distinctNames.Count, distinctNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
-            Assert.True(distinctNames.Count > 0, $"Architecture {architecture} should have at least one specifiable instruction set.");
+        [Theory]
+        [MemberData(nameof(GetArchitectures))]
+        public void AllSpecifiableNamesAppearInHelpText(TargetArchitecture architecture)
+        {
+            // Verify that the DistinctBy approach doesn't accidentally hide any specifiable
+            // name due to ordering (e.g., a non-specifiable entry appearing first for a name).
+            var allSpecifiableNames = InstructionSetFlags
+                .ArchitectureToValidInstructionSets(architecture)
+                .Where(i => i.Specifiable)
+                .Select(i => i.Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var helpTextNames = InstructionSetFlags
+                .ArchitectureToValidInstructionSets(architecture)
+                .DistinctBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+                .Where(i => i.Specifiable)
+                .Select(i => i.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            Assert.True(allSpecifiableNames.SetEquals(helpTextNames),
+                $"Help text names for {architecture} should match all specifiable names. " +
+                $"Missing: [{string.Join(", ", allSpecifiableNames.Except(helpTextNames))}] " +
+                $"Extra: [{string.Join(", ", helpTextNames.Except(allSpecifiableNames))}]");
         }
 
         [Fact]
@@ -78,7 +101,8 @@ namespace ILCompiler.Compiler.Tests
         {
             // x86-64 (without v-suffix) was removed in .NET 10 because SSE4.2
             // became the baseline. Only x86-64-v2, v3, v4 should exist.
-            var cpuNames = InstructionSetFlags.AllCpuNames.ToList();
+            var cpuNames = InstructionSetFlags.AllCpuNames
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             Assert.DoesNotContain("x86-64", cpuNames);
         }
 
