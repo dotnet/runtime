@@ -37,6 +37,8 @@ namespace System.IO.MemoryMappedFiles
             Debug.Assert(fileHandle is null || fileSize >= 0);
 
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((inheritability & HandleInheritability.Inheritable) != 0);
+
+            if (fileHandle is not null)
             {
                 VerifyMemoryMappedFileAccess(access, capacity, fileSize);
             }
