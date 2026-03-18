@@ -440,7 +440,7 @@ namespace System.Net.Http
                         // Use HTTP/2 if possible.
                         if (_http2Enabled &&
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
-                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) &&
+                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) && // prefer HTTP/1.1 if connection is not secured and downgrade is possible
                             !(_http2SessionAuthSeen && request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)) // skip HTTP/2 for downgradeable requests after session auth
                         {
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
@@ -542,11 +542,7 @@ namespace System.Net.Http
                     // The pool flag was already set in Http2Connection.SendAsync so future downgradeable
                     // requests will go directly to HTTP/1.1. Retry this request on HTTP/1.1.
                     Debug.Assert(request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower);
-
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Session-based auth challenge on HTTP/2. Retrying on HTTP/1.1: {e}");
-                    }
+                    Debug.Assert(_http2SessionAuthSeen);
 
                     request.Version = HttpVersion.Version11;
                 }
