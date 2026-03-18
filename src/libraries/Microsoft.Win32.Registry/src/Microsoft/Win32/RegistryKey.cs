@@ -215,15 +215,13 @@ namespace Microsoft.Win32
                 }
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
             byte[]? securityDescriptor = registrySecurity?.GetSecurityDescriptorBinaryForm();
 
             fixed (void* pSecurityDescriptor = securityDescriptor)
             {
-                if (pSecurityDescriptor is not null)
-                {
-                    secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
-                }
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = pSecurityDescriptor is not null
+                    ? Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor)
+                    : Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
 
                 // By default, the new key will be writable.
                 int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,

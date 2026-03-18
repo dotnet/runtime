@@ -48,8 +48,7 @@ namespace System.Threading
 
             fixed (byte* pSecurityDescriptor = semaphoreSecurity.GetSecurityDescriptorBinaryForm())
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
-                secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                 SafeWaitHandle handle = Interop.Kernel32.CreateSemaphoreEx(
                     (IntPtr)(&secAttrs),

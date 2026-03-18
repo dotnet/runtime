@@ -48,8 +48,7 @@ namespace System.Threading
                 if (options.CurrentUserOnly)
                 {
                     securityDescriptorInfo = new(CurrentUserOnlyAceRights);
-                    securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
-                    securityAttributes.lpSecurityDescriptor = (void*)securityDescriptorInfo.SecurityDescriptor;
+                    securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((void*)securityDescriptorInfo.SecurityDescriptor);
                     securityAttributesPtr = &securityAttributes;
                 }
             }

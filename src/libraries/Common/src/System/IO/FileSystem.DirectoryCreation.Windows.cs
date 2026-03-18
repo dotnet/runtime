@@ -77,8 +77,7 @@ namespace System.IO
 
             fixed (byte* pSecurityDescriptor = securityDescriptor)
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
-                secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                 while (stackDir.Count > 0)
                 {
