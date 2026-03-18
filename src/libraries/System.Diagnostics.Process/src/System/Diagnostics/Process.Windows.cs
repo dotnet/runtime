@@ -425,7 +425,10 @@ namespace System.Diagnostics
 
         /// <summary>Starts the process using the supplied start info.</summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
-        private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo)
+        /// <param name="stdinHandle">The child's stdin handle, or null if not redirecting.</param>
+        /// <param name="stdoutHandle">The child's stdout handle, or null if not redirecting.</param>
+        /// <param name="stderrHandle">The child's stderr handle, or null if not redirecting.</param>
+        private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
@@ -441,13 +444,10 @@ namespace System.Diagnostics
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
             SafeProcessHandle procSH = new SafeProcessHandle();
 
-            // handles used in parent process
-            SafeFileHandle? parentInputPipeHandle = null;
-            SafeFileHandle? childInputPipeHandle = null;
-            SafeFileHandle? parentOutputPipeHandle = null;
-            SafeFileHandle? childOutputPipeHandle = null;
-            SafeFileHandle? parentErrorPipeHandle = null;
-            SafeFileHandle? childErrorPipeHandle = null;
+            // Inheritable copies of the child handles for CreateProcess
+            SafeFileHandle? inheritableStdinHandle = null;
+            SafeFileHandle? inheritableStdoutHandle = null;
+            SafeFileHandle? inheritableStderrHandle = null;
 
             // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
             // calls. We do not want one process to inherit the handles created concurrently for another
@@ -464,34 +464,34 @@ namespace System.Diagnostics
                     {
                         if (startInfo.RedirectStandardInput)
                         {
-                            CreatePipe(out parentInputPipeHandle, out childInputPipeHandle, true);
+                            inheritableStdinHandle = DuplicateAsInheritable(stdinHandle!);
                         }
                         else
                         {
-                            childInputPipeHandle = Console.OpenStandardInputHandle();
+                            inheritableStdinHandle = Console.OpenStandardInputHandle();
                         }
 
                         if (startInfo.RedirectStandardOutput)
                         {
-                            CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false);
+                            inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle!);
                         }
                         else
                         {
-                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
+                            inheritableStdoutHandle = Console.OpenStandardOutputHandle();
                         }
 
                         if (startInfo.RedirectStandardError)
                         {
-                            CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false);
+                            inheritableStderrHandle = DuplicateAsInheritable(stderrHandle!);
                         }
                         else
                         {
-                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
+                            inheritableStderrHandle = Console.OpenStandardErrorHandle();
                         }
 
-                        startupInfo.hStdInput = childInputPipeHandle.DangerousGetHandle();
-                        startupInfo.hStdOutput = childOutputPipeHandle.DangerousGetHandle();
-                        startupInfo.hStdError = childErrorPipeHandle.DangerousGetHandle();
+                        startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
+                        startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
+                        startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
 
                         startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
                     }
@@ -617,35 +617,15 @@ namespace System.Diagnostics
                 }
                 catch
                 {
-                    parentInputPipeHandle?.Dispose();
-                    parentOutputPipeHandle?.Dispose();
-                    parentErrorPipeHandle?.Dispose();
                     procSH.Dispose();
                     throw;
                 }
                 finally
                 {
-                    childInputPipeHandle?.Dispose();
-                    childOutputPipeHandle?.Dispose();
-                    childErrorPipeHandle?.Dispose();
+                    inheritableStdinHandle?.Dispose();
+                    inheritableStdoutHandle?.Dispose();
+                    inheritableStderrHandle?.Dispose();
                 }
-            }
-
-            if (startInfo.RedirectStandardInput)
-            {
-                Encoding enc = startInfo.StandardInputEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleCP());
-                _standardInput = new StreamWriter(new FileStream(parentInputPipeHandle!, FileAccess.Write, 4096, false), enc, 4096);
-                _standardInput.AutoFlush = true;
-            }
-            if (startInfo.RedirectStandardOutput)
-            {
-                Encoding enc = startInfo.StandardOutputEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-                _standardOutput = new StreamReader(new FileStream(parentOutputPipeHandle!, FileAccess.Read, 4096, parentOutputPipeHandle!.IsAsync), enc, true, 4096);
-            }
-            if (startInfo.RedirectStandardError)
-            {
-                Encoding enc = startInfo.StandardErrorEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-                _standardError = new StreamReader(new FileStream(parentErrorPipeHandle!, FileAccess.Read, 4096, parentErrorPipeHandle!.IsAsync), enc, true, 4096);
             }
 
             commandLine.Dispose();
@@ -659,6 +639,23 @@ namespace System.Diagnostics
             SetProcessHandle(procSH);
             SetProcessId((int)processInfo.dwProcessId);
             return true;
+        }
+
+        /// <summary>Duplicates a handle as inheritable so the child process can use it.</summary>
+        private static SafeFileHandle DuplicateAsInheritable(SafeFileHandle handle)
+        {
+            IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
+            if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
+                                                 handle,
+                                                 currentProcHandle,
+                                                 out SafeFileHandle duplicatedHandle,
+                                                 0,
+                                                 bInheritHandle: true,
+                                                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+            return duplicatedHandle;
         }
 
         private static ConsoleEncoding GetEncoding(int codePage)
@@ -809,7 +806,7 @@ namespace System.Diagnostics
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
         // We therefore only open the parent's end of the pipe for async I/O (overlapped), while the
         // child's end is always opened for synchronous I/O so the child process can use it normally.
-        private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
+        private static partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             // Only the parent's read end benefits from async I/O; stdin is always sync.
             // asyncRead applies to the read handle; asyncWrite to the write handle.
@@ -818,27 +815,20 @@ namespace System.Diagnostics
             // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
             // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
             parentHandle = parentInputs ? writeHandle : readHandle;
-            SafeFileHandle hTmpChild = parentInputs ? readHandle : writeHandle;
-
-            // Duplicate the child handle to be inheritable so that the child process
-            // has access. The original non-inheritable handle is closed afterwards.
-            IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
-            if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
-                                                 hTmpChild,
-                                                 currentProcHandle,
-                                                 out childHandle,
-                                                 0,
-                                                 bInheritHandle: true,
-                                                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
-            {
-                int lastError = Marshal.GetLastWin32Error();
-                parentHandle.Dispose();
-                hTmpChild.Dispose();
-                throw new Win32Exception(lastError);
-            }
-
-            hTmpChild.Dispose();
+            childHandle = parentInputs ? readHandle : writeHandle;
         }
+
+        /// <summary>Opens a stream around the specified file handle.</summary>
+        private static partial Stream OpenStream(SafeFileHandle handle, FileAccess access)
+        {
+            return new FileStream(handle, access, StreamBufferSize, handle.IsAsync);
+        }
+
+        /// <summary>Gets the default encoding for standard input.</summary>
+        private static partial Encoding GetStandardInputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleCP());
+
+        /// <summary>Gets the default encoding for standard output/error.</summary>
+        private static partial Encoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
         {

@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -15,7 +16,7 @@ internal static partial class Interop
             string filename, string[] argv, string[] envp, string? cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
             bool setUser, uint userId, uint groupId, uint[]? groups,
-            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
+            out int lpChildPid, SafeFileHandle stdinFd, SafeFileHandle stdoutFd, SafeFileHandle stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -29,7 +30,7 @@ internal static partial class Interop
                         filename, argvPtr, envpPtr, cwd,
                         redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 : 0,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
-                        out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);
+                        out lpChildPid, stdinFd, stdoutFd, stderrFd);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
@@ -45,7 +46,7 @@ internal static partial class Interop
             string filename, byte** argv, byte** envp, string? cwd,
             int redirectStdin, int redirectStdout, int redirectStderr,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
-            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd);
+            out int lpChildPid, SafeFileHandle stdinFd, SafeFileHandle stdoutFd, SafeFileHandle stderrFd);
 
         private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
         {

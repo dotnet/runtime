@@ -20,11 +20,11 @@ namespace System.Diagnostics
         private bool _haveResponding;
         private bool _responding;
 
-        private bool StartCore(ProcessStartInfo startInfo)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             return startInfo.UseShellExecute
                 ? StartWithShellExecuteEx(startInfo)
-                : StartWithCreateProcess(startInfo);
+                : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
         private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)

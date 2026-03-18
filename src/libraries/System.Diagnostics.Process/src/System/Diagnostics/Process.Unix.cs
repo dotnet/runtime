@@ -364,7 +364,7 @@ namespace System.Diagnostics
         /// With UseShellExecute option, we'll try the shell tools to launch it(e.g. "open fileName")
         /// </summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
-        private bool StartCore(ProcessStartInfo startInfo)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (PlatformDoesNotSupportProcessStartAndKill)
             {
@@ -384,7 +384,6 @@ namespace System.Diagnostics
                 }
             }
 
-            int stdinFd = -1, stdoutFd = -1, stderrFd = -1;
             string[] envp = CreateEnvp(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
@@ -428,7 +427,7 @@ namespace System.Diagnostics
                     isExecuting = ForkAndExecProcess(
                         startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
-                        out stdinFd, out stdoutFd, out stderrFd, usesTerminal,
+                        stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                         throwOnNoExec: false); // return false instead of throwing on ENOEXEC
                 }
 
@@ -441,7 +440,7 @@ namespace System.Diagnostics
                     ForkAndExecProcess(
                         startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
-                        out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
+                        stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
                 }
             }
             else
@@ -456,31 +455,7 @@ namespace System.Diagnostics
                 ForkAndExecProcess(
                     startInfo, filename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
-                    out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
-            }
-
-            // Configure the parent's ends of the redirection streams.
-            // We use UTF8 encoding without BOM by-default(instead of Console encoding as on Windows)
-            // as there is no good way to get this information from the native layer
-            // and we do not want to take dependency on Console contract.
-            if (startInfo.RedirectStandardInput)
-            {
-                Debug.Assert(stdinFd >= 0);
-                _standardInput = new StreamWriter(OpenStream(stdinFd, PipeDirection.Out),
-                    startInfo.StandardInputEncoding ?? Encoding.Default, StreamBufferSize)
-                { AutoFlush = true };
-            }
-            if (startInfo.RedirectStandardOutput)
-            {
-                Debug.Assert(stdoutFd >= 0);
-                _standardOutput = new StreamReader(OpenStream(stdoutFd, PipeDirection.In),
-                    startInfo.StandardOutputEncoding ?? Encoding.Default, true, StreamBufferSize);
-            }
-            if (startInfo.RedirectStandardError)
-            {
-                Debug.Assert(stderrFd >= 0);
-                _standardError = new StreamReader(OpenStream(stderrFd, PipeDirection.In),
-                    startInfo.StandardErrorEncoding ?? Encoding.Default, true, StreamBufferSize);
+                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
             }
 
             return true;
@@ -490,7 +465,7 @@ namespace System.Diagnostics
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             string[] envp, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
-            out int stdinFd, out int stdoutFd, out int stderrFd,
+            SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, bool throwOnNoExec = true)
         {
             if (string.IsNullOrEmpty(resolvedFilename))
@@ -511,8 +486,8 @@ namespace System.Diagnostics
 
                 int childPid;
 
-                // Invoke the shim fork/execve routine.  It will create pipes for all requested
-                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+                // Invoke the shim fork/execve routine.  It will fork a child process,
+                // map the provided file handles onto the appropriate stdin/stdout/stderr
                 // descriptors, and execve to execute the requested process.  The shim implementation
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
@@ -520,7 +495,10 @@ namespace System.Diagnostics
                     resolvedFilename, argv, envp, cwd,
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
-                    out childPid, out stdinFd, out stdoutFd, out stderrFd);
+                    out childPid,
+                    stdinHandle ?? s_invalidSafeFileHandle,
+                    stdoutHandle ?? s_invalidSafeFileHandle,
+                    stderrHandle ?? s_invalidSafeFileHandle);
 
                 if (errno == 0)
                 {
@@ -563,8 +541,7 @@ namespace System.Diagnostics
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
 
-        /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
-        private const int StreamBufferSize = 4096;
+        private static readonly SafeFileHandle s_invalidSafeFileHandle = new SafeFileHandle(new IntPtr(-1), ownsHandle: false);
 
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
@@ -753,15 +730,37 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
-        /// <param name="fd">The file descriptor.</param>
-        /// <param name="direction">The pipe direction.</param>
-        /// <returns>The opened stream.</returns>
-        private static AnonymousPipeClientStream OpenStream(int fd, PipeDirection direction)
+        /// <summary>Opens a stream around the specified file handle.</summary>
+        private static partial Stream OpenStream(SafeFileHandle handle, FileAccess access)
         {
-            Debug.Assert(fd >= 0);
-            return new AnonymousPipeClientStream(direction, new SafePipeHandle((IntPtr)fd, ownsHandle: true));
+            PipeDirection direction = access == FileAccess.Write ? PipeDirection.Out : PipeDirection.In;
+            return new AnonymousPipeClientStream(direction, new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: false));
         }
+
+        /// <summary>Creates an anonymous pipe, returning handles for the parent and child ends.</summary>
+        private static unsafe partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
+        {
+            int* fds = stackalloc int[2];
+            int result = Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC);
+            if (result != 0)
+            {
+                throw new Win32Exception();
+            }
+
+            SafeFileHandle readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
+            SafeFileHandle writeHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], ownsHandle: true);
+
+            // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
+            // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
+            parentHandle = parentInputs ? writeHandle : readHandle;
+            childHandle = parentInputs ? readHandle : writeHandle;
+        }
+
+        /// <summary>Gets the default encoding for standard input.</summary>
+        private static partial Encoding GetStandardInputEncoding() => Encoding.Default;
+
+        /// <summary>Gets the default encoding for standard output/error.</summary>
+        private static partial Encoding GetStandardOutputEncoding() => Encoding.Default;
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
         /// <param name="arguments">The argument string.</param>

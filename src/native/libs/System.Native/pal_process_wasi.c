@@ -30,9 +30,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       uint32_t* groups,
                                       int32_t groupsLength,
                                       int32_t* childPid,
-                                      int32_t* stdinFd,
-                                      int32_t* stdoutFd,
-                                      int32_t* stderrFd)
+                                      int32_t stdinFd,
+                                      int32_t stdoutFd,
+                                      int32_t stderrFd)
 {
     return -1;
 }

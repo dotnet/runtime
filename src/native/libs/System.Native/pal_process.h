@@ -32,9 +32,9 @@ PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    uint32_t* groups,       // the groups under which the child process should run
                    int32_t groupsLength,   // the length of groups
                    int32_t* childPid,      // [out] the child process' id
-                   int32_t* stdinFd,       // [out] if redirectStdin, the parent's fd for the child's stdin
-                   int32_t* stdoutFd,      // [out] if redirectStdout, the parent's fd for the child's stdout
-                   int32_t* stderrFd);     // [out] if redirectStderr, the parent's fd for the child's stderr
+                   int32_t stdinFd,        // if redirectStdin, the fd for the child's stdin
+                   int32_t stdoutFd,       // if redirectStdout, the fd for the child's stdout
+                   int32_t stderrFd);      // if redirectStderr, the fd for the child's stderr
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.

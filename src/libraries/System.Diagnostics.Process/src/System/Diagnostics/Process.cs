@@ -1227,6 +1227,24 @@ namespace System.Diagnostics
         /// <summary>Additional optional configuration hook after a process ID is set.</summary>
         partial void ConfigureAfterProcessIdSet();
 
+        /// <summary>Creates an anonymous pipe, returning handles for the parent and child ends.</summary>
+        /// <param name="parentHandle">The parent's end of the pipe.</param>
+        /// <param name="childHandle">The child's end of the pipe.</param>
+        /// <param name="parentInputs">true if the parent writes (stdin redirect); false if the parent reads (stdout/stderr redirect).</param>
+        private static partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs);
+
+        /// <summary>Opens a stream around the specified file handle.</summary>
+        private static partial Stream OpenStream(SafeFileHandle handle, FileAccess access);
+
+        /// <summary>Gets the default encoding for standard input.</summary>
+        private static partial Encoding GetStandardInputEncoding();
+
+        /// <summary>Gets the default encoding for standard output/error.</summary>
+        private static partial Encoding GetStandardOutputEncoding();
+
+        /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
+        private const int StreamBufferSize = 4096;
+
         /// <devdoc>
         ///    <para>
         ///       Starts a process specified by the <see cref='System.Diagnostics.Process.StartInfo'/> property of this <see cref='System.Diagnostics.Process'/>
@@ -1281,7 +1299,71 @@ namespace System.Diagnostics
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
 
-            return StartCore(startInfo);
+            SafeFileHandle? parentInputPipeHandle = null;
+            SafeFileHandle? parentOutputPipeHandle = null;
+            SafeFileHandle? parentErrorPipeHandle = null;
+
+            SafeFileHandle? childInputPipeHandle = null;
+            SafeFileHandle? childOutputPipeHandle = null;
+            SafeFileHandle? childErrorPipeHandle = null;
+
+            try
+            {
+                if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
+                {
+                    if (startInfo.RedirectStandardInput)
+                    {
+                        CreatePipe(out parentInputPipeHandle, out childInputPipeHandle, true);
+                    }
+
+                    if (startInfo.RedirectStandardOutput)
+                    {
+                        CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false);
+                    }
+
+                    if (startInfo.RedirectStandardError)
+                    {
+                        CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false);
+                    }
+                }
+
+                if (!StartCore(startInfo, childInputPipeHandle, childOutputPipeHandle, childErrorPipeHandle))
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                parentInputPipeHandle?.Dispose();
+                parentOutputPipeHandle?.Dispose();
+                parentErrorPipeHandle?.Dispose();
+                throw;
+            }
+            finally
+            {
+                childInputPipeHandle?.Dispose();
+                childOutputPipeHandle?.Dispose();
+                childErrorPipeHandle?.Dispose();
+            }
+
+            if (startInfo.RedirectStandardInput)
+            {
+                _standardInput = new StreamWriter(OpenStream(parentInputPipeHandle!, FileAccess.Write),
+                    startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                { AutoFlush = true };
+            }
+            if (startInfo.RedirectStandardOutput)
+            {
+                _standardOutput = new StreamReader(OpenStream(parentOutputPipeHandle!, FileAccess.Read),
+                    startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+            if (startInfo.RedirectStandardError)
+            {
+                _standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
+                    startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+
+            return true;
         }
 
         /// <devdoc>
