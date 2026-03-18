@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
@@ -8,22 +8,17 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct GeneralSubtreeAsn
+    file static class SharedGeneralSubtreeAsn
     {
-        private static ReadOnlySpan<byte> DefaultMinimum => [0x02, 0x01, 0x00];
-
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn Base;
-        internal int Minimum;
-        internal int? Maximum;
+        internal static ReadOnlySpan<byte> DefaultMinimum => [0x02, 0x01, 0x00];
 
 #if DEBUG
-        static GeneralSubtreeAsn()
+        static SharedGeneralSubtreeAsn()
         {
             GeneralSubtreeAsn decoded = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultMinimum, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedGeneralSubtreeAsn.DefaultMinimum, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.Minimum))
             {
@@ -33,6 +28,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct GeneralSubtreeAsn
+    {
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn Base;
+        internal int Minimum;
+        internal int? Maximum;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -51,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(Minimum);
 
-                if (!tmp.EncodedValueEquals(DefaultMinimum))
+                if (!tmp.EncodedValueEquals(SharedGeneralSubtreeAsn.DefaultMinimum))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                     tmp.CopyTo(writer);
@@ -130,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultMinimum, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedGeneralSubtreeAsn.DefaultMinimum, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.Minimum))
                 {

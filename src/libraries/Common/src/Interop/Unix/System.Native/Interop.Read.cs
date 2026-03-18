@@ -19,5 +19,8 @@ internal static partial class Interop
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Read", SetLastError = true)]
         internal static unsafe partial int Read(SafeHandle fd, byte* buffer, int count);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadFromNonblocking", SetLastError = true)]
+        internal static unsafe partial int ReadFromNonblocking(SafeHandle fd, byte* buffer, int count);
     }
 }
