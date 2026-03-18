@@ -578,6 +578,56 @@ namespace System.Text.Json.Serialization.Tests
                 => throw new NotImplementedException();
         }
 
+        // Tests for open generic converter on a non-generic type
+        [Fact]
+        public static void GenericConverterAttribute_OpenGenericOnNonGenericType_ThrowsArgumentException()
+        {
+            // The converter is an open generic but the target type is not generic,
+            // so the converter type cannot be instantiated (Activator.CreateInstance fails
+            // because Type.ContainsGenericParameters is true).
+            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(new NonGenericTypeWithOpenGenericConverter()));
+        }
+
+        [JsonConverter(typeof(OpenGenericConverterForNonGenericType<>))]
+        public class NonGenericTypeWithOpenGenericConverter
+        {
+            public string Name { get; set; }
+        }
+
+        public sealed class OpenGenericConverterForNonGenericType<T> : JsonConverter<NonGenericTypeWithOpenGenericConverter>
+        {
+            public override NonGenericTypeWithOpenGenericConverter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, NonGenericTypeWithOpenGenericConverter value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
+
+        // Tests for swapped parameter order in converter
+        [Fact]
+        public static void GenericConverterAttribute_SwappedParameterOrder_ThrowsInvalidOperationException()
+        {
+            // The converter converts TypeWithSwappedParams<B, A> but the type is TypeWithSwappedParams<A, B>,
+            // so MakeGenericType succeeds but CanConvert check fails.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TypeWithSwappedParams<int, string>()));
+        }
+
+        [JsonConverter(typeof(SwappedParamsConverter<,>))]
+        public class TypeWithSwappedParams<T1, T2>
+        {
+            public T1 First { get; set; }
+            public T2 Second { get; set; }
+        }
+
+        public sealed class SwappedParamsConverter<A, B> : JsonConverter<TypeWithSwappedParams<B, A>>
+        {
+            public override TypeWithSwappedParams<B, A> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, TypeWithSwappedParams<B, A> value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
+
         // Tests for nested containing class with type parameters
         [Fact]
         public static void GenericConverterAttribute_NestedConverter_Works()
