@@ -1376,7 +1376,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void DoesNotCallSetOnly()
+        public void BindsSetOnlyProperties()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1389,7 +1389,47 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var config = configurationBuilder.Build();
 
             var options = config.Get<SetOnlyPoco>();
-            Assert.False(options.AnyCalled);
+            Assert.True(options.SetOnlyCalled);
+            Assert.False(options.PrivateGetterCalled);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Source generator treats init-only properties separately (SetOnInit);
+            // they are not bound through the normal property binding path.
+            Assert.False(options.InitOnlyCalled);
+#else
+            // Reflection binder binds init-only set-only properties via PropertyInfo.SetValue.
+            Assert.True(options.InitOnlyCalled);
+#endif
+        }
+
+        [Fact]
+        public void BindsSetOnlyPropertiesWithTypeConversion()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"TimeoutSeconds", "30.5"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SetOnlyWithTypeConversionPoco>();
+            Assert.Equal(TimeSpan.FromSeconds(30.5), options.Timeout);
+        }
+
+        [Fact]
+        public void BindsSetOnlyComplexProperties()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Complex:A", "Test"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexSetOnlyPoco>();
+            Assert.NotNull(options.GetComplex());
+            Assert.Equal("Test", options.GetComplex().A);
         }
 
         [Fact]
@@ -1939,7 +1979,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("3", test.TestGetOverridden);
             Assert.Equal("4", test.TestSetOverridden);
             Assert.Equal("5", test.TestNoOverridden);
-            Assert.Null(test.ExposeTestVirtualSet());
+            Assert.Equal("6", test.ExposeTestVirtualSet());
         }
 
         [Fact]
