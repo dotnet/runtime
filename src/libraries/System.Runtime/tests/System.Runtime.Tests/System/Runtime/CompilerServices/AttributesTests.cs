@@ -236,6 +236,17 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(2)]
+        [InlineData(42)]
+        public static void MemorySafetyRulesAttributeTests(int version)
+        {
+            var attr = new MemorySafetyRulesAttribute(version);
+            Assert.Equal(version, attr.Version);
+        }
+
+        [Theory]
         [InlineData("1")]
         [InlineData("2")]
         public static void ExtensionMarkerAttributeTests(string name)
