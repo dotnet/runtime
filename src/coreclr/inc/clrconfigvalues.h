@@ -207,6 +207,7 @@ CONFIG_DWORD_INFO(UNSUPPORTED_Debugging_RequiredVersion, W("UNSUPPORTED_Debuggin
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MiniMdBufferCapacity, W("MiniMdBufferCapacity"), 64 * 1024, "The max size of the buffer to store mini metadata information for triage- and mini-dumps.")
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableFastHeapDumps, W("EnableFastHeapDumps"), 0, "If non-zero, uses CLRDATA_ENUM_MEM_HEAP2 for heap dumps which enumerates loader heap pages in bulk instead of walking individual runtime data structures.")
 
 CONFIG_DWORD_INFO(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCodeBpBindsAcrossVersions"), 0, "If non-zero causes native breakpoints at offset 0 to bind in all tiered compilation versions of the given method")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RichDebugInfo, W("RichDebugInfo"), 0, "If non-zero store some additional debug information for each jitted method")
