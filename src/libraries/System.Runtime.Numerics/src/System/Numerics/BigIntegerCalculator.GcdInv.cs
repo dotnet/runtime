@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -13,6 +14,20 @@ namespace System.Numerics
             // Executes the classic Euclidean algorithm.
 
             // https://en.wikipedia.org/wiki/Euclidean_algorithm
+
+            if (nint.Size == 8 && left <= uint.MaxValue && right <= uint.MaxValue)
+            {
+                // Use 32-bit modulo when values fit — div r32 is faster than div r64.
+                uint l = (uint)left, r = (uint)right;
+                while (r != 0)
+                {
+                    uint temp = l % r;
+                    l = r;
+                    r = temp;
+                }
+
+                return l;
+            }
 
             while (right != 0)
             {
@@ -373,43 +388,40 @@ namespace System.Numerics
                     y[i] = unchecked((nuint)yDigit);
                 }
             }
+            else if (BitConverter.IsLittleEndian)
+            {
+                // On 64-bit little-endian, reinterpret the nuint limbs as uint halves.
+                // Since a,b,c,d are at most 31 bits and each half is 32 bits,
+                // each product fits in 63 bits and the full expression fits in long.
+                // This matches the 32-bit path's arithmetic but operates on the
+                // raw memory of 64-bit limbs (little-endian stores low half first).
+                Span<uint> x32 = MemoryMarshal.Cast<nuint, uint>(x);
+                Span<uint> y32 = MemoryMarshal.Cast<nuint, uint>(y);
+                int length32 = length * 2;
+
+                long xCarry = 0L, yCarry = 0L;
+                for (int i = 0; i < length32; i++)
+                {
+                    long xDigit = a * (long)x32[i] - b * (long)y32[i] + xCarry;
+                    long yDigit = d * (long)y32[i] - c * (long)x32[i] + yCarry;
+                    xCarry = xDigit >> 32;
+                    yCarry = yDigit >> 32;
+                    x32[i] = unchecked((uint)xDigit);
+                    y32[i] = unchecked((uint)yDigit);
+                }
+            }
             else
             {
-                // Use Math.BigMul for widening multiplies instead of Int128
-                // which compiles to much cheaper native mul instructions.
-                // a,b,c,d are at most 31 bits, so each product fits in 95 bits.
-                ulong ua = (ulong)a, ub = (ulong)b, uc = (ulong)c, ud = (ulong)d;
-                long xCarry = 0, yCarry = 0;
+                // Big-endian fallback: use Int128 for widening arithmetic.
+                Int128 xCarry = 0, yCarry = 0;
                 for (int i = 0; i < length; i++)
                 {
-                    ulong xi = (ulong)x[i];
-                    ulong yi = (ulong)y[i];
-
-                    // xDigit = a*xi - b*yi + xCarry (fits in ~97 signed bits)
-                    ulong axi_hi = Math.BigMul(ua, xi, out ulong axi_lo);
-                    ulong byi_hi = Math.BigMul(ub, yi, out ulong byi_lo);
-
-                    ulong xlo = axi_lo - byi_lo;
-                    long xhi = (long)(axi_hi - byi_hi) - (axi_lo < byi_lo ? 1L : 0L);
-
-                    ulong xResultLo = xlo + unchecked((ulong)xCarry);
-                    xhi += (xCarry >> 63) + (xResultLo < xlo ? 1L : 0L);
-
-                    x[i] = unchecked((nuint)xResultLo);
-                    xCarry = xhi;
-
-                    // yDigit = d*yi - c*xi + yCarry
-                    ulong dyi_hi = Math.BigMul(ud, yi, out ulong dyi_lo);
-                    ulong cxi_hi = Math.BigMul(uc, xi, out ulong cxi_lo);
-
-                    ulong ylo = dyi_lo - cxi_lo;
-                    long yhi = (long)(dyi_hi - cxi_hi) - (dyi_lo < cxi_lo ? 1L : 0L);
-
-                    ulong yResultLo = ylo + unchecked((ulong)yCarry);
-                    yhi += (yCarry >> 63) + (yResultLo < ylo ? 1L : 0L);
-
-                    y[i] = unchecked((nuint)yResultLo);
-                    yCarry = yhi;
+                    Int128 xDigit = a * (Int128)x[i] - b * (Int128)y[i] + xCarry;
+                    Int128 yDigit = d * (Int128)y[i] - c * (Int128)x[i] + yCarry;
+                    xCarry = xDigit >> 64;
+                    yCarry = yDigit >> 64;
+                    x[i] = unchecked((nuint)(ulong)xDigit);
+                    y[i] = unchecked((nuint)(ulong)yDigit);
                 }
             }
 
