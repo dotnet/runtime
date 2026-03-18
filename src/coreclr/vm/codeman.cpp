@@ -429,7 +429,7 @@ void UnwindInfoTable::FlushPendingEntries()
     STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
         entryPoint, baseAddress, relativeEntryPoint);
 
-    // Not found in pending buffer — check the main (published) table under publish lock.
+    // First check the main (published) table under the publish lock.
     {
         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
         for (ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
