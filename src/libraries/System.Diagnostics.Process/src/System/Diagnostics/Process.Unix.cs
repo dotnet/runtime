@@ -207,9 +207,8 @@ namespace System.Diagnostics
 
             if (exited)
             {
-                int streamTimeout = milliseconds == Timeout.Infinite ? StreamDrainDefaultTimeoutMs : milliseconds;
-                _output?.CancelDueToProcessExit(streamTimeout);
-                _error?.CancelDueToProcessExit(streamTimeout);
+                _output?.CancelDueToProcessExit();
+                _error?.CancelDueToProcessExit();
             }
 
             return exited;
