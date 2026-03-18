@@ -143,6 +143,7 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG
     cTableCurCount = 0;
     cTableMaxCount = size;
     cDeletedEntries = 0;
+    bRegistrationFailed = false;
     iRangeStart = rangeStart;
     iRangeEnd = rangeEnd;
     hHandle = NULL;
@@ -247,6 +248,8 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             INDEBUG(size = size / 4 + 1);
             unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
             unwindInfo->Register();
+            if (unwindInfo->hHandle == NULL)
+                unwindInfo->bRegistrationFailed = true;
             VolatileStore(unwindInfoPtr, unwindInfo);
         }
     }
@@ -255,7 +258,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     _ASSERTE(unwindInfo->iRangeEnd == rangeEnd);
 
     // Means we had a failure publishing to the OS, in this case we give up
-    if (unwindInfo->hHandle == NULL)
+    if (unwindInfo->bRegistrationFailed)
         return;
 
     // Add to the pending buffer. If the buffer is full, flush it first and retry.
@@ -267,7 +270,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             {
                 unwindInfo->pPendingTable[unwindInfo->cPendingCount++] = *data;
 
-                STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%p, pending 0x%x\n",
+                STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%x, pending 0x%x\n",
                     unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
                     data->BeginAddress, unwindInfo->cPendingCount);
                 return;
