@@ -3039,12 +3039,12 @@ SWITCH_OPCODE:
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // On portable entry point platforms, managed calli targets are portable
-                        // entry points and always have a MethodDesc. Interpreted methods and FCalls
-                        // have no native entry point in the PortableEntryPoint and are dispatched
-                        // via CALL_INTERP_METHOD. Newobj allocator helpers carry both a native entry
-                        // point and a dummy MethodDesc; the call cookie is derived from the
-                        // MethodDesc and the native code is invoked via InvokeCalliStub.
+                        // entry points and always have a MethodDesc.
                         targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
+                        // If the method has native code, call it via InvokeCalliStub without going
+                        // through CALL_INTERP_METHOD. It is both a small optimization. Also, it is
+                        // necessary for correctness for Newobj allocator helpers where the MethodDesc
+                        // does not represent the actual entrypoint.
                         if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
                             goto CALL_INTERP_METHOD;
 
