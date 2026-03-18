@@ -85,8 +85,8 @@ namespace System.Formats.Tar
             {
                 var (offset, length) = segments[i];
 
-                // Validate segment ordering and bounds.
-                if (offset < previousEnd || offset + length > _realSize)
+                // Validate segment ordering and bounds. Avoid overflow by checking length separately.
+                if (offset < previousEnd || offset > _realSize || length > _realSize - offset)
                 {
                     throw new InvalidDataException(SR.TarInvalidNumber);
                 }
@@ -135,7 +135,8 @@ namespace System.Formats.Tar
                 }
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _virtualPosition = value;
-                _currentSegmentIndex = 0; // Reset segment hint after seek
+                // _currentSegmentIndex is not reset here; FindSegmentFromCurrent handles
+                // backward seeks using binary search.
             }
         }
 
@@ -161,7 +162,8 @@ namespace System.Formats.Tar
             }
 
             _virtualPosition = newPosition;
-            _currentSegmentIndex = 0; // Reset segment hint after seek
+            // _currentSegmentIndex is not reset here; FindSegmentFromCurrent handles
+            // backward seeks using binary search.
             return _virtualPosition;
         }
 
@@ -320,17 +322,44 @@ namespace System.Formats.Tar
             return bytesRead;
         }
 
-        // Finds the segment containing virtualPosition using _currentSegmentIndex as a hint for O(1)
-        // sequential reads. Backward seeks must reset _currentSegmentIndex to 0 before calling this
-        // (done in Seek() and Position.set). For strictly forward sequential reads the index only ever
-        // advances, so no reset is needed here.
+        // Finds the segment containing virtualPosition.
+        // Uses a sequential hint (_currentSegmentIndex) for O(1) amortized forward reads,
+        // and falls back to binary search when seeking backward or jumping into already-passed regions.
         // Returns the segment index if found, or the bitwise complement of the
         // insertion point (a negative number) if virtualPosition is in a hole.
         private int FindSegmentFromCurrent(long virtualPosition)
         {
             Debug.Assert(_segments is not null);
 
-            // Scan forward from the current cached index (optimal for sequential reads).
+            if (_segments.Length == 0)
+            {
+                return ~0;
+            }
+
+            // If the hint is past all segments, check for backward seek.
+            if (_currentSegmentIndex >= _segments.Length)
+            {
+                long lastEnd = _segments[_segments.Length - 1].Offset + _segments[_segments.Length - 1].Length;
+                if (virtualPosition >= lastEnd)
+                {
+                    // Still in the trailing hole — no search needed.
+                    return ~_segments.Length;
+                }
+                // Seeked back into segment range; use binary search over the full array.
+                int result = BinarySearchSegment(virtualPosition, 0, _segments.Length - 1);
+                _currentSegmentIndex = result >= 0 ? result : ~result;
+                return result;
+            }
+
+            // If position is before the current hint, use binary search (handles backward seeks).
+            if (virtualPosition < _segments[_currentSegmentIndex].Offset)
+            {
+                int result = BinarySearchSegment(virtualPosition, 0, _currentSegmentIndex - 1);
+                _currentSegmentIndex = result >= 0 ? result : ~result;
+                return result;
+            }
+
+            // Scan forward from the current hint (O(1) amortized for sequential reads).
             while (_currentSegmentIndex < _segments.Length)
             {
                 var (offset, length) = _segments[_currentSegmentIndex];
@@ -348,6 +377,31 @@ namespace System.Formats.Tar
                 _currentSegmentIndex++;
             }
             return ~_segments.Length; // Past all segments.
+        }
+
+        // Binary search over sorted segments in the range [lo, hi].
+        // Returns the segment index if found, or ~insertionPoint if virtualPosition is in a hole.
+        private int BinarySearchSegment(long virtualPosition, int lo, int hi)
+        {
+            Debug.Assert(_segments is not null);
+            while (lo <= hi)
+            {
+                int mid = lo + (hi - lo) / 2;
+                var (offset, length) = _segments[mid];
+                if (virtualPosition < offset)
+                {
+                    hi = mid - 1;
+                }
+                else if (virtualPosition >= offset + length)
+                {
+                    lo = mid + 1;
+                }
+                else
+                {
+                    return mid;
+                }
+            }
+            return ~lo;
         }
 
         // Parses the sparse map from rawStream (positioned at the start of the data section).
