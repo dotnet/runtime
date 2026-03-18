@@ -59,9 +59,20 @@ namespace System
         {
             if (Environment.GetEnvironmentVariable(envVariable) is string str)
             {
-                value = str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase);
+                if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = true;
+                    return true;
+                }
 
-                return true;
+                if (str == "0" || string.Equals(str, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = false;
+                    return true;
+                }
+
+                value = false;
+                return false;
             }
 
             value = false;
