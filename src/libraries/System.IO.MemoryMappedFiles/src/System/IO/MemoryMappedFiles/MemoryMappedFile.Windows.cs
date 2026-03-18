@@ -36,9 +36,7 @@ namespace System.IO.MemoryMappedFiles
         {
             Debug.Assert(fileHandle is null || fileSize >= 0);
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
-
-            if (fileHandle != null)
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((inheritability & HandleInheritability.Inheritable) != 0);
             {
                 VerifyMemoryMappedFileAccess(access, capacity, fileSize);
             }
@@ -107,7 +105,7 @@ namespace System.IO.MemoryMappedFiles
             Debug.Assert(access != MemoryMappedFileAccess.Write, "Callers requesting write access shouldn't try to create a mmf");
 
             SafeMemoryMappedFileHandle? handle = null;
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((inheritability & HandleInheritability.Inheritable) != 0);
 
             int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
             int waitSleep = 0;
@@ -249,12 +247,5 @@ namespace System.IO.MemoryMappedFiles
             }
             return handle;
         }
-
-        /// <summary>
-        /// Helper method used to extract the native binary security descriptor from the MemoryMappedFileSecurity
-        /// type. If pinningHandle is not null, caller must free it AFTER the call to CreateFile has returned.
-        /// </summary>
-        private static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability) =>
-            Interop.Kernel32.SECURITY_ATTRIBUTES.Create((inheritability & HandleInheritability.Inheritable) != 0);
     }
 }
