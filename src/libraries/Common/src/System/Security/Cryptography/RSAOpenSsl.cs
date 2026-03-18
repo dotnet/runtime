@@ -273,11 +273,11 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        private delegate T ExportPrivateKeyFunc<T>(ReadOnlyMemory<byte> pkcs8, ReadOnlyMemory<byte> pkcs1);
+        private delegate T ExportPrivateKeyFunc<T>(ReadOnlySpan<byte> pkcs8, ReadOnlySpan<byte> pkcs1);
 
-        private delegate ReadOnlyMemory<byte> TryExportPrivateKeySelector(
-            ReadOnlyMemory<byte> pkcs8,
-            ReadOnlyMemory<byte> pkcs1);
+        private delegate ReadOnlySpan<byte> TryExportPrivateKeySelector(
+            ReadOnlySpan<byte> pkcs8,
+            ReadOnlySpan<byte> pkcs1);
 
         private T ExportPrivateKey<T>(ExportPrivateKeyFunc<T> exporter)
         {
@@ -288,7 +288,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> pkcs1 = VerifyPkcs8(p8);
+                ReadOnlySpan<byte> pkcs1 = VerifyPkcs8(p8);
                 return exporter(p8, pkcs1);
             }
             finally
@@ -306,9 +306,9 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> pkcs1 = VerifyPkcs8(p8);
-                ReadOnlyMemory<byte> selected = selector(p8, pkcs1);
-                return selected.Span.TryCopyToDestination(destination, out bytesWritten);
+                ReadOnlySpan<byte> pkcs1 = VerifyPkcs8(p8);
+                ReadOnlySpan<byte> selected = selector(p8, pkcs1);
+                return selected.TryCopyToDestination(destination, out bytesWritten);
             }
             finally
             {
@@ -316,7 +316,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private T ExportPublicKey<T>(Func<ReadOnlyMemory<byte>, T> exporter)
+        private T ExportPublicKey<T>(Func<ReadOnlySpan<byte>, T> exporter)
         {
             // It's entirely possible that this line will cause the key to be generated in the first place.
             SafeEvpPKeyHandle key = GetKey();
@@ -334,7 +334,7 @@ namespace System.Security.Cryptography
         }
 
         private bool TryExportPublicKey(
-            Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>>? transform,
+            Func<ReadOnlySpan<byte>, ReadOnlySpan<byte>>? transform,
             Span<byte> destination,
             out int bytesWritten)
         {
@@ -345,14 +345,14 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> data = spki;
+                ReadOnlySpan<byte> data = spki;
 
                 if (transform != null)
                 {
                     data = transform(data);
                 }
 
-                return data.Span.TryCopyToDestination(destination, out bytesWritten);
+                return data.TryCopyToDestination(destination, out bytesWritten);
             }
             finally
             {
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography
             return ExportPublicKey(
                 static spki =>
                 {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
+                    ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
                     Debug.Assert(read == spki.Length);
                     return pkcs1.ToArray();
                 });
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
             return TryExportPublicKey(
                 spki =>
                 {
-                    ReadOnlyMemory<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
+                    ReadOnlySpan<byte> pkcs1 = RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(spki, out int read);
                     Debug.Assert(read == spki.Length);
                     return pkcs1;
                 },
@@ -424,7 +424,7 @@ namespace System.Security.Cryptography
                 return ExportPrivateKey(
                     static (pkcs8, pkcs1) =>
                     {
-                        AlgorithmIdentifierAsn algId = default;
+                        ValueAlgorithmIdentifierAsn algId = default;
                         RSAParameters ret;
                         RSAKeyFormatHelper.FromPkcs1PrivateKey(pkcs1, in algId, out ret);
                         return ret;
@@ -436,7 +436,7 @@ namespace System.Security.Cryptography
                 {
                     RSAParameters ret;
                     RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        spki.Span,
+                        spki,
                         out int read,
                         out ret);
 
@@ -515,7 +515,7 @@ namespace System.Security.Cryptography
 
             if (checkAlgorithm)
             {
-                read = RSAKeyFormatHelper.CheckSubjectPublicKeyInfo(source);
+                RSAKeyFormatHelper.ReadSubjectPublicKeyInfo(source, out read);
             }
             else
             {
@@ -776,7 +776,7 @@ namespace System.Security.Cryptography
                 signature);
         }
 
-        private static ReadOnlyMemory<byte> VerifyPkcs8(ReadOnlyMemory<byte> pkcs8)
+        private static ReadOnlySpan<byte> VerifyPkcs8(ReadOnlySpan<byte> pkcs8)
         {
             // OpenSSL 1.1.1 will export RSA public keys as a PKCS#8, but this makes a broken structure.
             //
@@ -785,9 +785,9 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> pkcs1Priv = RSAKeyFormatHelper.ReadPkcs8(pkcs8, out int read);
+                ReadOnlySpan<byte> pkcs1Priv = RSAKeyFormatHelper.ReadPkcs8(pkcs8, out int read);
                 Debug.Assert(read == pkcs8.Length);
-                _ = RSAPrivateKeyAsn.Decode(pkcs1Priv, AsnEncodingRules.BER);
+                ValueRSAPrivateKeyAsn.Decode(pkcs1Priv, AsnEncodingRules.BER, out _);
                 return pkcs1Priv;
             }
             catch (CryptographicException)
