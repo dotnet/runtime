@@ -14,9 +14,13 @@ namespace System.Numerics
         // Mutable for unit testing...
         internal static int MultiplyKaratsubaThreshold = 32;
         internal static int MultiplyToom3Threshold = 256;
+        internal static int SquareKaratsubaThreshold = 48;
+        internal static int SquareToom3Threshold = 384;
 #else
         internal const int MultiplyKaratsubaThreshold = 32;
         internal const int MultiplyToom3Threshold = 256;
+        internal const int SquareKaratsubaThreshold = 48;
+        internal const int SquareToom3Threshold = 384;
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,11 +38,11 @@ namespace System.Numerics
             // NOTE: useful thresholds needs some "empirical" testing,
             // which are smaller in DEBUG mode for testing purpose.
 
-            if (value.Length < MultiplyKaratsubaThreshold)
+            if (value.Length < SquareKaratsubaThreshold)
             {
                 Naive(value, bits);
             }
-            else if (value.Length < MultiplyToom3Threshold)
+            else if (value.Length < SquareToom3Threshold)
             {
                 Karatsuba(value, bits);
             }
