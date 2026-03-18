@@ -311,6 +311,11 @@ void UnwindInfoTable::FlushPendingEntries()
     if (localPendingCount == 0)
         return;
 
+    // If a previous Register() call failed, hHandle is NULL. Skip OS updates
+    // to avoid calling RtlGrowFunctionTable or re-registering with a null handle.
+    if (hHandle == NULL)
+        return;
+
     // Sort the pending entries by BeginAddress.
     // Use a simple insertion sort since cPendingMaxCount is small (32).
     for (ULONG i = 1; i < localPendingCount; i++)
