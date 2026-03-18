@@ -295,6 +295,15 @@ void UnwindInfoTable::FlushPendingEntries()
 
     _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
 
+    if (hHandle == NULL)
+    {
+        // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
+        // RtlGrowFunctionTable with a null handle. Avoid copying to the local buffer as
+        // well since it won't be published anyway.
+        cPendingCount = 0;
+        return;
+    }
+
     // Grab the pending entries under the pending lock, then release it so
     // other threads can keep accumulating new entries while we flush.
     T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
@@ -309,13 +318,10 @@ void UnwindInfoTable::FlushPendingEntries()
     if (localPendingCount == 0)
         return;
 
-    // If a previous Register() call failed, hHandle is NULL. Skip OS updates
-    // to avoid calling RtlGrowFunctionTable or re-registering with a null handle.
-    if (hHandle == NULL)
-        return;
-
     // Sort the pending entries by BeginAddress.
     // Use a simple insertion sort since cPendingMaxCount is small (32).
+    static_assert(cPendingMaxCount == 32,
+        "cPendingMaxCount was updated and might be too large for insertion sort, consider using a better algorithm");
     for (ULONG i = 1; i < localPendingCount; i++)
     {
         T_RUNTIME_FUNCTION key = localPending[i];
@@ -351,7 +357,7 @@ void UnwindInfoTable::FlushPendingEntries()
     STRESS_LOG7(LF_JIT, LL_INFO100, "FlushPendingEntries Handle: %p [%p, %p] Merging 0x%x live + 0x%x pending into 0x%x max, from 0x%x\n",
         hHandle, iRangeStart, iRangeEnd, liveCount, localPendingCount, desiredSpace, cTableMaxCount);
 
-    T_RUNTIME_FUNCTION* newPTable = new T_RUNTIME_FUNCTION[desiredSpace];
+    NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
 
     // Merge-sort the main table and pending buffer into newPTable.
     ULONG mainIdx = 0;
@@ -392,19 +398,17 @@ void UnwindInfoTable::FlushPendingEntries()
     _ASSERTE(toIdx == newCount);
     _ASSERTE(toIdx <= desiredSpace);
 
-    T_RUNTIME_FUNCTION* oldPTable = pTable;
+    NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable(pTable);
 
     UnRegister();
 
-    pTable = newPTable;
+    pTable = newPTable.Extract();
     cTableCurCount = toIdx;
     cTableMaxCount = desiredSpace;
     cDeletedEntries = 0;
 
     // Note that there is a short time when we are not publishing...
     Register();
-
-    delete[] oldPTable;
 }
 
 /*****************************************************************************/
