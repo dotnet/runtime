@@ -9110,7 +9110,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class RequiresUnsafeAttribute : System.Attribute
     {
         public RequiresUnsafeAttribute() { }
@@ -14033,7 +14033,7 @@ namespace System.Runtime.CompilerServices
         Always = 1,
         Sometimes = 2,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Module, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class MemorySafetyRulesAttribute : System.Attribute
     {
