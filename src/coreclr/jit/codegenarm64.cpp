@@ -1659,7 +1659,7 @@ void CodeGen::genFuncletEpilog()
 
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, imm);
             m_compiler->unwindSaveRegPair(REG_FP, REG_LR, static_cast<int>(imm));
-            if(!m_compiler->IsAot())
+            if (!m_compiler->IsAot())
             {
                 GetEmitter()->emitPacInEpilog();
             }
@@ -1680,7 +1680,7 @@ void CodeGen::genFuncletEpilog()
         GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
                                       genFuncletInfo.fiSP_to_FPLR_save_delta);
         m_compiler->unwindSaveRegPair(REG_FP, REG_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
-        if(!m_compiler->IsAot())
+        if (!m_compiler->IsAot())
         {
             GetEmitter()->emitPacInEpilog();
         }
