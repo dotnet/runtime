@@ -26,11 +26,11 @@ namespace System.Runtime.InteropServices
                                                  [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [UnmanagedCallersOnly]
-        private static unsafe void LoadLibraryCallbackStub(string* pLibraryName, Assembly* pAssembly, byte hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, IntPtr* pResult, Exception* pException)
+        private static unsafe void LoadLibraryCallbackStub(string* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, IntPtr* pResult, Exception* pException)
         {
             try
             {
-                *pResult = LoadLibraryCallbackStub(*pLibraryName, *pAssembly, hasDllImportSearchPathFlags != 0, dllImportSearchPathFlags);
+                *pResult = LoadLibraryCallbackStub(*pLibraryName, *pAssembly, hasDllImportSearchPathFlags, dllImportSearchPathFlags);
             }
             catch (Exception ex)
             {

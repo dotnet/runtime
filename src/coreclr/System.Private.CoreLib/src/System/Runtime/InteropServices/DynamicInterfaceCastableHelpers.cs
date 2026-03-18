@@ -23,11 +23,11 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void IsInterfaceImplemented(IDynamicInterfaceCastable* pCastable, RuntimeType* pInterfaceType, byte throwIfNotImplemented, byte* pResult, Exception* pException)
+        private static unsafe void IsInterfaceImplemented(IDynamicInterfaceCastable* pCastable, RuntimeType* pInterfaceType, bool throwIfNotImplemented, bool* pResult, Exception* pException)
         {
             try
             {
-                *pResult = IsInterfaceImplemented(*pCastable, *pInterfaceType, throwIfNotImplemented != 0) ? (byte)1 : (byte)0;
+                *pResult = IsInterfaceImplemented(*pCastable, *pInterfaceType, throwIfNotImplemented);
             }
             catch (Exception ex)
             {
