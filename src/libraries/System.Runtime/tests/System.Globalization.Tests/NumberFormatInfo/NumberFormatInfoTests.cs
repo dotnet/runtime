@@ -141,7 +141,7 @@ namespace System.Globalization.Tests
 
         public static bool FullICUPlatform => PlatformDetection.ICUVersion.Major >= 66 && PlatformDetection.IsNotBrowser;
 
-        [ConditionalTheory(nameof(FullICUPlatform))]
+        [ConditionalTheory(typeof(NumberFormatInfoMiscTests), nameof(FullICUPlatform))]
         [MemberData(nameof(NativeDigitTestData))]
         public void TestNativeDigits(string cultureName, string[] nativeDigits)
         {

@@ -37,6 +37,14 @@ public readonly struct OffsetMapping
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
+    /// <summary>
+    /// Returns true if the method at <paramref name="pCode"/> has debug info associated with it.
+    /// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
+    /// </summary>
+    bool HasDebugInfo(TargetCodePointer pCode) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
+    /// </summary>
     IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
 }
 

@@ -410,7 +410,7 @@ namespace System.Globalization
             };
 
         // Cache of regions we've already looked up
-        private static volatile Dictionary<string, CultureData>? s_cachedRegions;
+        private static Dictionary<string, CultureData>? s_cachedRegions;
         private static Dictionary<string, string>? s_regionNames;
 
         /// <summary>
@@ -655,7 +655,7 @@ namespace System.Globalization
         internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
-        private static volatile Dictionary<string, CultureData>? s_cachedCultures;
+        private static Dictionary<string, CultureData>? s_cachedCultures;
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {

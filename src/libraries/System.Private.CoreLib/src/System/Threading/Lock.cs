@@ -37,10 +37,10 @@ namespace System.Threading
 
         private static long s_contentionCount;
 
-        private int _owningThreadId;
+        private int _owningThreadId; // cDAC depends on exact name of this field
 
-        private uint _state; // see State for layout
-        private uint _recursionCount;
+        private uint _state; // see State for layout. cDAC depends on exact name of this field
+        private uint _recursionCount; // cDAC depends on exact name of this field
 
         // This field serves a few purposes currently:
         // - When positive, it indicates the number of spin-wait iterations that most threads would do upon contention
@@ -519,7 +519,7 @@ namespace System.Threading
                 goto Locked;
             }
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             // Lock was not acquired and a waiter was registered. All following paths need to unregister the waiter, including
             // exceptional paths.

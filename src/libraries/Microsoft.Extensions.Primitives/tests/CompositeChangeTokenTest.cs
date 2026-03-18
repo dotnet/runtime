@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(compositeChangeToken.ActiveChangeCallbacks);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RegisteredCallbackGetsInvokedExactlyOnce_WhenMultipleConcurrentChangeEventsOccur()
         {
             // Arrange
@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task NoDeadlock_WhenMultipleConcurrentChangeEventsOccur()
         {
             // Arrange

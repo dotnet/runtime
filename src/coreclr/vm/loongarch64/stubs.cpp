@@ -269,7 +269,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
@@ -294,6 +293,29 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The interpreter frame saves the floating point callee-saved registers (f24-f31)
+    // before FloatArgumentRegisters and TransitionBlock:
+    //   [f24-f31 (64 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // So f24-f31 are located at TransitionBlock - 128.
+    TADDR pTransitionBlock = GetTransitionBlock();
+    UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 128);
+
+    // LoongArch CONTEXT::F has 4 slots per register for LASX support.
+    // Each scalar double value is stored in the first slot.
+    for (int i = 0; i < 8; i++)
+    {
+        memcpy(&pRD->pCurrentContext->F[(24 + i) * 4], &pCalleeSavedFloats[i], sizeof(double));
+    }
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
+
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -306,17 +328,26 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->S0 = (PDWORD64)&m_ctx.S0;
-    pRD->pCurrentContextPointers->S1 = (PDWORD64)&m_ctx.S1;
-    pRD->pCurrentContextPointers->S2 = (PDWORD64)&m_ctx.S2;
-    pRD->pCurrentContextPointers->S3 = (PDWORD64)&m_ctx.S3;
-    pRD->pCurrentContextPointers->S4 = (PDWORD64)&m_ctx.S4;
-    pRD->pCurrentContextPointers->S5 = (PDWORD64)&m_ctx.S5;
-    pRD->pCurrentContextPointers->S6 = (PDWORD64)&m_ctx.S6;
-    pRD->pCurrentContextPointers->S7 = (PDWORD64)&m_ctx.S7;
-    pRD->pCurrentContextPointers->S8 = (PDWORD64)&m_ctx.S8;
-    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
-    pRD->pCurrentContextPointers->Ra = (PDWORD64)&m_ctx.Ra;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->S0 = (PDWORD64)&pContext->S0;
+    pRD->pCurrentContextPointers->S1 = (PDWORD64)&pContext->S1;
+    pRD->pCurrentContextPointers->S2 = (PDWORD64)&pContext->S2;
+    pRD->pCurrentContextPointers->S3 = (PDWORD64)&pContext->S3;
+    pRD->pCurrentContextPointers->S4 = (PDWORD64)&pContext->S4;
+    pRD->pCurrentContextPointers->S5 = (PDWORD64)&pContext->S5;
+    pRD->pCurrentContextPointers->S6 = (PDWORD64)&pContext->S6;
+    pRD->pCurrentContextPointers->S7 = (PDWORD64)&pContext->S7;
+    pRD->pCurrentContextPointers->S8 = (PDWORD64)&pContext->S8;
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&pContext->Fp;
+    pRD->pCurrentContextPointers->Ra = (PDWORD64)&pContext->Ra;
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
@@ -349,7 +380,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
     }
 #endif // DACCESS_COMPILE
 
@@ -466,9 +497,11 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     pRD->pCurrentContext->A0 = m_Args->A0;
     pRD->pCurrentContext->A1 = m_Args->A1;
+    pRD->pCurrentContext->A2 = m_Args->A2;
 
     pRD->volatileCurrContextPointers.A0 = &m_Args->A0;
     pRD->volatileCurrContextPointers.A1 = &m_Args->A1;
+    pRD->volatileCurrContextPointers.A2 = &m_Args->A2;
 
     pRD->pCurrentContext->S0 = m_Args->S0;
     pRD->pCurrentContext->S1 = m_Args->S1;

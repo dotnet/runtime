@@ -58,6 +58,10 @@ export interface AssetEntryInternal extends AssetEntry {
     integrity?: string
     cache?: RequestCache
     useCredentials?: boolean
+    culture?: string
+    priority?: boolean
+    shortName?: string
+    inprogress?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

@@ -63,6 +63,8 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
+        public static bool IsMonoRuntime => s_buildEnv.IsMonoRuntime;
+        public static bool IsCoreClrRuntime => s_buildEnv.IsCoreClrRuntime;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPath()
             => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");

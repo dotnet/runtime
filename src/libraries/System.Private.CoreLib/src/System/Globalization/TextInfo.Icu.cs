@@ -7,7 +7,7 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        private Tristate _needsTurkishCasing = Tristate.NotInitialized;
+        private NullableBool _needsTurkishCasing;
 
         private static bool NeedsTurkishCasing(string localeName)
         {
@@ -27,11 +27,11 @@ namespace System.Globalization
             }
             else
             {
-                if (_needsTurkishCasing == Tristate.NotInitialized)
+                if (_needsTurkishCasing == NullableBool.Undefined)
                 {
-                    _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? Tristate.True : Tristate.False;
+                    _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? NullableBool.True : NullableBool.False;
                 }
-                if (_needsTurkishCasing == Tristate.True)
+                if (_needsTurkishCasing == NullableBool.True)
                 {
                     Interop.Globalization.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 }

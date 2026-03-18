@@ -8,36 +8,40 @@
 #include "../../native/containers/dn-simdhash.h"
 #include "../../native/containers/dn-simdhash-specializations.h"
 #include "../../native/containers/dn-simdhash-utils.h"
+#include "interpalloc.h"
+
+struct dn_simdhash_arenaallocator final : public dn_allocator_t
+{
+    InterpAllocator m_arenaAllocator;
+    static _dn_allocator_vtable_t vtable;
+
+    static void *arena_alloc(dn_allocator_t *_this, size_t size);
+    static void *arena_realloc(dn_allocator_t *_this, void *ptr, size_t size);
+    static void arena_free(dn_allocator_t *_this, void *ptr);
+public:
+    dn_simdhash_arenaallocator(InterpAllocator arenaAllocator)
+        : m_arenaAllocator(arenaAllocator)
+    {
+        this->_vtable = &vtable;
+    }
+};
 
 class dn_simdhash_ptr_ptr_holder
 {
-public:
-    dn_simdhash_ptr_ptr_foreach_func ValueDestroyCallback;
-
-private:
     dn_simdhash_ptr_ptr_t *Value;
-
-    void free_hash_and_values()
-    {
-        if (Value == nullptr)
-            return;
-        if (ValueDestroyCallback)
-            dn_simdhash_ptr_ptr_foreach(Value, ValueDestroyCallback, nullptr);
-        dn_simdhash_free(Value);
-        Value = nullptr;
-    }
+    dn_simdhash_arenaallocator *ArenaAllocator;
 
 public:
-    dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_foreach_func valueDestroyCallback = nullptr)
-        : ValueDestroyCallback(valueDestroyCallback)
-        , Value(nullptr)
+    dn_simdhash_ptr_ptr_holder(InterpAllocator arenaAllocator)
+        : Value(nullptr)
+        , ArenaAllocator(new (arenaAllocator) dn_simdhash_arenaallocator(arenaAllocator))
     {
     }
 
     dn_simdhash_ptr_ptr_t* GetValue()
     {
         if (!Value)
-            Value = dn_simdhash_ptr_ptr_new(0, nullptr);
+            Value = dn_simdhash_ptr_ptr_new(0, ArenaAllocator);
 
         if (Value == nullptr)
             NOMEM();
@@ -55,58 +59,39 @@ public:
     dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_holder&& other)
     {
         Value = other.Value;
-        ValueDestroyCallback = other.ValueDestroyCallback;
+        ArenaAllocator = other.ArenaAllocator;
         other.Value = nullptr;
-        other.ValueDestroyCallback = nullptr;
+        other.ArenaAllocator = nullptr;
     }
     dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
     {
         if (this != &other)
         {
-            free_hash_and_values();
             Value = other.Value;
-            ValueDestroyCallback = other.ValueDestroyCallback;
+            ArenaAllocator = other.ArenaAllocator;
             other.Value = nullptr;
-            other.ValueDestroyCallback = nullptr;
+            other.ArenaAllocator = nullptr;
         }
         return *this;
-    }
-
-    ~dn_simdhash_ptr_ptr_holder()
-    {
-        free_hash_and_values();
     }
 };
 
 class dn_simdhash_u32_ptr_holder
 {
-public:
-    dn_simdhash_u32_ptr_foreach_func ValueDestroyCallback;
-
-private:
     dn_simdhash_u32_ptr_t *Value;
-
-    void free_hash_and_values()
-    {
-        if (Value == nullptr)
-            return;
-        if (ValueDestroyCallback)
-            dn_simdhash_u32_ptr_foreach(Value, ValueDestroyCallback, nullptr);
-        dn_simdhash_free(Value);
-        Value = nullptr;
-    }
+    dn_simdhash_arenaallocator *ArenaAllocator;
 
 public:
-    dn_simdhash_u32_ptr_holder(dn_simdhash_u32_ptr_foreach_func valueDestroyCallback = nullptr)
-        : ValueDestroyCallback(valueDestroyCallback)
-        , Value(nullptr)
+    dn_simdhash_u32_ptr_holder(InterpAllocator arenaAllocator)
+        : Value(nullptr)
+        , ArenaAllocator(new (arenaAllocator) dn_simdhash_arenaallocator(arenaAllocator))
     {
     }
 
     dn_simdhash_u32_ptr_t* GetValue()
     {
         if (!Value)
-            Value = dn_simdhash_u32_ptr_new(0, nullptr);
+            Value = dn_simdhash_u32_ptr_new(0, ArenaAllocator);
 
         if (Value == nullptr)
             NOMEM();
@@ -124,26 +109,20 @@ public:
     dn_simdhash_u32_ptr_holder(dn_simdhash_u32_ptr_holder&& other)
     {
         Value = other.Value;
-        ValueDestroyCallback = other.ValueDestroyCallback;
+        ArenaAllocator = other.ArenaAllocator;
         other.Value = nullptr;
-        other.ValueDestroyCallback = nullptr;
+        other.ArenaAllocator = nullptr;
     }
     dn_simdhash_u32_ptr_holder& operator=(dn_simdhash_u32_ptr_holder&& other)
     {
         if (this != &other)
         {
-            free_hash_and_values();
             Value = other.Value;
-            ValueDestroyCallback = other.ValueDestroyCallback;
+            ArenaAllocator = other.ArenaAllocator;
             other.Value = nullptr;
-            other.ValueDestroyCallback = nullptr;
+            other.ArenaAllocator = nullptr;
         }
         return *this;
-    }
-
-    ~dn_simdhash_u32_ptr_holder()
-    {
-        free_hash_and_values();
     }
 };
 

@@ -7,11 +7,15 @@ function libCoreRunFactory() {
         "$DOTNET",
         "$ENV",
         "$FS",
-        "$NODEFS",
-        "$NODERAWFS",
         "corerun_shutdown",
         "BrowserHost_ShutdownDotnet",
     ];
+    if (LibraryManager.library.$NODEFS) {
+        commonDeps.push("$NODEFS");
+    }
+    if (LibraryManager.library.$NODERAWFS) {
+        commonDeps.push("$NODERAWFS");
+    }
     const mergeCoreRun = {
         $CORERUN: {
             selfInitialize: () => {
