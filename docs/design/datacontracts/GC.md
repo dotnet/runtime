@@ -789,11 +789,11 @@ GetHandleTableMemoryRegions
 IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
 {
     List<GCMemoryRegionData> regions = new();
-    uint handleSegmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
+    uint handleSegmentSize = /* global value "HandleSegmentSize" */;
     // For server GC, use TotalCpuCount (processor count) for the number of
     // table slots per bucket, not NumHeaps (GC heap count).
     uint tableCount = isServerGC
-        ? target.Read<uint>(target.ReadGlobalPointer("TotalCpuCount"))
+        ? /* global value "TotalCpuCount" */
         : 1;
 
     // Safety caps matching native DAC
@@ -803,30 +803,29 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
 
     int maxRegions = MaxHandleTableRegions;
     TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
-    while (handleTableMap != null && maxRegions >= 0)
+    while (handleTableMap != TargetPointer.Null && maxRegions >= 0)
     {
-        HandleTableMap map = Read<HandleTableMap>(handleTableMap);
-        foreach (TargetPointer bucketPtr in map.BucketsPtr)
+        TargetPointer bucketsPtr = target.ReadPointer(handleTableMap + /* HandleTableMap::BucketsPtr offset */);
+        foreach (/* read global variable "InitialHandleTableArraySize" bucketPtrs starting at bucketsPtr */)
         {
-            if (bucketPtr == null) continue;
-            HandleTableBucket bucket = Read<HandleTableBucket>(bucketPtr);
+            if (bucketPtr == TargetPointer.Null) continue;
+            TargetPointer table = target.ReadPointer(bucketPtr + /* HandleTableBucket::Table offset */);
             for (uint j = 0; j < tableCount; j++)
             {
-                TargetPointer htPtr = ReadPointer(bucket.Table + j * PointerSize);
-                if (htPtr == null) continue;
-                HandleTable ht = Read<HandleTable>(htPtr);
-                if (ht.SegmentList == null) continue;
-                TargetPointer seg = ht.SegmentList;
+                TargetPointer htPtr = target.ReadPointer(table + j * target.PointerSize);
+                if (htPtr == TargetPointer.Null) continue;
+                TargetPointer segList = target.ReadPointer(htPtr + /* HandleTable::SegmentList offset */);
+                if (segList == TargetPointer.Null) continue;
+                TargetPointer seg = segList;
                 TargetPointer first = seg;
                 do
                 {
-                    TableSegment ts = Read<TableSegment>(seg);
                     regions.Add(new GCMemoryRegionData { Start = seg, Size = handleSegmentSize, Heap = (int)j });
-                    seg = ts.NextSegment;
-                } while (seg != null && seg != first);
+                    seg = target.ReadPointer(seg + /* TableSegment::NextSegment offset */);
+                } while (seg != TargetPointer.Null && seg != first);
             }
         }
-        handleTableMap = map.Next;
+        handleTableMap = target.ReadPointer(handleTableMap + /* HandleTableMap::Next offset */);
         maxRegions--;
     }
     return regions;
@@ -838,28 +837,30 @@ GetGCBookkeepingMemoryRegions
 IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
 {
     List<GCMemoryRegionData> regions = new();
-    if (!TryReadGlobalPointer("BookkeepingStart", out TargetPointer? bkGlobal))
+    if (!target.TryReadGlobalPointer("BookkeepingStart", out TargetPointer? bkGlobal))
         return regions;
-    TargetPointer bookkeepingStart = ReadPointer(bkGlobal);
-    if (bookkeepingStart == null) return regions;
+    TargetPointer bookkeepingStart = target.ReadPointer(bkGlobal);
+    if (bookkeepingStart == TargetPointer.Null) return regions;
 
-    uint cardTableInfoSize = ReadGlobal<uint>("CardTableInfoSize");
-    CardTableInfo cti = Read<CardTableInfo>(bookkeepingStart);
-    if (cti.Recount != 0 && cti.Size != 0)
-        regions.Add(new GCMemoryRegionData { Start = bookkeepingStart, Size = cti.Size });
+    uint cardTableInfoSize = /* global value "CardTableInfoSize" */;
+    uint recount = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Recount offset */);
+    ulong size = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Size offset */);
+    if (recount != 0 && size != 0)
+        regions.Add(new GCMemoryRegionData { Start = bookkeepingStart, Size = size });
 
-    TargetPointer next = cti.NextCardTable;
+    TargetPointer next = target.ReadPointer(bookkeepingStart + /* CardTableInfo::NextCardTable offset */);
     TargetPointer firstNext = next;
     int maxRegions = MaxBookkeepingRegions;
     // Compare next > cardTableInfoSize to guard against underflow when subtracting
     // cardTableInfoSize. Matches native DAC: `while (next > card_table_info_size)`.
-    while (next != null && next > cardTableInfoSize && maxRegions > 0)
+    while (next != TargetPointer.Null && next > cardTableInfoSize && maxRegions > 0)
     {
         TargetPointer ctAddr = next - cardTableInfoSize;
-        CardTableInfo ct = Read<CardTableInfo>(ctAddr);
-        if (ct.Recount != 0 && ct.Size != 0)
-            regions.Add(new GCMemoryRegionData { Start = ctAddr, Size = ct.Size });
-        next = ct.NextCardTable;
+        recount = target.ReadNUInt(ctAddr + /* CardTableInfo::Recount offset */);
+        size = target.ReadNUInt(ctAddr + /* CardTableInfo::Size offset */);
+        if (recount != 0 && size != 0)
+            regions.Add(new GCMemoryRegionData { Start = ctAddr, Size = size });
+        next = target.ReadPointer(ctAddr + /* CardTableInfo::NextCardTable offset */);
         if (next == firstNext) break;
         maxRegions--;
     }
@@ -872,15 +873,15 @@ GetGCFreeRegions
 IReadOnlyList<GCMemoryRegionData> IGC.GetGCFreeRegions()
 {
     List<GCMemoryRegionData> regions = new();
-    int countFreeRegionKinds = min(ReadGlobal<uint>("CountFreeRegionKinds"), 16);
-    uint regionFreeListSize = GetTypeInfo(RegionFreeList).Size;
+    uint countFreeRegionKinds = min(/* global value "CountFreeRegionKinds" */, 16);
+    uint regionFreeListSize = /* size of RegionFreeList data descriptor */;
 
     // Global free huge regions
-    if (TryReadGlobalPointer("GlobalFreeHugeRegions", out TargetPointer? globalHuge))
+    if (target.TryReadGlobalPointer("GlobalFreeHugeRegions", out TargetPointer? globalHuge))
         AddFreeList(globalHuge, FreeGlobalHugeRegion, regions);
 
     // Global regions to decommit
-    if (TryReadGlobalPointer("GlobalRegionsToDecommit", out TargetPointer? globalDecommit))
+    if (target.TryReadGlobalPointer("GlobalRegionsToDecommit", out TargetPointer? globalDecommit))
         for (int i = 0; i < countFreeRegionKinds; i++)
             AddFreeList(globalDecommit + i * regionFreeListSize, FreeGlobalRegion, regions);
 
@@ -888,45 +889,50 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetGCFreeRegions()
     {
         // For each server heap: enumerate per-heap free regions + freeable segments
         for each heap in server heaps:
-            for (int j = 0; j < countFreeRegionKinds; j++)
-                AddFreeList(heap.FreeRegions + j * regionFreeListSize, FreeRegion, regions, heapIndex);
-            AddSegmentList(heap.FreeableSohSegment, FreeSohSegment, regions, heapIndex);
-            AddSegmentList(heap.FreeableUohSegment, FreeUohSegment, regions, heapIndex);
+            TargetPointer freeRegionsBase = heapAddress + /* GCHeap::FreeRegions offset */;
+            if (freeRegionsBase != TargetPointer.Null)
+                for (int j = 0; j < countFreeRegionKinds; j++)
+                    AddFreeList(freeRegionsBase + j * regionFreeListSize, FreeRegion, regions, heapIndex);
+            TargetPointer sohSeg = target.ReadPointer(heapAddress + /* GCHeap::FreeableSohSegment offset */);
+            AddSegmentList(sohSeg, FreeSohSegment, regions, heapIndex);
+            TargetPointer uohSeg = target.ReadPointer(heapAddress + /* GCHeap::FreeableUohSegment offset */);
+            AddSegmentList(uohSeg, FreeUohSegment, regions, heapIndex);
     }
     else
     {
         // Workstation: use globals for free regions and freeable segments
-        if (TryReadGlobalPointer("GCHeapFreeRegions", out TargetPointer? freeRegions))
+        if (target.TryReadGlobalPointer("GCHeapFreeRegions", out TargetPointer? freeRegions))
             for (int i = 0; i < countFreeRegionKinds; i++)
                 AddFreeList(freeRegions + i * regionFreeListSize, FreeRegion, regions);
-        if (TryReadGlobalPointer("GCHeapFreeableSohSegment", out TargetPointer? soh))
-            AddSegmentList(ReadPointer(soh), FreeSohSegment, regions);
-        if (TryReadGlobalPointer("GCHeapFreeableUohSegment", out TargetPointer? uoh))
-            AddSegmentList(ReadPointer(uoh), FreeUohSegment, regions);
+        if (target.TryReadGlobalPointer("GCHeapFreeableSohSegment", out TargetPointer? soh))
+            AddSegmentList(target.ReadPointer(soh), FreeSohSegment, regions);
+        if (target.TryReadGlobalPointer("GCHeapFreeableUohSegment", out TargetPointer? uoh))
+            AddSegmentList(target.ReadPointer(uoh), FreeUohSegment, regions);
     }
     return regions;
 }
 
 void AddFreeList(TargetPointer freeListAddr, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
 {
-    RegionFreeList fl = Read<RegionFreeList>(freeListAddr);
-    if (fl.HeadFreeRegion != null)
-        AddSegmentList(fl.HeadFreeRegion, kind, regions, heap);
+    TargetPointer headFreeRegion = target.ReadPointer(freeListAddr + /* RegionFreeList::HeadFreeRegion offset */);
+    if (headFreeRegion != TargetPointer.Null)
+        AddSegmentList(headFreeRegion, kind, regions, heap);
 }
 
 void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
 {
     int iterationMax = MaxSegmentListIterations;
     TargetPointer curr = start;
-    while (curr != null)
+    while (curr != TargetPointer.Null)
     {
-        HeapSegment seg = Read<HeapSegment>(curr);
-        if (seg.Mem != null)
+        TargetPointer mem = target.ReadPointer(curr + /* HeapSegment::Mem offset */);
+        if (mem != TargetPointer.Null)
         {
-            ulong size = (seg.Mem < seg.Committed) ? seg.Committed - seg.Mem : 0;
-            regions.Add(new GCMemoryRegionData { Start = seg.Mem, Size = size, ExtraData = kind, Heap = heap });
+            TargetPointer committed = target.ReadPointer(curr + /* HeapSegment::Committed offset */);
+            ulong size = (mem < committed) ? committed - mem : 0;
+            regions.Add(new GCMemoryRegionData { Start = mem, Size = size, ExtraData = kind, Heap = heap });
         }
-        curr = seg.Next;
+        curr = target.ReadPointer(curr + /* HeapSegment::Next offset */);
         if (curr == start) break;
         if (iterationMax-- <= 0) break;
     }
