@@ -15,13 +15,12 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            AlgorithmIdentifierAsn algorithmIdentifier = new()
+            ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
             {
                 Algorithm = dsa.Algorithm.Oid,
-                Parameters = default(ReadOnlyMemory<byte>?),
             };
 
-            MLDsaPrivateKeyAsn privateKeyAsn = default;
+            ValueMLDsaPrivateKeyAsn privateKeyAsn = default;
             byte[]? rented = null;
             int written = 0;
 
@@ -31,8 +30,8 @@ namespace System.Security.Cryptography
                 {
                     int seedSize = dsa.Algorithm.PrivateSeedSizeInBytes;
                     rented = CryptoPool.Rent(seedSize);
-                    Memory<byte> buffer = rented.AsMemory(0, seedSize);
-                    dsa.ExportMLDsaPrivateSeed(buffer.Span);
+                    Span<byte> buffer = rented.AsSpan(0, seedSize);
+                    dsa.ExportMLDsaPrivateSeed(buffer);
                     written = buffer.Length;
                     privateKeyAsn.Seed = buffer;
                 }
@@ -40,8 +39,8 @@ namespace System.Security.Cryptography
                 {
                     int privateKeySize = dsa.Algorithm.PrivateKeySizeInBytes;
                     rented = CryptoPool.Rent(privateKeySize);
-                    Memory<byte> buffer = rented.AsMemory(0, privateKeySize);
-                    dsa.ExportMLDsaPrivateKey(buffer.Span);
+                    Span<byte> buffer = rented.AsSpan(0, privateKeySize);
+                    dsa.ExportMLDsaPrivateKey(buffer);
                     written = buffer.Length;
                     privateKeyAsn.ExpandedKey = buffer;
                 }

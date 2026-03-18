@@ -42,6 +42,10 @@ namespace System.Net
         /// Initializes a new instance of the <see cref="WebProxy" /> class from the specified <see cref="Uri" /> instance.
         /// </summary>
         /// <param name="Address">The address of the proxy server.</param>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
         public WebProxy(Uri? Address) : this(Address, false, null, null) { }
 
         /// <summary>
@@ -49,6 +53,10 @@ namespace System.Net
         /// </summary>
         /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
 
         /// <summary>
@@ -57,6 +65,10 @@ namespace System.Net
         /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
 
         /// <summary>
@@ -66,10 +78,17 @@ namespace System.Net
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
         /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property when no explicit <paramref name="Credentials"/> are provided.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
-            this.Credentials = Credentials;
+            if (Credentials is not null)
+            {
+                this.Credentials = Credentials;
+            }
             this.BypassProxyOnLocal = BypassOnLocal;
             if (BypassList != null)
             {
@@ -97,6 +116,10 @@ namespace System.Net
         /// </summary>
         /// <param name="Address">The URI of the proxy server.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains user info, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
         public WebProxy(string? Address)
             : this(CreateProxyUri(Address), false, null, null)
         {
@@ -108,6 +131,10 @@ namespace System.Net
         /// <param name="Address">The URI of the proxy server.</param>
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains user info, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal)
             : this(CreateProxyUri(Address), BypassOnLocal, null, null)
         {
@@ -120,6 +147,10 @@ namespace System.Net
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contain the URIs of the servers to bypass.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains user info, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, null)
         {
@@ -133,6 +164,10 @@ namespace System.Net
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
         /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// If the specified <paramref name="Address"/> contains user info, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property when no explicit <paramref name="Credentials"/> are provided.
+        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, Credentials)
         {
@@ -144,7 +179,22 @@ namespace System.Net
         /// <value>
         /// A <see cref="Uri"/> instance that contains the address of the proxy server.
         /// </value>
-        public Uri? Address { get; set; }
+        /// <remarks>
+        /// If the specified <see cref="Uri"/> contains <see cref="Uri.UserInfo"/>, the credentials
+        /// will be extracted and used to set the <see cref="Credentials"/> property.
+        /// </remarks>
+        public Uri? Address
+        {
+            get;
+            set
+            {
+                field = value;
+                if (GetCredentialsFromUri(value) is NetworkCredential uriCredentials)
+                {
+                    Credentials = uriCredentials;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value that indicates whether to bypass the proxy server for local addresses.
@@ -244,6 +294,38 @@ namespace System.Net
             }
 
             return proxyUri;
+        }
+
+        private static NetworkCredential? GetCredentialsFromUri(Uri? uri)
+        {
+            if (uri is null || !uri.IsAbsoluteUri)
+            {
+                return null;
+            }
+
+            string userInfo = uri.UserInfo;
+            if (string.IsNullOrEmpty(userInfo))
+            {
+                return null;
+            }
+
+            int colonIndex = userInfo.IndexOf(':');
+
+            string userName;
+            string password;
+
+            if (colonIndex != -1)
+            {
+                userName = Uri.UnescapeDataString(userInfo.AsSpan(0, colonIndex));
+                password = Uri.UnescapeDataString(userInfo.AsSpan(colonIndex + 1));
+            }
+            else
+            {
+                userName = Uri.UnescapeDataString(userInfo);
+                password = string.Empty;
+            }
+
+            return new NetworkCredential(userName, password);
         }
 
         private void UpdateRegexList()
