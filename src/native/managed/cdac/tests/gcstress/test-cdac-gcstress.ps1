@@ -40,7 +40,9 @@ $repoRoot = $PSScriptRoot
 # Resolve repo root — walk up from script location to find build script
 $buildScript = if ($IsWindows -or $env:OS -eq "Windows_NT") { "build.cmd" } else { "build.sh" }
 while ($repoRoot -and !(Test-Path (Join-Path $repoRoot $buildScript))) {
-    $repoRoot = Split-Path $repoRoot -Parent
+    $parent = Split-Path $repoRoot -Parent
+    if ($parent -eq $repoRoot) { $repoRoot = $null; break }
+    $repoRoot = $parent
 }
 if (-not $repoRoot) {
     Write-Error "Could not find repo root ($buildScript). Place this script inside the runtime repo."
