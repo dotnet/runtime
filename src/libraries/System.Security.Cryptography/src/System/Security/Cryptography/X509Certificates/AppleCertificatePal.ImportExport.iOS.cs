@@ -16,20 +16,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                unsafe
-                {
-                    fixed (byte* pin = rawData)
-                    {
-                        using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                        {
-                            // Permit trailing data after the PKCS12.
-                            ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
-                            PfxAsn.Decode(ref reader, manager.Memory, out _);
-                        }
-
-                        return true;
-                    }
-                }
+                // Permit trailing data after the PKCS12.
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
+                ValuePfxAsn.Decode(ref reader, out _);
+                return true;
             }
             catch (CryptographicException)
             {

@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="PfxAsn"
-  namespace="System.Security.Cryptography.Asn1.Pkcs12">
+  namespace="System.Security.Cryptography.Asn1.Pkcs12"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc7292#section-4
@@ -14,6 +15,13 @@
     }
   -->
   <asn:Integer name="Version" backingType="int" />
-  <asn:AsnType name="AuthSafe" typeName="System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn" />
-  <asn:AsnType name="MacData" typeName="System.Security.Cryptography.Asn1.Pkcs12.MacData" optional="true" />
+  <asn:AsnType
+    name="AuthSafe"
+    typeName="System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn"
+    valueTypeName="System.Security.Cryptography.Asn1.Pkcs7.ValueContentInfoAsn" />
+  <asn:AsnType
+    name="MacData"
+    typeName="System.Security.Cryptography.Asn1.Pkcs12.MacData"
+    valueTypeName="System.Security.Cryptography.Asn1.Pkcs12.ValueMacData"
+    optional="true" />
 </asn:Sequence>

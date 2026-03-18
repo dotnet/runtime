@@ -77,20 +77,9 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
-                        unsafe
-                        {
-                            fixed (byte* pin = rawData)
-                            {
-                                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
-
-                                using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                                {
-                                    PfxAsn.Decode(ref reader, manager.Memory, out _);
-                                }
-
-                                contentType = X509ContentType.Pkcs12;
-                            }
-                        }
+                        ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
+                        ValuePfxAsn.Decode(ref reader, out _);
+                        contentType = X509ContentType.Pkcs12;
                     }
                     catch (CryptographicException)
                     {
