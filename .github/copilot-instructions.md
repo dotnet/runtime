@@ -14,6 +14,8 @@ When NOT running under CCA, skip the `code-review` skill if the user has stated 
 
 Before making changes to a directory, search for `README.md` files in that directory and its parent directories up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
+For specialized runtime subsystems, also check `docs/design/features/` for design documents that describe architectural constraints relevant to your work.
+
 If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
@@ -121,13 +123,20 @@ Test projects are typically at: `tests/<LibraryName>.Tests.csproj` or `tests/<Li
 
 **Test all libraries:** `./build.sh libs.tests -test -rc release`
 
-**System.Private.CoreLib:** Rebuild with `./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc checked`
+**System.Private.CoreLib:** Rebuild with `./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc checked`. The `libs.pretest` step copies the updated CoreLib into the framework layout; omitting it leaves stale CoreLib in the test/runtime directories.
 
 Before completing, ensure ALL tests for affected libraries pass.
 
 ### CoreCLR
 
 **Test:** `cd src/tests && ./build.sh && ./run.sh`
+
+### ReadyToRun / crossgen2 Tests
+
+- Before writing tests under `src/tests/readytorun/`, read `docs/design/features/readytorun-pinvoke.md` for version-bubble and cross-module reference constraints. Also check for `README.md` files in the test directory.
+- If a ReadyToRun test compiles a standalone assembly and expects P/Invoke marshalling helpers from CoreLib (e.g., Objective-C exception checks, `SetLastError`), pass `--inputbubble` to crossgen2 so CoreLib is included in the version bubble.
+- For platform-specific P/Invoke detection tests, verify the exact library path and entrypoint strings matched by the compiler logic in `MarshalHelpers.cs` and use those exact values in `DllImport` attributes.
+- When validating R2R compilation via `--map`, check for `MethodWithGCInfo` entries (compiled native code). `MethodFixupSignature` and `DelayLoadHelperImport` entries are metadata references that exist regardless of whether a method was precompiled.
 
 ### Mono
 
@@ -205,15 +214,23 @@ $CORE_ROOT/corerun <TestName>.dll
 
 ---
 
-## Adding new tests
+## ⚠️ MANDATORY: Regression Test Verification
+
+**Before committing a regression test, you MUST confirm BOTH conditions:**
+- the test fails against the unfixed code, and
+- the test passes with the fix applied.
+
+The baseline build artifacts are the unfixed binaries for negative verification. Reuse that known-good pre-change build/output when proving the test fails without your fix; do not assume you need to reconstruct a separate "bad" build after editing code.
+
+⚠️ A first green run is **not** evidence that the test is valid. It may be passing because it never exercised the bug, because it ran against already-fixed binaries, or because it is only asserting existing behavior.
 
 When creating a regression test for a bug fix:
 
-1. **Verify the test FAILS without the fix** — build and run against the unfixed code.
-2. **Verify the test PASSES with the fix** — apply the fix, rebuild, and run again.
-3. If the fix is not yet merged locally, manually apply the minimal changes from the PR/commit to verify.
+1. **Verify the test FAILS without the fix** — run it against the baseline/unfixed build artifacts and confirm you are exercising the pre-fix binaries.
+2. **Verify the test PASSES with the fix** — apply the fix, rebuild the affected components, and rerun the same test to confirm the behavior changed for the right reason.
+3. **If the fix is not yet merged locally, manually apply the minimal changes from the PR/commit to verify** — do not skip negative verification just because the fix originated elsewhere.
 
-Do not mark a regression test task as complete until both conditions are confirmed.
+Do not mark a regression test task as complete until both conditions are explicitly confirmed.
 
 ## Troubleshooting
 
@@ -221,6 +238,7 @@ Do not mark a regression test task as complete until both conditions are confirm
 |-------|----------|
 | "shared framework must be built" | Run baseline build: `./build.sh clr+libs -rc release` |
 | "testhost" missing / FileNotFoundException | Run baseline build first (Step 2 above) |
+| crossgen2 + CoreLib changed | When a PR modifies both crossgen2 and CoreLib (e.g., adding new helper methods), do a full `./build.sh clr+libs` from the PR branch. Incremental crossgen2-only rebuilds will fail because the framework CoreLib won't have the new methods. |
 | Build timeout | Wait up to 40 min; only fail if no output for 5 min |
 | "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
 | "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-priority1` to the build command |

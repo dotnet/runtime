@@ -61,7 +61,7 @@ public class Runtime_<issue_number>
 
 - **License header**: Always include the standard .NET Foundation license header
 - **Class name**: Match the file name exactly (`Runtime_<issue_number>`)
-- **Test method**: `[Fact]` attribute, named `TestEntryPoint()` 
+- **Test method**: `[Fact]` attribute, named `TestEntryPoint()`
 - **Minimize the reproduction**: Strip to the minimal case that triggers the bug
 - **Use `[MethodImpl(MethodImplOptions.NoInlining)]`** when preventing inlining is needed to reproduce
 
@@ -121,6 +121,21 @@ If a custom .csproj file is needed, it should be located next to the test source
   </ItemGroup>
 </Project>
 ```
+
+## Step 5: ⚠️ Verify Test Correctness (Mandatory)
+
+A regression test is only valid if it **fails without the fix** and **passes with the fix**. A test that passes in both cases is worthless — it does not actually test the bug.
+
+1. **Verify the test FAILS without the fix:**
+   - If you have a baseline build from `main` (before the fix), use those artifacts to run the test.
+   - The test should fail (non-zero exit code, assertion failure, or incorrect output).
+   - If the test passes without the fix, the test is wrong — revisit your assertions.
+
+2. **Verify the test PASSES with the fix:**
+   - Build and run with the fix applied.
+   - The test should pass (exit code 100 for CoreCLR tests, or all assertions green for xUnit tests).
+
+Do not consider the test complete until both conditions are confirmed. A first green run is not evidence the test is valid — it may be a false positive caused by incorrect assertions or test inputs that don't exercise the bug.
 
 ## Tips
 
