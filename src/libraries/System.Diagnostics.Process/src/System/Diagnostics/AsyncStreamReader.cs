@@ -255,6 +255,30 @@ namespace System.Diagnostics
 
         internal Task EOF => _readToBufferTask ?? Task.CompletedTask;
 
+        internal void CancelDueToProcessExit(int milliseconds)
+        {
+            Task? task = _readToBufferTask;
+            if (task is not null && !task.Wait(milliseconds))
+            {
+                _cts.Cancel();
+                task.GetAwaiter().GetResult();
+            }
+        }
+
+        internal async Task CancelDueToProcessExitAsync(int milliseconds)
+        {
+            Task? task = _readToBufferTask;
+            if (task is not null)
+            {
+                Task completed = await Task.WhenAny(task, Task.Delay(milliseconds)).ConfigureAwait(false);
+                if (completed != task)
+                {
+                    _cts.Cancel();
+                    await task.ConfigureAwait(false);
+                }
+            }
+        }
+
         public void Dispose()
         {
             _cts.Cancel();

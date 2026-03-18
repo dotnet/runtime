@@ -671,5 +671,65 @@ namespace System.Diagnostics.Tests
             var process = new Process();
             await Assert.ThrowsAsync<InvalidOperationException>(() => process.WaitForExitAsync());
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("WaitForExit")]
+        [InlineData("WaitForExitInt")]
+        [InlineData("WaitForExitTimeSpan")]
+        [InlineData("WaitForExitAsync")]
+        public async Task WaitForExit_WithGrandChildProcess_DoesNotHang(string waitMethod)
+        {
+            Process child = CreateProcess(StartGrandChildProcessAndExit);
+            child.StartInfo.RedirectStandardOutput = true;
+            child.Start();
+
+            string grandChildPidStr = await child.StandardOutput.ReadLineAsync();
+            int grandChildPid = int.Parse(grandChildPidStr);
+
+            var stopwatch = Stopwatch.StartNew();
+
+            switch (waitMethod)
+            {
+                case "WaitForExit":
+                    child.WaitForExit();
+                    break;
+                case "WaitForExitInt":
+                    Assert.True(child.WaitForExit(WaitInMS));
+                    break;
+                case "WaitForExitTimeSpan":
+                    Assert.True(child.WaitForExit(TimeSpan.FromMilliseconds(WaitInMS)));
+                    break;
+                case "WaitForExitAsync":
+                    await child.WaitForExitAsync();
+                    break;
+            }
+
+            stopwatch.Stop();
+            Assert.True(stopwatch.Elapsed.TotalSeconds < 2, $"WaitForExit took {stopwatch.Elapsed.TotalSeconds:F1}s, expected < 2s");
+
+            try
+            {
+                Process.GetProcessById(grandChildPid).Kill();
+            }
+            catch (Exception) { }
+        }
+
+        private static int StartGrandChildProcessAndExit()
+        {
+            using Process grandChild = new Process();
+            grandChild.StartInfo.FileName = Environment.ProcessPath;
+            grandChild.StartInfo.Arguments = $"exec \"{typeof(ProcessWaitingTests).Assembly.Location}\" {nameof(SleepForEightHours)}";
+            grandChild.Start();
+            Console.WriteLine(grandChild.Id);
+
+            return RemoteExecutor.SuccessExitCode;
+        }
+
+        public static int SleepForEightHours()
+        {
+            Thread.Sleep(TimeSpan.FromHours(8));
+
+            return RemoteExecutor.SuccessExitCode;
+        }
     }
 }

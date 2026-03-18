@@ -176,11 +176,11 @@ namespace System.Diagnostics
             }
             finally
             {
-                // If we have a hard timeout, we cannot wait for the streams
-                if (milliseconds == Timeout.Infinite)
+                if (_signaled)
                 {
-                    _output?.EOF.GetAwaiter().GetResult();
-                    _error?.EOF.GetAwaiter().GetResult();
+                    int streamTimeout = milliseconds == Timeout.Infinite ? 300 : milliseconds;
+                    _output?.CancelDueToProcessExit(streamTimeout);
+                    _error?.CancelDueToProcessExit(streamTimeout);
                 }
 
                 handle?.Dispose();
