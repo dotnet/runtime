@@ -14,6 +14,7 @@ internal class StubDispatchFrame : IData<StubDispatchFrame>
         MethodDescPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDescPtr)].Offset);
         RepresentativeMTPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(RepresentativeMTPtr)].Offset);
         RepresentativeSlot = target.Read<uint>(address + (ulong)type.Fields[nameof(RepresentativeSlot)].Offset);
+        GCRefMap = target.ReadPointer(address + (ulong)type.Fields[nameof(GCRefMap)].Offset);
         Address = address;
     }
 
@@ -21,4 +22,5 @@ internal class StubDispatchFrame : IData<StubDispatchFrame>
     public TargetPointer MethodDescPtr { get; }
     public TargetPointer RepresentativeMTPtr { get; }
     public uint RepresentativeSlot { get; }
+    public TargetPointer GCRefMap { get; }
 }

@@ -75,6 +75,10 @@ public static class Constants
         public const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
         public const string DirectorySeparator = nameof(DirectorySeparator);
 
+        public const string TransitionBlockOffsetOfFirstGCRefMapSlot = nameof(TransitionBlockOffsetOfFirstGCRefMapSlot);
+        public const string TransitionBlockOffsetOfArgumentRegisters = nameof(TransitionBlockOffsetOfArgumentRegisters);
+        public const string TransitionBlockOffsetOfArgs = nameof(TransitionBlockOffsetOfArgs);
+
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
