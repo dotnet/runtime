@@ -219,9 +219,7 @@ namespace Microsoft.Win32
 
             fixed (void* pSecurityDescriptor = securityDescriptor)
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = pSecurityDescriptor is not null
-                    ? Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor)
-                    : Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                 // By default, the new key will be writable.
                 int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,

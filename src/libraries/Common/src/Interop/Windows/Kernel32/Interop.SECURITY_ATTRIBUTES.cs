@@ -20,11 +20,11 @@ internal static partial class Interop
                     nLength = (uint)sizeof(SECURITY_ATTRIBUTES)
                 };
 
-            internal static unsafe SECURITY_ATTRIBUTES Create(void* lpSecurityDescriptor) =>
+            internal static unsafe SECURITY_ATTRIBUTES Create(void* securityDescriptor) =>
                 new SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = lpSecurityDescriptor
+                    lpSecurityDescriptor = securityDescriptor
                 };
 
             internal static unsafe SECURITY_ATTRIBUTES Create(bool inheritable) =>
