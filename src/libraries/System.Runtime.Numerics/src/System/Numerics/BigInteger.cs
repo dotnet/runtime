@@ -1550,17 +1550,21 @@ namespace System.Numerics
                 highLimb = bits[bits.Length - 1];
             }
 
-            // Find the most significant byte index within the high limb
+            // Find the most significant byte index within the high limb.
+            // Use LeadingZeroCount for O(1) instead of byte-scanning loop.
             byte msb;
             int msbIndex;
-            int maxByteIndex = bytesPerLimb - 1;
-            msbIndex = maxByteIndex;
-            while (msbIndex > 0)
+            if (highByte == 0x00)
             {
-                msb = unchecked((byte)(highLimb >> (msbIndex * 8)));
-                if (msb != highByte)
-                    break;
-                msbIndex--;
+                // Positive: find highest non-zero byte
+                int lzc = BitOperations.LeadingZeroCount(highLimb);
+                msbIndex = Math.Max(0, bytesPerLimb - 1 - (lzc / 8));
+            }
+            else
+            {
+                // Negative: find highest non-0xFF byte
+                int lzc = BitOperations.LeadingZeroCount(~highLimb);
+                msbIndex = Math.Max(0, bytesPerLimb - 1 - (lzc / 8));
             }
             msb = unchecked((byte)(highLimb >> (msbIndex * 8)));
 
@@ -3010,11 +3014,21 @@ namespace System.Numerics
             {
                 if (nint.Size == 4)
                     return (long)left._sign * right._sign;
-                return (BigInteger)((Int128)left._sign * right._sign);
+
+                nint s1 = left._sign, s2 = right._sign;
+                if (s1 == (int)s1 && s2 == (int)s2)
+                    return (long)(int)s1 * (int)s2;
+
+                return MultiplyNint(s1, s2);
             }
 
             return Multiply(left._bits, left._sign, right._bits, right._sign);
         }
+
+        // Extracted to keep operator* body small enough for JIT inlining.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static BigInteger MultiplyNint(nint left, nint right)
+            => (BigInteger)((Int128)left * right);
 
         private static BigInteger Multiply(ReadOnlySpan<nuint> left, nint leftSign, ReadOnlySpan<nuint> right, nint rightSign)
         {
