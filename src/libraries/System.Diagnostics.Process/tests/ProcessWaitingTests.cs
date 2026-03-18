@@ -717,8 +717,8 @@ namespace System.Diagnostics.Tests
         private static int StartGrandChildProcessAndExit()
         {
             using Process grandChild = new Process();
-            grandChild.StartInfo.FileName = Environment.ProcessPath;
-            grandChild.StartInfo.Arguments = $"exec \"{typeof(ProcessWaitingTests).Assembly.Location}\" {nameof(SleepForEightHours)}";
+            grandChild.StartInfo.FileName = RemoteExecutor.HostRunner;
+            grandChild.StartInfo.Arguments = $"exec \"{RemoteExecutor.Path}\" {typeof(ProcessWaitingTests).Assembly.Location} {nameof(SleepForEightHours)}";
             grandChild.Start();
             Console.WriteLine(grandChild.Id);
 
