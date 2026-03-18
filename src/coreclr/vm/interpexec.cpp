@@ -3042,7 +3042,7 @@ SWITCH_OPCODE:
                         // entry points and always have a MethodDesc.
                         targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
                         // If the method has native code, call it via InvokeCalliStub without going
-                        // through CALL_INTERP_METHOD. It is both a small optimization. Also, it is
+                        // through CALL_INTERP_METHOD. It is a small optimization and also
                         // necessary for correctness for Newobj allocator helpers where the MethodDesc
                         // does not represent the actual entrypoint.
                         if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
