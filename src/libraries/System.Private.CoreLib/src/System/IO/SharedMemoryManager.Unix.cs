@@ -430,7 +430,7 @@ namespace System.IO
                 // created the file first (EEXIST), fall back to a plain open. If that open gets
                 // ENOENT (file was deleted in between), retry.
                 const int MaxRetries = 4;
-                for (int retries = 0; ; retries++)
+                for (int retries = 0; retries < MaxRetries; retries++)
                 {
                     SafeFileHandle fd = Interop.Sys.Open(
                         sharedMemoryFilePath,
@@ -474,7 +474,7 @@ namespace System.IO
                             createdFile = false;
                             return fd;
                         }
-                        catch (UnauthorizedAccessException) when (retries < MaxRetries)
+                        catch (UnauthorizedAccessException) when (retries < MaxRetries - 1)
                         {
                             Thread.Sleep(1);
                             continue;
@@ -485,7 +485,7 @@ namespace System.IO
                     fd.Dispose();
 
                     // The file was deleted after the create attempt. Retry.
-                    if (error.Error != Interop.Error.ENOENT || retries >= MaxRetries)
+                    if (error.Error != Interop.Error.ENOENT || retries >= MaxRetries - 1)
                     {
                         throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
                     }
