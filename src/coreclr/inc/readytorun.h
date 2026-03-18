@@ -342,6 +342,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
     READYTORUN_HELPER_ThrowExact                = 0x27,
+    READYTORUN_HELPER_ThrowArgument             = 0x28,
+    READYTORUN_HELPER_ThrowArgumentOutOfRange   = 0x29,
+    READYTORUN_HELPER_ThrowPlatformNotSupported = 0x2A,
+    READYTORUN_HELPER_ThrowNotImplemented       = 0x2B,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,

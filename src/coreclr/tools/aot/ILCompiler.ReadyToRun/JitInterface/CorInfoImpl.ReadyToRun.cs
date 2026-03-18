@@ -1277,13 +1277,17 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
-                    return GetThrowHelperMethodEntrypoint("ThrowArgumentException"u8);
+                    id = ReadyToRunHelper.ThrowArgument;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
-                    return GetThrowHelperMethodEntrypoint("ThrowArgumentOutOfRangeException"u8);
+                    id = ReadyToRunHelper.ThrowArgumentOutOfRange;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
-                    return GetThrowHelperMethodEntrypoint("ThrowPlatformNotSupportedException"u8);
+                    id = ReadyToRunHelper.ThrowPlatformNotSupported;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
-                    return GetThrowHelperMethodEntrypoint("ThrowNotImplementedException"u8);
+                    id = ReadyToRunHelper.ThrowNotImplemented;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
@@ -1302,19 +1306,6 @@ namespace Internal.JitInterface
             }
 
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
-        }
-
-        private ISymbolNode GetThrowHelperMethodEntrypoint(ReadOnlySpan<byte> methodName)
-        {
-            MetadataType throwHelpersType = _compilation.TypeSystemContext.SystemModule.GetKnownType(
-                "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8);
-            MethodDesc method = throwHelpersType.GetKnownMethod(methodName, null);
-            ModuleToken moduleToken = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
-            return _compilation.NodeFactory.MethodEntrypoint(
-                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
-                isInstantiatingStub: false,
-                isPrecodeImportRequired: false,
-                isJumpableImportRequired: false);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)

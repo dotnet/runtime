@@ -234,6 +234,10 @@ namespace Internal.ReadyToRunConstants
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
         ThrowExact                  = 0x27,
+        ThrowArgument               = 0x28,
+        ThrowArgumentOutOfRange     = 0x29,
+        ThrowPlatformNotSupported   = 0x2A,
+        ThrowNotImplemented         = 0x2B,
 
         // Write barriers
         WriteBarrier                = 0x30,
@@ -371,11 +375,6 @@ namespace Internal.ReadyToRunConstants
 
         // Marker to be used in asserts.
         FirstFakeHelper,
-
-        ThrowArgumentOutOfRange,
-        ThrowArgument,
-        ThrowPlatformNotSupported,
-        ThrowNotImplemented,
 
         DebugBreak,
 
