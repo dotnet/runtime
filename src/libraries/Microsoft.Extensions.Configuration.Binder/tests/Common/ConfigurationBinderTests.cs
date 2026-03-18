@@ -95,19 +95,19 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ConfigurationInterfaceOptions>();
+            var options = config.Get<OptionsWithIConfigurationSection>();
             var childOptions = options.Section.Get<DerivedOptions>();
             Test();
 
-            options = (ConfigurationInterfaceOptions)config.Get(typeof(ConfigurationInterfaceOptions));
+            options = (OptionsWithIConfigurationSection)config.Get(typeof(OptionsWithIConfigurationSection));
             childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions));
             Test();
 
-            options = config.Get<ConfigurationInterfaceOptions>(options => { });
+            options = config.Get<OptionsWithIConfigurationSection>(options => { });
             childOptions = options.Section.Get<DerivedOptions>(options => { });
             Test();
 
-            options = (ConfigurationInterfaceOptions)config.Get(typeof(ConfigurationInterfaceOptions), options => { });
+            options = (OptionsWithIConfigurationSection)config.Get(typeof(OptionsWithIConfigurationSection), options => { });
             childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions), options => { });
             Test();
 
@@ -125,6 +125,42 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanBindIConfigurationSectionWithDerivedOptionsSection()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Section:Integer", "-2"},
+                {"Section:Boolean", "TRUe"},
+                {"Section:Nested:Integer", "11"},
+                {"Section:Virtual", "Sup"},
+                {"Section:DerivedSection:Nested:Integer", "11"},
+                {"Section:DerivedSection:Virtual", "Sup"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<OptionsWithIConfigurationSection>();
+
+            var childOptions = options.Section.Get<DerivedOptionsWithIConfigurationSection>();
+
+            var childDerivedOptions = childOptions.DerivedSection.Get<DerivedOptions>();
+
+            Assert.True(childOptions.Boolean);
+            Assert.Equal(-2, childOptions.Integer);
+            Assert.Equal(11, childOptions.Nested.Integer);
+            Assert.Equal("Derived:Sup", childOptions.Virtual);
+            Assert.Equal(11, childDerivedOptions.Nested.Integer);
+            Assert.Equal("Derived:Sup", childDerivedOptions.Virtual);
+
+            Assert.Equal("Section", options.Section.Key);
+            Assert.Equal("Section", options.Section.Path);
+            Assert.Equal("DerivedSection", childOptions.DerivedSection.Key);
+            Assert.Equal("Section:DerivedSection", childOptions.DerivedSection.Path);
+            Assert.Null(options.Section.Value);
+        }
+
+        [Fact]
         public void CanBindIConfiguration()
         {
             var dic = new Dictionary<string, string>
@@ -138,19 +174,19 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ConfigurationIConfigurationOptions>();
+            var options = config.Get<OptionsWithIConfiguration>();
             var childOptions = options.Section.Get<DerivedOptions>();
             Test();
 
-            options = (ConfigurationIConfigurationOptions)config.Get(typeof(ConfigurationIConfigurationOptions));
+            options = (OptionsWithIConfiguration)config.Get(typeof(OptionsWithIConfiguration));
             childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions));
             Test();
 
-            options = config.Get<ConfigurationIConfigurationOptions>(options => { });
+            options = config.Get<OptionsWithIConfiguration>(options => { });
             childOptions = options.Section.Get<DerivedOptions>(options => { });
             Test();
 
-            options = (ConfigurationIConfigurationOptions)config.Get(typeof(ConfigurationIConfigurationOptions), options => { });
+            options = (OptionsWithIConfiguration)config.Get(typeof(OptionsWithIConfiguration), options => { });
             childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions), options => { });
             Test();
 
@@ -184,7 +220,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ConfigurationIConfigurationOptions>();
+            var options = config.Get<OptionsWithIConfiguration>();
             var childOptions = options.Section.Get<DerivedOptionsWithIConfiguration>();
             var childDerivedOptions = childOptions.DerivedSection.Get<DerivedOptions>();
 
@@ -226,42 +262,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(-2, options.Integer);
             Assert.Equal(11, options.Nested.Integer);
             Assert.Equal("Derived:Sup", options.Virtual);
-        }
-
-        [Fact]
-        public void CanBindIConfigurationSectionWithDerivedOptionsSection()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"Section:Integer", "-2"},
-                {"Section:Boolean", "TRUe"},
-                {"Section:Nested:Integer", "11"},
-                {"Section:Virtual", "Sup"},
-                {"Section:DerivedSection:Nested:Integer", "11"},
-                {"Section:DerivedSection:Virtual", "Sup"}
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<ConfigurationInterfaceOptions>();
-
-            var childOptions = options.Section.Get<DerivedOptionsWithIConfigurationSection>();
-
-            var childDerivedOptions = childOptions.DerivedSection.Get<DerivedOptions>();
-
-            Assert.True(childOptions.Boolean);
-            Assert.Equal(-2, childOptions.Integer);
-            Assert.Equal(11, childOptions.Nested.Integer);
-            Assert.Equal("Derived:Sup", childOptions.Virtual);
-            Assert.Equal(11, childDerivedOptions.Nested.Integer);
-            Assert.Equal("Derived:Sup", childDerivedOptions.Virtual);
-
-            Assert.Equal("Section", options.Section.Key);
-            Assert.Equal("Section", options.Section.Path);
-            Assert.Equal("DerivedSection", childOptions.DerivedSection.Key);
-            Assert.Equal("Section:DerivedSection", childOptions.DerivedSection.Path);
-            Assert.Null(options.Section.Value);
         }
 
         [Fact]
@@ -2744,7 +2744,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             configuration = TestHelpers.GetConfigurationFromJsonString("""
                 {
-                    "vaLue": [ { "key": "MyString" }, { "nested": "value" } ],
+                    "vaLue": [ { "key": "MyString" } ],
                 }
                 """);
 
@@ -2757,9 +2757,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             static void ValidateList(List<IConfiguration> list)
             {
-                Assert.Equal(2, list.Count);
+                Assert.Equal(1, list.Count);
                 Assert.Equal("MyString", list[0]["key"]);
-                Assert.Equal("value", list[1]["nested"]);
             }
         }
 

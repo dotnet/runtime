@@ -60,12 +60,12 @@ namespace Microsoft.Extensions
             }
         }
 
-        public class ConfigurationInterfaceOptions
+        public class OptionsWithIConfigurationSection
         {
             public IConfigurationSection Section { get; set; }
         }
 
-        public class ConfigurationIConfigurationOptions
+        public class OptionsWithIConfiguration
         {
             public IConfiguration Section { get; set; }
         }
