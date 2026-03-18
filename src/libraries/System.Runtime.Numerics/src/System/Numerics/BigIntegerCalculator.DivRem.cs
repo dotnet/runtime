@@ -310,31 +310,7 @@ namespace System.Numerics
         {
             Debug.Assert(left.Length >= right.Length);
 
-            // Combines a subtract and a multiply operation, which is naturally
-            // more efficient than multiplying and then subtracting...
-            // Uses branchless underflow detection to avoid branch misprediction
-            // penalties that dominate for large divisions (see issue #41495).
-
-            nuint carry = 0;
-
-            for (int i = 0; i < right.Length; i++)
-            {
-                nuint hi = BigMul(right[i], q, out nuint lo);
-
-                // Add carry to lo, propagate overflow to hi (branchless)
-                nuint loWithCarry = lo + carry;
-                hi += (loWithCarry < lo) ? (nuint)1 : 0;
-
-                // Subtract from left, detect underflow (branchless)
-                ref nuint leftElement = ref left[i];
-                nuint original = leftElement;
-                leftElement -= loWithCarry;
-                hi += (original < loWithCarry) ? (nuint)1 : 0;
-
-                carry = hi;
-            }
-
-            return carry;
+            return SubMul1(left, right, q);
         }
 
         private static bool DivideGuessTooBig(nuint q, nuint valHi1, nuint valHi0,

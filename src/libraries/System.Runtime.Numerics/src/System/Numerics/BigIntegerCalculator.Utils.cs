@@ -138,26 +138,6 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Performs widening multiply: a * b → (hi, lo). Used for schoolbook multiply inner loops.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static nuint MulAdd(nuint a, nuint b, nuint addend, ref nuint carry)
-        {
-            if (nint.Size == 8)
-            {
-                UInt128 product = (UInt128)(ulong)a * (ulong)b + (ulong)addend + (ulong)carry;
-                carry = (nuint)(ulong)(product >> 64);
-                return (nuint)(ulong)product;
-            }
-            else
-            {
-                ulong product = (ulong)a * b + addend + carry;
-                carry = (nuint)(uint)(product >> 32);
-                return (nuint)(uint)product;
-            }
-        }
-
-        /// <summary>
         /// Widening divide: (hi:lo) / divisor → (quotient, remainder).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -226,6 +206,195 @@ namespace System.Numerics
                 low = (nuint)(uint)product;
                 return (nuint)(uint)(product >> 32);
             }
+        }
+
+        /// <summary>
+        /// Multiply by scalar: result[0..left.Length] = left * multiplier.
+        /// Returns the carry out. Unrolled by 4 on 64-bit.
+        /// Unlike MulAdd1, this writes to result rather than accumulating.
+        /// </summary>
+        internal static nuint Mul1(Span<nuint> result, ReadOnlySpan<nuint> left, nuint multiplier)
+        {
+            Debug.Assert(result.Length >= left.Length);
+
+            int length = left.Length;
+            int i = 0;
+            nuint carry = 0;
+
+            if (nint.Size == 8)
+            {
+                for (; i + 3 < length; i += 4)
+                {
+                    UInt128 p0 = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)carry;
+                    result[i] = (nuint)(ulong)p0;
+
+                    UInt128 p1 = (UInt128)(ulong)left[i + 1] * (ulong)multiplier + (ulong)(p0 >> 64);
+                    result[i + 1] = (nuint)(ulong)p1;
+
+                    UInt128 p2 = (UInt128)(ulong)left[i + 2] * (ulong)multiplier + (ulong)(p1 >> 64);
+                    result[i + 2] = (nuint)(ulong)p2;
+
+                    UInt128 p3 = (UInt128)(ulong)left[i + 3] * (ulong)multiplier + (ulong)(p2 >> 64);
+                    result[i + 3] = (nuint)(ulong)p3;
+
+                    carry = (nuint)(ulong)(p3 >> 64);
+                }
+
+                for (; i < length; i++)
+                {
+                    UInt128 product = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)carry;
+                    result[i] = (nuint)(ulong)product;
+                    carry = (nuint)(ulong)(product >> 64);
+                }
+            }
+            else
+            {
+                for (; i < length; i++)
+                {
+                    ulong product = (ulong)left[i] * multiplier + carry;
+                    result[i] = (nuint)(uint)product;
+                    carry = (nuint)(uint)(product >> 32);
+                }
+            }
+
+            return carry;
+        }
+
+        /// <summary>
+        /// Fused multiply-accumulate by scalar: result[0..left.Length] += left * multiplier.
+        /// Returns the carry out. Unrolled by 4 on 64-bit to overlap multiply latencies.
+        /// </summary>
+        internal static nuint MulAdd1(Span<nuint> result, ReadOnlySpan<nuint> left, nuint multiplier)
+        {
+            Debug.Assert(result.Length >= left.Length);
+
+            int length = left.Length;
+            int i = 0;
+            nuint carry = 0;
+
+            if (nint.Size == 8)
+            {
+                // Unroll by 4: mulx has 3-5 cycle latency but 1 cycle throughput,
+                // so issuing 4 multiplies allows the CPU to pipeline them while
+                // carry chains complete sequentially behind.
+                for (; i + 3 < length; i += 4)
+                {
+                    UInt128 p0 = (UInt128)(ulong)left[i] * (ulong)multiplier
+                                 + (ulong)result[i] + (ulong)carry;
+                    result[i] = (nuint)(ulong)p0;
+
+                    UInt128 p1 = (UInt128)(ulong)left[i + 1] * (ulong)multiplier
+                                 + (ulong)result[i + 1] + (ulong)(p0 >> 64);
+                    result[i + 1] = (nuint)(ulong)p1;
+
+                    UInt128 p2 = (UInt128)(ulong)left[i + 2] * (ulong)multiplier
+                                 + (ulong)result[i + 2] + (ulong)(p1 >> 64);
+                    result[i + 2] = (nuint)(ulong)p2;
+
+                    UInt128 p3 = (UInt128)(ulong)left[i + 3] * (ulong)multiplier
+                                 + (ulong)result[i + 3] + (ulong)(p2 >> 64);
+                    result[i + 3] = (nuint)(ulong)p3;
+
+                    carry = (nuint)(ulong)(p3 >> 64);
+                }
+
+                for (; i < length; i++)
+                {
+                    UInt128 product = (UInt128)(ulong)left[i] * (ulong)multiplier
+                                      + (ulong)result[i] + (ulong)carry;
+                    result[i] = (nuint)(ulong)product;
+                    carry = (nuint)(ulong)(product >> 64);
+                }
+            }
+            else
+            {
+                for (; i < length; i++)
+                {
+                    ulong product = (ulong)left[i] * multiplier
+                                    + result[i] + carry;
+                    result[i] = (nuint)(uint)product;
+                    carry = (nuint)(uint)(product >> 32);
+                }
+            }
+
+            return carry;
+        }
+
+        /// <summary>
+        /// Fused subtract-multiply by scalar: result[0..right.Length] -= right * multiplier.
+        /// Returns the borrow out. Unrolled by 4 on 64-bit.
+        /// </summary>
+        internal static nuint SubMul1(Span<nuint> result, ReadOnlySpan<nuint> right, nuint multiplier)
+        {
+            Debug.Assert(result.Length >= right.Length);
+
+            int length = right.Length;
+            int i = 0;
+            nuint carry = 0;
+
+            if (nint.Size == 8)
+            {
+                for (; i + 3 < length; i += 4)
+                {
+                    UInt128 prod0 = (UInt128)(ulong)right[i] * (ulong)multiplier + (ulong)carry;
+                    nuint lo0 = (nuint)(ulong)prod0;
+                    nuint hi0 = (nuint)(ulong)(prod0 >> 64);
+                    nuint orig0 = result[i];
+                    result[i] = orig0 - lo0;
+                    hi0 += (orig0 < lo0) ? (nuint)1 : 0;
+
+                    UInt128 prod1 = (UInt128)(ulong)right[i + 1] * (ulong)multiplier + (ulong)hi0;
+                    nuint lo1 = (nuint)(ulong)prod1;
+                    nuint hi1 = (nuint)(ulong)(prod1 >> 64);
+                    nuint orig1 = result[i + 1];
+                    result[i + 1] = orig1 - lo1;
+                    hi1 += (orig1 < lo1) ? (nuint)1 : 0;
+
+                    UInt128 prod2 = (UInt128)(ulong)right[i + 2] * (ulong)multiplier + (ulong)hi1;
+                    nuint lo2 = (nuint)(ulong)prod2;
+                    nuint hi2 = (nuint)(ulong)(prod2 >> 64);
+                    nuint orig2 = result[i + 2];
+                    result[i + 2] = orig2 - lo2;
+                    hi2 += (orig2 < lo2) ? (nuint)1 : 0;
+
+                    UInt128 prod3 = (UInt128)(ulong)right[i + 3] * (ulong)multiplier + (ulong)hi2;
+                    nuint lo3 = (nuint)(ulong)prod3;
+                    nuint hi3 = (nuint)(ulong)(prod3 >> 64);
+                    nuint orig3 = result[i + 3];
+                    result[i + 3] = orig3 - lo3;
+                    hi3 += (orig3 < lo3) ? (nuint)1 : 0;
+
+                    carry = hi3;
+                }
+
+                for (; i < length; i++)
+                {
+                    UInt128 product = (UInt128)(ulong)right[i] * (ulong)multiplier + (ulong)carry;
+                    nuint lo = (nuint)(ulong)product;
+                    nuint hi = (nuint)(ulong)(product >> 64);
+                    nuint orig = result[i];
+                    result[i] = orig - lo;
+                    hi += (orig < lo) ? (nuint)1 : 0;
+                    carry = hi;
+                }
+            }
+            else
+            {
+                for (; i < length; i++)
+                {
+                    ulong product = (ulong)right[i] * multiplier + carry;
+                    uint lo = (uint)product;
+                    uint hi = (uint)(product >> 32);
+
+                    uint orig = (uint)result[i];
+                    result[i] = (nuint)(orig - lo);
+                    hi += (orig < lo) ? 1u : 0;
+
+                    carry = (nuint)hi;
+                }
+            }
+
+            return carry;
         }
     }
 }

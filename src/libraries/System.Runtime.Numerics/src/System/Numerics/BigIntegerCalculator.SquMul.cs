@@ -217,19 +217,8 @@ namespace System.Numerics
         {
             Debug.Assert(bits.Length == left.Length + 1);
 
-            // Executes the multiplication for one big and one native-width integer.
-            // Since every step holds the already slightly familiar equation
-            // a_i * b + c <= 2^n - 1 + (2^n - 1)^2 < 2^(2n) - 1,
-            // we are safe regarding to overflows (n = kcbitNuint).
-
-            int i = 0;
-            nuint carry = 0;
-
-            for (; i < left.Length; i++)
-            {
-                bits[i] = MulAdd(left[i], right, (nuint)0, ref carry);
-            }
-            bits[i] = carry;
+            nuint carry = Mul1(bits, left, right);
+            bits[left.Length] = carry;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -549,10 +538,6 @@ namespace System.Numerics
             {
                 Debug.Assert(right.Length < MultiplyKaratsubaThreshold);
 
-                // Switching to managed references helps eliminating
-                // index bounds check...
-                ref nuint resultPtr = ref MemoryMarshal.GetReference(bits);
-
                 // Multiplies the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
                 // should help getting the idea of these two loops...
@@ -562,14 +547,8 @@ namespace System.Numerics
 
                 for (int i = 0; i < right.Length; i++)
                 {
-                    nuint rv = right[i];
-                    nuint carry = 0;
-                    for (int j = 0; j < left.Length; j++)
-                    {
-                        ref nuint elementPtr = ref Unsafe.Add(ref resultPtr, i + j);
-                        elementPtr = MulAdd(left[j], rv, elementPtr, ref carry);
-                    }
-                    Unsafe.Add(ref resultPtr, i + left.Length) = carry;
+                    nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
+                    bits[i + left.Length] = carry;
                 }
             }
         }
