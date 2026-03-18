@@ -201,7 +201,8 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
-// Validate that our UserFlags enum values are correct for the platform
+// Validate that our UserFlags enum values match the platform, since
+// SystemNative_LChflags and SystemNative_FChflags pass them directly to the OS.
 #if HAVE_STAT_FLAGS && defined(UF_HIDDEN)
 c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
 #endif
