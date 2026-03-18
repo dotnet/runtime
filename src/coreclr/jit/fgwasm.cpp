@@ -642,24 +642,15 @@ public:
                     GenTree* const targetIndex     = m_compiler->gtNewIconNode(headerNumber);
                     GenTree* const storeControlVar = m_compiler->gtNewStoreLclVarNode(controlVarNum, targetIndex);
 
-                    if (transferBlock->IsLIR())
-                    {
-                        LIR::Range range = LIR::SeqTree(m_compiler, storeControlVar);
+                    LIR::Range range = LIR::SeqTree(m_compiler, storeControlVar);
 
-                        if (transferBlock->isEmpty())
-                        {
-                            LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
-                        }
-                        else
-                        {
-                            LIR::InsertBeforeTerminator(transferBlock, std::move(range));
-                        }
+                    if (transferBlock->isEmpty())
+                    {
+                        LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
                     }
                     else
                     {
-                        Statement* const assignStmt = m_compiler->fgNewStmtNearEnd(transferBlock, storeControlVar);
-                        m_compiler->gtSetStmtInfo(assignStmt);
-                        m_compiler->fgSetStmtSeq(assignStmt);
+                        LIR::InsertBeforeTerminator(transferBlock, std::move(range));
                     }
 
                     m_compiler->fgReplaceJumpTarget(transferBlock, header, dispatcher);
@@ -703,18 +694,8 @@ public:
 
             assert(dispatcher->isEmpty());
 
-            if (dispatcher->IsLIR())
-            {
-                LIR::Range range = LIR::SeqTree(m_compiler, switchNode);
-                LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
-            }
-            else
-            {
-                Statement* const switchStmt = m_compiler->fgNewStmtAtEnd(dispatcher, switchNode);
-
-                m_compiler->gtSetStmtInfo(switchStmt);
-                m_compiler->fgSetStmtSeq(switchStmt);
-            }
+            LIR::Range range = LIR::SeqTree(m_compiler, switchNode);
+            LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
         }
 
         // Handle nested Sccs
@@ -957,6 +938,8 @@ bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 //
 PhaseStatus Compiler::fgWasmTransformSccs()
 {
+    assert(fgNodeThreading == NodeThreading::LIR);
+
     FgWasm                  fgWasm(this);
     bool                    hasBlocksOnlyReachableViaEH = false;
     FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
@@ -1063,6 +1046,8 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 //
 PhaseStatus Compiler::fgWasmControlFlow()
 {
+    assert(fgNodeThreading == NodeThreading::LIR);
+
     // -----------------------------------------------
     // (1) Build loop-aware RPO layout
     //
@@ -1978,6 +1963,8 @@ void Compiler::fgDumpWasmControlFlowDot()
 //
 PhaseStatus Compiler::fgWasmEhFlow()
 {
+    assert(fgNodeThreading == NodeThreading::LIR);
+
     // If there is no EH, or no catch handlers, nothing to do.
     //
     bool hasCatch = false;
@@ -2170,17 +2157,9 @@ PhaseStatus Compiler::fgWasmEhFlow()
                     catchRetBlock->bbPreorderNum, catchRetBlock->bbNum);
             GenTree* const valueNode = gtNewIconNode(catchRetBlock->bbPreorderNum);
             GenTree* const storeNode = gtNewStoreLclVarNode(catchRetIndexLocalNum, valueNode);
-            if (catchRetBlock->IsLIR())
-            {
-                LIR::Range range = LIR::SeqTree(this, storeNode);
-                LIR::InsertBeforeTerminator(catchRetBlock, std::move(range));
-            }
-            else
-            {
-                Statement* const storeStmt = fgNewStmtNearEnd(catchRetBlock, storeNode);
-                gtSetStmtInfo(storeStmt);
-                fgSetStmtSeq(storeStmt);
-            }
+
+            LIR::Range range = LIR::SeqTree(this, storeNode);
+            LIR::InsertBeforeTerminator(catchRetBlock, std::move(range));
         }
     }
 
@@ -2253,17 +2232,9 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     // Use the special wasm GT_WASM_JEXCEPT here.
     //
     GenTree* const jumpNode = new (this, GT_WASM_JEXCEPT) GenTree(GT_WASM_JEXCEPT, TYP_VOID);
-
-    if (regionEntryBlock->IsLIR())
     {
         LIR::Range range = LIR::SeqTree(this, jumpNode);
         LIR::AsRange(regionEntryBlock).InsertAtEnd(std::move(range));
-    }
-    else
-    {
-        Statement* const jtrueStmt = fgNewStmtAtEnd(regionEntryBlock, jumpNode);
-        gtSetStmtInfo(jtrueStmt);
-        fgSetStmtSeq(jtrueStmt);
     }
 
     // Create the IR for the switch block.
@@ -2370,32 +2341,16 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     GenTree* const controlVar2        = gtNewLclvNode(catchRetIndexLocalNum, TYP_INT);
     GenTree* const adjustedControlVar = gtNewOperNode(GT_SUB, TYP_INT, controlVar2, biasValue);
     GenTree* const switchNode         = gtNewOperNode(GT_SWITCH, TYP_VOID, adjustedControlVar);
-
-    if (regionEntryBlock->IsLIR())
     {
         LIR::Range range = LIR::SeqTree(this, switchNode);
         LIR::AsRange(switchBlock).InsertAtEnd(std::move(range));
-    }
-    else
-    {
-        Statement* const switchStmt = fgNewStmtAtEnd(switchBlock, switchNode);
-        gtSetStmtInfo(switchStmt);
-        fgSetStmtSeq(switchStmt);
     }
 
     // Build the IR for the rethrow block.
     //
     GenTree* const rethrowNode = new (this, GT_WASM_THROW_REF) GenTree(GT_WASM_THROW_REF, TYP_VOID);
-
-    if (rethrowBlock->IsLIR())
     {
         LIR::Range range = LIR::SeqTree(this, rethrowNode);
         LIR::AsRange(rethrowBlock).InsertAtEnd(std::move(range));
-    }
-    else
-    {
-        Statement* const rethrowStmt = fgNewStmtAtEnd(rethrowBlock, rethrowNode);
-        gtSetStmtInfo(rethrowStmt);
-        fgSetStmtSeq(rethrowStmt);
     }
 }
