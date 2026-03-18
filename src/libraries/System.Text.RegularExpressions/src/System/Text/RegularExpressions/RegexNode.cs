@@ -394,7 +394,13 @@ namespace System.Text.RegularExpressions
                 // FinalOptimize can create patterns like Atomic(Alternate(X, Empty)) that ReduceAtomic
                 // would simplify to Loop?(X), or Concatenate(X, Empty) that ReduceConcatenation would
                 // simplify to X. A single re-reduce pass catches all known cases.
-                rootNode.FinalReduce();
+                // This is only done for Compiled/source generator, where the one-time construction cost
+                // is amortized over many matches and simpler trees produce better generated code.
+                // The source generator explicitly sets Compiled when parsing (RegexGenerator.cs).
+                if ((rootNode.Options & RegexOptions.Compiled) != 0)
+                {
+                    rootNode.FinalReduce();
+                }
 
                 // Optimization: unnecessary re-processing of starting loops.
                 // This runs after FinalReduce so it operates on the final tree structure, since
