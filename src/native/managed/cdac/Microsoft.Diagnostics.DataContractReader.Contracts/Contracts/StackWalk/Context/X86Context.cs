@@ -165,6 +165,8 @@ public struct X86Context : IPlatformContext
         }
     }
 
+    // Control flags
+
     [FieldOffset(0x0)]
     public uint ContextFlags;
 
