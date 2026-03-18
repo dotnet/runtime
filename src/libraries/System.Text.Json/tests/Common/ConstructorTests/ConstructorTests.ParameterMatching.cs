@@ -1893,7 +1893,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithInParameters()
         {
-            string json = @"{""DateTime"":""2020-12-15T00:00:00"",""TimeSpan"":""01:02:03""}";
+            string json = """{"DateTime":"2020-12-15T00:00:00","TimeSpan":"01:02:03"}""";
             TypeWith_InParameters result = await Serializer.DeserializeWrapper<TypeWith_InParameters>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.DateTime);
             Assert.Equal(new TimeSpan(1, 2, 3), result.TimeSpan);
@@ -1914,7 +1914,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithMixedByRefParameters()
         {
-            string json = @"{""Value1"":42,""Value2"":""hello"",""Value3"":3.14,""Value4"":true}";
+            string json = """{"Value1":42,"Value2":"hello","Value3":3.14,"Value4":true}""";
             TypeWith_MixedByRefParameters result = await Serializer.DeserializeWrapper<TypeWith_MixedByRefParameters>(json);
             Assert.Equal(42, result.Value1);
             Assert.Equal("hello", result.Value2);
@@ -1941,7 +1941,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithLargeInParameters()
         {
-            string json = @"{""A"":1,""B"":2,""C"":3,""D"":4,""E"":5}";
+            string json = """{"A":1,"B":2,"C":3,"D":4,"E":5}""";
             TypeWith_LargeInParameters result = await Serializer.DeserializeWrapper<TypeWith_LargeInParameters>(json);
             Assert.Equal(1, result.A);
             Assert.Equal(2, result.B);
@@ -1971,7 +1971,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameters()
         {
-            string json = @"{""Value1"":42,""Value2"":""hello""}";
+            string json = """{"Value1":42,"Value2":"hello"}""";
             TypeWith_RefParameters result = await Serializer.DeserializeWrapper<TypeWith_RefParameters>(json);
             Assert.Equal(42, result.Value1);
             Assert.Equal("hello", result.Value2);
@@ -1992,7 +1992,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameters()
         {
-            string json = @"{""Value1"":42,""Value2"":""hello""}";
+            string json = """{"Value1":42,"Value2":"hello"}""";
             TypeWith_OutParameters result = await Serializer.DeserializeWrapper<TypeWith_OutParameters>(json);
             // out parameters are excluded from the constructor delegate's metadata,
             // so JSON values are set via property setters after construction.
@@ -2026,7 +2026,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithInParameter_Primitive()
         {
-            string json = @"{""Value"":42}";
+            string json = """{"Value":42}""";
             TypeWith_InParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_InParameter_Primitive>(json);
             Assert.Equal(42, result.Value);
         }
@@ -2040,7 +2040,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithInParameter_Struct()
         {
-            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            string json = """{"Value":"2020-12-15T00:00:00"}""";
             TypeWith_InParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_InParameter_Struct>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.Value);
         }
@@ -2054,7 +2054,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithInParameter_ReferenceType()
         {
-            string json = @"{""Value"":""hello""}";
+            string json = """{"Value":"hello"}""";
             TypeWith_InParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_InParameter_ReferenceType>(json);
             Assert.Equal("hello", result.Value);
         }
@@ -2072,7 +2072,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameter_Primitive()
         {
-            string json = @"{""Value"":42}";
+            string json = """{"Value":42}""";
             TypeWith_RefParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_Primitive>(json);
             Assert.Equal(42, result.Value);
         }
@@ -2086,7 +2086,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameter_Struct()
         {
-            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            string json = """{"Value":"2020-12-15T00:00:00"}""";
             TypeWith_RefParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_Struct>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.Value);
         }
@@ -2100,7 +2100,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefParameter_ReferenceType()
         {
-            string json = @"{""Value"":""hello""}";
+            string json = """{"Value":"hello"}""";
             TypeWith_RefParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_RefParameter_ReferenceType>(json);
             Assert.Equal("hello", result.Value);
         }
@@ -2118,7 +2118,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameter_Primitive()
         {
-            string json = @"{""Value"":42}";
+            string json = """{"Value":42}""";
             TypeWith_OutParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Primitive>(json);
             // Out parameters are excluded from metadata, so JSON values are set via property setters
             Assert.Equal(42, result.Value);
@@ -2137,7 +2137,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameter_Struct()
         {
-            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            string json = """{"Value":"2020-12-15T00:00:00"}""";
             TypeWith_OutParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_Struct>(json);
             // Out parameters are excluded from metadata, so JSON values are set via property setters
             Assert.Equal(new DateTime(2020, 12, 15), result.Value);
@@ -2156,7 +2156,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithOutParameter_ReferenceType()
         {
-            string json = @"{""Value"":""hello""}";
+            string json = """{"Value":"hello"}""";
             TypeWith_OutParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_OutParameter_ReferenceType>(json);
             // Out parameters are excluded from metadata, so JSON values are set via property setters
             Assert.Equal("hello", result.Value);
@@ -2179,7 +2179,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefReadonlyParameter_Primitive()
         {
-            string json = @"{""Value"":42}";
+            string json = """{"Value":42}""";
             TypeWith_RefReadonlyParameter_Primitive result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_Primitive>(json);
             Assert.Equal(42, result.Value);
         }
@@ -2193,7 +2193,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefReadonlyParameter_Struct()
         {
-            string json = @"{""Value"":""2020-12-15T00:00:00""}";
+            string json = """{"Value":"2020-12-15T00:00:00"}""";
             TypeWith_RefReadonlyParameter_Struct result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_Struct>(json);
             Assert.Equal(new DateTime(2020, 12, 15), result.Value);
         }
@@ -2207,7 +2207,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeType_WithRefReadonlyParameter_ReferenceType()
         {
-            string json = @"{""Value"":""hello""}";
+            string json = """{"Value":"hello"}""";
             TypeWith_RefReadonlyParameter_ReferenceType result = await Serializer.DeserializeWrapper<TypeWith_RefReadonlyParameter_ReferenceType>(json);
             Assert.Equal("hello", result.Value);
         }
