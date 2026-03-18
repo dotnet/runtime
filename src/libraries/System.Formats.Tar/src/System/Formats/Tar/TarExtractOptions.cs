@@ -8,8 +8,6 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class TarExtractOptions
     {
-        private TarLinkStrategy _hardLinkStrategy = TarLinkStrategy.PreserveLink;
-
         /// <summary>
         /// Gets or sets a value indicating whether to overwrite existing files when extracting.
         /// </summary>
@@ -23,14 +21,14 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is not a defined <see cref="TarLinkStrategy"/> value.</exception>
         public TarLinkStrategy HardLinkStrategy
         {
-            get => _hardLinkStrategy;
+            get => field;
             set
             {
                 if (value is not TarLinkStrategy.PreserveLink and not TarLinkStrategy.CopyContents)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                _hardLinkStrategy = value;
+                field = value;
             }
         }
     }

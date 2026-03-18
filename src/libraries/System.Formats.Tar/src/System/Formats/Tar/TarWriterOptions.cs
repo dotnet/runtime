@@ -8,9 +8,6 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class TarWriterOptions
     {
-        private TarEntryFormat _format = TarEntryFormat.Pax;
-        private TarLinkStrategy _hardLinkStrategy = TarLinkStrategy.PreserveLink;
-
         /// <summary>
         /// Gets or sets the format of the entries when writing entries to the archive using the <see cref="TarWriter.WriteEntry(string, string?)"/> method.
         /// </summary>
@@ -18,16 +15,16 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public TarEntryFormat Format
         {
-            get => _format;
+            get => field;
             set
             {
                 if (value is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                _format = value;
+                field = value;
             }
-        }
+        } = TarEntryFormat.Pax;
 
         /// <summary>
         /// Gets or sets how hard links are handled when writing tar entries from disk.
@@ -36,14 +33,14 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is not a defined <see cref="TarLinkStrategy"/> value.</exception>
         public TarLinkStrategy HardLinkStrategy
         {
-            get => _hardLinkStrategy;
+            get => field;
             set
             {
                 if (value is not TarLinkStrategy.PreserveLink and not TarLinkStrategy.CopyContents)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                _hardLinkStrategy = value;
+                field = value;
             }
         }
     }
