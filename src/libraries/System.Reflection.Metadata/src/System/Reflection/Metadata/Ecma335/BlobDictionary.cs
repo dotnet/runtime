@@ -103,6 +103,8 @@ namespace System.Reflection.Metadata.Ecma335
 
         public int Count => _dictionary.Count;
 
+        public void Clear() => _dictionary.Clear();
+
         public Dictionary<int, KeyValuePair<ImmutableArray<byte>, BlobHandle>>.Enumerator GetEnumerator() =>
             _dictionary.GetEnumerator();
     }
