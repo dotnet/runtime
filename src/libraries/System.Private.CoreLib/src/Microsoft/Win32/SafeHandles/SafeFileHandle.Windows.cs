@@ -46,7 +46,14 @@ namespace Microsoft.Win32.SafeHandles
             else
             {
                 // When one or both ends are async, use named pipes to support async I/O.
-                string pipeName = $@"\\.\pipe\dotnet_{Guid.NewGuid():N}";
+
+                // From https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-createnamedpipea#remarks:
+                // "Windows 10, version 1709:  Pipes are only supported within an app-container; ie,
+                // from one UWP process to another UWP process that's part of the same app.
+                // Also, named pipes must use the syntax \\.\pipe\LOCAL\ for the pipe name."
+                // That is why we use "LOCAL" namespace for the pipe name,
+                // so that it works in AppContainer and outside of it.
+                string pipeName = $@"\\.\pipe\LOCAL\dotnet_{Guid.NewGuid():N}";
 
                 // Security: we don't need to specify a security descriptor, because
                 // we allow only for 1 instance of the pipe and immediately open the write end,
