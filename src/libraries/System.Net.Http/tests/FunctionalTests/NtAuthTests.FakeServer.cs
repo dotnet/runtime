@@ -342,33 +342,64 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(nameof(IsNtlmAndAlpnAvailable))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
-        public async Task Http2_NonAuthResponse_NotAffectedByDowngrade()
+        public async Task Http2_SessionAuthChallenge_Http2OnlyRequestsStillWork()
         {
-            // A non-auth 200 OK response on HTTP/2 should be returned normally,
-            // even after a different request triggered the pool downgrade.
-            await Http2LoopbackServer.CreateClientAndServerAsync(
+            // After a session auth challenge triggers the downgrade flag,
+            // HTTP/2-only requests (RequestVersionExact) should still use HTTP/2 normally.
+            await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using SocketsHttpHandler handler = CreateCredentialHandler();
                     using var client = new HttpClient(handler);
 
-                    // Send a request that gets a normal 200 OK on HTTP/2. No downgrade.
-                    var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                    request.Version = HttpVersion.Version20;
-                    request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                    // First request: downgradeable, triggers the session auth flag.
+                    var request1 = new HttpRequestMessage(HttpMethod.Get, uri);
+                    request1.Version = HttpVersion.Version20;
+                    request1.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
-                    HttpResponseMessage response = await client.SendAsync(request);
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    Assert.Equal(HttpVersion.Version20, response.Version);
+                    HttpResponseMessage response1 = await client.SendAsync(request1);
+                    Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                    Assert.Equal(HttpVersion.Version11, response1.Version);
+
+                    // Second request: HTTP/2-only. Should still use HTTP/2 despite the flag.
+                    var request2 = new HttpRequestMessage(HttpMethod.Get, uri);
+                    request2.Version = HttpVersion.Version20;
+                    request2.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    HttpResponseMessage response2 = await client.SendAsync(request2);
+                    Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                    Assert.Equal(HttpVersion.Version20, response2.Version);
                 },
                 async server =>
                 {
-                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-                    int streamId = await connection.ReadRequestHeaderAsync();
-                    await connection.SendResponseHeadersAsync(streamId, endStream: true, HttpStatusCode.OK);
-                });
+                    // First connection: HTTP/2. Send 401 auth challenge.
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var h2 = (Http2LoopbackConnection)connection;
+                        int streamId = await h2.ReadRequestHeaderAsync();
+
+                        await h2.SendResponseHeadersAsync(streamId, endStream: true, HttpStatusCode.Unauthorized,
+                            headers: new[] { new HttpHeaderData("WWW-Authenticate", "NTLM") });
+                    });
+
+                    // Second connection: HTTP/1.1. Handle auth for the downgradeable request.
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        Assert.IsType<LoopbackServer.Connection>(connection);
+                        await HandleAuthenticationRequestWithFakeServer((LoopbackServer.Connection)connection, useNtlm: true);
+                    });
+
+                    // Third connection: HTTP/2 for the HTTP/2-only request. Serve normally.
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var h2 = (Http2LoopbackConnection)connection;
+                        int streamId = await h2.ReadRequestHeaderAsync();
+                        await h2.SendResponseHeadersAsync(streamId, endStream: true, HttpStatusCode.OK);
+                    });
+                },
+                httpOptions: CreateHttpAgnosticOptions());
         }
 
         [Fact]

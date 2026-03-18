@@ -27,6 +27,7 @@ namespace System.Net.Http
         private RequestQueue<Http2Connection?> _http2RequestQueue;
 
         private bool _http2Enabled;
+        private bool _http2SessionAuthSeen;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
@@ -287,16 +288,15 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Disables HTTP/2 on this pool so that future requests use HTTP/1.1.
-        /// Called when a session-based authentication challenge (Negotiate/NTLM) is detected on HTTP/2,
-        /// since these authentication schemes require a persistent connection that HTTP/2 cannot provide.
+        /// Marks this pool as having seen a session-based authentication challenge on HTTP/2.
+        /// Future requests that allow downgrade (<see cref="HttpVersionPolicy.RequestVersionOrLower"/>)
+        /// will skip HTTP/2 and go directly to HTTP/1.1.
+        /// Requests that require HTTP/2 (e.g., <see cref="HttpVersionPolicy.RequestVersionExact"/>)
+        /// continue to use HTTP/2 as before.
         /// </summary>
-        private void DisableHttp2()
+        private void DisableHttp2ForDowngradeableRequests()
         {
-            lock (SyncObj)
-            {
-                _http2Enabled = false;
-            }
+            _http2SessionAuthSeen = true;
         }
 
         private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)

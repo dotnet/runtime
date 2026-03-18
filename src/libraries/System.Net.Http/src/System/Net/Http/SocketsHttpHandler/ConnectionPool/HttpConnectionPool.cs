@@ -440,7 +440,8 @@ namespace System.Net.Http
                         // Use HTTP/2 if possible.
                         if (_http2Enabled &&
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
-                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
+                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) &&
+                            !(_http2SessionAuthSeen && request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)) // skip HTTP/2 for downgradeable requests after session auth
                         {
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
@@ -538,15 +539,16 @@ namespace System.Net.Http
                 {
                     // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
                     // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
-                    // Disable HTTP/2 on this pool so all future requests go directly to HTTP/1.1.
+                    // Mark the pool so future downgradeable requests go directly to HTTP/1.1,
+                    // while HTTP/2-only requests continue to work as before.
                     Debug.Assert(request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower);
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Disabling HTTP/2 on pool due to session-based authentication challenge. Retrying on HTTP/1.1: {e}");
+                        Trace($"Session-based auth challenge on HTTP/2. Future downgradeable requests will use HTTP/1.1: {e}");
                     }
 
-                    DisableHttp2();
+                    DisableHttp2ForDowngradeableRequests();
                     request.Version = HttpVersion.Version11;
                 }
                 finally
@@ -717,6 +719,12 @@ namespace System.Net.Http
         {
             if (_http2Enabled)
             {
+                // Skip h2 ALPN for downgradeable requests if we've seen a session auth challenge.
+                if (_http2SessionAuthSeen && request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    return _sslOptionsHttp11!;
+                }
+
                 if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
                     return _sslOptionsHttp2Only!;
