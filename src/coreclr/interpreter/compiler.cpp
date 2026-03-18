@@ -4797,7 +4797,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // Get cookie for unmanaged calli. For managed calli and FCalls, the cookie will be NULL
+        // Get cookie for unmanaged calli. For managed calli, the cookie will be NULL
         // and the interpreter will resolve the call at runtime from the PortableEntryPoint's MethodDesc.
         CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
         bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
