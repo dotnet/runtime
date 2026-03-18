@@ -832,7 +832,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 #if defined(TARGET_ARM64)
         if (frameIterator->GetCodeManager()->IsPacPresent(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet()))
         {
-            pvHijackedAddr = PacSignPtr(pvHijackedAddr,  (void*)frameIterator->GetRegisterSet()->pFP);
+            pvHijackedAddr = PacSignPtr(pvHijackedAddr,  (void*)frameIterator->GetRegisterSet()->GetSP());
         }
 #endif // TARGET_ARM64
         *ppvRetAddrLocation = pvHijackedAddr;

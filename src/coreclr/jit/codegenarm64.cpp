@@ -213,7 +213,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     {
         case 1:
         {
-            if (JitConfig.JitPacEnabled() != 0)
+            if (JitConfig.JitPacEnabled() != 0 && !m_compiler->IsAot())
             {
                 // Generate:
                 //      ldp fp,lr,[sp]
@@ -245,7 +245,10 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
                                           m_compiler->lvaOutgoingArgSpaceSize);
             m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
-            GetEmitter()->emitPacInEpilog();
+            if (!m_compiler->IsAot())
+            {
+                GetEmitter()->emitPacInEpilog();
+            }
             GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
             m_compiler->unwindAllocStack(totalFrameSize);
             break;
@@ -288,6 +291,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
         GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
         m_compiler->unwindAllocStack(spAdjust);
+    }
+
+    if (m_compiler->IsAot())
+    {
+        GetEmitter()->emitPacInEpilog();
     }
 }
 
@@ -501,7 +509,7 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         {
             // We can use pre-indexed addressing when pointer authentication PAC is disabled.
             assert(reg1 != REG_LR);
-            if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR))
+            if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR) && !m_compiler->IsAot())
             {
                 // Generate:
                 // sub SP, SP, #spDelta
@@ -521,7 +529,6 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
                 GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_PRE_INDEX);
                 m_compiler->unwindSaveRegPairPreindexed(reg1, reg2, spDelta);
             }
-
             needToSaveRegs = false;
         }
         else // (spOffset != 0) || (spDelta < -512)
@@ -540,9 +547,9 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         // 64-bit STP offset range: -512 to 504, multiple of 8.
         assert(spOffset <= 504);
         assert((spOffset % 8) == 0);
-
         assert(reg1 != REG_LR);
-        if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR))
+
+        if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR) && !m_compiler->IsAot())
         {
             assert(reg1 == REG_FP);
             GetEmitter()->emitPacInProlog();
@@ -662,7 +669,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
         assert(!useSaveNextPair);
         if ((spOffset == 0) && (spDelta <= 504))
         {
-            if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR))
+            if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR) && !m_compiler->IsAot())
             {
                 // We separate SP increment and loading FP/LR when PAC is enabled.
                 assert(reg1 == REG_FP);
@@ -688,7 +695,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
             m_compiler->unwindSaveRegPair(reg1, reg2, spOffset);
 
-            if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR))
+            if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR) && !m_compiler->IsAot())
             {
                 assert(reg1 == REG_FP);
                 GetEmitter()->emitPacInEpilog();
@@ -702,7 +709,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
     {
         GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
-        if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR))
+        if ((JitConfig.JitPacEnabled() != 0) && (reg2 == REG_LR) && !m_compiler->IsAot())
         {
             assert(reg1 == REG_FP);
             GetEmitter()->emitPacInEpilog();
@@ -1411,6 +1418,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     m_compiler->unwindBegProlog();
 
+    if (m_compiler->IsAot())
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+
     regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
 
@@ -1443,13 +1455,16 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
             bool scratchRegIsZero = false;
             genAllocLclFrame(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, &scratchRegIsZero, maskArgRegsLiveIn);
             genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
-            GetEmitter()->emitPacInProlog();
+            if (!m_compiler->IsAot())
+            {
+                GetEmitter()->emitPacInProlog();
+            }
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
             m_compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
         }
         else
         {
-            if (JitConfig.JitPacEnabled() != 0)
+            if (JitConfig.JitPacEnabled() != 0 && !m_compiler->IsAot())
             {
                 // generate sub SP,SP,imm
                 genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
@@ -1481,7 +1496,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
 
-        GetEmitter()->emitPacInProlog();
+        if (!m_compiler->IsAot())
+        {
+            GetEmitter()->emitPacInProlog();
+        }
         GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
                                       genFuncletInfo.fiSP_to_FPLR_save_delta);
         m_compiler->unwindSaveRegPair(REG_FP, REG_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
@@ -1491,7 +1509,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     else if (genFuncletInfo.fiFrameType == 3)
     {
         // Avoid using pre-indexed store when PAC is enabled.
-        if ((m_compiler->opts.IsOSR()) || (JitConfig.JitPacEnabled() != 0))
+        if ((m_compiler->opts.IsOSR()) || ((JitConfig.JitPacEnabled() != 0) && !m_compiler->IsAot()))
         {
             // With OSR we may see large values for fiSpDelta1
             // We repurpose genAllocLclFram to do the necessary probing.
@@ -1628,7 +1646,7 @@ void CodeGen::genFuncletEpilog()
     {
         // With OSR we may see large values for fiSpDelta1
         //
-        if (m_compiler->opts.IsOSR() || (JitConfig.JitPacEnabled() != 0))
+        if (m_compiler->opts.IsOSR() || ((JitConfig.JitPacEnabled() != 0) && !m_compiler->IsAot()))
         {
             ssize_t   imm     = 0;
             regNumber tempReg = REG_SCRATCH;
@@ -1641,7 +1659,10 @@ void CodeGen::genFuncletEpilog()
 
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, imm);
             m_compiler->unwindSaveRegPair(REG_FP, REG_LR, static_cast<int>(imm));
-            GetEmitter()->emitPacInEpilog();
+            if(!m_compiler->IsAot())
+            {
+                GetEmitter()->emitPacInEpilog();
+            }
             genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, tempReg, nullptr, /* reportUnwindData */ true);
         }
         else
@@ -1659,7 +1680,10 @@ void CodeGen::genFuncletEpilog()
         GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
                                       genFuncletInfo.fiSP_to_FPLR_save_delta);
         m_compiler->unwindSaveRegPair(REG_FP, REG_LR, genFuncletInfo.fiSP_to_FPLR_save_delta);
-        GetEmitter()->emitPacInEpilog();
+        if(!m_compiler->IsAot())
+        {
+            GetEmitter()->emitPacInEpilog();
+        }
 
         // fiFrameType==2 constraints:
         assert(genFuncletInfo.fiSpDelta1 < 0);
@@ -1674,7 +1698,7 @@ void CodeGen::genFuncletEpilog()
     {
         // With OSR we may see large values for fiSpDelta1
         // Avoid post-indexed load when PAC is enabled.
-        if (m_compiler->opts.IsOSR() || (JitConfig.JitPacEnabled() != 0))
+        if (m_compiler->opts.IsOSR() || ((JitConfig.JitPacEnabled() != 0) && !m_compiler->IsAot()))
         {
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
             m_compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
@@ -1719,6 +1743,11 @@ void CodeGen::genFuncletEpilog()
             assert(genFuncletInfo.fiSpDelta1 >= -240);
             genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
         }
+    }
+
+    if (m_compiler->IsAot())
+    {
+        GetEmitter()->emitPacInEpilog();
     }
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
