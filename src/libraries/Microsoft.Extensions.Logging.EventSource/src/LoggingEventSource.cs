@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// FormattedMessage() is called when ILogger.Log() is called. and the FormattedMessage keyword is active
         /// This only gives you the human readable formatted message.
         /// </summary>
-        [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways, Version = 2)]
+        [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways, Version = 3)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
         internal unsafe void FormattedMessage(
@@ -149,12 +149,14 @@ namespace Microsoft.Extensions.Logging.EventSource
             string? FormattedMessage,
             string ActivityTraceId,
             string ActivitySpanId,
-            string ActivityTraceFlags)
+            string ActivityTraceFlags,
+            string Exception)
         {
             Debug.Assert(LoggerName != null);
             Debug.Assert(ActivityTraceId != null);
             Debug.Assert(ActivitySpanId != null);
             Debug.Assert(ActivityTraceFlags != null);
+            Debug.Assert(Exception != null);
 
             EventName ??= string.Empty;
             FormattedMessage ??= string.Empty;
@@ -165,8 +167,9 @@ namespace Microsoft.Extensions.Logging.EventSource
             fixed (char* activityTraceId = ActivityTraceId)
             fixed (char* activitySpanId = ActivitySpanId)
             fixed (char* activityTraceFlags = ActivityTraceFlags)
+            fixed (char* exception = Exception)
             {
-                const int eventDataCount = 9;
+                const int eventDataCount = 10;
                 EventData* eventData = stackalloc EventData[eventDataCount];
 
                 SetEventData(ref eventData[0], ref Level);
@@ -178,6 +181,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 SetEventData(ref eventData[6], ref ActivityTraceId, activityTraceId);
                 SetEventData(ref eventData[7], ref ActivitySpanId, activitySpanId);
                 SetEventData(ref eventData[8], ref ActivityTraceFlags, activityTraceFlags);
+                SetEventData(ref eventData[9], ref Exception, exception);
 
                 WriteEventCore(1, eventDataCount, eventData);
             }

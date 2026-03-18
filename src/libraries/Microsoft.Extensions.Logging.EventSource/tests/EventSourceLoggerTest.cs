@@ -952,7 +952,8 @@ namespace Microsoft.Extensions.Logging.Test
 
             { "E4FM", (e) => VerifySingleEvent(e, "Logger1", EventTypes.FormattedMessage, 4, "ErrorEvent", LogLevel.Error,
 
-                @"""FormattedMessage"":""Logger1 Event4 Error foo " + GuidParam.ToString("D") + @"""") },
+                @"""FormattedMessage"":""Logger1 Event4 Error foo " + GuidParam.ToString("D") + @"""",
+                @"""Exception"":""""") },
 
             { "E4JS", (e) => VerifySingleEvent(e, "Logger1", EventTypes.MessageJson, 4, "ErrorEvent", LogLevel.Error,
                 @"""ArgumentsJson"":{""stringParam"":""foo"",""guidParam"":""" + GuidParam.ToString("D") + @"""") },
@@ -962,7 +963,8 @@ namespace Microsoft.Extensions.Logging.Test
                 @"{""Key"":""guidParam"",""Value"":""" + GuidParam.ToString("D") +@"""}") },
 
             { "E5FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 5, null, LogLevel.Critical,
-                @"""FormattedMessage"":""Logger2 Event5 Critical bar 23 45") },
+                @"""FormattedMessage"":""Logger2 Event5 Critical bar 23 45",
+                @"""Exception"":""System.Exception: oops") },
 
 // Starting in netcoreapp3.0 Exception.ToString() puts a newline before inner exceptions
 #if NET
