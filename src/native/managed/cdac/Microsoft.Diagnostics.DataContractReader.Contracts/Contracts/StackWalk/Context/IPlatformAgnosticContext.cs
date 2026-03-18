@@ -25,7 +25,7 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
     public abstract void Unwind(Target target);
 
-    static IPlatformAgnosticContext GetContextForPlatform(Target target)
+    public static IPlatformAgnosticContext GetContextForPlatform(Target target)
     {
         IRuntimeInfo runtimeInfo = target.Contracts.RuntimeInfo;
         return runtimeInfo.GetTargetArchitecture() switch

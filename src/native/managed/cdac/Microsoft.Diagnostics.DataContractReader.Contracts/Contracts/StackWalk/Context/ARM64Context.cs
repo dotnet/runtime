@@ -241,119 +241,119 @@ internal struct ARM64Context : IPlatformContext
     [FieldOffset(0x4)]
     public uint Cpsr;
 
-    [Register(RegisterType.General, RegisterNumber = 0)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x8)]
     public ulong X0;
 
-    [Register(RegisterType.General, RegisterNumber = 1)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x10)]
     public ulong X1;
 
-    [Register(RegisterType.General, RegisterNumber = 2)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x18)]
     public ulong X2;
 
-    [Register(RegisterType.General, RegisterNumber = 3)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x20)]
     public ulong X3;
 
-    [Register(RegisterType.General, RegisterNumber = 4)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x28)]
     public ulong X4;
 
-    [Register(RegisterType.General, RegisterNumber = 5)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x30)]
     public ulong X5;
 
-    [Register(RegisterType.General, RegisterNumber = 6)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x38)]
     public ulong X6;
 
-    [Register(RegisterType.General, RegisterNumber = 7)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x40)]
     public ulong X7;
 
-    [Register(RegisterType.General, RegisterNumber = 8)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x48)]
     public ulong X8;
 
-    [Register(RegisterType.General, RegisterNumber = 9)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x50)]
     public ulong X9;
 
-    [Register(RegisterType.General, RegisterNumber = 10)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x58)]
     public ulong X10;
 
-    [Register(RegisterType.General, RegisterNumber = 11)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x60)]
     public ulong X11;
 
-    [Register(RegisterType.General, RegisterNumber = 12)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x68)]
     public ulong X12;
 
-    [Register(RegisterType.General, RegisterNumber = 13)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x70)]
     public ulong X13;
 
-    [Register(RegisterType.General, RegisterNumber = 14)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x78)]
     public ulong X14;
 
-    [Register(RegisterType.General, RegisterNumber = 15)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x80)]
     public ulong X15;
 
-    [Register(RegisterType.General, RegisterNumber = 16)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x88)]
     public ulong X16;
 
-    [Register(RegisterType.General, RegisterNumber = 17)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x90)]
     public ulong X17;
 
-    [Register(RegisterType.General, RegisterNumber = 18)]
+    [Register(RegisterType.General)]
     [FieldOffset(0x98)]
     public ulong X18;
 
-    [Register(RegisterType.General, RegisterNumber = 19)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xa0)]
     public ulong X19;
 
-    [Register(RegisterType.General, RegisterNumber = 20)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xa8)]
     public ulong X20;
 
-    [Register(RegisterType.General, RegisterNumber = 21)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xb0)]
     public ulong X21;
 
-    [Register(RegisterType.General, RegisterNumber = 22)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xb8)]
     public ulong X22;
 
-    [Register(RegisterType.General, RegisterNumber = 23)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xc0)]
     public ulong X23;
 
-    [Register(RegisterType.General, RegisterNumber = 24)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xc8)]
     public ulong X24;
 
-    [Register(RegisterType.General, RegisterNumber = 25)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xd0)]
     public ulong X25;
 
-    [Register(RegisterType.General, RegisterNumber = 26)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xd8)]
     public ulong X26;
 
-    [Register(RegisterType.General, RegisterNumber = 27)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xe0)]
     public ulong X27;
 
-    [Register(RegisterType.General, RegisterNumber = 28)]
+    [Register(RegisterType.General)]
     [FieldOffset(0xe8)]
     public ulong X28;
 
@@ -361,19 +361,19 @@ internal struct ARM64Context : IPlatformContext
 
     #region Control Registers
 
-    [Register(RegisterType.Control | RegisterType.FramePointer, RegisterNumber = 29)]
+    [Register(RegisterType.Control | RegisterType.FramePointer)]
     [FieldOffset(0xf0)]
     public ulong Fp;
 
-    [Register(RegisterType.Control, RegisterNumber = 30)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xf8)]
     public ulong Lr;
 
-    [Register(RegisterType.Control | RegisterType.StackPointer, RegisterNumber = 31)]
+    [Register(RegisterType.Control | RegisterType.StackPointer)]
     [FieldOffset(0x100)]
     public ulong Sp;
 
-    [Register(RegisterType.Control | RegisterType.ProgramCounter, RegisterNumber = 32)]
+    [Register(RegisterType.Control | RegisterType.ProgramCounter)]
     [FieldOffset(0x108)]
     public ulong Pc;
 
