@@ -991,7 +991,7 @@ namespace System.Net.Http.Functional.Tests
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
 
         [OuterLoop]
-        [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
+        [ConditionalTheory(typeof(TelemetryTest), nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task EventSource_Proxy_LogsIPAddress(bool useSsl)

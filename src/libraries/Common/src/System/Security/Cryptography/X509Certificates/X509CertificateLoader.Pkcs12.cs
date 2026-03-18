@@ -187,8 +187,8 @@ namespace System.Security.Cryptography.X509Certificates
                     bagState.ConfirmPassword();
                 }
 
-                AsnValueReader outer = new AsnValueReader(authSafeContents, AsnEncodingRules.BER);
-                AsnValueReader reader = outer.ReadSequence();
+                ValueAsnReader outer = new ValueAsnReader(authSafeContents, AsnEncodingRules.BER);
+                ValueAsnReader reader = outer.ReadSequence();
                 outer.ThrowIfNotEmpty();
 
                 ReadOnlyMemory<byte> rebind = pfxAsn.AuthSafe.Content;
@@ -276,8 +276,8 @@ namespace System.Security.Cryptography.X509Certificates
             ref int? workRemaining,
             ref BagState bagState)
         {
-            AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
-            AsnValueReader reader = outer.ReadSequence();
+            ValueAsnReader outer = new ValueAsnReader(contentData.Span, AsnEncodingRules.BER);
+            ValueAsnReader reader = outer.ReadSequence();
             outer.ThrowIfNotEmpty();
 
             HashSet<string> duplicateAttributeCheck = new();
@@ -577,15 +577,17 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.Pkcs12PbeWithShaAnd2Key3Des:
                     case Oids.Pkcs12PbeWithShaAnd128BitRC2:
                     case Oids.Pkcs12PbeWithShaAnd40BitRC2:
-                        PBEParameter pbeParameter = PBEParameter.Decode(
-                            algorithmIdentifier.Parameters.Value,
-                            AsnEncodingRules.BER);
+                        ValuePBEParameter.Decode(
+                            algorithmIdentifier.Parameters.Value.Span,
+                            AsnEncodingRules.BER,
+                            out ValuePBEParameter pbeParameter);
 
                         return pbeParameter.IterationCount;
                     case Oids.PasswordBasedEncryptionScheme2:
-                        PBES2Params pbes2Params = PBES2Params.Decode(
-                            algorithmIdentifier.Parameters.Value,
-                            AsnEncodingRules.BER);
+                        ValuePBES2Params.Decode(
+                            algorithmIdentifier.Parameters.Value.Span,
+                            AsnEncodingRules.BER,
+                            out ValuePBES2Params pbes2Params);
 
                         if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
                         {
@@ -595,14 +597,15 @@ namespace System.Security.Cryptography.X509Certificates
                                     pbes2Params.EncryptionScheme.Algorithm));
                         }
 
-                        if (!pbes2Params.KeyDerivationFunc.Parameters.HasValue)
+                        if (!pbes2Params.KeyDerivationFunc.HasParameters)
                         {
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
-                        Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
-                            pbes2Params.KeyDerivationFunc.Parameters.Value,
-                            AsnEncodingRules.BER);
+                        ValuePbkdf2Params.Decode(
+                            pbes2Params.KeyDerivationFunc.Parameters,
+                            AsnEncodingRules.BER,
+                            out ValuePbkdf2Params pbkdf2Params);
 
                         return pbkdf2Params.IterationCount;
                     default:
@@ -1002,7 +1005,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     try
                     {
-                        AsnValueReader reader = new AsnValueReader(
+                        ValueAsnReader reader = new ValueAsnReader(
                             _decryptBuffer.AsSpan(saveOffset, written),
                             AsnEncodingRules.BER);
 
@@ -1109,12 +1112,12 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 decrypted = KeyFormatHelper.DecryptPkcs8(
                                     password,
-                                    bag.BagValue,
+                                    bag.BagValue.Span,
                                     out contentRead);
 
                                 try
                                 {
-                                    AsnValueReader reader = new AsnValueReader(decrypted, AsnEncodingRules.BER);
+                                    ValueAsnReader reader = new ValueAsnReader(decrypted, AsnEncodingRules.BER);
                                     reader.ReadSequence();
                                     reader.ThrowIfNotEmpty();
                                 }
@@ -1137,12 +1140,12 @@ namespace System.Security.Cryptography.X509Certificates
                             {
                                 decrypted = KeyFormatHelper.DecryptPkcs8(
                                     password,
-                                    bag.BagValue,
+                                    bag.BagValue.Span,
                                     out contentRead);
 
                                 try
                                 {
-                                    AsnValueReader reader = new AsnValueReader(decrypted, AsnEncodingRules.BER);
+                                    ValueAsnReader reader = new ValueAsnReader(decrypted, AsnEncodingRules.BER);
                                     reader.ReadSequence();
                                     reader.ThrowIfNotEmpty();
                                 }

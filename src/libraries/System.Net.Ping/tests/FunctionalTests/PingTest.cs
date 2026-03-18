@@ -459,7 +459,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(nameof(DoesNotUsePingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(DoesNotUsePingUtility))]
         public async Task SendPingWithIPAddressAndBigSize()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -787,6 +787,62 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [OuterLoop] // Depends on external host
+        public async Task SendPingWithLowTtl_RoundtripTimeIsNonZero()
+        {
+            // Regression test: non-Success replies (e.g. TtlExpired) should preserve the
+            // round-trip time from the ICMP reply, not hardcode it to 0.
+            if (UsesPingUtility)
+            {
+                throw new SkipTestException("Test is only applicable to the IcmpSendEcho code path.");
+            }
+
+            string host = System.Net.Test.Common.Configuration.Ping.PingHost;
+            PingOptions options = new PingOptions();
+            byte[] payload = TestSettings.PayloadAsBytesShort;
+
+            using Ping ping = new Ping();
+
+            // Verify host is reachable first.
+            bool reachable = false;
+            for (int i = 0; i < s_pingcount; i++)
+            {
+                PingReply checkReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload);
+                if (checkReply.Status == IPStatus.Success)
+                {
+                    reachable = true;
+                    break;
+                }
+            }
+            if (!reachable)
+            {
+                throw new SkipTestException($"Host {host} is not reachable. Skipping test.");
+            }
+
+            // RTT can legitimately be 0ms on very fast networks, so retry a few times
+            // and assert that at least one reply reports a non-zero RTT.
+            options.Ttl = 1;
+            bool gotNonZeroRtt = false;
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                PingReply pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
+
+                Assert.True(
+                    pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired,
+                    $"pingReply.Status was {pingReply.Status} instead of TimeExceeded or TtlExpired");
+
+                if (pingReply.RoundtripTime > 0)
+                {
+                    gotNonZeroRtt = true;
+                    break;
+                }
+            }
+
+            Assert.True(gotNonZeroRtt,
+                "Expected at least one TtlExpired reply with non-zero RoundtripTime across 3 attempts");
+        }
+
         private async Task Ping_TimedOut_Core(Func<Ping, string, Task<PingReply>> sendPing)
         {
             Ping sender = new Ping();
@@ -854,7 +910,7 @@ namespace System.Net.NetworkInformation.Tests
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(PingTest), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [OuterLoop("Requires sudo access")]
@@ -949,7 +1005,7 @@ namespace System.Net.NetworkInformation.Tests
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(UsesPingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(UsesPingUtility))]
         public void SendPing_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -959,7 +1015,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
         }
 
-        [ConditionalFact(nameof(UsesPingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(UsesPingUtility))]
         public async Task SendPingAsync_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();

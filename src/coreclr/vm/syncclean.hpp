@@ -5,21 +5,9 @@
 #ifndef _SYNCCLEAN_HPP_
 #define _SYNCCLEAN_HPP_
 
-// We keep a list of memory blocks to be freed at the end of GC, but before we resume EE.
-// To make this work, we need to make sure that these data are accessed in cooperative GC
-// mode.
-
-struct EEHashEntry;
-
 class SyncClean final
 {
 public:
-    static void Terminate ();
-
-    static void AddEEHashTable (EEHashEntry** entry);
-    static void CleanUp ();
-
-private:
-    static VolatilePtr<EEHashEntry *> m_EEHashTable;    // Cleanup list for EEHashTable
+    static void CleanUp();
 };
 #endif

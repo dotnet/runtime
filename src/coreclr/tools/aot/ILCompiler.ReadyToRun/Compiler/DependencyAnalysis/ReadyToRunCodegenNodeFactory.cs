@@ -20,6 +20,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
+using ILCompiler.ReadyToRun;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -62,6 +63,8 @@ namespace ILCompiler.DependencyAnalysis
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
         public bool IsComponentModule;
+        public bool StripInliningInfo;
+        public bool StripDebugInfo;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -99,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
             if (HotColdMap == null)
             {
                 HotColdMap = new HotColdMapNode();
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap, HotColdMap);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap);
                 dependencyGraph.AddRoot(HotColdMap, "HotColdMap is generated because there is cold code");
             }
         }
@@ -362,7 +365,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmTypeNodes = new(key =>
             {
-                return new WasmTypeNode(key.Types);
+                return new WasmTypeNode(key);
             });
         }
 
@@ -396,6 +399,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public InstrumentationDataTableNode InstrumentationDataTable;
         public InliningInfoNode CrossModuleInlningInfo;
+        public ImportReferenceProvider ImportReferenceProvider;
 
         public Import ModuleImport;
 
@@ -482,6 +486,16 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
+                // Async methods are not emitted in composite mode nor on ARM32
+                // The mutable module tokens emission is not well tested for composite mode and we should find a real solution for that problem
+                // ARM32 relocs require the thumb bit set, and the JIT/crossgen doesn't set it properly for the usages in async methods.
+                // https://github.com/dotnet/runtime/issues/125337
+                // https://github.com/dotnet/runtime/issues/125338
+                if (Target.Architecture == TargetArchitecture.ARM
+                    && (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
+                {
+                    continue;
+                }
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
@@ -701,37 +715,37 @@ namespace ILCompiler.DependencyAnalysis
             graph.ComputingDependencyPhaseChange += Graph_ComputingDependencyPhaseChange;
 
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode);
 
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable);
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
             DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
             graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode);
             graph.AddRoot(exceptionInfoLookupTableNode, "ExceptionInfoLookupTable is always generated");
 
             ManifestMetadataTable = new ManifestMetadataTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable);
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
             ((ReadyToRunILProvider)ilProvider).InitManifestMutableModule(ManifestMetadataTable._mutableModule);
             Resolver.InitManifestMutableModule(ManifestMetadataTable._mutableModule);
 
             ManifestAssemblyMvidHeaderNode mvidTableNode = new ManifestAssemblyMvidHeaderNode(ManifestMetadataTable);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestAssemblyMvids, mvidTableNode, mvidTableNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestAssemblyMvids, mvidTableNode);
 
             AssemblyTableNode assemblyTable = null;
 
             if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 assemblyTable = new AssemblyTableNode();
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable);
             }
 
             // Generate per assembly header tables
@@ -739,7 +753,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
             {
                 assemblyIndex++;
-                HeaderNode tableHeader = Header;
+                ReadyToRunHeaderNode tableHeader = Header;
                 if (assemblyTable != null)
                 {
                     AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
@@ -748,15 +762,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule);
-                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable);
 
                 TypesTableNode typesTable = new TypesTableNode(inputModule);
-                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable);
 
-                if (CompilationModuleGroup.IsCompositeBuildMode)
+                if (CompilationModuleGroup.IsCompositeBuildMode && !OptimizationFlags.StripInliningInfo)
                 {
                     InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable);
                 }
 
                 // Core library attributes are checked FAR more often than other dlls
@@ -766,41 +780,54 @@ namespace ILCompiler.DependencyAnalysis
                 if (inputModule == TypeSystemContext.SystemModule)
                 {
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable);
                 }
 
                 if (EnclosingTypeMapNode.IsSupported(inputModule.MetadataReader))
                 {
                     var node = new EnclosingTypeMapNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node, node);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node);
                 }
 
                 if (TypeGenericInfoMapNode.IsSupported(inputModule.MetadataReader))
                 {
                     var node = new TypeGenericInfoMapNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node, node);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node);
                 }
 
                 if (MethodIsGenericMapNode.IsSupported(inputModule.MetadataReader))
                 {
                     var node = new MethodIsGenericMapNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node);
                 }
+                ImportReferenceProvider ??= new ImportReferenceProvider();
+
+                TypeMapMetadata metadata = TypeMapMetadata.CreateFromAssembly((EcmaAssembly)inputModule.Assembly, TypeSystemContext.SystemModule, TypeMapAssemblyTargetsMode.Record);
+
+                ReadyToRunTypeMapManager typeMapManager = new(inputModule, metadata);
+                typeMapManager.AddToReadyToRunHeader(tableHeader, this, ImportReferenceProvider);
+                typeMapManager.AttachToDependencyGraph(graph);
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
-                CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
-            this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
+            if (!OptimizationFlags.StripInliningInfo)
+            {
+                InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
+                    CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable);
+                this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
+            }
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
 
-            DebugInfoTable = new DebugInfoTableNode();
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+            if (!OptimizationFlags.StripDebugInfo)
+            {
+                DebugInfoTable = new DebugInfoTableNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable);
+            }
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
@@ -854,7 +881,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (ProfileDataManager.SynthesizeRandomPgoData || HasAnyProfileDataForInput())
                 {
                     InstrumentationDataTable = new InstrumentationDataTableNode(this, ProfileDataManager);
-                    Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
+                    Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable);
                 }
             }
 
@@ -1079,26 +1106,20 @@ namespace ILCompiler.DependencyAnalysis
             return default;
         }
 
-        private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
-        {
-            public readonly CorInfoWasmType[] Types;
-
-            public WasmTypeNodeKey(CorInfoWasmType[] types)
-            {
-                Types = types;
-            }
-
-            public bool Equals(WasmTypeNodeKey other) => Types.SequenceEqual(other.Types);
-            public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
-            public override int GetHashCode()
-                => Types.Length; // TODO-WASM: Hash all the types
-        }
-
-        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
+        private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
-            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(types));
+            WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
+            return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
+        public WasmTypeNode WasmTypeNode(MethodDesc method)
+        {
+            WasmFuncType funcType = WasmLowering.GetSignature(method);
+            return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
 }
