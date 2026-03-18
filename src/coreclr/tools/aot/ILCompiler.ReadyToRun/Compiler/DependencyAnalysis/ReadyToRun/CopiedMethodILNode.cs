@@ -13,8 +13,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
-        // Minimal IL method body: tiny header (0x02 flags | 0x01 size << 2 = 0x06) + ret opcode (0x2A).
-        private static readonly byte[] s_minimalILBody = new byte[] { 0x06, 0x2A };
+        // Throws NullReferenceException if the stripped body is encountered.
+        // Tiny header (0x0A: 2 bytes code) + ldnull (0x14) + throw (0x7A).
+        private static readonly byte[] s_strippedMethodBody = [0x0A, 0x14, 0x7A];
 
         EcmaMethod _method;
 
@@ -54,23 +55,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
-            var peReader = _method.Module.PEReader;
-            byte[] bodyBytes;
-            {
-                var reader = peReader.GetSectionData(rva).GetReader();
-                int size = MethodBodyBlock.Create(reader).Size;
-                bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
-            }
-
             if (factory.OptimizationFlags.StripILBodies
                 && factory.OptimizationFlags.CompiledMethodDefs is not null
                 && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
                 && !_method.HasInstantiation
                 && !_method.OwningType.HasInstantiation)
             {
-                return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+                return new ObjectData(s_strippedMethodBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
             }
+
+            var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
+            var peReader = _method.Module.PEReader;
+            var reader = peReader.GetSectionData(rva).GetReader();
+            int size = MethodBodyBlock.Create(reader).Size;
+            byte[] bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
 
             return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
         }
