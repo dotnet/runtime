@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -14,6 +15,13 @@ internal static partial class Interop
             internal uint nLength;
             internal unsafe void* lpSecurityDescriptor;
             internal BOOL bInheritHandle;
+
+            internal static unsafe SECURITY_ATTRIBUTES Create(FileShare share) =>
+                new SECURITY_ATTRIBUTES
+                {
+                    nLength = (uint)sizeof(SECURITY_ATTRIBUTES),
+                    bInheritHandle = ((share & FileShare.Inheritable) != 0) ? BOOL.TRUE : BOOL.FALSE
+                };
         }
     }
 }

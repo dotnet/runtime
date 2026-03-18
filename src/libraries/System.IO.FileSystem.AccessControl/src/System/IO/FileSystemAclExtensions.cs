@@ -269,11 +269,7 @@ namespace System.IO
 
             SafeFileHandle handle;
 
-            var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-            {
-                nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                bInheritHandle = ((share & FileShare.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-            };
+            var secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(share);
 
             if (security != null)
             {
