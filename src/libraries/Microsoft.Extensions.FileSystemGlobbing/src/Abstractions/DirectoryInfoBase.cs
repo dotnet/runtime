@@ -11,6 +11,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
     public abstract class DirectoryInfoBase : FileSystemInfoBase
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="DirectoryInfoBase" /> class.
+        /// </summary>
+        protected DirectoryInfoBase() { }
+
+        /// <summary>
         /// Enumerates all files and directories in the directory.
         /// </summary>
         /// <returns>Collection of files and directories</returns>

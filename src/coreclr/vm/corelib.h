@@ -454,6 +454,9 @@ DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
 #endif // FEATURE_OBJCMARSHAL
 
+DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
+DEFINE_FIELD_U(_currAssembly, CallbackContext, _currAssembly)
+
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
@@ -690,6 +693,9 @@ DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig
 DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_GENERIC_CONTEXT, SetNextCallGenericContext, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_ASYNC_CONTINUATION, SetNextCallAsyncContinuation, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      CALL_TO_STRING,         CallToString,               SM_PtrObj_PtrStr_PtrException_RetVoid)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+DEFINE_METHOD(RUNTIME_HELPERS,      NEWOBJ_HELPER_DUMMY,    NewobjHelperDummy,          SM_IntPtr_RetObj)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 DEFINE_METHOD(RUNTIME_HELPERS,      CALL_DEFAULT_CONSTRUCTOR, CallDefaultConstructor, NoSig)
 
 DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
