@@ -463,6 +463,18 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?i)\\d", "\\d")]
         [InlineData("(?i).", ".")]
         [InlineData("(?i)\\$", "\\$")]
+        // IgnoreCase node prefix extraction with single-node branch handling
+        [InlineData("(?i)(?:ab|abc)d", "(?i)ab(?>c?)d")]
+        [InlineData("(?i)(?:http|https)://foo", "[Hh](?>[Tt]{2})[Pp](?>[Ss]?)://[Ff](?>[Oo]{2})")]
+        [InlineData("(?i)(?:abc|abcd|abce|abcfg)h", "(?i)abc(?:|[de]|fg)h")]
+        [InlineData("(?i)(?:ab|abc|abcd)e", "(?i)ab(?:c(?>d?))??e")]
+        // Non-IgnoreCase node prefix extraction with single-node branch handling
+        [InlineData("(?:[ab][0-9]|[ab])x", "[ab](?>[0-9]?)x")]
+        [InlineData("(?:\\w\\d|\\w)x", "\\w(?>\\d?)x")]
+        // Non-IgnoreCase text prefix extraction (regression guards)
+        [InlineData("(?:http|https)://foo", "http(?>s?)://foo")]
+        [InlineData("(?:ab|abc)d", "ab(?>c?)d")]
+        [InlineData("(?:abc|abcd|abce|abcfg)h", "abc(?:|[de]|fg)h")]
         public void PatternsReduceIdentically(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
@@ -643,6 +655,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\b\B", "\b")]
         [InlineData(@"^$", "^")]
         [InlineData(@"^$", "$")]
+        // After alternation prefix extraction, optional patterns should differ from non-optional
+        [InlineData("(?i)(?:ab|abc)d", "(?i)abcd")]
+        [InlineData("(?:[ab][0-9]|[ab])x", "[ab][0-9]x")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.

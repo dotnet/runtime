@@ -64,6 +64,7 @@ namespace Internal.JitInterface
         X64_AVX512VP2INTERSECT = InstructionSet_X64.AVX512VP2INTERSECT,
         X64_AVXIFMA = InstructionSet_X64.AVXIFMA,
         X64_AVXVNNI = InstructionSet_X64.AVXVNNI,
+        X64_AVX512BMM = InstructionSet_X64.AVX512BMM,
         X64_GFNI = InstructionSet_X64.GFNI,
         X64_GFNI_V256 = InstructionSet_X64.GFNI_V256,
         X64_GFNI_V512 = InstructionSet_X64.GFNI_V512,
@@ -109,6 +110,7 @@ namespace Internal.JitInterface
         X86_AVX512VP2INTERSECT = InstructionSet_X86.AVX512VP2INTERSECT,
         X86_AVXIFMA = InstructionSet_X86.AVXIFMA,
         X86_AVXVNNI = InstructionSet_X86.AVXVNNI,
+        X86_AVX512BMM = InstructionSet_X86.AVX512BMM,
         X86_GFNI = InstructionSet_X86.GFNI,
         X86_GFNI_V256 = InstructionSet_X86.GFNI_V256,
         X86_GFNI_V512 = InstructionSet_X86.GFNI_V512,
@@ -203,36 +205,37 @@ namespace Internal.JitInterface
         AVX512VP2INTERSECT = 13,
         AVXIFMA = 14,
         AVXVNNI = 15,
-        GFNI = 16,
-        GFNI_V256 = 17,
-        GFNI_V512 = 18,
-        SHA = 19,
-        WAITPKG = 20,
-        X86Serialize = 21,
-        Vector128 = 22,
-        Vector256 = 23,
-        Vector512 = 24,
-        VectorT128 = 25,
-        VectorT256 = 26,
-        VectorT512 = 27,
-        AVXVNNIINT = 28,
-        AVXVNNIINT_V512 = 29,
-        X86Base_X64 = 30,
-        AVX_X64 = 31,
-        AVX2_X64 = 32,
-        AVX512_X64 = 33,
-        AVX512v2_X64 = 34,
-        AVX512v3_X64 = 35,
-        AVX10v1_X64 = 36,
-        AVX10v2_X64 = 37,
-        AES_X64 = 38,
-        AVX512VP2INTERSECT_X64 = 39,
-        AVXIFMA_X64 = 40,
-        AVXVNNI_X64 = 41,
-        GFNI_X64 = 42,
-        SHA_X64 = 43,
-        WAITPKG_X64 = 44,
-        X86Serialize_X64 = 45,
+        AVX512BMM = 16,
+        GFNI = 17,
+        GFNI_V256 = 18,
+        GFNI_V512 = 19,
+        SHA = 20,
+        WAITPKG = 21,
+        X86Serialize = 22,
+        Vector128 = 23,
+        Vector256 = 24,
+        Vector512 = 25,
+        VectorT128 = 26,
+        VectorT256 = 27,
+        VectorT512 = 28,
+        AVXVNNIINT = 29,
+        AVXVNNIINT_V512 = 30,
+        X86Base_X64 = 31,
+        AVX_X64 = 32,
+        AVX2_X64 = 33,
+        AVX512_X64 = 34,
+        AVX512v2_X64 = 35,
+        AVX512v3_X64 = 36,
+        AVX10v1_X64 = 37,
+        AVX10v2_X64 = 38,
+        AES_X64 = 39,
+        AVX512VP2INTERSECT_X64 = 40,
+        AVXIFMA_X64 = 41,
+        AVXVNNI_X64 = 42,
+        GFNI_X64 = 43,
+        SHA_X64 = 44,
+        WAITPKG_X64 = 45,
+        X86Serialize_X64 = 46,
     }
 
     public enum InstructionSet_X86
@@ -254,36 +257,37 @@ namespace Internal.JitInterface
         AVX512VP2INTERSECT = 13,
         AVXIFMA = 14,
         AVXVNNI = 15,
-        GFNI = 16,
-        GFNI_V256 = 17,
-        GFNI_V512 = 18,
-        SHA = 19,
-        WAITPKG = 20,
-        X86Serialize = 21,
-        Vector128 = 22,
-        Vector256 = 23,
-        Vector512 = 24,
-        VectorT128 = 25,
-        VectorT256 = 26,
-        VectorT512 = 27,
-        AVXVNNIINT = 28,
-        AVXVNNIINT_V512 = 29,
-        X86Base_X64 = 30,
-        AVX_X64 = 31,
-        AVX2_X64 = 32,
-        AVX512_X64 = 33,
-        AVX512v2_X64 = 34,
-        AVX512v3_X64 = 35,
-        AVX10v1_X64 = 36,
-        AVX10v2_X64 = 37,
-        AES_X64 = 38,
-        AVX512VP2INTERSECT_X64 = 39,
-        AVXIFMA_X64 = 40,
-        AVXVNNI_X64 = 41,
-        GFNI_X64 = 42,
-        SHA_X64 = 43,
-        WAITPKG_X64 = 44,
-        X86Serialize_X64 = 45,
+        AVX512BMM = 16,
+        GFNI = 17,
+        GFNI_V256 = 18,
+        GFNI_V512 = 19,
+        SHA = 20,
+        WAITPKG = 21,
+        X86Serialize = 22,
+        Vector128 = 23,
+        Vector256 = 24,
+        Vector512 = 25,
+        VectorT128 = 26,
+        VectorT256 = 27,
+        VectorT512 = 28,
+        AVXVNNIINT = 29,
+        AVXVNNIINT_V512 = 30,
+        X86Base_X64 = 31,
+        AVX_X64 = 32,
+        AVX2_X64 = 33,
+        AVX512_X64 = 34,
+        AVX512v2_X64 = 35,
+        AVX512v3_X64 = 36,
+        AVX10v1_X64 = 37,
+        AVX10v2_X64 = 38,
+        AES_X64 = 39,
+        AVX512VP2INTERSECT_X64 = 40,
+        AVXIFMA_X64 = 41,
+        AVXVNNI_X64 = 42,
+        GFNI_X64 = 43,
+        SHA_X64 = 44,
+        WAITPKG_X64 = 45,
+        X86Serialize_X64 = 46,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -1089,6 +1093,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx512vp2intersect", "", InstructionSet.X64_AVX512VP2INTERSECT, true);
                     yield return new InstructionSetInfo("avxifma", "", InstructionSet.X64_AVXIFMA, true);
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X64_AVXVNNI, true);
+                    yield return new InstructionSetInfo("avx512bmm", "Avx512Bmm", InstructionSet.X64_AVX512BMM, true);
                     yield return new InstructionSetInfo("gfni", "Gfni", InstructionSet.X64_GFNI, true);
                     yield return new InstructionSetInfo("gfni_v256", "Gfni_V256", InstructionSet.X64_GFNI_V256, true);
                     yield return new InstructionSetInfo("gfni_v512", "Gfni_V512", InstructionSet.X64_GFNI_V512, true);
@@ -1162,6 +1167,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx512vp2intersect", "", InstructionSet.X86_AVX512VP2INTERSECT, true);
                     yield return new InstructionSetInfo("avxifma", "", InstructionSet.X86_AVXIFMA, true);
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X86_AVXVNNI, true);
+                    yield return new InstructionSetInfo("avx512bmm", "Avx512Bmm", InstructionSet.X86_AVX512BMM, true);
                     yield return new InstructionSetInfo("gfni", "Gfni", InstructionSet.X86_GFNI, true);
                     yield return new InstructionSetInfo("gfni_v256", "Gfni_V256", InstructionSet.X86_GFNI_V256, true);
                     yield return new InstructionSetInfo("gfni_v512", "Gfni_V512", InstructionSet.X86_GFNI_V512, true);
@@ -1642,6 +1648,9 @@ namespace Internal.JitInterface
                         else
                         { return InstructionSet.X64_AVXVNNI; }
 
+                    case "Avx512Bmm":
+                        { return InstructionSet.X64_AVX512BMM; }
+
                     case "Gfni":
                         if (nestedTypeName == "X64")
                         { return InstructionSet.X64_GFNI_X64; }
@@ -1783,6 +1792,9 @@ namespace Internal.JitInterface
 
                     case "AvxVnni":
                         { return InstructionSet.X86_AVXVNNI; }
+
+                    case "Avx512Bmm":
+                        { return InstructionSet.X86_AVX512BMM; }
 
                     case "Gfni":
                         if (nestedTypeName == "V256")
@@ -2614,6 +2626,16 @@ namespace Internal.JitInterface
                 }
                 break;
 
+                case (InstructionSet.X64_AVX512BMM, TargetArchitecture.X64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "Avx512Bmm"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                    }
+                }
+                break;
+
                 case (InstructionSet.X64_GFNI, TargetArchitecture.X64):
                 case (InstructionSet.X64_GFNI_X64, TargetArchitecture.X64):
                 {
@@ -3050,6 +3072,16 @@ namespace Internal.JitInterface
                 case (InstructionSet.X86_AVXVNNI, TargetArchitecture.X86):
                 {
                     var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "AvxVnni"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                    }
+                }
+                break;
+
+                case (InstructionSet.X86_AVX512BMM, TargetArchitecture.X86):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.X86"u8, "Avx512Bmm"u8, false);
                     if (type != null)
                     {
                         yield return type;

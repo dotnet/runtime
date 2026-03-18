@@ -86,6 +86,10 @@ Crst AssemblyLoader
     AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
+Crst AsyncContinuations
+    AcquiredBefore LeafLock
+End
+
 Crst AvailableClass
     AcquiredBefore LoaderHeap
 End
@@ -292,7 +296,7 @@ End
 
 Crst LoaderAllocatorReferences
     AcquiredBefore LoaderAllocator
-    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable
+    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable ILStubGen
 End
 
 Crst AssemblyList

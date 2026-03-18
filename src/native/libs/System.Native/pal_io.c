@@ -160,7 +160,9 @@ c_static_assert((int)PAL_DT_BLK == (int)DT_BLK);
 c_static_assert((int)PAL_DT_REG == (int)DT_REG);
 c_static_assert((int)PAL_DT_LNK == (int)DT_LNK);
 c_static_assert((int)PAL_DT_SOCK == (int)DT_SOCK);
+#ifdef DT_WHT // not available in OpenBSD
 c_static_assert((int)PAL_DT_WHT == (int)DT_WHT);
+#endif
 #endif
 
 // Validate that our Lock enum value are correct for the platform
@@ -567,32 +569,32 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     errno = ENOTSUP;
     return -1;
 #else // TARGET_WASM
-    switch (flags)
+    if ((flags & ~(PAL_O_CLOEXEC | PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0)
     {
-        case 0:
-            break;
-        case PAL_O_CLOEXEC:
+        assert_msg(false, "Unknown pipe flag", (int)flags);
+        errno = EINVAL;
+        return -1;
+    }
+
+    int32_t pipeFlags = 0;
+    if ((flags & PAL_O_CLOEXEC) != 0)
+    {
 #if HAVE_O_CLOEXEC
-            flags = O_CLOEXEC;
+        pipeFlags = O_CLOEXEC;
 #endif
-            break;
-        default:
-            assert_msg(false, "Unknown pipe flag", (int)flags);
-            errno = EINVAL;
-            return -1;
     }
 
     int32_t result;
 #if HAVE_PIPE2
     // If pipe2 is available, use it.  This will handle O_CLOEXEC if it was set.
-    while ((result = pipe2(pipeFds, flags)) < 0 && errno == EINTR);
+    while ((result = pipe2(pipeFds, pipeFlags)) < 0 && errno == EINTR);
 #elif HAVE_PIPE
     // Otherwise, use pipe.
     while ((result = pipe(pipeFds)) < 0 && errno == EINTR);
 
     // Then, if O_CLOEXEC was specified, use fcntl to configure the file descriptors appropriately.
 #if HAVE_O_CLOEXEC
-    if ((flags & O_CLOEXEC) != 0 && result == 0)
+    if ((pipeFlags & O_CLOEXEC) != 0 && result == 0)
 #else
     if ((flags & PAL_O_CLOEXEC) != 0 && result == 0)
 #endif
@@ -614,6 +616,28 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #else /* HAVE_PIPE */
     result = -1;
 #endif /* HAVE_PIPE */
+
+    if (result == 0 && ((flags & (PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0))
+    {
+        if ((flags & PAL_O_NONBLOCK_READ) != 0)
+        {
+            result = SystemNative_FcntlSetIsNonBlocking((intptr_t)pipeFds[0], 1);
+        }
+
+        if (result == 0 && (flags & PAL_O_NONBLOCK_WRITE) != 0)
+        {
+            result = SystemNative_FcntlSetIsNonBlocking((intptr_t)pipeFds[1], 1);
+        }
+
+        if (result != 0)
+        {
+            int tmpErrno = errno;
+            close(pipeFds[0]);
+            close(pipeFds[1]);
+            errno = tmpErrno;
+        }
+    }
+
     return result;
 #endif // TARGET_WASM
 }
@@ -743,13 +767,18 @@ int32_t SystemNative_FSync(intptr_t fd)
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
-    while ((result =
-#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
-    fcntl(fileDescriptor, F_FULLFSYNC)
-#else
-    fsync(fileDescriptor)
+#ifdef TARGET_OSX
+    while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
+    if (result >= 0)
+    {
+        return result;
+    }
+
+    // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
+    // network file systems, read-only handles). Fall back to fsync.
+    // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
 #endif
-    < 0) && errno == EINTR);
+    while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
     return result;
 }
 
@@ -1203,6 +1232,67 @@ int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
     return Common_Read(fd, buffer, bufferSize);
 }
 
+int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize)
+{
+    while (1)
+    {
+        int32_t result = Common_Read(fd, buffer, bufferSize);
+        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            return result;
+        }
+
+        // The fd is non-blocking and no data is available yet.
+        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
+        {
+            // The pipe/socket was closed with no data available (EOF).
+            return 0;
+        }
+    }
+}
+
+int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize)
+{
+    while (1)
+    {
+        int32_t result = Common_Write(fd, buffer, bufferSize);
+        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            return result;
+        }
+
+        // The fd is non-blocking and the write buffer is full.
+        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
+        {
+            // The pipe/socket was closed.
+            errno = EPIPE;
+            return -1;
+        }
+    }
+}
+
 int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
 {
     assert(buffer != NULL || bufferSize == 0);
@@ -1534,7 +1624,9 @@ int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 
     // ucred causes Emscripten to fail even though it's defined,
     // but getting peer credentials won't work for WebAssembly anyway
-#if defined(SO_PEERCRED) && !defined(TARGET_WASM)
+    // ucred also causes OpeBSD to fail because the struct definition is named
+    // differently and on OpenBSD we can use getpeereid(3) instead anyways.
+#if defined(SO_PEERCRED) && !defined(TARGET_WASM) && !defined(TARGET_OPENBSD)
     struct ucred creds;
     socklen_t len = sizeof(creds);
     if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0)
