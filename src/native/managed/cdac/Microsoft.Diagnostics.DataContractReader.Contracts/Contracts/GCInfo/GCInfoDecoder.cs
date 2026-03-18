@@ -520,6 +520,26 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _interruptibleRanges;
     }
 
+    /// <inheritdoc />
+    public uint? FindFirstInterruptiblePoint(uint startOffset, uint endOffset)
+    {
+        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
+
+        foreach (InterruptibleRange range in _interruptibleRanges)
+        {
+            if (range.EndOffset <= startOffset)
+                continue;
+
+            if (startOffset >= range.StartOffset && startOffset < range.EndOffset)
+                return startOffset;
+
+            if (range.StartOffset < endOffset)
+                return range.StartOffset;
+        }
+
+        return null;
+    }
+
     public uint StackBaseRegister
     {
         get

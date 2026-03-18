@@ -25,6 +25,12 @@ internal interface IGCInfoDecoder : IGCInfoHandle
     uint StackBaseRegister { get; }
 
     /// <summary>
+    /// Finds the first interruptible point within the given handler range [startOffset, endOffset).
+    /// Returns <c>null</c> if no interruptible point exists in the range.
+    /// </summary>
+    uint? FindFirstInterruptiblePoint(uint startOffset, uint endOffset) => null;
+
+    /// <summary>
     /// Enumerates all live GC slots at the given instruction offset.
     /// </summary>
     /// <param name="instructionOffset">Relative offset from method start.</param>

@@ -23,7 +23,8 @@ internal class GcScanner
         IPlatformAgnosticContext context,
         CodeBlockHandle cbh,
         CodeManagerFlags flags,
-        GcScanContext scanContext)
+        GcScanContext scanContext,
+        uint? relOffsetOverride = null)
     {
         TargetNUInt relativeOffset = _eman.GetRelativeOffset(cbh);
         _eman.GetGCInfo(cbh, out TargetPointer gcInfoAddr, out uint gcVersion);
@@ -41,8 +42,10 @@ internal class GcScanner
         // The native code uses GET_CALLER_SP(pRD) which comes from EnsureCallerContextIsValid.
         TargetPointer? callerSP = null;
 
+        uint offsetToUse = relOffsetOverride ?? (uint)relativeOffset.Value;
+
         return decoder.EnumerateLiveSlots(
-            (uint)relativeOffset.Value,
+            offsetToUse,
             flags,
             (bool isRegister, uint registerNumber, int spOffset, uint spBase, uint gcFlags) =>
             {

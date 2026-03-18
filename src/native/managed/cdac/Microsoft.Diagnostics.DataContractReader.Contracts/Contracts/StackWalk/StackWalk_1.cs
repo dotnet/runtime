@@ -216,18 +216,28 @@ internal partial class StackWalk_1 : IStackWalk
                             ? CodeManagerFlags.ActiveStackFrame
                             : 0;
 
-                        // TODO(stackref): Wire up funclet parent frame flags from Filter:
-                        // - ShouldParentToFuncletSkipReportingGCReferences → ParentOfFuncletStackFrame
-                        //   (tells GCInfoDecoder to skip reporting since funclet already reported)
-                        // - ShouldParentFrameUseUnwindTargetPCforGCReporting → use exception's
-                        //   unwind target IP instead of current IP for GC liveness lookup
-                        // - ShouldParentToFuncletReportSavedFuncletSlots → report funclet's
-                        //   callee-saved register slots from the parent frame
-                        // These require careful validation to ensure Filter sets them correctly
-                        // for all stack configurations before wiring them into EnumGcRefs.
+                        if (gcFrame.ShouldParentToFuncletSkipReportingGCReferences)
+                            codeManagerFlags |= CodeManagerFlags.ParentOfFuncletStackFrame;
+
+                        uint? relOffsetOverride = null;
+                        if (gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting)
+                        {
+                            // When resuming in a catch funclet associated with the same parent,
+                            // report liveness at the first interruptible point of the catch handler
+                            // instead of the original throw site. This mirrors the native runtime
+                            // logic in gcenv.ee.common.cpp.
+                            _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
+                            IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
+                            if (gcHandle is IGCInfoDecoder decoder)
+                            {
+                                relOffsetOverride = decoder.FindFirstInterruptiblePoint(
+                                    gcFrame.ClauseForCatchHandlerStartPC,
+                                    gcFrame.ClauseForCatchHandlerEndPC);
+                            }
+                        }
 
                         GcScanner gcScanner = new(_target);
-                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext);
+                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext, relOffsetOverride);
                     }
                     else
                     {
@@ -292,8 +302,12 @@ internal partial class StackWalk_1 : IStackWalk
         public bool ShouldParentFrameUseUnwindTargetPCforGCReporting { get; set; }
         public bool ShouldSaveFuncletInfo { get; set; }
         public bool ShouldParentToFuncletReportSavedFuncletSlots { get; set; }
+        public uint ClauseForCatchHandlerStartPC { get; set; }
+        public uint ClauseForCatchHandlerEndPC { get; set; }
     }
 
+    // TODO(stackref): Implement force-reporting for finally funclets with marker frame detection.
+    // See native StackFrameIterator::Filter in stackwalk.cpp for reference.
     private enum ForceGcReportingStage
     {
         Off,
@@ -315,7 +329,6 @@ internal partial class StackWalk_1 : IStackWalk
         TargetPointer funcletParentStackFrame = TargetPointer.Null;
         TargetPointer intermediaryFuncletParentStackFrame;
 
-        ForceGcReportingStage forceReportingWhileSkipping = ForceGcReportingStage.Off;
         bool foundFirstFunclet = false;
 
         foreach (StackDataFrameHandle handle in handles)
@@ -416,12 +429,11 @@ internal partial class StackWalk_1 : IStackWalk
 
                                         IPlatformAgnosticContext callerContext = handle.Context.Clone();
                                         callerContext.Unwind(_target);
-                                        if (!IsManaged(callerContext.InstructionPointer, out _))
-                                        {
-                                            // Initiate force reporting of references in the new managed exception handling code frames.
-                                            // These frames are still alive when we are in a finally funclet.
-                                            forceReportingWhileSkipping = ForceGcReportingStage.LookForManagedFrame;
-                                        }
+                                        // TODO(stackref): Implement force-reporting for finally funclets.
+                                        // When the funclet is not unwound and its caller IP is managed,
+                                        // intermediate frames should be force-reported to keep dynamic methods alive.
+                                        // This requires marker frame detection (DispatchManagedException/RhThrowEx)
+                                        // to know when to stop force-reporting.
                                     }
                                 }
                             }
@@ -468,9 +480,8 @@ internal partial class StackWalk_1 : IStackWalk
                                         callerContext.Unwind(_target);
                                         if (!frameWasUnwound && IsManaged(callerContext.InstructionPointer, out _))
                                         {
-                                            // Initiate force reporting of references in the new managed exception handling code frames.
-                                            // These frames are still alive when we are in a finally funclet.
-                                            forceReportingWhileSkipping = ForceGcReportingStage.LookForManagedFrame;
+                                            // TODO(stackref): Implement force-reporting for finally funclets
+                                            // (see ForceGcReportingStage). Requires marker frame detection.
                                         }
 
                                         // For non-filter funclets, we will make the callback for the funclet
@@ -594,8 +605,8 @@ internal partial class StackWalk_1 : IStackWalk
 
                                                 gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting = true;
 
-                                                // TODO(stackref): Is this required?
-                                                // gcFrame.ehClauseForCatch = exInfo.ClauseForCatch;
+                                                gcFrame.ClauseForCatchHandlerStartPC = exInfo.ClauseForCatchHandlerStartPC;
+                                                gcFrame.ClauseForCatchHandlerEndPC = exInfo.ClauseForCatchHandlerEndPC;
                                             }
                                             else if (!IsFunclet(handle))
                                             {
@@ -632,25 +643,13 @@ internal partial class StackWalk_1 : IStackWalk
 
                             if (skipFuncletCallback)
                             {
-                                if (parentStackFrame != TargetPointer.Null &&
-                                    forceReportingWhileSkipping == ForceGcReportingStage.Off)
+                                if (parentStackFrame != TargetPointer.Null)
                                 {
+                                    // Skip intermediate frames between funclet and parent.
+                                    // The native runtime unconditionally skips these frames.
+                                    // TODO(stackref): Implement force-reporting for finally funclets
+                                    // (ForceGcReportingStage) with proper marker frame detection.
                                     break;
-                                }
-
-                                if (forceReportingWhileSkipping == ForceGcReportingStage.LookForManagedFrame)
-                                {
-                                    // State indicating that the next marker frame should turn off the reporting again. That would be the caller of the managed RhThrowEx
-                                    forceReportingWhileSkipping = ForceGcReportingStage.LookForMarkerFrame;
-                                    // TODO(stackref): Implement marker frame detection. The native code checks
-                                    // if the caller IP is within DispatchManagedException / RhThrowEx to
-                                    // transition back to Off. Without this, force-reporting stays active
-                                    // indefinitely during funclet skipping.
-                                }
-
-                                if (forceReportingWhileSkipping != ForceGcReportingStage.Off)
-                                {
-                                    // TODO(stackref): add debug assert that we are in the EH code
                                 }
                             }
                         }
