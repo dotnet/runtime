@@ -205,8 +205,8 @@ namespace Microsoft.Win32.SafeHandles
 
                 // Only throw for errors that indicate there is not enough space or the file is too large.
                 // SetFileInformationByHandle fails with ERROR_DISK_FULL when the size is disallowed by filesystem,
-                // such as >4GB on FAT32 volume, and with ERROR_INVALID_PARAMETER on NTFS when the requested
-                // allocation size exceeds the maximum file size supported by the volume's cluster size.
+                // such as >4GB on a FAT32 volume, and with ERROR_INVALID_PARAMETER on NTFS when the requested
+                // allocation size exceeds the maximum file size supported by the filesystem or volume configuration.
                 if (errorCode is Interop.Errors.ERROR_DISK_FULL or
                     Interop.Errors.ERROR_FILE_TOO_LARGE or
                     Interop.Errors.ERROR_INVALID_PARAMETER)
