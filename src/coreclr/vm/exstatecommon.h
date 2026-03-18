@@ -419,11 +419,8 @@ private:
         // Bucket details were captured for ThreadAbort
         Wb_CapturedForThreadAbort = 1,
 
-        // Bucket details were captured at AD Transition
-        Wb_CapturedAtADTransition = 2,
-
         // Bucket details were captured during Reflection invocation
-        Wb_CapturedAtReflectionInvocation = 4
+        Wb_CapturedAtReflectionInvocation = 2
     };
 
     DWORD m_DebugFlags;
@@ -445,10 +442,6 @@ public:
     BOOL CapturedForThreadAbort()      { LIMITED_METHOD_CONTRACT; return m_DebugFlags & Wb_CapturedForThreadAbort; }
     void SetCapturedForThreadAbort()   { LIMITED_METHOD_CONTRACT; m_DebugFlags |= Wb_CapturedForThreadAbort; }
     void ResetCapturedForThreadAbort() { LIMITED_METHOD_CONTRACT; m_DebugFlags &= ~Wb_CapturedForThreadAbort; }
-
-    BOOL CapturedAtADTransition()      { LIMITED_METHOD_CONTRACT; return m_DebugFlags & Wb_CapturedAtADTransition; }
-    void SetCapturedAtADTransition()   { LIMITED_METHOD_CONTRACT; m_DebugFlags |= Wb_CapturedAtADTransition; }
-    void ResetCapturedAtADTransition() { LIMITED_METHOD_CONTRACT; m_DebugFlags &= ~Wb_CapturedAtADTransition; }
 
     BOOL CapturedAtReflectionInvocation()      { LIMITED_METHOD_CONTRACT; return m_DebugFlags & Wb_CapturedAtReflectionInvocation; }
     void SetCapturedAtReflectionInvocation()   { LIMITED_METHOD_CONTRACT; m_DebugFlags |= Wb_CapturedAtReflectionInvocation; }

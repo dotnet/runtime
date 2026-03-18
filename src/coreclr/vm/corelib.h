@@ -454,6 +454,9 @@ DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
 #endif // FEATURE_OBJCMARSHAL
 
+DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
+DEFINE_FIELD_U(_currAssembly, CallbackContext, _currAssembly)
+
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
@@ -690,6 +693,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig
 DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_GENERIC_CONTEXT, SetNextCallGenericContext, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_ASYNC_CONTINUATION, SetNextCallAsyncContinuation, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      CALL_TO_STRING,         CallToString,               SM_PtrObj_PtrStr_PtrException_RetVoid)
+DEFINE_METHOD(RUNTIME_HELPERS,      CALL_DEFAULT_CONSTRUCTOR, CallDefaultConstructor, NoSig)
 
 DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
@@ -1311,6 +1315,7 @@ DEFINE_METHOD(GENERICSHELPERS, CLASSWITHSLOTANDMODULE, ClassWithSlotAndModule, N
 DEFINE_CLASS(INITHELPERS, CompilerServices, InitHelpers)
 DEFINE_METHOD(INITHELPERS, INITCLASS, InitClass, NoSig)
 DEFINE_METHOD(INITHELPERS, INITINSTANTIATEDCLASS, InitInstantiatedClass, NoSig)
+DEFINE_METHOD(INITHELPERS, CALLCLASSCONSTRUCTOR, CallClassConstructor, SM_PtrVoid_PtrVoid_PtrException_RetVoid)
 
 DEFINE_CLASS(STATICSHELPERS, CompilerServices, StaticsHelpers)
 DEFINE_METHOD(STATICSHELPERS, GET_NONGC_STATIC, GetNonGCStaticBase, NoSig)

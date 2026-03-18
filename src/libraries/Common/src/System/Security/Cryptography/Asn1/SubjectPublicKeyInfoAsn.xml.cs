@@ -96,6 +96,20 @@ namespace System.Security.Cryptography.Asn1
         internal System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn Algorithm;
         internal ReadOnlySpan<byte> SubjectPublicKey;
 
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            Algorithm.Encode(writer);
+            writer.WriteBitString(SubjectPublicKey, 0);
+            writer.PopSequence(tag);
+        }
+
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueSubjectPublicKeyInfoAsn decoded)
         {
             Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
