@@ -1356,6 +1356,20 @@ namespace System.Text.Json
         {
             byte nextByte = default;
             int counter = 0;
+#if NET
+            int nonDigitOffset = data.Slice(i).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            if (nonDigitOffset < 0)
+            {
+                counter = data.Length - i;
+                i = data.Length;
+            }
+            else
+            {
+                counter = nonDigitOffset;
+                i += nonDigitOffset;
+                nextByte = data[i];
+            }
+#else
             for (; i < data.Length; i++)
             {
                 nextByte = data[i];
@@ -1365,6 +1379,7 @@ namespace System.Text.Json
                 }
                 counter++;
             }
+#endif
             if (i >= data.Length)
             {
                 if (IsLastSpan)
@@ -1394,6 +1409,18 @@ namespace System.Text.Json
                     HasValueSequence = true;
                     i = 0;
                     data = _buffer;
+#if NET
+                    nonDigitOffset = data.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+                    if (nonDigitOffset < 0)
+                    {
+                        i = data.Length;
+                    }
+                    else
+                    {
+                        i = nonDigitOffset;
+                        nextByte = data[i];
+                    }
+#else
                     for (; i < data.Length; i++)
                     {
                         nextByte = data[i];
@@ -1402,6 +1429,7 @@ namespace System.Text.Json
                             break;
                         }
                     }
+#endif
                     _bytePositionInLine += i;
                     if (i >= data.Length)
                     {

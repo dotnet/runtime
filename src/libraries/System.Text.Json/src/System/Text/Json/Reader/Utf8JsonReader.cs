@@ -48,6 +48,10 @@ namespace System.Text.Json
 
         private readonly bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
+#if NET
+        private static readonly SearchValues<byte> s_whitespaceLookup = SearchValues.Create(" \t\n\r"u8);
+#endif
+
         internal readonly ReadOnlySequence<byte> OriginalSequence => _sequence;
 
         internal readonly ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
@@ -1008,6 +1012,36 @@ namespace System.Text.Json
         {
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer;
+
+#if NET
+            // Use vectorized search to find the first non-whitespace byte.
+            // JSON RFC 8259 section 2 says only these 4 characters count as whitespace.
+            ReadOnlySpan<byte> remaining = localBuffer.Slice(_consumed);
+            int idx = remaining.IndexOfAnyExcept(s_whitespaceLookup);
+            if (idx < 0)
+            {
+                idx = remaining.Length;
+            }
+
+            if (idx > 0)
+            {
+                ReadOnlySpan<byte> whitespace = remaining.Slice(0, idx);
+                int newLineCount = whitespace.Count(JsonConstants.LineFeed);
+
+                if (newLineCount > 0)
+                {
+                    _lineNumber += newLineCount;
+                    int lastLF = whitespace.LastIndexOf(JsonConstants.LineFeed);
+                    _bytePositionInLine = idx - lastLF - 1;
+                }
+                else
+                {
+                    _bytePositionInLine += idx;
+                }
+
+                _consumed += idx;
+            }
+#else
             for (; _consumed < localBuffer.Length; _consumed++)
             {
                 byte val = localBuffer[_consumed];
@@ -1031,6 +1065,7 @@ namespace System.Text.Json
                     _bytePositionInLine++;
                 }
             }
+#endif
         }
 
         /// <summary>
@@ -1603,6 +1638,20 @@ namespace System.Text.Json
 
         private ConsumeNumberResult ConsumeIntegerDigits(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
+#if NET
+            int nonDigitOffset = data.Slice(i).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            byte nextByte;
+            if (nonDigitOffset < 0)
+            {
+                i = data.Length;
+                nextByte = default;
+            }
+            else
+            {
+                i += nonDigitOffset;
+                nextByte = data[i];
+            }
+#else
             byte nextByte = default;
             for (; i < data.Length; i++)
             {
@@ -1612,6 +1661,7 @@ namespace System.Text.Json
                     break;
                 }
             }
+#endif
             if (i >= data.Length)
             {
                 if (IsLastSpan)
