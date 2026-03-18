@@ -463,8 +463,8 @@ namespace System.IO
 
                     // Another process created the file. Try to open it.
                     // The creator may not have called FChMod yet, so if validation
-                    // fails on permissions, retry — the next attempt should see the
-                    // correct permissions.
+                    // fails on permissions (UnauthorizedAccessException), retry.
+                    // UID mismatches (IOException) are permanent and propagate immediately.
                     fd = Interop.Sys.Open(sharedMemoryFilePath, MandatoryFlags, 0);
                     if (!fd.IsInvalid)
                     {
@@ -474,7 +474,7 @@ namespace System.IO
                             createdFile = false;
                             return fd;
                         }
-                        catch (IOException) when (retries < MaxRetries)
+                        catch (UnauthorizedAccessException) when (retries < MaxRetries)
                         {
                             Thread.Sleep(1);
                             continue;
@@ -537,7 +537,7 @@ namespace System.IO
             if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
             {
                 fd.Dispose();
-                throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
             }
         }
 
