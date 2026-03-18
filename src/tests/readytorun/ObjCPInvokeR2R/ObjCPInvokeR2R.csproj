@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CrossGenTest>false</CrossGenTest>
+    <!-- https://github.com/dotnet/runtime/issues/73138 -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- Only run on Apple platforms where ShouldCheckForPendingException recognizes objc_msgSend -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- Skip when sanitizers are enabled — crossgen2 invocation requires non-sanitized jitinterface -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ObjCPInvokeR2R.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+
+REM ObjC P/Invoke R2R test is macOS-only — batch commands are a no-op placeholder
+echo ObjC P/Invoke R2R test is not supported on Windows
+exit /b 0
+]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+
+mkdir -p IL_DLLS
+
+if [ ! -f IL_DLLS/ObjCPInvokeR2R.dll ]
+then
+  cp ObjCPInvokeR2R.dll IL_DLLS/ObjCPInvokeR2R.dll
+fi
+if [ ! -f IL_DLLS/ObjCPInvokeR2R.dll ]
+then
+  echo Failed to copy ObjCPInvokeR2R.dll to IL_DLLS
+  exit 1
+fi
+
+"$CORE_ROOT"/crossgen2/crossgen2 --map -r:"$CORE_ROOT"/*.dll -o:ObjCPInvokeR2R.dll IL_DLLS/ObjCPInvokeR2R.dll
+
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen2 failed with exitcode: $__cgExitCode
+  exit 1
+fi
+if [ ! -f ObjCPInvokeR2R.map ]
+then
+  echo FAILED: crossgen2 did not produce map file
+  exit 1
+fi
+
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+</Project>
