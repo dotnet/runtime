@@ -8443,37 +8443,37 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 if (m_compiler->opts.compReloc)
                 {
-                    /*
-                        The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
-                        either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
-                        to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
-                        thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
-                        the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
-                        emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
-                        (while regular method calls could not do this) because the async method and its resumption stub
-                        are tightly coupled and effectively funclets of the same method. However, this means that
-                        crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
-                        unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
-                        reloc with the addend for the thumb bit.
-                    */
-                    if (m_compiler->IsReadyToRun() &&
-                        m_compiler->info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_ARM)
+#ifdef TARGET_ARM
+                    // The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
+                    // either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
+                    // to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
+                    // thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
+                    // the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
+                    // emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
+                    // (while regular method calls could not do this) because the async method and its resumption stub
+                    // are tightly coupled and effectively funclets of the same method. However, this means that
+                    // crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
+                    // unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
+                    // reloc with the addend for the thumb bit.
+                    if (m_compiler->IsReadyToRun())
                     {
                         emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
                                                           CorInfoReloc::DIRECT, 1);
                     }
                     else
+#endif
                     {
                         emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     }
                     if (target != nullptr)
                     {
-                        if (m_compiler->IsReadyToRun() &&
-                            m_compiler->info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_ARM)
+#ifdef TARGET_ARM
+                        if (m_compiler->IsReadyToRun())
                         {
                             emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, 1);
                         }
                         else
+#endif
                         {
                             emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                         }
