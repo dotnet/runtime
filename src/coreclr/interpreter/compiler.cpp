@@ -319,6 +319,13 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
+    if (m_isFirstInstForEmptyILStack)
+    {
+        // This is the first instruction we are emitting for this IL offset and the stack is empty, which
+        // implies the IL stack is empty too.
+        ins->flags |= INTERP_INST_FLAG_EMPTY_IL_STACK;
+        m_isFirstInstForEmptyILStack = false;
+    }
     m_pLastNewIns = ins;
     return ins;
 }
@@ -1069,7 +1076,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
                 m_ILToNativeMapSize++;
             }
         }
@@ -8378,6 +8385,10 @@ retry_emit:
 
         if (ILOpcodePeeps.FindAndApplyPeep(this))
             continue;
+
+
+        // Empty stack at the beginning of the IL instruction implies IL stack being empty too
+        m_isFirstInstForEmptyILStack = (m_pStackPointer - m_pStackBase) == 0;
 
         uint8_t opcode = *m_ip;
         switch (opcode)
