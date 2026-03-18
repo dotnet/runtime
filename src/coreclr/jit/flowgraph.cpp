@@ -7691,55 +7691,17 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             // For flow purposes we may consider it to be outside the try.
         }
 
-        // If this block is a BBJ_EHCATCHRET, find the handler region of the continuation.
-        //
-        // Walk up through enclosing trys until we reach the outermost try that
-        // is enclosed by the same handler as the continuation.
-        //
-        // Mark each try/catch we walk through as needing to support runtime resumption.
-        //
-        // TODO: find a way to share similar logic from fgWasmEhFlow
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
         //
         if (block->KindIs(BBJ_EHCATCHRET))
         {
             assert(block->hasHndIndex());
-            const unsigned    ehRegionIndex = block->getHndIndex();
-            EHblkDsc* const   ehDsc         = &comp->compHndBBtab[ehRegionIndex];
-            BasicBlock* const continuation  = block->GetTarget();
-            unsigned const    continuationHandlerIndex =
-                continuation->hasHndIndex() ? continuation->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
 
-            FlowGraphTryRegion* region = regions->m_tryRegions[ehDsc->ebdID];
-            assert(region != nullptr);
-
-            while (region != nullptr)
-            {
-                if (region->HasCatchHandler())
-                {
-                    region->SetRequiresRuntimeResumption();
-                }
-
-                FlowGraphTryRegion* const parent = region->m_parent;
-
-                if (parent == nullptr)
-                {
-                    break;
-                }
-
-                if (region->IsMutualProtectWith(parent))
-                {
-                    region = parent;
-                    continue;
-                }
-
-                if (region->m_ehDsc->ebdEnclosingHndIndex != continuationHandlerIndex)
-                {
-                    region = parent;
-                    continue;
-                }
-
-                break;
-            }
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
         }
     }
 
