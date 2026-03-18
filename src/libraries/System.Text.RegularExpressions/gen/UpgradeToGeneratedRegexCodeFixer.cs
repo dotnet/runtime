@@ -477,19 +477,36 @@ namespace System.Text.RegularExpressions.Generator
         /// Counts how many Regex call sites in the same type (across all partial declarations)
         /// appear before the given node in a deterministic order. This ensures that when the
         /// BatchFixer applies fixes concurrently against the original compilation, each fix
-        /// picks a unique generated method name.
+        /// picks a unique generated property name.
         /// </summary>
         private static int CountPrecedingRegexCallSites(
             INamedTypeSymbol typeSymbol, Compilation compilation,
             INamedTypeSymbol regexSymbol, SyntaxNode nodeToFix,
             CancellationToken cancellationToken)
         {
-            var callSites = new List<(string FilePath, int Position)>();
+            // Build a map from SyntaxTree to its index in the compilation, used as a
+            // tiebreaker when FilePath is null/empty (e.g., in-memory documents).
+            var treeIndexMap = new Dictionary<SyntaxTree, int>();
+            int treeCounter = 0;
+            foreach (SyntaxTree tree in compilation.SyntaxTrees)
+            {
+                treeIndexMap[tree] = treeCounter++;
+            }
+
+            var callSites = new List<(string FilePath, int TreeIndex, int Position)>();
+            var semanticModelCache = new Dictionary<SyntaxTree, SemanticModel>();
 
             foreach (SyntaxReference syntaxRef in typeSymbol.DeclaringSyntaxReferences)
             {
                 SyntaxNode declSyntax = syntaxRef.GetSyntax(cancellationToken);
-                SemanticModel declModel = compilation.GetSemanticModel(syntaxRef.SyntaxTree);
+
+                if (!semanticModelCache.TryGetValue(syntaxRef.SyntaxTree, out SemanticModel? declModel))
+                {
+                    declModel = compilation.GetSemanticModel(syntaxRef.SyntaxTree);
+                    semanticModelCache[syntaxRef.SyntaxTree] = declModel;
+                }
+
+                int treeIndex = treeIndexMap.TryGetValue(syntaxRef.SyntaxTree, out int idx) ? idx : -1;
 
                 foreach (SyntaxNode descendant in declSyntax.DescendantNodes())
                 {
@@ -525,7 +542,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     if (isFixableRegexCall)
                     {
-                        callSites.Add((syntaxRef.SyntaxTree.FilePath ?? string.Empty, descendant.SpanStart));
+                        callSites.Add((syntaxRef.SyntaxTree.FilePath ?? string.Empty, treeIndex, descendant.SpanStart));
                     }
                 }
             }
@@ -538,14 +555,19 @@ namespace System.Text.RegularExpressions.Generator
             callSites.Sort((a, b) =>
             {
                 int cmp = StringComparer.Ordinal.Compare(a.FilePath, b.FilePath);
+                if (cmp != 0) return cmp;
+                cmp = a.TreeIndex.CompareTo(b.TreeIndex);
                 return cmp != 0 ? cmp : a.Position.CompareTo(b.Position);
             });
 
             string currentFilePath = nodeToFix.SyntaxTree.FilePath ?? string.Empty;
+            int currentTreeIndex = treeIndexMap.TryGetValue(nodeToFix.SyntaxTree, out int currentIdx) ? currentIdx : -1;
             int currentPosition = nodeToFix.SpanStart;
 
             int index = callSites.FindIndex(c =>
-                StringComparer.Ordinal.Equals(c.FilePath, currentFilePath) && c.Position == currentPosition);
+                StringComparer.Ordinal.Equals(c.FilePath, currentFilePath) &&
+                c.TreeIndex == currentTreeIndex &&
+                c.Position == currentPosition);
 
             return index > 0 ? index : 0;
         }
