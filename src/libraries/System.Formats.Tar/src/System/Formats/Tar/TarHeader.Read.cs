@@ -114,6 +114,7 @@ namespace System.Formats.Tar
 
             if (_ea == null || _ea.Count == 0)
             {
+                // no extended attributes were added, so we can skip the rest of the processing
                 return;
             }
 
