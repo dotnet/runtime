@@ -49,5 +49,27 @@ namespace System.Runtime.CompilerServices
             else
                 InitClassSlow(pMT);
         }
+
+        [DebuggerHidden]
+        [UnmanagedCallersOnly]
+        internal static void CallClassConstructor(void* cctor, void* instantiatingArg, Exception* pException)
+        {
+            try
+            {
+                if (instantiatingArg == null)
+                {
+                    ((delegate*<void>)cctor)();
+                }
+                else
+                {
+                    // Explicitly pass the instantiating argument as a regular argument to match the ABI of a non-instantiating stub.
+                    ((delegate*<void*, void>)cctor)(instantiatingArg);
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

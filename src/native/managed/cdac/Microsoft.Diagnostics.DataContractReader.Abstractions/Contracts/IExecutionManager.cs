@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -10,6 +11,28 @@ public struct CodeBlockHandle
     // TODO-Layering: These members should be accessible only to contract implementations.
     public readonly TargetPointer Address;
     public CodeBlockHandle(TargetPointer address) => Address = address;
+}
+
+public struct ExceptionClauseInfo
+{
+    public enum ExceptionClauseFlags : uint
+    {
+        Unknown = 0,
+        Fault = 0x1,
+        Finally = 0x2,
+        Filter = 0x3,
+        Typed = 0x4
+    }
+    public ExceptionClauseFlags ClauseType;
+    public bool? IsCatchAllHandler;
+    public uint TryStartPC;
+    public uint TryEndPC;
+    public uint HandlerStartPC;
+    public uint HandlerEndPC;
+    public uint? FilterOffset;
+    public uint? ClassToken;
+    public TargetNUInt? TypeHandle;
+    public TargetPointer? ModuleAddr;
 }
 
 public struct JitManagerInfo
@@ -34,6 +57,7 @@ public interface IExecutionManager : IContract
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => throw new NotImplementedException();
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
 }
 

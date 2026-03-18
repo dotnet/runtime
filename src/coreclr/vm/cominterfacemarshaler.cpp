@@ -165,12 +165,9 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
             MethodDesc *pCtorMD = m_typeHandle.GetMethodTable()->GetDefaultConstructor();
             if (pCtorMD)
             {
-                PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pCtorMD);
-                DECLARE_ARGHOLDER_ARRAY(CtorArgs, 1);
-                CtorArgs[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*pComObj);
+                UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-                // Call the ctor...
-                CALL_MANAGED_METHOD_NORET(CtorArgs);
+                defaultCtorInvoker.InvokeThrowing(pComObj, pCtorMD->GetSingleCallableAddrOfCode());
             }
         }
     }

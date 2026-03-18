@@ -2954,8 +2954,16 @@ namespace System.Text.RegularExpressions
         /// consumed. true is only valid when used as part of a search to determine where to try a full match, not as part of
         /// actual matching logic.
         /// </param>
+        /// <param name="forPrefixAnalysis">
+        /// Defaults to false. When true, Capture and Atomic nodes are transparently unwrapped so the string inside
+        /// these groups can be extracted. This must only be set to true for prefix analysis, not for the compiler/source
+        /// generator, as the compiler must not skip Capture nodes (they have side effects that need to be emitted).
+        /// Atomic groups are safe to unwrap here because prefix analysis only examines what characters must appear at a
+        /// given position; atomicity affects whether the engine can backtrack into the group, but does not change which
+        /// characters the group's content matches at that position.
+        /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false)
+        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
@@ -2969,6 +2977,21 @@ namespace System.Text.RegularExpressions
             for (; i < exclusiveChildBound; i++)
             {
                 RegexNode child = Child(i);
+
+                // When used for prefix analysis, unwrap capture groups and atomic groups so
+                // their contents can be examined. Capture unwrapping must not be done when used
+                // by the compiler/source generator, as it would cause capture side effects to be
+                // skipped. Atomic groups may change overall match results by preventing
+                // backtracking (e.g. (?>a|ab)c won't match "abc"), but they don't change what
+                // characters the group matches at its position, so they are safe to unwrap for
+                // prefix analysis.
+                if (forPrefixAnalysis)
+                {
+                    while (child.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
+                    {
+                        child = child.Child(0);
+                    }
+                }
 
                 if (child.Kind is RegexNodeKind.One)
                 {
@@ -3006,6 +3029,26 @@ namespace System.Text.RegularExpressions
                     }
 
                     vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                }
+                else if (child.Kind is RegexNodeKind.Concatenate)
+                {
+                    // This can occur after unwrapping a Capture whose child is a Concatenate.
+                    // Recurse to extract any case-insensitive string from the inner concatenation.
+                    if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out int innerNodesConsumed, out string? innerStr, consumeZeroWidthNodes, forPrefixAnalysis))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(innerStr);
+
+                    // If the inner concatenation wasn't fully consumed, we can't continue past it
+                    // as subsequent siblings aren't guaranteed to immediately follow the extracted prefix.
+                    if (innerNodesConsumed < child.ChildCount())
+                    {
+                        i++;
+                        break;
+                    }
                 }
                 else if (child.Kind is RegexNodeKind.Empty)
                 {

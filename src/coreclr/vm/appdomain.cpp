@@ -2537,15 +2537,15 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     }
     CONTRACT_END;
 
-    Assembly *pAssembly = pLock->GetAssembly();
-
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
 
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
     {
+        Assembly* pAssembly = pLock->GetAssembly();
         _ASSERTE(pAssembly != nullptr);
+
         pAssembly->ThrowIfError(targetLevel);
 
         RETURN pAssembly;
@@ -2616,7 +2616,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
              fileLoadLevelName[pLock->GetLoadLevel()]));
     }
 
-    pAssembly = pLock->GetAssembly();
+    Assembly* pAssembly = pLock->GetAssembly();
     _ASSERTE(pAssembly != nullptr); // We should always be loading to at least FILE_LOAD_ALLOCATE, so the assembly should be created
 
     // There may have been an error stored on the domain file by another thread, or from a previous load
