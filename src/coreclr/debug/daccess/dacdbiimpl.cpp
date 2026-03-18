@@ -1279,16 +1279,16 @@ HRESULT DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly vmDomainAsse
         DomainAssembly * pDomainAssembly = vmDomainAssembly.GetDacPtr();
         Module *     pModule     = pDomainAssembly->GetAssembly()->GetModule();
 
-    MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
-    if (pMethodDesc != NULL && pMethodDesc->IsAsyncThunkMethod())
-    {
-        MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncOtherVariantNoCreate();
-        if (pAsyncVariant != NULL)
+        MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
+        if (pMethodDesc != NULL && pMethodDesc->IsAsyncThunkMethod())
         {
-            pMethodDesc = pAsyncVariant;
+            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncOtherVariantNoCreate();
+            if (pAsyncVariant != NULL)
+            {
+                pMethodDesc = pAsyncVariant;
+            }
         }
-    }
-    pCodeInfo->vmNativeCodeMethodDescToken.SetHostPtr(pMethodDesc);
+        pCodeInfo->vmNativeCodeMethodDescToken.SetHostPtr(pMethodDesc);
 
         // if we are loading a module and trying to bind a previously set breakpoint, we may not have
         // a method desc yet, so check for that situation
