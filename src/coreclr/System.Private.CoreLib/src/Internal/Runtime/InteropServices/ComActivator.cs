@@ -762,17 +762,10 @@ namespace Internal.Runtime.InteropServices
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);
 
-        [UnmanagedCallersOnly]
-        private static unsafe void Create(object* pResult, Exception* pException)
+        // Helper function to create an object from the native side
+        public static object Create()
         {
-            try
-            {
-                *pResult = new LicenseInteropProxy();
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
+            return new LicenseInteropProxy();
         }
 
         // Determine if the type supports licensing
@@ -884,19 +877,6 @@ namespace Internal.Runtime.InteropServices
             bstrKey = Marshal.StringToBSTR((string)key!);
         }
 
-        [UnmanagedCallersOnly]
-        private static unsafe void GetCurrentContextInfo(LicenseInteropProxy* pProxy, Type* pType, bool* pIsDesignTime, IntPtr* pBstrKey, Exception* pException)
-        {
-            try
-            {
-                pProxy->GetCurrentContextInfo(pType->TypeHandle, out *pIsDesignTime, out *pBstrKey);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
         // The CLR invokes this when instantiating a licensed COM
         // object inside a designtime license context.
         // It's purpose is to save away the license key that the CLR
@@ -911,19 +891,6 @@ namespace Internal.Runtime.InteropServices
             string key = Marshal.PtrToStringBSTR(bstrKey);
 
             SetSavedLicenseKey(_licContext!, _targetRcwType!, key);
-        }
-
-        [UnmanagedCallersOnly]
-        private static unsafe void SaveKeyInCurrentContext(LicenseInteropProxy* pProxy, IntPtr bstrKey, Exception* pException)
-        {
-            try
-            {
-                pProxy->SaveKeyInCurrentContext(bstrKey);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
         }
     }
 }

@@ -431,8 +431,6 @@ DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrClass_PtrStr_Int_PtrObj_PtrArrObj_PtrArrBool_PtrArrInt_PtrArrType_PtrType_PtrObj_PtrException_RetVoid, P(C(CLASS)) P(s) i P(j) P(a(j)) P(a(F)) P(a(i)) P(a(C(TYPE))) P(C(TYPE)) P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrComObject_PtrClass_PtrObj_PtrException_RetVoid, P(C(COM_OBJECT)) P(C(CLASS)) P(j) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrLicenseInteropProxy_IntPtr_PtrException_RetVoid, P(C(LICENSE_INTEROP_PROXY)) I P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrLicenseInteropProxy_PtrType_PtrBool_PtrIntPtr_PtrException_RetVoid, P(C(LICENSE_INTEROP_PROXY)) P(C(TYPE)) P(F) P(I) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrException_RetVoid, P(j) P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrObj_PtrException_RetVoid, P(j) P(j) P(j) P(C(EXCEPTION)), v))
