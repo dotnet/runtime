@@ -321,6 +321,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(I
 #define OFFSETOF__CallStubHeader__HasSwiftError 0x0D
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__HasSwiftError == offsetof(CallStubHeader, HasSwiftError))
 
+#define OFFSETOF__CallStubHeader__HasSwiftReturnLowering 0x0E
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__HasSwiftReturnLowering == offsetof(CallStubHeader, HasSwiftReturnLowering))
+
 #define OFFSETOF__CallStubHeader__Routines 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
 

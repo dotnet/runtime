@@ -46,7 +46,7 @@ namespace System.Tests
 
         public static bool NotMobileAndRemoteExecutable => PlatformDetection.IsNotMobile && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [ConditionalTheory(typeof(PosixSignalRegistrationTests), nameof(NotMobileAndRemoteExecutable))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [MemberData(nameof(SupportedSignals))]
         public void SignalHandlerCalledForKnownSignals(PosixSignal s)
@@ -81,7 +81,7 @@ namespace System.Tests
             }, s.ToString()).Dispose();
         }
 
-        [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [ConditionalTheory(typeof(PosixSignalRegistrationTests), nameof(NotMobileAndRemoteExecutable))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [MemberData(nameof(PosixSignalAsRawValues))]
         public void SignalHandlerCalledForRawSignals(PosixSignal s)
@@ -202,7 +202,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(nameof(NotMobileAndRemoteExecutable))]
+        [ConditionalFact(typeof(PosixSignalRegistrationTests), nameof(NotMobileAndRemoteExecutable))]
         [OuterLoop("SIGQUIT will generate a coredump")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65000", TestPlatforms.OSX)] // large (~6 GB) coredump on OSX leads to timeout on upload
         public void SignalCanCancelTermination_ExpectedCrash()
@@ -210,7 +210,7 @@ namespace System.Tests
             SignalCanCancelTermination(PosixSignal.SIGQUIT, false, 131);
         }
 
-        [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [ConditionalTheory(typeof(PosixSignalRegistrationTests), nameof(NotMobileAndRemoteExecutable))]
         [InlineData(PosixSignal.SIGINT, true, 0)]
         [InlineData(PosixSignal.SIGINT, false, 130)]
         [InlineData(PosixSignal.SIGTERM, true, 0)]

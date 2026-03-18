@@ -484,18 +484,6 @@ namespace Internal.IL
                 // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                 allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
-                if (allowAsyncVariant)
-                {
-                    bool isDirect = opcode == ILOpcode.call || method.IsCallEffectivelyDirect();
-                    if (isDirect && !method.IsAsync)
-                    {
-                        // Async variant would be a thunk. Do not resolve direct calls
-                        // to async thunks. That just creates and JITs unnecessary
-                        // thunks, and the thunks are harder for the JIT to optimize.
-                        allowAsyncVariant = false;
-                    }
-                }
-
                 if (allowAsyncVariant && MatchTaskAwaitPattern())
                 {
                     runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
@@ -737,8 +725,7 @@ namespace Internal.IL
                 else
                 {
                     // We have the canonical version of the method - find the runtime determined version.
-                    // This is simplified because we know the method is on a valuetype.
-                    Debug.Assert(targetMethod.OwningType.IsValueType);
+                    Debug.Assert(targetMethod.OwningType.IsValueType || targetMethod.Signature.IsStatic);
 
                     MethodDesc targetOfLookup;
                     if (_constrained.IsRuntimeDeterminedType)

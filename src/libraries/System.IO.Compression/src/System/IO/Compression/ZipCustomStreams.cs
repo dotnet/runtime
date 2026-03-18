@@ -334,7 +334,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -357,7 +357,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -395,7 +395,7 @@ namespace System.IO.Compression
 
                 if (_positionInSuperStream > _endInSuperStream - buffer.Length)
                 {
-                    buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
+                    buffer = buffer.Slice(0, (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream));
                 }
 
                 int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);

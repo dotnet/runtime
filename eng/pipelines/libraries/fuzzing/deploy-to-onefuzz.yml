@@ -180,6 +180,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonReaderFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Utf8JsonReaderFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonWriterFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Utf8JsonWriterFuzzer to OneFuzz

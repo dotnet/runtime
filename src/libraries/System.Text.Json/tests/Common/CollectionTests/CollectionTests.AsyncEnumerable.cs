@@ -269,7 +269,7 @@ namespace System.Text.Json.Serialization.Tests
                 return;
             }
 
-            var utf8Stream = new Utf8MemoryStream(@"{ ""Data"" : [0,1,2,3,4] }");
+            var utf8Stream = new Utf8MemoryStream("""{ "Data" : [0,1,2,3,4] }""");
 
             var result = await StreamingSerializer.DeserializeWrapper<AsyncEnumerableDto<int>>(utf8Stream);
             Assert.Equal(new int[] { 0, 1, 2, 3, 4 }, await result.Data.ToListAsync());

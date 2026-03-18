@@ -45,7 +45,9 @@ namespace System.Text.Json.Tests
             string result;
 
             result = JsonSerializer.Serialize(d);
-            Assert.Equal(@"""2000-12-15T22:11:03.055Z""", result);
+            Assert.Equal("""
+                "2000-12-15T22:11:03.055Z"
+                """, result);
 
             Assert.Equal(d, JsonSerializer.Deserialize<DateTime>(result));
 
@@ -61,7 +63,9 @@ namespace System.Text.Json.Tests
             string result;
 
             result = JsonSerializer.Serialize(d);
-            Assert.Equal(@"""2000-12-15T22:11:03.055+00:00""", result);
+            Assert.Equal("""
+                "2000-12-15T22:11:03.055+00:00"
+                """, result);
 
             Assert.Equal(d, JsonSerializer.Deserialize<DateTimeOffset>(result));
         }
@@ -101,7 +105,7 @@ namespace System.Text.Json.Tests
             c.PreField = "Pre";
             c.PostField = "Post";
             json = JsonSerializer.Serialize(c);
-            Assert.Equal(@"{""PreField"":""Pre"",""DateTimeField"":null,""DateTimeOffsetField"":null,""PostField"":""Post""}", json);
+            Assert.Equal("""{"PreField":"Pre","DateTimeField":null,"DateTimeOffsetField":null,"PostField":"Post"}""", json);
         }
 
         [Fact]
@@ -146,7 +150,7 @@ namespace System.Text.Json.Tests
 
             string jsonText = JsonSerializer.Serialize(p, new JsonSerializerOptions { IgnoreNullValues = true});
 
-            Assert.Equal(@"{""Name"":""Keith"",""BirthDate"":""1980-03-08T00:00:00"",""LastModified"":""2009-04-12T20:44:55""}", jsonText);
+            Assert.Equal("""{"Name":"Keith","BirthDate":"1980-03-08T00:00:00","LastModified":"2009-04-12T20:44:55"}""", jsonText);
         }
     }
 

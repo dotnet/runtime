@@ -1193,24 +1193,16 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                // Only handle the case where each branch is a concatenation
-                foreach (RegexNode child in children)
-                {
-                    if (child.Kind != RegexNodeKind.Concatenate || child.ChildCount() < 2)
-                    {
-                        return alternation;
-                    }
-                }
-
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
-                    Debug.Assert(children[startingIndex].Children is List<RegexNode> { Count: >= 2 });
-
                     // Only handle the case where each branch begins with the same One, Notone, Set (individual or loop), or Anchor.
                     // Note that while we can do this for individual characters, fixed length loops, and atomic loops, doing
                     // it for non-atomic variable length loops could change behavior as each branch could otherwise have a
                     // different number of characters consumed by the loop based on what's after it.
-                    RegexNode required = children[startingIndex].Child(0);
+                    // A branch may be either a Concatenation (get its first child) or a single node (e.g., a Set
+                    // that was reduced from a single-child Concatenation after prior prefix extraction).
+                    RegexNode startingNode = children[startingIndex];
+                    RegexNode required = startingNode.Kind == RegexNodeKind.Concatenate ? startingNode.Child(0) : startingNode;
                     switch (required.Kind)
                     {
                         case RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set:
@@ -1230,7 +1222,8 @@ namespace System.Text.RegularExpressions
                     int endingIndex = startingIndex + 1;
                     for (; endingIndex < children.Count; endingIndex++)
                     {
-                        RegexNode other = children[endingIndex].Child(0);
+                        RegexNode endingNode = children[endingIndex];
+                        RegexNode other = endingNode.Kind == RegexNodeKind.Concatenate ? endingNode.Child(0) : endingNode;
                         if (required.Kind != other.Kind ||
                             required.Options != other.Options ||
                             required.M != other.M ||
@@ -1252,8 +1245,16 @@ namespace System.Text.RegularExpressions
                     var newAlternate = new RegexNode(RegexNodeKind.Alternate, alternation.Options);
                     for (int i = startingIndex; i < endingIndex; i++)
                     {
-                        ((List<RegexNode>)children[i].Children!).RemoveAt(0);
-                        newAlternate.AddChild(children[i]);
+                        if (children[i].Kind == RegexNodeKind.Concatenate)
+                        {
+                            ((List<RegexNode>)children[i].Children!).RemoveAt(0);
+                            newAlternate.AddChild(children[i]);
+                        }
+                        else
+                        {
+                            // The entire branch was the extracted prefix; what remains is Empty.
+                            newAlternate.AddChild(new RegexNode(RegexNodeKind.Empty, children[i].Options));
+                        }
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
@@ -2953,8 +2954,16 @@ namespace System.Text.RegularExpressions
         /// consumed. true is only valid when used as part of a search to determine where to try a full match, not as part of
         /// actual matching logic.
         /// </param>
+        /// <param name="forPrefixAnalysis">
+        /// Defaults to false. When true, Capture and Atomic nodes are transparently unwrapped so the string inside
+        /// these groups can be extracted. This must only be set to true for prefix analysis, not for the compiler/source
+        /// generator, as the compiler must not skip Capture nodes (they have side effects that need to be emitted).
+        /// Atomic groups are safe to unwrap here because prefix analysis only examines what characters must appear at a
+        /// given position; atomicity affects whether the engine can backtrack into the group, but does not change which
+        /// characters the group's content matches at that position.
+        /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false)
+        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
@@ -2968,6 +2977,21 @@ namespace System.Text.RegularExpressions
             for (; i < exclusiveChildBound; i++)
             {
                 RegexNode child = Child(i);
+
+                // When used for prefix analysis, unwrap capture groups and atomic groups so
+                // their contents can be examined. Capture unwrapping must not be done when used
+                // by the compiler/source generator, as it would cause capture side effects to be
+                // skipped. Atomic groups may change overall match results by preventing
+                // backtracking (e.g. (?>a|ab)c won't match "abc"), but they don't change what
+                // characters the group matches at its position, so they are safe to unwrap for
+                // prefix analysis.
+                if (forPrefixAnalysis)
+                {
+                    while (child.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
+                    {
+                        child = child.Child(0);
+                    }
+                }
 
                 if (child.Kind is RegexNodeKind.One)
                 {
@@ -3005,6 +3029,26 @@ namespace System.Text.RegularExpressions
                     }
 
                     vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                }
+                else if (child.Kind is RegexNodeKind.Concatenate)
+                {
+                    // This can occur after unwrapping a Capture whose child is a Concatenate.
+                    // Recurse to extract any case-insensitive string from the inner concatenation.
+                    if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out int innerNodesConsumed, out string? innerStr, consumeZeroWidthNodes, forPrefixAnalysis))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(innerStr);
+
+                    // If the inner concatenation wasn't fully consumed, we can't continue past it
+                    // as subsequent siblings aren't guaranteed to immediately follow the extracted prefix.
+                    if (innerNodesConsumed < child.ChildCount())
+                    {
+                        i++;
+                        break;
+                    }
                 }
                 else if (child.Kind is RegexNodeKind.Empty)
                 {

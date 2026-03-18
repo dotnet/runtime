@@ -323,7 +323,7 @@ namespace System.Globalization.Tests
             Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }
 
-        [ConditionalTheory(nameof(IsNotWindowsKanaRegressedVersion))]
+        [ConditionalTheory(typeof(CompareInfoCompareTests), nameof(IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(Compare_Kana_TestData))]
         public void CompareWithKana(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {

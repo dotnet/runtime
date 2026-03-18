@@ -27,8 +27,7 @@ namespace Microsoft.Interop
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<AttributeSyntax> ForwardedAttributes,
             LibraryImportData LibraryImportData,
-            EnvironmentFlags EnvironmentFlags,
-            SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
+            EnvironmentFlags EnvironmentFlags);
 
         public static class StepNames
         {
@@ -38,8 +37,9 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Collect all methods adorned with LibraryImportAttribute
-            var attributedMethods = context.SyntaxProvider
+            // Collect all methods adorned with LibraryImportAttribute and filter out invalid ones
+            // (diagnostics for invalid methods are reported by the analyzer)
+            var methodsToGenerate = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.LibraryImportAttribute,
                     static (node, ct) => node is MethodDeclarationSyntax,
@@ -47,22 +47,12 @@ namespace Microsoft.Interop
                         ? new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
                         : null)
                 .Where(
-                    static modelData => modelData is not null);
-
-            // Validate if attributed methods can have source generated
-            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
-            {
-                DiagnosticInfo? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
-                return diagnostic is not null
-                    ? DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From(diagnostic)
-                    : DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From((data.Syntax, data.Symbol));
-            });
-
-            var methodsToGenerate = context.FilterAndReportDiagnostics(methodsWithDiagnostics);
+                    static modelData => modelData is not null
+                        && Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(modelData.Syntax, modelData.Symbol) is null);
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<MemberDeclarationSyntax> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Select(static (data, ct) => new
                 {
@@ -77,12 +67,10 @@ namespace Microsoft.Interop
                 .Select(
                     static (data, ct) => GenerateSource(data)
                 )
-                .WithComparer(Comparers.GeneratedSyntax)
+                .WithComparer(SyntaxEquivalentComparer.Instance)
                 .WithTrackingName(StepNames.GenerateSingleStub);
 
-            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
-
-            context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
+            context.RegisterConcatenatedSyntaxOutputs(generateSingleStub, "LibraryImports.g.cs");
         }
 
         private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? defaultDllImportSearchPathsAttribute)
@@ -164,11 +152,9 @@ namespace Microsoft.Interop
             CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
             INamedTypeSymbol? defaultDllImportSearchPathsAttrType = environment.DefaultDllImportSearchPathsAttrType;
             // Get any attributes of interest on the method
             AttributeData? generatedDllImportAttr = null;
-            AttributeData? lcidConversionAttr = null;
             AttributeData? defaultDllImportSearchPathsAttribute = null;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
@@ -176,10 +162,6 @@ namespace Microsoft.Interop
                     && attr.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                 {
                     generatedDllImportAttr = attr;
-                }
-                else if (lcidConversionAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, lcidConversionAttrType))
-                {
-                    lcidConversionAttr = attr;
                 }
                 else if (defaultDllImportSearchPathsAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultDllImportSearchPathsAttrType))
                 {
@@ -190,23 +172,20 @@ namespace Microsoft.Interop
             Debug.Assert(generatedDllImportAttr is not null);
 
             var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.Downlevel.SR));
 
             // Process the LibraryImport attribute
             LibraryImportCompilationData libraryImportData =
                 ProcessLibraryImportAttribute(generatedDllImportAttr!) ??
                 new LibraryImportCompilationData("INVALID_CSHARP_SYNTAX");
 
-            if (lcidConversionAttr is not null)
-            {
-                // Using LCIDConversion with LibraryImport is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
-            }
+            // Create a diagnostics bag that discards all diagnostics.
+            // Diagnostics are now reported by the analyzer, not the generator.
+            var discardedDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.Downlevel.SR));
 
             // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
-                DownlevelLibraryImportGeneratorHelpers.CreateMarshallingInfoParser(environment, generatorDiagnostics, symbol, libraryImportData),
+                DownlevelLibraryImportGeneratorHelpers.CreateMarshallingInfoParser(environment, discardedDiagnostics, symbol, libraryImportData),
                 environment,
                 new CodeEmitOptions(SkipInit: false),
                 typeof(DownlevelLibraryImportGenerator).Assembly);
@@ -223,21 +202,21 @@ namespace Microsoft.Interop
                 locations,
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
-                environment.EnvironmentFlags,
-                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray())
+                environment.EnvironmentFlags
                 );
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
+        private static MemberDeclarationSyntax GenerateSource(
             IncrementalStubGenerationContext pinvokeStub)
         {
-            var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), pinvokeStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.Downlevel.SR));
+            // Note: Diagnostics are now reported by the analyzer, so we pass a discarding diagnostics bag
+            var discardedDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), pinvokeStub.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.Downlevel.SR));
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeStubGenerator(
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError,
-                diagnostics,
+                discardedDiagnostics,
                 DownlevelLibraryImportGeneratorHelpers.GeneratorResolver,
                 new CodeEmitOptions(SkipInit: false));
 
@@ -247,7 +226,7 @@ namespace Microsoft.Interop
                 || stubGenerator.HasForwardedTypes
                 || pinvokeStub.LibraryImportData.SetLastError)
             {
-                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+                return PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub);
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes.Array;
@@ -270,23 +249,16 @@ namespace Microsoft.Interop
             dllImport = dllImport.WithLeadingTrivia(Comment("// Local P/Invoke"));
             code = code.AddStatements(dllImport);
 
-            return (pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code)), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+            return pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code));
         }
 
-        private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, IncrementalStubGenerationContext stub, GeneratorDiagnosticsBag diagnostics)
+        private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
         {
             LibraryImportData pinvokeData = stub.LibraryImportData with { EntryPoint = stub.LibraryImportData.EntryPoint ?? userDeclaredMethod.Identifier.ValueText };
 
             if (pinvokeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling)
                 && pinvokeData.StringMarshalling != StringMarshalling.Utf16)
             {
-                // Report a diagnostic when a StringMarshalling other than Utf16 is used.
-                // The other options can't be forwarded for downlevel scenarios.
-                diagnostics.ReportCannotForwardToDllImport(
-                    stub.DiagnosticLocation,
-                    $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
-                    $"{nameof(StringMarshalling)}{Type.Delimiter}{pinvokeData.StringMarshalling}");
-
                 pinvokeData = pinvokeData with { IsUserDefined = pinvokeData.IsUserDefined & ~InteropAttributeMember.StringMarshalling };
             }
 
@@ -408,31 +380,5 @@ namespace Microsoft.Interop
             }
         }
 
-        private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
-        {
-            // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
-            if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is not null
-                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
-            }
-
-            // Verify that the types the method is declared in are marked partial.
-            if (methodSyntax.Parent is TypeDeclarationSyntax typeDecl && !typeDecl.IsInPartialContext(out var nonPartialIdentifier))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, nonPartialIdentifier);
-            }
-
-            // Verify the method does not have a ref return
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
-            }
-
-            return null;
-        }
     }
 }

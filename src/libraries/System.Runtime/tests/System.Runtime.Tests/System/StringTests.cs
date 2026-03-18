@@ -67,7 +67,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSimpleActiveCodePage))]
+        [ConditionalFact(typeof(StringTests), nameof(IsSimpleActiveCodePage))]
         public static unsafe void Ctor_SBytePtr_DoesNotAccessInvalidPage()
         {
             // Allocates a buffer of all ' ' followed by a null terminator,

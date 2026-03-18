@@ -21,12 +21,12 @@ To build the CoreCLR runtime for WebAssembly, use the following command from the
 
 **Linux/macOS:**
 ```bash
-./build.sh -os browser -c Debug -subset clr.runtime
+./build.sh -os browser -c Debug -subset clr+libs
 ```
 
 **Windows:**
 ```cmd
-.\build.cmd -os browser -c Debug -subset clr.runtime
+.\build.cmd -os browser -c Debug -subset clr+libs
 ```
 
 This command will:
@@ -57,6 +57,8 @@ dotnet-serve --directory "artifacts\bin\coreclr\browser.wasm.Debug"
 ```
 
 This will start a local HTTP server and you can open the provided URL in your browser.
+
+You will also need to ensure the `WASM_PRELOAD_DIR` (see `src/coreclr/hosts/corerun/CMakeLists.txt`) is populated during a build of `corerun` so the virtual file system is created. This will require the copying of the libraries (see Console Testing details below) and `HelloWorld.dll` into `./artifacts/bin/coreclr/browser.wasm.Debug/IL` and then the corerun project will then need to be rebuilt.
 
 ### Console Testing
 

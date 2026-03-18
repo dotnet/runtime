@@ -385,7 +385,6 @@ public:
         JITDUMP("digraph SCC_%u {\n", m_num);
         BitVecOps::Iter iterator(m_traits, m_blocks);
         unsigned int    poNum;
-        bool            first = true;
         while (iterator.NextElem(&poNum))
         {
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
@@ -472,7 +471,6 @@ public:
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
             BitVecOps::Iter iterator(m_traits, nestedBlocks);
             unsigned int    poNum;
-            bool            first = true;
             while (iterator.NextElem(&poNum))
             {
                 BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
@@ -546,7 +544,7 @@ public:
     //   * The switch in the dispatcher transfers control to the headers based on on the control var value.
     //
     //   ** if we have an edge pred->header such that pred has no other successors
-    //      we hoist the assingnment into pred.
+    //      we hoist the assignment into pred.
     //
     //   TODO: if the source of an edge to a header is dominated by that header,
     //   the edge can be left as is. (requires dominators)
@@ -621,7 +619,7 @@ public:
                     // is preferable; the assignment should be cheap.
                     //
                     // For now we just check if the pred has only this header as successor.
-                    // We also don't putcode into BBJ_CALLFINALLYRET (note that restriction
+                    // We also don't put code into BBJ_CALLFINALLYRET (note that restriction
                     // is perhaps no longer needed).
                     //
                     if (pred->HasTarget() && (pred->GetTarget() == header) && !pred->isBBCallFinallyPairTail())
@@ -746,9 +744,8 @@ void FgWasm::WasmFindSccs(ArrayStack<Scc*>& sccs)
     {
         JITDUMP("\n*** Sccs\n");
 
-        for (int i = 0; i < sccs.Height(); i++)
+        for (Scc* const scc : sccs.BottomUpOrder())
         {
-            Scc* const scc = sccs.Bottom(i);
             scc->DumpAll();
 
             numIrreducible += scc->NumIrr();
@@ -800,9 +797,8 @@ void FgWasm::WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock
         AssignBlockToScc(block, block, subset, sccs, map);
     }
 
-    for (int i = 0; i < sccs.Height(); i++)
+    for (Scc* const scc : sccs.BottomUpOrder())
     {
-        Scc* const scc = sccs.Bottom(i);
         scc->Finalize();
     }
 }
@@ -941,9 +937,8 @@ bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 {
     bool modified = false;
 
-    for (int i = 0; i < sccs.Height(); i++)
+    for (Scc* const scc : sccs.BottomUpOrder())
     {
-        Scc* const scc = sccs.Bottom(i);
         modified |= scc->TransformViaSwitchDispatch();
     }
 
@@ -1035,7 +1030,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 // not need a new interval for the branch. Because we're walking front to back, we will have already
 // recorded an interval that starts earlier.
 //
-// We then scan the intervals in non-decreasing start order, lookin for earlier intervals that contain
+// We then scan the intervals in non-decreasing start order, looking for earlier intervals that contain
 // the start of the current interval but not the end. When we find one, the start of the current interval
 // will need to decrease so the earlier interval can nest inside. That is, if we have a:[0, 4] and b:[2,6] we
 // will need to decrease the start of b to match a and then reorder, and emit them as b:[0,6], a[0,4].
@@ -1054,12 +1049,13 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 // In what follows we co-opt the bbPreorderNum slot of each block to instead hold the index of the
 // block in the loop-aware RPO.
 //
+// Return Value:
+//    PhaseStatus indicating whether the flow graph was modified.
+//
 // Still TODO
 // * Blocks only reachable via EH
-// * proper handling of BR_TABLE defaults
 // * tail calls (RETURN_CALL)
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
-// * During LaRPO formation, remember the position of the last block in the loop
 // * Compatibility of LaRPO with try region layout constraints (if any)
 //
 PhaseStatus Compiler::fgWasmControlFlow()
@@ -1076,6 +1072,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     if (hasBlocksOnlyReachableViaEH)
     {
         JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        NYI_WASM("Method has blocks only reachable via EH");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1108,13 +1105,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
     assert(numBlocks == dfsCount);
 
-    // Splice in a fake BB0
+    // Splice in a fake BB0. Heap-allocated because it is published
+    // in fgIndexToBlockMap and accessed during codegen.
     //
-    BasicBlock bb0;
-    INDEBUG(bb0.bbNum = 0;);
-    bb0.bbPreorderNum        = numBlocks;
-    bb0.bbPostorderNum       = dfsTree->GetPostOrderCount();
-    initialLayout[numBlocks] = &bb0;
+    BasicBlock* bb0 = new (this, CMK_WasmCfgLowering) BasicBlock();
+    INDEBUG(bb0->bbNum = 0;);
+    bb0->SetFlagsRaw(BBF_EMPTY);
+    bb0->bbPreorderNum       = numBlocks;
+    bb0->bbPostorderNum      = dfsTree->GetPostOrderCount();
+    initialLayout[numBlocks] = bb0;
 
     // -----------------------------------------------
     // (2) Build the intervals
@@ -1135,16 +1134,20 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         if (loop != nullptr)
         {
-            // Find the loop's lexical extent given our ordering
-            // (maybe memoize this during loop finding...)
+            // Loop bodies are contiguous in the LaRPO, so the end position
+            // is the header position plus the number of blocks in the loop.
             //
-            // Note that cursor may end up pointing at BB0
-            //
-            unsigned endCursor = cursor;
-            while ((endCursor < numBlocks) && loop->ContainsBlock(initialLayout[endCursor]))
+            unsigned endCursor = cursor + loop->NumLoopBlocks();
+            assert(endCursor <= numBlocks);
+
+#ifdef DEBUG
+            unsigned endCursorCheck = cursor;
+            while ((endCursorCheck < numBlocks) && loop->ContainsBlock(initialLayout[endCursorCheck]))
             {
-                endCursor++;
+                endCursorCheck++;
             }
+            assert(endCursor == endCursorCheck);
+#endif
 
             WasmInterval* const loopInterval = WasmInterval::NewLoop(this, block, initialLayout[endCursor]);
 
@@ -1343,11 +1346,12 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return false;
         }
 
-        // Tiebreaker
+        // Tiebreaker: loops before blocks, but equal elements must return false
+        // to satisfy strict weak ordering.
         //
-        if (i1->IsLoop())
+        if (i1->IsLoop() != i2->IsLoop())
         {
-            return true;
+            return i1->IsLoop();
         }
 
         return false;
@@ -1418,35 +1422,39 @@ PhaseStatus Compiler::fgWasmControlFlow()
             const unsigned trueNum  = block->GetTrueTarget()->bbPreorderNum;
             const unsigned falseNum = block->GetFalseTarget()->bbPreorderNum;
 
-            // We don't expect degenerate BBJ_COND
-            //
-            assert(trueNum != falseNum);
-
-            // If the true target is the next block, reverse the branch
-            //
-            const bool reverseCondition = trueNum == (cursor + 1);
-
-            if (reverseCondition)
+            if (trueNum == falseNum)
             {
-                JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
-                        block->GetTrueTarget()->bbNum);
-
-                GenTree* const test = block->GetLastLIRNode();
-                assert(test->OperIs(GT_JTRUE));
-                {
-                    GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
-                    // Ensure `gtReverseCond` did not create a new node.
-                    assert(cond == test->AsOp()->gtOp1);
-                    test->AsOp()->gtOp1 = cond;
-                }
-
-                // Rewire the flow
-                //
-                std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                // If branch is degenerate update to BBJ_ALWAYS
+                fgRemoveConditionalJump(block);
             }
             else
             {
-                JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+                // If the true target is the next block, reverse the branch
+                //
+                const bool reverseCondition = trueNum == (cursor + 1);
+
+                if (reverseCondition)
+                {
+                    JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
+                            block->GetTrueTarget()->bbNum);
+
+                    GenTree* const test = block->GetLastLIRNode();
+                    assert(test->OperIs(GT_JTRUE));
+                    {
+                        GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
+                        // Ensure `gtReverseCond` did not create a new node.
+                        assert(cond == test->AsOp()->gtOp1);
+                        test->AsOp()->gtOp1 = cond;
+                    }
+
+                    // Rewire the flow
+                    //
+                    std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                }
+                else
+                {
+                    JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+                }
             }
         }
     }
@@ -1495,9 +1503,9 @@ void Compiler::fgDumpWasmControlFlow()
         }
         else
         {
-            for (int i = 0; i < activeIntervals.Height(); i++)
+            for (WasmInterval* const interval : activeIntervals.TopDownOrder())
             {
-                JITDUMP(" [%u,%u]", activeIntervals.Top(i)->Start(), activeIntervals.Top(i)->End());
+                JITDUMP(" [%u,%u]", interval->Start(), interval->End());
             }
         }
         JITDUMP("\n");

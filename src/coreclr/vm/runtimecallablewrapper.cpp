@@ -137,20 +137,16 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         GCPROTECT_BEGIN(gc);
 
         // Create an instance of the object
-        MethodDescCallSite createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
-        gc.pProxy = createObj.Call_RetOBJECTREF(NULL);
+        UnmanagedCallersOnlyCaller createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
+        createObj.InvokeThrowing(&gc.pProxy);
         gc.pType = rth.GetManagedClassObject();
 
         // Query the current licensing context
-        MethodDescCallSite getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO, &gc.pProxy);
+        UnmanagedCallersOnlyCaller getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO);
         CLR_BOOL fDesignTime = FALSE;
-        ARG_SLOT args[4];
-        args[0] = ObjToArgSlot(gc.pProxy);
-        args[1] = ObjToArgSlot(gc.pType);
-        args[2] = (ARG_SLOT)&fDesignTime;
-        args[3] = (ARG_SLOT)(BSTR*)&bstrKey;
-
-        getCurrentContextInfo.Call(args);
+        INT_PTR bstrKeyRaw = NULL;
+        getCurrentContextInfo.InvokeThrowing(&gc.pProxy, &gc.pType, &fDesignTime, &bstrKeyRaw);
+        bstrKey = (BSTR)bstrKeyRaw;
 
         if (fDesignTime)
         {
@@ -181,11 +177,9 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             // Store the requested license key
             if (SUCCEEDED(hr))
             {
-                MethodDescCallSite saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT, &gc.pProxy);
-
-                args[0] = ObjToArgSlot(gc.pProxy);
-                args[1] = (ARG_SLOT)(BSTR)bstrKey;
-                saveKeyInCurrentContext.Call(args);
+                UnmanagedCallersOnlyCaller saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT);
+                BSTR bstrKeyValue = (BSTR)bstrKey;
+                saveKeyInCurrentContext.InvokeThrowing(&gc.pProxy, reinterpret_cast<INT_PTR>(bstrKeyValue));
             }
         }
 

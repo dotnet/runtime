@@ -2993,7 +2993,7 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
 {
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
         type([TestLibrary]TestLibrary.PlatformDetection)
-        string[1] ('IsThreadingSupported')
+        string[1] ('IsMultithreadingSupported')
     }
   .maxstack  4
   .entrypoint
