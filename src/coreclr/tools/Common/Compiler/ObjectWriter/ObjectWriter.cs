@@ -332,6 +332,7 @@ namespace ILCompiler.ObjectWriter
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
+            {
                 foreach (var symbolicRelocation in relocationList)
                 {
                     if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
@@ -339,6 +340,7 @@ namespace ILCompiler.ObjectWriter
                         undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
                     }
                 }
+            }
             return undefinedSymbolSet;
         }
 

@@ -370,6 +370,10 @@ namespace ILCompiler.ObjectWriter
 
                 uint rawSectionSize = (uint)webcilSection.Stream.Length;
                 uint alignedSectionSize = (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
+
+                // Webcil files are flat-mapped, since (for example) there is no uninitialized data which is expanded on load.
+                // As a result, the virtual size is the same as the aligned raw size (including padding), and
+                // the pointer to raw data for each section is also the same as the virtual address.
                 uint virtualSize = alignedSectionSize;
                 WebcilSectionHeader sectionHeader = new WebcilSectionHeader(
                     virtualSize: virtualSize,
@@ -492,6 +496,8 @@ namespace ILCompiler.ObjectWriter
 
         private Dictionary<string, WasmGlobal> _definedGlobals = new();
 
+        // TODO-Wasm: In the future, we may want to consider representing Wasm globals in the dependency graph so that they
+        // can be referenced by other nodes and we can make effective use of them.  
         private void WriteGlobal(SectionWriter writer, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
         {
             WasmGlobal global = new WasmGlobal(
@@ -762,6 +768,9 @@ namespace ILCompiler.ObjectWriter
                             break;
                         }
 
+                        // TODO-Wasm: None of the IMAGE_REL type relocs should occur in Wasm
+                        // code, and we should add asserts for this once we've updated the necessary
+                        // dependency nodes to emit the proper reloc type on Wasm.
                         case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                             // No action required
                             break;
