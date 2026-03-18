@@ -795,7 +795,7 @@ namespace System.Text.Unicode
                     255, 255, 255, 255, 255, 255, 255, 255,
                     255, 255, 255, 255, 255, 0b11110000 - 1, 0b11100000 - 1, 0b11000000 - 1);
             Vector128<byte> prevIncomplete = Vector128.SubtractSaturate(prevInputBlock, maxValue);
-            int numIncomplete; // maximum number of incomplete bytes to go back
+            int numIncomplete = 0; // maximum number of incomplete bytes to go back
 
             // The error bit encoding is slightly different from the paper, instead it follows the
             // SimdUnicode implementation. TOO_LARGE_1000 and OVERLONG_4 can share the same bit as
@@ -867,10 +867,11 @@ namespace System.Text.Unicode
             Vector128<sbyte> vecContinuationBytes = Vector128<sbyte>.Zero;
             int overflowCounter = 0;
 
+            bool foundError = false;
+
             int processedLength = 0;
             for (; processedLength <= inputLength - Vector128<byte>.Count; processedLength += Vector128<byte>.Count)
             {
-
                 Vector128<byte> currentBlock = Vector128.Load(pInputBuffer + processedLength);
                 if (!Ascii.VectorContainsNonAsciiChar(currentBlock))
                 {
@@ -879,30 +880,37 @@ namespace System.Text.Unicode
                     if (prevIncomplete != Vector128<byte>.Zero)
                     {
                         numIncomplete = Vector128<byte>.Count - 3;
-                        goto RewindPointerAndAdjustCounters;
+                        foundError = true;
+                        break;
                     }
 
                     // Often, we have a lot of ASCII characters in a row.
-                    int localasciirun = Vector128<byte>.Count;
-                    if (processedLength + localasciirun + Vector128<byte>.Count <= inputLength)
+                    if (processedLength + (Vector128<byte>.Count * 2) <= inputLength)
                     {
-                        Vector128<byte> block = Vector128.Load(pInputBuffer + processedLength + localasciirun);
+                        byte* pAsciiRunStart   = pInputBuffer + processedLength;
+                        byte* pAsciiRunCurrent = pAsciiRunStart + Vector128<byte>.Count; // The first block is already checked
+
+                        Vector128<byte> block = Vector128.Load(pAsciiRunCurrent);
                         if (!Ascii.VectorContainsNonAsciiChar(block))
                         {
-                            localasciirun += Vector128<byte>.Count;
-                            for (; localasciirun <= inputLength - processedLength - (Vector128<byte>.Count * 4); localasciirun += (Vector128<byte>.Count * 4))
+                            // If we see more ASCII characters, unroll the loop by 4.
+
+                            byte* pAsciiRunEnd = pAsciiRunStart + inputLength - processedLength - (Vector128<byte>.Count * 4);
+
+                            for (; pAsciiRunCurrent <= pAsciiRunEnd; pAsciiRunCurrent += (Vector128<byte>.Count * 4))
                             {
-                                Vector128<byte> block1 = Vector128.Load(pInputBuffer + processedLength + localasciirun);
-                                Vector128<byte> block2 = Vector128.Load(pInputBuffer + processedLength + localasciirun + (Vector128<byte>.Count * 1));
-                                Vector128<byte> block3 = Vector128.Load(pInputBuffer + processedLength + localasciirun + (Vector128<byte>.Count * 2));
-                                Vector128<byte> block4 = Vector128.Load(pInputBuffer + processedLength + localasciirun + (Vector128<byte>.Count * 3));
+                                Vector128<byte> block1 = Vector128.Load(pAsciiRunCurrent);
+                                Vector128<byte> block2 = Vector128.Load(pAsciiRunCurrent + (Vector128<byte>.Count * 1));
+                                Vector128<byte> block3 = Vector128.Load(pAsciiRunCurrent + (Vector128<byte>.Count * 2));
+                                Vector128<byte> block4 = Vector128.Load(pAsciiRunCurrent + (Vector128<byte>.Count * 3));
                                 if (Ascii.VectorContainsNonAsciiChar(block1 | block2 | block3 | block4))
                                 {
                                     break;
                                 }
                             }
                         }
-                        processedLength += localasciirun - Vector128<byte>.Count;
+
+                        processedLength += (int)(pAsciiRunCurrent - pAsciiRunStart) - Vector128<byte>.Count;
                     }
                 }
                 else
@@ -949,7 +957,8 @@ namespace System.Text.Unicode
                     {
                         // Error is found if the error bit mask is non-zero.
                         numIncomplete = (processedLength == 0) ? 0 : 3;
-                        goto RewindPointerAndAdjustCounters;
+                        foundError = true;
+                        break;
                     }
 
                     prevIncomplete = Vector128.SubtractSaturate(currentBlock, maxValue);
@@ -981,38 +990,13 @@ namespace System.Text.Unicode
                     }
                     else
                     {
-                        numContinuationBytes += BitOperations.PopCount(byte2High.ExtractMostSignificantBits());
-                        numFourByteSequences += BitOperations.PopCount(Vector128.SubtractSaturate(currentBlock, fourthByte).ExtractMostSignificantBits());
+                        numContinuationBytes += Vector128.CountWhereAllBitsSet(byte2High);
+                        numFourByteSequences += Vector128.CountWhereAllBitsSet(Vector128.SubtractSaturate(currentBlock, fourthByte));
                     }
                 }
             }
 
-            bool hasIncomplete = prevIncomplete != Vector128<byte>.Zero;
-            if (processedLength == inputLength && !hasIncomplete)
-            {
-                // No invalid byte is found across the whole input length.
-
-                if (AdvSimd.Arm64.IsSupported)
-                {
-                    numContinuationBytes -= AdvSimd.Arm64.AddAcrossWidening(vecContinuationBytes).ToScalar();
-                    if (vecFourByteSequences != Vector128<sbyte>.Zero)
-                    {
-                        numFourByteSequences -= AdvSimd.Arm64.AddAcrossWidening(vecFourByteSequences).ToScalar();
-                    }
-                }
-                else
-                {
-                    // Do nothing since numContinuationBytes and numFourByteSequences were incremented directly.
-                }
-
-                (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSIMDAdjustments(numFourByteSequences, numContinuationBytes);
-                return pInputBuffer + inputLength;
-            }
-
-            numIncomplete = hasIncomplete ? 3 : 0;
-
-        RewindPointerAndAdjustCounters:
-
+            // Sum up the remaining values from vecContinuationBytes and vecFourByteSequences.
             if (AdvSimd.Arm64.IsSupported)
             {
                 numContinuationBytes -= AdvSimd.Arm64.AddAcrossWidening(vecContinuationBytes).ToScalar();
@@ -1024,6 +1008,21 @@ namespace System.Text.Unicode
             else
             {
                 // Do nothing since numContinuationBytes and numFourByteSequences were incremented directly.
+            }
+
+            if (!foundError)
+            {
+                bool hasIncomplete = prevIncomplete != Vector128<byte>.Zero;
+                if (processedLength == inputLength && !hasIncomplete)
+                {
+                    // No invalid byte is found across the whole input length.
+
+                    (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSIMDAdjustments(numFourByteSequences, numContinuationBytes);
+                    return pInputBuffer + inputLength;
+                }
+
+                // Still has incomplete data to validate.
+                numIncomplete = hasIncomplete ? 3 : 0;
             }
 
             // Find the first invalid byte, going back if necessary.
@@ -1039,7 +1038,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe byte* SimpleRewindAndValidateWithErrors(int howFarBack, byte* buf, int len)
+        private static byte* SimpleRewindAndValidateWithErrors(int howFarBack, byte* buf, int len)
         {
             // We scan the input from buf to len, possibly going back howFarBack bytes, to find the end of
             // a valid UTF-8 sequence. We return buf + len if the buffer is valid, otherwise we return the
@@ -1168,7 +1167,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void AdjustCounters(byte* pProcessed, byte* pInvalid, ref int numFourByteSequences, ref int numContinuationBytes)
+        private static void AdjustCounters(byte* pProcessed, byte* pInvalid, ref int numFourByteSequences, ref int numContinuationBytes)
         {
             if (pInvalid < pProcessed)
             {
