@@ -501,8 +501,11 @@ namespace System.Text.RegularExpressions.Generator
                     // Skip call sites inside nested type declarations — they belong to
                     // a different type and won't affect this type's generated names.
                     // Extension blocks are not nested types, so don't skip those.
-                    if (descendant.Ancestors().Any(a =>
-                        a is TypeDeclarationSyntax && a != declSyntax && a is not ExtensionBlockDeclarationSyntax))
+                    // Only check ancestors up to (not including) declSyntax, so that
+                    // types *containing* declSyntax (e.g., an outer class) are not
+                    // mistaken for nested types.
+                    if (descendant.Ancestors().TakeWhile(a => a != declSyntax).Any(a =>
+                        a is TypeDeclarationSyntax && a is not ExtensionBlockDeclarationSyntax))
                     {
                         continue;
                     }

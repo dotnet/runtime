@@ -1451,6 +1451,335 @@ internal partial class C
         }
 
         [Fact]
+        public async Task CodeFixerNestedTypeCallsDoNotAffectOuterTypeNaming()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+
+    class Inner
+    {
+        public static Regex X()
+        {
+            return [|new Regex|](""inner"");
+        }
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    partial class Inner
+    {
+        public static Regex X()
+        {
+            return MyRegex;
+        }
+
+        [GeneratedRegex(""inner"")]
+        private static partial Regex MyRegex { get; }
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                NumberOfFixAllIterations = 2,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFixerNonConstantPatternDoesNotAffectNaming()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A(string pattern)
+    {
+        var r = new Regex(pattern);
+        return r;
+    }
+
+    public static Regex B()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A(string pattern)
+    {
+        var r = new Regex(pattern);
+        return r;
+    }
+
+    public static Regex B()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerPartialStructGeneratesUniqueNames()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial struct S
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial struct S
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial struct S
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial struct S
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerMixedConstructorAndStaticMethodCallsAcrossPartials()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial class C
+{
+    public static bool B(string input)
+    {
+        return [|Regex.IsMatch|](input, ""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static bool B(string input)
+    {
+        return MyRegex1.IsMatch(input);
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerNestedPartialTypeDoesNotInterfereWithOuterPartial()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class Outer
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""outer1"");
+    }
+
+    internal partial class Inner
+    {
+        public static Regex X()
+        {
+            return [|new Regex|](""inner1"");
+        }
+    }
+}
+
+internal partial class Outer
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""outer2"");
+    }
+
+    internal partial class Inner
+    {
+        public static Regex Y()
+        {
+            return [|new Regex|](""inner2"");
+        }
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class Outer
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    internal partial class Inner
+    {
+        public static Regex X()
+        {
+            return MyRegex;
+        }
+
+        [GeneratedRegex(""inner1"")]
+        private static partial Regex MyRegex { get; }
+    }
+
+    [GeneratedRegex(""outer1"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class Outer
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    internal partial class Inner
+    {
+        public static Regex Y()
+        {
+            return MyRegex1;
+        }
+
+        [GeneratedRegex(""inner2"")]
+        private static partial Regex MyRegex1 { get; }
+    }
+
+    [GeneratedRegex(""outer2"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                NumberOfFixAllIterations = 2,
+            }.RunAsync();
+        }
+
+        [Fact]
         public async Task CodeFixerSupportsNamedParameters()
         {
             string test = @"using System.Text.RegularExpressions;
