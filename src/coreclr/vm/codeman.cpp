@@ -252,17 +252,6 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     _ASSERTE(unwindInfo->iRangeStart == rangeStart);
     _ASSERTE(unwindInfo->iRangeEnd == rangeEnd);
 
-    // Means we had a failure publishing to the OS, in this case we give up
-    if (unwindInfo->hHandle == NULL)
-     {
-         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-         // Re-read the table under the publish lock in case a flush/unregister/register
-         // sequence was in progress when we first inspected hHandle.
-         unwindInfo = *unwindInfoPtr;
-         if (unwindInfo == NULL || unwindInfo->hHandle == NULL)
-             return;
-     }
-
     // Add to the pending buffer. If the buffer is full, flush it first and retry.
     while (true)
     {
