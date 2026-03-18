@@ -1917,6 +1917,8 @@ void emitter::emitInsSve_R_F(
 void emitter::emitInsSve_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
+    assert(IsMovInstruction(ins));
+
     emitAttr size = EA_SIZE(attr);
 
     switch (ins)
