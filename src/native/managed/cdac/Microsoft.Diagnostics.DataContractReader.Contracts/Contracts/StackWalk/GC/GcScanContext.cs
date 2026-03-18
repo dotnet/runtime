@@ -48,6 +48,7 @@ internal class GcScanContext
         if (flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR) && ResolveInteriorPointers)
         {
             // TODO(stackref): handle interior pointers
+            // https://github.com/dotnet/runtime/issues/125728
             throw new NotImplementedException();
         }
 
@@ -81,6 +82,7 @@ internal class GcScanContext
         if (flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR) && ResolveInteriorPointers)
         {
             // TODO(stackref): handle interior pointers
+            // https://github.com/dotnet/runtime/issues/125728
             throw new NotImplementedException();
         }
 

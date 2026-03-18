@@ -1146,7 +1146,7 @@ typedef struct IMAGE_COR_ILMETHOD_SECT_FAT
 /* If COR_ILMETHOD_SECT_HEADER::Kind() = CorILMethod_Sect_EHTable then the attribute
    is a list of exception handling clauses.  There are two formats, fat or small
 */
-typedef enum CorExceptionFlag                       // [cDAC] [ExecutionManager]: Contract depends on these values.
+typedef enum CorExceptionFlag                       // definitions for the Flags field below (for both big and small)
 {
     COR_ILEXCEPTION_CLAUSE_NONE,                    // This is a typed handler
     COR_ILEXCEPTION_CLAUSE_FILTER  = 0x0001,        // If this bit is on, then this EH entry is for a filter
