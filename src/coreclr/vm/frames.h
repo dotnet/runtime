@@ -2560,6 +2560,12 @@ public:
         m_isFaulting = isFaulting;
     }
 
+    Interception GetInterception_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_isFaulting ? INTERCEPTION_EXCEPTION : INTERCEPTION_NONE;
+    }
+
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
     {
         fn(dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation)), sc, 0);

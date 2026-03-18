@@ -131,15 +131,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeFileHandle CreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
-            if ((share & FileShare.Inheritable) != 0)
-            {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = Interop.BOOL.TRUE
-                };
-            }
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((share & FileShare.Inheritable) != 0);
 
             int fAccess =
                 ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
@@ -203,9 +195,10 @@ namespace Microsoft.Win32.SafeHandles
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                // Only throw for errors that indicate there is not enough space.
-                // SetFileInformationByHandle fails with ERROR_DISK_FULL in certain cases when the size is disallowed by filesystem,
-                // such as >4GB on FAT32 volume. We cannot distinguish them currently.
+                // Only throw for errors that indicate there is not enough space or the file is too large.
+                // SetFileInformationByHandle fails with ERROR_DISK_FULL when the size is disallowed by filesystem,
+                // such as >4GB on a FAT32 volume, and with ERROR_INVALID_PARAMETER on NTFS when the requested
+                // allocation size exceeds the maximum file size supported by the filesystem or volume configuration.
                 if (errorCode is Interop.Errors.ERROR_DISK_FULL or
                     Interop.Errors.ERROR_FILE_TOO_LARGE or
                     Interop.Errors.ERROR_INVALID_PARAMETER)

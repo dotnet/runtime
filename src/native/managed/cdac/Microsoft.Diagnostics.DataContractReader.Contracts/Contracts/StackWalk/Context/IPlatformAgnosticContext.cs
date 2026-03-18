@@ -7,24 +7,23 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 public interface IPlatformAgnosticContext
 {
-    abstract uint Size { get; }
-    abstract uint DefaultContextFlags { get; }
+    public abstract uint Size { get; }
+    public abstract uint DefaultContextFlags { get; }
 
-    TargetPointer StackPointer { get; set; }
-    TargetPointer InstructionPointer { get; set; }
-    TargetPointer FramePointer { get; set; }
+    public TargetPointer StackPointer { get; set; }
+    public TargetPointer InstructionPointer { get; set; }
+    public TargetPointer FramePointer { get; set; }
 
-    uint SPRegisterNumber { get; }
-    TargetPointer GetRegisterValue(uint registerNumber);
-
-    abstract void Clear();
-    abstract void ReadFromAddress(Target target, TargetPointer address);
-    abstract void FillFromBuffer(Span<byte> buffer);
-    abstract byte[] GetBytes();
-    abstract IPlatformAgnosticContext Clone();
-    abstract bool TrySetRegister(Target target, string fieldName, TargetNUInt value);
-    abstract bool TryReadRegister(Target target, string fieldName, out TargetNUInt value);
-    abstract void Unwind(Target target);
+    public abstract void Clear();
+    public abstract void ReadFromAddress(Target target, TargetPointer address);
+    public abstract void FillFromBuffer(Span<byte> buffer);
+    public abstract byte[] GetBytes();
+    public abstract IPlatformAgnosticContext Clone();
+    public abstract bool TrySetRegister(string fieldName, TargetNUInt value);
+    public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
+    public abstract bool TrySetRegister(int number, TargetNUInt value);
+    public abstract bool TryReadRegister(int number, out TargetNUInt value);
+    public abstract void Unwind(Target target);
 
     static IPlatformAgnosticContext GetContextForPlatform(Target target)
     {

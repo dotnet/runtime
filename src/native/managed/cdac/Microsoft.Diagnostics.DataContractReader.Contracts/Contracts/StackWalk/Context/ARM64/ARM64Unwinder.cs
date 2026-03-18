@@ -1187,41 +1187,8 @@ internal class ARM64Unwinder(Target target)
 
     private static void SetRegister(ref ARM64Context context, uint regIndex, ulong value)
     {
-        switch (regIndex)
-        {
-            case 0: context.X0 = value; break;
-            case 1: context.X1 = value; break;
-            case 2: context.X2 = value; break;
-            case 3: context.X3 = value; break;
-            case 4: context.X4 = value; break;
-            case 5: context.X5 = value; break;
-            case 6: context.X6 = value; break;
-            case 7: context.X7 = value; break;
-            case 8: context.X8 = value; break;
-            case 9: context.X9 = value; break;
-            case 10: context.X10 = value; break;
-            case 11: context.X11 = value; break;
-            case 12: context.X12 = value; break;
-            case 13: context.X13 = value; break;
-            case 14: context.X14 = value; break;
-            case 15: context.X15 = value; break;
-            case 16: context.X16 = value; break;
-            case 17: context.X17 = value; break;
-            case 18: context.X18 = value; break;
-            case 19: context.X19 = value; break;
-            case 20: context.X20 = value; break;
-            case 21: context.X21 = value; break;
-            case 22: context.X22 = value; break;
-            case 23: context.X23 = value; break;
-            case 24: context.X24 = value; break;
-            case 25: context.X25 = value; break;
-            case 26: context.X26 = value; break;
-            case 27: context.X27 = value; break;
-            case 28: context.X28 = value; break;
-            case 29: context.Fp = value; break;
-            case 30: context.Lr = value; break;
-            default: throw new ArgumentOutOfRangeException(nameof(regIndex));
-        }
+        if (!context.TrySetRegister((int)regIndex, new TargetNUInt(value)))
+            throw new ArgumentOutOfRangeException(nameof(regIndex));
     }
 
     private static bool OPCODE_IS_END(byte opcode)

@@ -918,51 +918,12 @@ internal class ARMUnwinder(Target target)
 
     private static void SetRegister(ref ARMContext context, int regIndex, uint value)
     {
-        switch (regIndex)
-        {
-            case 0: context.R0 = value; break;
-            case 1: context.R1 = value; break;
-            case 2: context.R2 = value; break;
-            case 3: context.R3 = value; break;
-            case 4: context.R4 = value; break;
-            case 5: context.R5 = value; break;
-            case 6: context.R6 = value; break;
-            case 7: context.R7 = value; break;
-            case 8: context.R8 = value; break;
-            case 9: context.R9 = value; break;
-            case 10: context.R10 = value; break;
-            case 11: context.R11 = value; break;
-            case 12: context.R12 = value; break;
-            case 13: context.Sp = value; break;
-            case 14: context.Lr = value; break;
-            case 15: context.Pc = value; break;
-            case 16: context.Cpsr = value; break;
-            default: throw new ArgumentOutOfRangeException(nameof(regIndex));
-        }
+        if (!context.TrySetRegister(regIndex, new TargetNUInt(value)))
+            throw new ArgumentOutOfRangeException(nameof(regIndex));
     }
 
-    private static uint GetRegister(ref ARMContext context, int regIndex) =>
-    regIndex switch
-    {
-        0 => context.R0,
-        1 => context.R1,
-        2 => context.R2,
-        3 => context.R3,
-        4 => context.R4,
-        5 => context.R5,
-        6 => context.R6,
-        7 => context.R7,
-        8 => context.R8,
-        9 => context.R9,
-        10 => context.R10,
-        11 => context.R11,
-        12 => context.R12,
-        13 => context.Sp,
-        14 => context.Lr,
-        15 => context.Pc,
-        16 => context.Cpsr,
-        _ => throw new ArgumentOutOfRangeException(nameof(regIndex)),
-    };
+    private static uint GetRegister(ref ARMContext context, int regIndex)
+        => context.TryReadRegister(regIndex, out TargetNUInt value) ? (uint)value.Value : throw new ArgumentOutOfRangeException(nameof(regIndex));
 
     #endregion
 }

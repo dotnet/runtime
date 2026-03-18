@@ -54,7 +54,7 @@ internal class GcScanner
 
                 if (isRegister)
                 {
-                    TargetPointer regValue = context.GetRegisterValue(registerNumber);
+                    TargetPointer regValue = ReadRegisterValue(context, (int)registerNumber);
                     GcScanSlotLocation loc = new((int)registerNumber, 0, false);
                     scanContext.GCEnumCallback(regValue, scanFlags, loc);
                 }
@@ -63,20 +63,13 @@ internal class GcScanner
                     TargetPointer baseAddr = spBase switch
                     {
                         1 => context.StackPointer,                                  // GC_SP_REL
-                        2 => context.GetRegisterValue(stackBaseRegister),            // GC_FRAMEREG_REL
+                        2 => ReadRegisterValue(context, (int)stackBaseRegister),     // GC_FRAMEREG_REL
                         0 => GetCallerSP(context, ref callerSP),                    // GC_CALLER_SP_REL
                         _ => throw new InvalidOperationException($"Unknown stack slot base: {spBase}"),
                     };
 
                     TargetPointer addr = new(baseAddr.Value + (ulong)(long)spOffset);
-                    int regForBase = spBase switch
-                    {
-                        1 => (int)context.SPRegisterNumber,           // GC_SP_REL
-                        2 => (int)stackBaseRegister,                  // GC_FRAMEREG_REL
-                        0 => (int)context.SPRegisterNumber,           // GC_CALLER_SP_REL
-                        _ => 0,
-                    };
-                    GcScanSlotLocation loc = new(regForBase, spOffset, true);
+                    GcScanSlotLocation loc = new((int)spBase, spOffset, true);
                     scanContext.GCEnumCallback(addr, scanFlags, loc);
                 }
             });
@@ -95,6 +88,14 @@ internal class GcScanner
             cached = callerContext.StackPointer;
         }
         return cached.Value;
+    }
+
+    private static TargetPointer ReadRegisterValue(IPlatformAgnosticContext context, int registerNumber)
+    {
+        if (!context.TryReadRegister(registerNumber, out TargetNUInt value))
+            throw new ArgumentOutOfRangeException(nameof(registerNumber), $"Register number {registerNumber} not found");
+
+        return new TargetPointer(value.Value);
     }
 
 }
