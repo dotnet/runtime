@@ -721,6 +721,32 @@ namespace System.Numerics.Tests
             Assert.Equal(expected2, r2);
         }
 
+        [Theory]
+        [InlineData(33, 16, 2)]   // Even modulus ≥ ReducerThreshold → Barrett with multi-limb exponent
+        [InlineData(65, 32, 2)]   // Large even modulus → Barrett + pool allocation
+        public void ModPowEvenLargeModulusMultiLimbExponent(int modulusLimbs, int baseLimbs, int exponentLimbs)
+        {
+            var rng = new Random(14000 + modulusLimbs);
+            BigInteger modulus = MakePositive(modulusLimbs, rng);
+            modulus &= ~BigInteger.One; // force even
+            if (modulus < 2) modulus = 2;
+
+            BigInteger b = MakePositive(baseLimbs, rng);
+            BigInteger exp = MakePositive(exponentLimbs, rng);
+
+            BigInteger result = BigInteger.ModPow(b, exp, modulus);
+
+            Assert.True(result >= 0);
+            Assert.True(result < modulus);
+
+            // Cross-validate: a^e mod m == (a^e1 * a^e2) mod m  where e = e1 + e2
+            BigInteger e1 = exp >> 1;
+            BigInteger e2 = exp - e1;
+            BigInteger r1 = BigInteger.ModPow(b, e1, modulus);
+            BigInteger r2 = BigInteger.ModPow(b, e2, modulus);
+            Assert.Equal(result, (r1 * r2) % modulus);
+        }
+
         // --- GCD with specific size differences ---
 
         [Theory]
