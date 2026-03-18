@@ -779,6 +779,70 @@ namespace System.Numerics.Tests
             Assert.Equal(gcd, BigInteger.GreatestCommonDivisor(a, -b));
         }
 
+        // --- GCD with zero (exercises array-sharing paths) ---
+
+        public static IEnumerable<object[]> GcdWithZeroData()
+        {
+            // Single-limb values that fit in _sign (trivialLeft/trivialRight both true)
+            yield return new object[] { BigInteger.Zero, BigInteger.Zero, BigInteger.Zero };
+            yield return new object[] { BigInteger.Zero, BigInteger.One, BigInteger.One };
+            yield return new object[] { BigInteger.One, BigInteger.Zero, BigInteger.One };
+            yield return new object[] { BigInteger.Zero, BigInteger.MinusOne, BigInteger.One };
+            yield return new object[] { BigInteger.MinusOne, BigInteger.Zero, BigInteger.One };
+            yield return new object[] { BigInteger.Zero, new BigInteger(42), new BigInteger(42) };
+            yield return new object[] { new BigInteger(-42), BigInteger.Zero, new BigInteger(42) };
+
+            // Multi-limb values (exercises the trivialLeft / trivialRight paths that share _bits)
+            BigInteger twoLimb = (BigInteger.One << (nint.Size * 8)) + 1;       // just over 1 limb
+            BigInteger threeLimb = (BigInteger.One << (nint.Size * 8 * 2)) + 1; // just over 2 limbs
+            BigInteger large = BigInteger.Pow(new BigInteger(long.MaxValue), 4); // many limbs
+
+            yield return new object[] { BigInteger.Zero, twoLimb, twoLimb };
+            yield return new object[] { twoLimb, BigInteger.Zero, twoLimb };
+            yield return new object[] { BigInteger.Zero, -twoLimb, twoLimb };
+            yield return new object[] { -twoLimb, BigInteger.Zero, twoLimb };
+
+            yield return new object[] { BigInteger.Zero, threeLimb, threeLimb };
+            yield return new object[] { threeLimb, BigInteger.Zero, threeLimb };
+            yield return new object[] { BigInteger.Zero, -threeLimb, threeLimb };
+            yield return new object[] { -threeLimb, BigInteger.Zero, threeLimb };
+
+            yield return new object[] { BigInteger.Zero, large, large };
+            yield return new object[] { large, BigInteger.Zero, large };
+            yield return new object[] { BigInteger.Zero, -large, large };
+            yield return new object[] { -large, BigInteger.Zero, large };
+
+            // One-limb value that doesn't fit in _sign (magnitude >= nint.MaxValue)
+            BigInteger oneLimbLarge = new BigInteger(nint.MaxValue) + 1; // requires _bits with 1 element
+            yield return new object[] { BigInteger.Zero, oneLimbLarge, oneLimbLarge };
+            yield return new object[] { oneLimbLarge, BigInteger.Zero, oneLimbLarge };
+            yield return new object[] { BigInteger.Zero, -oneLimbLarge, oneLimbLarge };
+            yield return new object[] { -oneLimbLarge, BigInteger.Zero, oneLimbLarge };
+
+            // Non-zero trivial + multi-limb (tests Gcd(bits, scalar) path)
+            yield return new object[] { new BigInteger(6), twoLimb, BigInteger.GreatestCommonDivisor(6, twoLimb) };
+            yield return new object[] { twoLimb, new BigInteger(6), BigInteger.GreatestCommonDivisor(twoLimb, 6) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GcdWithZeroData))]
+        public void GcdWithZero(BigInteger left, BigInteger right, BigInteger expected)
+        {
+            BigInteger result = BigInteger.GreatestCommonDivisor(left, right);
+            Assert.Equal(expected, result);
+
+            // GCD is always non-negative
+            Assert.True(result >= 0);
+
+            // GCD is symmetric
+            Assert.Equal(result, BigInteger.GreatestCommonDivisor(right, left));
+
+            // GCD with negated inputs should give the same result
+            Assert.Equal(result, BigInteger.GreatestCommonDivisor(-left, right));
+            Assert.Equal(result, BigInteger.GreatestCommonDivisor(left, -right));
+            Assert.Equal(result, BigInteger.GreatestCommonDivisor(-left, -right));
+        }
+
         // --- CopySign coverage ---
 
         [Theory]

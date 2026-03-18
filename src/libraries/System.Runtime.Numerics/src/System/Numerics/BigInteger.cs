@@ -1000,7 +1000,7 @@ namespace System.Numerics
                 Debug.Assert(right._bits != null);
                 return left._sign != 0
                     ? BigIntegerCalculator.Gcd(right._bits, NumericsHelpers.Abs(left._sign))
-                    : new BigInteger(right._bits, negative: false);
+                    : new BigInteger(+1, right._bits);
             }
 
             if (trivialRight)
@@ -1008,7 +1008,7 @@ namespace System.Numerics
                 Debug.Assert(left._bits != null);
                 return right._sign != 0
                     ? BigIntegerCalculator.Gcd(left._bits, NumericsHelpers.Abs(right._sign))
-                    : new BigInteger(left._bits, negative: false);
+                    : new BigInteger(+1, left._bits);
             }
 
             Debug.Assert(left._bits != null && right._bits != null);
