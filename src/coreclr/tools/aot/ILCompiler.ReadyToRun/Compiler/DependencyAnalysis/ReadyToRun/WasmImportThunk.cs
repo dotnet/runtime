@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (useVirtualCall)
             {
                 // In wasm we should always be using a helper to get the function pointer target, and then dispatching on that instead of using a thunk
-                throw new System.NotSupportedException();
+                throw new System.NotSupportedException(nameof(useVirtualCall));
             }
             else if (useJumpableStub)
             {
@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else if (helperId == ReadyToRunHelper.GetString)
             {
                 // This helper is only used for a size optimization, which will not be relevant in the WASM case, so we should fix any logic in the compiler that tries to use this sort of helper
-                throw new System.NotSupportedException();
+                throw new System.NotSupportedException(nameof(helperId));
             }
             else if (helperId == ReadyToRunHelper.DelayLoad_MethodCall ||
                 helperId == ReadyToRunHelper.DelayLoad_Helper ||
@@ -107,12 +107,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
+        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
+
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
             Debug.Assert(_thunkKind == ImportThunkKind.DelayLoadHelper);
             Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
 
-            ISymbolNode helperTypeIndex = factory.WasmTypeNode(new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 });
+            ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
             // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
             // The general logic is...

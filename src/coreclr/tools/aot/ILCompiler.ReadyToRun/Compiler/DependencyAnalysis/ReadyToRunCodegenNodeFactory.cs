@@ -701,10 +701,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return unchecked(31 * Helper.GetHashCode() +
-                    31 * ContainingImportSection.GetHashCode() +
-                    31 * UseVirtualCall.GetHashCode() +
-                    31 * UseJumpableStub.GetHashCode());
+                return HashCode.Combine(Helper, ContainingImportSection, UseVirtualCall, UseJumpableStub);
             }
         }
 
@@ -748,11 +745,11 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return unchecked(31 * Helper.GetHashCode() +
-                    31 * TypeNode.GetHashCode() +
-                    31 * ContainingImportSection.GetHashCode() +
-                    31 * UseVirtualCall.GetHashCode() +
-                    31 * UseJumpableStub.GetHashCode());
+                return HashCode.Combine(Helper.GetHashCode(),
+                    TypeNode.GetHashCode(),
+                    ContainingImportSection.GetHashCode(),
+                    UseVirtualCall.GetHashCode(),
+                    UseJumpableStub.GetHashCode());
             }
         }
 

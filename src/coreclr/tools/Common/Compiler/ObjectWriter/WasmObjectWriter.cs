@@ -423,6 +423,11 @@ namespace ILCompiler.ObjectWriter
                             // WASM-TODO actually implement this
                             break;
                         }
+                        case RelocType.WASM_TABLE_INDEX_U32:
+                        {
+                            // WASM-TODO actually implement this
+                            break;
+                        }
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now

@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
@@ -45,11 +46,17 @@ namespace ILCompiler.ObjectWriter
             _params = ps;
         }
 
+        private static ulong lastLengthPrefix;
+
         public readonly void EmitLengthPrefix(ulong length)
         {
             switch (_params.LengthEncodeFormat)
             {
                 case LengthEncodeFormat.ULEB128:
+                    if (length == 44 && lastLengthPrefix == 88)
+                    {
+                        Debug.Assert(false);
+                    }
                     WriteULEB128(length);
                     break;
                 case LengthEncodeFormat.None:
@@ -57,6 +64,7 @@ namespace ILCompiler.ObjectWriter
                 default:
                     throw new InvalidOperationException("Length prefix encoding not specified");
             }
+            lastLengthPrefix = (ulong)length;
         }
 
         public readonly uint LengthPrefixSize(int length)

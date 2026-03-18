@@ -15,7 +15,6 @@ using ILCompiler.DependencyAnalysis.Wasm;
 namespace ILCompiler.ObjectWriter.WasmInstructions
 {
     // Represents a Wasm function body in the code section.
-    // Encodes as: ULEB128(0) (zero local declarations) + instructions + 0x0B end
     public class WasmFunctionBody : IWasmEncodable
     {
         public readonly WasmFuncType Signature;

@@ -74,6 +74,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.AddSymbol(this);
             WasmTypeNode typeNode;
 
+            RelocType tableIndexPointerRelocType = factory.Target.PointerSize == 4 ? RelocType.WASM_TABLE_INDEX_U32 : RelocType.WASM_TABLE_INDEX_U64;
+
             if (_import.Signature is GenericLookupSignature)
             {
                 typeNode = factory.WasmTypeNode(factory.Target.PointerSize == 4 ? _genericLookupTypes32Bit : _genericLookupTypes64Bit);
@@ -82,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 typeNode = factory.WasmTypeNode(((MethodFixupSignature)(_import.Signature)).Method);
             }
-            builder.EmitReloc(factory.WasmImportThunk(typeNode, _helperId, _import.Table, _useVirtualCall, _useJumpableStub), RelocType.IMAGE_REL_BASED_ADDR32NB);
+            builder.EmitReloc(factory.WasmImportThunk(typeNode, _helperId, _import.Table, _useVirtualCall, _useJumpableStub), tableIndexPointerRelocType);
             builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);
             if (factory.Target.PointerSize == 8)
             {
