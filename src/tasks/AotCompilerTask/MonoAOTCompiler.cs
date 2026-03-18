@@ -545,11 +545,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             try
             {
                 if (be9 is not null)
-                    allowedParallelism = be9.RequestCores(allowedParallelism);
+                {
+                    int requestedCores = be9.RequestCores(allowedParallelism);
+                    if (requestedCores > 0)
+                        allowedParallelism = requestedCores;
+                    else
+                        be9 = null;
+                }
             }
-            catch (NotImplementedException)
+            catch (Exception)
             {
-                // RequestCores is not implemented in TaskHostFactory
+                // RequestCores is not implemented in TaskHostFactory, or IBuildEngine callbacks are not supported
                 be9 = null;
             }
 
