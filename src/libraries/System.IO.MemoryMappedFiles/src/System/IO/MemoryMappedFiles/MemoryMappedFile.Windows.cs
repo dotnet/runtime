@@ -254,16 +254,7 @@ namespace System.IO.MemoryMappedFiles
         /// Helper method used to extract the native binary security descriptor from the MemoryMappedFileSecurity
         /// type. If pinningHandle is not null, caller must free it AFTER the call to CreateFile has returned.
         /// </summary>
-        private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
-        {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            if ((inheritability & HandleInheritability.Inheritable) != 0)
-            {
-                secAttrs = default;
-                secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
-                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
-            }
-            return secAttrs;
-        }
+        private static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability) =>
+            Interop.Kernel32.SECURITY_ATTRIBUTES.Create((inheritability & HandleInheritability.Inheritable) != 0);
     }
 }
