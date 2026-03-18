@@ -38,7 +38,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLKem? GetMLKemPublicKey(this X509Certificate2 certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
@@ -83,7 +82,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static MLKem? GetMLKemPrivateKey(this X509Certificate2 certificate)
         {
             ArgumentNullException.ThrowIfNull(certificate);
@@ -121,7 +119,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="PlatformNotSupportedException">
         ///   Combining a certificate and an ML-KEM private key is not supported on this platform.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, MLKem privateKey)
         {
             ArgumentNullException.ThrowIfNull(certificate);
