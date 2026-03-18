@@ -188,9 +188,9 @@
     <MicrosoftNETCoreCoreDisToolsVersion>1.4.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <!-- xharness -->
-    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>11.0.0-prerelease.26167.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>11.0.0-prerelease.26167.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>11.0.0-prerelease.26167.2</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>11.0.0-prerelease.26168.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>11.0.0-prerelease.26168.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>11.0.0-prerelease.26168.1</MicrosoftDotNetXHarnessCLIVersion>
     <!-- hotreload-utils -->
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>9.0.0-alpha.0.26152.4</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
