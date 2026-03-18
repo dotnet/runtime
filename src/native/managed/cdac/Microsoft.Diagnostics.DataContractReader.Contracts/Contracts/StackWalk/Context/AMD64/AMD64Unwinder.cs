@@ -1262,32 +1262,13 @@ internal class AMD64Unwinder(Target target)
 
     private static bool IsRexPrefix(byte b) => (b & 0xf0) == 0x40;
 
-    private static TargetPointer GetRegister(AMD64Context context, byte register) => register switch
-    {
-        0 => context.Rax,
-        1 => context.Rcx,
-        2 => context.Rdx,
-        3 => context.Rbx,
-        4 => context.Rsp,
-        5 => context.Rbp,
-        6 => context.Rsi,
-        7 => context.Rdi,
-        8 => context.R8,
-        9 => context.R9,
-        10 => context.R10,
-        11 => context.R11,
-        12 => context.R12,
-        13 => context.R13,
-        14 => context.R14,
-        15 => context.R15,
-        _ => throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.")
-    };
+    private static TargetPointer GetRegister(AMD64Context context, byte register)
+        => context.TryReadRegister(register, out TargetNUInt value) ? value.Value : throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
 
     private static void SetRegister(ref AMD64Context context, byte register, TargetPointer value)
     {
-        if (!context.TryGetRegisterName(register, out string? name))
+        if (!context.TrySetRegister(register, new TargetNUInt(value)))
             throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
-        context.TrySetRegister(name, new TargetNUInt(value));
     }
 
     private static void UnwinderAssert(bool condition, string? message = null)

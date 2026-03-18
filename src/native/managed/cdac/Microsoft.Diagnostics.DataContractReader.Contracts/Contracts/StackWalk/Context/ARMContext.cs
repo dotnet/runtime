@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.ARM;
 
@@ -105,18 +102,55 @@ internal struct ARMContext : IPlatformContext
         return false;
     }
 
-
-    // Maps numbered registers (0–16) to their canonical names for by-number dispatch.
-    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
+    public bool TrySetRegister(int number, TargetNUInt value)
     {
-        [0] = "R0", [1] = "R1", [2] = "R2", [3] = "R3", [4] = "R4",
-        [5] = "R5", [6] = "R6", [7] = "R7", [8] = "R8", [9] = "R9",
-        [10] = "R10", [11] = "R11", [12] = "R12", [13] = "Sp", [14] = "Lr",
-        [15] = "Pc", [16] = "Cpsr",
-    }.ToFrozenDictionary();
+        switch (number)
+        {
+            case 0: R0 = (uint)value.Value; return true;
+            case 1: R1 = (uint)value.Value; return true;
+            case 2: R2 = (uint)value.Value; return true;
+            case 3: R3 = (uint)value.Value; return true;
+            case 4: R4 = (uint)value.Value; return true;
+            case 5: R5 = (uint)value.Value; return true;
+            case 6: R6 = (uint)value.Value; return true;
+            case 7: R7 = (uint)value.Value; return true;
+            case 8: R8 = (uint)value.Value; return true;
+            case 9: R9 = (uint)value.Value; return true;
+            case 10: R10 = (uint)value.Value; return true;
+            case 11: R11 = (uint)value.Value; return true;
+            case 12: R12 = (uint)value.Value; return true;
+            case 13: Sp = (uint)value.Value; return true;
+            case 14: Lr = (uint)value.Value; return true;
+            case 15: Pc = (uint)value.Value; return true;
+            case 16: Cpsr = (uint)value.Value; return true;
+            default: return false;
+        }
+    }
 
-    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
-        => s_registersByNumber.TryGetValue(number, out name);
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(R0); return true;
+            case 1: value = new TargetNUInt(R1); return true;
+            case 2: value = new TargetNUInt(R2); return true;
+            case 3: value = new TargetNUInt(R3); return true;
+            case 4: value = new TargetNUInt(R4); return true;
+            case 5: value = new TargetNUInt(R5); return true;
+            case 6: value = new TargetNUInt(R6); return true;
+            case 7: value = new TargetNUInt(R7); return true;
+            case 8: value = new TargetNUInt(R8); return true;
+            case 9: value = new TargetNUInt(R9); return true;
+            case 10: value = new TargetNUInt(R10); return true;
+            case 11: value = new TargetNUInt(R11); return true;
+            case 12: value = new TargetNUInt(R12); return true;
+            case 13: value = new TargetNUInt(Sp); return true;
+            case 14: value = new TargetNUInt(Lr); return true;
+            case 15: value = new TargetNUInt(Pc); return true;
+            case 16: value = new TargetNUInt(Cpsr); return true;
+            default: value = default; return false;
+        }
+    }
 
     // Control flags
 

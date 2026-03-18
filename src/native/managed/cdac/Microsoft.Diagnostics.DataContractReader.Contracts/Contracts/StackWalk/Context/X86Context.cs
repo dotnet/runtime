@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
@@ -136,16 +133,37 @@ public struct X86Context : IPlatformContext
         return false;
     }
 
-
-    // Maps numbered GP registers (0–7) to their canonical names for by-number dispatch.
-    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
+    public bool TrySetRegister(int number, TargetNUInt value)
     {
-        [0] = "Eax", [1] = "Ecx", [2] = "Edx", [3] = "Ebx",
-        [4] = "Esp", [5] = "Ebp", [6] = "Esi", [7] = "Edi",
-    }.ToFrozenDictionary();
+        switch (number)
+        {
+            case 0: Eax = (uint)value.Value; return true;
+            case 1: Ecx = (uint)value.Value; return true;
+            case 2: Edx = (uint)value.Value; return true;
+            case 3: Ebx = (uint)value.Value; return true;
+            case 4: Esp = (uint)value.Value; return true;
+            case 5: Ebp = (uint)value.Value; return true;
+            case 6: Esi = (uint)value.Value; return true;
+            case 7: Edi = (uint)value.Value; return true;
+            default: return false;
+        }
+    }
 
-    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
-        => s_registersByNumber.TryGetValue(number, out name);
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(Eax); return true;
+            case 1: value = new TargetNUInt(Ecx); return true;
+            case 2: value = new TargetNUInt(Edx); return true;
+            case 3: value = new TargetNUInt(Ebx); return true;
+            case 4: value = new TargetNUInt(Esp); return true;
+            case 5: value = new TargetNUInt(Ebp); return true;
+            case 6: value = new TargetNUInt(Esi); return true;
+            case 7: value = new TargetNUInt(Edi); return true;
+            default: value = default; return false;
+        }
+    }
 
     [FieldOffset(0x0)]
     public uint ContextFlags;

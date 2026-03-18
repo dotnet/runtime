@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.AMD64;
 
@@ -139,17 +136,54 @@ internal struct AMD64Context : IPlatformContext
         return false;
     }
 
-    // Maps numbered GP registers (0–15) to their canonical names for by-number dispatch.
-    private static readonly FrozenDictionary<int, string> s_registersByNumber = new Dictionary<int, string>
+    public bool TrySetRegister(int number, TargetNUInt value)
     {
-        [0] = "Rax", [1] = "Rcx", [2] = "Rdx", [3] = "Rbx",
-        [4] = "Rsp", [5] = "Rbp", [6] = "Rsi", [7] = "Rdi",
-        [8] = "R8", [9] = "R9", [10] = "R10", [11] = "R11",
-        [12] = "R12", [13] = "R13", [14] = "R14", [15] = "R15",
-    }.ToFrozenDictionary();
+        switch (number)
+        {
+            case 0: Rax = value.Value; return true;
+            case 1: Rcx = value.Value; return true;
+            case 2: Rdx = value.Value; return true;
+            case 3: Rbx = value.Value; return true;
+            case 4: Rsp = value.Value; return true;
+            case 5: Rbp = value.Value; return true;
+            case 6: Rsi = value.Value; return true;
+            case 7: Rdi = value.Value; return true;
+            case 8: R8 = value.Value; return true;
+            case 9: R9 = value.Value; return true;
+            case 10: R10 = value.Value; return true;
+            case 11: R11 = value.Value; return true;
+            case 12: R12 = value.Value; return true;
+            case 13: R13 = value.Value; return true;
+            case 14: R14 = value.Value; return true;
+            case 15: R15 = value.Value; return true;
+            default: return false;
+        }
+    }
 
-    public bool TryGetRegisterName(int number, [NotNullWhen(true)] out string? name)
-        => s_registersByNumber.TryGetValue(number, out name);
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(Rax); return true;
+            case 1: value = new TargetNUInt(Rcx); return true;
+            case 2: value = new TargetNUInt(Rdx); return true;
+            case 3: value = new TargetNUInt(Rbx); return true;
+            case 4: value = new TargetNUInt(Rsp); return true;
+            case 5: value = new TargetNUInt(Rbp); return true;
+            case 6: value = new TargetNUInt(Rsi); return true;
+            case 7: value = new TargetNUInt(Rdi); return true;
+            case 8: value = new TargetNUInt(R8); return true;
+            case 9: value = new TargetNUInt(R9); return true;
+            case 10: value = new TargetNUInt(R10); return true;
+            case 11: value = new TargetNUInt(R11); return true;
+            case 12: value = new TargetNUInt(R12); return true;
+            case 13: value = new TargetNUInt(R13); return true;
+            case 14: value = new TargetNUInt(R14); return true;
+            case 15: value = new TargetNUInt(R15); return true;
+            default: value = default; return false;
+        }
+    }
+
 
     [FieldOffset(0x0)]
     public ulong P1Home;

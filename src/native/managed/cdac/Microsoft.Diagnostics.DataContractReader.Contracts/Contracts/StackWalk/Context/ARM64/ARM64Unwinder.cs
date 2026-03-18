@@ -1187,9 +1187,8 @@ internal class ARM64Unwinder(Target target)
 
     private static void SetRegister(ref ARM64Context context, uint regIndex, ulong value)
     {
-        if (!context.TryGetRegisterName((int)regIndex, out string? name))
+        if (!context.TrySetRegister((int)regIndex, new TargetNUInt(value)))
             throw new ArgumentOutOfRangeException(nameof(regIndex));
-        context.TrySetRegister(name, new TargetNUInt(value));
     }
 
     private static bool OPCODE_IS_END(byte opcode)

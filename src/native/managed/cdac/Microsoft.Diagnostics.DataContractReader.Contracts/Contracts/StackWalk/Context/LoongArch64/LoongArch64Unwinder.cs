@@ -721,8 +721,7 @@ internal class LoongArch64Unwinder(Target target)
 
     private static void SetRegisterValue(ref LoongArch64Context context, uint regNum, ulong value)
     {
-        if (context.TryGetRegisterName((int)regNum, out string? name))
-            context.TrySetRegister(name, new TargetNUInt(value));
+        context.TrySetRegister((int)regNum, new TargetNUInt(value));
     }
 
     #endregion
