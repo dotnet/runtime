@@ -9110,6 +9110,11 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    public sealed partial class RequiresUnsafeAttribute : System.Attribute
+    {
+        public RequiresUnsafeAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple=false, Inherited=false)]
     public sealed partial class SetsRequiredMembersAttribute : System.Attribute
     {
@@ -14027,6 +14032,13 @@ namespace System.Runtime.CompilerServices
         Default = 0,
         Always = 1,
         Sometimes = 2,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, AllowMultiple=false, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class MemorySafetyRulesAttribute : System.Attribute
+    {
+        public MemorySafetyRulesAttribute(int version) { }
+        public int Version { get { throw null; } }
     }
     public enum MethodCodeType
     {
