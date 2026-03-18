@@ -286,6 +286,19 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Disables HTTP/2 on this pool so that future requests use HTTP/1.1.
+        /// Called when a session-based authentication challenge (Negotiate/NTLM) is detected on HTTP/2,
+        /// since these authentication schemes require a persistent connection that HTTP/2 cannot provide.
+        /// </summary>
+        private void DisableHttp2()
+        {
+            lock (SyncObj)
+            {
+                _http2Enabled = false;
+            }
+        }
+
         private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");

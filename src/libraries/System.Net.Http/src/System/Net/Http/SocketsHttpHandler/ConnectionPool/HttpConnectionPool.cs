@@ -537,16 +537,16 @@ namespace System.Net.Http
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnSessionAuthenticationChallenge)
                 {
                     // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
-                    // These authentication schemes don't work properly over HTTP/2, so we need to downgrade to HTTP/1.1.
-                    // The version policy was already validated before throwing this exception.
+                    // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                    // Disable HTTP/2 on this pool so all future requests go directly to HTTP/1.1.
                     Debug.Assert(request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower);
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Retrying request on HTTP/1.1 due to session-based authentication challenge on HTTP/2: {e}");
+                        Trace($"Disabling HTTP/2 on pool due to session-based authentication challenge. Retrying on HTTP/1.1: {e}");
                     }
 
-                    // Retry on HTTP/1.1 for session-based authentication.
+                    DisableHttp2();
                     request.Version = HttpVersion.Version11;
                 }
                 finally
