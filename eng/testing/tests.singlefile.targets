@@ -30,11 +30,11 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
-    <!-- NativeAOT always enables trimming. Set this early so liveILLink.targets
-         computes _RequiresLiveILLink=true and loads ILLink targets that define
-         _PrepareTrimConfiguration. Previously set by the directly-imported
-         Microsoft.NETCore.Native.targets, now deferred via AfterMicrosoftNETSdkTargets. -->
-    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order
+         (before ILLink), matching how the shipping SDK imports them. -->
+    <PublishAot>true</PublishAot>
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
 
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
@@ -46,14 +46,6 @@
 
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <DefineConstants>$(DefineConstants);TEST_READY_TO_RUN_COMPILED</DefineConstants>
-  </PropertyGroup>
-
-  <!-- Import ILC targets after the SDK targets so that the NativeCompile target redefinition
-       in Microsoft.NETCore.Native.Publish.targets comes AFTER the SDK's empty placeholder
-       in Microsoft.NET.Publish.targets (MSBuild last-definition-wins). This mirrors how
-       ILLink targets are imported via $(ILLinkTargetsPath) at the end of Microsoft.NET.Sdk.targets. -->
-  <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
-    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">

@@ -544,11 +544,11 @@
 
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
 
-    <!-- NativeAOT always enables trimming. Set this early so liveILLink.targets (imported below)
-         computes _RequiresLiveILLink=true and loads the ILLink targets that define
-         _PrepareTrimConfiguration. Previously this was set by Microsoft.NETCore.Native.targets
-         during direct import, but now that import is deferred via AfterMicrosoftNETSdkTargets. -->
-    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order
+         (before ILLink), matching how the shipping SDK imports them. -->
+    <PublishAot>true</PublishAot>
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
 
     <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
@@ -581,12 +581,6 @@
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
-  <!-- Import ILC targets after the SDK targets so that the NativeCompile target redefinition
-       in Microsoft.NETCore.Native.Publish.targets comes AFTER the SDK's empty placeholder
-       in Microsoft.NET.Publish.targets (MSBuild last-definition-wins). -->
-  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
-    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</AfterMicrosoftNETSdkTargets>
-  </PropertyGroup>
   <Import Project="$(RepoRoot)eng/liveILLink.targets" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
