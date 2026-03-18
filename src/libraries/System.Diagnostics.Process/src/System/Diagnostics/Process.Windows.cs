@@ -18,10 +18,6 @@ namespace System.Diagnostics
     {
         private static readonly object s_createProcessLock = new object();
 
-        // When not disabled via the environment variable, use overlapped (async) I/O for the parent's end
-        // of stdout/stderr pipes so that reads don't tie up a thread-pool thread per pipe instance.
-        private static readonly bool s_useAsyncReads = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_DIAGNOSTICS_PROCESS_DISABLE_ASYNC_READS") != "true";
-
         private string? _processName;
 
         /// <summary>
@@ -477,7 +473,7 @@ namespace System.Diagnostics
 
                         if (startInfo.RedirectStandardOutput)
                         {
-                            CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false, asyncReads: s_useAsyncReads);
+                            CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false, asyncReads: true);
                         }
                         else
                         {
@@ -486,7 +482,7 @@ namespace System.Diagnostics
 
                         if (startInfo.RedirectStandardError)
                         {
-                            CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false, asyncReads: s_useAsyncReads);
+                            CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false, asyncReads: true);
                         }
                         else
                         {
@@ -644,12 +640,12 @@ namespace System.Diagnostics
             if (startInfo.RedirectStandardOutput)
             {
                 Encoding enc = startInfo.StandardOutputEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-                _standardOutput = new StreamReader(new FileStream(parentOutputPipeHandle!, FileAccess.Read, 4096, false), enc, true, 4096);
+                _standardOutput = new StreamReader(new FileStream(parentOutputPipeHandle!, FileAccess.Read, 4096, parentOutputPipeHandle!.IsAsync), enc, true, 4096);
             }
             if (startInfo.RedirectStandardError)
             {
                 Encoding enc = startInfo.StandardErrorEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-                _standardError = new StreamReader(new FileStream(parentErrorPipeHandle!, FileAccess.Read, 4096, false), enc, true, 4096);
+                _standardError = new StreamReader(new FileStream(parentErrorPipeHandle!, FileAccess.Read, 4096, parentErrorPipeHandle!.IsAsync), enc, true, 4096);
             }
 
             commandLine.Dispose();
