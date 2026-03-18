@@ -945,77 +945,11 @@ namespace System.Formats.Tar
             CollectExtendedAttributesFromStandardFieldsIfNeeded(_ea ??= new Dictionary<string, string>());
         }
 
+        // At write time, we both add and remove entries to ensure the EA dictionary
+        // is fully normalized. Delegates to the shared helper with removeIfUnneeded: true.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded(Dictionary<string, string> ea)
         {
-            ea[PaxEaName] = _name;
-            ea[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
-
-            TryAddStringField(ea, PaxEaGName, _gName, FieldLengths.GName);
-            TryAddStringField(ea, PaxEaUName, _uName, FieldLengths.UName);
-
-            if (!string.IsNullOrEmpty(_linkName))
-            {
-                Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
-                ea[PaxEaLinkName] = _linkName;
-            }
-
-            if (_size > Octal12ByteFieldMaxValue)
-            {
-                ea[PaxEaSize] = _size.ToString();
-            }
-            else
-            {
-                ea.Remove(PaxEaSize);
-            }
-
-            if (_uid > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaUid] = _uid.ToString();
-            }
-            else
-            {
-                ea.Remove(PaxEaUid);
-            }
-
-            if (_gid > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaGid] = _gid.ToString();
-            }
-            else
-            {
-                ea.Remove(PaxEaGid);
-            }
-
-            if (_devMajor > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaDevMajor] = _devMajor.ToString();
-            }
-            else
-            {
-                ea.Remove(PaxEaDevMajor);
-            }
-
-            if (_devMinor > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaDevMinor] = _devMinor.ToString();
-            }
-            else
-            {
-                ea.Remove(PaxEaDevMinor);
-            }
-
-            // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.
-            static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string? value, int maxLength)
-            {
-                if (string.IsNullOrEmpty(value) || GetUtf8TextLength(value) <= maxLength)
-                {
-                    extendedAttributes.Remove(key);
-                }
-                else
-                {
-                    extendedAttributes[key] = value;
-                }
-            }
+            AddOrUpdateStandardFieldExtendedAttributes(ea, removeIfUnneeded: true);
         }
 
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number

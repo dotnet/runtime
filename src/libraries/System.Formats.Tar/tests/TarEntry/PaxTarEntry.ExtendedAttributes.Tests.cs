@@ -137,11 +137,49 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("renamed.txt", readEntry.ExtendedAttributes[PaxEaName]);
         }
 
+        // Helper to build a raw PAX archive MemoryStream from EA data and header fields.
+        // Provides a seekable MemoryStream positioned at 0, ready for TarReader.
+        private static MemoryStream BuildRawPaxArchiveStream(
+            string headerName,
+            Dictionary<string, string> extraEAs = null,
+            int uid = 0, int gid = 0,
+            long mtime = 1700000000,
+            bool includePathInEA = true)
+        {
+            var ms = new MemoryStream();
+            byte[] eaData;
+            if (includePathInEA)
+            {
+                eaData = BuildRawPaxExtendedAttributeData(headerName, extraEAs);
+            }
+            else
+            {
+                var sb = new System.Text.StringBuilder();
+                if (extraEAs is not null)
+                {
+                    foreach (var kvp in extraEAs)
+                    {
+                        AppendRawPaxExtendedAttributeRecord(sb, kvp.Key, kvp.Value);
+                    }
+                }
+                eaData = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+            }
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, headerName, Convert.ToInt32("644", 8), uid, gid, 0, mtime, '0', "");
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+            ms.Position = 0;
+            return ms;
+        }
+
         [Fact]
         public void EAPreservationOnRead_StandardFieldEAs_StillVisibleInExtendedAttributes()
         {
-            // Build a raw archive with uid/gid EAs that fit in standard fields
-            using var ms = new MemoryStream();
             var extraEAs = new Dictionary<string, string>
             {
                 [PaxEaUid] = "1000",
@@ -149,22 +187,10 @@ namespace System.Formats.Tar.Tests
                 [PaxEaUName] = "testuser",
                 [PaxEaGName] = "testgroup",
             };
-            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
-            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 1000, 2000, 0, 1700000000, '0', "");
-            PadToTarBlockBoundary(ms);
-
-            ms.Write(new byte[1024]);
-
-            ms.Position = 0;
+            using MemoryStream ms = BuildRawPaxArchiveStream("file.txt", extraEAs, uid: 1000, gid: 2000);
             using TarReader reader = new(ms);
             PaxTarEntry readEntry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
 
-            // Standard-field EAs should still be visible in ExtendedAttributes after reading
             Assert.Equal(1000, readEntry.Uid);
             Assert.Equal(2000, readEntry.Gid);
             Assert.Equal("testuser", readEntry.UserName);
@@ -211,20 +237,9 @@ namespace System.Formats.Tar.Tests
             long headerMtime = 1700000000;
             string eaMtime = "9876543210.123";
 
-            using var ms = new MemoryStream();
-            var extraEAs = new Dictionary<string, string> { ["mtime"] = eaMtime };
-            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
-            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 0, 0, 0, headerMtime, '0', "");
-            PadToTarBlockBoundary(ms);
-
-            ms.Write(new byte[1024]);
-
-            ms.Position = 0;
+            using MemoryStream ms = BuildRawPaxArchiveStream("file.txt",
+                extraEAs: new Dictionary<string, string> { ["mtime"] = eaMtime },
+                mtime: headerMtime);
             using TarReader reader = new(ms);
             PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
 
@@ -237,25 +252,13 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void BadArchive_UidGidDisagreement_EAWins()
         {
-            using var ms = new MemoryStream();
             var extraEAs = new Dictionary<string, string>
             {
                 ["uid"] = "1000",
                 ["gid"] = "2000"
             };
-            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
             // Header has uid=500, gid=600 (different from EA values)
-            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 500, 600, 0, 1700000000, '0', "");
-            PadToTarBlockBoundary(ms);
-
-            ms.Write(new byte[1024]);
-
-            ms.Position = 0;
+            using MemoryStream ms = BuildRawPaxArchiveStream("file.txt", extraEAs, uid: 500, gid: 600);
             using TarReader reader = new(ms);
             PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
 
@@ -271,22 +274,9 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void BadArchive_MissingEAPath_HeaderNameIsUsed()
         {
-            using var ms = new MemoryStream();
-            // Build EA data without a "path" key, only mtime
-            var sb = new System.Text.StringBuilder();
-            AppendRawPaxExtendedAttributeRecord(sb, "mtime", "1700000000");
-            byte[] eaData = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
-            WriteRawTarHeader(ms, "fallback-name.txt", Convert.ToInt32("644", 8), 0, 0, 0, 1700000000, '0', "");
-            PadToTarBlockBoundary(ms);
-
-            ms.Write(new byte[1024]);
-
-            ms.Position = 0;
+            using MemoryStream ms = BuildRawPaxArchiveStream("fallback-name.txt",
+                extraEAs: new Dictionary<string, string> { ["mtime"] = "1700000000" },
+                includePathInEA: false);
             using TarReader reader = new(ms);
             PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
 
@@ -297,20 +287,8 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void BadArchive_MalformedNumericEA_Throws()
         {
-            using var ms = new MemoryStream();
-            var extraEAs = new Dictionary<string, string> { ["uid"] = "notanumber" };
-            byte[] eaData = BuildRawPaxExtendedAttributeData("file.txt", extraEAs);
-
-            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
-            ms.Write(eaData);
-            PadToTarBlockBoundary(ms);
-
-            WriteRawTarHeader(ms, "file.txt", Convert.ToInt32("644", 8), 0, 0, 0, 1700000000, '0', "");
-            PadToTarBlockBoundary(ms);
-
-            ms.Write(new byte[1024]);
-
-            ms.Position = 0;
+            using MemoryStream ms = BuildRawPaxArchiveStream("file.txt",
+                extraEAs: new Dictionary<string, string> { ["uid"] = "notanumber" });
             using TarReader reader = new(ms);
             Assert.Throws<FormatException>(() => reader.GetNextEntry());
         }

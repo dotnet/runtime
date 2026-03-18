@@ -416,46 +416,27 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
-        [Fact]
-        public void PaxReader_EAPathOverridesHeaderName()
+        public static IEnumerable<object[]> EAPathOverrideData()
         {
-            byte[] content = "test data"u8.ToArray();
-            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("data/report.txt", "config/settings.txt", content);
-
-            using var stream = new MemoryStream(archive);
-            using var reader = new TarReader(stream);
-            TarEntry entry = reader.GetNextEntry();
-
-            Assert.NotNull(entry);
-            Assert.Equal("config/settings.txt", entry.Name);
+            // (headerName, eaPath, expectedName)
+            yield return new object[] { "data/report.txt", "config/settings.txt", "config/settings.txt" };
+            yield return new object[] { "../../escape.txt", "safe.txt", "safe.txt" };
+            yield return new object[] { "safe.txt", "../../escape.txt", "../../escape.txt" };
         }
 
-        [Fact]
-        public void PaxReader_EAPathOverridesHeaderName_TraversalInHeader()
+        [Theory]
+        [MemberData(nameof(EAPathOverrideData))]
+        public void PaxReader_EAPathOverridesHeaderName(string headerName, string eaPath, string expectedName)
         {
             byte[] content = "test data"u8.ToArray();
-            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("../../escape.txt", "safe.txt", content);
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride(headerName, eaPath, content);
 
             using var stream = new MemoryStream(archive);
             using var reader = new TarReader(stream);
             TarEntry entry = reader.GetNextEntry();
 
             Assert.NotNull(entry);
-            Assert.Equal("safe.txt", entry.Name);
-        }
-
-        [Fact]
-        public void PaxReader_EAPathOverridesHeaderName_TraversalInEA()
-        {
-            byte[] content = "test data"u8.ToArray();
-            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("safe.txt", "../../escape.txt", content);
-
-            using var stream = new MemoryStream(archive);
-            using var reader = new TarReader(stream);
-            TarEntry entry = reader.GetNextEntry();
-
-            Assert.NotNull(entry);
-            Assert.Contains("..", entry.Name);
+            Assert.Equal(expectedName, entry.Name);
         }
 
         [Fact]
@@ -471,30 +452,19 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("./other.txt", entry.LinkName);
         }
 
-        [Fact]
-        public void PaxReader_EASizeOverridesHeaderSize_Larger()
+        public static IEnumerable<object[]> EASizeOverrideData()
         {
-            byte[] actualData = "ABCDEFGHIJ"u8.ToArray();
-            long headerSize = 10;
-            long eaSize = 50;
-
-            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
-
-            using var stream = new MemoryStream(archive);
-            using var reader = new TarReader(stream);
-            TarEntry entry = reader.GetNextEntry(copyData: true);
-
-            Assert.NotNull(entry);
-            Assert.Equal(eaSize, entry.Length);
+            // (actualDataSize, headerSize, eaSize) — EA size always takes precedence
+            yield return new object[] { 10, 10L, 50L };   // eaSize > headerSize (larger)
+            yield return new object[] { 100, 100L, 25L }; // eaSize < headerSize (smaller)
         }
 
-        [Fact]
-        public void PaxReader_EASizeOverridesHeaderSize_Smaller()
+        [Theory]
+        [MemberData(nameof(EASizeOverrideData))]
+        public void PaxReader_EASizeOverridesHeaderSize(int actualDataSize, long headerSize, long eaSize)
         {
-            byte[] actualData = new byte[100];
+            byte[] actualData = new byte[actualDataSize];
             Array.Fill<byte>(actualData, (byte)'X');
-            long headerSize = 100;
-            long eaSize = 25;
 
             byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
 

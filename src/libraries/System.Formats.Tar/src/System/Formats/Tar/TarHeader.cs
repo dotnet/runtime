@@ -209,23 +209,23 @@ namespace System.Formats.Tar
 
         // Ensures standard fields are present in the extended attributes dictionary
         // without removing any existing entries. Used for populating the EA dictionary
-        // for read access. Unlike CollectExtendedAttributesFromStandardFieldsIfNeeded
-        // (which adds or removes entries at write time), this method only adds entries
-        // that exceed standard field capacity — it never removes keys.
+        // for read access. Delegates to the shared helper with removeIfUnneeded: false.
         private void PopulateExtendedAttributesFromStandardFields(Dictionary<string, string> ea)
+        {
+            AddOrUpdateStandardFieldExtendedAttributes(ea, removeIfUnneeded: false);
+        }
+
+        // Shared helper that adds standard header field values to extended attributes.
+        // When removeIfUnneeded is true (write-time), entries that fit in standard fields
+        // are removed from the dictionary. When false (read-time/populate), only entries
+        // that exceed standard field capacity are added — existing keys are never removed.
+        private void AddOrUpdateStandardFieldExtendedAttributes(Dictionary<string, string> ea, bool removeIfUnneeded)
         {
             ea[PaxEaName] = _name;
             ea[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
 
-            if (!string.IsNullOrEmpty(_gName) && GetUtf8TextLength(_gName) > FieldLengths.GName)
-            {
-                ea[PaxEaGName] = _gName;
-            }
-
-            if (!string.IsNullOrEmpty(_uName) && GetUtf8TextLength(_uName) > FieldLengths.UName)
-            {
-                ea[PaxEaUName] = _uName;
-            }
+            AddOrRemoveStringField(ea, PaxEaGName, _gName, FieldLengths.GName, removeIfUnneeded);
+            AddOrRemoveStringField(ea, PaxEaUName, _uName, FieldLengths.UName, removeIfUnneeded);
 
             if (!string.IsNullOrEmpty(_linkName))
             {
@@ -233,29 +233,34 @@ namespace System.Formats.Tar
                 ea[PaxEaLinkName] = _linkName;
             }
 
-            if (_size > Octal12ByteFieldMaxValue)
+            AddOrRemoveNumericField(ea, PaxEaSize, _size, Octal12ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaUid, _uid, Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaGid, _gid, Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaDevMajor, _devMajor, Octal8ByteFieldMaxValue, removeIfUnneeded);
+            AddOrRemoveNumericField(ea, PaxEaDevMinor, _devMinor, Octal8ByteFieldMaxValue, removeIfUnneeded);
+
+            static void AddOrRemoveStringField(Dictionary<string, string> ea, string key, string? value, int maxUtf8ByteLength, bool removeIfUnneeded)
             {
-                ea[PaxEaSize] = _size.ToString();
+                if (!string.IsNullOrEmpty(value) && GetUtf8TextLength(value) > maxUtf8ByteLength)
+                {
+                    ea[key] = value;
+                }
+                else if (removeIfUnneeded)
+                {
+                    ea.Remove(key);
+                }
             }
 
-            if (_uid > Octal8ByteFieldMaxValue)
+            static void AddOrRemoveNumericField(Dictionary<string, string> ea, string key, long value, long maxNonextendedValue, bool removeIfUnneeded)
             {
-                ea[PaxEaUid] = _uid.ToString();
-            }
-
-            if (_gid > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaGid] = _gid.ToString();
-            }
-
-            if (_devMajor > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaDevMajor] = _devMajor.ToString();
-            }
-
-            if (_devMinor > Octal8ByteFieldMaxValue)
-            {
-                ea[PaxEaDevMinor] = _devMinor.ToString();
+                if (value > maxNonextendedValue)
+                {
+                    ea[key] = value.ToString();
+                }
+                else if (removeIfUnneeded)
+                {
+                    ea.Remove(key);
+                }
             }
         }
     }
