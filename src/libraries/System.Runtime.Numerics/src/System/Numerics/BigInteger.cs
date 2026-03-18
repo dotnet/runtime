@@ -2672,11 +2672,13 @@ namespace System.Numerics
             nuint xInline = unchecked((nuint)left._sign);
             nuint yInline = unchecked((nuint)right._sign);
 
-            // AND result length: for positive operands, min length suffices (AND with 0 = 0).
+            // AND result length: for positive operands, min length suffices (AND with 0 = 0),
+            // plus 1 for sign extension so the two's complement constructor doesn't
+            // misinterpret a high bit in the top limb as a negative sign.
             // For negative operands (sign-extended with 1s), we need max length + 1 for sign.
             int zLen = (leftNeg || rightNeg)
                 ? Math.Max(xLen, yLen) + 1
-                : Math.Min(xLen, yLen);
+                : Math.Min(xLen, yLen) + 1;
 
             nuint[]? resultBufferFromPool = null;
             Span<nuint> z = ((uint)zLen <= BigIntegerCalculator.StackAllocThreshold
