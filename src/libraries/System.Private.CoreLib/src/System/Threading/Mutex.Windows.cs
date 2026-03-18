@@ -40,7 +40,7 @@ namespace System.Threading
             out bool createdNew)
         {
             Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes;
             Interop.Kernel32.SECURITY_ATTRIBUTES* securityAttributesPtr = null;
             if (!string.IsNullOrEmpty(name) && options.WasSpecified)
             {

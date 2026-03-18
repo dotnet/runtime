@@ -55,7 +55,7 @@ namespace System.Threading
             SafeWaitHandle myHandle;
             int errorCode;
             Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes;
             if (!string.IsNullOrEmpty(name) && options.WasSpecified)
             {
                 name = options.GetNameWithSessionPrefix(name);
