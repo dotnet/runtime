@@ -342,6 +342,65 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [ConditionalTheory(nameof(IsNtlmAndAlpnAvailable))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
+        public async Task Http2_SessionAuthChallenge_PostSetsFlag_SubsequentGetUsesHttp11(bool useNtlm)
+        {
+            // A POST with content that gets a session auth challenge can't be retried,
+            // but it should still set the pool flag so that subsequent downgradeable
+            // requests (like GET) go directly to HTTP/1.1.
+            await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using SocketsHttpHandler handler = CreateCredentialHandler();
+                    using var client = new HttpClient(handler);
+
+                    // First request: POST with content gets 401. Can't retry, but sets the flag.
+                    var postRequest = new HttpRequestMessage(HttpMethod.Post, uri);
+                    postRequest.Version = HttpVersion.Version20;
+                    postRequest.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                    postRequest.Content = new StringContent("test content");
+
+                    HttpResponseMessage postResponse = await client.SendAsync(postRequest);
+                    Assert.Equal(HttpStatusCode.Unauthorized, postResponse.StatusCode);
+                    Assert.Equal(HttpVersion.Version20, postResponse.Version);
+
+                    // Second request: GET without content. Should go directly to HTTP/1.1
+                    // because the pool flag was set by the POST's auth challenge.
+                    var getRequest = new HttpRequestMessage(HttpMethod.Get, uri);
+                    getRequest.Version = HttpVersion.Version20;
+                    getRequest.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
+                    HttpResponseMessage getResponse = await client.SendAsync(getRequest);
+                    Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+                    Assert.Equal(HttpVersion.Version11, getResponse.Version);
+                },
+                async server =>
+                {
+                    // First connection: HTTP/2. POST with content gets 401 auth challenge.
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var h2 = (Http2LoopbackConnection)connection;
+                        int streamId = await h2.ReadRequestHeaderAsync(expectEndOfStream: false);
+                        await h2.ReadBodyAsync();
+
+                        string authScheme = useNtlm ? "NTLM" : "Negotiate";
+                        await h2.SendResponseHeadersAsync(streamId, endStream: true, HttpStatusCode.Unauthorized,
+                            headers: new[] { new HttpHeaderData("WWW-Authenticate", authScheme) });
+                    });
+
+                    // Second connection: HTTP/1.1 for the GET (pool flag was set by POST).
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        Assert.IsType<LoopbackServer.Connection>(connection);
+                        await HandleAuthenticationRequestWithFakeServer((LoopbackServer.Connection)connection, useNtlm);
+                    });
+                },
+                httpOptions: CreateHttpAgnosticOptions());
+        }
+
         [ConditionalFact(nameof(IsNtlmAndAlpnAvailable))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
         public async Task Http2_SessionAuthChallenge_Http2OnlyRequestsStillWork()

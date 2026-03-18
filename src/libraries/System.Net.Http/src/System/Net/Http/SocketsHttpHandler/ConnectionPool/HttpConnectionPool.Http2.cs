@@ -27,7 +27,7 @@ namespace System.Net.Http
         private RequestQueue<Http2Connection?> _http2RequestQueue;
 
         private bool _http2Enabled;
-        private bool _http2SessionAuthSeen;
+        private volatile bool _http2SessionAuthSeen;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
@@ -294,7 +294,7 @@ namespace System.Net.Http
         /// Requests that require HTTP/2 (e.g., <see cref="HttpVersionPolicy.RequestVersionExact"/>)
         /// continue to use HTTP/2 as before.
         /// </summary>
-        private void DisableHttp2ForDowngradeableRequests()
+        internal void OnSessionAuthenticationChallengeSeen()
         {
             _http2SessionAuthSeen = true;
         }

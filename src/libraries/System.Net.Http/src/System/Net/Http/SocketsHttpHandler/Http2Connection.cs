@@ -2067,19 +2067,27 @@ namespace System.Net.Http
 
                 // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
                 // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
-                // We can only safely retry if there's no request content, as we cannot guarantee that we can
-                // rewind arbitrary content streams. Additionally, we only retry if the version policy allows downgrade.
-                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response) &&
-                    request.Content is null &&
-                    request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response))
                 {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
-                    }
+                    // Mark the pool so future downgradeable requests go directly to HTTP/1.1.
+                    // This is set regardless of whether we can retry this particular request,
+                    // so that subsequent requests benefit from the downgrade.
+                    _pool.OnSessionAuthenticationChallengeSeen();
 
-                    response.Dispose();
-                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    // We can only safely retry if there's no request content, as we cannot guarantee
+                    // that we can rewind arbitrary content streams.
+                    // Additionally, we only retry if the version policy allows downgrade.
+                    if (request.Content is null &&
+                        request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
+                        }
+
+                        response.Dispose();
+                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    }
                 }
 
                 return response;

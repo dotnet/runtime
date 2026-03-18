@@ -539,16 +539,15 @@ namespace System.Net.Http
                 {
                     // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
                     // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
-                    // Mark the pool so future downgradeable requests go directly to HTTP/1.1,
-                    // while HTTP/2-only requests continue to work as before.
+                    // The pool flag was already set in Http2Connection.SendAsync so future downgradeable
+                    // requests will go directly to HTTP/1.1. Retry this request on HTTP/1.1.
                     Debug.Assert(request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower);
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Session-based auth challenge on HTTP/2. Future downgradeable requests will use HTTP/1.1: {e}");
+                        Trace($"Session-based auth challenge on HTTP/2. Retrying on HTTP/1.1: {e}");
                     }
 
-                    DisableHttp2ForDowngradeableRequests();
                     request.Version = HttpVersion.Version11;
                 }
                 finally
