@@ -243,7 +243,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public async Task WaitToReadAsync_ReturnsFalse_WhenReadAsyncWasCancelledAndChannelCompleted()
+        public async Task WaitToReadAsync_ReturnsFalse_WhenReadAsyncWasCanceledAndChannelCompleted()
         {
             Channel<int> c = CreateChannel();
 
