@@ -70,7 +70,7 @@ namespace System.Net
                 return false;
             }
 
-            return string.Compare(uri.AbsolutePath, 0, uriPrefix.AbsolutePath, 0, UriPrefixLength, StringComparison.OrdinalIgnoreCase) == 0;
+            return uri.AbsolutePath.AsSpan(0, UriPrefixLength).Equals(uriPrefix.AbsolutePath.AsSpan(0, UriPrefixLength), StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode() =>

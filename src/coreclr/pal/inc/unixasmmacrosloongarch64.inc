@@ -523,3 +523,11 @@ $__RedirectionStubEndFuncName
 0:
 #endif
 .endm
+
+#include <loongarch64/InlineTls.inc>
+
+// Inlined version of RhpGetThread. Target cannot be a0.
+.macro INLINE_GETTHREAD target
+        INLINE_GET_TLS_VAR \target, C_FUNC(t_CurrentThreadInfo)
+        ld.d  \target, \target, OFFSETOF__ThreadLocalInfo__m_pThread
+.endm

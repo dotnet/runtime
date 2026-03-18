@@ -57,29 +57,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
             Append(value);
         }
 
-        public virtual void RootAssemblyEntryPoint(string fileName)
+        public virtual void RootAssemblyEntryPoint(string assemblyName)
         {
             Append("-a");
-            Append(fileName);
+            Append(assemblyName);
             Append("entrypoint");
         }
 
-        public virtual void RootAssemblyVisible(string fileName)
+        public virtual void RootAssemblyVisible(string assemblyName)
         {
 #if NET
             Append("-a");
-            Append(fileName);
+            Append(assemblyName);
             Append("visible");
 #else
             Append("-r");
-            Append(fileName);
+            Append(assemblyName);
 #endif
         }
 
-        public virtual void RootAssembly(string fileName)
+        public virtual void RootAssembly(string assemblyName)
         {
             Append("-a");
-            Append(fileName);
+            Append(assemblyName);
         }
 
         public virtual void IgnoreDescriptors(bool value)
@@ -121,11 +121,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public virtual void AddSkipUnresolved(bool skipUnresolved)
         {
-            if (skipUnresolved)
-            {
-                Append("--skip-unresolved");
-                Append("true");
-            }
+            Append("--skip-unresolved");
+            Append(skipUnresolved.ToString());
         }
 
         public virtual void AddStripDescriptors(bool stripDescriptors)
@@ -194,12 +191,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public virtual void ProcessTestInputAssembly(NPath inputAssemblyPath)
         {
+            var assemblyName = inputAssemblyPath.FileNameWithoutExtension;
             if (_metadataProvider.LinkPublicAndFamily())
-                RootAssemblyVisible(inputAssemblyPath.ToString());
+                RootAssemblyVisible(assemblyName);
             else if (_metadataProvider.LinkAll())
-                RootAssembly(inputAssemblyPath.ToString());
+                RootAssembly(assemblyName);
             else
-                RootAssemblyEntryPoint(inputAssemblyPath.ToString());
+                RootAssemblyEntryPoint(assemblyName);
         }
 
         public virtual void ProcessOptions(TestCaseLinkerOptions options)

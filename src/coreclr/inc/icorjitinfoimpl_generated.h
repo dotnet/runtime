@@ -104,6 +104,10 @@ CORINFO_METHOD_HANDLE getInstantiatedEntry(
           CORINFO_METHOD_HANDLE* methodArg,
           CORINFO_CLASS_HANDLE* classArg) override;
 
+CORINFO_METHOD_HANDLE getAsyncOtherVariant(
+          CORINFO_METHOD_HANDLE ftn,
+          bool* variantIsThunk) override;
+
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
@@ -303,7 +307,6 @@ CORINFO_CLASS_HANDLE getObjectType(
 
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup) override;

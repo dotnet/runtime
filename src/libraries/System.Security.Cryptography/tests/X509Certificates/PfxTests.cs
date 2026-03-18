@@ -557,7 +557,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(nameof(MLKemIsNotSupported))]
+        [ConditionalTheory(typeof(PfxTests), nameof(MLKemIsNotSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_NotSupported(X509KeyStorageFlags keyStorageFlags)
         {
