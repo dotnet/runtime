@@ -133,6 +133,7 @@ namespace System.IO
             private readonly SafeFileHandle _inotifyHandle;
             private readonly ConcurrentDictionary<int, Watch> _wdToWatch = new ConcurrentDictionary<int, Watch>();
             private readonly ReaderWriterLockSlim _addLock = new(LockRecursionPolicy.NoRecursion);
+            private readonly ManualResetEventSlim _readyToRead = new(false);
             private bool _isThreadStopping;
             private bool _allWatchersStopped;
             private int _bufferAvailable;
@@ -199,6 +200,11 @@ namespace System.IO
                     throw;
                 }
             }
+
+            /// <summary>
+            /// Waits until the processing thread is ready to read inotify events.
+            /// </summary>
+            internal void WaitForReadReady() => _readyToRead.Wait();
 
             private void StopINotify()
             {
@@ -489,6 +495,11 @@ namespace System.IO
                     uint movedFromCookie = 0;
                     bool movedFromIsDir = false;
 
+                    // Signal that the processing thread is ready to read events.
+                    // This ensures callers of Start() can wait until events will
+                    // be captured before performing filesystem operations.
+                    _readyToRead.Set();
+
                     while (TryReadEvent(out NotifyEvent nextEvent))
                     {
                         if (!ProcessEvent(nextEvent, ref movedFromWatchCount, ref movedFromName, ref movedFromCookie, ref movedFromIsDir))
@@ -509,6 +520,9 @@ namespace System.IO
                 }
                 finally
                 {
+                    // Ensure any caller blocked on WaitForReadReady() is unblocked,
+                    // even if ProcessEvents exits early due to an error.
+                    _readyToRead.Set();
                     Debug.Assert(_inotifyHandle.IsClosed);
                 }
             }
@@ -1054,6 +1068,12 @@ namespace System.IO
                             _inotify.AddWatcher(this);
                         }
                     }
+
+                    // Ensure the processing thread is ready to read events before
+                    // we start emitting or performing filesystem operations that
+                    // should be observed. Without this, events can be missed if
+                    // they occur before ProcessEvents enters its read loop.
+                    inotify.WaitForReadReady();
 
                     _ = DequeueEvents();
 
