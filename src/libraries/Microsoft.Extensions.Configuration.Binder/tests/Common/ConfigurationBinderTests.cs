@@ -2735,16 +2735,16 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
                 {
-                    "vaLue": "MyString",
+                    "vaLue": { "key": "MyString" },
                 }
                 """);
 
             var obj = configuration.GetSection("value").Get<IConfiguration>();
-            Assert.NotNull(obj);
+            Assert.Equal("MyString", obj["key"]);
 
             configuration = TestHelpers.GetConfigurationFromJsonString("""
                 {
-                    "vaLue": [ "MyString", { "nested": "value" } ],
+                    "vaLue": [ { "key": "MyString" }, { "nested": "value" } ],
                 }
                 """);
 
@@ -2758,7 +2758,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             static void ValidateList(List<IConfiguration> list)
             {
                 Assert.Equal(2, list.Count);
-                Assert.Empty(list[0].GetChildren());
+                Assert.Equal("MyString", list[0]["key"]);
                 Assert.Equal("value", list[1]["nested"]);
             }
         }
