@@ -3,7 +3,6 @@
 
 #ifdef FEATURE_INTERPRETER
 
-#include <minipal.h>
 #include "interpexec.h"
 #include "interpframeallocator.h"
 
