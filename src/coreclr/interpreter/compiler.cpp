@@ -4803,7 +4803,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Get cookie for unmanaged calli. For managed calli, the cookie will be NULL
+        // and the interpreter will resolve the call at runtime from the PortableEntryPoint's MethodDesc.
+        CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isUnmanaged)
+        {
+            calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+        }
+#else
         calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
         m_ip += 5;
     }
     else
@@ -5452,7 +5463,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_pStackPointer--;
             int codePointerLookupResult = m_pStackPointer[0].var;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            calliCookie = NULL;
+#else
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
 
             EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
 
@@ -5495,7 +5510,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pStackPointer--;
                 int synthesizedLdvirtftnPtrVar = m_pStackPointer[0].var;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                calliCookie = NULL;
+#else
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
 
                 EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, &callInfo.sig);
             }
