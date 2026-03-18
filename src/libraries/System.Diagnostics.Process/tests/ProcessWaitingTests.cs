@@ -679,7 +679,14 @@ namespace System.Diagnostics.Tests
         [InlineData("WaitForExitAsync")]
         public async Task WaitForExit_WithGrandChildProcess_DoesNotHang(string waitMethod)
         {
-            Process child = CreateProcess(StartGrandChildProcessAndExit);
+            Process child = CreateProcess(() =>
+            {
+                using Process grandChild = CreateProcess(SleepForEightHours);
+                grandChild.Start();
+                Console.WriteLine(grandChild.Id);
+
+                return RemoteExecutor.SuccessExitCode;
+            });
             child.StartInfo.RedirectStandardOutput = true;
             child.Start();
 
@@ -714,18 +721,7 @@ namespace System.Diagnostics.Tests
             catch (Exception) { }
         }
 
-        private static int StartGrandChildProcessAndExit()
-        {
-            using Process grandChild = new Process();
-            grandChild.StartInfo.FileName = RemoteExecutor.HostRunner;
-            grandChild.StartInfo.Arguments = $"exec \"{RemoteExecutor.Path}\" {typeof(ProcessWaitingTests).Assembly.Location} {nameof(SleepForEightHours)}";
-            grandChild.Start();
-            Console.WriteLine(grandChild.Id);
-
-            return RemoteExecutor.SuccessExitCode;
-        }
-
-        public static int SleepForEightHours()
+        private static int SleepForEightHours()
         {
             Thread.Sleep(TimeSpan.FromHours(8));
 
