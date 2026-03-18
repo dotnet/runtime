@@ -4,7 +4,7 @@
 #ifndef _SYNCBLK_INL_
 #define _SYNCBLK_INL_
 
-FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(DWORD tid)
+FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(Thread* pCurThread)
 {
     CONTRACTL
     {
@@ -20,6 +20,7 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(DWORD t
                      SBLK_MASK_LOCK_THREADID +
                      SBLK_MASK_LOCK_RECLEVEL)) == 0)
     {
+        DWORD tid = pCurThread->GetThreadId();
         if (tid > SBLK_MASK_LOCK_THREADID)
         {
             return HeaderLockResult::UseSlowPath;
@@ -38,20 +39,16 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(DWORD t
         return HeaderLockResult::Failure;
     }
 
-    if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-    {
-        return HeaderLockResult::UseSlowPath;
-    }
-
-    // The header is transitioning - use the slow path
-    if (oldValue & BIT_SBLK_SPIN_LOCK)
+    // The header either has a sync block, will need a sync block to represent the lock
+    // or is in the process of transitioning to a sync block. In any of these cases, we need to take the slow path.
+    if (oldValue & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK))
     {
         return HeaderLockResult::UseSlowPath;
     }
 
     // Here we know we have the "thin lock" layout, but the lock is not free.
     // It could still be the recursion case - compare the thread id to check
-    if (tid != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID))
+    if (pCurThread->GetThreadId() != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID))
     {
         return HeaderLockResult::Failure;
     }
@@ -74,14 +71,13 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(DWORD t
         return HeaderLockResult::Success;
     }
 
-    // Use the slow path instead of spinning. The compare-exchange above would not fail often, and it's not worth forcing the
-    // spin loop that typically follows the call to this function to check the recursive case, so just bail to the slow path.
-    return HeaderLockResult::UseSlowPath;
+    // We failed to acquire because someone touched other bits in the header.
+    return HeaderLockResult::Failure;
 }
 
 // Helper encapsulating the core logic for releasing monitor. Returns what kind of
 // follow up action is necessary. This is FORCEINLINE to make it provide a very efficient implementation.
-FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(DWORD tid)
+FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(Thread* pCurThread)
 {
     CONTRACTL {
         NOTHROW;
@@ -93,14 +89,14 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(DWORD t
 
     if ((syncBlockValue & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
     {
-        if (tid > SBLK_MASK_LOCK_THREADID)
-        {
-            return HeaderLockResult::UseSlowPath;
-        }
+        DWORD tid = pCurThread->GetThreadId();
 
         if ((syncBlockValue & SBLK_MASK_LOCK_THREADID) != tid)
         {
             // This thread does not own the lock.
+            // We don't need to check if the thread id could be stored in the lock
+            // as we know we are in the thin lock case.
+            // The lock is definitely not being held by this thread.
             return HeaderLockResult::Failure;
         }
 
@@ -117,8 +113,6 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(DWORD t
             {
                 return HeaderLockResult::Success;
             }
-
-            return HeaderLockResult::UseSlowPath;
         }
         else
         {
@@ -132,8 +126,6 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(DWORD t
             {
                 return HeaderLockResult::Success;
             }
-
-            return HeaderLockResult::UseSlowPath;
         }
     }
 

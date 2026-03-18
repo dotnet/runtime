@@ -141,7 +141,7 @@ namespace System
             return builder.ToString();
         }
 
-        private static unsafe OperatingSystem GetOSVersion()
+        private static OperatingSystem GetOSVersion()
         {
             if (Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) != 0)
             {
@@ -150,30 +150,36 @@ namespace System
 
             var version = new Version((int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber, 0);
 
-            return osvi.szCSDVersion[0] != '\0' ?
-                new OperatingSystem(PlatformID.Win32NT, version, new string(&osvi.szCSDVersion[0])) :
-                new OperatingSystem(PlatformID.Win32NT, version);
+            if (osvi.szCSDVersion[0] != '\0')
+            {
+                ReadOnlySpan<char> csd = osvi.szCSDVersion;
+                int idx = csd.IndexOf('\0');
+                return new OperatingSystem(PlatformID.Win32NT, version, new string(idx >= 0 ? csd[..idx] : csd));
+            }
+
+            return new OperatingSystem(PlatformID.Win32NT, version);
         }
 
-        public static string SystemDirectory
+        private static string? s_systemDirectory;
+
+        public static string SystemDirectory => s_systemDirectory ??= GetSystemDirectory();
+
+        private static string GetSystemDirectory()
         {
-            get
+            // Normally this will be C:\Windows\System32
+            var builder = new ValueStringBuilder(stackalloc char[32]);
+
+            uint length;
+            while ((length = Interop.Kernel32.GetSystemDirectoryW(ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
             {
-                // Normally this will be C:\Windows\System32
-                var builder = new ValueStringBuilder(stackalloc char[32]);
-
-                uint length;
-                while ((length = Interop.Kernel32.GetSystemDirectoryW(ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
-                {
-                    builder.EnsureCapacity((int)length);
-                }
-
-                if (length == 0)
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-
-                builder.Length = (int)length;
-                return builder.ToString();
+                builder.EnsureCapacity((int)length);
             }
+
+            if (length == 0)
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+
+            builder.Length = (int)length;
+            return builder.ToString();
         }
 
         public static unsafe bool UserInteractive
@@ -377,6 +383,27 @@ namespace System
 
         /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
         /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static long TickCount64 => (long)Interop.Kernel32.GetTickCount64();
+        public static long TickCount64
+        {
+            get
+            {
+                unsafe
+                {
+                    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+                    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+                    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+                    // into things like multimedia scenarios and additionally does not include "bias" from time
+                    // the system is spent asleep or in hibernation.
+
+                    ulong unbiasedTime;
+
+                    Interop.BOOL result = Interop.Kernel32.QueryUnbiasedInterruptTime(&unbiasedTime);
+                    // The P/Invoke is documented to only fail if a null-ptr is passed in
+                    Debug.Assert(result != Interop.BOOL.FALSE);
+
+                    return (long)(unbiasedTime / TimeSpan.TicksPerMillisecond);
+                }
+            }
+        }
     }
 }

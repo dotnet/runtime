@@ -313,7 +313,7 @@ GTNODE(JTRUE            , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------
 
-GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL)            // Multi-dimensional array-element address
+GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL|DBK_NOTLIR)  // Multi-dimensional array-element address
 GTNODE(CALL             , GenTreeCall        ,0,0,GTK_SPECIAL|DBK_NOCONTAIN)
 GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,0,GTK_SPECIAL)            // List of fields of a struct, when passed as an argument
 
@@ -331,9 +331,6 @@ GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if defined(FEATURE_EH_WINDOWS_X86)
-GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // FEATURE_EH_WINDOWS_X86
 
 //-----------------------------------------------------------------------------
 //  Swift interop-specific nodes:

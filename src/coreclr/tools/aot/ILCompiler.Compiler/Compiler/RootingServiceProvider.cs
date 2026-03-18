@@ -143,7 +143,7 @@ namespace ILCompiler
 
         public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, Utf8String exportName, bool exportHidden)
         {
-            var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
+            var blob = _factory.ReadOnlyDataBlob(Utf8String.Concat("__readonlydata_"u8, exportName.AsSpan()), data, alignment);
             _rootAdder(blob, reason);
             exportName = _factory.NameMangler.NodeMangler.ExternVariable(exportName);
             _factory.NodeAliases.Add(blob, (exportName, exportHidden));

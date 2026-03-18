@@ -11,14 +11,14 @@ window.addEventListener("load", onLoad);
 try {
     const { setModuleImports, getAssemblyExports, setEnvironmentVariable, getConfig } = await dotnet
         .withModuleConfig()
-        .withExitOnUnhandledError()
-        .withExitCodeLogging()
-        .withElementOnExit()
-        .withOnConfigLoaded(() => {
-            // you can test abort of the startup by opening http://localhost:8000/?throwError=true
-            const params = new URLSearchParams(location.search);
-            if (params.get("throwError") === "true") {
-                throw new Error("Error thrown from OnConfigLoaded");
+        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true })
+        .withModuleConfig({
+            onConfigLoaded: () => {
+                // you can test abort of the startup by opening http://localhost:8000/?throwError=true
+                const params = new URLSearchParams(location.search);
+                if (params.get("throwError") === "true") {
+                    throw new Error("Error thrown from OnConfigLoaded");
+                }
             }
         })
         .create();

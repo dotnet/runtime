@@ -124,6 +124,36 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
+        if (s_buildEnv.IsCoreClrRuntime)
+        {
+            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
+            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+            extraProperties +=
+            """
+                <UseMonoRuntime>false</UseMonoRuntime>
+            """;
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App">
+                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    </ItemGroup>
+                </Target>
+            """;
+        }
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
@@ -280,7 +310,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -291,13 +321,20 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                    : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    ? $".withConfig({{ forwardConsole: {forwardConsole.ToString().ToLowerInvariant()}, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }}).create()"
+                    : ".withConfig({ appendElementOnExit: true, logExitCode: true }).create()"
             );
 
-        // dotnet.run() is used instead of runMain() in net9.0+
-        if (targetFrameworkVersion.Major >= 9)
+        if (targetFrameworkVersion.Major >= 11)
+        {
+            // runMainAndExit() is used instead of runMain() in net11.0+
+            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "runMainAndExit()");
+        }
+        else if (targetFrameworkVersion.Major >= 9)
+        {
+            // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
+        }
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
@@ -381,6 +418,19 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
+
+        if (runOptions is BlazorRunOptions)
+        {
+            // DOMContentLoaded fires as soon as the initial HTML is parsed,
+            // but Blazor WebAssembly still needs to download the runtime,
+            // assemblies, and render the component tree. Wait for actual
+            // Blazor content to appear before interacting with the page.
+            // The ".page" class comes from MainLayout.razor and is only
+            // present after Blazor has rendered (client-side apps) or is
+            // included in the initial server-rendered HTML (Blazor Web apps).
+            _testOutput.WriteLine("Waiting for Blazor to finish rendering");
+            await page.Locator(".page").WaitForAsync(new() { Timeout = 1 * 60 * 1000 });
+        }
 
         if (runOptions.ExecuteAfterLoaded is not null)
         {

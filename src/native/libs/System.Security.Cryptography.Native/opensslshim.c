@@ -28,17 +28,11 @@ TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
 
- static void* volatile libssl = NULL;
+static void* volatile libssl = NULL;
 
-#ifdef __APPLE__
-#define DYLIBNAME_PREFIX "libssl."
-#define DYLIBNAME_SUFFIX ".dylib"
-#define MAKELIB(v) DYLIBNAME_PREFIX v DYLIBNAME_SUFFIX
-#else
 #define LIBNAME "libssl.so"
 #define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
-#endif
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
 // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
@@ -70,18 +64,8 @@ static void OpenLibraryOnce(void)
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {
-#ifdef __APPLE__
-        char soName[sizeof(DYLIBNAME_PREFIX) + MaxVersionStringLength + sizeof(DYLIBNAME_SUFFIX)] =
-            DYLIBNAME_PREFIX;
-
-        strcat(soName, versionOverride);
-        strcat(soName, DYLIBNAME_SUFFIX);
-#else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
-
         strcat(soName, versionOverride);
-#endif
-
         DlOpen(soName);
     }
 
@@ -91,21 +75,20 @@ static void OpenLibraryOnce(void)
         // Android OpenSSL has no soname
         DlOpen(LIBNAME);
     }
-#endif
-
-    if (libssl == NULL)
-    {
-        // Prefer OpenSSL 3.x
-        DlOpen(MAKELIB("3"));
-    }
-
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("1.1"));
-    }
-
-#ifdef __FreeBSD__
+#elif defined(__FreeBSD__)
     // The ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpen(MAKELIB("17"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from base as found in FreeBSD 15.0
+        DlOpen(MAKELIB("35"));
+    }
+
     if (libssl == NULL)
     {
         // OpenSSL 3.0 from ports
@@ -130,6 +113,16 @@ static void OpenLibraryOnce(void)
     }
 #endif
 
+    if (libssl == NULL)
+    {
+        // Prefer OpenSSL 3.x
+        DlOpen(MAKELIB("3"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("1.1"));
+    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;

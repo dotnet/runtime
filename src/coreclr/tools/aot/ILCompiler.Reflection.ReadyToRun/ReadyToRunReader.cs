@@ -601,6 +601,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 //initialize R2RMethods
                 ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSection(section, reader, isEntryPoint));
                 ParseInstanceMethodEntrypoints(isEntryPoint);
+                MarkResumptionStubEntryPoints(isEntryPoint, runtimeFunctionSection, nRuntimeFunctions);
                 CountRuntimeFunctions(isEntryPoint, dHotColdMap, firstColdRuntimeFunction);
             }
         }
@@ -860,7 +861,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int runtimeFunctionId;
                     int? fixupOffset;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
-                    ReadyToRunMethod method = new ReadyToRunMethod(this, componentReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
+                    ReadyToRunMethod method = new ReadyToRunMethod(this, componentReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, signaturePrefixes: [], fixupOffset: fixupOffset);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -933,6 +934,92 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        private record struct DecodedMethodSignature(
+            string OwningType,
+            EntityHandle MethodHandle,
+            string[] MethodTypeArgs,
+            string ConstrainedType,
+            string[] SignaturePrefixes);
+
+        private DecodedMethodSignature DecodeMethodSignature(ref IAssemblyMetadata mdReader, ref SignatureDecoder decoder)
+        {
+            int startOffset = decoder.Offset;
+            uint methodFlags = decoder.ReadUInt();
+
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
+            {
+                int moduleIndex = (int)decoder.ReadUInt();
+                mdReader = OpenReferenceAssembly(moduleIndex);
+
+                SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
+                decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader.MetadataReader, this, startOffset);
+
+                decoder.ReadUInt(); // Skip past methodFlags
+                decoder.ReadUInt(); // And moduleIndex
+            }
+
+            string owningType = null;
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
+            {
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) == 0)
+                {
+                    mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
+                    if ((_composite) && mdReader == null)
+                    {
+                        // The only types that don't have module overrides on them in composite images are primitive types within the system module
+                        mdReader = GetSystemModuleMetadataReader();
+                    }
+                }
+                owningType = decoder.ReadTypeSignatureNoEmit();
+            }
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
+            {
+                throw new NotImplementedException();
+            }
+            EntityHandle methodHandle;
+            int rid = (int)decoder.ReadUInt();
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken) != 0)
+            {
+                methodHandle = MetadataTokens.MemberReferenceHandle(rid);
+            }
+            else
+            {
+                methodHandle = MetadataTokens.MethodDefinitionHandle(rid);
+            }
+            string[] methodTypeArgs = null;
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
+            {
+                uint typeArgCount = decoder.ReadUInt();
+                methodTypeArgs = new string[typeArgCount];
+                for (int typeArgIndex = 0; typeArgIndex < typeArgCount; typeArgIndex++)
+                {
+                    methodTypeArgs[typeArgIndex] = decoder.ReadTypeSignatureNoEmit();
+                }
+            }
+
+            string constrainedType = null;
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained) != 0)
+            {
+                constrainedType = decoder.ReadTypeSignatureNoEmit();
+            }
+
+            List<string> signaturePrefixes = [];
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+            {
+                signaturePrefixes.Add("[UNBOX]");
+            }
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
+            {
+                signaturePrefixes.Add("[INST]");
+            }
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
+            {
+                signaturePrefixes.Add("[ASYNC]");
+            }
+
+            return new DecodedMethodSignature(owningType, methodHandle, methodTypeArgs, constrainedType, signaturePrefixes.ToArray());
+        }
+
         /// <summary>
         /// Initialize generic method instances with argument types and runtime function indices from InstanceMethodEntrypoints
         /// </summary>
@@ -950,69 +1037,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             while (!curParser.IsNull())
             {
                 IAssemblyMetadata mdReader = GetGlobalMetadata();
-                bool updateMDReaderFromOwnerType = true;
                 SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
                 SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
 
-                string owningType = null;
-
-                uint methodFlags = decoder.ReadUInt();
-
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
-                {
-                    int moduleIndex = (int)decoder.ReadUInt();
-                    mdReader = OpenReferenceAssembly(moduleIndex);
-
-                    decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader.MetadataReader, this, (int)curParser.Offset);
-
-                    decoder.ReadUInt(); // Skip past methodFlags
-                    decoder.ReadUInt(); // And moduleIndex
-                    updateMDReaderFromOwnerType = false;
-                }
-
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
-                {
-                    if (updateMDReaderFromOwnerType)
-                    {
-                        mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
-                        if ((_composite) && mdReader == null)
-                        {
-                            // The only types that don't have module overrides on them in composite images are primitive types within the system module
-                            mdReader = GetSystemModuleMetadataReader();
-                        }
-                    }
-                    owningType = decoder.ReadTypeSignatureNoEmit();
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
-                {
-                    throw new NotImplementedException();
-                }
-                EntityHandle methodHandle;
-                int rid = (int)decoder.ReadUInt();
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken) != 0)
-                {
-                    methodHandle = MetadataTokens.MemberReferenceHandle(rid);
-                }
-                else
-                {
-                    methodHandle = MetadataTokens.MethodDefinitionHandle(rid);
-                }
-                string[] methodTypeArgs = null;
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
-                {
-                    uint typeArgCount = decoder.ReadUInt();
-                    methodTypeArgs = new string[typeArgCount];
-                    for (int typeArgIndex = 0; typeArgIndex < typeArgCount; typeArgIndex++)
-                    {
-                        methodTypeArgs[typeArgIndex] = decoder.ReadTypeSignatureNoEmit();
-                    }
-                }
-
-                string constrainedType = null;
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained) != 0)
-                {
-                    constrainedType = decoder.ReadTypeSignatureNoEmit();
-                }
+                var sig = DecodeMethodSignature(ref mdReader, ref decoder);
 
                 int runtimeFunctionId;
                 int? fixupOffset;
@@ -1020,11 +1048,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                 ReadyToRunMethod method = new ReadyToRunMethod(
                     this,
                     mdReader,
-                    methodHandle,
+                    sig.MethodHandle,
                     runtimeFunctionId,
-                    owningType,
-                    constrainedType,
-                    methodTypeArgs,
+                    sig.OwningType,
+                    sig.ConstrainedType,
+                    sig.MethodTypeArgs,
+                    sig.SignaturePrefixes,
                     fixupOffset);
                 if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                 {
@@ -1090,53 +1119,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
                 SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
 
-                string owningType = null;
-
-                uint methodFlags = decoder.ReadUInt();
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
-                {
-                    mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
-                    if ((_composite) && mdReader == null)
-                    {
-                        // The only types that don't have module overrides on them in composite images are primitive types within the system module
-                        mdReader = GetSystemModuleMetadataReader();
-                    }
-                    owningType = decoder.ReadTypeSignatureNoEmit();
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
-                {
-                    throw new NotImplementedException();
-                }
-                EntityHandle methodHandle;
-                int rid = (int)decoder.ReadUInt();
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken) != 0)
-                {
-                    methodHandle = MetadataTokens.MemberReferenceHandle(rid);
-                }
-                else
-                {
-                    methodHandle = MetadataTokens.MethodDefinitionHandle(rid);
-                }
-                string[] methodTypeArgs = null;
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
-                {
-                    uint typeArgCount = decoder.ReadUInt();
-                    methodTypeArgs = new string[typeArgCount];
-                    for (int typeArgIndex = 0; typeArgIndex < typeArgCount; typeArgIndex++)
-                    {
-                        methodTypeArgs[typeArgIndex] = decoder.ReadTypeSignatureNoEmit();
-                    }
-                }
-
-                string constrainedType = null;
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained) != 0)
-                {
-                    constrainedType = decoder.ReadTypeSignatureNoEmit();
-                }
+                var sig = DecodeMethodSignature(ref mdReader, ref decoder);
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
 
-                PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs);
+                PgoInfoKey key = new PgoInfoKey(mdReader, sig.OwningType, sig.MethodHandle, sig.MethodTypeArgs, sig.SignaturePrefixes);
                 PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
 
                 // Since we do non-assembly qualified name based matching for generic instantiations, we can have conflicts.
@@ -1173,6 +1160,62 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 version = (int)(versionAndFlags >> 2);
                 pgoDataOffset = offset;
+            }
+        }
+
+        /// <summary>
+        /// Scan method fixups for ResumptionStubEntryPoint entries, mark the corresponding
+        /// runtime functions as entry points, and create ReadyToRunMethod entries for them
+        /// using the parent async method's metadata with a [RESUME] prefix.
+        /// </summary>
+        private void MarkResumptionStubEntryPoints(bool[] isEntryPoint, ReadyToRunSection runtimeFunctionSection, int nRuntimeFunctions)
+        {
+            EnsureImportSections();
+
+            int runtimeFunctionSize = CalculateRuntimeFunctionSize();
+            int runtimeFunctionsOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+
+            Dictionary<uint, int> stubRvaToMethodIndexMap = new Dictionary<uint, int>(nRuntimeFunctions);
+            for (int i = 0; i < nRuntimeFunctions; i++)
+            {
+                int entryOffset = runtimeFunctionsOffset + i * runtimeFunctionSize;
+                uint beginAddress = BitConverter.ToUInt32(Image, entryOffset);
+                stubRvaToMethodIndexMap[beginAddress] = i;
+            }
+
+            foreach (ReadyToRunMethod method in Methods.ToList())
+            {
+                if (method.Fixups is null)
+                    continue;
+
+                foreach (FixupCell fixup in method.Fixups)
+                {
+                    ReadyToRunImportSection importSection = ImportSections[(int)fixup.TableIndex];
+                    ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixup.CellOffset];
+                    int sigOffset = GetOffset((int)entry.SignatureRVA);
+                    byte kind = Image[sigOffset];
+
+                    if (kind != (byte)ReadyToRunFixupKind.ResumptionStubEntryPoint)
+                        continue;
+
+                    // Signature format: [0x38] [4-byte RVA of resumption stub code]
+                    uint stubRVA = BitConverter.ToUInt32(Image, sigOffset + 1);
+                    if (stubRvaToMethodIndexMap.TryGetValue(stubRVA, out int index))
+                    {
+                        isEntryPoint[index] = true;
+                        ReadyToRunMethod stubMethod = new ReadyToRunMethod(
+                            this,
+                            method.ComponentReader,
+                            method.MethodHandle,
+                            index,
+                            owningType: null,
+                            constrainedType: null,
+                            instanceArgs: method.InstanceArgs,
+                            signaturePrefixes: ["[RESUME]"],
+                            fixupOffset: null);
+                        _instanceMethods.Add(new InstanceMethod(0, stubMethod));
+                    }
+                }
             }
         }
 
@@ -1295,9 +1338,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 return new Guid(mvidBytes);
             }
+            else if (assemblyIndex != 0)
+            {
+                // It's possible to have an index for an assembly in a non-composite image in one case:
+                // If the assembly index is only used for a module fixup, then we won't have an MVID for it
+                // as we haven't taken a dependency on any image details, just existence of the assembly.
+                return default(Guid);
+            }
             else
             {
-                Debug.Assert(assemblyIndex == 0);
                 MetadataReader mdReader = GetGlobalMetadata().MetadataReader;
                 return mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid);
             }

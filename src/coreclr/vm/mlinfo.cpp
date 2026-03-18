@@ -18,6 +18,7 @@
 #include "olevariant.h"
 #include "ilmarshalers.h"
 #include "interoputil.h"
+#include "mdfileformat.h"  // For CPackedLen
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -206,7 +207,6 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
 
                 pParamInfo->m_strSafeArrayUserDefTypeName = (LPUTF8)pvNativeType;
                 pParamInfo->m_cSafeArrayUserDefTypeNameBytes = strLen;
-                _ASSERTE((ULONG)(pvNativeType + strLen - pvNativeTypeStart) == cbNativeType);
             }
             break;
 
@@ -304,7 +304,6 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
 
             pParamInfo->m_strCMCookie = (LPUTF8)pvNativeType;
             pParamInfo->m_cCMCookieStrBytes = strLen;
-            _ASSERTE((ULONG)(pvNativeType + strLen - pvNativeTypeStart) == cbNativeType);
             break;
 
         default:

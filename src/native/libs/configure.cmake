@@ -14,9 +14,16 @@ if (CLR_CMAKE_TARGET_APPLE)
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
     add_compile_options(-Wno-poison-system-directories)
+elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND CLR_CMAKE_TARGET_BROWSER)
+    # When cross-compiling for browser-wasm on macOS, suppress warnings about
+    # /usr/local/include which may be added by the toolchain (e.g., brew's clang)
+    add_compile_options(-Wno-poison-system-directories)
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+elseif (CLR_CMAKE_TARGET_OPENBSD)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -109,6 +116,7 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/types.h>
     #include <sys/mount.h>
     int main(void)
     {
@@ -143,11 +151,6 @@ check_symbol_exists(
     F_DUPFD
     fcntl.h
     HAVE_F_DUPFD)
-
-check_symbol_exists(
-    F_FULLFSYNC
-    fcntl.h
-    HAVE_F_FULLFSYNC)
 
 check_function_exists(
     getifaddrs
@@ -200,13 +203,18 @@ check_symbol_exists(
 
 check_symbol_exists(
     getmntinfo
-    sys/mount.h
+    "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)
 
 check_symbol_exists(
     strcpy_s
     string.h
     HAVE_STRCPY_S)
+
+check_symbol_exists(
+    strlcpy
+    string.h
+    HAVE_STRLCPY)
 
 check_symbol_exists(
     strlcat
@@ -327,7 +335,7 @@ check_struct_has_member(
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
@@ -351,11 +359,11 @@ else ()
     set (STATFS_INCLUDES sys/statfs.h)
 endif ()
 
-set(CMAKE_EXTRA_INCLUDE_FILES ${STATFS_INCLUDES})
+set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${STATFS_INCLUDES})
 
 check_symbol_exists(
     "statfs"
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_STATFS)
 
 check_symbol_exists(
@@ -554,28 +562,24 @@ if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
-    set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
@@ -613,21 +617,6 @@ else()
         "
         HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
 
-    check_c_source_runs(
-        "
-        #include <stdlib.h>
-        #include <time.h>
-        #include <sys/time.h>
-        int main(void)
-        {
-            int ret;
-            struct timespec ts;
-            ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-            exit(ret);
-            return 0;
-        }
-        "
-        HAVE_CLOCK_MONOTONIC)
 
     check_c_source_runs(
         "
@@ -750,8 +739,29 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, size_t bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_SIZE_T)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, int bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_INT)
+
+check_prototype_definition(
+    getfsstat
+    "int getfsstat(struct statfs *buf, long bufsize, int flags)"
+    0
+    "sys/types.h;sys/mount.h"
+    HAVE_GETFSSTAT_LONG)
 
 check_prototype_definition(
     ioctl
@@ -887,6 +897,10 @@ check_include_files(
     HAVE_DLFCN_H)
 
 check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
+check_include_files(
     "sys/statvfs.h"
     HAVE_SYS_STATVFS_H)
 
@@ -960,6 +974,10 @@ check_include_files(
     HAVE_SYS_MNTENT_H)
 
 check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
+
+check_include_files(
     "stdint.h;net/if_media.h"
     HAVE_NET_IFMEDIA_H)
 
@@ -977,35 +995,50 @@ check_include_files(
 
 check_symbol_exists(
     getpeereid
-    unistd.h
+    "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
-check_symbol_exists(
-    getdomainname
-    unistd.h
-    HAVE_GETDOMAINNAME)
+set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if (CLR_CMAKE_TARGET_SUNOS)
+    # On SunOS, getdomainname is in libnsl but not declared in any header
+    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+    check_function_exists(
+        getdomainname
+        HAVE_GETDOMAINNAME)
+else()
+    check_symbol_exists(
+        getdomainname
+        unistd.h
+        HAVE_GETDOMAINNAME)
+endif()
 
-# getdomainname on OSX takes an 'int' instead of a 'size_t'
-# check if compiling with 'size_t' would cause a warning
-set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
-check_c_source_compiles(
-    "
-    #include <unistd.h>
-    int main(void)
-    {
-        size_t namelen = 20;
-        char name[20];
-        int dummy = getdomainname(name, namelen);
-        (void)dummy;
-        return 0;
-    }
-    "
-    HAVE_GETDOMAINNAME_SIZET)
-set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+# Some platforms (e.g. macOS, SunOS) define getdomainname with an 'int' length parameter
+# Check whether using 'size_t' for the length parameter would cause a warning
+if (CLR_CMAKE_TARGET_SUNOS)
+    # SunOS uses int, not size_t
+    set (HAVE_GETDOMAINNAME_SIZET 0)
+else()
+    set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+    set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
+    check_c_source_compiles(
+        "
+        #include <unistd.h>
+        int main(void)
+        {
+            size_t namelen = 20;
+            char name[20];
+            int dummy = getdomainname(name, namelen);
+            (void)dummy;
+            return 0;
+        }
+        "
+        HAVE_GETDOMAINNAME_SIZET)
+    set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+endif()
+set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
+if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))
     set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
 endif()
 
@@ -1033,6 +1066,9 @@ elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAK
 endif()
 
 option(HeimdalGssApi "use heimdal implementation of GssApi" OFF)
+if (CLR_CMAKE_TARGET_OPENBSD)
+    set(HeimdalGssApi ON)
+endif()
 
 if (HeimdalGssApi)
    check_include_files(

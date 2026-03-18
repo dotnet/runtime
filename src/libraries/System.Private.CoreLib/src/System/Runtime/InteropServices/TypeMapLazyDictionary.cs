@@ -22,9 +22,15 @@ namespace System.Runtime.InteropServices
         private ref struct CallbackContext
         {
             private RuntimeAssembly? _currAssembly;
+            private readonly RuntimeType _groupType;
             private LazyExternalTypeDictionary? _externalTypeMap;
             private LazyProxyTypeDictionary? _proxyTypeMap;
             private ExceptionDispatchInfo? _creationException;
+
+            public CallbackContext(RuntimeType groupType)
+            {
+                _groupType = groupType;
+            }
 
             public RuntimeAssembly CurrentAssembly
             {
@@ -41,7 +47,7 @@ namespace System.Runtime.InteropServices
                 [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
                 get
                 {
-                    _externalTypeMap ??= new LazyExternalTypeDictionary();
+                    _externalTypeMap ??= new LazyExternalTypeDictionary(_groupType);
                     return _externalTypeMap;
                 }
             }
@@ -51,7 +57,7 @@ namespace System.Runtime.InteropServices
                 [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
                 get
                 {
-                    _proxyTypeMap ??= new LazyProxyTypeDictionary();
+                    _proxyTypeMap ??= new LazyProxyTypeDictionary(_groupType);
                     return _proxyTypeMap;
                 }
             }
@@ -78,7 +84,15 @@ namespace System.Runtime.InteropServices
             QCallTypeHandle groupType,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
+            delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedExternalTypeMap,
+            delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
             CallbackContext* context);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
+        private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
+        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);
 
         public ref struct Utf16SharedBuffer
         {
@@ -116,6 +130,42 @@ namespace System.Runtime.InteropServices
             char[] buffer = ArrayPool<char>.Shared.Rent(needed);
             int converted = Encoding.UTF8.GetChars(utf8TypeName, buffer);
             utf16Buffer = new Utf16SharedBuffer(buffer, converted);
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe Interop.BOOL NewPrecachedExternalTypeMap(CallbackContext* context)
+        {
+            Debug.Assert(context != null);
+
+            try
+            {
+                context->ExternalTypeMap.AddPreCachedModule((RuntimeModule)context->CurrentAssembly.ManifestModule);
+            }
+            catch (Exception ex)
+            {
+                context->CreationException = ExceptionDispatchInfo.Capture(ex);
+                return Interop.BOOL.FALSE; // Stop processing.
+            }
+
+            return Interop.BOOL.TRUE; // Continue processing.
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe Interop.BOOL NewPrecachedProxyTypeMap(CallbackContext* context)
+        {
+            Debug.Assert(context != null);
+
+            try
+            {
+                context->ProxyTypeMap.AddPreCachedModule((RuntimeModule)context->CurrentAssembly.ManifestModule);
+            }
+            catch (Exception ex)
+            {
+                context->CreationException = ExceptionDispatchInfo.Capture(ex);
+                return Interop.BOOL.FALSE; // Stop processing.
+            }
+
+            return Interop.BOOL.TRUE; // Continue processing.
         }
 
         [UnmanagedCallersOnly]
@@ -192,11 +242,11 @@ namespace System.Runtime.InteropServices
             RuntimeAssembly? startingAssembly;
             if (AppContext.GetData("System.Runtime.InteropServices.TypeMappingEntryAssembly") is string entryAssemblyName)
             {
-                startingAssembly = Assembly.Load(entryAssemblyName) as RuntimeAssembly;
+                startingAssembly = (RuntimeAssembly?)Assembly.Load(entryAssemblyName);
             }
             else
             {
-                startingAssembly = Assembly.GetEntryAssembly() as RuntimeAssembly;
+                startingAssembly = (RuntimeAssembly?)Assembly.GetEntryAssembly();
             }
 
             if (startingAssembly is null)
@@ -204,12 +254,14 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_TypeMapMissingEntryAssembly);
             }
 
-            CallbackContext context;
+            CallbackContext context = new(groupType);
             ProcessAttributes(
                 new QCallAssembly(ref startingAssembly),
                 new QCallTypeHandle(ref groupType),
                 newExternalTypeEntry,
                 newProxyTypeEntry,
+                &NewPrecachedExternalTypeMap,
+                &NewPrecachedProxyTypeMap,
                 &context);
 
             // If an exception was thrown during the processing of
@@ -243,12 +295,25 @@ namespace System.Runtime.InteropServices
 
         private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
         {
+            protected RuntimeType _groupType;
+            protected readonly List<RuntimeModule> _preCachedModules = [];
+
             protected abstract bool TryGetOrLoadType(TKey key, [NotNullWhen(true)] out Type? type);
+
+            protected abstract bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, TKey key, [NotNullWhen(true)] out Type? type);
 
             public Type this[TKey key]
             {
                 get
                 {
+                    foreach (RuntimeModule module in _preCachedModules)
+                    {
+                        if (TryGetOrLoadTypeFromPreCachedDictionary(module, key, out Type? precachedType))
+                        {
+                            return precachedType;
+                        }
+                    }
+
                     if (!TryGetOrLoadType(key, out Type? type))
                     {
                         ThrowHelper.ThrowKeyNotFoundException(key);
@@ -258,7 +323,27 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value) => TryGetOrLoadType(key, out value);
+            protected LazyTypeLoadDictionary(RuntimeType groupType)
+            {
+                _groupType = groupType;
+            }
+
+            public void AddPreCachedModule(RuntimeModule module)
+            {
+                _preCachedModules.Add(module);
+            }
+
+            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value)
+            {
+                foreach (RuntimeModule module in _preCachedModules)
+                {
+                    if (TryGetOrLoadTypeFromPreCachedDictionary(module, key, out value))
+                    {
+                        return true;
+                    }
+                }
+                return TryGetOrLoadType(key, out value);
+            }
 
             // Not supported to avoid exposing TypeMap entries in a manner that
             // would violate invariants the Trimmer is attempting to enforce.
@@ -317,14 +402,18 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
         private sealed class LazyExternalTypeDictionary : LazyTypeLoadDictionary<string>
         {
-            private static int ComputeHashCode(string key) => key.GetHashCode();
+            private readonly Dictionary<string, DelayedType> _lazyData = [];
 
-            private readonly Dictionary<int, DelayedType> _lazyData = new();
+            protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
+            {
+                IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
+                return type != null;
+            }
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
             {
-                int hash = ComputeHashCode(key);
-                if (!_lazyData.TryGetValue(hash, out DelayedType? value))
+                if (!_lazyData.TryGetValue(key, out DelayedType? value))
                 {
                     type = null;
                     return false;
@@ -334,15 +423,29 @@ namespace System.Runtime.InteropServices
                 return true;
             }
 
+            public LazyExternalTypeDictionary(RuntimeType groupType) : base(groupType)
+            {
+            }
+
             public void Add(string key, TypeNameUtf8 targetType, RuntimeAssembly fallbackAssembly)
             {
-                int hash = ComputeHashCode(key);
-                if (_lazyData.ContainsKey(hash))
+                if (_lazyData.ContainsKey(key))
                 {
                     ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
                 }
 
-                _lazyData.Add(hash, new DelayedType(targetType, fallbackAssembly));
+                // Check if any of the pre-cached dictionaries have an entry for this key.
+                // We can go down the path that would load the type as we will only load the type in the
+                // error case (duplicate key).
+                foreach (RuntimeModule module in _preCachedModules)
+                {
+                    if (TryGetOrLoadTypeFromPreCachedDictionary(module, key, out Type? _))
+                    {
+                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                    }
+                }
+
+                _lazyData.Add(key, new DelayedType(targetType, fallbackAssembly));
             }
         }
 
@@ -374,6 +477,14 @@ namespace System.Runtime.InteropServices
             }
 
             private readonly Dictionary<int, DelayedTypeCollection> _lazyData = new();
+
+            protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, Type key, [NotNullWhen(true)] out Type? type)
+            {
+                RuntimeType rtKey = (RuntimeType)key;
+                IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
+                type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
+                return type != null;
+            }
 
             protected override bool TryGetOrLoadType(Type key, [NotNullWhen(true)] out Type? type)
             {
@@ -407,6 +518,10 @@ namespace System.Runtime.InteropServices
                 }
                 type = null;
                 return false;
+            }
+
+            public LazyProxyTypeDictionary(RuntimeType groupType) : base(groupType)
+            {
             }
 
             public void Add(

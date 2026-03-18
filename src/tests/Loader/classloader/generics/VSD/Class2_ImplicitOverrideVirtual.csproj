@@ -7,6 +7,9 @@
     <Compile Include="Class2_ImplicitOverrideVirtual.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="Class_ImplicitOverrideVirtualNewslot.csproj" />
   </ItemGroup>
 </Project>

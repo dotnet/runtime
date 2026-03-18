@@ -134,8 +134,7 @@ namespace System.Management
             if (nsPath.Length != 0)
             {
                 // Any path separators present?
-                char[] pathSeparators = { '\\', '/' };
-                if (nsPath.IndexOfAny(pathSeparators) == -1)
+                if (nsPath.AsSpan().IndexOfAny('\\', '/') < 0)
                 {
                     // No separators.  The only valid path is "root".
                     if (!string.Equals("root", nsPath, StringComparison.OrdinalIgnoreCase))

@@ -210,7 +210,12 @@ ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 
     if (x509)
     {
-        X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
         ASN1_OBJECT* algOid;
 
         if (pubkey && X509_PUBKEY_get0_param(&algOid, NULL, NULL, NULL, pubkey))
@@ -272,7 +277,12 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
         return 0;
     }
 
-    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
 
     if (!pubkey)
     {
@@ -324,7 +334,7 @@ Return values:
 NULL if the public key cannot be determined, a pointer to the ASN1_BIT_STRING structure representing
 the public key.
 */
-ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
+const ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
     // No error queue impact.
 
@@ -378,7 +388,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return 0;
     }
 
-    int length = asn1->length;
+    int length = ASN1_STRING_length(asn1);
     assert(length >= 0);
     if (length < 0)
     {
@@ -390,7 +400,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return -length;
     }
 
-    memcpy_s(pBuf, Int32ToSizeT(cBuf), asn1->data, Int32ToSizeT(length));
+    memcpy_s(pBuf, Int32ToSizeT(cBuf), ASN1_STRING_get0_data(asn1), Int32ToSizeT(length));
     return 1;
 }
 
@@ -484,28 +494,28 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
     // UrlName: SAN.Entries.FirstOrDefault(type == GEN_URI);
     if (nameType == NAME_TYPE_SIMPLE)
     {
-        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
+        const X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
 
         if (name)
         {
-            ASN1_STRING* cn = NULL;
-            ASN1_STRING* ou = NULL;
-            ASN1_STRING* o = NULL;
-            ASN1_STRING* e = NULL;
-            ASN1_STRING* firstRdn = NULL;
+            const ASN1_STRING* cn = NULL;
+            const ASN1_STRING* ou = NULL;
+            const ASN1_STRING* o = NULL;
+            const ASN1_STRING* e = NULL;
+            const ASN1_STRING* firstRdn = NULL;
 
             // Walk the list backwards because it is stored in stack order
             for (int i = X509_NAME_entry_count(name) - 1; i >= 0; --i)
             {
-                X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
+                const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
 
                 if (!entry)
                 {
                     continue;
                 }
 
-                ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
-                ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+                const ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
+                const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
 
                 if (!oid || !str)
                 {
@@ -538,7 +548,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                 }
             }
 
-            ASN1_STRING* answer = cn;
+            const ASN1_STRING* answer = cn;
 
             // If there was no CN, but there was something, then perform fallbacks.
             if (!answer && firstRdn)
@@ -662,7 +672,7 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
 
     if (nameType == NAME_TYPE_EMAIL || nameType == NAME_TYPE_DNS)
     {
-        X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
+        const X509_NAME* name = forIssuer ? X509_get_issuer_name(x509) : X509_get_subject_name(x509);
         int expectedNid = NID_undef;
 
         switch (nameType)
@@ -680,15 +690,15 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
             // Walk the list backwards because it is stored in stack order
             for (int i = X509_NAME_entry_count(name) - 1; i >= 0; --i)
             {
-                X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
+                const X509_NAME_ENTRY* entry = X509_NAME_get_entry(name, i);
 
                 if (!entry)
                 {
                     continue;
                 }
 
-                ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
-                ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
+                const ASN1_OBJECT* oid = X509_NAME_ENTRY_get_object(entry);
+                const ASN1_STRING* str = X509_NAME_ENTRY_get_data(entry);
 
                 if (!oid || !str)
                 {
@@ -800,12 +810,19 @@ int32_t CryptoNative_CheckX509IpAddress(
 
             ipAddr = sanEntry->d.iPAddress;
 
-            if (!ipAddr || !ipAddr->data || ipAddr->length != addressBytesLen)
+            if (!ipAddr || ASN1_STRING_length(ipAddr) != addressBytesLen)
             {
                 continue;
             }
 
-            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            const uint8_t* ipAddrData = ASN1_STRING_get0_data(ipAddr);
+
+            if (!ipAddrData)
+            {
+                continue;
+            }
+
+            if (!memcmp(addressBytes, ipAddrData, (size_t)addressBytesLen))
             {
                 success = 1;
                 break;
@@ -818,7 +835,7 @@ int32_t CryptoNative_CheckX509IpAddress(
     if (!success)
     {
         // This is a shared/interor pointer, do not free!
-        X509_NAME* subject = X509_get_subject_name(x509);
+        OSSL4CONST X509_NAME* subject = X509_get_subject_name(x509);
 
         if (subject)
         {
@@ -827,11 +844,14 @@ int32_t CryptoNative_CheckX509IpAddress(
             while ((i = X509_NAME_get_index_by_NID(subject, subjectNid, i)) >= 0)
             {
                 // Shared/interior pointers, do not free!
-                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
-                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
+                const X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
+                const ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
-                if (cn->length == cchHostname &&
-                    !strncasecmp((const char*)cn->data, hostname, (size_t)cchHostname))
+                const char* data = (const char*)ASN1_STRING_get0_data(cn);
+
+                if (ASN1_STRING_length(cn) == cchHostname &&
+                    data != NULL &&
+                    !strncasecmp(data, hostname, (size_t)cchHostname))
                 {
                     success = 1;
                     break;

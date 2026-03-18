@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         internal StringComparison ComparisonType { get; }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using case-insensitive matching
+        /// Initializes a new instance of the <see cref="Matcher" /> class using case-insensitive matching.
         /// </summary>
         public Matcher()
             : this(StringComparison.OrdinalIgnoreCase, false)
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method specified
+        /// Initializes a new instance of the <see cref="Matcher" /> class using the string comparison method specified.
         /// </summary>
         /// <param name="comparisonType">The <see cref="StringComparison" /> to use</param>
         public Matcher(StringComparison comparisonType)
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method and filter ordering specified
+        /// Initializes a new instance of the <see cref="Matcher" /> class using the string comparison method and filter ordering specified.
         /// </summary>
         /// <param name="comparisonType">The <see cref="StringComparison" /> to use</param>
         /// <param name="preserveFilterOrder">

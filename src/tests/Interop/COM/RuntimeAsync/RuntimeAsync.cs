@@ -58,17 +58,36 @@ public class RuntimeAsyncBuiltInCom
             }
         }
     }
+
+    [Fact]
+    public static void TaskReturningPInvokeWithComMarshalling()
+    {
+        Task originalTask = new(() => {});
+        Task result = RunTask(originalTask);
+
+        originalTask.Start();
+
+        result.GetAwaiter().GetResult();
+
+        static async Task RunTask(Task task)
+        {
+            await RuntimeAsyncNative.PassThroughTask(task);
+        }
+    }
 }
 
 public static class RuntimeAsyncNative
 {
-    [DllImport("RuntimeAsyncNative")]
+    [DllImport(nameof(RuntimeAsyncNative))]
     [return: MarshalAs(UnmanagedType.U1)]
     public static extern bool ValidateSlotLayoutForDefaultInterface([MarshalAs(UnmanagedType.Interface)] object comObject, int expectedIntValue, float expectedFloatValue);
 
-    [DllImport("RuntimeAsyncNative")]
+    [DllImport(nameof(RuntimeAsyncNative))]
     [return: MarshalAs(UnmanagedType.U1)]
     public static extern bool ValidateSlotLayoutForInterface([MarshalAs(UnmanagedType.Interface)] object comObject, float expectedFloatValue);
+
+    [DllImport(nameof(RuntimeAsyncNative))]
+    public static extern Task PassThroughTask(Task task);
 }
 
 [ComVisible(true)]

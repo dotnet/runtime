@@ -22,6 +22,7 @@ jobs:
         repository: 'dotnet/aspnetcore'
         path: aspnetcore
         ref: main
+        persist-credentials: false
     - name: Checkout runtime
       uses: actions/checkout@v6
       with:
@@ -29,6 +30,7 @@ jobs:
         repository: 'dotnet/runtime'
         path: runtime
         ref: main
+        persist-credentials: false
     - name: Copy
       shell: cmd
       working-directory: .\aspnetcore\src\Shared\runtime\
@@ -42,7 +44,7 @@ jobs:
         mkdir ..\artifacts
         git status > ..\artifacts\status.txt
         git diff > ..\artifacts\diff.txt
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v7
       with:
         name: results
         path: artifacts
@@ -57,7 +59,7 @@ jobs:
     - name: Send PR
       if: steps.check.outputs.changed == 'true'
       # https://github.com/marketplace/actions/create-pull-request
-      uses: dotnet/actions-create-pull-request@v4
+      uses: dotnet/actions-create-pull-request@e8d799aa1f8b17f324f9513832811b0a62f1e0b1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         path: .\runtime

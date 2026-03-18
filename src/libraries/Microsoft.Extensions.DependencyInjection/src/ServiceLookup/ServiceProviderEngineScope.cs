@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -120,10 +121,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void Dispose()
         {
             List<object>? toDispose = BeginDispose();
-
-            if (toDispose != null)
+            if (toDispose is null)
             {
-                for (int i = toDispose.Count - 1; i >= 0; i--)
+                return;
+            }
+
+            object? exceptionsCache = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
+            {
+                try
                 {
                     if (toDispose[i] is IDisposable disposable)
                     {
@@ -134,66 +140,124 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
                     }
                 }
+                catch (Exception exception)
+                {
+                    AddExceptionToCache(ref exceptionsCache, exception);
+                }
             }
+
+            CheckExceptionCache(exceptionsCache);
         }
 
         public ValueTask DisposeAsync()
         {
             List<object>? toDispose = BeginDispose();
-
-            if (toDispose != null)
+            if (toDispose is null)
             {
-                try
-                {
-                    for (int i = toDispose.Count - 1; i >= 0; i--)
-                    {
-                        object disposable = toDispose[i];
-                        if (disposable is IAsyncDisposable asyncDisposable)
-                        {
-                            ValueTask vt = asyncDisposable.DisposeAsync();
-                            if (!vt.IsCompletedSuccessfully)
-                            {
-                                return Await(i, vt, toDispose);
-                            }
-
-                            // If its a IValueTaskSource backed ValueTask,
-                            // inform it its result has been read so it can reset
-                            vt.GetAwaiter().GetResult();
-                        }
-                        else
-                        {
-                            ((IDisposable)disposable).Dispose();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return new ValueTask(Task.FromException(ex));
-                }
+                return default;
             }
 
-            return default;
-
-            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
+            object? exceptionsCache = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
             {
-                await vt.ConfigureAwait(false);
-                // vt is acting on the disposable at index i,
-                // decrement it and move to the next iteration
-                i--;
-
-                for (; i >= 0; i--)
+                try
                 {
                     object disposable = toDispose[i];
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        ValueTask vt = asyncDisposable.DisposeAsync();
+                        if (!vt.IsCompletedSuccessfully)
+                        {
+                            return Await(i, vt, toDispose, exceptionsCache);
+                        }
+
+                        // If its a IValueTaskSource backed ValueTask,
+                        // inform it its result has been read so it can reset
+                        vt.GetAwaiter().GetResult();
                     }
                     else
                     {
                         ((IDisposable)disposable).Dispose();
                     }
                 }
+                catch (Exception exception)
+                {
+                    AddExceptionToCache(ref exceptionsCache, exception);
+                }
             }
+
+            CheckExceptionCache(exceptionsCache);
+
+            return default;
+
+            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose, object? exceptionsCache)
+            {
+                try
+                {
+                    await vt.ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    AddExceptionToCache(ref exceptionsCache, exception);
+                }
+
+                // vt is acting on the disposable at index i,
+                // decrement it and move to the next iteration
+                i--;
+
+                for (; i >= 0; i--)
+                {
+                    try
+                    {
+                        object disposable = toDispose[i];
+                        if (disposable is IAsyncDisposable asyncDisposable)
+                        {
+                            await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            ((IDisposable)disposable).Dispose();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        AddExceptionToCache(ref exceptionsCache, exception);
+                    }
+                }
+
+                CheckExceptionCache(exceptionsCache);
+            }
+        }
+
+        private static void AddExceptionToCache(ref object? exceptionsCache, Exception exception)
+        {
+            if (exceptionsCache is null)
+            {
+                exceptionsCache = ExceptionDispatchInfo.Capture(exception);
+            }
+            else if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+            {
+                exceptionsCache = new List<Exception> { exceptionInfo.SourceException, exception };
+            }
+            else
+            {
+                ((List<Exception>)exceptionsCache).Add(exception);
+            }
+        }
+
+        private static void CheckExceptionCache(object? exceptionsCache)
+        {
+            if (exceptionsCache is null)
+            {
+                return;
+            }
+
+            if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+            {
+                exceptionInfo.Throw();
+            }
+
+            throw new AggregateException((List<Exception>)exceptionsCache);
         }
 
         private List<object>? BeginDispose()

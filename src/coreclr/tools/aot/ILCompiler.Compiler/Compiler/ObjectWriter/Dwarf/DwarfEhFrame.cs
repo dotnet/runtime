@@ -104,7 +104,7 @@ namespace ILCompiler.ObjectWriter
             if (cie.PersonalitySymbolName != null)
             {
                 _sectionWriter.WriteByte(cie.PersonalityEncoding);
-                WriteAddress(cie.PersonalityEncoding, cie.PersonalitySymbolName);
+                WriteAddress(cie.PersonalityEncoding, new Utf8String(cie.PersonalitySymbolName));
             }
             if (cie.LsdaEncoding != 0)
             {

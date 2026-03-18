@@ -16,9 +16,7 @@
 #include "sigformat.h"
 #include "eeconfig.h"
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
 #include "interoputil.inl"
@@ -1121,7 +1119,9 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
     CONTRACTL_END;
 
     STRINGREF message = NULL;
+    GCPROTECT_BEGIN(message);
     ResMgrGetString(m_resourceName, &message);
+    GCPROTECT_END();
 
     if (message != NULL)
     {
@@ -1301,8 +1301,8 @@ OBJECTREF EEArgumentException::CreateThrowable()
     gc.pThrowable = NULL;
     gc.s1 = NULL;
     gc.pTmpThrowable = NULL;
-    ResMgrGetString(m_resourceName, &gc.s1);
     GCPROTECT_BEGIN(gc);
+    ResMgrGetString(m_resourceName, &gc.s1);
 
     MethodTable *pMT = CoreLibBinder::GetException(m_kind);
     gc.pThrowable = AllocateObject(pMT);

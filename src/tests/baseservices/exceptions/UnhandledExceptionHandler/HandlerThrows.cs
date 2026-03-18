@@ -44,6 +44,7 @@ public class HandlerThrows
         SetHandler();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/47624", TestRuntimes.Mono)]
     [Fact]
     public static void Test1()
     {

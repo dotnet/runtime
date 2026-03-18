@@ -26,9 +26,8 @@ namespace System.Globalization.Tests
         public void Normalize()
         {
             // Windows 8 test data came from http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt
-            // Windows 7 test came from http://www.unicode.org/Public/3.0-Update1/NormalizationTest-3.0.1.txt
 
-            using (Stream stream = typeof(StringNormalizationAllTests).GetTypeInfo().Assembly.GetManifestResourceStream(PlatformDetection.IsWindows7 ? "NormalizationDataWin7" : "NormalizationDataWin8"))
+            using (Stream stream = typeof(StringNormalizationAllTests).GetTypeInfo().Assembly.GetManifestResourceStream("NormalizationDataWin8"))
             {
                 using (StreamReader sr = new StreamReader(stream))
                 {

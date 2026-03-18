@@ -328,9 +328,9 @@ internal static partial class Interop
             throw new SslException();
         }
 
-        internal static void SslSetCertificate(SafeSslHandle sslHandle, IntPtr[] certChainPtrs)
+        internal static void SslSetCertificate(SafeSslHandle sslHandle, ReadOnlySpan<IntPtr> certChainPtrs)
         {
-            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs, (UIntPtr)certChainPtrs.Length))
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs))
             {
                 int osStatus = AppleCryptoNative_SslSetCertificate(sslHandle, cfCertRefs);
 
@@ -386,7 +386,7 @@ internal static partial class Interop
                 {
                     // we did not match common case. This is more expensive path allocating Core Foundation objects.
                     cfProtocolsArrayRef = new SafeCreateHandle[protocols.Count];
-                    IntPtr[] protocolsPtr = new System.IntPtr[protocols.Count];
+                    IntPtr[] protocolsPtr = new IntPtr[protocols.Count];
 
                     for (int i = 0; i < protocols.Count; i++)
                     {

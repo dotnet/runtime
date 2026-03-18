@@ -121,7 +121,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData("ar-SA", ";")]
         [InlineData("as-IN", ",")]
         [InlineData("ba-RU", ";")]
@@ -211,13 +211,13 @@ namespace System.Globalization.Tests
         {
             foreach (string cultureName in s_cultureNames)
             {
-                // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
-                yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+                // DESERT CAPITAL LETTER LONG I has a lower case variant.
+                yield return new object[] { cultureName, "\U00010400", "\U00010428" };
             }
 
             if (!PlatformDetection.IsNlsGlobalization)
             {
-                yield return new object[] { "", "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+                yield return new object[] { "", "\U00010400", "\U00010428" };
             }
         }
 
@@ -369,8 +369,8 @@ namespace System.Globalization.Tests
         {
             foreach (string cultureName in s_cultureNames)
             {
-                // DESERT SMALL LETTER LONG I has an upper case variant (but not on Windows 7).
-                yield return new object[] { cultureName, "\U00010428", PlatformDetection.IsWindows7 ? "\U00010428" : "\U00010400" };
+                // DESERT SMALL LETTER LONG I has an upper case variant.
+                yield return new object[] { cultureName, "\U00010428", "\U00010400" };
             }
         }
 

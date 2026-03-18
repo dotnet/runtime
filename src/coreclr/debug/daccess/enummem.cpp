@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: enummem.cpp
 //
-
-//
 // ICLRDataEnumMemoryRegions implementation.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -184,6 +182,8 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     // global pointers.
     //
 #define DEFINE_DACVAR(size_type, id, var) \
+    ReportMem(m_dacGlobals.id, sizeof(size_type));
+#define DEFINE_DACVAR_VOLATILE(size_type, id, var) \
     ReportMem(m_dacGlobals.id, sizeof(size_type));
 
     ULONG64 dacTableAddress;
@@ -595,7 +595,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            PCODE addr = pMD->GetNativeCode();
+            PCODE addr = pMD->GetCodeForInterpreterOrJitted();
             if (addr != (PCODE)NULL)
             {
                 EECodeInfo codeInfo(addr);
@@ -974,7 +974,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // back to source lines for functions on stacks is very useful and we don't
                             // want to allow the function to fail for all targets.
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(USE_GC_INFO_DECODER)
 
                             if (addr != (PCODE)NULL)
                             {
@@ -995,7 +995,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     }
                                 }
                             }
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+#endif // USE_GC_INFO_DECODER
                         }
                         pMethodDefinition.Clear();
                     }

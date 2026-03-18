@@ -30,6 +30,7 @@ private:
     PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
+    friend struct ::cdac_data<ReadyToRunCoreInfo>;
 
 public:
     ReadyToRunCoreInfo();
@@ -45,6 +46,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pLayout;
     }
+};
+
+template<>
+struct cdac_data<ReadyToRunCoreInfo>
+{
+    static constexpr size_t Header = offsetof(ReadyToRunCoreInfo, m_pCoreHeader);
 };
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
@@ -97,6 +104,28 @@ public:
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };
 
+struct StringWithLength
+{
+    LPCUTF8 str;
+    uint32_t length;
+};
+
+class VersionResilientStringHash : public NoRemoveSHashTraits<DefaultSHashTraits<StringWithLength>>
+{
+public:
+    using key_t = StringWithLength;
+    static const key_t GetKey(_In_ const element_t& e) { return e; }
+    static count_t Hash(_In_ key_t key)
+    {
+        return ComputeNameHashCode(key.str, key.length);
+    }
+    static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return strncmp(lhs.str, rhs.str, min(lhs.length, rhs.length)) == 0 && lhs.length == rhs.length; }
+    static bool IsNull(_In_ const element_t& e) { return e.str == nullptr; }
+    static const element_t Null() { return {}; }
+};
+
+using ExternalTypeNameHash = SHash<VersionResilientStringHash>;
+
 class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
@@ -143,7 +172,12 @@ class ReadyToRunInfo
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
 
+    NativeFormat::NativeHashtable   m_externalTypeMaps;
+    NativeFormat::NativeHashtable   m_proxyTypeMaps;
+    NativeFormat::NativeHashtable   m_typeMapAssemblyTargets;
+
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
+    TADDR                           m_pLoadedImageBase;
 
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
@@ -169,6 +203,8 @@ public:
 
     PTR_ReadyToRunLoadedImage GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
+
+    void RegisterResumptionStub(PCODE stubEntryPoint);
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
@@ -330,6 +366,18 @@ public:
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
+    TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
+
+    bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
+
+    bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
+    TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
+
+    bool HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount);
+
+    COUNT_T GetTypeMapAssemblyTargets(MethodTable* pGroupType, Module** pTargetModules, COUNT_T count);
+
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
@@ -337,7 +385,7 @@ private:
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, ModuleBase *pModule1, mdToken mdToken2, IMDInternalImport * pImport2, ModuleBase *pModule2);
 
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
-    void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
+    bool SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
 
     PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 
@@ -356,6 +404,8 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
+    static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
+    static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
 };
 
 class DynamicHelpers
