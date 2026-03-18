@@ -60,6 +60,7 @@ internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 
 internal sealed class PInvokeCollector {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
+    private readonly Dictionary<Type, bool> _typeUnsupportedOnBrowserCache = new();
     private LogAdapter Log { get; init; }
 
     public PInvokeCollector(LogAdapter log)
@@ -171,31 +172,6 @@ internal sealed class PInvokeCollector {
 
             return false;
         }
-
-        static bool IsUnsupportedOnBrowser(Type? type)
-        {
-            if (type is null)
-                return false;
-
-            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
-            {
-                try
-                {
-                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
-                        cattr.ConstructorArguments.Count > 0 &&
-                        cattr.ConstructorArguments[0].Value?.ToString() == "browser")
-                    {
-                        return true;
-                    }
-                }
-                catch
-                {
-                    // Assembly not found, ignore
-                }
-            }
-
-            return false;
-        }
     }
 
     public static bool IsBlittable(Type type, LogAdapter log) => PInvokeTableGenerator.IsBlittable(type, log);
@@ -231,6 +207,38 @@ internal sealed class PInvokeCollector {
             _assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly
                 .GetCustomAttributesData()
                 .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
+        }
+
+        return value;
+    }
+
+    private bool IsUnsupportedOnBrowser(Type? type)
+    {
+        if (type is null)
+            return false;
+
+        if (!_typeUnsupportedOnBrowserCache.TryGetValue(type, out bool value))
+        {
+            value = false;
+            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
+            {
+                try
+                {
+                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
+                        cattr.ConstructorArguments.Count > 0 &&
+                        cattr.ConstructorArguments[0].Value?.ToString() == "browser")
+                    {
+                        value = true;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Assembly not found, ignore
+                }
+            }
+
+            _typeUnsupportedOnBrowserCache[type] = value;
         }
 
         return value;
