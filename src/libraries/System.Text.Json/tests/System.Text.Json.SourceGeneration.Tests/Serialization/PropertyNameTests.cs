@@ -32,6 +32,24 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"MyValue":"test"}""", json);
         }
 
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_CustomDerived_TypeLevel_PreventsGlobalPolicyFromApplying()
+        {
+            // Even when a global naming policy is configured, the custom derived attribute
+            // should prevent it from applying — the CLR name should be used instead.
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" }, options);
+            Assert.Equal("""{"MyValue":"test"}""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_PreventsGlobalPolicyFromApplying()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedMemberNamingPolicyAttribute { MyValue = "test" }, options);
+            Assert.Equal("""{"MyValue":"test"}""", json);
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(Dictionary<string, OverridePropertyNameDesignTime_TestClass>))]
         [JsonSerializable(typeof(Dictionary<string, int>))]
@@ -76,6 +94,22 @@ namespace System.Text.Json.SourceGeneration.Tests
         public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_FallsBackToClrName()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedMemberNamingPolicyAttribute { MyValue = "test" });
+            Assert.Equal("""{"MyValue":"test"}""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_CustomDerived_TypeLevel_PreventsGlobalPolicyFromApplying()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" }, options);
+            Assert.Equal("""{"MyValue":"test"}""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_PreventsGlobalPolicyFromApplying()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedMemberNamingPolicyAttribute { MyValue = "test" }, options);
             Assert.Equal("""{"MyValue":"test"}""", json);
         }
 
