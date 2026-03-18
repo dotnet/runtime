@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
+    <Compile Include="InstructionSetHelpTests.cs" />
     <Compile Include="SwiftLoweringTests.cs" />
   </ItemGroup>
 </Project>
