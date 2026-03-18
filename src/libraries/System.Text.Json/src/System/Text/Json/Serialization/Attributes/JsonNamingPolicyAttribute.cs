@@ -4,7 +4,7 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// When placed on a type, property, or field, indicates what <see cref="Json.JsonNamingPolicy"/>
+    /// When placed on a type, property, or field, indicates what <see cref="JsonNamingPolicy"/>
     /// should be used to convert property names.
     /// </summary>
     /// <remarks>
