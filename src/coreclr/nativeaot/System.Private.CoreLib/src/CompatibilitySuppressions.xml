@@ -825,4 +825,16 @@
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.NativeFormat.TypeHashingAlgorithms</Target>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.MemorySafetyRulesAttribute</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
 </Suppressions>
