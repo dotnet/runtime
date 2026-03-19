@@ -26,6 +26,7 @@
 #include "threadstore.inl"
 #include "eventtrace_context.h"
 #include "eventtracebase.h"
+#include "thread.inl"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
