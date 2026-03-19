@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using Xunit;
 using System.Tests;
 
@@ -87,49 +86,6 @@ namespace System.IO.Tests
             var innerException = new Exception("Inner exception");
             var exception = new FileNotFoundException(message, fileName, innerException);
 
-            Assert.Null(exception.FusionLog);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        public static void RequestingAssemblyChain_IncludedInMessage()
-        {
-            string fileName = "Missing.Assembly";
-            string requestingAssembly = "Parent.Assembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
-            int hResult = unchecked((int)0x80070002); // COR_E_FILENOTFOUND
-
-            ConstructorInfo? ctor = typeof(FileNotFoundException).GetConstructor(
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null,
-                new[] { typeof(string), typeof(string), typeof(int) },
-                modifiers: null);
-
-            Assert.NotNull(ctor);
-            var exception = (FileNotFoundException)ctor.Invoke(new object[] { fileName, requestingAssembly, hResult });
-
-            Assert.Contains(requestingAssembly, exception.Message);
-            Assert.Null(exception.FusionLog);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        public static void RequestingAssemblyChain_MultipleAssemblies_IncludedInMessage()
-        {
-            string fileName = "Missing.Assembly";
-            string assemblyA = "A, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
-            string assemblyB = "B, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null";
-            string requestingChain = assemblyA + "\n" + assemblyB;
-            int hResult = unchecked((int)0x80070002); // COR_E_FILENOTFOUND
-
-            ConstructorInfo? ctor = typeof(FileNotFoundException).GetConstructor(
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null,
-                new[] { typeof(string), typeof(string), typeof(int) },
-                modifiers: null);
-
-            Assert.NotNull(ctor);
-            var exception = (FileNotFoundException)ctor.Invoke(new object[] { fileName, requestingChain, hResult });
-
-            Assert.Contains(assemblyA, exception.Message);
-            Assert.Contains(assemblyB, exception.Message);
             Assert.Null(exception.FusionLog);
         }
     }
