@@ -80,6 +80,21 @@
              Importance="normal" />
   </Target>
 
+  <!-- Filter out Windows-only debuggees on non-Windows platforms. Debuggees opt in
+       by setting <WindowsOnly>true</WindowsOnly> in their csproj. -->
+  <Target Name="_FilterWindowsOnlyDebuggees"
+          Condition="'$(HostOS)' != 'windows'"
+          BeforeTargets="GenerateAllDumps;BuildDebuggeesOnly;PrepareHelixPayload">
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DebuggeeMeta" />
+    </MSBuild>
+    <ItemGroup>
+      <DebuggeeCsproj Remove="%(_DebuggeeMeta.ProjectPath)" Condition="'%(_DebuggeeMeta.WindowsOnly)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
   <!-- Top-level target — must be invoked explicitly (not triggered by Build).
        Reads DumpTypes from each debuggee csproj and dispatches generation. -->
   <Target Name="GenerateAllDumps">
@@ -114,6 +129,13 @@
                      Condition="!Exists('$(_DumpInfoFile)')" />
     <Message Text="Wrote dump-info.json: $(_DumpInfoFile) (os=$(_DumpOS), arch=$(_DumpArch))"
              Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />
+  </Target>
+
+  <!-- Build all debuggees without running them (for Helix payload preparation).
+       Uses dotnet build (via Exec) to ensure implicit NuGet restore, matching
+       the pattern in _GenerateLocalDump. Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
+  <Target Name="BuildDebuggeesOnly">
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;%(DebuggeeCsproj.Identity)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) --nologo" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
