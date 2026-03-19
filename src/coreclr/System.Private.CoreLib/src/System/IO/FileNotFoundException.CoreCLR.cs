@@ -13,5 +13,17 @@ namespace System.IO
             FileName = fileName;
             SetMessageField();
         }
+
+        // Do not delete: this is invoked from native code.
+        // Used when the requesting assembly is known, to provide assembly load dependency context.
+        private FileNotFoundException(string? fileName, string? requestingAssemblyName, int hResult)
+            : base(null)
+        {
+            HResult = hResult;
+            FileName = fileName;
+            if (requestingAssemblyName is not null)
+                FusionLog = SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyName);
+            SetMessageField();
+        }
     }
 }

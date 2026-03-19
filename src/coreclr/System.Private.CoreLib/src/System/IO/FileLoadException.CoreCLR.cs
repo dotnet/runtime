@@ -17,6 +17,18 @@ namespace System.IO
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
         }
 
+        // Do not delete: this is invoked from native code.
+        // Used when the requesting assembly is known, to provide assembly load dependency context.
+        private FileLoadException(string? fileName, string? requestingAssemblyName, int hResult)
+            : base(null)
+        {
+            HResult = hResult;
+            FileName = fileName;
+            if (requestingAssemblyName is not null)
+                FusionLog = SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyName);
+            _message = FormatFileLoadExceptionMessage(FileName, HResult);
+        }
+
         internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)
         {
             string? format = null;

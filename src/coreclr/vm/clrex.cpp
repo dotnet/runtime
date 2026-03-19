@@ -1606,32 +1606,62 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     struct {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
+        STRINGREF pNewFusionLogString;
     } gc;
     gc.pNewException = NULL;
     gc.pNewFileString = NULL;
+    gc.pNewFusionLogString = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);
     gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
+    bool usedThreeArgCtor = false;
 
-    if (!pMD)
+    if (!m_requestingAssemblyName.IsEmpty())
     {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
+        gc.pNewFusionLogString = StringObject::NewString(m_requestingAssemblyName);
+
+        MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
+                                COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
+
+        if (pMD)
+        {
+            MethodDescCallSite exceptionCtor(pMD);
+
+            ARG_SLOT args[] = {
+                ObjToArgSlot(gc.pNewException),
+                ObjToArgSlot(gc.pNewFileString),
+                ObjToArgSlot(gc.pNewFusionLogString),
+                (ARG_SLOT) m_hr
+            };
+
+            exceptionCtor.Call(args);
+            usedThreeArgCtor = true;
+        }
     }
 
-    MethodDescCallSite  exceptionCtor(pMD);
+    if (!usedThreeArgCtor)
+    {
+        MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
+                                COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
 
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.pNewException),
-        ObjToArgSlot(gc.pNewFileString),
-        (ARG_SLOT) m_hr
-    };
+        if (!pMD)
+        {
+            MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
+            COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
+        }
 
-    exceptionCtor.Call(args);
+        MethodDescCallSite exceptionCtor(pMD);
+
+        ARG_SLOT args[] = {
+            ObjToArgSlot(gc.pNewException),
+            ObjToArgSlot(gc.pNewFileString),
+            (ARG_SLOT) m_hr
+        };
+
+        exceptionCtor.Call(args);
+    }
 
     GCPROTECT_END();
 
@@ -1684,7 +1714,29 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
     StackSString name;
     pSpec->GetDisplayName(0, name);
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
+
+    // Extract the requesting assembly name for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            StackSString requestingName;
+            pParentAssembly->GetDisplayName(requestingName);
+            pException->SetRequestingAssembly(requestingName);
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
 }
 
 /* static */
