@@ -1724,6 +1724,7 @@ public:
 
     MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
     {
+        _ASSERTE(HasAsyncOtherVariant());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
