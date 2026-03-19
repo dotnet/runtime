@@ -110,18 +110,13 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchAssemblyLoadContext)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
-            return context.LoadUnmanagedDll(unmanagedDllName);
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void ResolveUnmanagedDll(string* pUnmanagedDllName, IntPtr gchAssemblyLoadContext, IntPtr* pResult, Exception* pException)
         {
             try
             {
-                *pResult = ResolveUnmanagedDll(*pUnmanagedDllName, gchAssemblyLoadContext);
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                *pResult = context.LoadUnmanagedDll(*pUnmanagedDllName);
             }
             catch (Exception ex)
             {
@@ -131,18 +126,13 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
         // after trying all other means of resolution.
-        private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchAssemblyLoadContext)
-        {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
-            return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void ResolveUnmanagedDllUsingEvent(string* pUnmanagedDllName, Assembly* pAssembly, IntPtr gchAssemblyLoadContext, IntPtr* pResult, Exception* pException)
         {
             try
             {
-                *pResult = ResolveUnmanagedDllUsingEvent(*pUnmanagedDllName, *pAssembly, gchAssemblyLoadContext);
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                *pResult = context.GetResolvedUnmanagedDll(*pAssembly, *pUnmanagedDllName);
             }
             catch (Exception ex)
             {
@@ -208,21 +198,16 @@ namespace System.Runtime.Loader
         /// <summary>
         /// Called by the runtime to start an assembly load activity for tracing
         /// </summary>
-        private static void StartAssemblyLoad(ref Guid activityId, ref Guid relatedActivityId)
-        {
-            // Make sure ActivityTracker is enabled
-            ActivityTracker.Instance.Enable();
-
-            // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
-            ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, ref relatedActivityId, EventActivityOptions.Recursive, useTplSource: false);
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void StartAssemblyLoad(Guid* activityId, Guid* relatedActivityId, Exception* pException)
         {
             try
             {
-                StartAssemblyLoad(ref *activityId, ref *relatedActivityId);
+                // Make sure ActivityTracker is enabled
+                ActivityTracker.Instance.Enable();
+
+                // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
+                ActivityTracker.Instance.OnStart(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref *activityId, ref *relatedActivityId, EventActivityOptions.Recursive, useTplSource: false);
             }
             catch (Exception ex)
             {
@@ -233,18 +218,13 @@ namespace System.Runtime.Loader
         /// <summary>
         /// Called by the runtime to stop an assembly load activity for tracing
         /// </summary>
-        private static void StopAssemblyLoad(ref Guid activityId)
-        {
-            // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
-            ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void StopAssemblyLoad(Guid* activityId, Exception* pException)
         {
             try
             {
-                StopAssemblyLoad(ref *activityId);
+                // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
+                ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref *activityId, useTplSource: false);
             }
             catch (Exception ex)
             {
@@ -255,17 +235,12 @@ namespace System.Runtime.Loader
         /// <summary>
         /// Called by the runtime to make sure the default ALC is initialized
         /// </summary>
-        private static void InitializeDefaultContext()
-        {
-            _ = Default;
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void InitializeDefaultContext(Exception* pException)
         {
             try
             {
-                InitializeDefaultContext();
+                _ = Default;
             }
             catch (Exception ex)
             {

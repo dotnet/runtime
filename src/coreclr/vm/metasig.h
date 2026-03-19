@@ -448,7 +448,6 @@ DEFINE_METASIG_T(SM(PtrException_PtrException_RetVoid, P(C(EXCEPTION)) P(C(EXCEP
 DEFINE_METASIG_T(SM(PtrChar_PtrException_PtrObj_PtrException_RetVoid, P(u) P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrStr_PtrException_RetVoid, P(u) P(s) P(C(EXCEPTION)), v))
 
-DEFINE_METASIG_T(SM(PtrException_RetUInt, P(C(EXCEPTION)), K))
 DEFINE_METASIG_T(SM(PtrGuid_PtrException_RetVoid, P(C(GUID)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrGuid_PtrGuid_PtrException_RetVoid, P(C(GUID)) P(C(GUID)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrLock_Int_UInt_PtrException_RetVoid, P(C(LOCK)) i K P(C(EXCEPTION)), v))

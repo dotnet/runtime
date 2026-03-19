@@ -125,19 +125,6 @@ namespace System.Threading
             OnThreadExiting();
         }
 
-        [UnmanagedCallersOnly]
-        private static unsafe void StartCallback(Thread* pThread, Exception* pException)
-        {
-            try
-            {
-                pThread->StartCallback();
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
         // Max iterations to be done in SpinWait without switching GC modes.
         private const int SpinWaitCoopThreshold = 1024;
 

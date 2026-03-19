@@ -130,20 +130,13 @@ namespace System.Reflection
             return type;
         }
 
-        // Used by VM
-        internal static unsafe RuntimeType? GetTypeHelper(char* pTypeName, RuntimeAssembly? requestingAssembly,
-            bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod)
-        {
-            ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
-            return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName, unsafeAccessorMethod);
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void GetTypeHelper(char* pTypeName, RuntimeAssembly* pRequestingAssembly, bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod, RuntimeType* pResult, Exception* pException)
         {
             try
             {
-                *pResult = GetTypeHelper(pTypeName, *pRequestingAssembly, throwOnError, requireAssemblyQualifiedName, unsafeAccessorMethod);
+                ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+                *pResult = GetTypeHelper(typeName, *pRequestingAssembly, throwOnError, requireAssemblyQualifiedName, unsafeAccessorMethod);
             }
             catch (Exception ex)
             {

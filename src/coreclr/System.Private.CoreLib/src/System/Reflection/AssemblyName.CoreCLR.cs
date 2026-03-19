@@ -144,35 +144,30 @@ namespace System.Reflection
             return ProcessorArchitecture.None;
         }
 
-        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec)
-        {
-            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
-
-            fixed (char* pName = parts._name)
-            fixed (char* pCultureName = parts._cultureName)
-            fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
-            {
-                NativeAssemblyNameParts nameParts = default;
-
-                nameParts._flags = parts._flags;
-                nameParts._pName = pName;
-                nameParts._pCultureName = pCultureName;
-
-                nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
-                nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
-
-                nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
-
-                InitializeAssemblySpec(&nameParts, pAssemblySpec);
-            }
-        }
-
         [UnmanagedCallersOnly]
         private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec, Exception* pException)
         {
             try
             {
-                ParseAsAssemblySpec(pAssemblyName, pAssemblySpec);
+                AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
+
+                fixed (char* pName = parts._name)
+                fixed (char* pCultureName = parts._cultureName)
+                fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
+                {
+                    NativeAssemblyNameParts nameParts = default;
+
+                    nameParts._flags = parts._flags;
+                    nameParts._pName = pName;
+                    nameParts._pCultureName = pCultureName;
+
+                    nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
+                    nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
+
+                    nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
+
+                    InitializeAssemblySpec(&nameParts, pAssemblySpec);
+                }
             }
             catch (Exception ex)
             {
