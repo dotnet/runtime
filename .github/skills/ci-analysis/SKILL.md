@@ -22,9 +22,22 @@ Use this skill when:
 - Asked questions like "why is this PR failing", "analyze the CI", "is CI green", "retry CI", "rerun tests", or "test failures"
 - Investigating canceled or timed-out jobs for recoverable results
 
+## Scripts
+
+Two equivalent scripts are provided:
+
+| Script | Runtime | Command |
+|--------|---------|---------|
+| `Get-CIStatus.cs` | .NET 10+ (`dotnet run`) | `dotnet run scripts/Get-CIStatus.cs -- -BuildId 123` |
+| `Get-CIStatus.ps1` | PowerShell 7+ (`pwsh`) | `./scripts/Get-CIStatus.ps1 -BuildId 123` |
+
+**Prefer the C# script** — it requires only the .NET SDK (already available in dotnet repos) and has no PowerShell dependency.
+
+> ⚠️ If running from inside a repo with a custom `global.json`, copy the script to a temp directory or use `dotnet run --no-launch-profile` to avoid SDK version conflicts.
+
 ## Script Limitations
 
-The `Get-CIStatus.ps1` script targets **Azure DevOps + Helix** infrastructure specifically. It won't help with:
+Both scripts target **Azure DevOps + Helix** infrastructure specifically. They won't help with:
 - **GitHub Actions** workflows (different API, different log format)
 - Repos not using **Helix** for test distribution (no Helix work items to query)
 - Pure **build performance** questions (use MSBuild binlog analysis instead)
@@ -33,21 +46,31 @@ However, the analysis patterns in this skill (interpreting failures, correlating
 
 ## Quick Start
 
-```powershell
+```bash
 # Analyze PR failures (most common) - defaults to dotnet/runtime
-./scripts/Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
+dotnet run scripts/Get-CIStatus.cs -- -PRNumber 123445 -ShowLogs
 
 # Analyze by build ID
-./scripts/Get-CIStatus.ps1 -BuildId 1276327 -ShowLogs
+dotnet run scripts/Get-CIStatus.cs -- -BuildId 1276327 -ShowLogs
 
 # Query specific Helix work item
-./scripts/Get-CIStatus.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
+dotnet run scripts/Get-CIStatus.cs -- -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
 
 # Other dotnet repositories
-./scripts/Get-CIStatus.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
-./scripts/Get-CIStatus.ps1 -PRNumber 67890 -Repository "dotnet/sdk"
-./scripts/Get-CIStatus.ps1 -PRNumber 11111 -Repository "dotnet/roslyn"
+dotnet run scripts/Get-CIStatus.cs -- -PRNumber 12345 -Repository "dotnet/aspnetcore"
+dotnet run scripts/Get-CIStatus.cs -- -PRNumber 67890 -Repository "dotnet/sdk"
+dotnet run scripts/Get-CIStatus.cs -- -PRNumber 11111 -Repository "dotnet/roslyn"
 ```
+
+<details><summary>PowerShell equivalent</summary>
+
+```powershell
+./scripts/Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
+./scripts/Get-CIStatus.ps1 -BuildId 1276327 -ShowLogs
+./scripts/Get-CIStatus.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
+```
+
+</details>
 
 ## Key Parameters
 
