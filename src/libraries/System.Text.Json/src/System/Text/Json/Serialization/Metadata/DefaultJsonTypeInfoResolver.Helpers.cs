@@ -102,6 +102,13 @@ namespace System.Text.Json.Serialization.Metadata
             bool constructorHasSetsRequiredMembersAttribute =
                 typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
+            // Resolve type-level [JsonIgnore] once per type, rather than per-member.
+            JsonIgnoreCondition? typeIgnoreCondition = typeInfo.Type.GetUniqueCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
+            if (typeIgnoreCondition == JsonIgnoreCondition.Always)
+            {
+                ThrowHelper.ThrowInvalidOperationException(SR.DefaultIgnoreConditionInvalid);
+            }
+
             JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
@@ -118,6 +125,7 @@ namespace System.Text.Json.Serialization.Metadata
                     typeInfo,
                     currentType,
                     nullabilityCtx,
+                    typeIgnoreCondition,
                     constructorHasSetsRequiredMembersAttribute,
                     ref state);
             }
@@ -141,6 +149,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo typeInfo,
             Type currentType,
             NullabilityInfoContext nullabilityCtx,
+            JsonIgnoreCondition? typeIgnoreCondition,
             bool constructorHasSetsRequiredMembersAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
@@ -172,6 +181,7 @@ namespace System.Text.Json.Serialization.Metadata
                         typeToConvert: propertyInfo.PropertyType,
                         memberInfo: propertyInfo,
                         nullabilityCtx,
+                        typeIgnoreCondition,
                         shouldCheckMembersForRequiredMemberAttribute,
                         hasJsonIncludeAttribute,
                         ref state);
@@ -188,6 +198,7 @@ namespace System.Text.Json.Serialization.Metadata
                         typeToConvert: fieldInfo.FieldType,
                         memberInfo: fieldInfo,
                         nullabilityCtx,
+                        typeIgnoreCondition,
                         shouldCheckMembersForRequiredMemberAttribute,
                         hasJsonIncludeAttribute,
                         ref state);
@@ -202,11 +213,12 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             NullabilityInfoContext nullabilityCtx,
+            JsonIgnoreCondition? typeIgnoreCondition,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, nullabilityCtx, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
+            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, nullabilityCtx, typeIgnoreCondition, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -224,11 +236,22 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             NullabilityInfoContext nullabilityCtx,
+            JsonIgnoreCondition? typeIgnoreCondition,
             JsonSerializerOptions options,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
+
+            // Fall back to the type-level [JsonIgnore] if no member-level attribute is specified.
+            if (ignoreCondition is null && typeIgnoreCondition is not null)
+            {
+                // WhenWritingNull is invalid for non-nullable value types; treat as Never in that case
+                // so that the type-level annotation still overrides the global JSO DefaultIgnoreCondition.
+                ignoreCondition = typeIgnoreCondition == JsonIgnoreCondition.WhenWritingNull && !typeToConvert.IsNullableType()
+                    ? JsonIgnoreCondition.Never
+                    : typeIgnoreCondition;
+            }
 
             if (JsonTypeInfo.IsInvalidForSerialization(typeToConvert))
             {
