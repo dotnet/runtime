@@ -1340,7 +1340,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
 
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_and : INS_i32_and);
+            // Wasm relops always produce i32 results
+            //
+            GetEmitter()->emitIns(INS_i32_and);
             genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
         }
     }
@@ -1476,6 +1478,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
     // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
     // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
+
+    if (treeNode->TypeIs(TYP_LONG))
+    {
+        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        // Zero-extend the shift amount to 64 bits for long shifts/rotates.
+        // Wasteful if the amount was a constant, perhaps we should contain it if so.
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
@@ -2720,6 +2730,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
         case GenTreeBlk::BlkOpKindNativeOpcode:
             genConsumeOperands(blkOp);
+
+            if (isCopyBlk) NYI_WASM("codegenwasm.cpp 2724");
             // Emit the size constant expected by the memory.copy and memory.fill opcodes
             GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
             GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
