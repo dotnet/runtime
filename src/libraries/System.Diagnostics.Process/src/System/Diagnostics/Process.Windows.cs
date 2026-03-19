@@ -453,15 +453,29 @@ namespace System.Diagnostics
             {
                 startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
-                inheritableStdinHandle = DuplicateAsInheritable(stdinHandle);
-                inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle);
-                inheritableStderrHandle = DuplicateAsInheritable(stderrHandle);
+                // A process could be started with INVALID_HANDLE_VALUE, we need to take this into account.
+                if (!stdinHandle.IsInvalid)
+                {
+                    inheritableStdinHandle = DuplicateAsInheritable(stdinHandle);
+                    startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
+                }
 
-                startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
-                startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
-                startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
+                if (!stdoutHandle.IsInvalid)
+                {
+                    inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle);
+                    startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
+                }
 
-                startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+                if (!stderrHandle.IsInvalid)
+                {
+                    inheritableStderrHandle = DuplicateAsInheritable(stderrHandle);
+                    startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
+                }
+
+                if (!stdinHandle.IsInvalid || !stdoutHandle.IsInvalid || !stderrHandle.IsInvalid)
+                {
+                    startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+                }
 
                 if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                 {
