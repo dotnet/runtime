@@ -100,84 +100,138 @@
   </Target>
 
   <!-- ============================================================================
-       CheckCoreRootFreshness: Warn when Core_Root binaries are stale compared
-       to build output. Runs before any tests execute. Detects the most common
-       staleness scenarios:
-         1) CLR rebuilt (build.cmd clr) but Core_Root not refreshed
-         2) Libraries rebuilt (build.cmd libs) but Core_Root not refreshed
-         3) IL-CG2 R2R cache uses stale crossgen2/clrjit (RunCrossGen2 only)
+       Core_Root Freshness Check
+       Warns when Core_Root binaries are stale compared to build output.
+       Runs before any tests execute. Two-phase design:
+         _ComputeCoreRootFileMappings: enumerates Core_Root files and resolves
+           each to its build-output source based on config and RID.
+         CheckCoreRootFreshness: incremental target (Inputs/Outputs) that
+           warns about stale files without failing the build.
+       A separate target handles IL-CG2 R2R cache staleness.
        ========================================================================= -->
-  <Target Name="CheckCoreRootFreshness" BeforeTargets="RunTests"
-          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and '$(ContinuousIntegrationBuild)' != 'true'">
 
-    <!-- Construct the CLR build output path (same logic as eng/liveBuilds.targets) -->
+  <Target Name="_ComputeCoreRootFileMappings"
+          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
+                     '$(ContinuousIntegrationBuild)' != 'true' and
+                     Exists('$(CORE_ROOT)')">
+
     <PropertyGroup>
-      <_CoreCLRArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)'))</_CoreCLRArtifactsDir>
-      <_CoreRootDir>$([MSBuild]::NormalizePath('$(BaseOutputPathWithConfig)', 'Tests', 'Core_Root'))</_CoreRootDir>
-      <_StalenessDetected>false</_StalenessDetected>
+      <_CoreRootDir>$([MSBuild]::NormalizeDirectory('$(CORE_ROOT)'))</_CoreRootDir>
     </PropertyGroup>
 
-    <!-- === Check 1: CLR binaries (clrjit, coreclr) === -->
-    <PropertyGroup Condition="Exists('$(_CoreCLRArtifactsDir)clrjit.dll') and Exists('$(_CoreRootDir)\clrjit.dll')">
-      <_ClrJitSrcTime>$([System.IO.File]::GetLastWriteTime('$(_CoreCLRArtifactsDir)clrjit.dll').Ticks)</_ClrJitSrcTime>
-      <_ClrJitDstTime>$([System.IO.File]::GetLastWriteTime('$(_CoreRootDir)\clrjit.dll').Ticks)</_ClrJitDstTime>
-      <_ClrJitStale Condition="$(_ClrJitSrcTime) &gt; $(_ClrJitDstTime)">true</_ClrJitStale>
-    </PropertyGroup>
-    <PropertyGroup Condition="Exists('$(_CoreCLRArtifactsDir)coreclr.dll') and Exists('$(_CoreRootDir)\coreclr.dll')">
-      <_CoreClrSrcTime>$([System.IO.File]::GetLastWriteTime('$(_CoreCLRArtifactsDir)coreclr.dll').Ticks)</_CoreClrSrcTime>
-      <_CoreClrDstTime>$([System.IO.File]::GetLastWriteTime('$(_CoreRootDir)\coreclr.dll').Ticks)</_CoreClrDstTime>
-      <_CoreClrStale Condition="$(_CoreClrSrcTime) &gt; $(_CoreClrDstTime)">true</_CoreClrStale>
-    </PropertyGroup>
-    <PropertyGroup Condition="Exists('$(_CoreCLRArtifactsDir)System.Private.CoreLib.dll') and Exists('$(_CoreRootDir)\System.Private.CoreLib.dll')">
-      <_SPCLibSrcTime>$([System.IO.File]::GetLastWriteTime('$(_CoreCLRArtifactsDir)System.Private.CoreLib.dll').Ticks)</_SPCLibSrcTime>
-      <_SPCLibDstTime>$([System.IO.File]::GetLastWriteTime('$(_CoreRootDir)\System.Private.CoreLib.dll').Ticks)</_SPCLibDstTime>
-      <_SPCLibStale Condition="$(_SPCLibSrcTime) &gt; $(_SPCLibDstTime)">true</_SPCLibStale>
+    <!-- ── Root-level files ──────────────────────────────────────────── -->
+    <ItemGroup>
+      <_CoreRootRootFile Include="$(_CoreRootDir)*" />
+    </ItemGroup>
+
+    <!-- Priority 1: CoreCLR build artifacts (coreclr, clrjit, SPCL, etc.) -->
+    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
+      <_CoreRootFileMapping Include="@(_CoreRootRootFile)"
+          Condition="Exists('$(CoreCLRArtifactsPath)%(Filename)%(Extension)')">
+        <SourceFile>$(CoreCLRArtifactsPath)%(Filename)%(Extension)</SourceFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- Priority 2: Libraries managed (shared framework DLLs) -->
+    <ItemGroup Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')">
+      <_CoreRootFileMapping Include="@(_CoreRootRootFile)"
+          Exclude="@(_CoreRootFileMapping)"
+          Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)%(Filename)%(Extension)')">
+        <SourceFile>$(LibrariesSharedFrameworkBinArtifactsPath)%(Filename)%(Extension)</SourceFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- Priority 3: Libraries native -->
+    <ItemGroup Condition="Exists('$(LibrariesNativeArtifactsPath)')">
+      <_CoreRootFileMapping Include="@(_CoreRootRootFile)"
+          Exclude="@(_CoreRootFileMapping)"
+          Condition="Exists('$(LibrariesNativeArtifactsPath)%(Filename)%(Extension)')">
+        <SourceFile>$(LibrariesNativeArtifactsPath)%(Filename)%(Extension)</SourceFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- ── crossgen2/ → crossgen2-published/ (only rename in the mapping) ── -->
+    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
+      <_CG2File Include="$(_CoreRootDir)crossgen2\**\*" />
+      <_CoreRootFileMapping Include="@(_CG2File)"
+          Condition="Exists('$(CoreCLRArtifactsPath)crossgen2-published\%(RecursiveDir)%(Filename)%(Extension)')">
+        <SourceFile>$(CoreCLRArtifactsPath)crossgen2-published\%(RecursiveDir)%(Filename)%(Extension)</SourceFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- ── Identity-mapped subdirectories (same name in source and dest) ── -->
+    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
+      <_IdentitySubdir Include="R2RDump;IL;PDB;R2RTest;PdbChecker;SuperFileCheck;AssemblyChecker;ilc-published;aotsdk;build;xunit;managed-ilasm" />
+    </ItemGroup>
+    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
+      <_SubdirFile Include="$(_CoreRootDir)%(_IdentitySubdir.Identity)\**\*">
+        <SourceSubdir>%(_IdentitySubdir.Identity)</SourceSubdir>
+      </_SubdirFile>
+    </ItemGroup>
+    <!-- Use an intermediate item to avoid SourceSubdir metadata batching conflict with _CoreRootFileMapping -->
+    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
+      <_SubdirFileMapping Include="@(_SubdirFile)"
+          Condition="Exists('$(CoreCLRArtifactsPath)%(SourceSubdir)\%(RecursiveDir)%(Filename)%(Extension)')">
+        <SourceFile>$(CoreCLRArtifactsPath)%(SourceSubdir)\%(RecursiveDir)%(Filename)%(Extension)</SourceFile>
+      </_SubdirFileMapping>
+    </ItemGroup>
+    <ItemGroup>
+      <_CoreRootFileMapping Include="@(_SubdirFileMapping)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Incremental target: skipped entirely when all Core_Root files are up to date.
+       Condition cannot reference @(_CoreRootFileMapping) because that item group is populated
+       by _ComputeCoreRootFileMappings via DependsOnTargets; MSBuild evaluates Condition before
+       DependsOnTargets for the purpose of skipping the target, so the item would always be empty.
+       Instead, we guard with Exists('$(CORE_ROOT)') and check item count inside the body. -->
+  <Target Name="CheckCoreRootFreshness"
+          BeforeTargets="RunTests"
+          DependsOnTargets="_ComputeCoreRootFileMappings"
+          Inputs="@(_CoreRootFileMapping->'%(SourceFile)')"
+          Outputs="@(_CoreRootFileMapping)"
+          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
+                     '$(ContinuousIntegrationBuild)' != 'true' and
+                     Exists('$(CORE_ROOT)')">
+
+    <!-- Compare timestamps to find which specific files are stale -->
+    <ItemGroup>
+      <_StaleFile Include="@(_CoreRootFileMapping)"
+          Condition="$([System.IO.File]::GetLastWriteTime('%(SourceFile)').Ticks) &gt;
+                     $([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks)" />
+    </ItemGroup>
+
+    <Warning Condition="'%(_StaleFile.Identity)' != ''"
+             Text="STALE Core_Root: %(_StaleFile.Filename)%(_StaleFile.Extension) in Core_Root is older than build output at %(_StaleFile.SourceFile)" />
+
+    <Warning Condition="@(_StaleFile->Count()) &gt; 0"
+             Text="Core_Root has @(_StaleFile->Count()) stale file(s). Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly — To suppress: /p:SkipCoreRootFreshnessCheck=true" />
+  </Target>
+
+  <!-- IL-CG2 R2R cache staleness (separate concern, runs independently) -->
+  <Target Name="_CheckIlCg2CacheFreshness"
+          BeforeTargets="RunTests"
+          Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
+                     '$(ContinuousIntegrationBuild)' != 'true' and
+                     '$(RunCrossGen2)' == '1'">
+
+    <PropertyGroup>
+      <_CoreRootDir>$([MSBuild]::NormalizeDirectory('$(CORE_ROOT)'))</_CoreRootDir>
+      <_Crossgen2DstPath>$(_CoreRootDir)crossgen2\crossgen2.exe</_Crossgen2DstPath>
+      <_Crossgen2DstPath Condition="'$(OS)' != 'Windows_NT'">$(_CoreRootDir)crossgen2/crossgen2</_Crossgen2DstPath>
     </PropertyGroup>
 
-    <Warning Text="STALE Core_Root: clrjit.dll in Core_Root is older than the CLR build output. Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly"
-             Condition="'$(_ClrJitStale)' == 'true'" />
-    <Warning Text="STALE Core_Root: coreclr.dll in Core_Root is older than the CLR build output. Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly"
-             Condition="'$(_CoreClrStale)' == 'true'" />
-    <Warning Text="STALE Core_Root: System.Private.CoreLib.dll in Core_Root is older than the CLR build output. Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly"
-             Condition="'$(_SPCLibStale)' == 'true'" />
-
-    <!-- === Check 2: crossgen2 staleness (only when running R2R tests) === -->
-    <PropertyGroup Condition="'$(RunCrossGen2)' == '1'">
-      <_Crossgen2SrcPath>$(_CoreCLRArtifactsDir)crossgen2-published\crossgen2.exe</_Crossgen2SrcPath>
-      <_Crossgen2SrcPath Condition="'$(OS)' != 'Windows_NT'">$(_CoreCLRArtifactsDir)crossgen2-published/crossgen2</_Crossgen2SrcPath>
-      <_Crossgen2DstPath>$(_CoreRootDir)\crossgen2\crossgen2.exe</_Crossgen2DstPath>
-      <_Crossgen2DstPath Condition="'$(OS)' != 'Windows_NT'">$(_CoreRootDir)/crossgen2/crossgen2</_Crossgen2DstPath>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(RunCrossGen2)' == '1' and Exists('$(_Crossgen2SrcPath)') and Exists('$(_Crossgen2DstPath)')">
-      <_CG2SrcTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2SrcPath)').Ticks)</_CG2SrcTime>
-      <_CG2DstTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_CG2DstTime>
-      <_Crossgen2Stale Condition="$(_CG2SrcTime) &gt; $(_CG2DstTime)">true</_Crossgen2Stale>
-    </PropertyGroup>
-
-    <Warning Text="STALE Core_Root: crossgen2.exe in Core_Root is older than the CLR build output. Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly"
-             Condition="'$(_Crossgen2Stale)' == 'true'" />
-
-    <!-- === Check 3: IL-CG2 done flags stale vs crossgen2 (only when running R2R tests) === -->
-    <ItemGroup Condition="'$(RunCrossGen2)' == '1' and Exists('$(_Crossgen2DstPath)')">
+    <ItemGroup Condition="Exists('$(_Crossgen2DstPath)')">
       <_IlCg2DoneFiles Include="$(BaseOutputPathWithConfig)**\IL-CG2\done" />
     </ItemGroup>
-    <PropertyGroup Condition="'$(RunCrossGen2)' == '1' and '@(_IlCg2DoneFiles)' != ''">
+
+    <PropertyGroup Condition="'@(_IlCg2DoneFiles)' != ''">
       <_Crossgen2InCoreRootTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_Crossgen2InCoreRootTime>
-      <_AnyStaleCg2Cache>false</_AnyStaleCg2Cache>
     </PropertyGroup>
 
-    <!-- MSBuild can't easily loop+compare in XML, so use a simpler heuristic:
-         check if ANY IL-CG2/done file is older than crossgen2 in Core_Root -->
     <Warning Text="STALE IL-CG2: One or more IL-CG2 R2R caches may be stale (crossgen2 is newer than cached compilations). Delete stale caches with: Get-ChildItem -Recurse -Directory -Filter IL-CG2 $(BaseOutputPathWithConfig) | Remove-Item -Recurse -Force"
-             Condition="'$(RunCrossGen2)' == '1' and '@(_IlCg2DoneFiles)' != '' and
+             Condition="'@(_IlCg2DoneFiles)' != '' and
                         $([System.IO.File]::GetLastWriteTime('%(_IlCg2DoneFiles.Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
-
-    <!-- Summary: only log when there's a problem -->
-    <PropertyGroup>
-      <_StalenessDetected Condition="'$(_ClrJitStale)' == 'true' or '$(_CoreClrStale)' == 'true' or '$(_SPCLibStale)' == 'true' or '$(_Crossgen2Stale)' == 'true'">true</_StalenessDetected>
-    </PropertyGroup>
-    <Warning Text="Core_Root freshness check: WARNINGS above — tests may use stale runtime binaries. To suppress this check, pass /p:SkipCoreRootFreshnessCheck=true"
-             Condition="'$(_StalenessDetected)' == 'true'" />
   </Target>
 
   <Target Name="RunTests" DependsOnTargets="RunMergedTests;RunStandaloneRunnerTests" Condition="'$(SkipTests)' != 'True'">
