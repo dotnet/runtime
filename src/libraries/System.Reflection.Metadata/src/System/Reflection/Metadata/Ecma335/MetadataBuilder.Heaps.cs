@@ -380,19 +380,6 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Clears all blobs added so far.
-        /// </summary>
-        /// <remarks>
-        /// Temporarily added for use in benchmarks, through <c>UnsafeAccessorAttribute</c>.
-        /// </remarks>
-        private void ClearBlobs()
-        {
-            _blobs.Clear();
-            _blobs.GetOrAdd([], [], default, out _);
-            _blobHeapSize = 1;
-        }
-
-        /// <summary>
         /// Adds specified Guid to Guid heap, if it's not there already.
         /// </summary>
         /// <param name="guid">Guid to add.</param>
