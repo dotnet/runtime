@@ -683,6 +683,12 @@ BEGIN
     IDS_NATIVE_IMAGE_CANNOT_BE_LOADED_MULTIPLE_TIMES "Native image cannot be loaded multiple times"
 END
 
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_EE_MISSING_METHOD_ALC               "Method not found: '%1'. %2"
+    IDS_EE_MISSING_FIELD_ALC                "Field not found: '%1'. %2"
+END
+
 //
 // Descriptions for FACILITY_URT hresults. None of these may be parameterized.
 //

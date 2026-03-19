@@ -45,8 +45,43 @@
 #include "generics.h"
 #include "instmethhash.h"
 #include "typestring.h"
+#include "assemblybinder.h"
 
 #ifndef DACCESS_COMPILE
+
+static void GetAssemblyDetailInfoForDiagnostics(MethodTable* pMT, SString& detailInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Assembly* pAssembly = pMT->GetAssembly();
+    PEAssembly* pPEAssembly = pAssembly->GetPEAssembly();
+
+    StackSString sAssemblyDisplayName;
+    pPEAssembly->GetDisplayName(sAssemblyDisplayName);
+
+    SString sAlcName;
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
+
+    DefineFullyQualifiedNameForClass();
+    LPCUTF8 szClassName = GetFullyQualifiedNameForClass(pMT);
+
+    SString assemblyPath{pPEAssembly->GetPath()};
+    if (assemblyPath.IsEmpty())
+    {
+        detailInfo.Printf("The type '%s' exists in '%s' loaded in the context '%s' in a byte array",
+                          szClassName,
+                          sAssemblyDisplayName.GetUTF8(),
+                          sAlcName.GetUTF8());
+    }
+    else
+    {
+        detailInfo.Printf("The type '%s' exists in '%s' loaded in the context '%s' at location '%s'",
+                          szClassName,
+                          sAssemblyDisplayName.GetUTF8(),
+                          sAlcName.GetUTF8(),
+                          assemblyPath.GetUTF8());
+    }
+}
 
 void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT, LPCSTR szMember)
 {
@@ -77,6 +112,14 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT
     MAKE_FULLY_QUALIFIED_MEMBER_NAME(szFullName, NULL, szClassName, (szMember?szMember:"?"), "");
     _ASSERTE(szFullName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szwFullName, szFullName);
+
+    if (pMT)
+    {
+        SString detailInfo;
+        GetAssemblyDetailInfoForDiagnostics(pMT, detailInfo);
+        EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD_ALC, szwFullName, detailInfo.GetUnicode()));
+    }
+
     EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD, szwFullName));
 }
 
@@ -114,12 +157,28 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         MetaSig tmp(pSig, cSig, static_cast<Module*>(pModule), pTypeContext);
         SigFormat sf(tmp, szMember, szClassName, NULL);
         MAKE_WIDEPTR_FROMUTF8(szwFullName, sf.GetCString());
+
+        if (pMT != NULL)
+        {
+            SString detailInfo;
+            GetAssemblyDetailInfoForDiagnostics(pMT, detailInfo);
+            EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD_ALC, szwFullName, detailInfo.GetUnicode()));
+        }
+
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, szwFullName));
     }
     else
     {
         SString typeName;
         typeName.Printf("%s.%s", szClassName, szMember);
+
+        if (pMT != NULL)
+        {
+            SString detailInfo;
+            GetAssemblyDetailInfoForDiagnostics(pMT, detailInfo);
+            EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD_ALC, typeName.GetUnicode(), detailInfo.GetUnicode()));
+        }
+
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
 }
