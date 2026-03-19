@@ -19,7 +19,7 @@ namespace System.Net.Http
         private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
         private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
 
-        private static volatile NullableBool s_usePortInSpn;
+        private static NullableBool s_usePortInSpn;
 
         private static bool UsePortInSpn
         {

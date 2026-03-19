@@ -104,4 +104,10 @@ public abstract class ContractRegistry
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
+
+    /// <summary>
+    /// Flush all cached data held by contracts in this registry.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    public abstract void Flush();
 }
