@@ -109,6 +109,14 @@ namespace System.Numerics
                     right = right.Slice(0, k);
                 }
 
+                // Barrett's quotient estimate may overshoot by up to 2, so right
+                // can exceed left by up to 2*modulus. Compensate by adding modulus
+                // until left >= right before subtracting.
+                while (CompareActual(left, right) < 0)
+                {
+                    AddSelf(left, modulus);
+                }
+
                 SubtractSelf(left, right);
                 left = left.Slice(0, ActualLength(left));
 
