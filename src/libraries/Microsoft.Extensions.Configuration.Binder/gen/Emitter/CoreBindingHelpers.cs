@@ -1026,7 +1026,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (!member.CanGet)
                     {
-                        // Set-only property: initialize to default since we can't read the current value.
+                        if (member.HasAnyGetter)
+                        {
+                            // Property has a non-public getter that cannot be used here; skip binding to
+                            // match the behavior of the reflection-based binder.
+                            return;
+                        }
+
+                        // Truly set-only property (no getter at all): initialize to default since we can't read the current value.
                         _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = default;");
                     }
                     else if (memberType is NullableSpec)
@@ -1050,12 +1057,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     targetObjAccessExpr = memberAccessExpr;
                     initKind = InitializationKind.AssignmentWithNullCheck;
                 }
-                else
+                else if (!member.HasAnyGetter)
                 {
-                    // When CanGet is false, the property can't be passed by ref (CS0206).
+                    // When there is no getter at all, the property can't be passed by ref (CS0206).
                     // Use a temp variable and assign back after binding.
+                    if (!_typeIndex.CanInstantiate(effectiveMemberType))
+                    {
+                        return;
+                    }
+
                     targetObjAccessExpr = tempIdentifier;
                     initKind = InitializationKind.Declaration;
+                }
+                else
+                {
+                    // Property has a non-public getter that cannot be used here; skip binding to
+                    // match the behavior of the reflection-based binder.
+                    return;
                 }
 
                 Action<string, string?>? writeOnSuccess = !canSet
