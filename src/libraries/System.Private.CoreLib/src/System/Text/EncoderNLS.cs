@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -61,6 +62,7 @@ namespace System.Text
             return result;
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -102,6 +104,7 @@ namespace System.Text
             }
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -150,6 +153,7 @@ namespace System.Text
 
         // This is the version that uses pointers.  We call the base encoding worker function
         // after setting our appropriate internal variables.  This is getting bytes
+        [RequiresUnsafe]
         public override unsafe void Convert(char* chars, int charCount,
                                             byte* bytes, int byteCount, bool flush,
                                             out int charsUsed, out int bytesUsed, out bool completed)
