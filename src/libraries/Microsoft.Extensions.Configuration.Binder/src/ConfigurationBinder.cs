@@ -270,7 +270,8 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void ResetPropertyValue(PropertyInfo property, object instance, BinderOptions options)
         {
-            // We don't support set only, non public, or indexer properties
+            // We don't support indexer properties, or properties without both a getter and a setter.
+            // Access to non-public accessors is controlled by BindNonPublicProperties.
             if (property.GetMethod is null ||
                 property.SetMethod is null ||
                 (!options.BindNonPublicProperties && (!property.GetMethod.IsPublic || !property.SetMethod.IsPublic)) ||
@@ -286,7 +287,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindProperty(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
-            // We don't support non public or indexer properties
+            // Indexer properties are not supported. Access to non-public accessors is controlled by BindNonPublicProperties.
             if (property.GetMethod is { } getMethod)
             {
                 if ((!options.BindNonPublicProperties && !getMethod.IsPublic) ||
