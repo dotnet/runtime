@@ -573,6 +573,7 @@ namespace Internal.JitInterface
             // version bubble the stubs are not wrapped with ManifestModuleWrappedMethodIL, so
             // token resolution for InstantiatedType / ParameterizedType falls through to a path
             // that cannot handle them. Skip compilation and let the runtime JIT these stubs.
+            // https://github.com/dotnet/runtime/issues/125337
             if (methodNeedingCode.IsCompilerGeneratedILBodyForAsync() && compilation != null && compilation.NodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 return true;
