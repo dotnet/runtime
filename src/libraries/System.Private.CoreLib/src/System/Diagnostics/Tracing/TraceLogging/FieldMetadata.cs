@@ -206,7 +206,7 @@ namespace System.Diagnostics.Tracing
                     if (metadata != null)
                     {
                         Debug.Assert(custom != null);
-                        Debug.Assert(pos + this.fixedCount <= metadata.Length);
+                        Debug.Assert(checked(pos + this.fixedCount) <= metadata.Length);
                         Buffer.BlockCopy(custom, 0, metadata, pos, this.fixedCount);
                     }
                     pos += this.fixedCount;
