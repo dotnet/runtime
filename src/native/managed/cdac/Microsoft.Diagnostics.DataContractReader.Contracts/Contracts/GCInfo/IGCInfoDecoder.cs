@@ -33,7 +33,7 @@ internal interface IGCInfoDecoder : IGCInfoHandle
     bool EnumerateLiveSlots(
         uint instructionOffset,
         CodeManagerFlags flags,
-        LiveSlotCallback reportSlot) => throw new NotImplementedException();
+        LiveSlotCallback reportSlot);
 }
 
 internal delegate void LiveSlotCallback(bool isRegister, uint registerNumber, int spOffset, uint spBase, uint gcFlags);
