@@ -650,6 +650,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         default:
 #ifdef DEBUG
+            if (JitConfig.JitWasmNyiToR2RUnsupported())
+            {
+                NYI_WASM("Opcode not implemented");
+            }
+
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
 #else
             NYI_WASM("Opcode not implemented");

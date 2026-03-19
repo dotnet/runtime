@@ -63,6 +63,8 @@ namespace ILCompiler.DependencyAnalysis
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
         public bool IsComponentModule;
+        public bool StripInliningInfo;
+        public bool StripDebugInfo;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -484,16 +486,6 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
-                // Async methods are not emitted in composite mode nor on ARM32
-                // The mutable module tokens emission is not well tested for composite mode and we should find a real solution for that problem
-                // ARM32 relocs require the thumb bit set, and the JIT/crossgen doesn't set it properly for the usages in async methods.
-                // https://github.com/dotnet/runtime/issues/125337
-                // https://github.com/dotnet/runtime/issues/125338
-                if (Target.Architecture == TargetArchitecture.ARM
-                    && (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
-                {
-                    continue;
-                }
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
@@ -765,7 +757,7 @@ namespace ILCompiler.DependencyAnalysis
                 TypesTableNode typesTable = new TypesTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable);
 
-                if (CompilationModuleGroup.IsCompositeBuildMode)
+                if (CompilationModuleGroup.IsCompositeBuildMode && !OptimizationFlags.StripInliningInfo)
                 {
                     InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable);
@@ -807,10 +799,13 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapManager.AttachToDependencyGraph(graph);
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
-                CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable);
-            this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
+            if (!OptimizationFlags.StripInliningInfo)
+            {
+                InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
+                    CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable);
+                this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
+            }
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable);
@@ -818,8 +813,11 @@ namespace ILCompiler.DependencyAnalysis
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
 
-            DebugInfoTable = new DebugInfoTableNode();
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable);
+            if (!OptimizationFlags.StripDebugInfo)
+            {
+                DebugInfoTable = new DebugInfoTableNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable);
+            }
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",

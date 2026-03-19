@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -16,12 +17,15 @@ namespace System.Threading
     /// </summary>
     public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
+        [RequiresUnsafe]
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: true);
 
+        [RequiresUnsafe]
         private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: false);
 
+        [RequiresUnsafe]
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
@@ -32,6 +36,7 @@ namespace System.Threading
             return overlapped._nativeOverlapped;
         }
 
+        [RequiresUnsafe]
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);
@@ -56,6 +61,7 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         private unsafe void FreeNativeOverlappedPortableCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -73,6 +79,7 @@ namespace System.Threading
                 Overlapped.Free(overlapped);
         }
 
+        [RequiresUnsafe]
         private static unsafe object? GetNativeOverlappedStatePortableCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -82,6 +89,7 @@ namespace System.Threading
             return wrapper._userState;
         }
 
+        [RequiresUnsafe]
         private static unsafe ThreadPoolBoundHandleOverlapped GetOverlappedWrapper(NativeOverlapped* overlapped)
         {
             ThreadPoolBoundHandleOverlapped wrapper;
