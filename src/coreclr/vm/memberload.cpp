@@ -178,10 +178,8 @@ static BOOL TryDetectAlcMismatchInMethodSignature(
             SString detailCandidate;
             FormatAssemblyContextDetail(pPEAssemblyCandidate, "B", detailCandidate);
 
-            detailInfo.Printf("Signature of the method requires the type '%s' but the type loaded in this context is from a different assembly. [A]%s != [B]%s. %s. %s",
+            detailInfo.Printf("The signature of the method requires the type '%s' but the type loaded in this context is from a different assembly. %s. %s",
                               callerTypeName.GetUTF8(),
-                              callerTypeName.GetUTF8(),
-                              candidateTypeName.GetUTF8(),
                               detailCaller.GetUTF8(),
                               detailCandidate.GetUTF8());
             return TRUE;
