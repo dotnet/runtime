@@ -160,12 +160,22 @@ namespace System.Numerics
             // The single-limb modulus pow algorithm for all but
             // the last power limb using square-and-multiply.
 
+            // When modulus fits in uint, all intermediate values also fit in uint
+            // (since every step takes % modulus), so we can use cheaper ulong arithmetic.
+            bool useUlong = nint.Size == 4 || modulus <= uint.MaxValue;
+
             for (int i = 0; i < power.Length - 1; i++)
             {
                 nuint p = power[i];
                 for (int j = 0; j < kcbitNuint; j++)
                 {
-                    if (nint.Size == 8)
+                    if (useUlong)
+                    {
+                        if ((p & 1) == 1)
+                            result = (nuint)(uint)(((ulong)result * value) % modulus);
+                        value = (nuint)(uint)(((ulong)value * value) % modulus);
+                    }
+                    else
                     {
                         if ((p & 1) == 1)
                         {
@@ -176,12 +186,6 @@ namespace System.Numerics
                             UInt128 sq = (UInt128)(ulong)value * (ulong)value;
                             value = (nuint)(ulong)(sq % (ulong)modulus);
                         }
-                    }
-                    else
-                    {
-                        if ((p & 1) == 1)
-                            result = (nuint)(uint)(((ulong)result * value) % modulus);
-                        value = (nuint)(uint)(((ulong)value * value) % modulus);
                     }
                     p >>= 1;
                 }
@@ -195,9 +199,20 @@ namespace System.Numerics
             // The single-limb modulus pow algorithm for the last or
             // the only power limb using square-and-multiply.
 
+            // When modulus fits in uint, all intermediate values also fit in uint
+            // (since every step takes % modulus), so we can use cheaper ulong arithmetic.
+            bool useUlong = nint.Size == 4 || modulus <= uint.MaxValue;
+
             while (power != 0)
             {
-                if (nint.Size == 8)
+                if (useUlong)
+                {
+                    if ((power & 1) == 1)
+                        result = (nuint)(uint)(((ulong)result * value) % modulus);
+                    if (power != 1)
+                        value = (nuint)(uint)(((ulong)value * value) % modulus);
+                }
+                else
                 {
                     if ((power & 1) == 1)
                     {
@@ -209,13 +224,6 @@ namespace System.Numerics
                         UInt128 sq = (UInt128)(ulong)value * (ulong)value;
                         value = (nuint)(ulong)(sq % (ulong)modulus);
                     }
-                }
-                else
-                {
-                    if ((power & 1) == 1)
-                        result = (nuint)(uint)(((ulong)result * value) % modulus);
-                    if (power != 1)
-                        value = (nuint)(uint)(((ulong)value * value) % modulus);
                 }
                 power >>= 1;
             }
