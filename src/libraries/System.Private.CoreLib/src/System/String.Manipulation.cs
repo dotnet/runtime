@@ -2662,6 +2662,7 @@ namespace System
             return CreateTrimmedString(start, end);
         }
 
+        [RequiresUnsafe]
         private unsafe string TrimHelper(char* trimChars, int trimCharsLength, TrimType trimType)
         {
             Debug.Assert(trimChars != null);

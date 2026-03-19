@@ -145,10 +145,10 @@ namespace System.Text.RegularExpressions
 
         internal static void ValidateOptions(RegexOptions options)
         {
-            const int MaxOptionShift = 11;
+            const int MaxOptionShift = 12;
             if (((((uint)options) >> MaxOptionShift) != 0) ||
                 ((options & RegexOptions.ECMAScript) != 0 && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.CultureInvariant)) != 0) ||
-                ((options & RegexOptions.NonBacktracking) != 0 && (options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft)) != 0))
+                ((options & RegexOptions.NonBacktracking) != 0 && (options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft | RegexOptions.AnyNewLine)) != 0))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.options);
             }

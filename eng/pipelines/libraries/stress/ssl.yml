@@ -72,7 +72,7 @@ extends:
         timeoutInMinutes: 120
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2026preview.scout.amd64.open
+          demands: ImageOverride -equals windows.vs2026.amd64.open
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
@@ -96,7 +96,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = $env:SSLSTRESS_CLIENT_ARGS
             $env:STRESS_SERVER_ARGS = $env:SSLSTRESS_SERVER_ARGS
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
         - publish: $(Build.ArtifactStagingDirectory)/dumps

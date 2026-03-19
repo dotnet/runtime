@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -16,6 +17,7 @@ namespace System
         private static unsafe delegate*<object, bool> s_possiblyComObjectCallback;
         private static unsafe delegate*<object, out object?, IntPtr> s_objectToComWeakRefCallback;
 
+        [RequiresUnsafe]
         internal static unsafe void InitializeCallbacks(
             delegate*<IntPtr, object?, object?> comWeakRefToObject,
             delegate*<object, bool> possiblyComObject,

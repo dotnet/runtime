@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Metadata
 {
     [VerifyMetadataNames]
-    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "test", "library")]
     [KeptMember(".ctor()")]
     public class RootLibraryAssemblyNamesAreKept
     {
