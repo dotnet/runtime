@@ -80,22 +80,8 @@ EOF
 
 if [ -z "$CLR_CC" ]; then
 
-    if [ "$__baseOS" = "Darwin" ] && [ "$compiler" = "clang" ] && [ -z "$majorVersion" ]; then
-        # On Darwin, prefer /usr/bin/clang (the Apple toolchain shim) over any
-        # versioned LLVM clang that may be installed via Homebrew or other
-        # package managers. The shim always delegates to the active Xcode's
-        # AppleClang and automatically injects -isysroot, which is required
-        # for the linker to find system libraries, frameworks, and Swift
-        # runtime paths. Calling the Xcode toolchain clang directly (via
-        # xcrun --find) skips the implicit -isysroot, breaking native linking.
-        if [ -x "/usr/bin/clang" ]; then
-            CC="/usr/bin/clang"
-            CXX="/usr/bin/clang++"
-        fi
-    fi
-
     # Set default versions
-    if [ -z "$majorVersion" ] && [ -z "$CC" ]; then
+    if [ -z "$majorVersion" ]; then
         minVersion=8
         maxVersion="$((maxVersion + 1))" # +1 for headspace
         i="$maxVersion"
@@ -115,7 +101,7 @@ if [ -z "$CLR_CC" ]; then
             CXX="$(command -v "$cxxCompiler" 2> /dev/null)"
             set_compiler_version_from_CC
         fi
-    elif [ -n "$majorVersion" ] && [ -z "$CC" ]; then
+    else
         desired_version="$(check_version_exists "$majorVersion")"
         if [ "$desired_version" = "-1" ]; then
             echo "Error: Could not find specific version of $compiler: $majorVersion."
