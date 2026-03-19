@@ -381,6 +381,7 @@ struct cdac_data<InteropSyncBlockInfo>
 #ifdef FEATURE_COMINTEROP
     static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
+    static constexpr size_t CCF = offsetof(InteropSyncBlockInfo, m_pCCF);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -441,23 +442,15 @@ class SyncBlock
     // can never be 0. ObjectNative::GetHashCode in objectnative.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
-    // In some early version of VB when there were no arrays developers used to use BSTR as arrays
-    // The way this was done was by adding a trail byte at the end of the BSTR
-    // To support this scenario, we need to use the sync block for this special case and
-    // save the trail character in here.
-    // This stores the trail character when a BSTR is used as an array
-    WCHAR m_BSTRTrailByte;
-
   public:
     SyncBlock(DWORD indx)
         : m_Lock((OBJECTHANDLE)NULL)
-        , m_thinLock(0)
+        , m_thinLock()
         , m_dwSyncIndex(indx)
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
         , m_dwHashCode(0)
-        , m_BSTRTrailByte(0)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -597,24 +590,10 @@ class SyncBlock
         SyncBlockPrecious   = 0x80000000,
     };
 
-    BOOL HasCOMBstrTrailByte()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_BSTRTrailByte!=0);
-    }
-    WCHAR GetCOMBstrTrailByte()
-    {
-        return m_BSTRTrailByte;
-    }
-    void SetCOMBstrTrailByte(WCHAR trailByte)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_BSTRTrailByte = trailByte;
-        SetPrecious();
-    }
-
     private:
     void InitializeThinLock(DWORD recursionLevel, DWORD threadId);
+
+    bool TryUpgradeThinLockToFullLock(OBJECTHANDLE lockHandle);
 
     friend struct ::cdac_data<SyncBlock>;
 };
@@ -623,6 +602,10 @@ template<>
 struct cdac_data<SyncBlock>
 {
     static constexpr size_t InteropInfo = offsetof(SyncBlock, m_pInteropInfo);
+    static constexpr size_t Lock = offsetof(SyncBlock, m_Lock);
+    static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
+    static constexpr size_t LinkNext = offsetof(SyncBlock, m_Link) + offsetof(SLink, m_pNext);
+
 };
 
 class SyncTableEntry
@@ -781,6 +764,14 @@ class SyncBlockCache
 #ifdef VERIFY_HEAP
     void    VerifySyncTableEntry();
 #endif
+    friend struct ::cdac_data<SyncBlockCache>;
+};
+
+template<>
+struct cdac_data<SyncBlockCache>
+{
+    static constexpr size_t FreeSyncTableIndex = offsetof(SyncBlockCache, m_FreeSyncTableIndex);
+    static constexpr size_t CleanupBlockList = offsetof(SyncBlockCache, m_pCleanupBlockList);
 };
 
 // See code:#SyncBlockOverView for more
@@ -976,9 +967,9 @@ class ObjHeader
         UseSlowPath = 2
     };
 
-    HeaderLockResult AcquireHeaderThinLock(DWORD tid);
+    HeaderLockResult AcquireHeaderThinLock(Thread* pCurThread);
 
-    HeaderLockResult ReleaseHeaderThinLock(DWORD tid);
+    HeaderLockResult ReleaseHeaderThinLock(Thread* pCurThread);
 
     friend struct ::cdac_data<ObjHeader>;
 };
@@ -990,13 +981,6 @@ struct cdac_data<ObjHeader>
 };
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
-
-
-#define ENTER_SPIN_LOCK(pOh)        \
-    pOh->EnterSpinLock();
-
-#define LEAVE_SPIN_LOCK(pOh)        \
-    pOh->ReleaseSpinLock();
 
 #ifdef TARGET_X86
 #include <poppack.h>

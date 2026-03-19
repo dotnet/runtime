@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -129,7 +130,7 @@ namespace System.Diagnostics.Tracing
         {
             //
             // explicit cleanup is done by calling Dispose with true from
-            // Dispose() or Close(). The disposing arguement is ignored because there
+            // Dispose() or Close(). The disposing argument is ignored because there
             // are no unmanaged resources.
             // The finalizer calls Dispose with false.
             //
@@ -478,8 +479,8 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
-                EightObjects eightObjectStack = default;
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
+                InlineArray8<object?> eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = eightObjectStack;
 
@@ -903,32 +904,16 @@ namespace System.Diagnostics.Tracing
         }
 
 
-        private static bool s_setInformationMissing;
-
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
             void* data,
             uint dataSize)
         {
-            int status = Interop.Errors.ERROR_NOT_SUPPORTED;
-
-            if (!s_setInformationMissing)
-            {
-                try
-                {
-                    status = Interop.Advapi32.EventSetInformation(
-                        _registrationHandle,
-                        eventInfoClass,
-                        data,
-                        dataSize);
-                }
-                catch (TypeLoadException)
-                {
-                    s_setInformationMissing = true;
-                }
-            }
-
-            return status;
+            return Interop.Advapi32.EventSetInformation(
+                _registrationHandle,
+                eventInfoClass,
+                data,
+                dataSize);
         }
 
         /// <summary>

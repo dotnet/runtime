@@ -12,7 +12,10 @@
 #ifndef __CALLING_CONVENTION_INCLUDED
 #define __CALLING_CONVENTION_INCLUDED
 
+#include <algorithm>
+
 #ifdef FEATURE_INTERPRETER
+#include <cgencpu.h>
 #include <interpretershared.h>
 #endif // FEATURE_INTERPRETER
 
@@ -51,8 +54,11 @@ struct ArgLocDesc
 
 #if defined(UNIX_AMD64_ABI)
 
-    EEClass* m_eeClass;           // For structs passed in register, it points to the EEClass of the struct
+#ifdef DEBUG
+    TypeHandle m_thStructInRegs;           // For structs passed in register, add a debug field to make it a bit easier to debug
+#endif // DEBUG
 
+    SystemVEightByteRegistersInfo m_eightByteInfo;
 #endif // UNIX_AMD64_ABI
 
 #ifdef FEATURE_HFA
@@ -104,7 +110,7 @@ struct ArgLocDesc
         m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
-        m_eeClass = NULL;
+        m_eightByteInfo.InitEmpty();
 #endif
     }
 };
@@ -1088,7 +1094,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     // x86 is special as always
     ret += this->HasThis() ? offsetof(ArgumentRegisters, EDX) : offsetof(ArgumentRegisters, ECX);
 #elif TARGET_ARM64
-    ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
+    if (this->IsRetBuffPassedAsFirstArg())
+    {
+        if (this->HasThis())
+            ret += TARGET_REGISTER_SIZE;
+    }
+    else
+    {
+        ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
+    }
 #else
     if (this->HasThis())
         ret += TARGET_REGISTER_SIZE;
@@ -1116,7 +1130,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetVASigCookieOffset()
         ret += TARGET_REGISTER_SIZE;
     }
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
     {
         ret += TARGET_REGISTER_SIZE;
     }
@@ -1169,7 +1183,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
         ret += TARGET_REGISTER_SIZE;
     }
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
     {
         ret += TARGET_REGISTER_SIZE;
     }
@@ -1226,7 +1240,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetAsyncContinuationArgOffset()
         ret += TARGET_REGISTER_SIZE;
     }
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
     {
         ret += TARGET_REGISTER_SIZE;
     }
@@ -1262,7 +1276,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         if (this->HasThis())
             numRegistersUsed++;
 
-        if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
             numRegistersUsed++;
 
         _ASSERTE(!this->IsVarArg() || !this->HasParamType());
@@ -1380,14 +1394,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        MethodTable *pMT = m_argTypeHandle.GetMethodTable();
-        if (this->IsRegPassedStruct(pMT))
+        if (this->IsRegPassedStruct(m_argTypeHandle))
         {
-            EEClass* eeClass = pMT->GetClass();
             cGenRegs = 0;
-            for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+            SystemVEightByteRegistersInfo eightByteInfo = this->GetEightByteRegistersInfo(m_argTypeHandle);
+
+            uint8_t numberEightBytes = eightByteInfo.GetNumEightBytes();
+            for (int i = 0; i < numberEightBytes; i++)
             {
-                switch (eeClass->GetEightByteClassification(i))
+                switch (eightByteInfo.GetEightByteClassification(i))
                 {
                     case SystemVClassificationTypeInteger:
                     case SystemVClassificationTypeIntegerReference:
@@ -1411,7 +1426,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                m_argLocDescForStructInRegs.m_eeClass = eeClass;
+#ifdef DEBUG
+                m_argLocDescForStructInRegs.m_thStructInRegs = m_argTypeHandle;
+#endif
+                m_argLocDescForStructInRegs.m_eightByteInfo = eightByteInfo;
 
                 m_hasArgLocDescForStructInRegs = true;
 
@@ -1887,6 +1905,27 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_WASM)
+
+    unsigned align;
+    if (argType == ELEMENT_TYPE_VALUETYPE)
+    {
+        align = std::clamp(CEEInfo::getClassAlignmentRequirementStatic(thValueType.GetMethodTable()), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
+    }
+    else
+    {
+        align = INTERP_STACK_SLOT_SIZE;
+    }
+
+    if (HasRetBuffArg())
+    {
+        // the slot for retbuf arg will be removed before the actual call
+        m_ofsStack = ALIGN_UP(m_ofsStack - INTERP_STACK_SLOT_SIZE, align) + INTERP_STACK_SLOT_SIZE;
+    }
+    else
+    {
+        m_ofsStack = ALIGN_UP(m_ofsStack, align);
+    }
+
     int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
@@ -1953,30 +1992,29 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             _ASSERTE(!thValueType.IsNull());
 
 #if defined(UNIX_AMD64_ABI)
-            MethodTable *pMT = thValueType.AsMethodTable();
-            if (pMT->IsRegPassedStruct())
+            if (this->IsRegPassedStruct(thValueType))
             {
-                EEClass* eeClass = pMT->GetClass();
-
-                if (eeClass->GetNumberEightBytes() == 1)
+                SystemVEightByteRegistersInfo eightByteInfo = this->GetEightByteRegistersInfo(thValueType);
+                if (eightByteInfo.GetNumEightBytes() == 1)
                 {
                     // Structs occupying just one eightbyte are treated as int / double
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    if (eightByteInfo.GetEightByteClassification(0) == SystemVClassificationTypeSSE)
                     {
                         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;
                     }
                 }
                 else
                 {
+                    _ASSERTE(eightByteInfo.GetNumEightBytes() == 2);
                     // Size of the struct is 16 bytes
                     flags |= (16 << RETURN_FP_SIZE_SHIFT);
                     // The lowest two bits of the size encode the order of the int and SSE fields
-                    if (eeClass->GetEightByteClassification(0) == SystemVClassificationTypeSSE)
+                    if (eightByteInfo.GetEightByteClassification(0) == SystemVClassificationTypeSSE)
                     {
                         flags |= (1 << RETURN_FP_SIZE_SHIFT);
                     }
 
-                    if (eeClass->GetEightByteClassification(1) == SystemVClassificationTypeSSE)
+                    if (eightByteInfo.GetEightByteClassification(1) == SystemVClassificationTypeSSE)
                     {
                         flags |= (2 << RETURN_FP_SIZE_SHIFT);
                     }
@@ -2064,7 +2102,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     if (this->HasThis())
         numRegistersUsed++;
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
         numRegistersUsed++;
 
     if (this->IsVarArg())
@@ -2190,6 +2228,15 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     // Clear the iterator started flag
     m_dwFlags &= ~ITERATION_STARTED;
 
+#ifdef TARGET_WASM
+    if (this->NumFixedArgs() == 0)
+    {
+        // We have zero arguments, but we still need to reserve space for hidden arguments which are in registers on other architectures
+        // in non-zero argument cases, the offset is already included in first argument offset.
+        maxOffset += m_ofsStack;
+    }
+#endif // TARGET_WASM
+
     int nSizeOfArgStack = maxOffset - TransitionBlock::GetOffsetOfArgs();
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
@@ -2239,12 +2286,24 @@ protected:
         m_pSig->Reset();
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2319,6 +2378,45 @@ public:
         return type == ELEMENT_TYPE_VALUETYPE && !thValueType.IsEnum();
     }
 };
+
+class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+{
+protected:
+    BOOL IsRegPassedStruct(TypeHandle th);
+
+#if defined(UNIX_AMD64_ABI)
+    SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th);
+#endif
+};
+
+class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+{
+public:
+    PInvokeArgIterator(MetaSig* pSig)
+    {
+        m_pSig = pSig;
+    }
+};
+
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+class ArgIteratorBaseForWindowsArm64PInvokeThisCall : public ArgIteratorBaseForPInvoke
+{
+public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return TRUE;
+    }
+};
+
+class WindowsArm64PInvokeThisCallArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForWindowsArm64PInvokeThisCall>
+{
+public:
+    WindowsArm64PInvokeThisCallArgIterator(MetaSig* pSig)
+    {
+        m_pSig = pSig;
+    }
+};
+#endif // defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
 
 // Conventience helper
 inline BOOL HasRetBuffArg(MetaSig * pSig)

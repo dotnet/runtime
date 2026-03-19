@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     HighWare,
                     "1.1.1",
                     runtimeConfig => runtimeConfig.WithFramework(Constants.MicrosoftNETCoreApp, "4.0.0"),
-                    path => NetCoreAppBuilder.ForNETCoreApp(HighWare, TestContext.BuildRID)
+                    path => NetCoreAppBuilder.ForNETCoreApp(HighWare, HostTestContext.BuildRID)
                         .WithProject(HighWare, "1.1.1", p => p
                             .WithAssemblyGroup(null, g => g
                             .WithAsset(TestAssemblyWithNoVersions + ".dll")

@@ -52,7 +52,7 @@ export function update_thread_info (): void {
     monoThreadInfo.threadPrefix = `${hexPrefix}${hexPtr}-${threadType}`;
 
     loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
-    if (!loaderHelpers.config.forwardConsoleLogsToWS) {
+    if (!loaderHelpers.config.forwardConsole) {
         set_thread_prefix(monoThreadInfo.threadPrefix!);
     }
 

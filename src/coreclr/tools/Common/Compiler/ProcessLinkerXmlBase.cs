@@ -785,7 +785,7 @@ namespace ILCompiler
             MetadataType typeReference = (MetadataType)type;
             for (int i = 1; i < names.Length; i++)
             {
-                var nested_type = typeReference.GetNestedType(names[i]);
+                var nested_type = typeReference.GetNestedType(Encoding.UTF8.GetBytes(names[i]));
                 if (nested_type == null)
                     return null;
 

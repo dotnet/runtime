@@ -3,6 +3,9 @@
 
 // Simplified from an Antigen test case
 
+
+namespace Runtime_115123;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

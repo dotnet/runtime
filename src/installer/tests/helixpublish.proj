@@ -10,6 +10,7 @@
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <DotNetCliRuntime>$(TargetRid)</DotNetCliRuntime>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,9 +46,16 @@
     <MSBuild Projects="%(HostTestProject.Identity)" Targets="GetTargetPath">
       <Output TaskParameter="TargetOutputs" PropertyName="_TargetPath" />
     </MSBuild>
+
+    <PropertyGroup>
+      <_TestExePath>$([System.IO.Path]::GetFileNameWithoutExtension($(_TargetPath)))$(ExeSuffix)</_TestExePath>
+    </PropertyGroup>
+
     <ItemGroup>
       <HostTestProject>
-        <Command>dotnet test $([System.IO.Path]::GetFileName($(_TargetPath))) $(TestRunnerAdditionalArguments) --logger trx --results-directory .</Command>
+        <Command Condition="'$(TargetOS)' == 'windows'">$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
+        <Command Condition="'$(TargetOS)' != 'windows'">./$(_TestExePath) $(TestRunnerAdditionalArguments) --report-trx --results-directory .</Command>
+        <PreCommands Condition="'$(TargetOS)' != 'windows'">chmod +x $(_TestExePath)</PreCommands>
         <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
       </HostTestProject>
     </ItemGroup>
@@ -58,7 +66,7 @@
       <HelixWorkItem Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(HostTestProject.Identity)))">
         <PayloadDirectory>%(HostTestProject.PayloadDirectory)</PayloadDirectory>
         <Command>%(HostTestProject.Command)</Command>
-        <PreCommands>@(_HelixPreCommands)</PreCommands>
+        <PreCommands>@(_HelixPreCommands);%(HostTestProject.PreCommands)</PreCommands>
         <Timeout>00:30:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>

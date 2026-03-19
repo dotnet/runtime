@@ -21,6 +21,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 // MVID: {278BBD66-C040-4E84-A7AB-909BC878147E}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -172,6 +173,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {string('needs triage') int32(2)}
     .entrypoint
     // Code size       113 (0x71)
     .maxstack  1

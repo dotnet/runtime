@@ -6,10 +6,11 @@ using System;
 using Xunit;
 
 
-namespace Test
+namespace b53547
 {
     public class AA
     {
+        [OuterLoop]
         [Fact]
         public static unsafe void TestEntryPoint()
         {

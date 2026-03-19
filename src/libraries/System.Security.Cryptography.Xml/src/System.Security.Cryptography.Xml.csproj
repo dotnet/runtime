@@ -104,6 +104,7 @@ System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
     <Compile Include="System\Security\Cryptography\Xml\KeyInfoRetrievalMethod.cs" />
     <Compile Include="System\Security\Cryptography\Xml\KeyInfoX509Data.cs" />
     <Compile Include="System\Security\Cryptography\Xml\KeyReference.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\LocalAppContextSwitches.cs" />
     <Compile Include="System\Security\Cryptography\Xml\MyXmlDocument.cs" />
     <Compile Include="System\Security\Cryptography\Xml\NamespaceFrame.cs" />
     <Compile Include="System\Security\Cryptography\Xml\NamespaceSortOrder.cs" />

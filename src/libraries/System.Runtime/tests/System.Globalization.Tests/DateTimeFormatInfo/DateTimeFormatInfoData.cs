@@ -40,11 +40,6 @@ namespace System.Globalization.Tests
 
         public static CalendarWeekRule BrFRCalendarWeekRule()
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return CalendarWeekRule.FirstDay;
-            }
-
             if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
             {
                 return CalendarWeekRule.FirstFullWeek;

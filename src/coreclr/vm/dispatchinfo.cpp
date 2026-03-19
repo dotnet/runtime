@@ -450,9 +450,9 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
             {
-                // TODO: (async) revisit and examine if this needs to be supported somehow
+                // We don't expose runtime-async methods via IDispatch.
                 if (pMeth->IsAsyncMethod())
-                    ThrowHR(COR_E_NOTSUPPORTED);
+                    RETURN NULL;
 
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
             }
@@ -830,14 +830,11 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
     GCX_PREEMP();
-
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMD->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
 
     MetaSig         msig(pMD);
     LPCSTR          szName;
@@ -1558,8 +1555,8 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         {
             // If the method is culture aware, then set the specified culture on the thread.
             GetCultureInfoForLCID(lcid, &pObjs->CultureInfo);
-            pObjs->OldCultureInfo = Thread::GetCulture(FALSE);
-            Thread::SetCulture(&pObjs->CultureInfo, FALSE);
+            pObjs->OldCultureInfo = GetCurrentCulture(FALSE);
+            SetCurrentCulture(&pObjs->CultureInfo, FALSE);
         }
 
         // If the method has custom marshalers then we will need to call
@@ -2287,7 +2284,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
 
         // If the culture was changed then restore it to the old culture.
         if (Objs.OldCultureInfo != NULL)
-            Thread::SetCulture(&Objs.OldCultureInfo, FALSE);
+            SetCurrentCulture(&Objs.OldCultureInfo, FALSE);
     }
     GCPROTECT_END();
     GCPROTECT_END();
@@ -2584,7 +2581,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
-        // TODO: (async) revisit and examine if this needs to be supported somehow
+        // Runtime-async property accessors are not visible from COM
         if (pMDForProperty->IsAsyncVariantMethod())
         {
             return false;

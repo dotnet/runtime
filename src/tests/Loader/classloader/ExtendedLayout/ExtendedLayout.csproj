@@ -4,11 +4,12 @@
 
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119948 -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExtendedLayout.cs" />
     <Compile Include="CStruct.cs" />
+    <Compile Include="CUnion.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ExtendedLayoutTypes.ilproj" />

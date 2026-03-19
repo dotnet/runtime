@@ -1,12 +1,69 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using Xunit;
 
 namespace System.Security.Cryptography.OpenSsl.Tests
 {
     public static class SafeEvpPKeyHandleTests
     {
+        [Fact]
+        public static void DuplicateHandle_ConcurrentWithDispose_DoesNotProduceInvalidHandle()
+        {
+            using ECDsaOpenSsl ecdsa = new ECDsaOpenSsl();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                SafeEvpPKeyHandle keyHandle = ecdsa.DuplicateKeyHandle();
+                SafeEvpPKeyHandle? duplicated = null;
+
+                Thread disposeThread = new Thread(() =>
+                {
+                    Thread.Sleep(Random.Shared.Next(0, 3));
+                    keyHandle.Dispose();
+                });
+
+                Thread duplicateThread = new Thread(() =>
+                {
+                    Thread.Sleep(Random.Shared.Next(0, 3));
+                    try
+                    {
+                        duplicated = keyHandle.DuplicateHandle();
+                    }
+                    catch
+                    {
+                        // We are only interested in crashes, not managed exceptions.
+                    }
+                });
+
+                disposeThread.Start();
+                duplicateThread.Start();
+                disposeThread.Join();
+                duplicateThread.Join();
+
+                if (duplicated is not null)
+                {
+                    bool refAdded = false;
+
+                    try
+                    {
+                        duplicated.DangerousAddRef(ref refAdded);
+                        Assert.NotEqual(IntPtr.Zero, duplicated.DangerousGetHandle());
+                    }
+                    finally
+                    {
+                        if (refAdded)
+                        {
+                            duplicated.DangerousRelease();
+                        }
+                    }
+
+                    duplicated.Dispose();
+                }
+            }
+        }
+
         [Fact]
         public static void TestOpenSslVersion()
         {

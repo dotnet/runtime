@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -317,104 +316,87 @@ namespace System
             }
         }
 
-        internal static unsafe char[] UnescapeString(string input, int start, int end, char[] dest,
-            ref int destPosition, char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax,
-            bool isQuery)
+        internal static void Unescape(scoped ReadOnlySpan<char> chars, ref ValueStringBuilder dest)
         {
-            fixed (char* pStr = input)
+            for (int i = 0; (uint)i < (uint)chars.Length;)
             {
-                return UnescapeString(pStr, start, end, dest, ref destPosition, rsvd1, rsvd2, rsvd3, unescapeMode,
-                    syntax, isQuery);
+                if (chars[i] == '%' && (uint)(i + 2) < (uint)chars.Length)
+                {
+                    char unescaped = DecodeHexChars(chars[i + 1], chars[i + 2]);
+
+                    if (unescaped == Uri.c_DummyChar)
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    // Copy previous characters that don't require any transformations.
+                    // Using a loop instead of Append(span) to avoid the call overhead for typically short sections.
+                    foreach (char c in chars.Slice(0, i))
+                    {
+                        dest.Append(c);
+                    }
+
+                    if (char.IsAscii(unescaped))
+                    {
+                        dest.Append(unescaped);
+                        i += 3;
+                    }
+                    else
+                    {
+                        int charactersRead = PercentEncodingHelper.UnescapePercentEncodedUTF8Sequence(
+                            chars.Slice(i),
+                            ref dest,
+                            isQuery: false,
+                            iriParsing: false);
+
+                        Debug.Assert(charactersRead > 0);
+                        i += charactersRead;
+                    }
+
+                    chars = chars.Slice(i);
+                    i = 0;
+                }
+                else
+                {
+                    i++;
+                }
             }
+
+            dest.Append(chars);
         }
 
-        internal static unsafe char[] UnescapeString(char* pStr, int start, int end, char[] dest, ref int destPosition,
+        internal static void UnescapeString(scoped ReadOnlySpan<char> chars, ref ValueStringBuilder dest,
             char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
-            ValueStringBuilder vsb = new ValueStringBuilder(dest.Length);
-            vsb.Append(dest.AsSpan(0, destPosition));
-            UnescapeString(pStr, start, end, ref vsb, rsvd1, rsvd2, rsvd3, unescapeMode,
-                    syntax, isQuery);
-
-            if (vsb.Length > dest.Length)
-            {
-                dest = vsb.AsSpan().ToArray();
-            }
-            else
-            {
-                vsb.AsSpan(destPosition).TryCopyTo(dest.AsSpan(destPosition));
-            }
-            destPosition = vsb.Length;
-            vsb.Dispose();
-            return dest;
-        }
-
-        //
-        // This method will assume that any good Escaped Sequence will be unescaped in the output
-        // - Assumes Dest.Length - detPosition >= end-start
-        // - UnescapeLevel controls various modes of operation
-        // - Any "bad" escape sequence will remain as is or '%' will be escaped.
-        // - destPosition tells the starting index in dest for placing the result.
-        //   On return destPosition tells the last character + 1 position in the "dest" array.
-        // - The control chars and chars passed in rsdvX parameters may be re-escaped depending on UnescapeLevel
-        // - It is a RARE case when Unescape actually needs escaping some characters mentioned above.
-        //   For this reason it returns a char[] that is usually the same ref as the input "dest" value.
-        //
-        internal static unsafe void UnescapeString(string input, int start, int end, ref ValueStringBuilder dest,
-            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
-        {
-            fixed (char* pStr = input)
-            {
-                UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
-            }
-        }
-        internal static unsafe void UnescapeString(scoped ReadOnlySpan<char> input, scoped ref ValueStringBuilder dest,
-           char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
-        {
-            fixed (char* pStr = &MemoryMarshal.GetReference(input))
-            {
-                UnescapeString(pStr, 0, input.Length, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
-            }
-        }
-        internal static unsafe void UnescapeString(char* pStr, int start, int end, ref ValueStringBuilder dest,
-            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
-        {
-            if ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.CopyOnly)
-            {
-                dest.Append(new ReadOnlySpan<char>(pStr + start, end - start));
-                return;
-            }
+            Debug.Assert(unescapeMode != UnescapeMode.None);
 
             bool escapeReserved = false;
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
 
-            for (int next = start; next < end;)
+            while (!chars.IsEmpty)
             {
+                int i;
                 char ch = (char)0;
 
-                for (; next < end; ++next)
+                for (i = 0; (uint)i < (uint)chars.Length; i++)
                 {
-                    if ((ch = pStr[next]) == '%')
+                    ch = chars[i];
+
+                    if (ch == '%')
                     {
                         if ((unescapeMode & UnescapeMode.Unescape) == 0)
                         {
                             // re-escape, don't check anything else
                             escapeReserved = true;
                         }
-                        else if (next + 2 < end)
+                        else if ((uint)(i + 2) < (uint)chars.Length)
                         {
-                            ch = DecodeHexChars(pStr[next + 1], pStr[next + 2]);
-                            // Unescape a good sequence if full unescape is requested
-                            if (unescapeMode >= UnescapeMode.UnescapeAll)
-                            {
-                                if (ch == Uri.c_DummyChar)
-                                {
-                                    continue;
-                                }
-                            }
+                            ch = DecodeHexChars(chars[i + 1], chars[i + 2]);
+
                             // re-escape % from an invalid sequence
-                            else if (ch == Uri.c_DummyChar)
+                            if (ch == Uri.c_DummyChar)
                             {
                                 if ((unescapeMode & UnescapeMode.Escape) != 0)
                                     escapeReserved = true;
@@ -424,35 +406,30 @@ namespace System
                             // Do not unescape '%' itself unless full unescape is requested
                             else if (ch == '%')
                             {
-                                next += 2;
+                                i += 2;
                                 continue;
                             }
                             // Do not unescape a reserved char unless full unescape is requested
                             else if (ch == rsvd1 || ch == rsvd2 || ch == rsvd3)
                             {
-                                next += 2;
+                                i += 2;
                                 continue;
                             }
                             // Do not unescape a dangerous char unless it's V1ToStringFlags mode
                             else if ((unescapeMode & UnescapeMode.V1ToStringFlag) == 0 && IsNotSafeForUnescape(ch))
                             {
-                                next += 2;
+                                i += 2;
                                 continue;
                             }
                             else if (iriParsing && (ch <= '\x9F' ? IsNotSafeForUnescape(ch) : !IriHelper.CheckIriUnicodeRange(ch, isQuery)))
                             {
                                 // check if unenscaping gives a char outside iri range
                                 // if it does then keep it escaped
-                                next += 2;
+                                i += 2;
                                 continue;
                             }
                             // unescape escaped char or escape %
                             break;
-                        }
-                        else if (unescapeMode >= UnescapeMode.UnescapeAll)
-                        {
-                            // keep a '%' as part of a bogus sequence
-                            continue;
                         }
                         else
                         {
@@ -460,11 +437,6 @@ namespace System
                         }
                         // escape (escapeReserved==true) or otherwise unescape the sequence
                         break;
-                    }
-                    else if ((unescapeMode & (UnescapeMode.Unescape | UnescapeMode.UnescapeAll))
-                        == (UnescapeMode.Unescape | UnescapeMode.UnescapeAll))
-                    {
-                        continue;
                     }
                     else if ((unescapeMode & UnescapeMode.Escape) != 0)
                     {
@@ -485,38 +457,41 @@ namespace System
                     }
                 }
 
-                //copy off previous characters from input
-                while (start < next)
-                    dest.Append(pStr[start++]);
+                // Copy previous characters that don't require any transformations.
+                // Using a loop instead of Append(span) to avoid the call overhead for typically short sections.
+                foreach (char c in chars.Slice(0, i))
+                {
+                    dest.Append(c);
+                }
 
-                if (next != end)
+                if (i < chars.Length)
                 {
                     if (escapeReserved)
                     {
-                        PercentEncodeByte((byte)pStr[next], ref dest);
+                        PercentEncodeByte((byte)chars[i], ref dest);
                         escapeReserved = false;
-                        next++;
+                        i++;
                     }
                     else if (ch <= 127)
                     {
                         dest.Append(ch);
-                        next += 3;
+                        i += 3;
                     }
                     else
                     {
                         // Unicode
                         int charactersRead = PercentEncodingHelper.UnescapePercentEncodedUTF8Sequence(
-                            new ReadOnlySpan<char>(pStr + next, end - next),
+                            chars.Slice(i),
                             ref dest,
                             isQuery,
                             iriParsing);
 
                         Debug.Assert(charactersRead > 0);
-                        next += charactersRead;
+                        i += charactersRead;
                     }
-
-                    start = next;
                 }
+
+                chars = chars.Slice(i);
             }
         }
 

@@ -17,11 +17,12 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="package.json" />
-    <WasmExtraFilesToDeploy Include="package-lock.json" />
+    <Content Include="package.json" Link="wwwroot\package.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="package-lock.json" Link="wwwroot\package-lock.json" CopyToOutputDirectory="PreserveNewest" />
 
     <NodeNpmModule Include="ws" />
   </ItemGroup>

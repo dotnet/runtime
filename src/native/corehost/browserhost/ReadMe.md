@@ -17,7 +17,7 @@ Implements native part of the CoreCLR host and exposes it as an internal JavaScr
 It is **Emscripten application** statically linked from libraries.
 
 - `libSystem.Native.Browser.js` linked -> `dotnet.native.js`
-- `libSystem.Browser.Utils.js` linked -> `dotnet.native.js`
+- `libSystem.Native.Browser.Utils.js` linked -> `dotnet.native.js`
 - `libSystem.Runtime.InteropServices.JavaScript.Native.js` linked -> `dotnet.native.js`
 - `libSystem.Native.Browser.a` linked -> `dotnet.native.wasm`
 - `libSystem.Runtime.InteropServices.JavaScript.Native.a` linked -> `dotnet.native.wasm`

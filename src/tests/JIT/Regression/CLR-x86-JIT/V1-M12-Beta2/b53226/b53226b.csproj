@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="b53226b.cs" />
-  </ItemGroup>
-</Project>

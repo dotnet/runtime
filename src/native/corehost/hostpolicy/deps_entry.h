@@ -12,7 +12,7 @@
 
 struct deps_asset_t
 {
-    deps_asset_t() : deps_asset_t(_X(""), _X(""), version_t(), version_t(), _X("")) { }
+    deps_asset_t() : deps_asset_t(_X(""), _X(""), version_t::empty(), version_t::empty(), _X("")) { }
 
     deps_asset_t(const pal::string_t& name, const pal::string_t& relative_path, const version_t& assembly_version, const version_t& file_version)
         : deps_asset_t(name, relative_path, assembly_version, file_version, _X("")) { }
@@ -56,9 +56,7 @@ struct deps_entry_t
     pal::string_t library_type;
     pal::string_t library_name;
     pal::string_t library_version;
-    pal::string_t library_hash;
     pal::string_t library_path;
-    pal::string_t library_hash_path;
     pal::string_t runtime_store_manifest_list;
     asset_types asset_type;
     deps_asset_t asset;

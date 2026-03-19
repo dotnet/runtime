@@ -205,7 +205,7 @@ namespace System.Reflection
 
             if (tkCustomAttributeTokens.Length == 0)
             {
-                return Array.Empty<CustomAttributeRecord>();
+                return [];
             }
 
             CustomAttributeRecord[] records = new CustomAttributeRecord[tkCustomAttributeTokens.Length];
@@ -269,7 +269,7 @@ namespace System.Reflection
             }
             else
             {
-                m_ctorParams = Array.Empty<CustomAttributeCtorParameter>();
+                m_ctorParams = [];
             }
 
             FieldInfo[] fields = m_ctor.DeclaringType!.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -1823,11 +1823,11 @@ namespace System.Reflection
 
             if (useAttributeArray)
             {
-                return elementCount == 0 ? Array.Empty<Attribute>() : new Attribute[elementCount];
+                return elementCount == 0 ? [] : new Attribute[elementCount];
             }
             if (useObjectArray)
             {
-                return elementCount == 0 ? Array.Empty<object>() : new object[elementCount];
+                return elementCount == 0 ? [] : new object[elementCount];
             }
             return elementCount == 0 ? caType.GetEmptyArray() : (object[])Array.CreateInstance(caType, elementCount);
         }

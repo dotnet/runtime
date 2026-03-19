@@ -1163,11 +1163,11 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
 
                     {
                         RSLockHolder lockHolder(pProcess->GetProcessLock());
-                        pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics
+                        IfFailThrow(pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics
                                                                                              // which are never boxed
                                                                          pAppDomain->GetADToken(),
                                                                          data->vmTypeHandle,
-                                                                         &typeInfo);
+                                                                         &typeInfo));
                     }
 
                     IfFailThrow(CordbType::TypeDataToType(pAppDomain,&typeInfo, pRes));
@@ -1373,7 +1373,7 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
         TypeParamsList params;
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->GetTypeHandleParams(pAppDomain->GetADToken(), vmTypeHandle, &params);
+            IfFailThrow(pProcess->GetDAC()->GetTypeHandleParams(pAppDomain->GetADToken(), vmTypeHandle, &params));
         }
 
         // convert the parameter type information to a list of CordbTypeInstances (one for each parameter)
@@ -1616,11 +1616,11 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
 
         {
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-            pProcess->GetDAC()->GetSimpleType(m_appdomain->GetADToken(),
+            IfFailThrow(pProcess->GetDAC()->GetSimpleType(m_appdomain->GetADToken(),
                                               m_elementType,
                                               &metadataToken,
                                               &vmModule,
-                                              &vmDomainAssembly);
+                                              &vmDomainAssembly));
         }
 
         //
@@ -1689,7 +1689,7 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             CordbProcess *pProcess = GetProcess();
             {
                 RSLockHolder lockHolder(pProcess->GetProcessLock());
-                typeHandleApprox = pProcess->GetDAC()->GetApproxTypeHandle(&typeData);
+                IfFailThrow(pProcess->GetDAC()->GetApproxTypeHandle(&typeData, &typeHandleApprox));
             }
         }
         EX_CATCH_HRESULT(hr);
@@ -1704,11 +1704,11 @@ HRESULT CordbType::InitInstantiationFieldInfo(BOOL fForceInit)
             // this may be called multiple times. Each call will discard previous values in m_fieldList and reinitialize
             // the list with updated information
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeDomainAssembly(),
+            IfFailThrow(pProcess->GetDAC()->GetInstantiationFieldInfo(m_pClass->GetModule()->GetRuntimeDomainAssembly(),
                                                           m_typeHandleExact,
                                                           typeHandleApprox,
                                                           &m_fieldList,
-                                                          &m_objectSize);
+                                                          &m_objectSize));
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -2342,13 +2342,13 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
                 VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
 
                 // get module and token of the simple type
-                GetProcess()->GetDAC()->GetSimpleType(GetAppDomain()->GetADToken(),
+                IfFailThrow(GetProcess()->GetDAC()->GetSimpleType(GetAppDomain()->GetADToken(),
                                                       et,
                                                       &mdToken,
                                                       &vmModule,
-                                                      &vmDomainAssembly);
+                                                      &vmDomainAssembly));
 
-                vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
+                IfFailThrow(GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken, &vmTypeHandle));
             }
             break;
         case ELEMENT_TYPE_ARRAY:
@@ -2382,7 +2382,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
                     IfFailThrow(hr);
 
                     VMPTR_Module vmModule = GetModule();
-                    vmTypeHandle = GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken);
+                    IfFailThrow(GetProcess()->GetDAC()->GetTypeHandle(vmModule, mdToken, &vmTypeHandle));
                 }
             }
             break;
@@ -2397,7 +2397,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
             break;
         }
 
-        GetProcess()->GetDAC()->GetTypeIDForType(vmTypeHandle, pId);
+        IfFailThrow(GetProcess()->GetDAC()->GetTypeIDForType(vmTypeHandle, pId));
     }
     EX_CATCH_HRESULT(hr);
 
@@ -2681,7 +2681,9 @@ HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
                     if (m_typeHandleExact.IsNull())
                         InitInstantiationTypeHandle(FALSE);
 
-                    *isRequired = GetProcess()->GetDAC()->RequiresAlign8(m_typeHandleExact);
+                    BOOL _alignResult;
+                    IfFailThrow(GetProcess()->GetDAC()->RequiresAlign8(m_typeHandleExact, &_alignResult));
+                    *isRequired = _alignResult;
                 }
                 else
                 {

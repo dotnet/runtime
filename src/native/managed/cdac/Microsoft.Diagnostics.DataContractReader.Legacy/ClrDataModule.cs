@@ -62,65 +62,62 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     int IXCLRDataModule.StartEnumAssemblies(ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumAssembly(ulong* handle, /*IXCLRDataAssembly*/ void** assembly)
+    int IXCLRDataModule.EnumAssembly(ulong* handle, DacComNullableByRef<IXCLRDataAssembly> assembly)
         => _legacyModule is not null ? _legacyModule.EnumAssembly(handle, assembly) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumAssemblies(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumAssemblies(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeDefinitions(ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumTypeDefinition(ulong* handle, /*IXCLRDataTypeDefinition*/ void** typeDefinition)
+    int IXCLRDataModule.EnumTypeDefinition(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
         => _legacyModule is not null ? _legacyModule.EnumTypeDefinition(handle, typeDefinition) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeDefinitions(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataModule.StartEnumTypeInstances(/*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
+    int IXCLRDataModule.StartEnumTypeInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumTypeInstances(appDomain, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumTypeInstance(ulong* handle, /*IXCLRDataTypeInstance*/ void** typeInstance)
+    int IXCLRDataModule.EnumTypeInstance(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
         => _legacyModule is not null ? _legacyModule.EnumTypeInstance(handle, typeInstance) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeInstances(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumTypeInstances(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeDefinitionsByName(char* name, uint flags, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitionsByName(name, flags, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumTypeDefinitionByName(ulong* handle, /*IXCLRDataTypeDefinition*/ void** type)
+    int IXCLRDataModule.EnumTypeDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> type)
         => _legacyModule is not null ? _legacyModule.EnumTypeDefinitionByName(handle, type) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeDefinitionsByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitionsByName(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataModule.StartEnumTypeInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
+    int IXCLRDataModule.StartEnumTypeInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumTypeInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumTypeInstanceByName(ulong* handle, /*IXCLRDataTypeInstance*/ void** type)
+    int IXCLRDataModule.EnumTypeInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> type)
         => _legacyModule is not null ? _legacyModule.EnumTypeInstanceByName(handle, type) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeInstancesByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumTypeInstancesByName(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataModule.GetTypeDefinitionByToken(/*mdTypeDef*/ uint token, /*IXCLRDataTypeDefinition*/ void** typeDefinition)
+    int IXCLRDataModule.GetTypeDefinitionByToken(/*mdTypeDef*/ uint token, DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
         => _legacyModule is not null ? _legacyModule.GetTypeDefinitionByToken(token, typeDefinition) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumMethodDefinitionsByName(char* name, uint flags, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumMethodDefinitionsByName(name, flags, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumMethodDefinitionByName(ulong* handle, /*IXCLRDataMethodDefinition*/ void** method)
+    int IXCLRDataModule.EnumMethodDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> method)
         => _legacyModule is not null ? _legacyModule.EnumMethodDefinitionByName(handle, method) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumMethodDefinitionsByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumMethodDefinitionsByName(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
+    int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, out IXCLRDataMethodInstance? method)
-    {
-        method = default;
-        return _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, out method) : HResults.E_NOTIMPL;
-    }
+    int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
+        => _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataModule.GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, /*IXCLRDataMethodDefinition*/ void** methodDefinition)
+    int IXCLRDataModule.GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
         => _legacyModule is not null ? _legacyModule.GetMethodDefinitionByToken(token, methodDefinition) : HResults.E_NOTIMPL;
 
-    int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, /*IXCLRDataTask*/ void* tlsTask, ulong* handle)
+    int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, IXCLRDataTask? tlsTask, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumDataByName(name, flags, appDomain, tlsTask, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumDataByName(ulong* handle, /*IXCLRDataValue*/ void** value)
+    int IXCLRDataModule.EnumDataByName(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
         => _legacyModule is not null ? _legacyModule.EnumDataByName(handle, value) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumDataByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;

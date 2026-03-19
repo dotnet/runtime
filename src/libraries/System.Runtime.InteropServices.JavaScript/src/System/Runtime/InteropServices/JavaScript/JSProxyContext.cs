@@ -23,6 +23,8 @@ namespace System.Runtime.InteropServices.JavaScript
         // they have negative values, so that they don't collide with JSHandles.
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
+        internal Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
+        internal int NextJSExportHandle = 1;
 
 #if !FEATURE_WASM_MANAGED_THREADS
         private JSProxyContext()
@@ -491,7 +493,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
-                };
+                }
                 if (!skipJS)
                 {
 #if FEATURE_WASM_MANAGED_THREADS

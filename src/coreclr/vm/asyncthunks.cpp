@@ -58,13 +58,14 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     return true;
 }
 
-// provided an async method, emits a Task-returning wrapper.
-void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL)
+// Provided an async method, emits a Task-returning wrapper.
+// The emitted code matches method EmitTaskReturningThunk in the Managed Type System.
+void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL)
 {
-    _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
+    _ASSERTE(!pAsyncCallVariant->IsAsyncThunkMethod());
 
     // Emits roughly the following code:
-    // 
+    //
     // ExecutionAndSyncBlockStore store = default;
     // store.Push();
     // try
@@ -73,7 +74,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
     //   {
     //     T result = Inner(args);
     //     // call an intrisic to see if the call above produced a continuation
-    //     if (StubHelpers.AsyncCallContinuation() == null)
+    //     if (AsyncHelpers.AsyncCallContinuation() == null)
     //       return Task.FromResult(result);
     //
     //     return FinalizeTaskReturningThunk();
@@ -132,12 +133,12 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             }
 
             int token;
-            _ASSERTE(!pAsyncOtherVariant->IsWrapperStub());
-            if (pAsyncOtherVariant->HasClassOrMethodInstantiation())
+            _ASSERTE(!pAsyncCallVariant->IsWrapperStub());
+            if (pAsyncCallVariant->HasClassOrMethodInstantiation())
             {
                 // For generic code emit generic signatures.
                 int typeSigToken = mdTokenNil;
-                if (pAsyncOtherVariant->HasClassInstantiation())
+                if (pAsyncCallVariant->HasClassInstantiation())
                 {
                     SigBuilder typeSigBuilder;
                     typeSigBuilder.AppendElementType(ELEMENT_TYPE_GENERICINST);
@@ -145,8 +146,8 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                     // TODO: (async) Encoding potentially shared method tables in
                     // signatures of tokens seems odd, but this hits assert
                     // with the typical method table.
-                    typeSigBuilder.AppendPointer(pAsyncOtherVariant->GetMethodTable());
-                    DWORD numClassTypeArgs = pAsyncOtherVariant->GetNumGenericClassArgs();
+                    typeSigBuilder.AppendPointer(pAsyncCallVariant->GetMethodTable());
+                    DWORD numClassTypeArgs = pAsyncCallVariant->GetNumGenericClassArgs();
                     typeSigBuilder.AppendData(numClassTypeArgs);
                     for (DWORD i = 0; i < numClassTypeArgs; ++i)
                     {
@@ -159,10 +160,10 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                     typeSigToken = pCode->GetSigToken(typeSig, typeSigLen);
                 }
 
-                if (pAsyncOtherVariant->HasMethodInstantiation())
+                if (pAsyncCallVariant->HasMethodInstantiation())
                 {
                     SigBuilder methodSigBuilder;
-                    DWORD numMethodTypeArgs = pAsyncOtherVariant->GetNumGenericMethodArgs();
+                    DWORD numMethodTypeArgs = pAsyncCallVariant->GetNumGenericMethodArgs();
                     methodSigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
                     methodSigBuilder.AppendData(numMethodTypeArgs);
                     for (DWORD i = 0; i < numMethodTypeArgs; ++i)
@@ -174,23 +175,23 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
                     DWORD sigLen;
                     PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)methodSigBuilder.GetSignature(&sigLen);
                     int methodSigToken = pCode->GetSigToken(sig, sigLen);
-                    token = pCode->GetToken(pAsyncOtherVariant, typeSigToken, methodSigToken);
+                    token = pCode->GetToken(pAsyncCallVariant, typeSigToken, methodSigToken);
                 }
                 else
                 {
-                    token = pCode->GetToken(pAsyncOtherVariant, typeSigToken);
+                    token = pCode->GetToken(pAsyncCallVariant, typeSigToken);
                 }
             }
             else
             {
-                token = pCode->GetToken(pAsyncOtherVariant);
+                token = pCode->GetToken(pAsyncCallVariant);
             }
 
             pCode->EmitCALL(token, localArg, logicalResultLocal != UINT_MAX ? 1 : 0);
 
             if (logicalResultLocal != UINT_MAX)
                 pCode->EmitSTLOC(logicalResultLocal);
-            pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
+            pCode->EmitCALL(METHOD__ASYNC_HELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
             pCode->EmitBRFALSE(finishedLabel);
 
             pCode->EmitLEAVE(suspendedLabel);
@@ -359,46 +360,6 @@ SigPointer MethodDesc::GetAsyncThunkResultTypeSig()
     return SigPointer(returnTypeSig, (DWORD)(returnTypeSigEnd - returnTypeSig));
 }
 
-bool MethodDesc::IsValueTaskAsyncThunk()
-{
-    _ASSERTE(IsAsyncThunkMethod());
-    PCCOR_SIGNATURE pSigRaw;
-    DWORD cSig;
-    if (FAILED(GetMDImport()->GetSigOfMethodDef(GetMemberDef(), &cSig, &pSigRaw)))
-    {
-        _ASSERTE(!"Loaded MethodDesc should not fail to get signature");
-        pSigRaw = NULL;
-        cSig = 0;
-    }
-
-    SigPointer pSig(pSigRaw, cSig);
-    uint32_t callConvInfo;
-    IfFailThrow(pSig.GetCallingConvInfo(&callConvInfo));
-
-    if ((callConvInfo & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
-    {
-        // GenParamCount
-        IfFailThrow(pSig.GetData(NULL));
-    }
-
-    // ParamCount
-    IfFailThrow(pSig.GetData(NULL));
-
-    // ReturnType comes now. Skip the modifiers.
-    IfFailThrow(pSig.SkipCustomModifiers());
-
-    // here we should have something Task, ValueTask, Task<retType> or ValueTask<retType>
-    BYTE bElementType;
-    IfFailThrow(pSig.GetByte(&bElementType));
-
-    // skip ELEMENT_TYPE_GENERICINST
-    if (bElementType == ELEMENT_TYPE_GENERICINST)
-        IfFailThrow(pSig.GetByte(&bElementType));
-
-    _ASSERTE(bElementType == ELEMENT_TYPE_VALUETYPE || bElementType == ELEMENT_TYPE_CLASS);
-    return bElementType == ELEMENT_TYPE_VALUETYPE;
-}
-
 // Given a method Foo<T>, return a MethodSpec token for Foo<T> instantiated
 // with the result type from the current async method's return type. For
 // example, if "this" represents Task<List<T>> Foo<T>(), and "md" is
@@ -468,43 +429,47 @@ int MethodDesc::GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream
     return pCode->GetToken(md, typeSigToken);
 }
 
-// provided a Task-returning method, emits an async wrapper.
-void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
+// Provided a Task-returning method, emits an async wrapper.
+// The emitted code matches method EmitAsyncMethodThunk in the Managed Type System.
+void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL)
 {
-    _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
-    _ASSERTE(!pAsyncOtherVariant->IsVoid());
+    _ASSERTE(!pTaskReturningVariant->IsAsyncThunkMethod());
+    _ASSERTE(!pTaskReturningVariant->IsVoid());
 
     // Implement IL that is effectively the following:
-    /*
-    {
-        Task task = other(arg);
-        if (!task.IsCompleted)
-        {
-            // Magic function which will suspend the current run of async methods
-            AsyncHelpers.TransparentAwaitTask(task);
-        }
-        return AsyncHelpers.CompletedTaskResult(task);
-    }
+    // {
+    //    Task task = other(arg);
+    //    if (!task.IsCompleted)
+    //    {
+    //        // Magic function which will suspend the current run of async methods
+    //        AsyncHelpers.TransparentAwait(task);
+    //    }
+    //    return AsyncHelpers.CompletedTaskResult(task);
+    // }
 
-    For ValueTask:
-    {
-        ValueTask vt = other(arg);
-        if (vt.IsCompleted)
-            return vt.Result/vt.ThrowIfCompletedUnsuccessfully();
+    // For ValueTask:
 
-        Task task = vt.AsTask();
-        <same code as above>
-    }
-    */
+    // {
+    //    ValueTask vt = other(arg);
+    //    if (!vt.IsCompleted)
+    //    {
+    //        taskOrNotifier = vt.AsTaskOrNotifier()
+
+    //        // Magic function which will suspend the current run of async methods
+    //        AsyncHelpers.TransparentAwait(taskOrNotifier);
+    //    }
+
+    //    return vt.Result/vt.ThrowIfCompletedUnsuccessfully();
+    // }
     ILCodeStream* pCode = pSL->NewCodeStream(ILStubLinker::kDispatch);
 
     int userFuncToken;
-    _ASSERTE(!pAsyncOtherVariant->IsWrapperStub());
-    if (pAsyncOtherVariant->HasClassOrMethodInstantiation())
+    _ASSERTE(!pTaskReturningVariant->IsWrapperStub());
+    if (pTaskReturningVariant->HasClassOrMethodInstantiation())
     {
         // For generic code emit generic signatures.
         int typeSigToken = mdTokenNil;
-        if (pAsyncOtherVariant->HasClassInstantiation())
+        if (pTaskReturningVariant->HasClassInstantiation())
         {
             SigBuilder typeSigBuilder;
             typeSigBuilder.AppendElementType(ELEMENT_TYPE_GENERICINST);
@@ -512,8 +477,8 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
             // TODO: (async) Encoding potentially shared method tables in
             // signatures of tokens seems odd, but this hits assert
             // with the typical method table.
-            typeSigBuilder.AppendPointer(pAsyncOtherVariant->GetMethodTable());
-            DWORD numClassTypeArgs = pAsyncOtherVariant->GetNumGenericClassArgs();
+            typeSigBuilder.AppendPointer(pTaskReturningVariant->GetMethodTable());
+            DWORD numClassTypeArgs = pTaskReturningVariant->GetNumGenericClassArgs();
             typeSigBuilder.AppendData(numClassTypeArgs);
             for (DWORD i = 0; i < numClassTypeArgs; ++i)
             {
@@ -526,10 +491,10 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
             typeSigToken = pCode->GetSigToken(typeSig, typeSigLen);
         }
 
-        if (pAsyncOtherVariant->HasMethodInstantiation())
+        if (pTaskReturningVariant->HasMethodInstantiation())
         {
             SigBuilder methodSigBuilder;
-            DWORD numMethodTypeArgs = pAsyncOtherVariant->GetNumGenericMethodArgs();
+            DWORD numMethodTypeArgs = pTaskReturningVariant->GetNumGenericMethodArgs();
             methodSigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
             methodSigBuilder.AppendData(numMethodTypeArgs);
             for (DWORD i = 0; i < numMethodTypeArgs; ++i)
@@ -541,16 +506,16 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
             DWORD sigLen;
             PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)methodSigBuilder.GetSignature(&sigLen);
             int methodSigToken = pCode->GetSigToken(sig, sigLen);
-            userFuncToken = pCode->GetToken(pAsyncOtherVariant, typeSigToken, methodSigToken);
+            userFuncToken = pCode->GetToken(pTaskReturningVariant, typeSigToken, methodSigToken);
         }
         else
         {
-            userFuncToken = pCode->GetToken(pAsyncOtherVariant, typeSigToken);
+            userFuncToken = pCode->GetToken(pTaskReturningVariant, typeSigToken);
         }
     }
     else
     {
-        userFuncToken = pCode->GetToken(pAsyncOtherVariant);
+        userFuncToken = pCode->GetToken(pTaskReturningVariant);
     }
 
     DWORD localArg = 0;
@@ -563,32 +528,35 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
         pCode->EmitLDARG(localArg++);
     }
 
-    pCode->EmitCALL(userFuncToken, localArg, 1);
+    // other(arg)
+    if (pTaskReturningVariant->IsAbstract())
+    {
+        _ASSERTE(pTaskReturningVariant->IsCLRToCOMCall());
+        pCode->EmitCALLVIRT(userFuncToken, localArg, 1);
+    }
+    else
+    {
+        pCode->EmitCALL(userFuncToken, localArg, 1);
+    }
 
     TypeHandle thLogicalRetType = msig.GetRetTypeHandleThrowing();
-    if (IsValueTaskAsyncThunk())
+    if (IsAsyncVariantForValueTaskReturningMethod())
     {
-        // Emit
-        // if (vtask.IsCompleted)
-        //   return vtask.Result/vtask.ThrowIfCompletedUnsuccessfully()
-        // task = vtask.AsTask()
-        //
-
         MethodTable* pMTValueTask;
         int isCompletedToken;
         int completionResultToken;
-        int asTaskToken;
+        int asTaskOrNotifierToken;
         if (msig.IsReturnTypeVoid())
         {
             pMTValueTask = CoreLibBinder::GetClass(CLASS__VALUETASK);
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK__THROW_IF_COMPLETED_UNSUCCESSFULLY);
-            MethodDesc* pMDAsTask = CoreLibBinder::GetMethod(METHOD__VALUETASK__AS_TASK);
+            MethodDesc* pMDAsTaskOrNotifier = CoreLibBinder::GetMethod(METHOD__VALUETASK__AS_TASK_OR_NOTIFIER);
 
             isCompletedToken = pCode->GetToken(pMDValueTaskIsCompleted);
             completionResultToken = pCode->GetToken(pMDCompletionResult);
-            asTaskToken = pCode->GetToken(pMDAsTask);
+            asTaskOrNotifierToken = pCode->GetToken(pMDAsTaskOrNotifier);
         }
         else
         {
@@ -597,73 +565,75 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& m
 
             MethodDesc* pMDValueTaskIsCompleted = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_ISCOMPLETED);
             MethodDesc* pMDCompletionResult = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__GET_RESULT);
-            MethodDesc* pMDAsTask = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__AS_TASK);
+            MethodDesc* pMDAsTaskOrNotifier = CoreLibBinder::GetMethod(METHOD__VALUETASK_1__AS_TASK_OR_NOTIFIER);
 
             pMDValueTaskIsCompleted = FindOrCreateAssociatedMethodDesc(pMDValueTaskIsCompleted, pMTValueTask, FALSE, Instantiation(), FALSE);
             pMDCompletionResult = FindOrCreateAssociatedMethodDesc(pMDCompletionResult, pMTValueTask, FALSE, Instantiation(), FALSE);
-            pMDAsTask = FindOrCreateAssociatedMethodDesc(pMDAsTask, pMTValueTask, FALSE, Instantiation(), FALSE);
+            pMDAsTaskOrNotifier = FindOrCreateAssociatedMethodDesc(pMDAsTaskOrNotifier, pMTValueTask, FALSE, Instantiation(), FALSE);
 
             isCompletedToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDValueTaskIsCompleted);
             completionResultToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDCompletionResult);
-            asTaskToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDAsTask);
+            asTaskOrNotifierToken = GetTokenForGenericTypeMethodCallWithAsyncReturnType(pCode, pMDAsTaskOrNotifier);
         }
 
         LocalDesc valueTaskLocalDesc(pMTValueTask);
         DWORD valueTaskLocal = pCode->NewLocal(valueTaskLocalDesc);
-        ILCodeLabel* valueTaskNotCompletedLabel = pCode->NewCodeLabel();
+        ILCodeLabel* valueTaskCompletedLabel = pCode->NewCodeLabel();
 
         // Store value task returned by call to actual user func
         pCode->EmitSTLOC(valueTaskLocal);
-
         pCode->EmitLDLOCA(valueTaskLocal);
         pCode->EmitCALL(isCompletedToken, 1, 1);
-        pCode->EmitBRFALSE(valueTaskNotCompletedLabel);
+        pCode->EmitBRTRUE(valueTaskCompletedLabel);
 
+        pCode->EmitLDLOCA(valueTaskLocal);
+        pCode->EmitCALL(asTaskOrNotifierToken, 1, 1);
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT, 1, 0);
+
+        pCode->EmitLabel(valueTaskCompletedLabel);
         pCode->EmitLDLOCA(valueTaskLocal);
         pCode->EmitCALL(completionResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
         pCode->EmitRET();
-
-        pCode->EmitLabel(valueTaskNotCompletedLabel);
-        pCode->EmitLDLOCA(valueTaskLocal);
-        pCode->EmitCALL(asTaskToken, 1, 1);
-    }
-
-    MethodTable* pMTTask;
-
-    int completedTaskResultToken;
-    if (msig.IsReturnTypeVoid())
-    {
-        pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
-
-        MethodDesc* pMDCompletedTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK);
-        completedTaskResultToken = pCode->GetToken(pMDCompletedTask);
     }
     else
     {
-        MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(CLASS__TASK_1);
-        pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+        MethodTable* pMTTask;
 
-        MethodDesc* pMDCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
-        pMDCompletedTaskResult = FindOrCreateAssociatedMethodDesc(pMDCompletedTaskResult, pMDCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-        completedTaskResultToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDCompletedTaskResult);
+        int completedTaskResultToken;
+        if (msig.IsReturnTypeVoid())
+        {
+            pMTTask = CoreLibBinder::GetClass(CLASS__TASK);
+
+            MethodDesc* pMDCompletedTask = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK);
+            completedTaskResultToken = pCode->GetToken(pMDCompletedTask);
+        }
+        else
+        {
+            MethodTable* pMTTaskOpen = CoreLibBinder::GetClass(CLASS__TASK_1);
+            pMTTask = ClassLoader::LoadGenericInstantiationThrowing(pMTTaskOpen->GetModule(), pMTTaskOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+
+            MethodDesc* pMDCompletedTaskResult = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__COMPLETED_TASK_RESULT);
+            pMDCompletedTaskResult = FindOrCreateAssociatedMethodDesc(pMDCompletedTaskResult, pMDCompletedTaskResult->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
+            completedTaskResultToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, pMDCompletedTaskResult);
+        }
+
+        LocalDesc taskLocalDesc(pMTTask);
+        DWORD taskLocal = pCode->NewLocal(taskLocalDesc);
+        ILCodeLabel* pGetResultLabel = pCode->NewCodeLabel();
+
+        // Store task returned by actual user func or by ValueTask.AsTask
+        pCode->EmitSTLOC(taskLocal);
+
+        pCode->EmitLDLOC(taskLocal);
+        pCode->EmitCALL(METHOD__TASK__GET_ISCOMPLETED, 1, 1);
+        pCode->EmitBRTRUE(pGetResultLabel);
+
+        pCode->EmitLDLOC(taskLocal);
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT, 1, 0);
+
+        pCode->EmitLabel(pGetResultLabel);
+        pCode->EmitLDLOC(taskLocal);
+        pCode->EmitCALL(completedTaskResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
+        pCode->EmitRET();
     }
-
-    LocalDesc taskLocalDesc(pMTTask);
-    DWORD taskLocal = pCode->NewLocal(taskLocalDesc);
-    ILCodeLabel* pGetResultLabel = pCode->NewCodeLabel();
-
-    // Store task returned by actual user func or by ValueTask.AsTask
-    pCode->EmitSTLOC(taskLocal);
-
-    pCode->EmitLDLOC(taskLocal);
-    pCode->EmitCALL(METHOD__TASK__GET_ISCOMPLETED, 1, 1);
-    pCode->EmitBRTRUE(pGetResultLabel);
-
-    pCode->EmitLDLOC(taskLocal);
-    pCode->EmitCALL(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK, 1, 0);
-
-    pCode->EmitLabel(pGetResultLabel);
-    pCode->EmitLDLOC(taskLocal);
-    pCode->EmitCALL(completedTaskResultToken, 1, msig.IsReturnTypeVoid() ? 0 : 1);
-    pCode->EmitRET();
 }

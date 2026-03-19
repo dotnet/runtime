@@ -24,7 +24,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return ObjectNodeSection.TextSection;            
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };            
         }
 
         public override bool IsShareable => false;

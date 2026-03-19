@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary", "CollectionStructExplicit" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Program__MyClassWithCustomCollections = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary", "CollectionStructExplicit" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.IReadOnlyList<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            if (instance is not ICollection<int> temp)
+            if (instance is not global::System.Collections.Generic.ICollection<int> temp)
             {
                 return;
             }
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.IReadOnlyDictionary<string, int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            if (instance is not IDictionary<string, int> temp)
+            if (instance is not global::System.Collections.Generic.IDictionary<string, int> temp)
             {
                 return;
             }
@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (AsConfigWithChildren(value9) is IConfigurationSection section10)
             {
                 global::System.Collections.Generic.IReadOnlyList<int>? temp12 = instance.IReadOnlyList;
-                temp12 = temp12 is null ? (global::System.Collections.Generic.IReadOnlyList<int>)new List<int>() : (global::System.Collections.Generic.IReadOnlyList<int>)new List<int>(temp12);
+                temp12 = temp12 is null ? (global::System.Collections.Generic.IReadOnlyList<int>)new global::System.Collections.Generic.List<int>() : (global::System.Collections.Generic.IReadOnlyList<int>)new global::System.Collections.Generic.List<int>(temp12);
                 BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
                 instance.IReadOnlyList = temp12;
             }
@@ -187,7 +187,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (AsConfigWithChildren(value13) is IConfigurationSection section14)
             {
                 global::System.Collections.Generic.IReadOnlyDictionary<string, int>? temp16 = instance.IReadOnlyDictionary;
-                temp16 = temp16 is null ? (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)new Dictionary<string, int>() : (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)temp16.ToDictionary(pair => pair.Key, pair => pair.Value);
+                temp16 = temp16 is null ? (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)new global::System.Collections.Generic.Dictionary<string, int>() : (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)temp16.ToDictionary(pair => pair.Key, pair => pair.Value);
                 BindCore(section14, ref temp16, defaultValueIfNotFound: false, binderOptions);
                 instance.IReadOnlyDictionary = temp16;
             }
@@ -225,17 +225,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
-                List<string>? temp = null;
+                global::System.Collections.Generic.List<string>? temp = null;
         
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
                     if (!keys.Value.Contains(section.Key))
                     {
-                        (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        (temp ??= new global::System.Collections.Generic.List<string>()).Add($"'{section.Key}'");
                     }
                 }
         

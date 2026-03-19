@@ -50,7 +50,6 @@
       <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/clrjit_*.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
@@ -124,6 +123,11 @@
 
       <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
       <RunTimeArtifactsIncludeFolders Include="xunit/" TargetDir="xunit/" />
+
+      <!-- Managed ilasm for testing -->
+      <RunTimeArtifactsIncludeFolders Include="managed-ilasm/" TargetDir="managed-ilasm/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
     </ItemGroup>
 
     <ItemGroup>
@@ -190,7 +194,7 @@
           TargetDir="wasm-test-runner/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(BrowserProjectRoot)\test-main.js"
+          Include="$(BrowserProjectRoot)\test-main.mjs"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal

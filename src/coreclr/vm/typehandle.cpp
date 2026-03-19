@@ -971,17 +971,7 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
         return TypeHandle(g_pArrayClass);
     }
 
-
-    {
-        // This should just result in resolving an already loaded type.
-        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-        // == FailIfNotLoadedOrNotRestored
-        TypeHandle result = ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank, ClassLoader::DontLoadTypes);
-        _ASSERTE(!result.IsNull());
-
-        // <TODO> should be able to assert IsRestored here </TODO>
-        return result;
-    }
+    return ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank);
 }
 
 #endif // #ifndef DACCESS_COMPILE

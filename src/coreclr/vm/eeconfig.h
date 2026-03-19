@@ -43,6 +43,15 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
+enum ClrModifiableAssemblies {
+    /* modifiable assemblies are implicitly disabled */
+    MODIFIABLE_ASSM_UNSET = 0,
+    /* modifiable assemblies are explicitly disabled */
+    MODIFIABLE_ASSM_NONE = 1,
+    /* assemblies with the Debug flag are modifiable */
+    MODIFIABLE_ASSM_DEBUG = 2,
+};
+
 enum ParseCtl {
     parseAll,               // parse entire config file
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
@@ -87,6 +96,11 @@ public:
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif // FEATURE_TIERED_COMPILATION
+    DWORD TieredCompilation_DefaultTier() const 
+    {
+        LIMITED_METHOD_CONTRACT;
+        return tieredCompilation_DefaultTier;
+    }
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
@@ -269,9 +283,7 @@ public:
 
     bool IsJitVerificationDisabled(void)    const {LIMITED_METHOD_CONTRACT;  return fJitVerificationDisable; }
 
-#ifdef FEATURE_EH_FUNCLETS
     bool SuppressLockViolationsOnReentryFromOS() const {LIMITED_METHOD_CONTRACT;  return fSuppressLockViolationsOnReentryFromOS; }
-#endif
 
 #endif // _DEBUG
 
@@ -406,9 +418,8 @@ public:
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
-    bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
-    bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
-    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
+    bool    StressLog()                            const { LIMITED_METHOD_CONTRACT; return fStressLog; }
+    ClrModifiableAssemblies ModifiableAssemblies() const { LIMITED_METHOD_CONTRACT; return modifiableAssemblies; }
 
     // Optimizations to improve working set
 
@@ -520,9 +531,7 @@ private: //----------------------------------------------------------------
                                         // at load time.
     bool fJitVerificationDisable;       // Turn off jit verification (for testing purposes only)
 
-#ifdef FEATURE_EH_FUNCLETS
     bool fSuppressLockViolationsOnReentryFromOS;
-#endif
 
 #endif // _DEBUG
 #ifdef ENABLE_STARTUP_DELAY
@@ -572,8 +581,7 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pReadyToRunExcludeList;
 
     bool fStressLog;
-    bool fForceEnc;
-    bool fDebugAssembliesModifiable;
+    ClrModifiableAssemblies modifiableAssemblies;
 
 #ifdef _DEBUG
     // interop logging
@@ -604,6 +612,7 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
+    DWORD tieredCompilation_DefaultTier;
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;

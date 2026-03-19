@@ -147,6 +147,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/121209", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -840,7 +841,9 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((byte[])null));
-            Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            
+            BadImageFormatException ex = Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]

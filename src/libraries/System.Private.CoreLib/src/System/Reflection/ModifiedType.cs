@@ -172,8 +172,10 @@ namespace System.Reflection
         public override bool IsEnum => _unmodifiedType.IsEnum;
         protected override bool IsPrimitiveImpl() => _unmodifiedType.IsPrimitive;
         protected override bool IsByRefImpl() => _unmodifiedType.IsByRef;
+        public override bool IsGenericParameter => _unmodifiedType.IsGenericParameter;
         public override bool IsGenericTypeParameter => _unmodifiedType.IsGenericTypeParameter;
         public override bool IsGenericMethodParameter => _unmodifiedType.IsGenericMethodParameter;
+        public override int GenericParameterPosition => _unmodifiedType.GenericParameterPosition;
         protected override bool IsPointerImpl() => _unmodifiedType.IsPointer;
         protected override bool IsValueTypeImpl() => _unmodifiedType.IsValueType;
         protected override bool IsCOMObjectImpl() => _unmodifiedType.IsCOMObject;

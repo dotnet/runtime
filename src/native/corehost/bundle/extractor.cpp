@@ -122,6 +122,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
     size_t cast_size = to_size_t_dbgchecked(size);
     size_t extracted_size = 0;
 
+    trace::verbose(_X("  %s (size: %" PRId64 ")"), entry.relative_path().c_str(), size);
     if (entry.compressedSize() != 0)
     {
 #if defined(NATIVE_LIBS_EMBEDDED)
@@ -158,8 +159,9 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
             int produced = bufSize - zStream.availOut;
             if (fwrite(buf, 1, produced, file) != (size_t)produced)
             {
+                int error_code = errno;
                 CompressionNative_InflateEnd(&zStream);
-                trace::error(_X("I/O failure when writing decompressed file."));
+                trace::error(_X("I/O failure when writing decompressed file. %s (%d)"), pal::strerror(error_code).c_str(), error_code);
                 throw StatusCode::BundleExtractionIOError;
             }
 
@@ -175,12 +177,16 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
     else
     {
         extracted_size = fwrite(reader, 1, cast_size, file);
+        if (extracted_size != cast_size)
+        {
+            int error_code = errno;
+            trace::error(_X("I/O failure when writing extracted files. %s (%d)"), pal::strerror(error_code).c_str(), error_code);
+        }
     }
 
     if (extracted_size != cast_size)
     {
         trace::error(_X("Failure extracting contents of the application bundle. Expected size:%" PRId64 " Actual size:%zu"), size, extracted_size);
-        trace::error(_X("I/O failure when writing extracted files."));
         throw StatusCode::BundleExtractionIOError;
     }
 

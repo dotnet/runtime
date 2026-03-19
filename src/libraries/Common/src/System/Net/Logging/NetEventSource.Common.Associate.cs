@@ -29,7 +29,7 @@ namespace System.Net
         public static void Associate(object? thisOrContextObject, object first, object second, [CallerMemberName] string? memberName = null) =>
             Log.Associate(IdOf(thisOrContextObject), memberName, IdOf(first), IdOf(second));
 
-        [Event(AssociateEventId, Level = EventLevel.Informational, Keywords = Keywords.Default, Message = "[{2}]<-->[{3}]")]
+        [Event(AssociateEventId, Level = EventLevel.Informational, Message = "[{2}]<-->[{3}]")]
         private void Associate(string thisOrContextObject, string? memberName, string first, string second)
         {
             Debug.Assert(IsEnabled());

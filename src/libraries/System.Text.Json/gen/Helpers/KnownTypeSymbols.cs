@@ -52,6 +52,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? ISetOfTType => GetOrResolveType(typeof(ISet<>), ref _ISetOfTType);
         private Option<INamedTypeSymbol?> _ISetOfTType;
 
+        public INamedTypeSymbol? IReadOnlySetOfTType => GetOrResolveType("System.Collections.Generic.IReadOnlySet`1", ref _IReadOnlySetOfTType);
+        private Option<INamedTypeSymbol?> _IReadOnlySetOfTType;
+
         public INamedTypeSymbol? StackOfTType => GetOrResolveType(typeof(Stack<>), ref _StackOfTType);
         private Option<INamedTypeSymbol?> _StackOfTType;
 

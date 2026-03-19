@@ -464,7 +464,7 @@ namespace System
         public char[] ToCharArray()
         {
             if (Length == 0)
-                return Array.Empty<char>();
+                return [];
 
             char[] chars = new char[Length];
 
@@ -487,7 +487,7 @@ namespace System
             if (length <= 0)
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(length);
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[length];

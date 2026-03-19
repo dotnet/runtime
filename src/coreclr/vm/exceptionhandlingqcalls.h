@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 #ifndef EXCEPTION_HANDLING_QCALLS_H
 #define EXCEPTION_HANDLING_QCALLS_H
-
-#ifdef FEATURE_EH_FUNCLETS
 
 struct RhEHClause;
 struct ExInfo;
@@ -20,6 +17,5 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
 extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, unsigned int* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pIsExceptionIntercepted);
 #endif // DACCESS_COMPILE
 
-#endif // FEATURE_EH_FUNCLETS
-
 #endif // EXCEPTION_HANDLING_QCALLS_H
+

@@ -874,7 +874,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 public override Type Return() => typeof(int);
             }
 
-            public static void Test ()
+            public static void Test()
             {
                 // https://github.com/dotnet/linker/issues/3133
                 // Access the interfaces as well - otherwise NativeAOT can decide
@@ -883,17 +883,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // which leads to some warnings not being generated.
                 // The goal of this test is to validate the generated diagnostics
                 // so we're forcing the checks to happen with this.
-                typeof (Library.IAnnotatedMethods).RequiresAll ();
-                typeof (Library.IUnannotatedMethods).RequiresAll ();
+                typeof(Library.IAnnotatedMethods).RequiresAll();
+                typeof(Library.IUnannotatedMethods).RequiresAll();
 
-                typeof (ImplIUnannotatedMethodsMismatch).RequiresPublicMethods ();
-                typeof (ImplIAnnotatedMethodsMismatch).RequiresPublicMethods ();
-                typeof (DerivedFromAnnotatedMismatch).RequiresPublicMethods ();
-                typeof (DerivedFromUnannotatedMismatch).RequiresPublicMethods ();
-                typeof (ImplIUnannotatedMethodsMatch).RequiresPublicMethods ();
-                typeof (ImplIAnnotatedMethodsMatch).RequiresPublicMethods ();
-                typeof (DerivedFromAnnotatedMatch).RequiresPublicMethods ();
-                typeof (DerivedFromUnannotatedMatch).RequiresPublicMethods ();
+                typeof(ImplIUnannotatedMethodsMismatch).RequiresPublicMethods();
+                typeof(ImplIAnnotatedMethodsMismatch).RequiresPublicMethods();
+                typeof(DerivedFromAnnotatedMismatch).RequiresPublicMethods();
+                typeof(DerivedFromUnannotatedMismatch).RequiresPublicMethods();
+                typeof(ImplIUnannotatedMethodsMatch).RequiresPublicMethods();
+                typeof(ImplIAnnotatedMethodsMatch).RequiresPublicMethods();
+                typeof(DerivedFromAnnotatedMatch).RequiresPublicMethods();
+                typeof(DerivedFromUnannotatedMatch).RequiresPublicMethods();
             }
         }
 
@@ -904,57 +904,57 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             abstract class Base
             {
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public abstract Type NonGenericAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public abstract Type NonGenericAbstract([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
 
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public virtual Type NonGenericVirtual ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => type;
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public virtual Type NonGenericVirtual([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => type;
 
-                public abstract void GenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+                public abstract void GenericAbstract<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>();
 
-                public virtual void GenericVirtual<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+                public virtual void GenericVirtual<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() { }
 
-                public abstract Type UnannotatedAbstract (Type type);
+                public abstract Type UnannotatedAbstract(Type type);
 
-                public abstract void UnannotatedGenericAbstract<T> ();
+                public abstract void UnannotatedGenericAbstract<T>();
             }
 
             class Derived : Base
             {
-                [ExpectedWarning ("IL2092")]
-                [ExpectedWarning ("IL2093")]
-                public override Type NonGenericAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                public override Type NonGenericAbstract([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
 
-                [ExpectedWarning ("IL2092")]
-                [ExpectedWarning ("IL2093")]
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
-                public override Type NonGenericVirtual (Type type) => null;
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+                public override Type NonGenericVirtual(Type type) => null;
 
-                [ExpectedWarning ("IL2095")]
-                public override void GenericAbstract<T> () { }
+                [ExpectedWarning("IL2095")]
+                public override void GenericAbstract<T>() { }
 
-                [ExpectedWarning ("IL2095")]
-                public override void GenericVirtual<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
+                [ExpectedWarning("IL2095")]
+                public override void GenericVirtual<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>() { }
 
-                [ExpectedWarning ("IL2092")]
-                [ExpectedWarning ("IL2093")]
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public override Type UnannotatedAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public override Type UnannotatedAbstract([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
 
-                [ExpectedWarning ("IL2095")]
-                public override void UnannotatedGenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
+                [ExpectedWarning("IL2095")]
+                public override void UnannotatedGenericAbstract<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>() { }
             }
 
             interface IBaseWithDefault
             {
-                void DefaultMethod (Type type);
+                void DefaultMethod(Type type);
             }
 
             interface IDerivedWithDefault : IBaseWithDefault
             {
-                [ExpectedWarning ("IL2092")]
-                [UnexpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/linker/issues/3121")]
-                void IBaseWithDefault.DefaultMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
+                [ExpectedWarning("IL2092")]
+                [UnexpectedWarning("IL2092", Tool.Analyzer, "https://github.com/dotnet/linker/issues/3121")]
+                void IBaseWithDefault.DefaultMethod([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
             }
 
             class ImplDerivedWithDefault : IDerivedWithDefault
@@ -963,67 +963,67 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             interface IGvmBase
             {
-                Type UnannotatedGvm<T> (Type type);
-                Type UnannotatedGvmCalledThroughBase<T> (Type type);
+                Type UnannotatedGvm<T>(Type type);
+                Type UnannotatedGvmCalledThroughBase<T>(Type type);
 
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                static abstract Type AnnotatedStaticGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type);
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                static abstract Type AnnotatedStaticGvm<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type);
 
-                static virtual Type UnannotatedStaticGvm<T> (Type type) => null;
+                static virtual Type UnannotatedStaticGvm<T>(Type type) => null;
             }
 
             class ImplIGvmBase : IGvmBase
             {
                 // NativeAOT doesn't validate overrides when it can resolve them as direct calls
-                [ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public Type UnannotatedGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
+                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public Type UnannotatedGvm<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
 
-                [ExpectedWarning ("IL2092")]
-                [ExpectedWarning ("IL2093")]
-                [ExpectedWarning ("IL2095")]
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public Type UnannotatedGvmCalledThroughBase<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public Type UnannotatedGvmCalledThroughBase<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
 
-                [ExpectedWarning ("IL2092")]
-                [ExpectedWarning ("IL2093")]
-                [ExpectedWarning ("IL2095")]
-                public static Type AnnotatedStaticGvm<T> (Type type) => null;
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
+                public static Type AnnotatedStaticGvm<T>(Type type) => null;
 
-                [ExpectedWarning ("IL2092")]
-                [ExpectedWarning ("IL2093")]
-                [ExpectedWarning ("IL2095")]
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public static Type UnannotatedStaticGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public static Type UnannotatedStaticGvm<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
             }
 
-            static void CallStaticGvm<TGvmBase> () where TGvmBase : IGvmBase
+            static void CallStaticGvm<TGvmBase>() where TGvmBase : IGvmBase
             {
-                TGvmBase.AnnotatedStaticGvm<string> (typeof (string));
-                TGvmBase.UnannotatedStaticGvm<string> (typeof (string));
+                TGvmBase.AnnotatedStaticGvm<string>(typeof(string));
+                TGvmBase.UnannotatedStaticGvm<string>(typeof(string));
             }
 
-            public static void Test ()
+            public static void Test()
             {
-                Base instance = new Derived ();
-                instance.NonGenericAbstract (typeof (string));
-                instance.NonGenericVirtual (typeof (string));
-                instance.GenericAbstract<string> ();
-                instance.GenericVirtual<string> ();
-                instance.UnannotatedAbstract (typeof (string));
-                instance.UnannotatedGenericAbstract<string> ();
+                Base instance = new Derived();
+                instance.NonGenericAbstract(typeof(string));
+                instance.NonGenericVirtual(typeof(string));
+                instance.GenericAbstract<string>();
+                instance.GenericVirtual<string>();
+                instance.UnannotatedAbstract(typeof(string));
+                instance.UnannotatedGenericAbstract<string>();
 
-                ((IBaseWithDefault) (new ImplDerivedWithDefault ())).DefaultMethod (typeof (string));
+                ((IBaseWithDefault)(new ImplDerivedWithDefault())).DefaultMethod(typeof(string));
 
-                ImplIGvmBase impl = new ImplIGvmBase ();
-                impl.UnannotatedGvm<string> (typeof (string));
+                ImplIGvmBase impl = new ImplIGvmBase();
+                impl.UnannotatedGvm<string>(typeof(string));
 
-                IGvmBase ibase = (IGvmBase) impl;
-                ibase.UnannotatedGvmCalledThroughBase<string> (typeof (string));
+                IGvmBase ibase = (IGvmBase)impl;
+                ibase.UnannotatedGvmCalledThroughBase<string>(typeof(string));
 
-                CallStaticGvm<ImplIGvmBase> ();
+                CallStaticGvm<ImplIGvmBase>();
             }
         }
 
@@ -1037,86 +1037,90 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class BaseMethodWithRequires
             {
-                [RequiresUnreferencedCode (nameof (MethodWithRequires))]
-                [RequiresDynamicCode (nameof (MethodWithRequires))]
-                public virtual void MethodWithRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+                [RequiresUnreferencedCode(nameof(MethodWithRequires))]
+                [RequiresDynamicCode(nameof(MethodWithRequires))]
+                public virtual void MethodWithRequires([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) { }
             }
 
-            [RequiresUnreferencedCode (nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
-            [RequiresDynamicCode (nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+            [RequiresUnreferencedCode(nameof(DerivedTypeWithRequires_BaseMethodWithRequires))]
+            [RequiresDynamicCode(nameof(DerivedTypeWithRequires_BaseMethodWithRequires))]
             class DerivedTypeWithRequires_BaseMethodWithRequires : BaseMethodWithRequires
             {
-                public override void MethodWithRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+                public override void MethodWithRequires([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) { }
             }
 
-            [ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
-            [ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires))]
-            [ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
-            [ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
-            static void Test_DerivedTypeWithRequires_BaseMethodWithRequires ()
+            [ExpectedWarning("IL2026", nameof(DerivedTypeWithRequires_BaseMethodWithRequires))]
+            [ExpectedWarning("IL2026", nameof(DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires))]
+            [ExpectedWarning("IL3050", nameof(DerivedTypeWithRequires_BaseMethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3050", nameof(DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            static void Test_DerivedTypeWithRequires_BaseMethodWithRequires()
             {
-                new DerivedTypeWithRequires_BaseMethodWithRequires ().MethodWithRequires (typeof (int));
+                new DerivedTypeWithRequires_BaseMethodWithRequires().MethodWithRequires(typeof(int));
             }
 
             class BaseMethodWithoutRequires
             {
-                public virtual void MethodWithoutRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+                public virtual void MethodWithoutRequires([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) { }
             }
 
-            [RequiresUnreferencedCode (nameof (DerivedTypeWithRequires_BaseMethodWithoutRequires))]
+            [RequiresUnreferencedCode(nameof(DerivedTypeWithRequires_BaseMethodWithoutRequires))]
             class DerivedTypeWithRequires_BaseMethodWithoutRequires : BaseMethodWithoutRequires
             {
-                public override void MethodWithoutRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+                public override void MethodWithoutRequires([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type t) { }
             }
 
-            [ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithoutRequires))]
-            static void Test_DerivedTypeWithRequires_BaseMethodWithoutRequires ()
+            [ExpectedWarning("IL2026", nameof(DerivedTypeWithRequires_BaseMethodWithoutRequires))]
+            static void Test_DerivedTypeWithRequires_BaseMethodWithoutRequires()
             {
-                new DerivedTypeWithRequires_BaseMethodWithoutRequires ().MethodWithoutRequires (typeof (int));
+                new DerivedTypeWithRequires_BaseMethodWithoutRequires().MethodWithoutRequires(typeof(int));
             }
 
-            public static void Test ()
+            public static void Test()
             {
-                Test_DerivedTypeWithRequires_BaseMethodWithRequires ();
-                Test_DerivedTypeWithRequires_BaseMethodWithoutRequires ();
+                Test_DerivedTypeWithRequires_BaseMethodWithRequires();
+                Test_DerivedTypeWithRequires_BaseMethodWithoutRequires();
             }
         }
 
         class InstantiatedGeneric
         {
-            class GenericBase<T> {
-                [ExpectedWarning ("IL2106")]
-                [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public virtual T ReturnValue () => default;
-            }
-
-            class InstantiatedDerived : GenericBase<Type> {
-                public override Type ReturnValue () => null;
-            }
-
-            public static void Test ()
+            class GenericBase<T>
             {
-                new InstantiatedDerived ().ReturnValue ();
+                [ExpectedWarning("IL2106")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public virtual T ReturnValue() => default;
+            }
+
+            class InstantiatedDerived : GenericBase<Type>
+            {
+                public override Type ReturnValue() => null;
+            }
+
+            public static void Test()
+            {
+                new InstantiatedDerived().ReturnValue();
             }
         }
 
         class AnnotationOnUnsupportedType
         {
-            class UnsupportedType {
-                [ExpectedWarning ("IL2041")]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-                public virtual void UnsupportedAnnotationMismatch () { }
-            }
-
-            class DerivedUnsupportedType : UnsupportedType {
-                [ExpectedWarning ("IL2041")]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-                public override void UnsupportedAnnotationMismatch () { }
-            }
-
-            public static void Test ()
+            class UnsupportedType
             {
-                new DerivedUnsupportedType ().UnsupportedAnnotationMismatch ();
+                [ExpectedWarning("IL2041")]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public virtual void UnsupportedAnnotationMismatch() { }
+            }
+
+            class DerivedUnsupportedType : UnsupportedType
+            {
+                [ExpectedWarning("IL2041")]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                public override void UnsupportedAnnotationMismatch() { }
+            }
+
+            public static void Test()
+            {
+                new DerivedUnsupportedType().UnsupportedAnnotationMismatch();
             }
         }
     }

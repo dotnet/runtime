@@ -37,7 +37,6 @@ class Object;
 #include "typestring.h"
 #include "caparser.h"
 #include "classnames.h"
-#include "objectnative.h"
 #include "finalizerthread.h"
 #include "dynamicinterfacecastable.h"
 
@@ -138,20 +137,16 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         GCPROTECT_BEGIN(gc);
 
         // Create an instance of the object
-        MethodDescCallSite createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
-        gc.pProxy = createObj.Call_RetOBJECTREF(NULL);
+        UnmanagedCallersOnlyCaller createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
+        createObj.InvokeThrowing(&gc.pProxy);
         gc.pType = rth.GetManagedClassObject();
 
         // Query the current licensing context
-        MethodDescCallSite getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO, &gc.pProxy);
+        UnmanagedCallersOnlyCaller getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO);
         CLR_BOOL fDesignTime = FALSE;
-        ARG_SLOT args[4];
-        args[0] = ObjToArgSlot(gc.pProxy);
-        args[1] = ObjToArgSlot(gc.pType);
-        args[2] = (ARG_SLOT)&fDesignTime;
-        args[3] = (ARG_SLOT)(BSTR*)&bstrKey;
-
-        getCurrentContextInfo.Call(args);
+        INT_PTR bstrKeyRaw = NULL;
+        getCurrentContextInfo.InvokeThrowing(&gc.pProxy, &gc.pType, &fDesignTime, &bstrKeyRaw);
+        bstrKey = (BSTR)bstrKeyRaw;
 
         if (fDesignTime)
         {
@@ -182,11 +177,9 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             // Store the requested license key
             if (SUCCEEDED(hr))
             {
-                MethodDescCallSite saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT, &gc.pProxy);
-
-                args[0] = ObjToArgSlot(gc.pProxy);
-                args[1] = (ARG_SLOT)(BSTR)bstrKey;
-                saveKeyInCurrentContext.Call(args);
+                UnmanagedCallersOnlyCaller saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT);
+                BSTR bstrKeyValue = (BSTR)bstrKey;
+                saveKeyInCurrentContext.InvokeThrowing(&gc.pProxy, reinterpret_cast<INT_PTR>(bstrKeyValue));
             }
         }
 
@@ -1195,7 +1188,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 
             // Do a noop wait just to make sure we are cooperating
             // with the finalizer thread
-            pThread->Join(1, TRUE);
+            pThread->DoReentrantWaitWithRetry(pThread->GetThreadHandle(), 1, WaitMode_Alertable);
         }
     }
 }
@@ -1280,14 +1273,6 @@ VOID RCWCleanupList::ReleaseRCWListRaw(RCW* pRCW)
         pRCW = pNext;
     }
 }
-
-const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
-{
-    0,                           // GCPressureSize_None
-    GC_PRESSURE_PROCESS_LOCAL,   // GCPressureSize_ProcessLocal
-    GC_PRESSURE_MACHINE_LOCAL,   // GCPressureSize_MachineLocal
-    GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
-};
 
 //--------------------------------------------------------------------------------
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
@@ -1476,42 +1461,6 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     if (IUnkEntry::IsComponentFreeThreaded(pUnk))
         return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
-}
-
-void RCW::AddMemoryPressure(GCPressureSize pressureSize)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    int pressure = s_rGCPressureTable[pressureSize];
-    GCInterface::AddMemoryPressure(pressure);
-
-    // Remember the pressure we set.
-    m_Flags.m_GCPressure = pressureSize;
-}
-
-void RCW::RemoveMemoryPressure()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (GCPressureSize_None == m_Flags.m_GCPressure)
-        return;
-
-    int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-    GCInterface::RemoveMemoryPressure(pressure);
-
-    m_Flags.m_GCPressure = GCPressureSize_None;
 }
 
 
@@ -1728,9 +1677,6 @@ void RCW::Cleanup()
 
         // Release the IUnkEntry and the InterfaceEntries.
         ReleaseAllInterfacesCallBack(this);
-
-        // Remove the memory pressure caused by this RCW (if present)
-        RemoveMemoryPressure();
     }
 
 #ifdef _DEBUG

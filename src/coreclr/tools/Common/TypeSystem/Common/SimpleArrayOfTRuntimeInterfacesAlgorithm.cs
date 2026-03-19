@@ -12,13 +12,13 @@ namespace Internal.TypeSystem
         private MetadataType[] _genericRuntimeInterfaces;
         private ModuleDesc _systemModule;
 
-        private static readonly string[] s_genericRuntimeInterfacesNames =
+        private static readonly ReadOnlyMemory<byte>[] s_genericRuntimeInterfacesNames =
         {
-            "IEnumerable`1",
-            "ICollection`1",
-            "IList`1",
-            "IReadOnlyList`1",
-            "IReadOnlyCollection`1",
+            "IEnumerable`1"u8.ToArray(),
+            "ICollection`1"u8.ToArray(),
+            "IList`1"u8.ToArray(),
+            "IReadOnlyList`1"u8.ToArray(),
+            "IReadOnlyCollection`1"u8.ToArray(),
         };
 
         public SimpleArrayOfTRuntimeInterfacesAlgorithm(ModuleDesc systemModule)
@@ -33,7 +33,7 @@ namespace Internal.TypeSystem
             int count = 0;
             for (int i = 0; i < s_genericRuntimeInterfacesNames.Length; ++i)
             {
-                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic"u8, System.Text.Encoding.UTF8.GetBytes(s_genericRuntimeInterfacesNames[i]), throwIfNotFound: false);
+                MetadataType runtimeInterface =_systemModule.GetType("System.Collections.Generic"u8, s_genericRuntimeInterfacesNames[i].Span, throwIfNotFound: false);
                 if (runtimeInterface != null)
                     _genericRuntimeInterfaces[count++] = runtimeInterface;
             };

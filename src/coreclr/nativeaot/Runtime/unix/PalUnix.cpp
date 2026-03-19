@@ -477,24 +477,6 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-static uint32_t g_RhPageSize;
-
-void InitializeOsPageSize()
-{
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
-
-#if defined(HOST_AMD64)
-    ASSERT(g_RhPageSize == 0x1000);
-#elif defined(HOST_APPLE)
-    ASSERT(g_RhPageSize == 0x4000);
-#endif
-}
-
-uint32_t PalGetOsPageSize()
-{
-    return g_RhPageSize;
-}
-
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 static pthread_key_t key;
 #endif
@@ -531,8 +513,6 @@ bool PalInit()
     InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
-
-    InitializeOsPageSize();
 
 #ifdef FEATURE_HIJACK
     if (!InitializeSignalHandling())
@@ -1017,24 +997,24 @@ static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
-#ifdef HOST_APPLE
-        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
-        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
-        || siginfo->si_pid == 0
-#endif
-        )
-    {
-        // Make sure that errno is not modified
-        int savedErrNo = errno;
-        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
-        errno = savedErrNo;
-    }
-
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
         pThread->SetActivationPending(false);
     }
 
@@ -1088,6 +1068,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);

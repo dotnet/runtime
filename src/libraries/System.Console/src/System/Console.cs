@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -650,6 +651,52 @@ namespace System
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
             ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardError();
+        }
+
+        /// <summary>
+        /// Gets the standard input handle.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> representing the standard input handle.</returns>
+        /// <remarks>
+        /// The returned handle does not own the underlying resource, so disposing it will not close the standard input handle.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static SafeFileHandle OpenStandardInputHandle()
+        {
+            return ConsolePal.OpenStandardInputHandle();
+        }
+
+        /// <summary>
+        /// Gets the standard output handle.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> representing the standard output handle.</returns>
+        /// <remarks>
+        /// The returned handle does not own the underlying resource, so disposing it will not close the standard output handle.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static SafeFileHandle OpenStandardOutputHandle()
+        {
+            return ConsolePal.OpenStandardOutputHandle();
+        }
+
+        /// <summary>
+        /// Gets the standard error handle.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> representing the standard error handle.</returns>
+        /// <remarks>
+        /// The returned handle does not own the underlying resource, so disposing it will not close the standard error handle.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static SafeFileHandle OpenStandardErrorHandle()
+        {
+            return ConsolePal.OpenStandardErrorHandle();
         }
 
         [UnsupportedOSPlatform("android")]

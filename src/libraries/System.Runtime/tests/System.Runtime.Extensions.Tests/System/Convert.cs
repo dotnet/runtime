@@ -8,6 +8,8 @@ using System.Text;
 using System.Collections.Generic;
 
 using Test.Cryptography;
+using System.Buffers.Text;
+using System.Buffers;
 
 namespace System.Tests
 {
@@ -297,6 +299,8 @@ namespace System.Tests
                 bool success = Convert.TryFromBase64String(encoded, actual, out int bytesWritten);
                 Assert.False(success);
                 Assert.Equal(0, bytesWritten);
+
+                Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(Encoding.UTF8.GetBytes(encoded), actual, out _, out _));
             }
             else
             {
@@ -307,6 +311,10 @@ namespace System.Tests
                     Assert.True(success);
                     Assert.Equal<byte>(expected, actual);
                     Assert.Equal(expected.Length, bytesWritten);
+
+                    Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(Encoding.UTF8.GetBytes(encoded), actual, out int bytesConsumed, out bytesWritten));
+                    Assert.Equal(encoded.Length, bytesConsumed);
+                    Assert.Equal(expected.Length, bytesWritten);
                 }
 
                 // Buffer too short
@@ -316,6 +324,11 @@ namespace System.Tests
                     bool success = Convert.TryFromBase64String(encoded, actual, out int bytesWritten);
                     Assert.False(success);
                     Assert.Equal(0, bytesWritten);
+
+                    Assert.Equal(OperationStatus.DestinationTooSmall, Base64.DecodeFromUtf8(Encoding.UTF8.GetBytes(encoded), actual, out int bytesConsumed, out bytesWritten));
+                    Assert.Equal(actual.Length / 3 * 3, bytesWritten);
+                    Assert.InRange(bytesConsumed, Base64.GetMaxEncodedToUtf8Length(bytesWritten), encoded.Length - 1);
+                    Assert.NotEqual(' ', encoded[bytesConsumed]);
                 }
 
                 // Buffer larger than needed
@@ -326,6 +339,10 @@ namespace System.Tests
                     Assert.True(success);
                     Assert.Equal(99, actual[expected.Length]);
                     Assert.Equal<byte>(expected, actual.Take(expected.Length));
+                    Assert.Equal(expected.Length, bytesWritten);
+
+                    Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(Encoding.UTF8.GetBytes(encoded), actual, out int bytesConsumed, out bytesWritten));
+                    Assert.Equal(encoded.Length, bytesConsumed);
                     Assert.Equal(expected.Length, bytesWritten);
                 }
             }

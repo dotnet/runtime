@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NUnit.Framework;
 using Mono.Linker.Tests.Extensions;
+using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -40,7 +40,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
-        protected partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
+        protected virtual partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
         {
             TrimmingCustomizations customizations = new TrimmingCustomizations();
 

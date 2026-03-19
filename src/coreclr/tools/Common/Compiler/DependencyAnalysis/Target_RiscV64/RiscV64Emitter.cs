@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
 
         public void EmitMOV(Register regDst, ISymbolNode symbol)
         {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I);
             //auipc reg, off-hi-20bits
             EmitPC(regDst);
             //addi reg, reg, off-lo-12bits
@@ -87,6 +87,15 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             Builder.EmitUInt((uint)(0x00000067u | ((uint)regSrc << 15) | ((uint)regDst << 7) | (uint)((offset & 0xfff) << 20)));
         }
 
+        public void EmitLD(Register regDst, ISymbolNode symbol)
+        {
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I);
+            //auipc reg, off-hi-20bits
+            EmitPC(regDst);
+            //ld reg, off-lo-12bits(reg)
+            EmitLD(regDst, regDst, 0);
+        }
+
         public void EmitRET()
         {
             // jalr x0,0(x1)
@@ -103,28 +112,13 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                Builder.RequireInitialPointerAlignment();
-
-                if (Builder.CountBytes % Builder.TargetPointerSize != 0)
-                {
-                    // Emit a NOP instruction to align the 64-bit reloc below.
-                    EmitNOP();
-                }
-
-                // auipc x29, 0
-                EmitPC(Register.X29);
-                // ld x29,16(x29)
-                EmitLD(Register.X29, Register.X29, 16);
-                // ld x29,0(x29)
-                EmitLD(Register.X29, Register.X29, 0);
+                EmitLD(Register.X29, symbol);
                 // jalr x0,0(x29)
                 EmitJALR(Register.X0, Register.X29, 0);
-
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT);
                 EmitPC(Register.X29); // auipc x29, 0
                 EmitJALR(Register.X0, Register.X29, 0); // jalr x0, 0(x29)
             }

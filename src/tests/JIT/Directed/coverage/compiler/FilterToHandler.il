@@ -20,7 +20,7 @@
   .maxstack  2
 
   .try {
-try_start:  
+try_start:
       ldstr      "In try, throwing the first obj"
       call       void [System.Console]System.Console::WriteLine(string)
       newobj     instance void [mscorlib]System.ArithmeticException::.ctor()
@@ -31,10 +31,10 @@ filter_begin:
       call       void [System.Console]System.Console::WriteLine(string)
       leave.s handler_begin
       throw
-      ldc.i4.1 
+      ldc.i4.1
       endfilter
 
-handler_begin:  
+handler_begin:
       pop
       ldstr "In handler, should be unreached"
       call       void [System.Console]System.Console::WriteLine(string)
@@ -48,11 +48,11 @@ handler_end:
       leave.s done2
   }
 
-done2: 
+done2:
   ldstr      "Done"
   call       void [System.Console]System.Console::WriteLine(string)
 
-  ldc.i4 0x64  
+  ldc.i4 0x64
   ret
 }
 
@@ -65,6 +65,11 @@ done2:
     type([TestLibrary]TestLibrary.PlatformDetection)
     string[1] ('IsAppleMobile')
 }
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('Needs triage')
+        int32(0x2) // Mono
+    }
+    
 .entrypoint
 .maxstack	20
   .try

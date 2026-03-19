@@ -23,7 +23,6 @@ namespace System.Diagnostics.Tracing
     /// for the native platform.
     /// </summary>
     [EventSource(Guid = "E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4", Name = EventSourceName)]
-    [EventSourceAutoGenerate]
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         internal const string EventSourceName = "Microsoft-Windows-DotNETRuntime";
@@ -33,10 +32,6 @@ namespace System.Diagnostics.Tracing
         // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
         // pools would be in moderate use.
         private const ushort DefaultClrInstanceId = 0;
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private NativeRuntimeEventSource(int _) { }
 
 #if FEATURE_PERFTRACING
         /// <summary>

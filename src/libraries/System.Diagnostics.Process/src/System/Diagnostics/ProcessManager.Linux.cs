@@ -9,7 +9,7 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        private static volatile int _procMatchesPidNamespace;
+        private static NullableBool _procMatchesPidNamespace;
 
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
@@ -266,11 +266,7 @@ namespace System.Diagnostics
         {
             get
             {
-                // _procMatchesPidNamespace is set to:
-                // - 0: when uninitialized,
-                // - 1: '/proc' and the process pid namespace match,
-                // - 2: when they don't match.
-                if (_procMatchesPidNamespace == 0)
+                if (_procMatchesPidNamespace == NullableBool.Undefined)
                 {
                     // '/proc/self' is a symlink to the pid used by '/proc' for the current process.
                     // We compare it with the pid of the current process to see if the '/proc' and pid namespace match up.
@@ -282,9 +278,9 @@ namespace System.Diagnostics
                     }
                     Debug.Assert(procSelfPid.HasValue);
 
-                    _procMatchesPidNamespace = !procSelfPid.HasValue || procSelfPid == Environment.ProcessId ? 1 : 2;
+                    _procMatchesPidNamespace = !procSelfPid.HasValue || procSelfPid == Environment.ProcessId ? NullableBool.True : NullableBool.False;
                 }
-                return _procMatchesPidNamespace == 1;
+                return _procMatchesPidNamespace == NullableBool.True;
             }
         }
     }

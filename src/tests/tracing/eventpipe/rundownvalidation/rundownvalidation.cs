@@ -13,12 +13,15 @@ using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.RundownValidation
 {
 
     public class RundownValidation
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83051: not supported in net8", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -65,9 +68,20 @@ namespace Tracing.Tests.RundownValidation
             rundownParser.MethodILToNativeMapDCStop += (eventData) => hasMethodILToNativeMap = true;
             rundownParser.LoaderAppDomainDCStop += (eventData) => hasAppDomainDCStop = true;
             return () =>
-                hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
+            {
+                Logger.logger.Log("hasRuntimeStart: " + hasRuntimeStart);
+                Logger.logger.Log("hasMethodDCStopInit: " + hasMethodDCStopInit);
+                Logger.logger.Log("hasMethodDCStopComplete: " + hasMethodDCStopComplete);
+                Logger.logger.Log("hasLoaderModuleDCStop: " + hasLoaderModuleDCStop);
+                Logger.logger.Log("hasLoaderDomainModuleDCStop: " + hasLoaderDomainModuleDCStop);
+                Logger.logger.Log("hasAssemblyModuleDCStop: " + hasAssemblyModuleDCStop);
+                Logger.logger.Log("hasMethodDCStopVerbose: " + hasMethodDCStopVerbose);
+                Logger.logger.Log("hasMethodILToNativeMap: " + hasMethodILToNativeMap);
+                Logger.logger.Log("hasAppDomainDCStop: " + hasAppDomainDCStop);
+                return hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
                 hasLoaderModuleDCStop && hasLoaderDomainModuleDCStop && hasAssemblyModuleDCStop &&
                 hasMethodDCStopVerbose && hasMethodILToNativeMap && hasAppDomainDCStop ? 100 : -1;
+            };
         };
     }
 }

@@ -67,7 +67,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSimpleActiveCodePage))]
+        [ConditionalFact(typeof(StringTests), nameof(IsSimpleActiveCodePage))]
         public static unsafe void Ctor_SBytePtr_DoesNotAccessInvalidPage()
         {
             // Allocates a buffer of all ' ' followed by a null terminator,
@@ -1235,6 +1235,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_NoSuchStringComparison_ThrowsArgumentException_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void GetHashCode_NoSuchStringComparison_ThrowsArgumentException(StringComparison comparisonType)
         {
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "abc".GetHashCode(comparisonType));

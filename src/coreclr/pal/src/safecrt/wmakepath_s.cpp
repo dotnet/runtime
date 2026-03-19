@@ -4,11 +4,8 @@
 /***
 *wmakepath_s.c - create path name from components
 *
-
-*
 *Purpose:
 *   To provide support for creation of full path names from components
-*
 *******************************************************************************/
 
 #include <string.h>
@@ -18,7 +15,6 @@
 
 #include "mbusafecrt_internal.h"
 
-#define _FUNC_PROLOGUE
 #define _FUNC_NAME _wmakepath_s
 #define _CHAR char16_t
 #define _DEST _Dst

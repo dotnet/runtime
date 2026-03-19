@@ -4,29 +4,30 @@ using System;
 using System.Reflection;
 using Xunit;
 
-public class Program
+public class ClosedStatic
 {
     public int scale;
 
-    private Program(int scale)
+    private ClosedStatic(int scale)
     {
         this.scale = scale;
     }
-    public static decimal getfunc(Program prog,int constituent)
+    public static decimal getfunc(ClosedStatic prog,int constituent)
     {
         return new decimal(constituent/prog.scale);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
         int result = -1;
         
         int constituent = 3;
-        Program prog = new Program(1);
+        ClosedStatic prog = new ClosedStatic(1);
         2.Equals(3);
         
-        MethodInfo info = typeof(Program).GetMethod("getfunc", BindingFlags.Static | BindingFlags.Public);
+        MethodInfo info = typeof(ClosedStatic).GetMethod("getfunc", BindingFlags.Static | BindingFlags.Public);
         
         //Tests closed delegates over static methods with return buffer
         Func<int, decimal> deepThought = (Func<int, decimal>)info.CreateDelegate(typeof(Func<int, decimal>), prog);

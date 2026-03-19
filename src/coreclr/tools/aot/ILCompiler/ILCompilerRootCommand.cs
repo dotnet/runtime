@@ -100,8 +100,8 @@ namespace ILCompiler
             new("--ildump") { Description = "Dump IL assembly listing for compiler-generated IL" };
         public Option<bool> NoInlineTls { get; } =
             new("--noinlinetls") { Description = "Do not generate inline thread local statics" };
-        public Option<bool> EmitStackTraceData { get; } =
-            new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
+        public Option<string> StackTraceData { get; } =
+            new("--stacktracedata") { Description = "Stack trace data to generate (one of: frames, lines, none)" };
         public Option<string> MethodBodyFolding { get; } =
             new("--methodbodyfolding") { Description = "Fold identical method bodies (one of: none, generic, all" };
         public Option<string[]> InitAssemblies { get; } =
@@ -182,6 +182,8 @@ namespace ILCompiler
             new("--generateunmanagedentrypoints") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate unmanaged entrypoints for a given assembly" };
         public Option<bool> DisableGeneratedCodeHeuristics { get; } =
             new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
+        public Option<string> TypeMapEntryAssembly { get; } =
+            new("--typemap-entry-assembly") { Description = "Assembly name to use as entry point for TypeMap generation" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -232,7 +234,7 @@ namespace ILCompiler
             Options.Add(NoScanner);
             Options.Add(NoInlineTls);
             Options.Add(IlDump);
-            Options.Add(EmitStackTraceData);
+            Options.Add(StackTraceData);
             Options.Add(MethodBodyFolding);
             Options.Add(InitAssemblies);
             Options.Add(FeatureSwitches);
@@ -273,6 +275,7 @@ namespace ILCompiler
             Options.Add(MakeReproPath);
             Options.Add(UnmanagedEntryPointsAssemblies);
             Options.Add(DisableGeneratedCodeHeuristics);
+            Options.Add(TypeMapEntryAssembly);
 
             this.SetAction(result =>
             {
@@ -354,7 +357,10 @@ namespace ILCompiler
             Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
-                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx,aes,apx'");
+                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
+                "specified may light-up optimistically via dynamic checks. Individual instruction sets can be disallowed from such light-up by prefixing them with '-'. " +
+                "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
+                "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
             foreach (string arch in ValidArchitectures)
             {

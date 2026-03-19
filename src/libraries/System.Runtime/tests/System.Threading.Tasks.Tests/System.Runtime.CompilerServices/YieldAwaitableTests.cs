@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Tests
     public class YieldAwaitableTests
     {
         // awaiting Task.Yield
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunAsyncYieldAwaiterTests()
         {
             // Test direct usage works even though it's not encouraged
@@ -43,7 +43,7 @@ namespace System.Threading.Tasks.Tests
                 try { ya.GetResult(); }
                 catch
                 {
-                    Assert.Fail(string.Format("RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                    Assert.Fail("RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.GetResult threw inappropriately");
                 }
                 var mres = new ManualResetEventSlim();
                 Assert.False(ya.IsCompleted, "RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -67,7 +67,7 @@ namespace System.Threading.Tasks.Tests
                         try { ya.GetResult(); }
                         catch
                         {
-                            Assert.Fail(string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                            Assert.Fail("     > FAILURE. YieldAwaiter.GetResult threw inappropriately");
                         }
                         var mres = new ManualResetEventSlim();
                         Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -79,7 +79,7 @@ namespace System.Threading.Tasks.Tests
                         mres.Wait();
                         ya.GetResult();
                     }
-                    catch { Assert.Fail(string.Format("     > FAILURE. Unexpected exception from Yield")); }
+                    catch { Assert.Fail("     > FAILURE. Unexpected exception from Yield"); }
                 }, CancellationToken.None, TaskCreationOptions.None, new QUWITaskScheduler()).Wait();
             }
 
@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Tests
                         try { ya.GetResult(); }
                         catch
                         {
-                            Assert.Fail(string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                            Assert.Fail("     > FAILURE. YieldAwaiter.GetResult threw inappropriately");
                         }
                         var mres = new ManualResetEventSlim();
                         Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -106,7 +106,7 @@ namespace System.Threading.Tasks.Tests
                         mres.Wait();
                         ya.GetResult();
                     }
-                    catch { Assert.Fail(string.Format("     > FAILURE. Unexpected exception from Yield")); }
+                    catch { Assert.Fail("     > FAILURE. Unexpected exception from Yield"); }
                     SynchronizationContext.SetSynchronizationContext(null);
                 }, CancellationToken.None, TaskCreationOptions.None, new QUWITaskScheduler()).Wait();
             }
@@ -119,7 +119,7 @@ namespace System.Threading.Tasks.Tests
                 try { ya.GetResult(); }
                 catch
                 {
-                    Assert.Fail(string.Format("     > FAILURE. YieldAwaiter.GetResult threw inappropriately"));
+                    Assert.Fail("     > FAILURE. YieldAwaiter.GetResult threw inappropriately");
                 }
                 var mres = new ManualResetEventSlim();
                 Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
@@ -145,14 +145,14 @@ namespace System.Threading.Tasks.Tests
             SynchronizationContext.SetSynchronizationContext(null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task AsyncMethod_Yields_ReturnsToDefaultTaskScheduler()
         {
             await Task.Yield();
             Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task AsyncMethod_Yields_ReturnsToCorrectTaskScheduler()
         {
             QUWITaskScheduler ts = new QUWITaskScheduler();
@@ -166,7 +166,7 @@ namespace System.Threading.Tasks.Tests
             Assert.NotSame(ts, TaskScheduler.Current);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task AsyncMethod_Yields_ReturnsToCorrectSynchronizationContext()
         {
             var sc = new ValidateCorrectContextSynchronizationContext ();

@@ -288,5 +288,208 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(org, el);
             Assert.Equal(result, el.OuterXml);
         }
+
+        [Fact]
+        public void LoadXml_Null()
+        {
+            Reference r = new Reference();
+            Assert.Throws<ArgumentNullException>(() => r.LoadXml(null));
+        }
+
+        [Fact]
+        public void LoadXml_MissingDigestMethod()
+        {
+            string xml = @"<Reference xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue>
+            </Reference>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            Reference r = new Reference();
+            Assert.Throws<CryptographicException>(() => r.LoadXml(doc.DocumentElement));
+        }
+
+        [Fact]
+        public void LoadXml_MissingDigestValue()
+        {
+            string xml = @"<Reference xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha256"" />
+            </Reference>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            Reference r = new Reference();
+            Assert.Throws<CryptographicException>(() => r.LoadXml(doc.DocumentElement));
+        }
+
+        [Fact]
+        public void AddTransform_Null()
+        {
+            Reference r = new Reference();
+            Assert.Throws<ArgumentNullException>(() => r.AddTransform(null));
+        }
+
+        [Fact]
+        public void DigestValue_Null()
+        {
+            Reference r = new Reference();
+            r.DigestValue = null;
+            Assert.Null(r.DigestValue);
+        }
+
+        [Fact]
+        public void GetXml_NoDigestMethod()
+        {
+            Reference r = new Reference();
+            r.DigestValue = new byte[32];
+            // Actually doesn't throw - just returns element without DigestMethod
+            XmlElement xml = r.GetXml();
+            Assert.NotNull(xml);
+        }
+
+        [Fact]
+        public void GetXml_NoDigestValue()
+        {
+            Reference r = new Reference();
+            r.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            Assert.Throws<NullReferenceException>(() => r.GetXml());
+        }
+
+        [Fact]
+        public void Properties()
+        {
+            Reference r = new Reference();
+            
+            r.Id = "ref1";
+            Assert.Equal("ref1", r.Id);
+
+            r.Type = "http://www.w3.org/2000/09/xmldsig#Object";
+            Assert.Equal("http://www.w3.org/2000/09/xmldsig#Object", r.Type);
+
+            r.Uri = "#obj1";
+            Assert.Equal("#obj1", r.Uri);
+
+            Assert.NotNull(r.TransformChain);
+        }
+
+        [Fact]
+        public void Reference_TypeProperty()
+        {
+            Reference r = new Reference();
+            
+            r.Type = null;
+            Assert.Null(r.Type);
+            
+            r.Type = "http://www.w3.org/2000/09/xmldsig#Object";
+            Assert.Equal("http://www.w3.org/2000/09/xmldsig#Object", r.Type);
+            
+            r.Type = "";
+            Assert.Equal("", r.Type);
+        }
+
+        [Fact]
+        public void Reference_IdProperty()
+        {
+            Reference r = new Reference();
+            
+            r.Id = null;
+            Assert.Null(r.Id);
+            
+            r.Id = "ref-id";
+            Assert.Equal("ref-id", r.Id);
+            
+            r.Id = "";
+            Assert.Equal("", r.Id);
+        }
+
+        [Fact]
+        public void Reference_UriProperty()
+        {
+            Reference r = new Reference();
+            
+            r.Uri = null;
+            Assert.Null(r.Uri);
+            
+            r.Uri = "";
+            Assert.Equal("", r.Uri);
+            
+            r.Uri = "#id";
+            Assert.Equal("#id", r.Uri);
+        }
+
+        [Fact]
+        public void Reference_DigestMethodProperty()
+        {
+            Reference r = new Reference();
+            
+            r.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            Assert.Equal(SignedXml.XmlDsigSHA256Url, r.DigestMethod);
+            
+            r.DigestMethod = SignedXml.XmlDsigSHA512Url;
+            Assert.Equal(SignedXml.XmlDsigSHA512Url, r.DigestMethod);
+            
+            r.DigestMethod = null;
+            Assert.Null(r.DigestMethod);
+        }
+
+        [Fact]
+        public void Reference_LoadXml_WithId()
+        {
+            string xml = @"<Reference Id=""ref1"" URI=""#data1"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha256"" />
+                <DigestValue>AAAA</DigestValue>
+            </Reference>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            Reference r = new Reference();
+            r.LoadXml(doc.DocumentElement);
+            Assert.Equal("ref1", r.Id);
+        }
+
+        [Fact]
+        public void Reference_LoadXml_WithType()
+        {
+            string xml = @"<Reference Type=""http://www.w3.org/2000/09/xmldsig#Object"" URI=""#data1"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha256"" />
+                <DigestValue>AAAA</DigestValue>
+            </Reference>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            Reference r = new Reference();
+            r.LoadXml(doc.DocumentElement);
+            Assert.Equal("http://www.w3.org/2000/09/xmldsig#Object", r.Type);
+        }
+
+        [Fact]
+        public void Reference_LoadXml_EmptyUri()
+        {
+            string xml = @"<Reference URI="""" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha256"" />
+                <DigestValue>AAAA</DigestValue>
+            </Reference>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            Reference r = new Reference();
+            r.LoadXml(doc.DocumentElement);
+            Assert.Equal("", r.Uri);
+        }
+
+        [Fact]
+        public void Reference_LoadXml_NoUri()
+        {
+            string xml = @"<Reference xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha256"" />
+                <DigestValue>AAAA</DigestValue>
+            </Reference>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            Reference r = new Reference();
+            r.LoadXml(doc.DocumentElement);
+            Assert.Null(r.Uri); // No URI attribute means null
+        }
     }
 }

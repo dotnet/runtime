@@ -383,7 +383,7 @@ namespace System.Runtime.InteropServices
             // If the memory is empty, just return an empty array as the enumerable.
             if (length is 0 || obj is null)
             {
-                return Array.Empty<T>();
+                return [];
             }
 
             // If the object is a string, we can optimize. If it isn't a slice, just return the string as the
@@ -546,6 +546,7 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
         public static unsafe ref T AsRef<T>(Span<byte> span)
             where T : struct
         {

@@ -1,12 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b56772;
+
 using System;
 using System.Text;
 using Xunit;
 
 public class InternTest
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

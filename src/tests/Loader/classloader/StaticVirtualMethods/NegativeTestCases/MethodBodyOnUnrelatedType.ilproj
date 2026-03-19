@@ -16,4 +16,7 @@
     <ProjectReference Include="../TypeHierarchy/TypeHierarchyCommonCs.csproj" />
     <Compile Include="$(MSBuildThisFileName).il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -2374,7 +2374,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void TraceSwitchTest()
         {
             var dic = new Dictionary<string, string>
@@ -2404,7 +2404,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
 #endif
         public void TestGraphWithUnsupportedMember()
         {
@@ -3037,6 +3037,52 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.NotNull(result);
             Assert.Equal("Provider2A", result.A); // Value should come from the last provider
             Assert.Equal("Provider1B", result.B); // B should not be overridden by the second provider
+        }
+
+        [Fact]
+        public void TestBindingEmptyArrayToNullIEnumerable()
+        {
+            string jsonConfig1 = @"
+            {
+                ""MyService"": {
+                    ""IEnumerableProperty"": [],
+                    ""StringArray"": []
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .Build().GetSection("MyService");
+
+            MyOptionsWithNullableEnumerable? result = configuration.Get<MyOptionsWithNullableEnumerable>();
+
+            Assert.NotNull(result);
+            Assert.Equal(Array.Empty<int>(), result.IEnumerableProperty);
+            Assert.Equal(Array.Empty<string>(), result.StringArray);
+        }
+
+        [Fact]
+        public void TestBindingNestedIEnumerable()
+        {
+            string jsonConfig1 = """
+                {
+                  "source": {
+                    "name": "DemoService",
+                    "addresses": [ "127.0.0.1" ]
+                  }
+                }
+                """;
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .Build();
+
+            ContainingIEnumerable? result = configuration.Get<ContainingIEnumerable>();
+
+            Assert.NotNull(result);
+            Assert.Equal("DemoService", result.Source.Name);
+            Assert.Equal(1, result.Source.Addresses.Count());
+            Assert.Equal("127.0.0.1", result.Source.Addresses.First());
         }
     }
 }

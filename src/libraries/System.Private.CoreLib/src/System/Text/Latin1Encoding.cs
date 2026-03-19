@@ -435,7 +435,7 @@ namespace System.Text
 
             if (bytes.Length == 0)
             {
-                return Array.Empty<char>();
+                return [];
             }
 
             // Since we're going to fill the entire char[] buffer, we could consider GC.AllocateUninitializedArray.

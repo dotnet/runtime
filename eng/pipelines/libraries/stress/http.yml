@@ -12,7 +12,7 @@ schedules:
   branches:
     include:
     - main
-    - release/*-staging
+    - release/*.0
 
 variables:
   - template: ../variables.yml
@@ -44,6 +44,7 @@ extends:
         - checkout: self
           clean: true
           fetchDepth: 5
+          fetchTags: false
 
         - bash: |
             $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION) && \
@@ -104,12 +105,13 @@ extends:
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-windows-2022-open
+          demands: ImageOverride -equals windows.vs2026.amd64.open
 
         steps:
         - checkout: self
           clean: true
           fetchDepth: 5
+          fetchTags: false
           lfs: false
 
         - powershell: |
@@ -136,7 +138,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -145,7 +147,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -154,7 +156,7 @@ extends:
             $env:STRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
             $env:STRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
             New-Item -Force $env:DUMPS_SHARE -ItemType Directory
-            docker compose up --abort-on-container-exit --no-color
+            docker-compose up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b180381a;
+
 using System;
 using Xunit;
 
@@ -13,6 +16,7 @@ public class Test_constrained1
         Console.WriteLine(type);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

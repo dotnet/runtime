@@ -4,6 +4,9 @@
 // Issues with stack spill ordering around some GDVs
 // Compile with <DebugType>None</DebugType>
 
+
+namespace Runtime_95349;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;

@@ -41,14 +41,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private bool _disposed;
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher" />.
+        /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
+        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher"/>.
         /// </summary>
-        /// <param name="root">Root directory for the watcher.</param>
-        /// <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root" />.</param>
+        /// <param name="root">The root directory for the watcher.</param>
+        /// <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root"/>.</param>
         /// <param name="pollForChanges">
         /// <see langword="true"/> for the poller to use polling to trigger instances of
-        /// <see cref="IChangeToken" /> created by <see cref="CreateFileChangeToken(string)" />.
+        /// <see cref="IChangeToken"/> created by <see cref="CreateFileChangeToken(string)"/>; otherwise, <see langword="false"/>.
         /// </param>
         public PhysicalFilesWatcher(
             string root,
@@ -59,16 +59,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalFilesWatcher" /> that watches files in <paramref name="root" />.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher" />.
+        /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
+        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher"/>.
         /// </summary>
-        /// <param name="root">Root directory for the watcher.</param>
-        /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root" />.</param>
+        /// <param name="root">The root directory for the watcher.</param>
+        /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root"/>.</param>
         /// <param name="pollForChanges">
         /// <see langword="true"/> for the poller to use polling to trigger instances of
-        /// <see cref="IChangeToken" /> created by <see cref="CreateFileChangeToken(string)" />.
+        /// <see cref="IChangeToken"/> created by <see cref="CreateFileChangeToken(string)"/>; otherwise, <see langword="false"/>.
         /// </param>
-        /// <param name="filters">Specifies which files or directories are excluded. Notifications of changes to are not raised to these.</param>
+        /// <param name="filters">A bitwise combination of the enumeration values that specifies which files or directories are excluded. Notifications of changes to these are not raised.</param>
         public PhysicalFilesWatcher(
             string root,
             FileSystemWatcher? fileSystemWatcher,
@@ -153,23 +153,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialized, ref _timerLock, _timerFactory);
             }
 
-            IChangeToken changeToken;
-#if NET
-            bool isWildCard = pattern.Contains('*');
-#else
-            bool isWildCard = pattern.IndexOf('*') != -1;
-#endif
-            if (isWildCard || IsDirectoryPath(pattern))
-            {
-                changeToken = GetOrAddWildcardChangeToken(pattern);
-            }
-            else
-            {
-                changeToken = GetOrAddFilePathChangeToken(pattern);
-            }
-
-            return changeToken;
+            return pattern.Contains('*') || IsDirectoryPath(pattern)
+                ? GetOrAddWildcardChangeToken(pattern)
+                // get rid of \. in Windows and ./ in UNIX's at the start of path file
+                : GetOrAddFilePathChangeToken(RemoveRelativePathSegment(pattern));
         }
+
+        private static string RemoveRelativePathSegment(string pattern) =>
+            // The pattern has already been normalized to unix directory separators
+            pattern.StartsWith("./", StringComparison.Ordinal) ? pattern.Substring(2) : pattern;
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
@@ -255,7 +247,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <summary>
         /// Disposes the provider.
         /// </summary>
-        /// <param name="disposing"><c>true</c> is invoked from <see cref="IDisposable.Dispose"/>.</param>
+        /// <param name="disposing"><see langword="true"/> if invoked from <see cref="IDisposable.Dispose"/>; otherwise, <see langword="false"/>.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)

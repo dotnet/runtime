@@ -76,7 +76,7 @@ namespace System
             public T[] ToArray()
             {
                 if (_count == 0)
-                    return Array.Empty<T>();
+                    return [];
                 if (_count == 1)
                     return [_item];
 
@@ -754,7 +754,7 @@ namespace System
                 {
                     if (ReflectedType.IsGenericParameter)
                     {
-                        return Array.Empty<RuntimeConstructorInfo>();
+                        return [];
                     }
 
                     ListBuilder<RuntimeConstructorInfo> list = default;
@@ -1103,7 +1103,7 @@ namespace System
 
                     // For example, TypeDescs do not have metadata tokens
                     if (MdToken.IsNullToken(tkEnclosingType))
-                        return Array.Empty<RuntimeType>();
+                        return [];
 
                     ListBuilder<RuntimeType> list = default;
 
@@ -3729,6 +3729,26 @@ namespace System
             return new RuntimeTypeHandle(this).MakeArray(rank);
         }
 
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
+
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            foreach (Type? paramType in parameterTypes)
+            {
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType is not RuntimeType)
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType), nameof(parameterTypes));
+            }
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
+        }
+
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
 
         #endregion
@@ -3875,7 +3895,7 @@ namespace System
 
             object? instance;
 
-            args ??= Array.Empty<object>();
+            args ??= [];
 
             // Without a binder we need to do use the default binder...
             binder ??= DefaultBinder;
@@ -4199,6 +4219,39 @@ namespace System
             return ret;
         }
 
+        [RequiresUnreferencedCode("The member might be removed")]
+        [UnmanagedCallersOnly]
+        private static unsafe void ForwardCallToInvokeMember(
+            RuntimeType* pRuntimeType,
+            string* pMemberName,
+            int flags,
+            object* pTarget,
+            object[]* pArgs,
+            bool[]* pArgsIsByRef,
+            int[]* pArgsWrapperTypes,
+            Type[]* pArgsTypes,
+            Type* pRetType,
+            object* pResult,
+            Exception* pException)
+        {
+            try
+            {
+                *pResult = pRuntimeType->ForwardCallToInvokeMember(
+                    *pMemberName,
+                    (BindingFlags)flags,
+                    *pTarget,
+                    *pArgs,
+                    *pArgsIsByRef,
+                    *pArgsWrapperTypes,
+                    *pArgsTypes,
+                    *pRetType);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
         {
             int cArgs = aArgs.Length;
@@ -4226,11 +4279,9 @@ namespace System
                         case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             wrapperType = typeof(CurrencyWrapper);
                             break;
-#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             wrapperType = typeof(BStrWrapper);
                             isString = true;
@@ -4287,11 +4338,9 @@ namespace System
                         case DispatchWrapperType.Error:
                             aArgs[i] = new ErrorWrapper(aArgs[i]);
                             break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             aArgs[i] = new CurrencyWrapper(aArgs[i]);
                             break;
-#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             aArgs[i] = new BStrWrapper((string)aArgs[i]);
                             break;

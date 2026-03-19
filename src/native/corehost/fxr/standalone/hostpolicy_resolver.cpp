@@ -18,151 +18,6 @@ namespace
     pal::dll_t g_hostpolicy;
     hostpolicy_contract_t g_hostpolicy_contract;
     pal::string_t g_hostpolicy_dir;
-
-    /**
-    * Resolve the hostpolicy version from deps.
-    *  - Scan the deps file's libraries section and find the hostpolicy version in the file.
-    */
-    pal::string_t resolve_hostpolicy_version_from_deps(const pal::string_t& deps_json)
-    {
-        trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
-
-        json_parser_t json;
-        if (!json.parse_file(deps_json))
-        {
-            return {};
-        }
-
-        // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
-        // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
-        const pal::char_t prefix[] = _X("Microsoft.NETCore.DotNetHostPolicy/");
-        for (const auto& library : json.document()[_X("libraries")].GetObject())
-        {
-            pal::string_t lib_name{library.name.GetString()};
-            if (utils::starts_with(lib_name, prefix, false))
-            {
-                // Extract the version information that occurs after '/'
-                pal::string_t version = lib_name.substr(utils::strlen(prefix));
-                trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), version.c_str(), deps_json.c_str());
-                return version;
-            }
-        }
-
-        return {};
-    }
-
-    /**
-    * Given a directory and a version, find if the package relative
-    *     dir under the given directory contains hostpolicy.dll
-    */
-    bool to_hostpolicy_package_dir(const pal::string_t& dir, const pal::string_t& version, pal::string_t* candidate)
-    {
-        assert(!version.empty());
-
-        candidate->clear();
-
-        // Ensure the relative dir contains platform directory separators.
-        pal::string_t rel_dir = _STRINGIFY(HOST_POLICY_PKG_REL_DIR);
-        if (DIR_SEPARATOR != '/')
-        {
-            replace_char(&rel_dir, '/', DIR_SEPARATOR);
-        }
-
-        // Construct the path to directory containing hostpolicy.
-        pal::string_t path = dir;
-        append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME)); // package name
-        append_path(&path, version.c_str());                  // package version
-        append_path(&path, rel_dir.c_str());                  // relative dir containing hostpolicy library
-
-                                                            // Check if "path" contains the required library.
-        if (!file_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
-        {
-            trace::verbose(_X("Did not find %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
-            return false;
-        }
-
-        // "path" contains the directory containing hostpolicy library.
-        *candidate = path;
-
-        trace::verbose(_X("Found %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
-        return true;
-    }
-
-    /**
-    * Given a nuget version, detect if a serviced hostpolicy is available at
-    *   platform servicing location.
-    */
-    bool hostpolicy_exists_in_svc(const pal::string_t& version, pal::string_t* resolved_dir)
-    {
-        if (version.empty())
-        {
-            return false;
-        }
-
-        pal::string_t svc_dir;
-        pal::get_default_servicing_directory(&svc_dir);
-        append_path(&svc_dir, _X("pkgs"));
-        return to_hostpolicy_package_dir(svc_dir, version, resolved_dir);
-    }
-
-    /**
-    * Given a version and probing paths, find if package layout
-    *    directory containing hostpolicy exists.
-    */
-    bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_fullpaths, pal::string_t* candidate)
-    {
-        if (probe_fullpaths.empty() || version.empty())
-        {
-            return false;
-        }
-
-        // Check if the package relative directory containing hostpolicy exists.
-        for (const auto& probe_path : probe_fullpaths)
-        {
-            trace::verbose(_X("Considering %s to probe for %s"), probe_path.c_str(), LIBHOSTPOLICY_NAME);
-            if (to_hostpolicy_package_dir(probe_path, version, candidate))
-            {
-                return true;
-            }
-        }
-
-        // Print detailed message about the file not found in the probe paths.
-        trace::error(_X("Could not find required library %s in %d probing paths:"),
-            LIBHOSTPOLICY_NAME, probe_fullpaths.size());
-        for (const auto& path : probe_fullpaths)
-        {
-            trace::error(_X("  %s"), path.c_str());
-        }
-        return false;
-    }
-
-    /**
-    * Return name of deps file for app.
-    */
-    pal::string_t get_deps_file(
-        bool is_framework_dependent,
-        const pal::string_t& app_candidate,
-        const pal::string_t& specified_deps_file,
-        const fx_definition_vector_t& fx_definitions
-    )
-    {
-        if (is_framework_dependent)
-        {
-            // The hostpolicy is resolved from the root framework's name and location.
-            pal::string_t deps_file = get_root_framework(fx_definitions).get_dir();
-            if (!deps_file.empty() && deps_file.back() != DIR_SEPARATOR)
-            {
-                deps_file.push_back(DIR_SEPARATOR);
-            }
-
-            return deps_file + get_root_framework(fx_definitions).get_name() + _X(".deps.json");
-        }
-        else
-        {
-            // Self-contained app's hostpolicy is from specified deps or from app deps.
-            return !specified_deps_file.empty() ? specified_deps_file : get_deps_from_app_binary(get_directory(app_candidate), app_candidate);
-        }
-    }
 }
 
 int hostpolicy_resolver::load(
@@ -236,31 +91,9 @@ bool hostpolicy_resolver::try_get_dir(
     const fx_definition_vector_t& fx_definitions,
     const pal::string_t& app_candidate,
     const pal::string_t& specified_deps_file,
-    const std::vector<pal::string_t>& probe_fullpaths,
     pal::string_t* impl_dir)
 {
     bool is_framework_dependent = get_app(fx_definitions).get_runtime_config().get_is_framework_dependent();
-
-    // Obtain deps file for the given configuration.
-    pal::string_t resolved_deps = get_deps_file(is_framework_dependent, app_candidate, specified_deps_file, fx_definitions);
-
-    // Resolve hostpolicy version out of the deps file.
-    pal::string_t version;
-    if (pal::file_exists(resolved_deps))
-    {
-        version = resolve_hostpolicy_version_from_deps(resolved_deps);
-        if (trace::is_enabled() && version.empty())
-        {
-            trace::warning(_X("Dependency manifest %s does not contain an entry for %s"),
-                resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));
-        }
-
-        // Check if the given version of the hostpolicy exists in servicing.
-        if (hostpolicy_exists_in_svc(version, impl_dir))
-        {
-            return true;
-        }
-    }
 
     // Get the expected directory that would contain hostpolicy.
     pal::string_t expected;
@@ -295,16 +128,6 @@ bool hostpolicy_resolver::try_get_dir(
     if (file_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
     {
         impl_dir->assign(expected);
-        return true;
-    }
-
-    trace::verbose(_X("The %s was not found in [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
-
-    // Start probing for hostpolicy in the specified probe paths.
-    pal::string_t candidate;
-    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_fullpaths, &candidate))
-    {
-        impl_dir->assign(candidate);
         return true;
     }
 

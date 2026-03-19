@@ -3,6 +3,7 @@
 //
 
 #include <interpretershared.h>
+#include <interpexec.h>
 #include "callhelpers.hpp"
 #include "shash.h"
 
@@ -161,10 +162,15 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    PORTABILITY_ASSERT("TransitionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
+    pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
+    pRD->pCurrentContext->InterpreterSP = GetSP();
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-size_t CallDescrWorkerInternalReturnAddressOffset;
+size_t CallDescrWorkerInternalReturnAddressOffset = 0;
 
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
@@ -411,25 +417,24 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeCalliStub(CalliStubParam* pParam)
 {
-    _ASSERTE(ftn != (PCODE)NULL);
-    _ASSERTE(cookie != NULL);
+    _ASSERTE(pParam->ftn != (PCODE)NULL);
+    _ASSERTE(pParam->cookie != NULL);
 
-    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(ftn);
-    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(actualFtn, pArgs, pRet);
+    // WASM-TODO: Reconcile calling conventions for managed calli.
+    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(pParam->ftn);
+    ((void(*)(PCODE, int8_t*, int8_t*))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
-
-    // WASM-TODO: Reconcile calling conventions.
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }
@@ -558,14 +563,14 @@ namespace
         return true;
     }
 
-    class StringWasmThunkSHashTraits : public MapSHashTraits<const char*, void*>
+    class StringThunkSHashTraits : public MapSHashTraits<const char*, void*>
     {
     public:
         static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
         static count_t Hash(const char* key) { return HashStringA(key); }
     };
 
-    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringWasmThunkSHashTraits>> StringToWasmSigThunkHash;
+    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringThunkSHashTraits>> StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
 
     void* LookupThunk(const char* key)
@@ -618,11 +623,111 @@ namespace
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
 
-        return LookupThunk(keyBuffer);
+        void* thunk = LookupThunk(keyBuffer);
+#ifdef _DEBUG
+        if (thunk == NULL)
+            printf("WASM calli missing for key: %s\n", keyBuffer);
+#endif
+        return thunk;
+    }
+
+    ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
+    {
+        _ASSERTE(pMD != nullptr);
+
+        // the key is in the form $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
+        const char* pszNamespace = nullptr;
+        const char* pszName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
+        MetaSig sig(pMD);
+        strSource.Printf("%s#%d:%s:%s:%s",
+            pMD->GetName(),
+            sig.NumFixedArgs(),
+            pMD->GetAssembly()->GetSimpleName(),
+            pszNamespace != nullptr ? pszNamespace : "",
+            pszName);
+
+        return strSource.Hash();
+    }
+
+    struct ReverseThunkMapKey
+    {
+        ULONG HashCode;
+        const char* Source;
+    };
+
+    class ReverseThunkHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<const ReverseThunkMapEntry*>>
+    {
+    public:
+        typedef ReverseThunkMapKey key_t;
+
+        static key_t GetKey(element_t e)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return { e->hashCode, e->Source };
+        }
+        static BOOL Equals(key_t k1, key_t k2)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (k1.HashCode == k2.HashCode) && strcmp(k1.Source, k2.Source) == 0;
+        }
+        static count_t Hash(key_t k)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return k.HashCode;
+        }
+    };
+
+    typedef SHash<ReverseThunkHashTraits> ReverseThunkHash;
+    ReverseThunkHash* reverseThunkCache = nullptr;
+
+    ReverseThunkHash* CreateReverseThunkHashTable()
+    {
+        ReverseThunkHash* newTable = new ReverseThunkHash();
+        newTable->Reallocate(g_ReverseThunksCount * ReverseThunkHash::s_density_factor_denominator / ReverseThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_ReverseThunksCount; i++)
+        {
+            newTable->Add(&g_ReverseThunks[i]);
+        }
+
+        ReverseThunkHash **ppCache = &reverseThunkCache;
+        if (InterlockedCompareExchangeT(ppCache, newTable, nullptr) != nullptr)
+        {
+            // Another thread won the race, discard ours
+            delete newTable;
+        }
+        return *ppCache;
+    }
+
+    const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
+    {
+#ifdef LOGGING
+        {
+            const char* pszLookupNamespace = nullptr;
+            const char* pszLookupName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszLookupNamespace);
+            LOG((LF_STUBS, LL_INFO100000, "WASM lookupThunk pMD: %s.%s::%s\n", pszLookupNamespace ? pszLookupNamespace : "", pszLookupName, pMD->GetName()));
+        }
+#endif // LOGGING
+
+        ReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
+
+        if (table == nullptr)
+        {
+            LOG((LF_STUBS, LL_INFO100000, "WASM creating reverse thunk hash table for the first time\n"));
+            table = CreateReverseThunkHashTable();
+        }
+
+        SString source;
+        ULONG hashCode = GetHashCode(pMD, source);
+        ReverseThunkMapKey key = { hashCode, source.GetUTF8() };
+        const ReverseThunkMapEntry* entry = table->Lookup(key);
+        const ReverseThunkMapValue* thunk = entry != nullptr ? &entry->value : nullptr;
+        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u source: %s\n", thunk != nullptr ? "found" : "missing", hashCode, source.GetUTF8()));
+
+        return thunk;
     }
 }
 
-LPVOID GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -635,14 +740,38 @@ LPVOID GetCookieForCalliSig(MetaSig metaSig)
     return thunk;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 {
-    MetaSig sig(pMD);
-    void* cookie = GetCookieForCalliSig(sig);
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
+
+    const ReverseThunkMapValue* value = LookupThunk(pMD);
+    if (value == NULL)
+    {
+        PORTABILITY_ASSERT("GetUnmanagedCallersOnlyThunk: unknown thunk for unmanaged callers only method");
+        return NULL;
+    }
+
+    // Update the target method if not already set.
+    _ASSERTE(value->Target != NULL);
+    if (NULL == (*value->Target))
+        *value->Target = pMD;
+
+    _ASSERTE((*value->Target) == pMD);
+    _ASSERTE(value->EntryPoint != NULL);
+    return value->EntryPoint;
+}
+
+void InvokeManagedMethod(ManagedMethodParam *pParam)
+{
+    MetaSig sig(pParam->pMD);
+    void* cookie = GetCookieForCalliSig(sig, pParam->pMD);
 
     _ASSERTE(cookie != NULL);
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet);
+    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
+    InvokeCalliStub(&param);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)

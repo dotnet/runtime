@@ -411,7 +411,7 @@ namespace System.Net.ServerSentEvents
             else if (fieldName.SequenceEqual("id"u8))
             {
                 // Spec: "If the field value does not contain U+0000 NULL, then set the last event ID buffer to the field value. Otherwise, ignore the field."
-                if (fieldValue.IndexOf((byte)'\0') < 0)
+                if (!fieldValue.Contains((byte)'\0'))
                 {
                     // Note that fieldValue might be empty, in which case LastEventId will naturally be reset to the empty string. This is per spec.
                     LastEventId = _eventId = Encoding.UTF8.GetString(fieldValue);
