@@ -61,6 +61,7 @@ namespace Microsoft.Interop
                     Utf16 = 2,
                 }
             }
+            #nullable restore
             #pragma warning restore CS0436
             """;
 

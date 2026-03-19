@@ -772,13 +772,31 @@ namespace LibraryImportGenerator.UnitTests
                 public class Basic { }
                 """;
 
-            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test(framework)
+            var test = new OnlyTypeDefinitionsOutputTest(framework)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
             await test.RunAsync();
+        }
+
+        class OnlyTypeDefinitionsOutputTest : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test
+        {
+            public OnlyTypeDefinitionsOutputTest(TestTargetFramework framework)
+                : base(framework)
+            {
+            }
+
+            protected override async Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            {
+                var originalCompilation = await project.GetCompilationAsync(cancellationToken);
+                var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
+                // The generator should inject exactly one extra syntax tree (the type definitions file),
+                // but no method stubs.
+                Assert.Equal(originalCompilation!.SyntaxTrees.Count() + 1, newCompilation.SyntaxTrees.Count());
+                return (newCompilation, diagnostics);
+            }
         }
 
         class NoChangeTest<TSourceGenerator, TAnalyzer> : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<TSourceGenerator, TAnalyzer>.Test
