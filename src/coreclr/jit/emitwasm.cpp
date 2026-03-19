@@ -877,7 +877,7 @@ void emitter::emitDispIns(
         case IF_MEMIDX_MEMIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+            printf(" %" PRIu64 " %" PRIu64, (uint64_t)imm, (uint64_t)imm);
         }
         break;
         case IF_LOCAL_DECL:
