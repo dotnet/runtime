@@ -10161,6 +10161,77 @@ VOID GetAssemblyDetailInfo(SString    &sType,
     sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
 }
 
+VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
+                                     SString    &sGenericArgName,
+                                     SString    &sAssemblyDisplayName,
+                                     PEAssembly *pPEAssembly,
+                                     SString    &sAssemblyDetailInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    SString detailsUtf8;
+
+    SString sAlcName;
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    if (assemblyPath.IsEmpty())
+    {
+        detailsUtf8.Printf("Type %s has a generic argument '%s' that originates from '%s' in the context '%s' in a byte array",
+                                   sType.GetUTF8(),
+                                   sGenericArgName.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8());
+    }
+    else
+    {
+        detailsUtf8.Printf("Type %s has a generic argument '%s' that originates from '%s' in the context '%s' at location '%s'",
+                                   sType.GetUTF8(),
+                                   sGenericArgName.GetUTF8(),
+                                   sAssemblyDisplayName.GetUTF8(),
+                                   sAlcName.GetUTF8(),
+                                   assemblyPath.GetUTF8());
+    }
+
+    sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
+}
+
+// When the outermost types of a same-name cast failure share the same module,
+// the actual difference lies in their generic type arguments. This function
+// recursively finds the first pair of differing generic type arguments.
+static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo,
+                                              TypeHandle *pthArgFrom, TypeHandle *pthArgTo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Instantiation instFrom = thFrom.GetInstantiation();
+    Instantiation instTo = thTo.GetInstantiation();
+
+    if (instFrom.IsEmpty() || instTo.IsEmpty() || instFrom.GetNumArgs() != instTo.GetNumArgs())
+        return FALSE;
+
+    for (DWORD i = 0; i < instFrom.GetNumArgs(); i++)
+    {
+        if (instFrom[i] != instTo[i])
+        {
+            // If both arguments are from the same module, drill deeper
+            // into their own generic arguments to find the root difference.
+            Module *pModFrom = instFrom[i].GetModule();
+            Module *pModTo = instTo[i].GetModule();
+            if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
+            {
+                if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo))
+                    return TRUE;
+            }
+
+            *pthArgFrom = instFrom[i];
+            *pthArgTo = instTo[i];
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
                                                           TypeHandle thCastTo)
 {
@@ -10197,6 +10268,51 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);
+
+         // If the outermost types come from the same module, the actual difference
+         // must be in their generic type arguments. Report the differing generic
+         // argument's assembly info instead, which is more helpful to the user.
+         TypeHandle thDifferingArgFrom, thDifferingArgTo;
+         if (pModuleTypeFrom == pModuleTypeTo &&
+             FindFirstDifferingGenericArgument(thCastFrom, thCastTo, &thDifferingArgFrom, &thDifferingArgTo))
+         {
+             Module *pModuleArgFrom = thDifferingArgFrom.GetModule();
+             Module *pModuleArgTo = thDifferingArgTo.GetModule();
+
+             if ((pModuleArgFrom != NULL) && (pModuleArgTo != NULL))
+             {
+                 StackSString sGenericArgName;
+                 thDifferingArgFrom.GetName(sGenericArgName);
+
+                 PEAssembly *pPEAssemblyArgFrom = pModuleArgFrom->GetAssembly()->GetPEAssembly();
+                 PEAssembly *pPEAssemblyArgTo = pModuleArgTo->GetAssembly()->GetPEAssembly();
+
+                 StackSString sArgAssemblyFromDisplayName;
+                 StackSString sArgAssemblyToDisplayName;
+                 pPEAssemblyArgFrom->GetDisplayName(sArgAssemblyFromDisplayName);
+                 pPEAssemblyArgTo->GetDisplayName(sArgAssemblyToDisplayName);
+
+                 SString typeA = SL(W("A"));
+                 GetGenericArgAssemblyDetailInfo(typeA,
+                                                 sGenericArgName,
+                                                 sArgAssemblyFromDisplayName,
+                                                 pPEAssemblyArgFrom,
+                                                 sAssemblyDetailInfoFrom);
+                 SString typeB = SL(W("B"));
+                 GetGenericArgAssemblyDetailInfo(typeB,
+                                                 sGenericArgName,
+                                                 sArgAssemblyToDisplayName,
+                                                 pPEAssemblyArgTo,
+                                                 sAssemblyDetailInfoTo);
+
+                 COMPlusThrow(kInvalidCastException,
+                              IDS_EE_CANNOTCASTSAME,
+                              strCastFromName.GetUnicode(),
+                              strCastToName.GetUnicode(),
+                              sAssemblyDetailInfoFrom.GetUnicode(),
+                              sAssemblyDetailInfoTo.GetUnicode());
+             }
+         }
 
          SString typeA = SL(W("A"));
          GetAssemblyDetailInfo(typeA,

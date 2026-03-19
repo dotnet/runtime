@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Test creates non-collectible AssemblyLoadContext -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InvalidCastGenericALC.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="SharedType.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <PropertyGroup>
+    <SharedTypeOutputPath>$(OutputPath)/../SharedType</SharedTypeOutputPath>
+  </PropertyGroup>
+  <Target Name="CopySharedTypeToOutput" AfterTargets="Build">
+    <Copy SourceFiles="$(SharedTypeOutputPath)/SharedType.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>
