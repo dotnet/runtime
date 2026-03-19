@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
+using X86Base = System.Runtime.Intrinsics.X86.X86Base;
 
 namespace System.Numerics
 {
@@ -100,9 +102,12 @@ namespace System.Numerics
         {
             if (nint.Size == 8)
             {
-                UInt128 sum = (UInt128)(ulong)a + (ulong)b + (ulong)carryIn;
-                carryOut = (nuint)(ulong)(sum >> 64);
-                return (nuint)(ulong)sum;
+                nuint sum1 = a + b;
+                nuint c1 = (sum1 < a) ? (nuint)1 : (nuint)0;
+                nuint sum2 = sum1 + carryIn;
+                nuint c2 = (sum2 < sum1) ? (nuint)1 : (nuint)0;
+                carryOut = c1 + c2;
+                return sum2;
             }
             else
             {
@@ -173,6 +178,15 @@ namespace System.Numerics
                 }
 
                 {
+#pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
+                    if (X86Base.X64.IsSupported)
+                    {
+                        (ulong q, ulong r) = X86Base.X64.DivRem((ulong)lo, (ulong)hi, (ulong)divisor);
+                        remainder = (nuint)r;
+                        return (nuint)q;
+                    }
+#pragma warning restore SYSLIB5004
+
                     UInt128 value = ((UInt128)(ulong)hi << 64) | (ulong)lo;
                     UInt128 digit = value / (ulong)divisor;
                     remainder = (nuint)(ulong)(value - digit * (ulong)divisor);
@@ -196,9 +210,9 @@ namespace System.Numerics
         {
             if (nint.Size == 8)
             {
-                UInt128 product = (UInt128)(ulong)a * (ulong)b;
-                low = (nuint)(ulong)product;
-                return (nuint)(ulong)(product >> 64);
+                ulong hi = Math.BigMul((ulong)a, (ulong)b, out ulong lo);
+                low = (nuint)lo;
+                return (nuint)hi;
             }
             else
             {
