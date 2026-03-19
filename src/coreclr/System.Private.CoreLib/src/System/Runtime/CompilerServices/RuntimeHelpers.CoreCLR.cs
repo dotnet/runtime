@@ -655,6 +655,12 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // Dummy method providing a MethodDesc with the correct signature (IntPtr -> object)
+        // for newobj allocator JIT helpers on portable entry point platforms. The interpreter
+        // uses the MethodDesc to derive the call cookie; the method itself is never executed.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object NewobjHelperDummy(IntPtr methodTable);
+
         [UnmanagedCallersOnly]
         internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
         {

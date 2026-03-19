@@ -32,12 +32,12 @@ namespace System.Net.NetworkInformation
                     continue;
                 }
 
-                IPAddress localIPAddress = new IPAddress(new ReadOnlySpan<byte>(nativeInfo.LocalEndPoint.AddressBytes, checked((int)nativeInfo.LocalEndPoint.NumAddressBytes)));
+                IPAddress localIPAddress = new IPAddress(((ReadOnlySpan<byte>)nativeInfo.LocalEndPoint.AddressBytes)[..checked((int)nativeInfo.LocalEndPoint.NumAddressBytes)]);
                 IPEndPoint local = new IPEndPoint(localIPAddress, (int)nativeInfo.LocalEndPoint.Port);
 
                 IPAddress remoteIPAddress = nativeInfo.RemoteEndPoint.NumAddressBytes == 0 ?
                     IPAddress.Any :
-                    new IPAddress(new ReadOnlySpan<byte>(nativeInfo.RemoteEndPoint.AddressBytes, checked((int)nativeInfo.RemoteEndPoint.NumAddressBytes)));
+                    new IPAddress(((ReadOnlySpan<byte>)nativeInfo.RemoteEndPoint.AddressBytes)[..checked((int)nativeInfo.RemoteEndPoint.NumAddressBytes)]);
 
                 IPEndPoint remote = new IPEndPoint(remoteIPAddress, (int)nativeInfo.RemoteEndPoint.Port);
                 connectionInformations[nextResultIndex++] = new SimpleTcpConnectionInformation(local, remote, state);
@@ -87,7 +87,7 @@ namespace System.Net.NetworkInformation
                 int port = (int)endPointInfo.Port;
                 IPAddress ipAddress = endPointInfo.NumAddressBytes == 0 ?
                     IPAddress.Any :
-                    new IPAddress(new ReadOnlySpan<byte>(endPointInfo.AddressBytes, checked((int)endPointInfo.NumAddressBytes)));
+                    new IPAddress(((ReadOnlySpan<byte>)endPointInfo.AddressBytes)[..checked((int)endPointInfo.NumAddressBytes)]);
 
                 endPoints[i] = new IPEndPoint(ipAddress, port);
             }

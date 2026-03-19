@@ -30,6 +30,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
     private readonly Dictionary<TypeKeyByName, TypeHandle> _typeHandlesByName = new();
 
+    public void Flush()
+    {
+        _methodTables.Clear();
+        _methodDescs.Clear();
+        _typeHandles.Clear();
+        _typeHandlesByName.Clear();
+    }
+
     internal struct MethodTable
     {
         internal MethodTableFlags_1 Flags { get; }
