@@ -2078,7 +2078,8 @@ namespace System.Net.Http
                     // that we can rewind arbitrary content streams.
                     // Additionally, we only retry if the version policy allows downgrade.
                     if (request.Content is null &&
-                        request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
+                        request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower &&
+                        !request.IsAuthDisabled())
                     {
                         if (NetEventSource.Log.IsEnabled())
                         {
