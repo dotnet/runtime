@@ -140,7 +140,9 @@ namespace System.Numerics
                 Square(fold, core);
 
                 if (foldFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(foldFromPool);
+                }
 
                 SubtractCore(bitsHigh, bitsLow, core);
 
@@ -148,7 +150,9 @@ namespace System.Numerics
                 AddSelf(bits.Slice(n), core);
 
                 if (coreFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(coreFromPool);
+                }
             }
 
             static void Naive(ReadOnlySpan<nuint> value, Span<nuint> bits)
@@ -164,7 +168,7 @@ namespace System.Numerics
 
                 // ATTENTION: an ordinary multiplication is safe, because
                 // z_i+j + a_j * a_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
-                // = 2^(2n) - 1, where n = kcbitNuint. But here we would need
+                // = 2^(2n) - 1, where n = BitsPerLimb. But here we would need
                 // one extra bit... Hence, we split these operation and do some
                 // extra shifts.
                 if (nint.Size == 8)
@@ -178,8 +182,12 @@ namespace System.Numerics
                             UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
                             UInt128 digit2 = (UInt128)(ulong)value[j] * (ulong)v;
                             bits[i + j] = (nuint)(ulong)(digit1 + (digit2 << 1));
+                            // We need digit1 + 2*digit2, but that could overflow UInt128.
+                            // Instead, compute (digit2 + digit1/2) >> 63 which gives the
+                            // same carry without needing an extra bit of precision.
                             carry = (digit2 + (digit1 >> 1)) >> 63;
                         }
+
                         UInt128 digits = (UInt128)(ulong)v * (ulong)v + carry;
                         bits[i + i] = (nuint)(ulong)digits;
                         bits[i + i + 1] = (nuint)(ulong)(digits >> 64);
@@ -195,12 +203,13 @@ namespace System.Numerics
                         {
                             ulong digit1 = bits[i + j] + carry;
                             ulong digit2 = (ulong)value[j] * v;
-                            bits[i + j] = (nuint)(uint)(digit1 + (digit2 << 1));
+                            bits[i + j] = (uint)(digit1 + (digit2 << 1));
                             carry = (digit2 + (digit1 >> 1)) >> 31;
                         }
+
                         ulong digits = (ulong)v * v + carry;
-                        bits[i + i] = (nuint)(uint)digits;
-                        bits[i + i + 1] = (nuint)(uint)(digits >> 32);
+                        bits[i + i] = (uint)digits;
+                        bits[i + i + 1] = (uint)(digits >> 32);
                     }
                 }
             }
@@ -242,13 +251,21 @@ namespace System.Numerics
             // which are smaller in DEBUG mode for testing purpose.
 
             if (right.Length < MultiplyKaratsubaThreshold)
+            {
                 Naive(left, right, bits);
+            }
             else if ((left.Length + 1) >> 1 is int n && right.Length <= n)
+            {
                 RightSmall(left, right, bits, n);
+            }
             else if (right.Length < MultiplyToom3Threshold)
+            {
                 Karatsuba(left, right, bits, n);
+            }
             else
+            {
                 Toom3(left, right, bits);
+            }
 
             static void Toom3(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
             {
@@ -336,9 +353,13 @@ namespace System.Numerics
                 int qm1Sign = 1;
 
                 if (left0.Length < left2.Length)
+                {
                     Add(left2, left0, pm1);
+                }
                 else
+                {
                     Add(left0, left2, pm1);
+                }
 
                 pm1.CopyTo(p1);
                 AddSelf(p1, left1);
@@ -471,10 +492,14 @@ namespace System.Numerics
                 Multiply(leftFold, rightFold, core);
 
                 if (leftFoldFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(leftFoldFromPool);
+                }
 
                 if (rightFoldFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(rightFoldFromPool);
+                }
 
                 // ... compute z_1 = z_a * z_b - z_0 - z_2 = a_0 * b_1 + a_1 * b_0
                 SubtractCore(bitsLow, bitsHigh, core);
@@ -485,7 +510,9 @@ namespace System.Numerics
                 AddSelf(bits.Slice(n), core.TrimEnd((nuint)0));
 
                 if (coreFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(coreFromPool);
+                }
             }
 
             static void RightSmall(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits, int n)
@@ -524,7 +551,9 @@ namespace System.Numerics
                 AddSelf(bitsHigh, carry);
 
                 if (carryFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(carryFromPool);
+                }
             }
 
             static void Naive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
@@ -536,7 +565,7 @@ namespace System.Numerics
                 // should help getting the idea of these two loops...
                 // The inner multiplication operations are safe, because
                 // z_i+j + a_j * b_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
-                // = 2^(2n) - 1, where n = kcbitNuint.
+                // = 2^(2n) - 1, where n = BitsPerLimb.
 
                 for (int i = 0; i < right.Length; i++)
                 {
@@ -620,7 +649,7 @@ namespace System.Numerics
 
                     // Calculate p(-2) = (p(-1) + m_2)*2
                     {
-                        Debug.Assert(pm2[^1] < ((nuint)1 << (kcbitNuint - 1)));
+                        Debug.Assert(pm2[^1] < ((nuint)1 << (BitsPerLimb - 1)));
                         LeftShiftOne(pm2);
                     }
 
@@ -669,8 +698,8 @@ namespace System.Numerics
                 Span<nuint> r0 = bits.Slice(0, p0.Length + q0.Length);
                 Span<nuint> rInf =
                     !qInf.IsEmpty
-                    ? bits.Slice(4 * n, pInf.Length + qInf.Length)
-                    : default;
+                        ? bits.Slice(4 * n, pInf.Length + qInf.Length)
+                        : default;
 
                 Span<nuint> r1 = buffer.Slice(0, p1.Length + q1.Length);
                 Span<nuint> rm1 = buffer.Slice(rLength, pm1.Length + qm1.Length);
@@ -696,6 +725,7 @@ namespace System.Numerics
                     bits
                 );
             }
+
             public void Square(int n, Span<nuint> bits, Span<nuint> buffer)
             {
                 Debug.Assert(!buffer.ContainsAnyExcept((nuint)0));
@@ -806,7 +836,9 @@ namespace System.Numerics
                 AddSelf(bits.Slice(2 * n), z2.TrimEnd((nuint)0));
 
                 if (bits.Length >= 3 * n)
+                {
                     AddSelf(bits.Slice(3 * n), z3.TrimEnd((nuint)0));
+                }
             }
         }
 
@@ -815,20 +847,22 @@ namespace System.Numerics
             nuint oneThird, twoThirds;
             if (nint.Size == 8)
             {
-                oneThird = unchecked((nuint)0x5555_5555_5555_5555);
-                twoThirds = unchecked((nuint)0xAAAA_AAAA_AAAA_AAAA);
+                ulong oneThird64 = 0x5555_5555_5555_5555;
+                ulong twoThirds64 = 0xAAAA_AAAA_AAAA_AAAA;
+                oneThird = (nuint)oneThird64;
+                twoThirds = (nuint)twoThirds64;
             }
             else
             {
-                oneThird = (nuint)0x5555_5555;
-                twoThirds = (nuint)0xAAAA_AAAA;
+                oneThird = 0x5555_5555;
+                twoThirds = 0xAAAA_AAAA;
             }
 
             nuint carry = 0;
             for (int i = bits.Length - 1; i >= 0; i--)
             {
-                nuint quo = bits[i] / (nuint)3;
-                nuint rem = bits[i] - quo * (nuint)3;
+                nuint quo = bits[i] / 3;
+                nuint rem = bits[i] - quo * 3;
 
                 Debug.Assert(carry < 3);
 
@@ -851,9 +885,13 @@ namespace System.Numerics
                 else
                 {
                     if (--rem < 3)
+                    {
                         ++quo;
+                    }
                     else
+                    {
                         rem = 2;
+                    }
 
                     bits[i] = twoThirds + quo;
                     carry = rem;
@@ -862,6 +900,7 @@ namespace System.Numerics
 
             Debug.Assert(carry == 0);
         }
+
         private static void SubtractCore(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> core)
         {
             Debug.Assert(left.Length >= right.Length);
@@ -913,22 +952,22 @@ namespace System.Numerics
 
                 for (; i < right.Length; i++)
                 {
-                    long digit = ((long)(uint)core[i] + carry) - (uint)left[i] - (uint)right[i];
-                    core[i] = (nuint)(uint)digit;
+                    long digit = ((uint)core[i] + carry) - (uint)left[i] - (uint)right[i];
+                    core[i] = (uint)digit;
                     carry = digit >> 32;
                 }
 
                 for (; i < left.Length; i++)
                 {
-                    long digit = ((long)(uint)core[i] + carry) - (uint)left[i];
-                    core[i] = (nuint)(uint)digit;
+                    long digit = ((uint)core[i] + carry) - (uint)left[i];
+                    core[i] = (uint)digit;
                     carry = digit >> 32;
                 }
 
                 for (; carry != 0 && i < core.Length; i++)
                 {
                     long digit = (uint)core[i] + carry;
-                    core[i] = (nuint)(uint)digit;
+                    core[i] = (uint)digit;
                     carry = digit >> 32;
                 }
             }
@@ -940,11 +979,17 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
 
             if (rightSign == 0)
+            {
                 return;
+            }
             else if (rightSign > 0)
+            {
                 AddSelf(left, ref leftSign, right);
+            }
             else
+            {
                 SubtractSelf(left, ref leftSign, right);
+            }
         }
 
         private static void AddSelf(Span<nuint> left, ref int leftSign, ReadOnlySpan<nuint> right)
@@ -986,6 +1031,7 @@ namespace System.Numerics
                 }
             }
         }
+
         private static void SubtractSelf(Span<nuint> left, ref int leftSign, ReadOnlySpan<nuint> right)
         {
             Debug.Assert(left.Length >= right.Length);
@@ -1030,17 +1076,18 @@ namespace System.Numerics
             for (int i = 0; i < bits.Length; i++)
             {
                 nuint value = carry | bits[i] << 1;
-                carry = bits[i] >> (kcbitNuint - 1);
+                carry = bits[i] >> (BitsPerLimb - 1);
                 bits[i] = value;
             }
         }
+
         private static void RightShiftOne(Span<nuint> bits)
         {
             nuint carry = 0;
             for (int i = bits.Length - 1; i >= 0; i--)
             {
                 nuint value = carry | bits[i] >> 1;
-                carry = bits[i] << (kcbitNuint - 1);
+                carry = bits[i] << (BitsPerLimb - 1);
                 bits[i] = value;
             }
         }
@@ -1049,11 +1096,16 @@ namespace System.Numerics
         {
             int i = d.IndexOfAnyExcept((nuint)0);
             if ((uint)i >= (uint)d.Length)
+            {
                 return;
-            d[i] = (nuint)0 - d[i];
+            }
+
+            d[i] = 0 - d[i];
             d = d.Slice(i + 1);
             for (int j = 0; j < d.Length; j++)
+            {
                 d[j] = ~d[j];
+            }
         }
     }
 }

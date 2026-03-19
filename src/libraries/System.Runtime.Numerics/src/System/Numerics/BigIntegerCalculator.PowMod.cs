@@ -10,7 +10,6 @@ namespace System.Numerics
     {
         // Executes different exponentiation algorithms, which are
         // based on the classic square-and-multiply method.
-
         // https://en.wikipedia.org/wiki/Exponentiation_by_squaring
 
         public static void Pow(nuint value, nuint power, Span<nuint> bits)
@@ -23,15 +22,15 @@ namespace System.Numerics
             Debug.Assert(bits.Length == PowBound(power, value.Length));
 
             nuint[]? tempFromPool = null;
-            Span<nuint> temp = (bits.Length <= StackAllocThreshold ?
-                              stackalloc nuint[StackAllocThreshold]
-                              : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            Span<nuint> temp = (bits.Length <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             nuint[]? valueCopyFromPool = null;
-            Span<nuint> valueCopy = (bits.Length <= StackAllocThreshold ?
-                                   stackalloc nuint[StackAllocThreshold]
-                                   : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            Span<nuint> valueCopy = (bits.Length <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             value.CopyTo(valueCopy);
             valueCopy.Slice(value.Length).Clear();
 
@@ -40,9 +39,14 @@ namespace System.Numerics
             bits.Slice(result.Length).Clear();
 
             if (tempFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(tempFromPool);
+            }
+
             if (valueCopyFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
+            }
         }
 
         private static Span<nuint> PowCore(Span<nuint> value, int valueLength, Span<nuint> temp, nuint power, Span<nuint> result)
@@ -58,9 +62,15 @@ namespace System.Numerics
             while (power != 0)
             {
                 if ((power & 1) == 1)
+                {
                     resultLength = MultiplySelf(ref result, resultLength, value.Slice(0, valueLength), ref temp);
+                }
+
                 if (power != 1)
+                {
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
+                }
+
                 power >>= 1;
             }
 
@@ -74,12 +84,13 @@ namespace System.Numerics
             int resultLength = leftLength + right.Length;
 
             Multiply(left.Slice(0, leftLength), right, temp.Slice(0, resultLength));
-
             left.Clear();
+
             //switch buffers
             Span<nuint> t = left;
             left = temp;
             temp = t;
+
             return ActualLength(left.Slice(0, resultLength));
         }
 
@@ -91,12 +102,13 @@ namespace System.Numerics
             int resultLength = valueLength + valueLength;
 
             Square(value.Slice(0, valueLength), temp.Slice(0, resultLength));
-
             value.Clear();
+
             //switch buffers
             Span<nuint> t = value;
             value = temp;
             temp = t;
+
             return ActualLength(value.Slice(0, resultLength));
         }
 
@@ -111,10 +123,16 @@ namespace System.Numerics
                 checked
                 {
                     if ((power & 1) == 1)
+                    {
                         resultLength += valueLength;
+                    }
+
                     if (power != 1)
+                    {
                         valueLength += valueLength;
+                    }
                 }
+
                 power >>= 1;
             }
 
@@ -167,13 +185,16 @@ namespace System.Numerics
             for (int i = 0; i < power.Length - 1; i++)
             {
                 nuint p = power[i];
-                for (int j = 0; j < kcbitNuint; j++)
+                for (int j = 0; j < BitsPerLimb; j++)
                 {
                     if (useUlong)
                     {
                         if ((p & 1) == 1)
-                            result = (nuint)(uint)(((ulong)result * value) % modulus);
-                        value = (nuint)(uint)(((ulong)value * value) % modulus);
+                        {
+                            result = (uint)(((ulong)result * value) % modulus);
+                        }
+
+                        value = (uint)(((ulong)value * value) % modulus);
                     }
                     else
                     {
@@ -182,11 +203,13 @@ namespace System.Numerics
                             UInt128 prod = (UInt128)(ulong)result * (ulong)value;
                             result = (nuint)(ulong)(prod % (ulong)modulus);
                         }
+
                         {
                             UInt128 sq = (UInt128)(ulong)value * (ulong)value;
                             value = (nuint)(ulong)(sq % (ulong)modulus);
                         }
                     }
+
                     p >>= 1;
                 }
             }
@@ -208,9 +231,14 @@ namespace System.Numerics
                 if (useUlong)
                 {
                     if ((power & 1) == 1)
-                        result = (nuint)(uint)(((ulong)result * value) % modulus);
+                    {
+                        result = (uint)(((ulong)result * value) % modulus);
+                    }
+
                     if (power != 1)
-                        value = (nuint)(uint)(((ulong)value * value) % modulus);
+                    {
+                        value = (uint)(((ulong)value * value) % modulus);
+                    }
                 }
                 else
                 {
@@ -219,12 +247,14 @@ namespace System.Numerics
                         UInt128 prod = (UInt128)(ulong)result * (ulong)value;
                         result = (nuint)(ulong)(prod % (ulong)modulus);
                     }
+
                     if (power != 1)
                     {
                         UInt128 sq = (UInt128)(ulong)value * (ulong)value;
                         value = (nuint)(ulong)(sq % (ulong)modulus);
                     }
                 }
+
                 power >>= 1;
             }
 
@@ -248,9 +278,9 @@ namespace System.Numerics
 
             nuint[]? valueCopyFromPool = null;
             int size = Math.Max(value.Length, bits.Length);
-            Span<nuint> valueCopy = (size <= StackAllocThreshold ?
-                                   stackalloc nuint[StackAllocThreshold]
-                                   : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> valueCopy = (size <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
 
             // smallish optimization here:
             // subsequent operations will copy the elements to the beginning of the buffer,
@@ -267,17 +297,22 @@ namespace System.Numerics
             }
 
             nuint[]? tempFromPool = null;
-            Span<nuint> temp = (bits.Length <= StackAllocThreshold ?
-                              stackalloc nuint[StackAllocThreshold]
-                              : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            Span<nuint> temp = (bits.Length <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
             if (valueCopyFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
+            }
+
             if (tempFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(tempFromPool);
+            }
         }
 
         public static void Pow(nuint value, ReadOnlySpan<nuint> power,
@@ -297,9 +332,9 @@ namespace System.Numerics
 
             int size = Math.Max(value.Length, bits.Length);
             nuint[]? valueCopyFromPool = null;
-            Span<nuint> valueCopy = (size <= StackAllocThreshold ?
-                                   stackalloc nuint[StackAllocThreshold]
-                                   : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> valueCopy = (size <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
 
             // smallish optimization here:
             // subsequent operations will copy the elements to the beginning of the buffer,
@@ -316,24 +351,29 @@ namespace System.Numerics
             }
 
             nuint[]? tempFromPool = null;
-            Span<nuint> temp = (bits.Length <= StackAllocThreshold ?
-                              stackalloc nuint[StackAllocThreshold]
-                              : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            Span<nuint> temp = (bits.Length <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
             temp.Clear();
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
             if (valueCopyFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
+            }
+
             if (tempFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(tempFromPool);
+            }
         }
 
+        internal
 #if DEBUG
-        // Mutable for unit testing...
-        internal static
+        static // Mutable for unit testing...
 #else
-        internal const
+        const
 #endif
         int ReducerThreshold = 32;
 
@@ -391,46 +431,56 @@ namespace System.Numerics
         {
             int size = modulus.Length * 2 + 1;
             nuint[]? rFromPool = null;
-            Span<nuint> r = ((uint)size <= StackAllocThreshold ?
-                           stackalloc nuint[StackAllocThreshold]
-                           : rFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> r = ((uint)size <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : rFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
             r.Clear();
 
             size = r.Length - modulus.Length + 1;
             nuint[]? muFromPool = null;
-            Span<nuint> mu = ((uint)size <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : muFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> mu = ((uint)size <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : muFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
             mu.Clear();
 
             size = modulus.Length * 2 + 2;
             nuint[]? q1FromPool = null;
-            Span<nuint> q1 = ((uint)size <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : q1FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> q1 = ((uint)size <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : q1FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
             q1.Clear();
 
             nuint[]? q2FromPool = null;
-            Span<nuint> q2 = ((uint)size <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : q2FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> q2 = ((uint)size <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : q2FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
             q2.Clear();
 
-            FastReducer reducer = new FastReducer(modulus, r, mu, q1, q2);
+            FastReducer reducer = new(modulus, r, mu, q1, q2);
 
             if (rFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(rFromPool);
+            }
 
             Span<nuint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
             result.CopyTo(bits);
             bits.Slice(result.Length).Clear();
 
             if (muFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(muFromPool);
+            }
+
             if (q1FromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(q1FromPool);
+            }
+
             if (q2FromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(q2FromPool);
+            }
         }
 
         /// <summary>
@@ -441,15 +491,29 @@ namespace System.Numerics
         private static int ChooseWindowSize(int expBitLength)
         {
             if (expBitLength <= 24)
+            {
                 return 1;
+            }
+
             if (expBitLength <= 96)
+            {
                 return 3;
+            }
+
             if (expBitLength <= 384)
+            {
                 return 4;
+            }
+
             if (expBitLength <= 1536)
+            {
                 return 5;
+            }
+
             if (expBitLength <= 4096)
+            {
                 return 6;
+            }
 
             return 7;
         }
@@ -461,15 +525,21 @@ namespace System.Numerics
         {
             int length = ActualLength(value);
             if (length == 0)
+            {
                 return 0;
+            }
 
             nuint topLimb = value[length - 1];
-            int bits = (length - 1) * kcbitNuint;
+            int bits = (length - 1) * BitsPerLimb;
 
             if (nint.Size == 8)
+            {
                 bits += 64 - BitOperations.LeadingZeroCount((ulong)topLimb);
+            }
             else
+            {
                 bits += 32 - BitOperations.LeadingZeroCount((uint)topLimb);
+            }
 
             return bits;
         }
@@ -479,8 +549,8 @@ namespace System.Numerics
         /// </summary>
         private static int GetBit(ReadOnlySpan<nuint> value, int bitIndex)
         {
-            int limbIndex = bitIndex / kcbitNuint;
-            int bitOffset = bitIndex % kcbitNuint;
+            int limbIndex = bitIndex / BitsPerLimb;
+            int bitOffset = bitIndex % BitsPerLimb;
             return (int)((value[limbIndex] >> bitOffset) & 1);
         }
 
@@ -510,14 +580,18 @@ namespace System.Numerics
             value.Slice(0, valueLength).CopyTo(shifted.Slice(k));
 
             if (shifted.Length >= modulus.Length)
+            {
                 DivRem(shifted, modulus, default);
+            }
 
             shifted.Slice(0, k).CopyTo(value);
             value.Slice(k).Clear();
             valueLength = ActualLength(value.Slice(0, k));
 
             if (shiftPool is not null)
+            {
                 ArrayPool<nuint>.Shared.Return(shiftPool);
+            }
 
             // Compute R mod n (Montgomery form of 1) and save for later
             nuint[]? rModNPool = null;
@@ -535,8 +609,11 @@ namespace System.Numerics
                 DivRem(oneShifted, modulus, default);
                 oneShifted.Slice(0, k).CopyTo(rModN);
                 if (oneShiftPool is not null)
+                {
                     ArrayPool<nuint>.Shared.Return(oneShiftPool);
+                }
             }
+
             int rModNLength = ActualLength(rModN);
 
             // Choose sliding window size based on exponent bit length
@@ -551,7 +628,10 @@ namespace System.Numerics
                 bits.Slice(0, resultLength).CopyTo(originalBits);
                 originalBits.Slice(resultLength).Clear();
                 if (rModNPool is not null)
+                {
                     ArrayPool<nuint>.Shared.Return(rModNPool);
+                }
+
                 return;
             }
 
@@ -604,16 +684,21 @@ namespace System.Numerics
                     int prevLength = ActualLength(prev);
 
                     prod.Clear();
-                    Multiply(prev.Slice(0, prevLength), (ReadOnlySpan<nuint>)base2.Slice(0, base2Length),
+                    Multiply(prev.Slice(0, prevLength), base2.Slice(0, base2Length),
                              prod.Slice(0, prevLength + base2Length));
                     MontgomeryReduce(prod, modulus, n0inv);
                     prod.Slice(0, k).CopyTo(table.Slice(i * k, k));
                 }
 
                 if (base2Pool is not null)
+                {
                     ArrayPool<nuint>.Shared.Return(base2Pool);
+                }
+
                 if (prodPool is not null)
+                {
                     ArrayPool<nuint>.Shared.Return(prodPool);
+                }
             }
 
             // Initialize result to R mod n (bits and temp are untouched from caller)
@@ -622,7 +707,9 @@ namespace System.Numerics
             int resultLen = rModNLength;
 
             if (rModNPool is not null)
+            {
                 ArrayPool<nuint>.Shared.Return(rModNPool);
+            }
 
             // Left-to-right sliding window exponentiation
             int bitPos = expBitLength - 1;
@@ -688,6 +775,8 @@ namespace System.Numerics
         {
             Debug.Assert((n0 & 1) != 0);
 
+            // Newton's method has quadratic convergence: each iteration doubles
+            // the number of correct bits. Need ceil(log2(BitsPerLimb)) iterations.
             nuint x = 1;
             int iterations = nint.Size == 8 ? 6 : 5;
             for (int i = 0; i < iterations; i++)
@@ -695,7 +784,7 @@ namespace System.Numerics
                 x *= 2 - n0 * x;
             }
 
-            return unchecked((nuint)0 - x);
+            return 0 - x;
         }
 
         /// <summary>
@@ -712,7 +801,7 @@ namespace System.Numerics
 
             for (int i = 0; i < k; i++)
             {
-                nuint m = unchecked(value[i] * n0inv);
+                nuint m = value[i] * n0inv;
                 nuint carry = 0;
 
                 for (int j = 0; j < k; j++)
@@ -726,8 +815,8 @@ namespace System.Numerics
                     else
                     {
                         ulong p = (ulong)m * modulus[j] + value[i + j] + carry;
-                        value[i + j] = (nuint)(uint)p;
-                        carry = (nuint)(uint)(p >> 32);
+                        value[i + j] = (uint)p;
+                        carry = (uint)(p >> 32);
                     }
                 }
 
@@ -737,6 +826,7 @@ namespace System.Numerics
                     carry = (sum < value[idx]) ? (nuint)1 : 0;
                     value[idx] = sum;
                 }
+
                 overflow += carry;
             }
 
@@ -771,13 +861,14 @@ namespace System.Numerics
             for (int i = 0; i < power.Length - 1; i++)
             {
                 nuint p = power[i];
-                for (int j = 0; j < kcbitNuint; j++)
+                for (int j = 0; j < BitsPerLimb; j++)
                 {
                     if ((p & 1) == 1)
                     {
                         resultLength = MultiplySelf(ref result, resultLength, value.Slice(0, valueLength), ref temp);
                         resultLength = Reduce(result.Slice(0, resultLength), modulus);
                     }
+
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = Reduce(value.Slice(0, valueLength), modulus);
                     p >>= 1;
@@ -805,11 +896,13 @@ namespace System.Numerics
                     resultLength = MultiplySelf(ref result, resultLength, value.Slice(0, valueLength), ref temp);
                     resultLength = Reduce(result.Slice(0, resultLength), modulus);
                 }
+
                 if (power != 1)
                 {
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = Reduce(value.Slice(0, valueLength), modulus);
                 }
+
                 power >>= 1;
             }
 
@@ -830,13 +923,14 @@ namespace System.Numerics
             for (int i = 0; i < power.Length - 1; i++)
             {
                 nuint p = power[i];
-                for (int j = 0; j < kcbitNuint; j++)
+                for (int j = 0; j < BitsPerLimb; j++)
                 {
                     if ((p & 1) == 1)
                     {
                         resultLength = MultiplySelf(ref result, resultLength, value.Slice(0, valueLength), ref temp);
                         resultLength = reducer.Reduce(result.Slice(0, resultLength));
                     }
+
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = reducer.Reduce(value.Slice(0, valueLength));
                     p >>= 1;
@@ -864,11 +958,13 @@ namespace System.Numerics
                     resultLength = MultiplySelf(ref result, resultLength, value.Slice(0, valueLength), ref temp);
                     resultLength = reducer.Reduce(result.Slice(0, resultLength));
                 }
+
                 if (power != 1)
                 {
                     valueLength = SquareSelf(ref value, valueLength, ref temp);
                     valueLength = reducer.Reduce(value.Slice(0, valueLength));
                 }
+
                 power >>= 1;
             }
 

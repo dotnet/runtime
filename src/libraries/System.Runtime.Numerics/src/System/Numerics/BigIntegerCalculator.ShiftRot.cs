@@ -14,7 +14,7 @@ namespace System.Numerics
         {
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
-            int digitShiftMax = (int)((long)0x80000000 / kcbitNuint);
+            int digitShiftMax = (int)(0x80000000 / BitsPerLimb);
 
             int digitShift = digitShiftMax;
             int smallShift = 0;
@@ -22,14 +22,18 @@ namespace System.Numerics
             if (rotateLeftAmount < 0)
             {
                 if (rotateLeftAmount != -0x80000000)
-                    (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, kcbitNuint);
+                {
+                    (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerLimb);
+                }
 
                 RotateRight(bits, digitShift % bits.Length, smallShift);
             }
             else
             {
                 if (rotateLeftAmount != 0x80000000)
-                    (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, kcbitNuint);
+                {
+                    (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerLimb);
+                }
 
                 RotateLeft(bits, digitShift % bits.Length, smallShift);
             }
@@ -43,7 +47,9 @@ namespace System.Numerics
             bits[0] |= carry;
 
             if (digitShift == 0)
+            {
                 return;
+            }
 
             SwapUpperAndLower(bits, bits.Length - digitShift);
         }
@@ -56,7 +62,9 @@ namespace System.Numerics
             bits[^1] |= carry;
 
             if (digitShift == 0)
+            {
                 return;
+            }
 
             SwapUpperAndLower(bits, digitShift);
         }
@@ -75,9 +83,9 @@ namespace System.Numerics
 
             int tmpLength = Math.Min(lowerLength, upperLength);
             nuint[]? tmpFromPool = null;
-            Span<nuint> tmp = ((uint)tmpLength <= StackAllocThreshold ?
-                                  stackalloc nuint[StackAllocThreshold]
-                                  : tmpFromPool = ArrayPool<nuint>.Shared.Rent(tmpLength)).Slice(0, tmpLength);
+            Span<nuint> tmp = ((uint)tmpLength <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : tmpFromPool = ArrayPool<nuint>.Shared.Rent(tmpLength)).Slice(0, tmpLength);
 
             if (upperLength < lowerLength)
             {
@@ -93,18 +101,22 @@ namespace System.Numerics
             }
 
             if (tmpFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(tmpFromPool);
+            }
         }
 
         public static void LeftShiftSelf(Span<nuint> bits, int shift, out nuint carry)
         {
-            Debug.Assert((uint)shift < kcbitNuint);
+            Debug.Assert((uint)shift < BitsPerLimb);
 
             carry = 0;
             if (shift == 0 || bits.IsEmpty)
+            {
                 return;
+            }
 
-            int back = kcbitNuint - shift;
+            int back = BitsPerLimb - shift;
 
             if (Vector128.IsHardwareAccelerated)
             {
@@ -113,6 +125,8 @@ namespace System.Numerics
                 ref nuint start = ref MemoryMarshal.GetReference(bits);
                 int offset = bits.Length;
 
+                // Each vector load needs one extra element below it to source the carry bits
+                // that shift in from the lower limbs, hence the +1 minimum.
                 while (Vector512.IsHardwareAccelerated && offset >= Vector512<nuint>.Count + 1)
                 {
                     Vector512<nuint> current = Vector512.LoadUnsafe(ref start, (nuint)(offset - Vector512<nuint>.Count)) << shift;
@@ -165,15 +179,18 @@ namespace System.Numerics
                 }
             }
         }
+
         public static void RightShiftSelf(Span<nuint> bits, int shift, out nuint carry)
         {
-            Debug.Assert((uint)shift < kcbitNuint);
+            Debug.Assert((uint)shift < BitsPerLimb);
 
             carry = 0;
             if (shift == 0 || bits.IsEmpty)
+            {
                 return;
+            }
 
-            int back = kcbitNuint - shift;
+            int back = BitsPerLimb - shift;
 
             if (Vector128.IsHardwareAccelerated)
             {

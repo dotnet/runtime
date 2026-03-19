@@ -12,7 +12,6 @@ namespace System.Numerics
         public static nuint Gcd(nuint left, nuint right)
         {
             // Executes the classic Euclidean algorithm.
-
             // https://en.wikipedia.org/wiki/Euclidean_algorithm
 
             if (nint.Size == 8 && left <= uint.MaxValue && right <= uint.MaxValue)
@@ -51,7 +50,9 @@ namespace System.Numerics
             }
 
             if (right != 0)
+            {
                 return Gcd((uint)right, (uint)(left % right));
+            }
 
             return left;
         }
@@ -64,9 +65,8 @@ namespace System.Numerics
             // A common divisor cannot be greater than right;
             // we compute the remainder and continue above...
 
-            nuint temp = Remainder(left, right);
-
-            return Gcd(right, temp);
+            nuint remainder = Remainder(left, right);
+            return Gcd(right, remainder);
         }
 
         public static void Gcd(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> result)
@@ -79,15 +79,17 @@ namespace System.Numerics
             left.CopyTo(result);
 
             nuint[]? rightCopyFromPool = null;
-            Span<nuint> rightCopy = (right.Length <= StackAllocThreshold ?
-                                  stackalloc nuint[StackAllocThreshold]
-                                  : rightCopyFromPool = ArrayPool<nuint>.Shared.Rent(right.Length)).Slice(0, right.Length);
+            Span<nuint> rightCopy = (right.Length <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : rightCopyFromPool = ArrayPool<nuint>.Shared.Rent(right.Length)).Slice(0, right.Length);
             right.CopyTo(rightCopy);
 
             Gcd(result, rightCopy);
 
             if (rightCopyFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(rightCopyFromPool);
+            }
         }
 
         private static void Gcd(Span<nuint> left, Span<nuint> right)
@@ -107,16 +109,18 @@ namespace System.Numerics
 
             while (right.Length > (nint.Size == 4 ? 2 : 1))
             {
-                ulong x, y;
 
-                ExtractDigits(left, right, out x, out y);
+                ExtractDigits(left, right, out ulong x, out ulong y);
 
                 uint a = 1U, b = 0U;
                 uint c = 0U, d = 1U;
 
                 int iteration = 0;
 
-                // Lehmer's guessing
+                // Lehmer's guessing: use top digits to compute a 2x2 matrix (a,b,c,d)
+                // that approximates several GCD steps. Stop when the quotient or
+                // matrix entries would overflow, or when the Jebelean termination
+                // condition (t < s || t + r > y - c) indicates the guess may be wrong.
                 while (y != 0)
                 {
                     ulong q, r, s, t;
@@ -125,16 +129,18 @@ namespace System.Numerics
                     q = x / y;
 
                     if (q > 0xFFFFFFFF)
+                    {
                         break;
+                    }
 
                     r = a + q * c;
                     s = b + q * d;
                     t = x - q * y;
 
-                    if (r > 0x7FFFFFFF || s > 0x7FFFFFFF)
+                    if (r > 0x7FFFFFFF || s > 0x7FFFFFFF || t < s || t + r > y - c)
+                    {
                         break;
-                    if (t < s || t + r > y - c)
-                        break;
+                    }
 
                     a = (uint)r;
                     b = (uint)s;
@@ -142,22 +148,26 @@ namespace System.Numerics
 
                     ++iteration;
                     if (x == b)
+                    {
                         break;
+                    }
 
                     // Even iteration
                     q = y / x;
 
                     if (q > 0xFFFFFFFF)
+                    {
                         break;
+                    }
 
                     r = d + q * b;
                     s = c + q * a;
                     t = y - q * x;
 
-                    if (r > 0x7FFFFFFF || s > 0x7FFFFFFF)
+                    if (r > 0x7FFFFFFF || s > 0x7FFFFFFF || t < s || t + r > x - b)
+                    {
                         break;
-                    if (t < s || t + r > x - b)
-                        break;
+                    }
 
                     d = (uint)r;
                     c = (uint)s;
@@ -165,7 +175,9 @@ namespace System.Numerics
 
                     ++iteration;
                     if (y == c)
+                    {
                         break;
+                    }
                 }
 
                 if (b == 0)
@@ -180,7 +192,7 @@ namespace System.Numerics
                 else
                 {
                     // Lehmer's step
-                    var count = LehmerCore(left, right, a, b, c, d);
+                    int count = LehmerCore(left, right, a, b, c, d);
                     left = left.Slice(0, Refresh(left, count));
                     right = right.Slice(0, Refresh(right, count));
 
@@ -203,8 +215,8 @@ namespace System.Numerics
 
                 if (nint.Size == 4)
                 {
-                    x = (ulong)right[0];
-                    y = (ulong)left[0];
+                    x = right[0];
+                    y = left[0];
 
                     if (right.Length > 1)
                     {
@@ -214,8 +226,8 @@ namespace System.Numerics
                 }
                 else
                 {
-                    x = (ulong)right[0];
-                    y = (ulong)left[0];
+                    x = right[0];
+                    y = left[0];
                 }
 
                 left = left.Slice(0, Overwrite(left, Gcd(x, y)));
@@ -237,7 +249,7 @@ namespace System.Numerics
                     buffer.Slice(2).Clear();
                 }
 
-                nuint lo = unchecked((nuint)value);
+                nuint lo = (nuint)value;
                 nuint hi = (nuint)(value >> 32);
 
                 buffer[1] = hi;
@@ -318,8 +330,8 @@ namespace System.Numerics
                 Debug.Assert(yBuffer.Length >= 2);
                 Debug.Assert(xBuffer.Length >= yBuffer.Length);
 
-                ulong xh = (ulong)xBuffer[xBuffer.Length - 1];
-                ulong xl = (ulong)xBuffer[xBuffer.Length - 2];
+                ulong xh = xBuffer[xBuffer.Length - 1];
+                ulong xl = xBuffer[xBuffer.Length - 2];
 
                 ulong yh, yl;
 
@@ -327,13 +339,13 @@ namespace System.Numerics
                 switch (xBuffer.Length - yBuffer.Length)
                 {
                     case 0:
-                        yh = (ulong)yBuffer[yBuffer.Length - 1];
-                        yl = (ulong)yBuffer[yBuffer.Length - 2];
+                        yh = yBuffer[yBuffer.Length - 1];
+                        yl = yBuffer[yBuffer.Length - 2];
                         break;
 
                     case 1:
                         yh = 0UL;
-                        yl = (ulong)yBuffer[yBuffer.Length - 1];
+                        yl = yBuffer[yBuffer.Length - 1];
                         break;
 
                     default:
@@ -384,8 +396,8 @@ namespace System.Numerics
                     long yDigit = d * (long)y[i] - c * (long)x[i] + yCarry;
                     xCarry = xDigit >> 32;
                     yCarry = yDigit >> 32;
-                    x[i] = unchecked((nuint)xDigit);
-                    y[i] = unchecked((nuint)yDigit);
+                    x[i] = (nuint)xDigit;
+                    y[i] = (nuint)yDigit;
                 }
             }
             else if (BitConverter.IsLittleEndian)
@@ -402,12 +414,12 @@ namespace System.Numerics
                 long xCarry = 0L, yCarry = 0L;
                 for (int i = 0; i < length32; i++)
                 {
-                    long xDigit = a * (long)x32[i] - b * (long)y32[i] + xCarry;
-                    long yDigit = d * (long)y32[i] - c * (long)x32[i] + yCarry;
+                    long xDigit = a * x32[i] - b * y32[i] + xCarry;
+                    long yDigit = d * y32[i] - c * x32[i] + yCarry;
                     xCarry = xDigit >> 32;
                     yCarry = yDigit >> 32;
-                    x32[i] = unchecked((uint)xDigit);
-                    y32[i] = unchecked((uint)yDigit);
+                    x32[i] = (uint)xDigit;
+                    y32[i] = (uint)yDigit;
                 }
             }
             else
@@ -420,8 +432,8 @@ namespace System.Numerics
                     Int128 yDigit = d * (Int128)y[i] - c * (Int128)x[i] + yCarry;
                     xCarry = xDigit >> 64;
                     yCarry = yDigit >> 64;
-                    x[i] = unchecked((nuint)(ulong)xDigit);
-                    y[i] = unchecked((nuint)(ulong)yDigit);
+                    x[i] = (nuint)(ulong)xDigit;
+                    y[i] = (nuint)(ulong)yDigit;
                 }
             }
 

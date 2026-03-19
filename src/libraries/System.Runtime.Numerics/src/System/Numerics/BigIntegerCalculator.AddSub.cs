@@ -8,6 +8,12 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+        /// <summary>
+        /// Specifies the minimum number of elements required to trigger a copy operation using an optimized path.
+        /// </summary>
+        /// <remarks>
+        /// This threshold is determined based on benchmarking and may be adjusted in the future to balance the overhead of copying versus the benefits of reduced loop iterations.
+        /// </remarks>
         private const int CopyToThreshold = 8;
 
         private static void CopyTail(ReadOnlySpan<nuint> source, Span<nuint> dest, int start)
@@ -60,10 +66,11 @@ namespace System.Numerics
             {
                 left[i] = AddWithCarry(left[i], right[i], carry, out carry);
             }
+
             for (; carry != 0 && i < left.Length; i++)
             {
                 nuint sum = left[i] + carry;
-                carry = (sum < carry) ? (nuint)1 : (nuint)0;
+                carry = (sum < carry) ? 1 : (nuint)0;
                 left[i] = sum;
             }
 
@@ -118,11 +125,12 @@ namespace System.Numerics
             {
                 left[i] = SubWithBorrow(left[i], right[i], borrow, out borrow);
             }
+
             for (; borrow != 0 && i < left.Length; i++)
             {
                 nuint val = left[i];
                 left[i] = val - borrow;
-                borrow = (val < borrow) ? (nuint)1 : (nuint)0;
+                borrow = (val < borrow) ? 1 : (nuint)0;
             }
 
             // Assertion failing per https://github.com/dotnet/runtime/issues/97780
@@ -144,7 +152,7 @@ namespace System.Numerics
                 for (; i < left.Length; i++)
                 {
                     nuint sum = left[i] + carry;
-                    carry = (sum < carry) ? (nuint)1 : (nuint)0;
+                    carry = (sum < carry) ? 1 : (nuint)0;
                     bits[i] = sum;
                 }
 
@@ -155,7 +163,7 @@ namespace System.Numerics
                 for (; i < left.Length;)
                 {
                     nuint sum = left[i] + carry;
-                    carry = (sum < carry) ? (nuint)1 : (nuint)0;
+                    carry = (sum < carry) ? 1 : (nuint)0;
                     bits[i] = sum;
                     i++;
 
@@ -195,7 +203,7 @@ namespace System.Numerics
                 {
                     nuint val = left[i];
                     nuint diff = val - borrow;
-                    borrow = (diff > val) ? (nuint)1 : (nuint)0;
+                    borrow = (diff > val) ? 1 : (nuint)0;
                     bits[i] = diff;
                 }
             }
@@ -205,7 +213,7 @@ namespace System.Numerics
                 {
                     nuint val = left[i];
                     nuint diff = val - borrow;
-                    borrow = (diff > val) ? (nuint)1 : (nuint)0;
+                    borrow = (diff > val) ? 1 : (nuint)0;
                     bits[i] = diff;
                     i++;
 

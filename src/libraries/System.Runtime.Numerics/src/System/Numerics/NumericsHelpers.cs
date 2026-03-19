@@ -22,7 +22,9 @@ namespace System.Numerics
                 // Denormalized number.
                 fFinite = true;
                 if (man != 0)
+                {
                     exp = -1074;
+                }
             }
             else if (exp == 0x7FF)
             {
@@ -51,9 +53,14 @@ namespace System.Numerics
                 // Normalize so that 0x0010 0000 0000 0000 is the highest bit set.
                 int cbitShift = BitOperations.LeadingZeroCount(man) - 11;
                 if (cbitShift < 0)
+                {
                     man >>= -cbitShift;
+                }
                 else
+                {
                     man <<= cbitShift;
+                }
+
                 exp -= cbitShift;
                 Debug.Assert((man & 0xFFF0000000000000) == 0x0010000000000000);
 
@@ -89,13 +96,14 @@ namespace System.Numerics
             }
 
             if (sign < 0)
+            {
                 bits |= 0x8000000000000000;
+            }
 
             return BitConverter.UInt64BitsToDouble(bits);
         }
 
-        // Do an in-place two's complement. "Dangerous" because it causes
-        // a mutation and needs to be used with care for immutable types.
+        /// <summary>Performs an in-place two's complement. Use with care for immutable types.</summary>
         public static void DangerousMakeTwosComplement(Span<nuint> d)
         {
             // Given a number:
@@ -125,8 +133,7 @@ namespace System.Numerics
             DangerousMakeOnesComplement(d);
         }
 
-        // Do an in-place one's complement. "Dangerous" because it causes
-        // a mutation and needs to be used with care for immutable types.
+        /// <summary>Performs an in-place one's complement. Use with care for immutable types.</summary>
         public static void DangerousMakeOnesComplement(Span<nuint> d)
         {
             // Given a number:
@@ -166,13 +173,12 @@ namespace System.Numerics
             }
         }
 
+        /// <summary>Branchless abs: arithmetic right shift produces 0 (positive) or -1 (negative) mask,
+        /// then XOR-and-subtract flips negative values without branching.</summary>
         public static nuint Abs(int a)
         {
-            unchecked
-            {
-                nuint mask = (nuint)(a >> 31);
-                return ((nuint)a ^ mask) - mask;
-            }
+            nuint mask = (nuint)(a >> 31);
+            return ((nuint)a ^ mask) - mask;
         }
     }
 }

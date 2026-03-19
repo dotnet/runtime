@@ -8,18 +8,18 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+        internal
 #if DEBUG
-        // Mutable for unit testing...
-        internal static
+        static // Mutable for unit testing...
 #else
-        internal const
+        const
 #endif
         int DivideBurnikelZieglerThreshold = 64;
 
         public static void Divide(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient, out nuint remainder)
         {
             InitializeForDebug(quotient);
-            nuint carry = (nuint)0;
+            nuint carry = 0;
             DivideCore(left, right, quotient, ref carry);
             remainder = carry;
         }
@@ -27,7 +27,7 @@ namespace System.Numerics
         public static void Divide(ReadOnlySpan<nuint> left, nuint right, Span<nuint> quotient)
         {
             InitializeForDebug(quotient);
-            nuint carry = (nuint)0;
+            nuint carry = 0;
             DivideCore(left, right, quotient, ref carry);
         }
 
@@ -53,7 +53,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the remainder.
-            nuint carry = (nuint)0;
+            nuint carry = 0;
             for (int i = left.Length - 1; i >= 0; i--)
             {
                 DivRem(carry, left[i], right, out carry);
@@ -99,15 +99,17 @@ namespace System.Numerics
 
                 // NOTE: left will get overwritten, we need a local copy
                 // However, mutated left is not used afterwards, so use array pooling or stack alloc
-                Span<nuint> leftCopy = (left.Length <= StackAllocThreshold ?
-                                      stackalloc nuint[StackAllocThreshold]
-                                      : leftCopyFromPool = ArrayPool<nuint>.Shared.Rent(left.Length)).Slice(0, left.Length);
+                Span<nuint> leftCopy = (left.Length <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : leftCopyFromPool = ArrayPool<nuint>.Shared.Rent(left.Length)).Slice(0, left.Length);
                 left.CopyTo(leftCopy);
 
                 DivideGrammarSchool(leftCopy, right, quotient);
 
                 if (leftCopyFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(leftCopyFromPool);
+                }
             }
             else
             {
@@ -135,14 +137,16 @@ namespace System.Numerics
                 int quotientLength = left.Length - right.Length + 1;
                 nuint[]? quotientFromPool = null;
 
-                Span<nuint> quotient = (quotientLength <= StackAllocThreshold ?
-                                      stackalloc nuint[StackAllocThreshold]
-                                      : quotientFromPool = ArrayPool<nuint>.Shared.Rent(quotientLength)).Slice(0, quotientLength);
+                Span<nuint> quotient = (quotientLength <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : quotientFromPool = ArrayPool<nuint>.Shared.Rent(quotientLength)).Slice(0, quotientLength);
 
                 DivideBurnikelZiegler(left, right, quotient, remainder);
 
                 if (quotientFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(quotientFromPool);
+                }
             }
         }
 
@@ -172,9 +176,9 @@ namespace System.Numerics
 
                 // NOTE: left will get overwritten, we need a local copy
                 // However, mutated left is not used afterwards, so use array pooling or stack alloc
-                Span<nuint> leftCopy = (left.Length <= StackAllocThreshold ?
-                                      stackalloc nuint[StackAllocThreshold]
-                                      : leftCopyFromPool = ArrayPool<nuint>.Shared.Rent(left.Length)).Slice(0, left.Length);
+                Span<nuint> leftCopy = (left.Length <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : leftCopyFromPool = ArrayPool<nuint>.Shared.Rent(left.Length)).Slice(0, left.Length);
                 left.CopyTo(leftCopy);
 
                 nuint[]? quotientActualFromPool = null;
@@ -184,9 +188,9 @@ namespace System.Numerics
                 {
                     int quotientLength = left.Length - right.Length + 1;
 
-                    quotientActual = (quotientLength <= StackAllocThreshold ?
-                                stackalloc nuint[StackAllocThreshold]
-                                : quotientActualFromPool = ArrayPool<nuint>.Shared.Rent(quotientLength)).Slice(0, quotientLength);
+                    quotientActual = (quotientLength <= StackAllocThreshold
+                        ? stackalloc nuint[StackAllocThreshold]
+                        : quotientActualFromPool = ArrayPool<nuint>.Shared.Rent(quotientLength)).Slice(0, quotientLength);
                 }
                 else
                 {
@@ -196,9 +200,14 @@ namespace System.Numerics
                 DivideBurnikelZiegler(leftCopy, right, quotientActual, left);
 
                 if (quotientActualFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(quotientActualFromPool);
+                }
+
                 if (leftCopyFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(leftCopyFromPool);
+                }
             }
         }
 
@@ -218,18 +227,18 @@ namespace System.Numerics
             // will be more precise. Additionally we'll get r = a % b.
 
             nuint divHi = right[right.Length - 1];
-            nuint divLo = right.Length > 1 ? right[right.Length - 2] : (nuint)0;
+            nuint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
 
             // We measure the leading zeros of the divisor
             int shift = nint.Size == 8
                 ? BitOperations.LeadingZeroCount((ulong)divHi)
                 : BitOperations.LeadingZeroCount((uint)divHi);
-            int backShift = kcbitNuint - shift;
+            int backShift = BitsPerLimb - shift;
 
             // And, we make sure the most significant bit is set
             if (shift > 0)
             {
-                nuint divNx = right.Length > 2 ? right[right.Length - 3] : (nuint)0;
+                nuint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
 
                 divHi = (divHi << shift) | (divLo >> backShift);
                 divLo = (divLo << shift) | (divNx >> backShift);
@@ -240,16 +249,16 @@ namespace System.Numerics
             for (int i = left.Length; i >= right.Length; i--)
             {
                 int n = i - right.Length;
-                nuint t = (uint)i < (uint)left.Length ? left[i] : (nuint)0;
+                nuint t = (uint)i < (uint)left.Length ? left[i] : 0;
 
                 nuint valHi1 = t;
                 nuint valHi0 = left[i - 1];
-                nuint valLo = i > 1 ? left[i - 2] : (nuint)0;
+                nuint valLo = i > 1 ? left[i - 2] : 0;
 
                 // We shifted the divisor, we shift the dividend too
                 if (shift > 0)
                 {
-                    nuint valNx = i > 2 ? left[i - 3] : (nuint)0;
+                    nuint valNx = i > 2 ? left[i - 3] : 0;
 
                     valHi1 = (valHi1 << shift) | (valHi0 >> backShift);
                     valHi0 = (valHi0 << shift) | (valLo >> backShift);
@@ -262,7 +271,9 @@ namespace System.Numerics
 
                 // Our first guess may be a little bit to big
                 while (DivideGuessTooBig(digit, valHi1, valHi0, valLo, divHi, divLo))
+                {
                     --digit;
+                }
 
                 if (digit > 0)
                 {
@@ -282,10 +293,14 @@ namespace System.Numerics
 
                 // We have the digit!
                 if ((uint)n < (uint)quotient.Length)
+                {
                     quotient[n] = digit;
+                }
 
                 if ((uint)i < (uint)left.Length)
+                {
                     left[i] = 0;
+                }
             }
         }
 
@@ -295,7 +310,7 @@ namespace System.Numerics
 
             // Repairs the dividend, if the last subtract was too much
 
-            nuint carry = (nuint)0;
+            nuint carry = 0;
 
             for (int i = 0; i < right.Length; i++)
             {
@@ -326,7 +341,9 @@ namespace System.Numerics
 
             chkHiLo += chkLoHi;
             if (chkHiLo < chkLoHi)
+            {
                 chkHiHi++;
+            }
 
             return (chkHiHi > valHi1)
                 || ((chkHiHi == valHi1) && ((chkHiLo > valHi0) || ((chkHiLo == valHi0) && (chkLoLo > valLo))));
@@ -338,18 +355,14 @@ namespace System.Numerics
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(quotient.Length == left.Length - right.Length + 1);
-            Debug.Assert(remainder.Length == left.Length
-                        || remainder.Length == 0);
+            Debug.Assert(remainder.Length == left.Length || remainder.Length == 0);
 
             // Executes the Burnikel-Ziegler algorithm for computing q = a / b.
-            //
             // Burnikel, C., Ziegler, J.: Fast recursive division. Research Report MPI-I-98-1-022, MPI Saarbrücken, 1998
-
 
             // Fast recursive division: Algorithm 3
             int n;
             {
-                // m = min{1<<k|(1<<k) * DivideBurnikelZieglerThreshold > right.Length}
                 int m = (int)BitOperations.RoundUpToPowerOf2((uint)right.Length / (uint)DivideBurnikelZieglerThreshold + 1);
 
                 int j = (right.Length + m - 1) / m; // Ceil(right.Length/m)
@@ -363,9 +376,9 @@ namespace System.Numerics
 
             nuint[]? bFromPool = null;
 
-            Span<nuint> b = (n <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : bFromPool = ArrayPool<nuint>.Shared.Rent(n)).Slice(0, n);
+            Span<nuint> b = (n <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : bFromPool = ArrayPool<nuint>.Shared.Rent(n)).Slice(0, n);
 
             int aLength = left.Length + sigmaDigit;
 
@@ -376,18 +389,19 @@ namespace System.Numerics
                 ? BitOperations.LeadingZeroCount((ulong)left[^1])
                 : BitOperations.LeadingZeroCount((uint)left[^1]);
             if (leftLzc <= sigmaSmall)
+            {
                 ++aLength;
+            }
 
             nuint[]? aFromPool = null;
 
-            Span<nuint> a = (aLength <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : aFromPool = ArrayPool<nuint>.Shared.Rent(aLength)).Slice(0, aLength);
+            Span<nuint> a = (aLength <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : aFromPool = ArrayPool<nuint>.Shared.Rent(aLength)).Slice(0, aLength);
 
-            // 4. normalize
             static void Normalize(ReadOnlySpan<nuint> src, int sigmaDigit, int sigmaSmall, Span<nuint> bits)
             {
-                Debug.Assert((uint)sigmaSmall <= kcbitNuint);
+                Debug.Assert((uint)sigmaSmall <= BitsPerLimb);
                 Debug.Assert(src.Length + sigmaDigit <= bits.Length);
 
                 bits.Slice(0, sigmaDigit).Clear();
@@ -398,8 +412,8 @@ namespace System.Numerics
                 if (sigmaSmall != 0)
                 {
                     // Left shift
-                    int carryShift = kcbitNuint - sigmaSmall;
-                    nuint carry = (nuint)0;
+                    int carryShift = BitsPerLimb - sigmaSmall;
+                    nuint carry = 0;
 
                     for (int i = 0; i < bits.Length; i++)
                     {
@@ -420,14 +434,14 @@ namespace System.Numerics
             Debug.Assert(t < a.Length || (t == a.Length && (nint)a[^1] >= 0));
 
             nuint[]? rFromPool = null;
-            Span<nuint> r = ((n + 1) <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : rFromPool = ArrayPool<nuint>.Shared.Rent(n + 1)).Slice(0, n + 1);
+            Span<nuint> r = ((n + 1) <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : rFromPool = ArrayPool<nuint>.Shared.Rent(n + 1)).Slice(0, n + 1);
 
             nuint[]? zFromPool = null;
-            Span<nuint> z = (2 * n <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : zFromPool = ArrayPool<nuint>.Shared.Rent(2 * n)).Slice(0, 2 * n);
+            Span<nuint> z = (2 * n <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : zFromPool = ArrayPool<nuint>.Shared.Rent(2 * n)).Slice(0, 2 * n);
             a.Slice((t - 2) * n).CopyTo(z);
             z.Slice(a.Length - (t - 2) * n).Clear();
 
@@ -435,9 +449,9 @@ namespace System.Numerics
             if (quotientUpper.Length < n)
             {
                 nuint[]? qFromPool = null;
-                Span<nuint> q = (n <= StackAllocThreshold ?
-                                stackalloc nuint[StackAllocThreshold]
-                                : qFromPool = ArrayPool<nuint>.Shared.Rent(n)).Slice(0, n);
+                Span<nuint> q = (n <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : qFromPool = ArrayPool<nuint>.Shared.Rent(n)).Slice(0, n);
 
                 BurnikelZieglerD2n1n(z, b, q, r);
 
@@ -445,7 +459,9 @@ namespace System.Numerics
                 q.Slice(0, quotientUpper.Length).CopyTo(quotientUpper);
 
                 if (qFromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(qFromPool);
+                }
             }
             else
             {
@@ -461,11 +477,19 @@ namespace System.Numerics
             }
 
             if (zFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(zFromPool);
+            }
+
             if (bFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(bFromPool);
+            }
+
             if (aFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(aFromPool);
+            }
 
             Debug.Assert(r[^1] == 0);
             Debug.Assert(!r.Slice(0, sigmaDigit).ContainsAnyExcept((nuint)0));
@@ -477,10 +501,10 @@ namespace System.Numerics
                 if (sigmaSmall != 0)
                 {
                     // Right shift
-                    Debug.Assert((uint)sigmaSmall <= kcbitNuint);
+                    Debug.Assert((uint)sigmaSmall <= BitsPerLimb);
 
-                    int carryShift = kcbitNuint - sigmaSmall;
-                    nuint carry = (nuint)0;
+                    int carryShift = BitsPerLimb - sigmaSmall;
+                    nuint carry = 0;
 
                     for (int i = rt.Length - 1; i >= 0; i--)
                     {
@@ -497,7 +521,9 @@ namespace System.Numerics
             }
 
             if (rFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(rFromPool);
+            }
         }
 
         private static void BurnikelZieglerFallback(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> quotient, Span<nuint> remainder)
@@ -534,7 +560,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    carry = (nuint)0;
+                    carry = 0;
                     quotient.Slice(left.Length).Clear();
                     DivideCore(left, right[0], quotient, ref carry);
                 }
@@ -548,9 +574,9 @@ namespace System.Numerics
             else
             {
                 nuint[]? r1FromPool = null;
-                Span<nuint> r1 = (left.Length <= StackAllocThreshold ?
-                                stackalloc nuint[StackAllocThreshold]
-                                : r1FromPool = ArrayPool<nuint>.Shared.Rent(left.Length)).Slice(0, left.Length);
+                Span<nuint> r1 = (left.Length <= StackAllocThreshold
+                    ? stackalloc nuint[StackAllocThreshold]
+                    : r1FromPool = ArrayPool<nuint>.Shared.Rent(left.Length)).Slice(0, left.Length);
 
                 left.CopyTo(r1);
                 int quotientLength = Math.Min(left.Length - right.Length + 1, quotient.Length);
@@ -570,7 +596,9 @@ namespace System.Numerics
                 }
 
                 if (r1FromPool != null)
+                {
                     ArrayPool<nuint>.Shared.Return(r1FromPool);
+                }
             }
         }
 
@@ -592,15 +620,17 @@ namespace System.Numerics
             int halfN = right.Length >> 1;
 
             nuint[]? r1FromPool = null;
-            Span<nuint> r1 = ((right.Length + 1) <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : r1FromPool = ArrayPool<nuint>.Shared.Rent(right.Length + 1)).Slice(0, right.Length + 1);
+            Span<nuint> r1 = ((right.Length + 1) <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : r1FromPool = ArrayPool<nuint>.Shared.Rent(right.Length + 1)).Slice(0, right.Length + 1);
 
             BurnikelZieglerD3n2n(left.Slice(right.Length), left.Slice(halfN, halfN), right, quotient.Slice(halfN), r1);
             BurnikelZieglerD3n2n(r1.Slice(0, right.Length), left.Slice(0, halfN), right, quotient.Slice(0, halfN), remainder);
 
             if (r1FromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(r1FromPool);
+            }
         }
 
         private static void BurnikelZieglerD3n2n(ReadOnlySpan<nuint> left12, ReadOnlySpan<nuint> left3, ReadOnlySpan<nuint> right, Span<nuint> quotient, Span<nuint> remainder)
@@ -621,9 +651,9 @@ namespace System.Numerics
             ReadOnlySpan<nuint> b2 = right.Slice(0, n);
             Span<nuint> r1 = remainder.Slice(n);
             nuint[]? dFromPool = null;
-            Span<nuint> d = (right.Length <= StackAllocThreshold ?
-                            stackalloc nuint[StackAllocThreshold]
-                            : dFromPool = ArrayPool<nuint>.Shared.Rent(right.Length)).Slice(0, right.Length);
+            Span<nuint> d = (right.Length <= StackAllocThreshold
+                ? stackalloc nuint[StackAllocThreshold]
+                : dFromPool = ArrayPool<nuint>.Shared.Rent(right.Length)).Slice(0, right.Length);
 
             if (CompareActual(a1, b1) < 0)
             {
@@ -663,7 +693,9 @@ namespace System.Numerics
             SubtractSelf(rr, d);
 
             if (dFromPool != null)
+            {
                 ArrayPool<nuint>.Shared.Return(dFromPool);
+            }
 
             static void MultiplyActual(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
             {
