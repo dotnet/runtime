@@ -1968,7 +1968,7 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     static ConfigMethodRange JitR2RUnsupportedRange;
     JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
-    const unsigned hash = m_compiler->impInlineRoot()->info.compMethodHash();
+    const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
     const bool     inRange = JitR2RUnsupportedRange.Contains(hash);
 
     if (inRange)
@@ -1978,8 +1978,6 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     }
 #endif // defined(TARGET_WASM)
 #endif // DEBUG
-
-
 }
 
 //----------------------------------------------------------------------

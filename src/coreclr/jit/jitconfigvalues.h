@@ -872,7 +872,7 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
-CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange") 
+CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
