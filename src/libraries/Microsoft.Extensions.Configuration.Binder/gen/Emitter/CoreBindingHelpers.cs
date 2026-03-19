@@ -1044,12 +1044,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             return;
                         }
 
-                        // Truly set-only property (no getter at all): initialize to an appropriate default value
-                        // since we can't read the current value. For value types, use a constructor call to match
-                        // Activator.CreateInstance behavior (which honors user-defined parameterless ctors).
-                        string initializer = $"new {effectiveMemberTypeFQN}();";
+                        // Truly set-only property (no getter at all): declare a temp for the value so that
+                        // the binding logic can initialize it appropriately (for value types, using a
+                        // constructor call to match Activator.CreateInstance behavior, which honors
+                        // user-defined parameterless constructors).
+                        initKind = InitializationKind.Declaration;
 
-                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = {initializer};");
+                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier};");
                     }
                     else if (memberType is NullableSpec)
                     {
