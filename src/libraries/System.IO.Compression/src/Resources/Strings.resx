@@ -308,4 +308,7 @@
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
+  <data name="ZipStreamStoredDataDescriptorNotSupported" xml:space="preserve">
+    <value>Stored compression entries with data descriptors cannot be read in forward-only mode because the compressed size is unknown.</value>
+  </data>
 </root>
