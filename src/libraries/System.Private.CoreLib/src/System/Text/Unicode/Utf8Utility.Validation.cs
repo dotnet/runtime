@@ -879,7 +879,7 @@ namespace System.Text.Unicode
                     // we need to check if the previous block was incomplete.
                     if (prevIncomplete != Vector128<byte>.Zero)
                     {
-                        numIncomplete = Vector128<byte>.Count - 3;
+                        numIncomplete = 3;
                         foundError = true;
                         break;
                     }
@@ -1029,155 +1029,154 @@ namespace System.Text.Unicode
             // Then, adjust the counters 'numFourByteSequences' and 'numContinuationBytes', since we might be
             // overcounting or undercounting them during processing.
 
-            byte* invalidBytePointer = SimpleRewindAndValidateWithErrors(numIncomplete, pInputBuffer + processedLength - numIncomplete, inputLength - processedLength + numIncomplete);
+            ReadOnlySpan<byte> inputSpan = new ReadOnlySpan<byte>(pInputBuffer, inputLength);
 
-            AdjustCounters(pInputBuffer + processedLength, invalidBytePointer, ref numFourByteSequences, ref numContinuationBytes);
+            int invalidIndex = SimpleRewindAndValidateWithErrors(numIncomplete, inputSpan, processedLength - numIncomplete);
+            byte* invalidBytePointer = pInputBuffer + invalidIndex;
+
+            AdjustCounters(inputSpan, processedLength, invalidIndex, ref numFourByteSequences, ref numContinuationBytes);
 
             (utf16CodeUnitCountAdjustment, scalarCountAdjustment) = CalculateN2N3FinalSIMDAdjustments(numFourByteSequences, numContinuationBytes);
             return invalidBytePointer;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte* SimpleRewindAndValidateWithErrors(int howFarBack, byte* buf, int len)
+        private static int SimpleRewindAndValidateWithErrors(int howFarBack, ReadOnlySpan<byte> buffer, int startIndex)
         {
-            // We scan the input from buf to len, possibly going back howFarBack bytes, to find the end of
-            // a valid UTF-8 sequence. We return buf + len if the buffer is valid, otherwise we return the
-            // pointer to the first invalid byte.
+            // We scan from startIndex forward, possibly going back howFarBack bytes, to find the end of
+            // a valid UTF-8 sequence. We return buffer.Length if the buffer is valid, otherwise we return
+            // the index of the first invalid byte
 
-            int extraLen = 0;
             bool foundLeadingBytes = false;
 
             for (int i = 0; i <= howFarBack; i++)
             {
-                byte candidateByte = buf[0 - i];
+                byte candidateByte = buffer[startIndex - i];
                 foundLeadingBytes = (candidateByte & 0b11000000) != 0b10000000;
 
                 if (foundLeadingBytes)
                 {
-                    buf -= i;
-                    extraLen = i;
+                    startIndex -= i;
                     break;
                 }
             }
 
             if (!foundLeadingBytes)
             {
-                return buf - howFarBack;
+                return startIndex - howFarBack;
             }
-            int pos = 0;
-            int nextPos;
-            uint codePoint = 0;
 
-            len += extraLen;
-
-            while (pos < len)
+            int idx = startIndex;
+            while (idx < buffer.Length)
             {
-                byte firstByte = buf[pos];
+                byte firstByte = buffer[idx];
 
                 while (firstByte < 0b10000000)
                 {
-                    if (++pos == len)
+                    if (++idx == buffer.Length)
                     {
-                        return buf + len;
+                        return buffer.Length;
                     }
-                    firstByte = buf[pos];
+                    firstByte = buffer[idx];
                 }
 
                 if ((firstByte & 0b11100000) == 0b11000000)
                 {
-                    nextPos = pos + 2;
-                    if (nextPos > len)
+                    int nextIdx = idx + 2;
+                    if (nextIdx > buffer.Length)
                     {
-                        return buf + pos;
+                        return idx;
                     } // Too short
-                    if ((buf[pos + 1] & 0b11000000) != 0b10000000)
+                    if ((buffer[idx + 1] & 0b11000000) != 0b10000000)
                     {
-                        return buf + pos;
+                        return idx;
                     } // Too short
                     // range check
-                    codePoint = (uint)(firstByte & 0b00011111) << 6 | (uint)(buf[pos + 1] & 0b00111111);
+                    uint codePoint = (uint)(firstByte & 0b00011111) << 6 | (uint)(buffer[idx + 1] & 0b00111111);
                     if ((codePoint < 0x80) || (0x7ff < codePoint))
                     {
-                        return buf + pos;
+                        return idx;
                     } // Overlong
+                    idx = nextIdx;
                 }
                 else if ((firstByte & 0b11110000) == 0b11100000)
                 {
-                    nextPos = pos + 3;
-                    if (nextPos > len)
+                    int nextIdx = idx + 3;
+                    if (nextIdx > buffer.Length)
                     {
-                        return buf + pos;
+                        return idx;
                     } // Too short
                     // range check
-                    codePoint = (uint)(firstByte & 0b00001111) << 12 |
-                                 (uint)(buf[pos + 1] & 0b00111111) << 6 |
-                                 (uint)(buf[pos + 2] & 0b00111111);
+                    uint codePoint = (uint)(firstByte & 0b00001111) << 12 |
+                                     (uint)(buffer[idx + 1] & 0b00111111) << 6 |
+                                     (uint)(buffer[idx + 2] & 0b00111111);
                     // Either overlong or too large:
                     if ((codePoint < 0x800) || (0xffff < codePoint) ||
                         (0xd7ff < codePoint && codePoint < 0xe000))
                     {
-                        return buf + pos;
+                        return idx;
                     }
-                    if ((buf[pos + 1] & 0b11000000) != 0b10000000)
+                    if ((buffer[idx + 1] & 0b11000000) != 0b10000000)
                     {
-                        return buf + pos;
+                        return idx;
                     } // Too short
-                    if ((buf[pos + 2] & 0b11000000) != 0b10000000)
+                    if ((buffer[idx + 2] & 0b11000000) != 0b10000000)
                     {
-                        return buf + pos;
+                        return idx;
                     } // Too short
+                    idx = nextIdx;
                 }
                 else if ((firstByte & 0b11111000) == 0b11110000)
                 {
-                    nextPos = pos + 4;
-                    if (nextPos > len)
+                    int nextIdx = idx + 4;
+                    if (nextIdx > buffer.Length)
                     {
-                        return buf + pos;
+                        return idx;
                     }
-                    if ((buf[pos + 1] & 0b11000000) != 0b10000000)
+                    if ((buffer[idx + 1] & 0b11000000) != 0b10000000)
                     {
-                        return buf + pos;
+                        return idx;
                     }
-                    if ((buf[pos + 2] & 0b11000000) != 0b10000000)
+                    if ((buffer[idx + 2] & 0b11000000) != 0b10000000)
                     {
-                        return buf + pos;
+                        return idx;
                     }
-                    if ((buf[pos + 3] & 0b11000000) != 0b10000000)
+                    if ((buffer[idx + 3] & 0b11000000) != 0b10000000)
                     {
-                        return buf + pos;
+                        return idx;
                     }
                     // range check
-                    codePoint =
-                        (uint)(firstByte & 0b00000111) << 18 | (uint)(buf[pos + 1] & 0b00111111) << 12 |
-                        (uint)(buf[pos + 2] & 0b00111111) << 6 | (uint)(buf[pos + 3] & 0b00111111);
+                    uint codePoint =
+                        (uint)(firstByte & 0b00000111) << 18 | (uint)(buffer[idx + 1] & 0b00111111) << 12 |
+                        (uint)(buffer[idx + 2] & 0b00111111) << 6 | (uint)(buffer[idx + 3] & 0b00111111);
                     if (codePoint <= 0xffff || 0x10ffff < codePoint)
                     {
-                        return buf + pos;
+                        return idx;
                     }
+                    idx = nextIdx;
                 }
                 else
                 {
                     // we may have a continuation/too long error
-                    return buf + pos;
+                    return idx;
                 }
-                pos = nextPos;
             }
 
-            return buf + len; // no error
+            return buffer.Length; // no error
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AdjustCounters(byte* pProcessed, byte* pInvalid, ref int numFourByteSequences, ref int numContinuationBytes)
+        private static void AdjustCounters(ReadOnlySpan<byte> buffer, int processedIndex, int invalidIndex, ref int numFourByteSequences, ref int numContinuationBytes)
         {
-            if (pInvalid < pProcessed)
+            if (invalidIndex < processedIndex)
             {
-                for (byte* p = pInvalid; p < pProcessed; p++)
+                for (int i = invalidIndex; i < processedIndex; i++)
                 {
-                    if ((*p & 0b11000000) == 0b10000000)
+                    if ((buffer[i] & 0b11000000) == 0b10000000)
                     {
                         numContinuationBytes -= 1;
                     }
-                    if ((*p & 0b11110000) == 0b11110000)
+                    if ((buffer[i] & 0b11110000) == 0b11110000)
                     {
                         numFourByteSequences -= 1;
                     }
@@ -1185,13 +1184,13 @@ namespace System.Text.Unicode
             }
             else
             {
-                for (byte* p = pProcessed; p < pInvalid; p++)
+                for (int i = processedIndex; i < invalidIndex; i++)
                 {
-                    if ((*p & 0b11000000) == 0b10000000)
+                    if ((buffer[i] & 0b11000000) == 0b10000000)
                     {
                         numContinuationBytes += 1;
                     }
-                    if ((*p & 0b11110000) == 0b11110000)
+                    if ((buffer[i] & 0b11110000) == 0b11110000)
                     {
                         numFourByteSequences += 1;
                     }
