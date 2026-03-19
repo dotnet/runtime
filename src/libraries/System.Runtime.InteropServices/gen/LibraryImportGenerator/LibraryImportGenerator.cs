@@ -339,7 +339,17 @@ namespace Microsoft.Interop
             dllImport = dllImport.WithLeadingTrivia(Comment("// Local P/Invoke"));
             code = code.AddStatements(dllImport);
 
-            return pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code));
+            var signatureContext = pinvokeStub.SignatureContext;
+            if (pinvokeStub.EnvironmentFlags.HasFlag(EnvironmentFlags.RequiresUnsafeAvailable))
+            {
+                signatureContext = signatureContext with
+                {
+                    AdditionalAttributes = signatureContext.AdditionalAttributes.Add(
+                        AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute))))
+                };
+            }
+
+            return pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, signatureContext, code));
         }
 
         private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
