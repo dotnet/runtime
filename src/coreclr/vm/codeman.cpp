@@ -134,11 +134,19 @@ bool InitUnwindFtns()
 }
 
 /****************************************************************************/
-UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size)
+UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
     _ASSERTE((rangeEnd - rangeStart) <= 0x7FFFFFFF);
+
+    // We can choose the average method size estimate dynamically based on past experience
+    // 128 is the estimated size of an average method, so we can accurately predict
+    // how many RUNTIME_FUNCTION entries are in each chunk we allocate.
+    ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
+
+    // To ensure we test the growing logic in debug builds, make the size much smaller.
+    INDEBUG(size = size / 4 + 1);
 
     cTableCurCount = 0;
     cTableMaxCount = size;
@@ -210,9 +218,7 @@ void UnwindInfoTable::UnRegister()
 // Add 'data' to the pending buffer for later publication to the OS.
 // When the buffer is full, entries are flushed under s_pUnwindInfoTablePublishLock.
 //
-/* static */
-void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_RUNTIME_FUNCTION data,
-                                          TADDR rangeStart, TADDR rangeEnd)
+void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data)
 {
     CONTRACTL
     {
@@ -220,55 +226,29 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-    _ASSERTE(data->BeginAddress <= RUNTIME_FUNCTION__EndAddress(data, rangeStart));
-    _ASSERTE(RUNTIME_FUNCTION__EndAddress(data, rangeStart) <=  (rangeEnd-rangeStart));
-    _ASSERTE(unwindInfoPtr != NULL);
+    _ASSERTE(data->BeginAddress <= RUNTIME_FUNCTION__EndAddress(data, iRangeStart));
+    _ASSERTE(RUNTIME_FUNCTION__EndAddress(data, iRangeStart) <= (iRangeEnd - iRangeStart));
 
     if (!s_publishingActive)
         return;
-
-    UnwindInfoTable* unwindInfo = VolatileLoad(unwindInfoPtr);
-    // was the original list null, If so lazy initialize.
-    if (unwindInfo == NULL)
-    {
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        unwindInfo = *unwindInfoPtr;
-        if (unwindInfo == NULL)
-        {
-            // We can choose the average method size estimate dynamically based on past experience
-            // 128 is the estimated size of an average method, so we can accurately predict
-            // how many RUNTIME_FUNCTION entries are in each chunk we allocate.
-
-            ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
-
-            // To ensure we test the growing logic in debug builds, make the size much smaller.
-            INDEBUG(size = size / 4 + 1);
-            unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
-            unwindInfo->Register();
-            VolatileStore(unwindInfoPtr, unwindInfo);
-        }
-    }
-    _ASSERTE(unwindInfo != NULL);        // If new had failed, we would have thrown OOM
-    _ASSERTE(unwindInfo->iRangeStart == rangeStart);
-    _ASSERTE(unwindInfo->iRangeEnd == rangeEnd);
 
     // Add to the pending buffer. If the buffer is full, flush it first and retry.
     while (true)
     {
         {
             CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
-            if (unwindInfo->cPendingCount < UnwindInfoTable::cPendingMaxCount)
+            if (cPendingCount < cPendingMaxCount)
             {
-                unwindInfo->pPendingTable[unwindInfo->cPendingCount++] = *data;
+                pPendingTable[cPendingCount++] = *data;
 
                 STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%x, pending 0x%x\n",
-                    unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
-                    data->BeginAddress, unwindInfo->cPendingCount);
+                    hHandle, iRangeStart, iRangeEnd,
+                    data->BeginAddress, cPendingCount);
                 return;
             }
         }
         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        unwindInfo->FlushPendingEntries();
+        FlushPendingEntries();
     }
 }
 
@@ -464,29 +444,41 @@ void UnwindInfoTable::FlushPendingEntries()
 // Publish the stack unwind data 'data' which is relative 'baseAddress'
 // to the operating system in a way ETW stack tracing can use.
 
-/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, PT_RUNTIME_FUNCTION unwindInfo, int unwindInfoCount)
+/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, PT_RUNTIME_FUNCTION methodUnwindData, int methodUnwindDataCount)
 {
     STANDARD_VM_CONTRACT;
     if (!s_publishingActive)
         return;
 
-    TADDR entry = baseAddress + unwindInfo->BeginAddress;
+    TADDR entry = baseAddress + methodUnwindData->BeginAddress;
     RangeSection * pRS = ExecutionManager::FindCodeRange(entry, ExecutionManager::GetScanFlags());
     _ASSERTE(pRS != NULL);
     if (pRS != NULL)
     {
-        for(int i = 0; i < unwindInfoCount; i++)
-            AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, &unwindInfo[i], pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+        UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
+        if (unwindInfo == NULL)
+        {
+            CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+            if (pRS->_pUnwindInfoTable == NULL)
+            {
+                unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+                unwindInfo->Register();
+                VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
+            }
+            else
+            {
+                unwindInfo = pRS->_pUnwindInfoTable;
+            }
+        }
+
+        for (int i = 0; i < methodUnwindDataCount; i++)
+            unwindInfo->AddToUnwindInfoTable(&methodUnwindData[i]);
 
         // Flush any entries that were buffered above so the OS can unwind this
         // method immediately. Otherwise, we may end up with broken stack traces
         // for recently JITed methods.
         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        UnwindInfoTable* unwindInfoTable = pRS->_pUnwindInfoTable;
-        if (unwindInfoTable != NULL)
-        {
-            unwindInfoTable->FlushPendingEntries();
-        }
+        unwindInfo->FlushPendingEntries();
     }
 }
 
@@ -545,7 +537,7 @@ void UnwindInfoTable::FlushPendingEntries()
 }
 
 #else
-/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount)
+/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount)
 {
     LIMITED_METHOD_CONTRACT;
 }

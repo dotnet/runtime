@@ -597,7 +597,7 @@ public:
     // All public functions are thread-safe.
 
     // These are wrapper functions over the UnwindInfoTable functions that are specific to JIT compile code
-    static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount);
+    static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
 
     static void Initialize();
@@ -606,7 +606,7 @@ public:
 private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
     // These are used by the high-level method functions above
-    static void AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, T_RUNTIME_FUNCTION* data, TADDR rangeStart, TADDR rangeEnd);
+    void AddToUnwindInfoTable(T_RUNTIME_FUNCTION* data);
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
 public:
@@ -615,7 +615,7 @@ public:
 private:
     void UnRegister();
     void Register();
-    UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size);
+    UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
 
 private:
     void FlushPendingEntries();
