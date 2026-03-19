@@ -230,6 +230,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeOpenGenericNotCompatible(Type classType, MemberInfo? memberInfo, Type converterType)
+        {
+            string location = classType.ToString();
+            if (memberInfo != null)
+            {
+                location += $".{memberInfo.Name}";
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeOpenGenericNotCompatible, location, converterType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerOptionsReadOnly(JsonSerializerContext? context)
         {
             string message = context == null
