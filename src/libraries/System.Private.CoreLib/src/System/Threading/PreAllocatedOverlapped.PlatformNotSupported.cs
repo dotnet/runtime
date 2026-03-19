@@ -6,12 +6,18 @@ namespace System.Threading
     public sealed class PreAllocatedOverlapped : IDisposable
     {
         [CLSCompliant(false)]
-        public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
+        public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
+        }
 
         [CLSCompliant(false)]
-        public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
+        public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
+        }
 
         public void Dispose() { }
     }

@@ -9,7 +9,6 @@ using Xunit;
 public partial class ThreadPoolBoundHandleTests
 {
     [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)] // PreAllocatedOverlapped is not supported on non-Windows
     public unsafe void PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException()
     {
         AssertExtensions.Throws<ArgumentNullException>("callback", () => new PreAllocatedOverlapped(null, new object(), new byte[256]));
