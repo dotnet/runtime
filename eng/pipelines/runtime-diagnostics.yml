@@ -223,6 +223,13 @@ extends:
                     _Creator: dotnet-bot
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+              - task: PublishPipelineArtifact@1
+                inputs:
+                  targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+                  artifactName: CdacDumps_$(osGroup)_$(archType)
+                displayName: 'Publish Dump Artifacts'
+                condition: failed()
+                continueOnError: true
               - pwsh: |
                   if ("$(Agent.JobStatus)" -ne "Succeeded") {
                     Write-Error "One or more cDAC dump test failures were detected. Failing the job."

@@ -83,7 +83,8 @@
   <!-- Windows: test mode tail command -->
   <PropertyGroup Condition="'$(TargetOS)' == 'windows' AND '$(DumpOnly)' != 'true'">
     <_TestCommand>%HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec --runtimeconfig %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %HELIX_WORKITEM_PAYLOAD%\tests\xunit.console.dll %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo</_TestCommand>
-    <_FullCommand>$(_DumpGenCommands) &amp; $(_DumpInfoCommand) &amp; $(_TestCommand)</_FullCommand>
+    <_TarCommand>tar -czf %HELIX_WORKITEM_UPLOAD_ROOT%\dumps.tar.gz -C %HELIX_WORKITEM_PAYLOAD%\dumps .</_TarCommand>
+    <_FullCommand>$(_DumpGenCommands) &amp; $(_DumpInfoCommand) &amp; $(_TestCommand) &amp; $(_TarCommand)</_FullCommand>
   </PropertyGroup>
 
   <!-- Windows: DumpOnly mode tail command -->
@@ -101,7 +102,8 @@
   <!-- Unix: test mode tail command -->
   <PropertyGroup Condition="'$(TargetOS)' != 'windows' AND '$(DumpOnly)' != 'true'">
     <_TestCommand>$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo</_TestCommand>
-    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_DumpInfoCommand) &amp;&amp; $(_TestCommand)</_FullCommand>
+    <_TarCommand>tar -czf $HELIX_WORKITEM_UPLOAD_ROOT/dumps.tar.gz -C $HELIX_WORKITEM_PAYLOAD/dumps .</_TarCommand>
+    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_DumpInfoCommand) &amp;&amp; $(_TestCommand) ; $(_TarCommand)</_FullCommand>
   </PropertyGroup>
 
   <!-- Unix: DumpOnly mode tail command -->
@@ -133,12 +135,13 @@
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
 
-  <!-- Test mode: generate dumps then run tests -->
+  <!-- Test mode: generate dumps, run tests, then tar dumps for download on failure -->
   <ItemGroup Condition="'$(DumpOnly)' != 'true'">
     <HelixWorkItem Include="CdacDumpTests">
       <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
       <Command>$(_FullCommand)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>dumps.tar.gz</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 
