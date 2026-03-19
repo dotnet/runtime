@@ -47,7 +47,8 @@ namespace System.Text.Json.SourceGeneration
 
         /// <summary>
         /// The ref kind of the parameter: None (0), Ref (1), Out (2), In (3), RefReadOnlyParameter (4).
-        /// Using int instead of Microsoft.CodeAnalysis.RefKind to avoid dependency issues.
+        /// Using int instead of Microsoft.CodeAnalysis.RefKind since this is a model type that
+        /// should not depend on Roslyn-specific types.
         /// </summary>
         public required int RefKind { get; init; }
     }
