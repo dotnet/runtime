@@ -459,11 +459,18 @@ void ContinuationLayoutBuilder::AddReturn(const ReturnTypeInfo& info)
 {
     for (const ReturnTypeInfo& ret : m_returns)
     {
-        if ((ret.ReturnType == info.ReturnType) && (ret.ReturnLayout == info.ReturnLayout))
+        if (ret.ReturnType != info.ReturnType)
         {
-            // This return type is already in the layout, no need to add another slot for it.
-            return;
+            continue;
         }
+
+        if ((ret.ReturnType == TYP_STRUCT) && !ClassLayout::AreCompatible(ret.ReturnLayout, info.ReturnLayout))
+        {
+            continue;
+        }
+
+        // This return type is already in the layout, no need to add another slot for it.
+        return;
     }
 
     m_returns.push_back(info);
@@ -1237,6 +1244,23 @@ PhaseStatus AsyncTransformation::Run()
         } while (any);
     }
 
+    if (ReuseContinuations())
+    {
+        // Set up the local containing the continuation we can reuse. For OSR
+        // things are special: we can transition to the OSR method after having
+        // resumed in the tier0 method. In that case we end up with the tier0
+        // continuation in the OSR method, but we cannot reuse it.
+        if (m_compiler->opts.IsOSR())
+        {
+            m_reuseContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("OSR reusable continuation"));
+            m_compiler->lvaGetDesc(m_reuseContinuationVar)->lvType = TYP_REF;
+        }
+        else
+        {
+            m_reuseContinuationVar = m_compiler->lvaAsyncContinuationArg;
+        }
+    }
+
     CreateResumptionsAndSuspensions();
 
     // After transforming all async calls we have created resumption blocks;
@@ -1745,17 +1769,19 @@ void ContinuationLayout::Dump(int indent)
 //   Find the return info entry matching the specified call's return type.
 //
 // Parameters:
+//   comp - Compiler instance to use for looking up struct return layouts.
 //   call - The async call whose return type to look up.
 //
 // Returns:
 //   Pointer to the matching ReturnInfo entry.
 //
-const ReturnInfo* ContinuationLayout::FindReturn(GenTreeCall* call) const
+const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* call) const
 {
+    ClassLayout* layout = call->gtReturnType == TYP_STRUCT ? comp->typGetObjLayout(call->gtRetClsHnd) : nullptr;
     for (const ReturnInfo& ret : Returns)
     {
         if ((ret.Type.ReturnType == call->gtReturnType) &&
-            ((call->gtReturnType != TYP_STRUCT) || (ret.Type.ReturnLayout->GetClassHandle() == call->gtRetClsHnd)))
+            ((call->gtReturnType != TYP_STRUCT) || ClassLayout::AreCompatible(ret.Type.ReturnLayout, layout)))
         {
             return &ret;
         }
@@ -1881,7 +1907,9 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
     // Now allocate all  returns
     for (ReturnInfo& ret : layout->Returns)
     {
-        ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
+        // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
+        layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
+        ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
     }
 
     if (m_needsKeepAlive)
@@ -2153,11 +2181,55 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
-    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), allocContinuation);
+    unsigned newContinuationVar   = GetNewContinuationVar();
+    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
+    if (ReuseContinuations())
+    {
+        // Split suspendBB into suspendBB -> [reuse continuation with Next store] -> [allocNewBlock with allocation
+        // call] -> suspendBBTail [empty]
+        BasicBlock* allocNewBB          = m_compiler->fgSplitBlockAfterNode(suspendBB, recordOffset);
+        BasicBlock* reuseContinuationBB = m_compiler->fgSplitBlockAtEnd(suspendBB);
+        BasicBlock* suspendTailBB       = m_compiler->fgSplitBlockAtEnd(allocNewBB);
+
+        m_compiler->fgRemoveRefPred(reuseContinuationBB->GetTargetEdge());
+        FlowEdge* toSuspendTail = m_compiler->fgAddRefPred(suspendTailBB, reuseContinuationBB);
+        reuseContinuationBB->SetTargetEdge(toSuspendTail);
+
+        FlowEdge* toAllocNew = m_compiler->fgAddRefPred(allocNewBB, suspendBB);
+        suspendBB->SetCond(suspendBB->GetTargetEdge(), toAllocNew);
+        suspendBB->GetTrueEdge()->setLikelihood(1.0);
+        suspendBB->GetFalseEdge()->setLikelihood(0.0);
+
+        JITDUMP("Continuation reuse is active. Split suspendBB into suspendBB " FMT_BB
+                " -> reuseContinuationBlock " FMT_BB " -> allocNewBlock " FMT_BB " -> suspendBBTail " FMT_BB "\n",
+                suspendBB->bbNum, reuseContinuationBB->bbNum, allocNewBB->bbNum, suspendTailBB->bbNum);
+
+        // Store newContinuationVar = reusableContinuation in suspendBB
+        GenTree* reusableContinuation   = m_compiler->gtNewLclvNode(m_reuseContinuationVar, TYP_REF);
+        GenTree* storeContinuationParam = m_compiler->gtNewStoreLclVarNode(newContinuationVar, reusableContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusableContinuation, storeContinuationParam);
+
+        // Check if newContinuationVar != null, jump to reuseContinuationBlock
+        GenTree* reusedContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        GenTree* null               = m_compiler->gtNewNull();
+        GenTree* neNull             = m_compiler->gtNewOperNode(GT_NE, TYP_INT, reusedContinuation, null);
+        GenTree* jtrue              = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusedContinuation, null, neNull, jtrue);
+
+        // Fill in 'Next' in reuseContinuationBB
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        unsigned nextOffset      = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationNextFldHnd);
+        returnedContinuation     = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+        GenTree* storeNext       = StoreAtOffset(returnedContinuation, nextOffset, newContinuation, TYP_REF);
+        LIR::AsRange(reuseContinuationBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeNext));
+
+        suspendBB = suspendTailBB;
+    }
+
     // Fill in 'ResumeInfo'
-    GenTree* newContinuation  = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    GenTree* newContinuation  = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
     GenTree* resumeInfoAddr =
         new (m_compiler, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
@@ -2165,7 +2237,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResume));
 
     // Fill in 'state'
-    newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation       = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
     GenTree* stateNumNode = m_compiler->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
@@ -2174,18 +2246,37 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
     unsigned             continuationFlags = 0;
-    if (subLayout.NeedsOSRILOffset())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
+    auto                 encodeIndex = [&continuationFlags](unsigned offset, unsigned firstBit, unsigned numBits) {
+        assert(numBits < 32);
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        unsigned index = 1 + offset / TARGET_POINTER_SIZE;
+        unsigned mask  = (1u << numBits) - 1;
+
+        if ((index & mask) != index)
+        {
+            IMPL_LIMITATION("Cannot encode continuation offset in flags");
+        }
+
+        continuationFlags |= index << firstBit;
+    };
+
     if (subLayout.NeedsException())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
+        encodeIndex(layout.ExceptionOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
     if (subLayout.NeedsContinuationContext())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+        encodeIndex(layout.ContinuationContextOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
     if (call->gtReturnType != TYP_VOID)
-        continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
+    {
+        const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
+        assert(returnInfo != nullptr);
+        encodeIndex(returnInfo->Offset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
+    }
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
-    newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
@@ -2200,7 +2291,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
-        newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
         GenTree* ret    = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
         LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
     }
@@ -2441,10 +2532,10 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 
     GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = m_compiler->gtNewNull();
-    GenTree* started      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* resumed      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
-    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, started));
-    use.ReplaceWith(started);
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, resumed));
+    use.ReplaceWith(resumed);
     LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
 
     // Replace execContextPlaceholder with actual value
@@ -2817,7 +2908,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
                                                       const ContinuationLayout& layout,
                                                       BasicBlock*               storeResultBB)
 {
-    const ReturnInfo* retInfo = layout.FindReturn(call);
+    const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
     assert(retInfo != nullptr);
     GenTree* resultBase   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + retInfo->Offset;
@@ -3119,18 +3210,100 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
 //
 void AsyncTransformation::CreateResumptionsAndSuspensions()
 {
+    bool useSharedLayout = (m_states.size() > 1) && ReuseContinuations();
+
+    ContinuationLayout* sharedLayout = nullptr;
+    if (useSharedLayout)
+    {
+        JITDUMP("Creating shared layout:\n");
+        ContinuationLayoutBuilder* sharedLayoutBuilder =
+            ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
+        sharedLayout = sharedLayoutBuilder->Create();
+    }
+
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
-        ContinuationLayout* layout = state.Layout->Create();
+        ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
         CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout);
         CreateResumption(state.CallBlock, state.Call, state.ResumptionBB, state.CallDefInfo, *layout, *state.Layout);
         CreateDebugInfoForSuspensionPoint(*layout, *state.Layout);
 
         JITDUMP("\n");
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ReuseContinuations:
+//   Returns true if continuation reuse is enabled.
+//
+// Returns:
+//   True if so.
+//
+bool AsyncTransformation::ReuseContinuations()
+{
+    return JitConfig.JitAsyncReuseContinuations() != 0;
+}
+
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::CreateSharedLayout:
+//   Create a shared continuation layout that is the union of all per-call
+//   layouts. The shared layout contains every local, return type, and
+//   optional field needed by any individual suspension point.
+//
+// Parameters:
+//   comp   - The compiler instance.
+//   states - The vector of async states to merge.
+//
+// Returns:
+//   A new ContinuationLayoutBuilder representing the merged layout.
+//
+ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compiler*                         comp,
+                                                                         const jitstd::vector<AsyncState>& states)
+{
+    unsigned maxLocalStored = 0;
+    for (const AsyncState& state : states)
+    {
+        jitstd::vector<unsigned>& locals = state.Layout->m_locals;
+        if (locals.size() > 0)
+        {
+            maxLocalStored = std::max(maxLocalStored, locals[locals.size() - 1]);
+        }
+    }
+
+    ContinuationLayoutBuilder* sharedLayout = new (comp, CMK_Async) ContinuationLayoutBuilder(comp);
+    BitVecTraits               traits(maxLocalStored + 1, comp);
+    BitVec                     locals(BitVecOps::MakeEmpty(&traits));
+
+    for (const AsyncState& state : states)
+    {
+        ContinuationLayoutBuilder* layout = state.Layout;
+        sharedLayout->m_needsOSRILOffset |= layout->m_needsOSRILOffset;
+        sharedLayout->m_needsException |= layout->m_needsException;
+        sharedLayout->m_needsContinuationContext |= layout->m_needsContinuationContext;
+        sharedLayout->m_needsKeepAlive |= layout->m_needsKeepAlive;
+        sharedLayout->m_needsExecutionContext |= layout->m_needsExecutionContext;
+
+        for (unsigned local : layout->m_locals)
+        {
+            assert(local <= maxLocalStored);
+            BitVecOps::AddElemD(&traits, locals, local);
+        }
+
+        for (const ReturnTypeInfo& ret : layout->m_returns)
+        {
+            sharedLayout->AddReturn(ret);
+        }
+    }
+
+    BitVecOps::VisitBits(&traits, locals, [=](unsigned localNum) {
+        sharedLayout->AddLocal(localNum);
+        return true;
+    });
+
+    return sharedLayout;
 }
 
 //------------------------------------------------------------------------
@@ -3324,5 +3497,13 @@ void AsyncTransformation::CreateResumptionSwitch()
         GenTree* ltZero           = m_compiler->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
         GenTree* jtrue            = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+
+        if (ReuseContinuations())
+        {
+            // Also, save the fact that we have a reusable continuation
+            continuationArg        = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+            GenTree* storeReusable = m_compiler->gtNewStoreLclVarNode(m_reuseContinuationVar, continuationArg);
+            LIR::AsRange(onContinuationBB).InsertAtBeginning(continuationArg, storeReusable);
+        }
     }
 }
