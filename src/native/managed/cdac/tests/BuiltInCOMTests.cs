@@ -161,6 +161,9 @@ public class BuiltInCOMTests
     ///   ComCallWrapper:       SimpleWrapper at 0, IPtr (=m_rgpIPtr[0]) at P, Next at 6P
     ///   SimpleComCallWrapper: RefCount (uint64) at 0, Flags (uint32) at 8,
     ///                         MainWrapper (pointer) at 12, VTablePtr (pointer) at 12+P
+    ///   ComCallWrapper:       SimpleWrapper (pointer) at 0, IPtr (pointer) at P, Next (pointer) at 6P, Handle (pointer) at 7P
+    ///   SimpleComCallWrapper: RefCount (uint64) at 0, Flags (uint32) at 8, MainWrapper (pointer) at 12,
+    ///                          VTablePtr (pointer) at 12+P, OuterIUnknown (pointer) at 12+2P
     ///   ComMethodTable:       Flags (nuint) at 0, MethodTable (pointer) at P, size = 2P
     /// </summary>
     private static Dictionary<DataType, Target.TypeInfo> CreateTypeInfos(int pointerSize)
