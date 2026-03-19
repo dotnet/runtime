@@ -92,7 +92,49 @@ bool OptIfConversionDsc::IfConvertCheck()
         {
             return false;
         }
+    }
+    else
+    {
+        assert(m_mainOper == GT_STORE_LCL_VAR);
 
+        GenTreeLclVar* thenStore = m_thenOperation.node->AsLclVar();
+        unsigned       lclNum    = thenStore->GetLclNum();
+
+        bool lclVarUsedInThen = m_compiler->gtHasRef(thenStore->Data(), lclNum);
+        if (!lclVarUsedInThen)
+        {
+            Statement* last = m_startBlock->lastStmt();
+            Statement* stmt = last;
+            do
+            {
+                GenTree* tree = stmt->GetRootNode();
+
+                if (tree->OperIs(GT_STORE_LCL_VAR))
+                {
+                    GenTreeLclVar* prevStore = tree->AsLclVar();
+                    if (prevStore->GetLclNum() == lclNum)
+                    {
+                        m_doElseConversion    = true;
+                        m_elseOperation.block = m_startBlock;
+                        m_elseOperation.stmt  = stmt;
+                        m_elseOperation.node  = tree;
+
+                        break;
+                    }
+                }
+
+                if (m_compiler->gtHasRef(tree, lclNum))
+                {
+                    break;
+                }
+
+                stmt = stmt->GetPrevStmt();
+            } while (stmt != last);
+        }
+    }
+
+    if (m_doElseConversion)
+    {
         // Both operations are the same node type.
         assert(m_thenOperation.node->OperGet() == m_elseOperation.node->OperGet());
 
@@ -232,10 +274,12 @@ void OptIfConversionDsc::IfConvertDump()
     // Then & Else only exist before the transformation
     if (m_startBlock->KindIs(BBJ_COND))
     {
-        m_compiler->fgDumpBlock(m_thenOperation.block);
+        JITDUMP("\nThen case:");
+        m_compiler->fgDumpStmtTree(m_thenOperation.block, m_thenOperation.stmt);
         if (m_doElseConversion)
         {
-            m_compiler->fgDumpBlock(m_elseOperation.block);
+            JITDUMP("\nElse case:");
+            m_compiler->fgDumpStmtTree(m_elseOperation.block, m_elseOperation.stmt);
         }
     }
 }
@@ -398,12 +442,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
-        JITDUMP("\nConditionally executing " FMT_BB, m_thenOperation.block->bbNum);
+        JITDUMP("JTRUE block is " FMT_BB ". ", m_startBlock->bbNum);
+        JITDUMP("Using " FMT_STMT " (Then) ", m_thenOperation.stmt->GetID());
         if (m_doElseConversion)
         {
-            JITDUMP(" and " FMT_BB, m_elseOperation.block->bbNum);
+            JITDUMP("and " FMT_STMT " (Else) ", m_elseOperation.stmt->GetID());
         }
-        JITDUMP(" inside " FMT_BB "\n", m_startBlock->bbNum);
+        JITDUMP("in the conversion.\n");
         IfConvertDump();
     }
 #endif
@@ -419,7 +464,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         {
             thenCost = m_thenOperation.node->AsLclVar()->Data()->GetCostEx() +
                        (m_compiler->gtIsLikelyRegVar(m_thenOperation.node) ? 0 : 2);
-            if (m_doElseConversion)
+            if (m_doElseConversion && m_elseOperation.block != m_startBlock)
             {
                 elseCost = m_elseOperation.node->AsLclVar()->Data()->GetCostEx() +
                            (m_compiler->gtIsLikelyRegVar(m_elseOperation.node) ? 0 : 2);
@@ -526,6 +571,10 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
     // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    if (m_doElseConversion && m_elseOperation.block == m_startBlock)
+    {
+        m_compiler->fgRemoveStmt(m_startBlock, m_elseOperation.stmt);
+    }
     m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
     m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
     m_thenOperation.block->SetFirstStmt(nullptr);
@@ -542,7 +591,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     else
     {
         FlowEdge* newEdge =
-            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+            (m_doElseConversion && m_elseOperation.block != m_startBlock) ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
         m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
@@ -554,7 +603,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         m_compiler->fgRemoveBlock(start, true);
     };
     removeBlock(falseBb);
-    if (m_doElseConversion)
+    if (m_doElseConversion && m_elseOperation.block != m_startBlock)
     {
         removeBlock(trueBb);
     }
