@@ -732,9 +732,9 @@ namespace System.Text.Json.SourceGeneration
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
 
                 // out parameters don't appear in metadata - they don't receive values from JSON.
-                int nonOutParamCount = parameters.Count(p => p.RefKind != (int)RefKind.Out);
+                int nonOutParamCount = parameters.Count(p => p.RefKind != RefKind.Out);
                 int paramCount = nonOutParamCount + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
-                Debug.Assert(paramCount > 0 || parameters.Any(p => p.RefKind == (int)RefKind.Out));
+                Debug.Assert(paramCount > 0 || parameters.Any(p => p.RefKind == RefKind.Out));
 
                 writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}() => new {JsonParameterInfoValuesTypeRef}[]");
                 writer.WriteLine('{');
@@ -744,7 +744,7 @@ namespace System.Text.Json.SourceGeneration
                 foreach (ParameterGenerationSpec spec in parameters)
                 {
                     // Skip out parameters - they don't receive values from JSON deserialization.
-                    if (spec.RefKind == (int)RefKind.Out)
+                    if (spec.RefKind == RefKind.Out)
                     {
                         continue;
                     }
@@ -940,7 +940,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             // RefKind.RefReadOnlyParameter was added in Roslyn 4.4
-            private const int RefKindRefReadOnlyParameter = 4;
+            private const RefKind RefKindRefReadOnlyParameter = (RefKind)4;
 
             private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
             {
@@ -949,7 +949,7 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ArgsVarName = "args";
 
-                bool hasRefOrRefReadonlyParams = parameters.Any(p => p.RefKind == (int)RefKind.Ref || p.RefKind == RefKindRefReadOnlyParameter);
+                bool hasRefOrRefReadonlyParams = parameters.Any(p => p.RefKind == RefKind.Ref || p.RefKind == RefKindRefReadOnlyParameter);
 
                 StringBuilder sb;
 
@@ -961,7 +961,7 @@ namespace System.Text.Json.SourceGeneration
                     // Declare temp variables for ref and ref readonly parameters
                     foreach (ParameterGenerationSpec param in parameters)
                     {
-                        if (param.RefKind == (int)RefKind.Ref || param.RefKind == RefKindRefReadOnlyParameter)
+                        if (param.RefKind == RefKind.Ref || param.RefKind == RefKindRefReadOnlyParameter)
                         {
                             // Use ArgsIndex to access the args array (out params don't have entries in args)
                             sb.Append($"var __temp{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ArgsIndex}]; ");
@@ -1010,8 +1010,8 @@ namespace System.Text.Json.SourceGeneration
                 {
                     return param.RefKind switch
                     {
-                        (int)RefKind.Ref => $"ref __temp{param.ParameterIndex}",
-                        (int)RefKind.Out => $"out var __discard{param.ParameterIndex}",
+                        RefKind.Ref => $"ref __temp{param.ParameterIndex}",
+                        RefKind.Out => $"out var __discard{param.ParameterIndex}",
                         RefKindRefReadOnlyParameter => $"in __temp{param.ParameterIndex}",
                         // Use ArgsIndex to access the args array (out params don't have entries in args)
                         _ => $"({param.ParameterType.FullyQualifiedName}){argsVarName}[{param.ArgsIndex}]", // None or In (in doesn't require keyword at call site)

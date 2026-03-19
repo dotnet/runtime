@@ -1584,7 +1584,7 @@ namespace System.Text.Json.SourceGeneration
                             ParameterIndex = i,
                             ArgsIndex = currentArgsIndex,
                             IsNullable = parameterInfo.IsNullable(),
-                            RefKind = (int)parameterInfo.RefKind,
+                            RefKind = parameterInfo.RefKind,
                         };
                     }
                 }
@@ -1607,7 +1607,7 @@ namespace System.Text.Json.SourceGeneration
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
 
                 // Count non-out constructor parameters - out params don't have entries in the args array.
-                int paramCount = constructorParameters?.Count(p => p.RefKind != (int)RefKind.Out) ?? 0;
+                int paramCount = constructorParameters?.Count(p => p.RefKind != RefKind.Out) ?? 0;
 
                 // Determine potential init-only or required properties that need to be part of the constructor delegate signature.
                 foreach (PropertyGenerationSpec property in properties)
@@ -1661,7 +1661,7 @@ namespace System.Text.Json.SourceGeneration
 
                             bool MatchesConstructorParameter(ParameterGenerationSpec paramSpec)
                                 // Don't match out parameters - they don't receive values from JSON.
-                                => paramSpec.RefKind != (int)RefKind.Out &&
+                                => paramSpec.RefKind != RefKind.Out &&
                                    propSpec.MemberName.Equals(paramSpec.Name, StringComparison.OrdinalIgnoreCase);
                         }
                     }

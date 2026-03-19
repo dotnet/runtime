@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.CodeAnalysis;
 using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
@@ -46,10 +47,8 @@ namespace System.Text.Json.SourceGeneration
         public required bool IsNullable { get; init; }
 
         /// <summary>
-        /// The ref kind of the parameter: None (0), Ref (1), Out (2), In (3), RefReadOnlyParameter (4).
-        /// Using int instead of Microsoft.CodeAnalysis.RefKind since this is a model type that
-        /// should not depend on Roslyn-specific types.
+        /// The ref kind of the parameter (None, Ref, Out, In, or RefReadOnlyParameter).
         /// </summary>
-        public required int RefKind { get; init; }
+        public required RefKind RefKind { get; init; }
     }
 }
