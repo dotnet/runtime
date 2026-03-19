@@ -19,7 +19,8 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 
 // ── CLI Argument Parsing ─────────────────────────────────────────────────────
@@ -167,8 +168,8 @@ try
 
             try
             {
-                var jobName = job["name"]?.GetValue<string>() ?? "unknown";
-                var jobId = job["id"]?.GetValue<string>() ?? "";
+                var jobName = job.Name ?? "unknown";
+                var jobId = job.Id ?? "";
                 WriteColor($"\n--- {jobName} ---", ConsoleColor.Cyan);
                 WriteColor($"  Build: https://dev.azure.com/{options.Organization}/{options.Project}/_build/results?buildId={currentBuildId}&view=logs&j={jobId}", ConsoleColor.Gray);
 
@@ -177,7 +178,7 @@ try
                 {
                     foreach (var task in helixTasks)
                     {
-                        var logId = task["log"]?["id"]?.GetValue<int>();
+                        var logId = task.Log?.Id;
                         if (logId is null) continue;
 
                         WriteColor("  Fetching Helix task log...", ConsoleColor.Gray);
@@ -192,7 +193,7 @@ try
                                 WriteColor($"    - {f}", ConsoleColor.White);
 
                             allFailuresForCorrelation.Add(new FailureInfo(
-                                task["name"]?.GetValue<string>() ?? "", jobName, [], [], failures));
+                                task.Name ?? "", jobName, [], [], failures));
                         }
 
                         var helixUrls = ExtractHelixConsoleUrls(logContent);
@@ -229,11 +230,11 @@ try
                     var buildTasks = GetFailedTasks(timeline, jobId);
                     foreach (var task in buildTasks.Take(3))
                     {
-                        var taskName = task["name"]?.GetValue<string>() ?? "unknown";
-                        var taskId = task["id"]?.GetValue<string>() ?? "";
+                        var taskName = task.Name ?? "unknown";
+                        var taskId = task.Id ?? "";
                         WriteColor($"  Failed task: {taskName}", ConsoleColor.Red);
 
-                        var logId = task["log"]?["id"]?.GetValue<int>();
+                        var logId = task.Log?.Id;
                         if (logId is null) continue;
 
                         WriteColor($"  Log: https://dev.azure.com/{options.Organization}/{options.Project}/_build/results?buildId={currentBuildId}&view=logs&j={jobId}&t={taskId}", ConsoleColor.Gray);
@@ -282,11 +283,11 @@ try
 
         // Build summary
         var allJobs = GetAllJobs(timeline);
-        var succeeded = allJobs.Count(j => j["result"]?.GetValue<string>() == "succeeded");
-        var warnings = allJobs.Count(j => j["result"]?.GetValue<string>() == "succeededWithIssues");
-        var pending = allJobs.Count(j => j["result"] is null || j["state"]?.GetValue<string>() is "pending" or "inProgress");
-        var canceled = allJobs.Count(j => j["result"]?.GetValue<string>() == "canceled");
-        var skipped = allJobs.Count(j => j["result"]?.GetValue<string>() == "skipped");
+        var succeeded = allJobs.Count(j => j.Result == "succeeded");
+        var warnings = allJobs.Count(j => j.Result == "succeededWithIssues");
+        var pending = allJobs.Count(j => j.Result is null || j.State is "pending" or "inProgress");
+        var canceled = allJobs.Count(j => j.Result == "canceled");
+        var skipped = allJobs.Count(j => j.Result == "skipped");
 
         WriteColor($"\n=== Build {currentBuildId} Summary ===", ConsoleColor.Yellow);
         var parts = new List<string>();
@@ -507,11 +508,11 @@ async Task<string?> CachedGet(string url, bool skipCache = false, bool skipCache
     return content;
 }
 
-async Task<JsonNode?> CachedGetJson(string url, bool skipCache = false, bool skipCacheWrite = false)
+async Task<T?> CachedGetJson<T>(string url, JsonTypeInfo<T> typeInfo, bool skipCache = false, bool skipCacheWrite = false) where T : class
 {
     var content = await CachedGet(url, skipCache, skipCacheWrite);
     if (content is null) return null;
-    try { return JsonNode.Parse(content); }
+    try { return JsonSerializer.Deserialize(content, typeInfo); }
     catch { return null; }
 }
 
@@ -624,8 +625,8 @@ async Task<List<KnownIssue>> GetBuildAnalysisKnownIssues(int pr)
         var (json, _, exitCode2) = RunProcess("gh", $"api repos/{options.Repository}/commits/{sha}/check-runs --jq \".check_runs[] | select(.name == \\\"Build Analysis\\\") | .output\"");
         if (exitCode2 != 0 || string.IsNullOrWhiteSpace(json)) return issues;
 
-        var output = JsonNode.Parse(json);
-        var text = output?["text"]?.GetValue<string>();
+        var output = JsonSerializer.Deserialize(json, CIStatusJsonContext.Default.CheckRunOutput);
+        var text = output?.Text;
         if (text is null) return issues;
 
         var pattern = new Regex(@"<a href=""(https://github\.com/[^/]+/[^/]+/issues/(\d+))"">([^<]+)</a>");
@@ -677,42 +678,30 @@ async Task<BuildStatus?> GetBuildStatus(int buildId)
     var url = $"https://dev.azure.com/{options.Organization}/{options.Project}/_apis/build/builds/{buildId}?api-version=7.0";
     try
     {
-        // Check cache for completed builds
         var cached = GetCachedResponse(url);
         if (cached is not null)
         {
-            var cachedNode = JsonNode.Parse(cached);
-            if (cachedNode?["status"]?.GetValue<string>() == "completed")
-            {
-                return new BuildStatus(
-                    cachedNode["status"]!.GetValue<string>(),
-                    cachedNode["result"]?.GetValue<string>(),
-                    cachedNode["startTime"]?.GetValue<string>(),
-                    cachedNode["finishTime"]?.GetValue<string>());
-            }
+            var cachedBuild = JsonSerializer.Deserialize(cached, CIStatusJsonContext.Default.BuildStatus);
+            if (cachedBuild?.Status == "completed")
+                return cachedBuild;
         }
 
-        var json = await CachedGetJson(url, skipCache: true);
-        if (json is null) return null;
+        var build = await CachedGetJson(url, CIStatusJsonContext.Default.BuildStatus, skipCache: true);
+        if (build is null) return null;
 
-        // Only cache completed builds
-        if (json["status"]?.GetValue<string>() == "completed")
-            SetCachedResponse(url, json.ToJsonString());
+        if (build.Status == "completed")
+            SetCachedResponse(url, JsonSerializer.Serialize(build, CIStatusJsonContext.Default.BuildStatus));
 
-        return new BuildStatus(
-            json["status"]!.GetValue<string>(),
-            json["result"]?.GetValue<string>(),
-            json["startTime"]?.GetValue<string>(),
-            json["finishTime"]?.GetValue<string>());
+        return build;
     }
     catch { return null; }
 }
 
-async Task<JsonNode?> GetTimeline(int buildId, bool skipCacheWrite = false)
+async Task<AzdoTimeline?> GetTimeline(int buildId, bool skipCacheWrite = false)
 {
     var url = $"https://dev.azure.com/{options.Organization}/{options.Project}/_apis/build/builds/{buildId}/timeline?api-version=7.0";
     WriteColor("Fetching build timeline...", ConsoleColor.Cyan);
-    return await CachedGetJson(url, skipCacheWrite: skipCacheWrite);
+    return await CachedGetJson(url, CIStatusJsonContext.Default.AzdoTimeline, skipCacheWrite: skipCacheWrite);
 }
 
 async Task<string?> GetBuildLog(int buildId, int logId)
@@ -726,79 +715,73 @@ async Task<string?> GetBuildLog(int buildId, int logId)
     "inProgress" => ("IN PROGRESS - showing failures so far", ConsoleColor.Cyan),
     "completed" when status.Result == "succeeded" => ($"completed ({status.Result})", ConsoleColor.Green),
     "completed" => ($"completed ({status.Result})", ConsoleColor.Red),
-    _ => (status.Status, ConsoleColor.Gray),
+    _ => (status.Status ?? "unknown", ConsoleColor.Gray),
 };
 
 // ── Timeline Queries ─────────────────────────────────────────────────────────
 
-List<JsonNode> GetAllJobs(JsonNode timeline) =>
-    timeline["records"]?.AsArray()
-        .Where(r => r?["type"]?.GetValue<string>() == "Job")
-        .Select(r => r!)
+List<TimelineRecord> GetAllJobs(AzdoTimeline timeline) =>
+    timeline.Records?
+        .Where(r => r.Type == "Job")
         .ToList() ?? [];
 
-List<JsonNode> GetJobsByResult(JsonNode timeline, string result) =>
-    timeline["records"]?.AsArray()
-        .Where(r => r?["type"]?.GetValue<string>() == "Job" && r?["result"]?.GetValue<string>() == result)
-        .Select(r => r!)
+List<TimelineRecord> GetJobsByResult(AzdoTimeline timeline, string result) =>
+    timeline.Records?
+        .Where(r => r.Type == "Job" && r.Result == result)
         .ToList() ?? [];
 
-List<JsonNode> GetHelixTasks(JsonNode timeline, string jobId) =>
-    timeline["records"]?.AsArray()
-        .Where(r => r?["parentId"]?.GetValue<string>() == jobId
-            && (r?["name"]?.GetValue<string>() ?? "").Contains("Helix", StringComparison.OrdinalIgnoreCase)
-            && r?["result"]?.GetValue<string>() == "failed")
-        .Select(r => r!)
+List<TimelineRecord> GetHelixTasks(AzdoTimeline timeline, string jobId) =>
+    timeline.Records?
+        .Where(r => r.ParentId == jobId
+            && (r.Name ?? "").Contains("Helix", StringComparison.OrdinalIgnoreCase)
+            && r.Result == "failed")
         .ToList() ?? [];
 
-List<JsonNode> GetFailedTasks(JsonNode timeline, string jobId) =>
-    timeline["records"]?.AsArray()
-        .Where(r => r?["parentId"]?.GetValue<string>() == jobId && r?["result"]?.GetValue<string>() == "failed")
-        .Select(r => r!)
+List<TimelineRecord> GetFailedTasks(AzdoTimeline timeline, string jobId) =>
+    timeline.Records?
+        .Where(r => r.ParentId == jobId && r.Result == "failed")
         .ToList() ?? [];
 
-List<LocalTestFailure> GetLocalTestFailures(JsonNode timeline, int buildId)
+List<LocalTestFailure> GetLocalTestFailures(AzdoTimeline timeline, int buildId)
 {
     var failures = new List<LocalTestFailure>();
-    var records = timeline["records"]?.AsArray();
+    var records = timeline.Records;
     if (records is null) return failures;
 
     foreach (var task in records)
     {
-        if (task is null) continue;
-        var issues = task["issues"]?.AsArray();
+        var issues = task.Issues;
         if (issues is null || issues.Count == 0) continue;
 
         var testErrors = issues
-            .Where(i => i is not null)
             .Where(i =>
             {
-                var msg = i!["message"]?.GetValue<string>() ?? "";
+                var msg = i.Message ?? "";
                 return msg.Contains("Tests failed:") || Regex.IsMatch(msg, @"error\s*:.*Test.*failed", RegexOptions.IgnoreCase);
             })
             .ToList();
 
         if (testErrors.Count == 0) continue;
 
-        var parentId = task["parentId"]?.GetValue<string>();
-        var parentJob = records.FirstOrDefault(r => r?["id"]?.GetValue<string>() == parentId && r?["type"]?.GetValue<string>() == "Job");
+        var parentId = task.ParentId;
+        var parentJob = records.FirstOrDefault(r => r.Id == parentId && r.Type == "Job");
 
         failures.Add(new LocalTestFailure(
-            task["name"]?.GetValue<string>() ?? "unknown",
-            task["id"]?.GetValue<string>(),
-            parentJob?["id"]?.GetValue<string>() ?? parentId ?? "",
-            task["log"]?["id"]?.GetValue<int>(),
-            testErrors.Select(e => e!["message"]?.GetValue<string>() ?? "").ToList()));
+            task.Name ?? "unknown",
+            task.Id,
+            parentJob?.Id ?? parentId ?? "",
+            task.Log?.Id,
+            testErrors.Select(e => e.Message ?? "").ToList()));
     }
     return failures;
 }
 
-void ShowCanceledJobs(List<JsonNode> canceledJobs, int max)
+void ShowCanceledJobs(List<TimelineRecord> canceledJobs, int max)
 {
     if (canceledJobs.Count == 0) return;
     WriteColor($"\nNote: {canceledJobs.Count} job(s) were canceled (not failed):", ConsoleColor.DarkYellow);
     foreach (var job in canceledJobs.Take(max))
-        WriteColor($"  - {job["name"]?.GetValue<string>()}", ConsoleColor.DarkGray);
+        WriteColor($"  - {job.Name}", ConsoleColor.DarkGray);
     if (canceledJobs.Count > max)
         WriteColor($"  ... and {canceledJobs.Count - max} more", ConsoleColor.DarkGray);
 }
@@ -811,11 +794,11 @@ async Task<int> RunHelixJobMode(Options opts)
     WriteColor($"\n=== Helix Job {jobId} ===", ConsoleColor.Yellow);
     WriteColor($"URL: https://helix.dot.net/api/jobs/{jobId}", ConsoleColor.Gray);
 
-    var jobDetails = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}");
+    var jobDetails = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}", CIStatusJsonContext.Default.HelixJobInfo);
     if (jobDetails is not null)
     {
-        WriteColor($"\nQueue: {jobDetails["QueueId"]}", ConsoleColor.Cyan);
-        WriteColor($"Source: {jobDetails["Source"]}", ConsoleColor.Cyan);
+        WriteColor($"\nQueue: {jobDetails.QueueId}", ConsoleColor.Cyan);
+        WriteColor($"Source: {jobDetails.Source}", ConsoleColor.Cyan);
     }
 
     if (opts.WorkItem is not null)
@@ -823,23 +806,22 @@ async Task<int> RunHelixJobMode(Options opts)
         var wi = Uri.EscapeDataString(opts.WorkItem);
         WriteColor($"\n--- Work Item: {opts.WorkItem} ---", ConsoleColor.Cyan);
 
-        var details = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{wi}");
+        var details = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{wi}", CIStatusJsonContext.Default.HelixWorkItemDetail);
         if (details is not null)
         {
-            var state = details["State"]?.GetValue<string>() ?? "unknown";
+            var state = details.State ?? "unknown";
             WriteColor($"  State: {state}", state == "Passed" ? ConsoleColor.Green : ConsoleColor.Red);
-            WriteColor($"  Exit Code: {details["ExitCode"]}", ConsoleColor.White);
-            WriteColor($"  Machine: {details["MachineName"]}", ConsoleColor.Gray);
+            WriteColor($"  Exit Code: {details.ExitCode}", ConsoleColor.White);
+            WriteColor($"  Machine: {details.MachineName}", ConsoleColor.Gray);
 
-            // Get files via ListFiles endpoint
-            var files = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{wi}/files");
-            if (files is JsonArray fileArray && fileArray.Count > 0)
+            var files = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{wi}/files", CIStatusJsonContext.Default.ListHelixFile);
+            if (files is { Count: > 0 })
             {
                 WriteColor("\n  Artifacts:", ConsoleColor.Yellow);
-                foreach (var f in fileArray.Take(15))
+                foreach (var f in files.Take(15))
                 {
-                    var name = f?["Name"]?.GetValue<string>() ?? "";
-                    var link = f?["Link"]?.GetValue<string>() ?? "";
+                    var name = f.Name ?? "";
+                    var link = f.Link ?? "";
                     if (name.EndsWith(".binlog", StringComparison.OrdinalIgnoreCase))
                         WriteColor($"    📋 {name}: {link}", ConsoleColor.Cyan);
                     else
@@ -869,23 +851,23 @@ async Task<int> RunHelixJobMode(Options opts)
     else
     {
         WriteColor("\nWork Items:", ConsoleColor.Yellow);
-        var workItems = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems");
-        if (workItems is JsonArray wiArray)
+        var workItems = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems", CIStatusJsonContext.Default.ListHelixWorkItemSummary);
+        if (workItems is not null)
         {
-            WriteColor($"  Total: {wiArray.Count}", ConsoleColor.Cyan);
+            WriteColor($"  Total: {workItems.Count}", ConsoleColor.Cyan);
             WriteColor("  Checking for failures...", ConsoleColor.Gray);
 
             var failedItems = new List<(string name, int exitCode, string state)>();
-            foreach (var wi in wiArray.Take(20))
+            foreach (var wi in workItems.Take(20))
             {
-                var name = wi?["Name"]?.GetValue<string>() ?? "";
+                var name = wi.Name ?? "";
                 var encoded = Uri.EscapeDataString(name);
-                var det = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{encoded}");
+                var det = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{encoded}", CIStatusJsonContext.Default.HelixWorkItemDetail);
                 if (det is not null)
                 {
-                    var exitCode = det["ExitCode"]?.GetValue<int>() ?? 0;
+                    var exitCode = det.ExitCode ?? 0;
                     if (exitCode != 0)
-                        failedItems.Add((name, exitCode, det["State"]?.GetValue<string>() ?? ""));
+                        failedItems.Add((name, exitCode, det.State ?? ""));
                 }
             }
 
@@ -902,10 +884,10 @@ async Task<int> RunHelixJobMode(Options opts)
             }
 
             WriteColor("\n  All work items:", ConsoleColor.Yellow);
-            foreach (var wi in wiArray.Take(10))
-                WriteColor($"    - {wi?["Name"]?.GetValue<string>()}", ConsoleColor.White);
-            if (wiArray.Count > 10)
-                WriteColor($"    ... and {wiArray.Count - 10} more", ConsoleColor.Gray);
+            foreach (var wi in workItems.Take(10))
+                WriteColor($"    - {wi.Name}", ConsoleColor.White);
+            if (workItems.Count > 10)
+                WriteColor($"    ... and {workItems.Count - 10} more", ConsoleColor.Gray);
 
             if (opts.FindBinlogs)
             {
@@ -913,17 +895,17 @@ async Task<int> RunHelixJobMode(Options opts)
                 WriteColor("  Scanning work items for binlogs...", ConsoleColor.Gray);
                 var binlogResults = new List<(string name, List<string> binlogs)>();
                 var scanned = 0;
-                foreach (var wi in wiArray.Take(30))
+                foreach (var wi in workItems.Take(30))
                 {
                     scanned++;
-                    var name = wi?["Name"]?.GetValue<string>() ?? "";
+                    var name = wi.Name ?? "";
                     var encoded = Uri.EscapeDataString(name);
-                    var files = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{encoded}/files");
-                    if (files is JsonArray fa)
+                    var files = await CachedGetJson($"https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{encoded}/files", CIStatusJsonContext.Default.ListHelixFile);
+                    if (files is not null)
                     {
-                        var binlogs = fa
-                            .Where(f => (f?["Name"]?.GetValue<string>() ?? "").EndsWith(".binlog", StringComparison.OrdinalIgnoreCase))
-                            .Select(f => f!["Name"]!.GetValue<string>())
+                        var binlogs = files
+                            .Where(f => (f.Name ?? "").EndsWith(".binlog", StringComparison.OrdinalIgnoreCase))
+                            .Select(f => f.Name!)
                             .ToList();
                         if (binlogs.Count > 0)
                             binlogResults.Add((name, binlogs));
@@ -1114,17 +1096,17 @@ async Task ShowKnownIssues(string testName, string errorMessage)
 
         try
         {
-            var issues = JsonNode.Parse(stdout)?.AsArray();
+            var issues = JsonSerializer.Deserialize(stdout, CIStatusJsonContext.Default.ListGitHubIssueInfo);
             if (issues is null || issues.Count == 0) continue;
 
             WriteColor("\n  Known Issues:", ConsoleColor.Magenta);
             foreach (var issue in issues)
             {
-                var title = issue?["title"]?.GetValue<string>() ?? "";
+                var title = issue.Title ?? "";
                 if (title.Contains(safe, StringComparison.OrdinalIgnoreCase))
                 {
-                    WriteColor($"    #{issue?["number"]}: {title}", ConsoleColor.Magenta);
-                    WriteColor($"    {issue?["url"]}", ConsoleColor.Gray);
+                    WriteColor($"    #{issue.Number}: {title}", ConsoleColor.Magenta);
+                    WriteColor($"    {issue.Url}", ConsoleColor.Gray);
                 }
             }
             break;
@@ -1177,51 +1159,51 @@ async Task SearchMihuBot(List<string> searchTerms, string testName)
     if (searchTerms.Count == 0) return;
     try
     {
-        var payload = new
+        var payload = new MihuBotRequest
         {
-            jsonrpc = "2.0",
-            method = "tools/call",
-            id = Guid.NewGuid().ToString(),
-            @params = new
+            Id = Guid.NewGuid().ToString(),
+            Method = "tools/call",
+            Params = new MihuBotRequestParams
             {
-                name = "search_dotnet_repos",
-                arguments = new
+                Name = "search_dotnet_repos",
+                Arguments = new MihuBotSearchArguments
                 {
-                    repository = options.Repository,
-                    searchTerms,
-                    extraSearchContext = $"test failure {testName}",
-                    includeOpen = true,
-                    includeClosed = true,
-                    includeIssues = true,
-                    includePullRequests = true,
-                    includeComments = false,
+                    Repository = options.Repository,
+                    SearchTerms = searchTerms,
+                    ExtraSearchContext = $"test failure {testName}",
+                    IncludeOpen = true,
+                    IncludeClosed = true,
+                    IncludeIssues = true,
+                    IncludePullRequests = true,
+                    IncludeComments = false,
                 }
             }
         };
 
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        var content = new StringContent(
+            JsonSerializer.Serialize(payload, CIStatusJsonContext.Default.MihuBotRequest),
+            Encoding.UTF8, "application/json");
         var resp = await http.PostAsync("https://mihubot.xyz/mcp", content);
         if (!resp.IsSuccessStatusCode) return;
 
-        var json = await resp.Content.ReadFromJsonAsync<JsonNode>();
-        var results = json?["result"]?["content"]?.AsArray();
+        var response = await resp.Content.ReadFromJsonAsync(CIStatusJsonContext.Default.MihuBotResponse);
+        var results = response?.Result?.Content;
         if (results is null) return;
 
         var found = new List<(string num, string title, string url, string state)>();
         foreach (var item in results)
         {
-            if (item?["type"]?.GetValue<string>() != "text") continue;
-            var text = item["text"]?.GetValue<string>();
-            if (text is null) continue;
-            var issues = JsonNode.Parse(text)?.AsArray();
+            if (item.Type != "text") continue;
+            if (item.Text is null) continue;
+            var issues = JsonSerializer.Deserialize(item.Text, CIStatusJsonContext.Default.ListMihuBotIssue);
             if (issues is null) continue;
             foreach (var issue in issues.Take(5))
             {
                 found.Add((
-                    issue?["Number"]?.ToString() ?? "",
-                    issue?["Title"]?.GetValue<string>() ?? "",
-                    issue?["Url"]?.GetValue<string>() ?? "",
-                    issue?["State"]?.GetValue<string>() ?? ""));
+                    issue.Number ?? "",
+                    issue.Title ?? "",
+                    issue.Url ?? "",
+                    issue.State ?? ""));
             }
         }
 
@@ -1322,8 +1304,150 @@ record Options
     public bool FindBinlogs;
 }
 
-record BuildStatus(string Status, string? Result, string? StartTime, string? FinishTime);
+record BuildStatus(string? Status, string? Result, string? StartTime, string? FinishTime);
 record KnownIssue(string Number, string Title, string Url);
 record HelixLogUrl(string Url, string JobId, string WorkItem);
 record FailureInfo(string TaskName, string JobName, List<string> Errors, List<string> HelixLogs, List<string> FailedTests);
 record LocalTestFailure(string TaskName, string? TaskId, string ParentJobId, int? LogId, List<string> Issues);
+
+// ═════════════════════════════════════════════════════════════════════════════
+// JSON API Models (for STJ source generation)
+// ═════════════════════════════════════════════════════════════════════════════
+
+// AzDO Timeline API
+record AzdoTimeline
+{
+    public List<TimelineRecord>? Records { get; init; }
+}
+
+record TimelineRecord
+{
+    public string? Id { get; init; }
+    public string? ParentId { get; init; }
+    public string? Type { get; init; }
+    public string? Name { get; init; }
+    public string? Result { get; init; }
+    public string? State { get; init; }
+    public TimelineLog? Log { get; init; }
+    public List<TimelineIssue>? Issues { get; init; }
+}
+
+record TimelineLog
+{
+    public int? Id { get; init; }
+}
+
+record TimelineIssue
+{
+    public string? Message { get; init; }
+}
+
+// Helix APIs
+record HelixJobInfo
+{
+    public string? QueueId { get; init; }
+    public string? Source { get; init; }
+}
+
+record HelixWorkItemDetail
+{
+    public string? State { get; init; }
+    public int? ExitCode { get; init; }
+    public string? MachineName { get; init; }
+}
+
+record HelixFile
+{
+    public string? Name { get; init; }
+    public string? Link { get; init; }
+}
+
+record HelixWorkItemSummary
+{
+    public string? Name { get; init; }
+}
+
+// GitHub CLI output
+record GitHubIssueInfo
+{
+    public int Number { get; init; }
+    public string? Title { get; init; }
+    public string? Url { get; init; }
+}
+
+// Build Analysis (from gh api)
+record CheckRunOutput
+{
+    public string? Text { get; init; }
+}
+
+// MihuBot API
+record MihuBotRequest
+{
+    public string Jsonrpc { get; init; } = "2.0";
+    public string? Id { get; init; }
+    public string? Method { get; init; }
+    public MihuBotRequestParams? Params { get; init; }
+}
+
+record MihuBotRequestParams
+{
+    public string? Name { get; init; }
+    public MihuBotSearchArguments? Arguments { get; init; }
+}
+
+record MihuBotSearchArguments
+{
+    public string? Repository { get; init; }
+    public List<string>? SearchTerms { get; init; }
+    public string? ExtraSearchContext { get; init; }
+    public bool IncludeOpen { get; init; }
+    public bool IncludeClosed { get; init; }
+    public bool IncludeIssues { get; init; }
+    public bool IncludePullRequests { get; init; }
+    public bool IncludeComments { get; init; }
+}
+
+record MihuBotResponse
+{
+    public MihuBotResult? Result { get; init; }
+}
+
+record MihuBotResult
+{
+    public List<MihuBotContentItem>? Content { get; init; }
+}
+
+record MihuBotContentItem
+{
+    public string? Type { get; init; }
+    public string? Text { get; init; }
+}
+
+record MihuBotIssue
+{
+    public string? Number { get; init; }
+    public string? Title { get; init; }
+    public string? Url { get; init; }
+    public string? State { get; init; }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Source Generation Context
+// ═════════════════════════════════════════════════════════════════════════════
+
+[JsonSourceGenerationOptions(
+    PropertyNameCaseInsensitive = true,
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(BuildStatus))]
+[JsonSerializable(typeof(AzdoTimeline))]
+[JsonSerializable(typeof(HelixJobInfo))]
+[JsonSerializable(typeof(HelixWorkItemDetail))]
+[JsonSerializable(typeof(List<HelixFile>))]
+[JsonSerializable(typeof(List<HelixWorkItemSummary>))]
+[JsonSerializable(typeof(List<GitHubIssueInfo>))]
+[JsonSerializable(typeof(CheckRunOutput))]
+[JsonSerializable(typeof(MihuBotRequest))]
+[JsonSerializable(typeof(MihuBotResponse))]
+[JsonSerializable(typeof(List<MihuBotIssue>))]
+partial class CIStatusJsonContext : JsonSerializerContext { }
