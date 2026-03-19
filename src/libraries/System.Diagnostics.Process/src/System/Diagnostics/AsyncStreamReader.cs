@@ -268,12 +268,12 @@ namespace System.Diagnostics
             }
         }
 
-        internal async Task CancelDueToProcessExitAsync()
+        internal async Task CancelDueToProcessExitAsync(CancellationToken cancellationToken)
         {
             Task? task = _readToBufferTask;
             if (task is not null)
             {
-                Task completed = await Task.WhenAny(task, Task.Delay(StreamDrainDefaultTimeoutMs)).ConfigureAwait(false);
+                Task completed = await Task.WhenAny(task, Task.Delay(StreamDrainDefaultTimeoutMs, cancellationToken)).ConfigureAwait(false);
                 if (completed != task)
                 {
                     _cts.Cancel();

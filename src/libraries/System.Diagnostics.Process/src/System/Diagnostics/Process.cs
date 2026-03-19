@@ -1566,12 +1566,12 @@ namespace System.Diagnostics
             {
                 if (_output is not null)
                 {
-                    await _output.CancelDueToProcessExitAsync().ConfigureAwait(false);
+                    await _output.CancelDueToProcessExitAsync(cancellationToken).ConfigureAwait(false);
                 }
 
                 if (_error is not null)
                 {
-                    await _error.CancelDueToProcessExitAsync().ConfigureAwait(false);
+                    await _error.CancelDueToProcessExitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
