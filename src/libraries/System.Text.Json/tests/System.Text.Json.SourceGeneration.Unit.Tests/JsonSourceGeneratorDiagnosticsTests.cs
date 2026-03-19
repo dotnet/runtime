@@ -731,28 +731,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void Diagnostic_HasPragmaSuppressibleLocation()
         {
-            // SYSLIB1038: JsonInclude attribute on inaccessible member (Warning, configurable).
+            // SYSLIB1039: Polymorphism not supported for fast-path serialization (Warning, configurable).
             string source = """
-                #pragma warning disable SYSLIB1038
+                #pragma warning disable SYSLIB1039
                 using System.Text.Json.Serialization;
 
-                namespace Test
+                namespace HelloWorld
                 {
-                    public class MyClass
+                    [JsonSerializable(typeof(MyBaseClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
-                        [JsonInclude]
-                        private int PrivateField;
                     }
 
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class JsonContext : JsonSerializerContext { }
+                    [JsonDerivedType(typeof(MyDerivedClass), "derived")]
+                    public class MyBaseClass
+                    {
+                    }
+
+                    public class MyDerivedClass : MyBaseClass
+                    {
+                    }
                 }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
             var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
-            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1038");
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1039");
             Assert.True(diagnostic.IsSuppressed);
         }
     }
