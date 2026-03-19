@@ -1638,30 +1638,7 @@ namespace System.Text.Json
 
         private ConsumeNumberResult ConsumeIntegerDigits(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
-#if NET
-            int nonDigitOffset = data.Slice(i).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
-            byte nextByte;
-            if (nonDigitOffset < 0)
-            {
-                i = data.Length;
-                nextByte = default;
-            }
-            else
-            {
-                i += nonDigitOffset;
-                nextByte = data[i];
-            }
-#else
-            byte nextByte = default;
-            for (; i < data.Length; i++)
-            {
-                nextByte = data[i];
-                if (!JsonHelpers.IsDigit(nextByte))
-                {
-                    break;
-                }
-            }
-#endif
+            JsonHelpers.SkipDigits(data, ref i, out byte nextByte);
             if (i >= data.Length)
             {
                 if (IsLastSpan)

@@ -1354,32 +1354,10 @@ namespace System.Text.Json
 
         private ConsumeNumberResult ConsumeIntegerDigitsMultiSegment(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
-            byte nextByte = default;
-            int counter = 0;
-#if NET
-            int nonDigitOffset = data.Slice(i).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
-            if (nonDigitOffset < 0)
-            {
-                counter = data.Length - i;
-                i = data.Length;
-            }
-            else
-            {
-                counter = nonDigitOffset;
-                i += nonDigitOffset;
-                nextByte = data[i];
-            }
-#else
-            for (; i < data.Length; i++)
-            {
-                nextByte = data[i];
-                if (!JsonHelpers.IsDigit(nextByte))
-                {
-                    break;
-                }
-                counter++;
-            }
-#endif
+            byte nextByte;
+            int startIndex = i;
+            JsonHelpers.SkipDigits(data, ref i, out nextByte);
+            int counter = i - startIndex;
             if (i >= data.Length)
             {
                 if (IsLastSpan)
@@ -1409,27 +1387,7 @@ namespace System.Text.Json
                     HasValueSequence = true;
                     i = 0;
                     data = _buffer;
-#if NET
-                    nonDigitOffset = data.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
-                    if (nonDigitOffset < 0)
-                    {
-                        i = data.Length;
-                    }
-                    else
-                    {
-                        i = nonDigitOffset;
-                        nextByte = data[i];
-                    }
-#else
-                    for (; i < data.Length; i++)
-                    {
-                        nextByte = data[i];
-                        if (!JsonHelpers.IsDigit(nextByte))
-                        {
-                            break;
-                        }
-                    }
-#endif
+                    JsonHelpers.SkipDigits(data, ref i, out nextByte);
                     _bytePositionInLine += i;
                     if (i >= data.Length)
                     {

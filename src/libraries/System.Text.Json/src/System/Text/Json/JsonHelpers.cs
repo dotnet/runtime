@@ -164,6 +164,39 @@ namespace System.Text.Json
         public static bool IsDigit(byte value) => (uint)(value - '0') <= '9' - '0';
 
         /// <summary>
+        /// Advances <paramref name="i"/> past any consecutive ASCII digit bytes ('0'..'9') in <paramref name="data"/>.
+        /// On return, <paramref name="nextByte"/> contains the first non-digit byte, or <see langword="default"/> if the
+        /// end of the span was reached.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SkipDigits(ReadOnlySpan<byte> data, ref int i, out byte nextByte)
+        {
+#if NET
+            int nonDigitOffset = data.Slice(i).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            if (nonDigitOffset < 0)
+            {
+                i = data.Length;
+                nextByte = default;
+            }
+            else
+            {
+                i += nonDigitOffset;
+                nextByte = data[i];
+            }
+#else
+            nextByte = default;
+            for (; i < data.Length; i++)
+            {
+                nextByte = data[i];
+                if (!IsDigit(nextByte))
+                {
+                    break;
+                }
+            }
+#endif
+        }
+
+        /// <summary>
         /// Perform a Read() with a Debug.Assert verifying the reader did not return false.
         /// This should be called when the Read() return value is not used, such as non-Stream cases where there is only one buffer.
         /// </summary>
