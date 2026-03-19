@@ -2702,6 +2702,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 }
                 """);
 
+            Assert.Throws<InvalidCastException>(() => configuration.Get<IConfigurationSection>());
+
             var obj = configuration.GetSection("value").Get<IConfigurationSection>();
             Assert.Equal("MyString", obj.Value);
 
@@ -2738,6 +2740,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                     "vaLue": { "key": "MyString" },
                 }
                 """);
+
+            Assert.Same(configuration, configuration.Get<IConfiguration>());
 
             var obj = configuration.GetSection("value").Get<IConfiguration>();
             Assert.Equal("MyString", obj["key"]);
