@@ -215,10 +215,10 @@ void UnwindInfoTable::UnRegister()
 }
 
 /*****************************************************************************/
-// Add 'data' to the pending buffer for later publication to the OS.
+// Add 'data' entries to the pending buffer for later publication to the OS.
 // When the buffer is full, entries are flushed under s_pUnwindInfoTablePublishLock.
 //
-void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data)
+void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 {
     CONTRACTL
     {
@@ -226,29 +226,32 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data)
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-    _ASSERTE(data->BeginAddress <= RUNTIME_FUNCTION__EndAddress(data, iRangeStart));
-    _ASSERTE(RUNTIME_FUNCTION__EndAddress(data, iRangeStart) <= (iRangeEnd - iRangeStart));
 
     if (!s_publishingActive)
         return;
 
-    // Add to the pending buffer. If the buffer is full, flush it first and retry.
-    while (true)
+    for (int i = 0; i < count; )
     {
         {
             CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
-            if (cPendingCount < cPendingMaxCount)
+            while (i < count && cPendingCount < cPendingMaxCount)
             {
-                pPendingTable[cPendingCount++] = *data;
+                _ASSERTE(data[i].BeginAddress <= RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart));
+                _ASSERTE(RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart) <= (iRangeEnd - iRangeStart));
+
+                pPendingTable[cPendingCount++] = data[i];
 
                 STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%x, pending 0x%x\n",
                     hHandle, iRangeStart, iRangeEnd,
-                    data->BeginAddress, cPendingCount);
-                return;
+                    data[i].BeginAddress, cPendingCount);
+                i++;
             }
         }
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-        FlushPendingEntries();
+        if (i < count)
+        {
+            CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+            FlushPendingEntries();
+        }
     }
 }
 
@@ -471,8 +474,7 @@ void UnwindInfoTable::FlushPendingEntries()
             }
         }
 
-        for (int i = 0; i < methodUnwindDataCount; i++)
-            unwindInfo->AddToUnwindInfoTable(&methodUnwindData[i]);
+        unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
 
         // Flush any entries that were buffered above so the OS can unwind this
         // method immediately. Otherwise, we may end up with broken stack traces

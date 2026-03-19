@@ -606,7 +606,7 @@ public:
 private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
     // These are used by the high-level method functions above
-    void AddToUnwindInfoTable(T_RUNTIME_FUNCTION* data);
+    void AddToUnwindInfoTable(T_RUNTIME_FUNCTION* data, int count);
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
 public:
