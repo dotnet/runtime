@@ -627,6 +627,7 @@ namespace System.Globalization
             return matched;
         }
 
+        [RequiresUnsafe]
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
@@ -775,6 +776,7 @@ namespace System.Globalization
             return IsSuffix(source, suffix, CompareOptions.None);
         }
 
+        [RequiresUnsafe]
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
@@ -1043,6 +1045,7 @@ namespace System.Globalization
         /// Caller needs to ensure <paramref name="matchLengthPtr"/> is non-null and points
         /// to a valid address. This method will validate <paramref name="options"/>.
         /// </summary>
+        [RequiresUnsafe]
         private unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
             Debug.Assert(matchLengthPtr != null);
@@ -1108,6 +1111,7 @@ namespace System.Globalization
             return retVal;
         }
 
+        [RequiresUnsafe]
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
