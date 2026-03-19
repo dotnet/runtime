@@ -24,23 +24,11 @@ public class CoreLibSizeTest
     // 30% above the non-release baseline: 27,131,904 * 1.30 = ~35,271,475 bytes
     private const long NonReleaseMaxAllowedSizeBytes = 35_271_475;
 
-    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
-    [Fact]
+    [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.HasAssemblyFiles))]
     public static int TestEntryPoint()
     {
-        string? coreRootPath = Environment.GetEnvironmentVariable("CORE_ROOT");
-        if (string.IsNullOrEmpty(coreRootPath))
-        {
-            Console.WriteLine("FAIL: CORE_ROOT environment variable is not set. The ReadyToRun test environment is misconfigured.");
-            return 101;
-        }
-
-        string coreLibPath = Path.Combine(coreRootPath, "System.Private.CoreLib.dll");
-        if (!File.Exists(coreLibPath))
-        {
-            Console.WriteLine($"FAIL: System.Private.CoreLib.dll not found at '{coreLibPath}'. The ReadyToRun test environment is misconfigured.");
-            return 101;
-        }
+        string coreLibPath = typeof(string).Assembly.Location;
 
         AssemblyConfigurationAttribute? configAttr = typeof(string).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>();
         bool isRelease = string.Equals(configAttr?.Configuration, "Release", StringComparison.OrdinalIgnoreCase);
