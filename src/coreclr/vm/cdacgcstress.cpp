@@ -36,6 +36,9 @@ struct StackRef
     unsigned int    Flags;      // SOSRefFlags (interior, pinned)
     CLRDATA_ADDRESS Source;     // IP or Frame that owns this ref
     int             SourceType; // SOS_StackSourceIP or SOS_StackSourceFrame
+    int             Register;   // Register number (cDAC only)
+    int             Offset;     // Register offset (cDAC only)
+    CLRDATA_ADDRESS StackPointer; // Stack pointer at this ref (cDAC only)
 };
 
 // Fixed-size buffer for collecting refs during stack walk.
@@ -341,6 +344,9 @@ static bool CollectCdacStackRefs(Thread* pThread, PCONTEXT regs, SArray<StackRef
         ref.Flags = refData.Flags;
         ref.Source = refData.Source;
         ref.SourceType = refData.SourceType;
+        ref.Register = refData.Register;
+        ref.Offset = refData.Offset;
+        ref.StackPointer = refData.StackPointer;
         pRefs->Append(ref);
     }
 
@@ -394,6 +400,12 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
         ref.Flags |= SOSRefInterior;
     if (flags & GC_CALL_PINNED)
         ref.Flags |= SOSRefPinned;
+
+    ref.Source = 0;
+    ref.SourceType = 0;
+    ref.Register = 0;
+    ref.Offset = 0;
+    ref.StackPointer = 0;
 }
 
 static bool CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, StackRef* outRefs, int* outCount)
@@ -638,39 +650,41 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     bool pass = (cdacCount == runtimeCount);
     if (pass && cdacCount > 0)
     {
-        // Counts match — verify that the same (Object, Flags) pairs are reported.
-        // We compare by (Object, Flags) rather than (Address, Object, Flags) because
-        // cDAC register refs have Address=0 while the runtime reports the actual
-        // stack spill address. The meaningful check is that the same GC objects
-        // are found with the same flags.
+        // Counts match — verify that the same (Address, Object, Flags) tuples are reported.
+        // Both sides normalize register refs to Address=0 and stack refs to the actual
+        // stack slot address, so all three fields should match.
         StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
 
-        // Build sorted (Object, Flags) arrays for both sets
-        struct ObjFlags { CLRDATA_ADDRESS Object; unsigned int Flags; };
-        auto compareObjFlags = [](const void* a, const void* b) -> int {
-            const ObjFlags* oa = static_cast<const ObjFlags*>(a);
-            const ObjFlags* ob = static_cast<const ObjFlags*>(b);
-            if (oa->Object != ob->Object)
-                return (oa->Object < ob->Object) ? -1 : 1;
-            if (oa->Flags != ob->Flags)
-                return (oa->Flags < ob->Flags) ? -1 : 1;
+        // Build sorted (Address, Object, Flags) arrays for both sets
+        struct RefTuple { CLRDATA_ADDRESS Address; CLRDATA_ADDRESS Object; unsigned int Flags; };
+        auto compareRefTuple = [](const void* a, const void* b) -> int {
+            const RefTuple* ra = static_cast<const RefTuple*>(a);
+            const RefTuple* rb = static_cast<const RefTuple*>(b);
+            if (ra->Address != rb->Address)
+                return (ra->Address < rb->Address) ? -1 : 1;
+            if (ra->Object != rb->Object)
+                return (ra->Object < rb->Object) ? -1 : 1;
+            if (ra->Flags != rb->Flags)
+                return (ra->Flags < rb->Flags) ? -1 : 1;
             return 0;
         };
 
         // Use stack buffers — counts are bounded by MAX_COLLECTED_REFS
-        ObjFlags cdacOF[MAX_COLLECTED_REFS];
-        ObjFlags rtOF[MAX_COLLECTED_REFS];
+        RefTuple cdacRT[MAX_COLLECTED_REFS];
+        RefTuple rtRT[MAX_COLLECTED_REFS];
         for (int i = 0; i < cdacCount; i++)
         {
-            cdacOF[i] = { cdacBuf[i].Object, cdacBuf[i].Flags };
-            rtOF[i] = { runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags };
+            cdacRT[i] = { cdacBuf[i].Address, cdacBuf[i].Object, cdacBuf[i].Flags };
+            rtRT[i] = { runtimeRefsBuf[i].Address, runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags };
         }
-        qsort(cdacOF, cdacCount, sizeof(ObjFlags), compareObjFlags);
-        qsort(rtOF, cdacCount, sizeof(ObjFlags), compareObjFlags);
+        qsort(cdacRT, cdacCount, sizeof(RefTuple), compareRefTuple);
+        qsort(rtRT, cdacCount, sizeof(RefTuple), compareRefTuple);
 
         for (int i = 0; i < cdacCount; i++)
         {
-            if (cdacOF[i].Object != rtOF[i].Object || cdacOF[i].Flags != rtOF[i].Flags)
+            if (cdacRT[i].Address != rtRT[i].Address ||
+                cdacRT[i].Object != rtRT[i].Object ||
+                cdacRT[i].Flags != rtRT[i].Flags)
             {
                 pass = false;
                 break;
@@ -768,9 +782,10 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
             }
 
             for (int i = 0; i < cdacCount; i++)
-                fprintf(s_logFile, "  cDAC [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx SourceType=%d\n",
+                fprintf(s_logFile, "  cDAC [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx SourceType=%d Reg=%d Offset=%d SP=0x%llx\n",
                     i, (unsigned long long)cdacRefs[i].Address, (unsigned long long)cdacRefs[i].Object,
-                    cdacRefs[i].Flags, (unsigned long long)cdacRefs[i].Source, cdacRefs[i].SourceType);
+                    cdacRefs[i].Flags, (unsigned long long)cdacRefs[i].Source, cdacRefs[i].SourceType,
+                    cdacRefs[i].Register, cdacRefs[i].Offset, (unsigned long long)cdacRefs[i].StackPointer);
             for (int i = 0; i < runtimeCount; i++)
                 fprintf(s_logFile, "  RT   [%d]: Address=0x%llx Object=0x%llx Flags=0x%x\n",
                     i, (unsigned long long)runtimeRefsBuf[i].Address, (unsigned long long)runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags);
