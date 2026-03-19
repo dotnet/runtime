@@ -229,6 +229,8 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_linkName))
             {
+                // The LinkName is stored unconditionally (not doing so might
+                // break users depending on existing behavior).
                 Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
                 ea[PaxEaLinkName] = _linkName;
             }
