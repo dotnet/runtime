@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Runtime.Loader.Tests
@@ -274,6 +275,57 @@ namespace System.Runtime.Loader.Tests
             alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
             Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
             Assert.IsType<InvalidOperationException>(error.InnerException);
+        }
+
+        private static void ForceCast<T>(object obj)
+        {
+            T result = (T)obj;
+            GC.KeepAlive(result);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
+        public static void InvalidCastException_GenericTypeArg_ShowsDifferingAssemblyInfo()
+        {
+            string sharedTypePath = Path.Combine(
+                Path.GetDirectoryName(typeof(AssemblyLoadContextTest).Assembly.Location),
+                "InvalidCastGenericALC.dll");
+
+            var alc1 = new AssemblyLoadContext("ALC1");
+            var alc2 = new AssemblyLoadContext("ALC2");
+
+            Assembly asm1 = alc1.LoadFromAssemblyPath(sharedTypePath);
+            Assembly asm2 = alc2.LoadFromAssemblyPath(sharedTypePath);
+
+            Type type1 = asm1.GetType("SharedAssembly.SharedType");
+            Type type2 = asm2.GetType("SharedAssembly.SharedType");
+
+            // StrongBox<T> is from System.Private.CoreLib - same in all contexts.
+            // The generic argument types come from different ALCs.
+            Type boxType1 = typeof(StrongBox<>).MakeGenericType(type1);
+            Type boxType2 = typeof(StrongBox<>).MakeGenericType(type2);
+
+            object instance = Activator.CreateInstance(boxType1);
+
+            MethodInfo forceCast = typeof(AssemblyLoadContextTest)
+                .GetMethod(nameof(ForceCast), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(boxType2);
+
+            var ex = Assert.Throws<TargetInvocationException>(() => forceCast.Invoke(null, new object[] { instance }));
+            var ice = Assert.IsType<InvalidCastException>(ex.InnerException);
+
+            // The message should mention the generic argument and its differing ALCs.
+            // Before the fix, it would only report the outer type's assembly
+            // (System.Private.CoreLib from the Default context for both),
+            // making the message unhelpful.
+            // After the fix, it reports the generic argument's assembly and ALC context.
+            if (!ice.Message.Contains("Debugging resource strings are unavailable"))
+            {
+                Assert.Contains("generic argument", ice.Message);
+                Assert.Contains("SharedAssembly.SharedType", ice.Message);
+                Assert.Contains("ALC1", ice.Message);
+                Assert.Contains("ALC2", ice.Message);
+            }
         }
     }
 }
