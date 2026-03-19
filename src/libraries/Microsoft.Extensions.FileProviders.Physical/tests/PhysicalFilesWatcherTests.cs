@@ -225,10 +225,11 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task GetOrAddFilePathChangeToken_FiresWhenMissingDirectoryIsCreated()
+        public async Task GetOrAddFilePathChangeToken_FiresWhenFileIsCreated_WithMissingParentDirectory()
         {
             using var root = new TempDirectory(GetTestFilePath());
             string missingDir = Path.Combine(root.Path, "missingdir");
+            string targetFile = Path.Combine(missingDir, "file.txt");
 
             using var physicalFilesWatcher = new PhysicalFilesWatcher(
                 root.Path + Path.DirectorySeparatorChar,
@@ -243,57 +244,54 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             cts.Token.Register(() => tcs.TrySetCanceled());
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
-            // Now create the missing directory – the token must fire
+            // Create the missing directory – the token must NOT fire yet
             Directory.CreateDirectory(missingDir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the parent directory is created");
+
+            // Create the actual file – now the token must fire
+            File.WriteAllText(targetFile, string.Empty);
 
             Assert.True(await tcs.Task);
         }
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task GetOrAddFilePathChangeToken_FiresWhenMultipleMissingDirectoryLevelsAreCreated()
+        public async Task GetOrAddFilePathChangeToken_FiresOnlyWhenFileIsCreated_WithMultipleMissingDirectories()
         {
-            // Verifies the cascading behavior: each time a missing directory is created the token fires,
-            // the caller re-registers, and a new pending watcher is placed one level deeper.
+            // Verifies that the token fires exactly once – when the target file is created –
+            // and does NOT fire when intermediate missing directory levels are created.
             using var root = new TempDirectory(GetTestFilePath());
             string level1 = Path.Combine(root.Path, "level1");
             string level2 = Path.Combine(level1, "level2");
+            string targetFile = Path.Combine(level2, "file.txt");
 
             using var physicalFilesWatcher = new PhysicalFilesWatcher(
                 root.Path + Path.DirectorySeparatorChar,
                 new FileSystemWatcher(root.Path),
                 pollForChanges: false);
 
-            var allLevelsDone = new TaskCompletionSource<bool>();
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            cts.Token.Register(() => allLevelsDone.TrySetCanceled());
+            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("level1/level2/file.txt");
 
-            void Register()
-            {
-                IChangeToken t = physicalFilesWatcher.GetOrAddFilePathChangeToken("level1/level2/file.txt");
-                t.RegisterChangeCallback(_ =>
-                {
-                    if (!Directory.Exists(level1) || !Directory.Exists(level2))
-                    {
-                        Register();
-                    }
-                    else
-                    {
-                        allLevelsDone.TrySetResult(true);
-                    }
-                }, null);
-            }
+            var tcs = new TaskCompletionSource<bool>();
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
-            Register();
-
-            // Create level1 – first token fires
+            // Create level1 – token must NOT fire
             Directory.CreateDirectory(level1);
-            await Task.Delay(300);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when level1 is created");
 
-            // Create level2 – second token fires and allLevelsDone completes
+            // Create level2 – token must NOT fire
             Directory.CreateDirectory(level2);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when level2 is created");
 
-            Assert.True(await allLevelsDone.Task);
+            // Create the target file – now the token must fire exactly once
+            File.WriteAllText(targetFile, string.Empty);
+
+            Assert.True(await tcs.Task);
         }
 
         [Fact]
