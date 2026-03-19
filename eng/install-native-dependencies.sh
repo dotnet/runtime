@@ -49,7 +49,7 @@ case "$os" in
         # Homebrew LLVM whose libraries (e.g., libunwind.dylib) are the wrong
         # architecture or conflict with the Apple SDK, breaking native linking.
         # The build uses Apple clang from /usr/bin/clang exclusively.
-        brew uninstall --ignore-dependencies llvm 2>/dev/null || true
+        brew uninstall --ignore-dependencies llvm@18 2>/dev/null || true
 
         brew bundle --no-upgrade --file "$(dirname "$0")/Brewfile"
         ;;
