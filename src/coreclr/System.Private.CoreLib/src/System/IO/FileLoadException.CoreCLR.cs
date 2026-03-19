@@ -18,15 +18,42 @@ namespace System.IO
         }
 
         // Do not delete: this is invoked from native code.
-        // Used when the requesting assembly is known, to provide assembly load dependency context.
-        private FileLoadException(string? fileName, string? requestingAssemblyName, int hResult)
+        // Used when the requesting assembly chain is known, to provide assembly load dependency context.
+        // The requestingAssemblyChain parameter is a newline-separated list of assembly display names,
+        // from immediate parent to root ancestor.
+        private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
-            if (requestingAssemblyName is not null)
-                FusionLog = SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyName);
+            if (requestingAssemblyChain is not null)
+                FusionLog = FormatRequestingAssemblyChain(requestingAssemblyChain);
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
+        }
+
+        internal static string FormatRequestingAssemblyChain(string requestingAssemblyChain)
+        {
+            int newlineIndex = requestingAssemblyChain.IndexOf('\n');
+            if (newlineIndex < 0)
+                return SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyChain);
+
+            var result = new System.Text.StringBuilder();
+            int start = 0;
+            while (start < requestingAssemblyChain.Length)
+            {
+                int end = requestingAssemblyChain.IndexOf('\n', start);
+                string name = end >= 0
+                    ? requestingAssemblyChain.Substring(start, end - start)
+                    : requestingAssemblyChain.Substring(start);
+
+                if (result.Length > 0)
+                    result.AppendLine();
+                result.Append(SR.Format(SR.IO_FileLoad_RequestingAssembly, name));
+
+                start = end >= 0 ? end + 1 : requestingAssemblyChain.Length;
+            }
+
+            return result.ToString();
         }
 
         internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)

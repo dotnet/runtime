@@ -1715,7 +1715,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
     StackSString name;
     pSpec->GetDisplayName(0, name);
 
-    // Extract the requesting assembly name for diagnostic purposes
+    // Extract the requesting assembly chain for diagnostic purposes
     {
         FAULT_NOT_FATAL();
 
@@ -1726,9 +1726,39 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
         Assembly *pParentAssembly = pSpec->GetParentAssembly();
         if (pParentAssembly != NULL)
         {
-            StackSString requestingName;
-            pParentAssembly->GetDisplayName(requestingName);
-            pException->SetRequestingAssembly(requestingName);
+            StackSString parentName;
+            pParentAssembly->GetDisplayName(parentName);
+
+            // Set the requesting assembly for this exception
+            pException->SetRequestingAssembly(parentName);
+
+            // Walk the inner exception chain and append this parent to each
+            // inner exception's chain, so that every exception in the chain
+            // carries the full dependency path from its perspective
+            EEFileLoadException *pInnerFLE = NULL;
+            Exception *pWalk = inner2;
+            int depth = 0;
+            while (pWalk != NULL && depth < 20)
+            {
+                if (EEFileLoadException::CheckType(pWalk))
+                {
+                    pInnerFLE = (EEFileLoadException*)pWalk;
+                    if (!pInnerFLE->m_requestingAssemblyName.IsEmpty())
+                    {
+                        StackSString updatedChain;
+                        updatedChain.Set(pInnerFLE->m_requestingAssemblyName);
+                        updatedChain.Append(W("\n"));
+                        updatedChain.Append(parentName);
+                        pInnerFLE->SetRequestingAssembly(updatedChain);
+                    }
+                    pWalk = pInnerFLE->m_innerException;
+                }
+                else
+                {
+                    break;
+                }
+                depth++;
+            }
         }
 
         STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "

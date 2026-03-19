@@ -15,14 +15,14 @@ namespace System.IO
         }
 
         // Do not delete: this is invoked from native code.
-        // Used when the requesting assembly is known, to provide assembly load dependency context.
-        private FileNotFoundException(string? fileName, string? requestingAssemblyName, int hResult)
+        // Used when the requesting assembly chain is known, to provide assembly load dependency context.
+        private FileNotFoundException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
-            if (requestingAssemblyName is not null)
-                FusionLog = SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyName);
+            if (requestingAssemblyChain is not null)
+                FusionLog = FileLoadException.FormatRequestingAssemblyChain(requestingAssemblyChain);
             SetMessageField();
         }
     }

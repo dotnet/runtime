@@ -15,14 +15,14 @@ namespace System
         }
 
         // Do not delete: this is invoked from native code.
-        // Used when the requesting assembly is known, to provide assembly load dependency context.
-        private BadImageFormatException(string? fileName, string? requestingAssemblyName, int hResult)
+        // Used when the requesting assembly chain is known, to provide assembly load dependency context.
+        private BadImageFormatException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             _fileName = fileName;
-            if (requestingAssemblyName is not null)
-                _fusionLog = SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyName);
+            if (requestingAssemblyChain is not null)
+                _fusionLog = IO.FileLoadException.FormatRequestingAssemblyChain(requestingAssemblyChain);
             SetMessageField();
         }
     }
