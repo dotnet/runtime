@@ -1057,7 +1057,7 @@ namespace System.Text.Json.Serialization
         public static System.Text.Json.Serialization.JsonDictionaryKeyFilter IgnoreMetadataNames { get { throw null; } }
         public abstract bool IgnoreKey(System.ReadOnlySpan<byte> utf8JsonPropertyName);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
