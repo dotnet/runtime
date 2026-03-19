@@ -1,3 +1,12 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+# This file is consumed by GitHub by default and the git-blame command
+# optionally to make blames ignore uninteresting commits. See docs here:
+# https://docs.github.com/en/repositories/working-with-files/using-files/viewing-and-understanding-files#ignore-commits-in-the-blame-view
+# To configure git-blame to use this file, run:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
 # These are the commits that trim gc.cpp copies to contain only
 # the functions relevant to each split file. They should be ignored
 # when running git blame.
