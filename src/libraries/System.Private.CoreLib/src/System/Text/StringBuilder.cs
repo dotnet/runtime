@@ -2323,6 +2323,7 @@ namespace System.Text
         /// <param name="value">The pointer to the start of the buffer.</param>
         /// <param name="valueCount">The number of characters in the buffer.</param>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe StringBuilder Append(char* value, int valueCount)
         {
             // We don't check null value as this case will throw null reference exception anyway

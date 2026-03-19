@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
@@ -74,6 +75,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDDUP xmm1,         m64</para>
         ///   <para>  VMOVDDUP xmm1 {k1}{z}, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadAndDuplicateToVector128(double* address) => LoadAndDuplicateToVector128(address);
 
         /// <summary>
@@ -81,48 +83,63 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadDquVector128(sbyte* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadDquVector128(byte* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadDquVector128(short* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadDquVector128(ushort* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadDquVector128(int* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadDquVector128(uint* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadDquVector128(long* address) => LoadDquVector128(address);
+
         /// <summary>
         ///   <para>__m128i _mm_lddqu_si128 (__m128i const* mem_addr)</para>
         ///   <para>   LDDQU xmm1, m128</para>
         ///   <para>  VLDDQU xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadDquVector128(ulong* address) => LoadDquVector128(address);
 
         /// <summary>

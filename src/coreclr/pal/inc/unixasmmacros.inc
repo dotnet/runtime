@@ -74,3 +74,10 @@
 #elif defined(HOST_POWERPC64)
 #include "unixasmmacrosppc64le.inc"
 #endif
+
+// Mark the stack as non-executable for ELF targets.
+// https://github.com/dotnet/runtime/issues/125469
+#if !defined(__APPLE__)
+.pushsection .note.GNU-stack,"",%progbits
+.popsection
+#endif
