@@ -234,7 +234,8 @@ bool CdacGcStress::Initialize()
     CLRConfigStringHolder logFilePath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacLogFile));
     if (logFilePath != nullptr)
     {
-        s_logFile = _wfopen(logFilePath, W("w"));
+        SString sLogPath(logFilePath);
+        fopen_s(&s_logFile, sLogPath.GetUTF8(), "w");
         if (s_logFile != nullptr)
         {
             fprintf(s_logFile, "=== cDAC GC Stress Verification Log ===\n");
