@@ -105,34 +105,49 @@ internal partial class StackWalk_1 : IStackWalk
     }
 
     IEnumerable<IStackDataFrameHandle> IStackWalk.CreateStackWalk(ThreadData threadData)
+        => CreateStackWalkCore(threadData, skipInitialFrames: false);
+
+    /// <summary>
+    /// Core stack walk implementation.
+    /// </summary>
+    /// <param name="threadData">Thread to walk.</param>
+    /// <param name="skipInitialFrames">
+    /// When true, pre-advances the FrameIterator past explicit Frames below the initial
+    /// managed frame's caller SP. This matches the native DacStackReferenceWalker behavior
+    /// for GC reference enumeration, where these frames are within the current managed
+    /// frame's stack range and don't contribute additional GC roots.
+    ///
+    /// Must be false for ClrDataStackWalk, which advances the cDAC and legacy DAC in
+    /// lockstep and must yield the same frame sequence (including initial skipped frames).
+    /// </param>
+    private IEnumerable<IStackDataFrameHandle> CreateStackWalkCore(ThreadData threadData, bool skipInitialFrames)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         FillContextFromThread(context, threadData);
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
 
-        // Skip Frames below the initial managed frame's caller SP, matching the
-        // native DAC behavior. The native's CheckForSkippedFrames uses
-        // EnsureCallerContextIsValid + GetSP(pCallerContext) to determine which
-        // Frames are "skipped" (between the managed frame and its caller).
-        // All Frames below this SP belong to the current managed frame or
-        // frames pushed more recently (e.g., RedirectedThreadFrame from GC stress,
-        // active InlinedCallFrames from P/Invoke calls within the method).
-        TargetPointer skipBelowSP;
-        if (state == StackWalkState.SW_FRAMELESS)
+        if (skipInitialFrames)
         {
-            // Compute the caller SP by unwinding the initial managed frame.
-            IPlatformAgnosticContext callerCtx = context.Clone();
-            callerCtx.Unwind(_target);
-            skipBelowSP = callerCtx.StackPointer;
-        }
-        else
-        {
-            skipBelowSP = context.StackPointer;
-        }
-        while (frameIterator.IsValid() && frameIterator.CurrentFrameAddress.Value < skipBelowSP.Value)
-        {
-            frameIterator.Next();
+            // Skip Frames below the initial managed frame's caller SP. All Frames
+            // below this SP belong to the current managed frame or frames pushed more
+            // recently (e.g., RedirectedThreadFrame from GC stress, active
+            // InlinedCallFrames from P/Invoke calls within the method).
+            TargetPointer skipBelowSP;
+            if (state == StackWalkState.SW_FRAMELESS)
+            {
+                IPlatformAgnosticContext callerCtx = context.Clone();
+                callerCtx.Unwind(_target);
+                skipBelowSP = callerCtx.StackPointer;
+            }
+            else
+            {
+                skipBelowSP = context.StackPointer;
+            }
+            while (frameIterator.IsValid() && frameIterator.CurrentFrameAddress.Value < skipBelowSP.Value)
+            {
+                frameIterator.Next();
+            }
         }
 
         // if the next Frame is not valid and we are not in managed code, there is nothing to return
@@ -157,7 +172,7 @@ internal partial class StackWalk_1 : IStackWalk
     {
         // TODO(stackref): This isn't quite right. We need to check if the FilterContext or ProfilerFilterContext
         // is set and prefer that if either is not null.
-        IEnumerable<IStackDataFrameHandle> stackFrames = ((IStackWalk)this).CreateStackWalk(threadData);
+        IEnumerable<IStackDataFrameHandle> stackFrames = CreateStackWalkCore(threadData, skipInitialFrames: true);
         IEnumerable<StackDataFrameHandle> frames = stackFrames.Select(AssertCorrectHandle);
         IEnumerable<GCFrameData> gcFrames = Filter(frames);
 
