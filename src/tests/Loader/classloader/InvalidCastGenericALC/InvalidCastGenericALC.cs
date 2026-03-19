@@ -17,7 +17,7 @@ public class InvalidCastGenericALC
     }
 
     [Fact]
-    public static void InvalidCastException_GenericTypeArg_ShowsDifferingAssemblyInfo()
+    public static int TestEntryPoint()
     {
         string sharedTypePath = Path.Combine(
             Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
@@ -47,7 +47,8 @@ public class InvalidCastGenericALC
         try
         {
             forceCast.Invoke(null, new object[] { instance });
-            Assert.Fail("Expected InvalidCastException was not thrown");
+            Console.WriteLine("FAIL: Expected InvalidCastException was not thrown");
+            return 101;
         }
         catch (TargetInvocationException ex) when (ex.InnerException is InvalidCastException ice)
         {
@@ -56,8 +57,8 @@ public class InvalidCastGenericALC
 
             if (ice.Message.Contains("Debugging resource strings are unavailable"))
             {
-                Console.WriteLine("Skipping message validation - resource strings unavailable");
-                return;
+                Console.WriteLine("PASS (skipping message validation - resource strings unavailable)");
+                return 100;
             }
 
             // The message should mention the generic argument and its differing ALCs.
@@ -65,10 +66,30 @@ public class InvalidCastGenericALC
             // (System.Private.CoreLib from the Default context for both),
             // making the message unhelpful.
             // After the fix, it reports the generic argument's assembly and ALC context.
-            Assert.Contains("generic argument", ice.Message);
-            Assert.Contains("SharedAssembly.SharedType", ice.Message);
-            Assert.Contains("ALC1", ice.Message);
-            Assert.Contains("ALC2", ice.Message);
+            bool hasGenericArgMention = ice.Message.Contains("generic argument");
+            bool hasTypeName = ice.Message.Contains("SharedAssembly.SharedType");
+            bool hasAlc1 = ice.Message.Contains("ALC1");
+            bool hasAlc2 = ice.Message.Contains("ALC2");
+
+            if (hasGenericArgMention && hasTypeName && hasAlc1 && hasAlc2)
+            {
+                Console.WriteLine("PASS");
+                return 100;
+            }
+            else
+            {
+                Console.WriteLine("FAIL: InvalidCastException message does not mention the differing generic argument's ALC info");
+                if (!hasGenericArgMention) Console.WriteLine("  Missing: 'generic argument'");
+                if (!hasTypeName) Console.WriteLine("  Missing: 'SharedAssembly.SharedType'");
+                if (!hasAlc1) Console.WriteLine("  Missing: 'ALC1'");
+                if (!hasAlc2) Console.WriteLine("  Missing: 'ALC2'");
+                return 102;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FAIL: Unexpected exception: {ex}");
+            return 103;
         }
     }
 }
