@@ -168,6 +168,7 @@
         <SourceSubdir>%(_IdentitySubdir.Identity)</SourceSubdir>
       </_SubdirFile>
     </ItemGroup>
+
     <!-- Use an intermediate item to avoid SourceSubdir metadata batching conflict with _CoreRootFileMapping -->
     <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
       <_SubdirFileMapping Include="@(_SubdirFile)"
@@ -227,7 +228,7 @@
       <_Crossgen2InCoreRootTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_Crossgen2InCoreRootTime>
     </PropertyGroup>
 
-    <Warning Text="STALE IL-CG2: One or more IL-CG2 R2R caches may be stale (crossgen2 is newer than cached compilations). Delete stale caches with: Get-ChildItem -Recurse -Directory -Filter IL-CG2 $(BaseOutputPathWithConfig) | Remove-Item -Recurse -Force"
+    <Warning Text="STALE IL-CG2: One or more IL-CG2 R2R caches may be stale (crossgen2 is newer than cached compilations)."
              Condition="'@(_IlCg2DoneFiles)' != '' and
                         $([System.IO.File]::GetLastWriteTime('%(_IlCg2DoneFiles.Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
   </Target>
