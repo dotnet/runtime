@@ -2798,11 +2798,19 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             break;
 
         case GenTreeBlk::BlkOpKindNativeOpcode:
+        {
             genConsumeOperands(blkOp);
+            GenTree *lhs = blkOp->gtGetOp1();
+            GenTree *rhs = blkOp->gtGetOp2();
+            // We expect neither the source or destination to be contained, if they are contained we will be missing an
+            //  operand on the Wasm stack
+            assert(!lhs->isContained() || lhs->OperIs(GT_IND) || lhs->OperIs(GT_INIT_VAL));
+            assert(!rhs->isContained() || rhs->OperIs(GT_IND) || rhs->OperIs(GT_INIT_VAL));
             // Emit the size constant expected by the memory.copy and memory.fill opcodes
             GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
             GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
             break;
+        }
 
         default:
             unreached();
