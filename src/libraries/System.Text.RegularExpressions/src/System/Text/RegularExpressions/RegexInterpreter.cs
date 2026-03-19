@@ -879,22 +879,11 @@ namespace System.Text.RegularExpressions
                             }
 
                             char ch = (char)Operand(0);
-                            if (!_rightToLeft)
+                            while (c-- > 0)
                             {
-                                if (inputSpan.Slice(runtextpos, c).ContainsAnyExcept(ch))
+                                if (Forwardcharnext(inputSpan) != ch)
                                 {
                                     goto BreakBackward;
-                                }
-                                runtextpos += c;
-                            }
-                            else
-                            {
-                                while (c-- > 0)
-                                {
-                                    if (Forwardcharnext(inputSpan) != ch)
-                                    {
-                                        goto BreakBackward;
-                                    }
                                 }
                             }
                         }
@@ -910,22 +899,11 @@ namespace System.Text.RegularExpressions
                             }
 
                             char ch = (char)Operand(0);
-                            if (!_rightToLeft)
+                            while (c-- > 0)
                             {
-                                if (inputSpan.Slice(runtextpos, c).Contains(ch))
+                                if (Forwardcharnext(inputSpan) == ch)
                                 {
                                     goto BreakBackward;
-                                }
-                                runtextpos += c;
-                            }
-                            else
-                            {
-                                while (c-- > 0)
-                                {
-                                    if (Forwardcharnext(inputSpan) == ch)
-                                    {
-                                        goto BreakBackward;
-                                    }
                                 }
                             }
                         }
@@ -962,31 +940,12 @@ namespace System.Text.RegularExpressions
                             char ch = (char)Operand(0);
                             int i;
 
-                            if (!_rightToLeft)
+                            for (i = len; i > 0; i--)
                             {
-                                // We're left-to-right, so we can employ the vectorized IndexOfAnyExcept
-                                // to search for any character that isn't the target.
-                                i = inputSpan.Slice(runtextpos, len).IndexOfAnyExcept(ch);
-                                if (i == -1)
+                                if (Forwardcharnext(inputSpan) != ch)
                                 {
-                                    runtextpos += len;
-                                    i = 0;
-                                }
-                                else
-                                {
-                                    runtextpos += i;
-                                    i = len - i;
-                                }
-                            }
-                            else
-                            {
-                                for (i = len; i > 0; i--)
-                                {
-                                    if (Forwardcharnext(inputSpan) != ch)
-                                    {
-                                        Backwardnext();
-                                        break;
-                                    }
+                                    Backwardnext();
+                                    break;
                                 }
                             }
 
