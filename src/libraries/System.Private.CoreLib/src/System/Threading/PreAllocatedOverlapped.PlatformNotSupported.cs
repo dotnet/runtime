@@ -15,7 +15,7 @@ namespace System.Threading
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
             new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
 
-        private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
+        private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? _, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
 

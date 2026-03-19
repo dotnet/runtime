@@ -1264,7 +1264,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CompressedStack.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Condition.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\StackCrawlMark.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventResetMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ExecutionContext.cs" />
@@ -2347,18 +2346,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.WindowsThreadPool.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.WindowsThreadPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandleOverlapped.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
