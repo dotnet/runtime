@@ -319,6 +319,13 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
+    if (m_isFirstInstForEmptyILStack)
+    {
+        // This is the first instruction we are emitting for this IL offset and the stack is empty, which
+        // implies the IL stack is empty too.
+        ins->flags |= INTERP_INST_FLAG_EMPTY_IL_STACK;
+        m_isFirstInstForEmptyILStack = false;
+    }
     m_pLastNewIns = ins;
     return ins;
 }
@@ -1069,7 +1076,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
                 m_ILToNativeMapSize++;
             }
         }
@@ -4796,7 +4803,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Get cookie for unmanaged calli. For managed calli, the cookie will be NULL
+        // and the interpreter will resolve the call at runtime from the PortableEntryPoint's MethodDesc.
+        CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isUnmanaged)
+        {
+            calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+        }
+#else
         calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
         m_ip += 5;
     }
     else
@@ -5445,7 +5463,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_pStackPointer--;
             int codePointerLookupResult = m_pStackPointer[0].var;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            calliCookie = NULL;
+#else
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
 
             EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
 
@@ -5488,7 +5510,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pStackPointer--;
                 int synthesizedLdvirtftnPtrVar = m_pStackPointer[0].var;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                calliCookie = NULL;
+#else
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
 
                 EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, &callInfo.sig);
             }
@@ -8378,6 +8404,10 @@ retry_emit:
 
         if (ILOpcodePeeps.FindAndApplyPeep(this))
             continue;
+
+
+        // Empty stack at the beginning of the IL instruction implies IL stack being empty too
+        m_isFirstInstForEmptyILStack = (m_pStackPointer - m_pStackBase) == 0;
 
         uint8_t opcode = *m_ip;
         switch (opcode)
