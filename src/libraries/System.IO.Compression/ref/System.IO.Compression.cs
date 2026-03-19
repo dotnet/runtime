@@ -144,6 +144,34 @@ namespace System.IO.Compression
         Deflate = 8,
         Deflate64 = 9,
     }
+    public sealed partial class ZipStreamEntry
+    {
+        internal ZipStreamEntry() { }
+        public long CompressedLength { get { throw null; } }
+        public System.IO.Compression.ZipCompressionMethod CompressionMethod { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public uint Crc32 { get { throw null; } }
+        public string FullName { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ushort GeneralPurposeBitFlags { get { throw null; } }
+        public bool IsDirectory { get { throw null; } }
+        public bool IsEncrypted { get { throw null; } }
+        public System.DateTimeOffset LastModified { get { throw null; } }
+        public long Length { get { throw null; } }
+        public string Name { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ushort VersionNeeded { get { throw null; } }
+        public int Read(System.Span<byte> buffer) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class ZipStreamReader : System.IAsyncDisposable, System.IDisposable
+    {
+        public ZipStreamReader(System.IO.Stream archiveStream, bool leaveOpen = false, System.Text.Encoding? entryNameEncoding = null) { }
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        public System.IO.Compression.ZipStreamEntry? GetNextEntry() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.IO.Compression.ZipStreamEntry?> GetNextEntryAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
     public sealed partial class ZLibCompressionOptions
     {
         public ZLibCompressionOptions() { }

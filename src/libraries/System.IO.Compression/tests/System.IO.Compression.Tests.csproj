@@ -27,6 +27,7 @@
     <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
     <Compile Include="ZipArchive\zip_LargeFiles.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
+    <Compile Include="ZipArchive\zip_StreamEntryReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.Comments.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
