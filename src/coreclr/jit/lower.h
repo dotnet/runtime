@@ -28,9 +28,6 @@ public:
 #ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_Lower))
 #endif
-#ifdef TARGET_WASM
-        , m_stackificationStack(compiler->getAllocator(CMK_Lower))
-#endif
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
         assert(m_regAlloc != nullptr);
@@ -142,7 +139,7 @@ private:
     unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
-    void     AfterLowerBlock();
+    void     AfterLowerBlocks();
     GenTree* LowerNode(GenTree* node);
 
     bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
@@ -211,6 +208,7 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
+    void     AfterLowerArgsForCall(GenTreeCall* call);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
@@ -395,9 +393,11 @@ private:
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
-    bool     LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    GenTree* LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    bool     TryLowerConstIntUDivOrUMod(GenTreeOp* divMod);
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
+    void     LowerDivOrMod(GenTreeOp* divMod);
     void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
@@ -460,6 +460,7 @@ private:
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    bool     TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBaseType);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
@@ -629,10 +630,6 @@ private:
     };
     ArrayStack<SavedIndir> m_blockIndirs;
     bool                   m_ffrTrashed;
-#endif
-
-#ifdef TARGET_WASM
-    ArrayStack<GenTree*> m_stackificationStack;
 #endif
 };
 

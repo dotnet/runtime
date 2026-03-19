@@ -126,6 +126,9 @@
   <data name="RequiresDynamicCodeCodeFixTitle" xml:space="preserve">
     <value>Add RequiresDynamicCode attribute to parent method</value>
   </data>
+  <data name="RequiresUnsafeCodeFixTitle" xml:space="preserve">
+    <value>Add RequiresUnsafe attribute to parent method</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>

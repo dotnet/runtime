@@ -7326,7 +7326,7 @@ void emitter::emitDispInsHelp(
                 if (jdsc != nullptr && id->idIns() == INS_movt)
                 {
                     unsigned     cnt = jdsc->dsSize / TARGET_POINTER_SIZE;
-                    BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
+                    BasicBlock** bbp = jdsc->Blocks();
 
                     bool isBound = (emitCodeGetCookie(*bbp) != nullptr);
 

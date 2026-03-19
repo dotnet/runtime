@@ -3729,6 +3729,26 @@ namespace System
             return new RuntimeTypeHandle(this).MakeArray(rank);
         }
 
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
+
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            foreach (Type? paramType in parameterTypes)
+            {
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType is not RuntimeType)
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType), nameof(parameterTypes));
+            }
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
+        }
+
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
 
         #endregion
@@ -4197,6 +4217,39 @@ namespace System
             }
 
             return ret;
+        }
+
+        [RequiresUnreferencedCode("The member might be removed")]
+        [UnmanagedCallersOnly]
+        private static unsafe void ForwardCallToInvokeMember(
+            RuntimeType* pRuntimeType,
+            string* pMemberName,
+            int flags,
+            object* pTarget,
+            object[]* pArgs,
+            bool[]* pArgsIsByRef,
+            int[]* pArgsWrapperTypes,
+            Type[]* pArgsTypes,
+            Type* pRetType,
+            object* pResult,
+            Exception* pException)
+        {
+            try
+            {
+                *pResult = pRuntimeType->ForwardCallToInvokeMember(
+                    *pMemberName,
+                    (BindingFlags)flags,
+                    *pTarget,
+                    *pArgs,
+                    *pArgsIsByRef,
+                    *pArgsWrapperTypes,
+                    *pArgsTypes,
+                    *pRetType);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)

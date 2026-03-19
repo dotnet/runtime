@@ -14,11 +14,12 @@ import {
     isSharedArrayBuffer,
 } from "./memory";
 import { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "./strings";
-import { abortPosix, abortBackgroundTimers, getExitStatus, setEnvironmentVariable, runBackgroundTimers } from "./host";
+import { abortPosix, getExitStatus, setEnvironmentVariable } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 import { initPolyfills } from "../utils/polyfills";
 import { registerRuntime } from "./runtime-list";
 import { registerCDAC } from "./cdac";
+import { abortBackgroundTimers, runBackgroundTimers } from "./scheduling";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");

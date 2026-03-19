@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
     {
         protected Disconnect(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         [InlineData(true)]
         [InlineData(false)]
         public async Task Disconnect_Success(bool reuseSocket)
@@ -50,7 +50,66 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public async Task DisconnectAndReuse_SameHost_Succeeds()
+        {
+            // After DisconnectAsync(reuseSocket: true), reconnecting to the same
+            // host and exchanging data should work without any stale data leaking
+            // from the previous connection.
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Connection 1: connect, exchange data, disconnect with reuse.
+            await client.ConnectAsync(listener.LocalEndPoint!);
+            using (Socket server1 = await listener.AcceptAsync())
+            {
+                byte[] serverPayload = new byte[2048];
+                Random.Shared.NextBytes(serverPayload);
+                await server1.SendAsync(serverPayload);
+
+                byte[] recvBuf = new byte[4096];
+                int received = await client.ReceiveAsync(recvBuf);
+                Assert.Equal(2048, received);
+            }
+
+            await client.DisconnectAsync(reuseSocket: true);
+
+            // Connection 2: reconnect and send a known message.
+            await client.ConnectAsync(listener.LocalEndPoint!);
+            using Socket server2 = await listener.AcceptAsync();
+
+            byte[] message = "HELLO"u8.ToArray();
+            await client.SendAsync(message);
+
+            // The server should receive exactly the message bytes and nothing else.
+            byte[] serverRecvBuf = new byte[65536 + message.Length];
+            int totalReceived = 0;
+
+            // Read with a short timeout to ensure no extra data arrives.
+            server2.ReceiveTimeout = 1000;
+            try
+            {
+                while (true)
+                {
+                    int n = server2.Receive(serverRecvBuf, totalReceived, serverRecvBuf.Length - totalReceived, SocketFlags.None);
+                    if (n == 0) break;
+                    totalReceived += n;
+                }
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+            {
+                // Expected: timeout means no more data.
+            }
+
+            Assert.Equal(message.Length, totalReceived);
+            Assert.Equal(message, serverRecvBuf[..totalReceived]);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         public async Task DisconnectAndReuse_ReconnectSync_ThrowsInvalidOperationException()
         {
             IPEndPoint loopback = new IPEndPoint(IPAddress.Loopback, 0);
@@ -97,19 +156,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Sync : Disconnect<SocketHelperArraySync>
     {
         public Disconnect_Sync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_SyncForceNonBlocking : Disconnect<SocketHelperSyncForceNonBlocking>
     {
         public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class Disconnect_Apm : Disconnect<SocketHelperApm>
     {
         public Disconnect_Apm(ITestOutputHelper output) : base(output) { }
@@ -134,7 +193,7 @@ namespace System.Net.Sockets.Tests
     {
         public Disconnect_CancellableTask(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         [InlineData(true)]
         [InlineData(false)]
         public async Task Disconnect_Precanceled_ThrowsOperationCanceledException(bool reuseSocket)

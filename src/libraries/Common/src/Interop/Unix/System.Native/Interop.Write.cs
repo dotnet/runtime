@@ -22,5 +22,8 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Write", SetLastError = true)]
         internal static unsafe partial int Write(IntPtr fd, byte* buffer, int bufferSize);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WriteToNonblocking", SetLastError = true)]
+        internal static unsafe partial int WriteToNonblocking(SafeHandle fd, byte* buffer, int bufferSize);
     }
 }

@@ -30,3 +30,11 @@ Across these workflows, the following changes were made to configure the issue l
     - `labeler-train.yml`
 6. Update the cache retention cron schedule to an arbitrary time of day:
     - `labeler-cache-retention.yml`
+
+## Repository Variables
+
+The following [repository variables](../../settings/variables/actions) can be configured to override default workflow behavior:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ISSUE_LABELER_PREDICTION_THRESHOLD` | The minimum prediction confidence threshold for applying an area label. Predictions below this threshold will apply the `DEFAULT_LABEL` instead. | `0.05` |

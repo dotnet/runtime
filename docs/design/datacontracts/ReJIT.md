@@ -28,6 +28,7 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | ProfControlBlock | GlobalEventMask | an `ICorProfiler` `COR_PRF_MONITOR` value |
+| ProfControlBlock | RejitOnAttachEnabled | cached value of the `ProfAPI_RejitOnAttach` configuration knob |
 | ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
 | ILCodeVersionNode | RejitState | a `RejitFlags` value |
 
@@ -55,22 +56,18 @@ public enum RejitFlags : uint
 {
     kStateRequested = 0x00000000,
 
-    kStateGettingReJITParameters = 0x00000001,
-
     kStateActive = 0x00000002,
 
-    kStateMask = 0x0000000F,
-
-    kSuppressParams = 0x80000000
+    kStateMask = 0x0000000F
 }
 
 bool IsEnabled()
 {
     TargetPointer address = target.ReadGlobalPointer("ProfilerControlBlock");
     ulong globalEventMask = target.Read<ulong>(address + /* ProfControlBlock::GlobalEventMask offset*/);
-    bool profEnabledReJIT = (GlobalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
-    bool clrConfigEnabledReJit = /* host process does not have environment variable DOTNET_ProfAPI_ReJitOnAttach set to 0 */;
-    return profEnabledReJIT || clrConfigEnabledReJIT;
+    bool profEnabledReJIT = (globalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
+    bool rejitOnAttachEnabled = target.Read<uint>(address + /* ProfControlBlock::RejitOnAttachEnabled offset*/) != 0;
+    return profEnabledReJIT || rejitOnAttachEnabled;
 }
 
 RejitState GetRejitState(ILCodeVersionHandle codeVersion)

@@ -25,7 +25,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_COM1_After_Open()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -37,7 +37,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasTwoSerialPorts))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasTwoSerialPorts))]
         public void PortName_COM2_After_Open()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
@@ -49,7 +49,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_Empty()
         {
             Debug.WriteLine("Verifying setting PortName=\"\"");
@@ -57,7 +57,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_null()
         {
             Debug.WriteLine("Verifying setting PortName=null");
@@ -65,7 +65,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_RND()
         {
             Random rndGen = new Random();
@@ -80,7 +80,7 @@ namespace System.IO.Ports.Tests
             VerifyException(rndStrBuf.ToString(), ThrowAt.Open, typeof(ArgumentException), typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_FileName()
         {
             string fileName = "PortNameEqualToFileName.txt";
@@ -103,14 +103,14 @@ namespace System.IO.Ports.Tests
             File.Delete(fileName);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_COM257()
         {
             Debug.WriteLine("Verifying setting PortName=COM257");
             VerifyException("COM257", ThrowAt.Open, typeof(IOException), typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_LPT()
         {
             Type expectedException = _dosDevices.CommonNameExists("LPT") ? typeof(ArgumentException) : typeof(ArgumentException);
@@ -119,7 +119,7 @@ namespace System.IO.Ports.Tests
             VerifyException("LPT", ThrowAt.Open, expectedException, typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_LPT1()
         {
             Type expectedException = _dosDevices.CommonNameExists("LPT1") ? typeof(ArgumentException) : typeof(ArgumentException);
@@ -128,7 +128,7 @@ namespace System.IO.Ports.Tests
             VerifyException("LPT1", ThrowAt.Open, expectedException, typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_PHYSICALDRIVE0()
         {
             Type expectedException = _dosDevices.CommonNameExists("PHYSICALDRIVE0") ? typeof(ArgumentException) : typeof(ArgumentException);
@@ -137,7 +137,7 @@ namespace System.IO.Ports.Tests
             VerifyException("PHYSICALDRIVE0", ThrowAt.Open, expectedException, typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_A()
         {
             Type expectedException = _dosDevices.CommonNameExists("A:") ? typeof(ArgumentException) : typeof(ArgumentException);
@@ -147,7 +147,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_C()
         {
             Debug.WriteLine("Verifying setting PortName=C:");
@@ -155,7 +155,7 @@ namespace System.IO.Ports.Tests
             VerifyException("C:", ThrowAt.Open, new[] { typeof(ArgumentException), typeof(ArgumentException) }, typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(PortName_Property), nameof(HasOneSerialPort))]
         public void PortName_SystemDrive()
         {
             Debug.WriteLine("Verifying setting PortName=%SYSTEMDRIVE%");

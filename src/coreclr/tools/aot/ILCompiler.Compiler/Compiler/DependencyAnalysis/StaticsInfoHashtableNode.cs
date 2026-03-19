@@ -13,9 +13,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable with information about all statics regions for all compiled generic types.
     /// </summary>
-    internal sealed class StaticsInfoHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class StaticsInfoHashtableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private ExternalReferencesTableNode _nativeStaticsReferences;
 
@@ -24,8 +23,6 @@ namespace ILCompiler.DependencyAnalysis
             _externalReferences = externalReferences;
             _nativeStaticsReferences = nativeStaticsReferences;
         }
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -106,8 +103,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

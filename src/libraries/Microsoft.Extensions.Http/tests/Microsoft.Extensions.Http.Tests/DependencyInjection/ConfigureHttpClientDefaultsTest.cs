@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
     // These are mostly integration tests that verify the configuration experience.
     public class ConfigureHttpClientDefaultsTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ConfigureHttpClientDefaults_WithNameConfig_NameConfigUsed()
         {
             // Arrange
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ConfigureHttpClientDefaults_MultipleConfig_LastWins()
         {
             // Arrange
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://default2.com/", client.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ConfigureHttpClientDefaults_MultipleConfigInOneDefault_LastWins()
         {
             // Arrange
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://default2.com/", client.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddTypedClient_Error()
         {
             // Arrange
