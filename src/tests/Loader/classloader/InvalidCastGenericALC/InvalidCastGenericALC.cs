@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using TestLibrary;
 using Xunit;
 
 public class InvalidCastGenericALC
@@ -16,6 +17,8 @@ public class InvalidCastGenericALC
         GC.KeepAlive(result);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/194", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/80526", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
