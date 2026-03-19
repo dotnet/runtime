@@ -90,13 +90,13 @@ namespace System.Diagnostics.Tests
             }
 
             // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
-            (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
+            (bool expectUsesShowWindow, int expectedWindowFlag) = windowStyle switch
             {
-                ProcessWindowStyle.Hidden => (1, 0),
-                ProcessWindowStyle.Minimized => (1, 2),
-                ProcessWindowStyle.Maximized => (1, 3),
+                ProcessWindowStyle.Hidden => (true, 0), // SW_HIDE is 0
+                ProcessWindowStyle.Minimized => (true, 2), // SW_SHOWMINIMIZED is 2
+                ProcessWindowStyle.Maximized => (true, 3), // SW_SHOWMAXIMIZED is 3
                 // UseShellExecute always sets the flag but no shell does not for Normal.
-                _ => useShellExecute ? (1, 1) : (0, 0),
+                _ => useShellExecute ? (true, 1) : (false, 0), // SW_SHOWNORMAL is 1
             };
 
             using Process p = CreateProcess((string procArg) =>
@@ -104,13 +104,13 @@ namespace System.Diagnostics.Tests
                 Interop.GetStartupInfoW(out Interop.STARTUPINFO si);
 
                 string[] argSplit = procArg.Split(" ");
-                int expectedDwFlag = int.Parse(argSplit[0]);
+                bool expectUsesShowWindow = bool.Parse(argSplit[0]);
                 short expectedWindowFlag = short.Parse(argSplit[1]);
 
-                Assert.Equal(expectedDwFlag, si.dwFlags);
+                Assert.Equal(expectUsesShowWindow, (si.dwFlags & 0x1) != 0); // STARTF_USESHOWWINDOW is 0x1
                 Assert.Equal(expectedWindowFlag, si.wShowWindow);
                 return RemoteExecutor.SuccessExitCode;
-            }, $"{expectedDwFlag} {expectedWindowFlag}");
+            }, $"{expectUsesShowWindow} {expectedWindowFlag}");
             p.StartInfo.UseShellExecute  = useShellExecute;
             p.StartInfo.WindowStyle = windowStyle;
             p.Start();
