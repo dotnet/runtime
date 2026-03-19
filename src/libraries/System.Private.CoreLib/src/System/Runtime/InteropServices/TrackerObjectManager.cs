@@ -93,13 +93,12 @@ namespace System.Runtime.InteropServices
                         }
                     }
                 }
-
-                // Remove the native object wrappers from the cache
-                // so we don't return released wrappers to the user if the native COM object
-                // happens to be reused.
-                GlobalInstanceForTrackerSupport.RemoveWrappersFromCache(wrappersToRemove);
             }
 
+            // Remove the native object wrappers from the cache
+            // so we don't return released wrappers to the user if the native COM object
+            // happens to be reused.
+            GlobalInstanceForTrackerSupport.RemoveWrappersFromCache(wrappersToRemove);
             GlobalInstanceForTrackerSupport.ReleaseObjects(objects);
         }
 
