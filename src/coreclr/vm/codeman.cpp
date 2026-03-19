@@ -177,29 +177,19 @@ UnwindInfoTable::~UnwindInfoTable()
 void UnwindInfoTable::Register()
 {
     _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
-    EX_TRY
+
+    hHandle = NULL;
+    NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
+    if (ret != STATUS_SUCCESS)
     {
-        hHandle = NULL;
-        NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
-        if (ret != STATUS_SUCCESS)
-        {
-            _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
-            hHandle = NULL;
-            STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
-        }
-        else
-        {
-            STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::Register Handle: %p [%p, %p]\n", hHandle, iRangeStart, iRangeEnd);
-        }
-    }
-    EX_CATCH
-    {
-        hHandle = NULL;
-        STRESS_LOG2(LF_JIT, LL_ERROR, "UnwindInfoTable::Register Exception while creating table [%p, %p]\n",
-            iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
+        hHandle = NULL;
+        STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
     }
-    EX_END_CATCH
+    else
+    {
+        STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::Register Handle: %p [%p, %p]\n", hHandle, iRangeStart, iRangeEnd);
+    }
 }
 
 /*****************************************************************************/
@@ -227,8 +217,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
     }
     CONTRACTL_END;
 
-    if (!s_publishingActive)
-        return;
+    _ASSERTE(s_publishingActive);
 
     for (int i = 0; i < count; )
     {
@@ -239,7 +228,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
                 _ASSERTE(data[i].BeginAddress <= RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart));
                 _ASSERTE(RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart) <= (iRangeEnd - iRangeStart));
 
-                pPendingTable[cPendingCount++] = data[i];
+                pendingTable[cPendingCount++] = data[i];
 
                 STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%x, pending 0x%x\n",
                     hHandle, iRangeStart, iRangeEnd,
@@ -284,8 +273,9 @@ void UnwindInfoTable::FlushPendingEntries()
     {
         CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
         localPendingCount = cPendingCount;
-        memcpy(localPending, pPendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        memcpy(localPending, pendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
         cPendingCount = 0;
+        INDEBUG( memset(pendingTable, 0xcc, sizeof(pendingTable)); )
     }
 
     if (localPendingCount == 0)
@@ -307,7 +297,9 @@ void UnwindInfoTable::FlushPendingEntries()
         localPending[j] = key;
     }
 
-    T_RUNTIME_FUNCTION* oldPTable = NULL;
+    // delete tables outside the publish lock — can be expensive for large allocations across threads.
+    NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable;
+    NewArrayHolder<T_RUNTIME_FUNCTION> newPTable;
     {
         CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
 
@@ -334,7 +326,7 @@ void UnwindInfoTable::FlushPendingEntries()
         STRESS_LOG7(LF_JIT, LL_INFO100, "FlushPendingEntries Handle: %p [%p, %p] Merging 0x%x live + 0x%x pending into 0x%x max, from 0x%x\n",
             hHandle, iRangeStart, iRangeEnd, liveCount, localPendingCount, desiredSpace, cTableMaxCount);
 
-        NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
+        newPTable = new T_RUNTIME_FUNCTION[desiredSpace];
 
         // Merge-sort the main table and pending buffer into newPTable.
         ULONG mainIdx = 0;
@@ -387,9 +379,6 @@ void UnwindInfoTable::FlushPendingEntries()
         // Note that there is a short time when we are not publishing...
         Register();
     }
-
-    // delete[] outside the publish lock — can be expensive for large allocations across threads.
-    delete[] oldPTable;
 }
 
 /*****************************************************************************/
@@ -437,10 +426,10 @@ void UnwindInfoTable::FlushPendingEntries()
         CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
         for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
         {
-            if (unwindInfo->pPendingTable[i].BeginAddress <= relativeEntryPoint &&
-                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pPendingTable[i], unwindInfo->iRangeStart))
+            if (unwindInfo->pendingTable[i].BeginAddress <= relativeEntryPoint &&
+                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pendingTable[i], unwindInfo->iRangeStart))
             {
-                unwindInfo->pPendingTable[i] = unwindInfo->pPendingTable[--unwindInfo->cPendingCount];
+                unwindInfo->pendingTable[i] = unwindInfo->pendingTable[--unwindInfo->cPendingCount];
                 STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
                 return;
             }
@@ -464,26 +453,24 @@ void UnwindInfoTable::FlushPendingEntries()
     TADDR entry = baseAddress + methodUnwindData->BeginAddress;
     RangeSection * pRS = ExecutionManager::FindCodeRange(entry, ExecutionManager::GetScanFlags());
     _ASSERTE(pRS != NULL);
-    if (pRS != NULL)
-    {
-        UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
-        if (unwindInfo == NULL)
-        {
-            CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
-            if (pRS->_pUnwindInfoTable == NULL)
-            {
-                unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
-                unwindInfo->Register();
-                VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
-            }
-            else
-            {
-                unwindInfo = pRS->_pUnwindInfoTable;
-            }
-        }
 
-        unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
+    UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
+    if (unwindInfo == NULL)
+    {
+        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+        if (pRS->_pUnwindInfoTable == NULL)
+        {
+            unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+            unwindInfo->Register();
+            VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
+        }
+        else
+        {
+            unwindInfo = pRS->_pUnwindInfoTable;
+        }
     }
+
+    unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
 }
 
 /*****************************************************************************/

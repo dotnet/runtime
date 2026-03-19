@@ -632,7 +632,7 @@ private:
     // These entries are accumulated and batch-merged into pTable to amortize the cost of
     // RtlDeleteGrowableFunctionTable + RtlAddGrowableFunctionTable.
     static const ULONG  cPendingMaxCount = 32;
-    T_RUNTIME_FUNCTION  pPendingTable[cPendingMaxCount];
+    T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
