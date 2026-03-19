@@ -867,6 +867,11 @@ CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
 
+#if defined(TARGET_WASM)
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
+CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+#endif // defined(TARGET_WASM)
+
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)
 
