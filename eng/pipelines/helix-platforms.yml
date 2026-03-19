@@ -257,6 +257,10 @@ variables:
   - name: helix_windows_arm64_oldest_internal
     value: Windows.10.Arm64
 
+  # Windows x86 (runs on x64 machines via WoW64)
+  - name: helix_windows_x86
+    value: Windows.10.Amd64.Open
+
   # ===========================================
   # Browser/WASM Platforms
   # ===========================================
