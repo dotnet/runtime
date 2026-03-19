@@ -208,7 +208,6 @@ handle_arguments_local() {
 
         generatelayoutonly|-generatelayoutonly)
             __GenerateLayoutOnly=1
-            __SkipRestorePackages=1
             ;;
 
         priority1|-priority1)
