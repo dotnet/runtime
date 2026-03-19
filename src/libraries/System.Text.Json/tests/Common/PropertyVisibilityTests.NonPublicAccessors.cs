@@ -596,6 +596,30 @@ namespace System.Text.Json.Serialization.Tests
             internal readonly int GetNumber() => Number;
         }
 
+        /// <summary>
+        /// Generic type with inaccessible [JsonInclude] properties to exercise reflection fallback
+        /// (UnsafeAccessor does not support generic types).
+        /// </summary>
+        public class GenericClassWithPrivateJsonIncludeProperties<T>
+        {
+            [JsonInclude]
+            private T Value { get; set; }
+
+            [JsonInclude]
+            private string Label { get; set; } = "default";
+
+            public static GenericClassWithPrivateJsonIncludeProperties<T> Create(T value, string label)
+            {
+                var obj = new GenericClassWithPrivateJsonIncludeProperties<T>();
+                obj.Value = value;
+                obj.Label = label;
+                return obj;
+            }
+
+            public T GetValue() => Value;
+            public string GetLabel() => Label;
+        }
+
         [Fact]
         public virtual async Task JsonInclude_PrivateProperties_CanRoundtrip()
         {
@@ -690,6 +714,20 @@ namespace System.Text.Json.Serialization.Tests
             var deserialized = await Serializer.DeserializeWrapper<StructWithJsonIncludePrivateProperties>(json);
             Assert.Equal("Hello", deserialized.GetName());
             Assert.Equal(42, deserialized.GetNumber());
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_GenericType_PrivateProperties_CanRoundtrip()
+        {
+            // Generic types use reflection fallback (UnsafeAccessor doesn't support generics).
+            var obj = GenericClassWithPrivateJsonIncludeProperties<int>.Create(42, "test");
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""Value"":42", json);
+            Assert.Contains(@"""Label"":""test""", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<GenericClassWithPrivateJsonIncludeProperties<int>>(json);
+            Assert.Equal(42, deserialized.GetValue());
+            Assert.Equal("test", deserialized.GetLabel());
         }
     }
 }
