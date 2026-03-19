@@ -87,7 +87,10 @@ namespace System.Runtime.InteropServices
                         // passing them.
                         nativeObjectWrapper.DisconnectTracker();
 
-                        wrappersToRemove.Add(nativeObjectWrapper);
+                        if (nativeObjectWrapper.ComWrappers == GlobalInstanceForTrackerSupport)
+                        {
+                            wrappersToRemove.Add(nativeObjectWrapper);
+                        }
                     }
                 }
 
