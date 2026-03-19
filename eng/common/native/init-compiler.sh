@@ -81,14 +81,16 @@ EOF
 if [ -z "$CLR_CC" ]; then
 
     if [ "$__baseOS" = "Darwin" ] && [ "$compiler" = "clang" ] && [ -z "$majorVersion" ]; then
-        # On Darwin, prefer the Xcode toolchain clang (AppleClang) over any
+        # On Darwin, prefer /usr/bin/clang (the Apple toolchain shim) over any
         # versioned LLVM clang that may be installed via Homebrew or other
-        # package managers. AppleClang is required for correct Apple platform
-        # linking, Swift interop, and CFI directive handling.
-        xcrun_cc="$(xcrun --find clang 2>/dev/null)"
-        if [ -n "$xcrun_cc" ]; then
-            CC="$xcrun_cc"
-            CXX="$(xcrun --find clang++ 2>/dev/null)"
+        # package managers. The shim always delegates to the active Xcode's
+        # AppleClang and automatically injects -isysroot, which is required
+        # for the linker to find system libraries, frameworks, and Swift
+        # runtime paths. Calling the Xcode toolchain clang directly (via
+        # xcrun --find) skips the implicit -isysroot, breaking native linking.
+        if [ -x "/usr/bin/clang" ]; then
+            CC="/usr/bin/clang"
+            CXX="/usr/bin/clang++"
         fi
     fi
 
