@@ -1969,11 +1969,12 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     static ConfigMethodRange JitR2RUnsupportedRange;
     JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
     const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
-    const bool     inRange = JitR2RUnsupportedRange.Contains(hash);
+    const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
 
     if (inRange)
     {
-        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange\n");
+        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x%08x, range is ", hash);
+        JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
         implReadyToRunUnsupported();
     }
 #endif // defined(TARGET_WASM)

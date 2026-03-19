@@ -2431,7 +2431,11 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
                 var_types regType = seg.GetRegisterType();
                 // If passed in a float reg then keep that type; otherwise let
                 // createSlotAccess get the type from the layout.
-                var_types slotType = varTypeUsesFloatReg(regType) ? regType : TYP_UNDEF;
+                //
+                // For Wasm just use the seg register type for structs.
+                // Note this will cause DNER if the arg was an unpromoted local.
+                //
+                var_types slotType = (varTypeUsesFloatReg(regType) || TARGET_WASM) ? regType : TYP_UNDEF;
                 GenTree*  access   = createSlotAccess(seg.Offset, slotType);
 
                 newArg->AsFieldList()->AddField(this, access, seg.Offset, access->TypeGet());
