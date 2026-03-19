@@ -74,8 +74,11 @@ namespace System.Runtime.CompilerServices
         ContinuationContextIndexFirstBit = 5,
         ContinuationContextIndexNumBits = 2,
 
+        // For JIT, the continuation stores space for every possible type of
+        // async callee's result. We need to represent the offset to each of
+        // these, so we allocate the rest of the bits for this.
         ResultIndexFirstBit = 7,
-        ResultIndexBits = 25,
+        ResultIndexNumBits = 25,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -138,7 +141,7 @@ namespace System.Runtime.CompilerServices
 
         public ref byte GetResultStorageOrNull()
         {
-            const uint mask = (1u << (int)ContinuationFlags.ResultIndexBits) - 1;
+            const uint mask = (1u << (int)ContinuationFlags.ResultIndexNumBits) - 1;
             uint index = ((uint)Flags >> (int)ContinuationFlags.ResultIndexFirstBit) & mask;
             if (index == 0)
                 return ref Unsafe.NullRef<byte>();

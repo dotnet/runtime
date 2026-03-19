@@ -50,7 +50,7 @@
        console apps, but also for test projects without an entry point. -->
   <Target Name="RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" Condition="'$(OutputType)' != 'Exe'">
     <ItemGroup>
-      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+      <TrimmerRootAssembly Condition="'%(Identity)' == '$(AssemblyName)'">
         <RootMode>all</RootMode>
       </TrimmerRootAssembly>
     </ItemGroup>

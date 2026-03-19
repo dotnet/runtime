@@ -500,6 +500,29 @@ public unsafe partial interface ISOSHandleEnum : ISOSEnum
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
 }
 
+public struct DACEHInfo
+{
+    public enum EHClauseType : uint
+    {
+        EHFault,
+        EHFinally,
+        EHFilter,
+        EHTyped,
+        EHUnknown,
+    }
+    public EHClauseType clauseType;
+    public ClrDataAddress tryStartOffset;
+    public ClrDataAddress tryEndOffset;
+    public ClrDataAddress handlerStartOffset;
+    public ClrDataAddress handlerEndOffset;
+    public Interop.BOOL isDuplicateClause;
+    public ClrDataAddress filterOffset;
+    public Interop.BOOL isCatchAllHandler;
+    public ClrDataAddress moduleAddr;
+    public ClrDataAddress mtCatch;
+    public uint tokCatch;
+}
+
 public enum SOSStackSourceType : uint
 {
     SOS_StackSourceIP = 0,
@@ -559,6 +582,25 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
 {
     [PreserveSig]
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
+}
+
+public struct DacpRCWData
+{
+    public ClrDataAddress identityPointer;
+    public ClrDataAddress unknownPointer;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress jupiterObject;
+    public ClrDataAddress vtablePtr;
+    public ClrDataAddress creatorThread;
+    public ClrDataAddress ctxCookie;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isJupiterObject;
+    public Interop.BOOL supportsIInspectable;
+    public Interop.BOOL isAggregated;
+    public Interop.BOOL isContained;
+    public Interop.BOOL isFreeThreaded;
+    public Interop.BOOL isDisconnected;
 }
 
 [GeneratedComInterface]
@@ -730,7 +772,7 @@ public unsafe partial interface ISOSDacInterface
 
     // EH
     [PreserveSig]
-    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ void* pCallback, void* token);
+    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token);
     [PreserveSig]
     int GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
 
@@ -758,7 +800,7 @@ public unsafe partial interface ISOSDacInterface
 
     // COM
     [PreserveSig]
-    int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
+    int GetRCWData(ClrDataAddress addr, DacpRCWData* data);
     [PreserveSig]
     int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
