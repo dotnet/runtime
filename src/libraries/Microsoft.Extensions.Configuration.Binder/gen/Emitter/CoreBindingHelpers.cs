@@ -981,15 +981,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                             // The current configuration section doesn't have any children, let's check if we are binding to an array and the configuration value is empty string.
                             // In this case, we will assign an empty array to the member. Otherwise, we will skip the binding logic.
-                            // The null check on the member requires a getter, so skip this fallback for set-only properties.
-                            if ((complexType is ArraySpec || complexType.IsExactIEnumerableOfT) && canSet && canGet)
+                            if ((complexType is ArraySpec || complexType.IsExactIEnumerableOfT) && canSet)
                             {
-                                // Either we have an array or we have an IEnumerable<T> both these types can be assigned an empty array when having empty string configuration value.
+                                // Either we have an array or we have an IEnumerable<T>; both these types can be assigned an empty array when having empty string configuration value.
                                 Debug.Assert(complexType is ArraySpec || complexType is EnumerableSpec);
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
-                                _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
-                                EmitEndBlock();
+
+                                if (canGet)
+                                {
+                                    // For properties with getters, only assign the empty array when the current value is null.
+                                    EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
+                                    _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
+                                    EmitEndBlock();
+                                }
+                                else
+                                {
+                                    // For true set-only properties (no getter), we cannot read the current value; assign the empty array when the configuration value is empty string.
+                                    EmitStartBlock($@"if ({Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
+                                    _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
+                                    EmitEndBlock();
+                                }
                             }
 
                             return _typeIndex.CanInstantiate(complexType);
