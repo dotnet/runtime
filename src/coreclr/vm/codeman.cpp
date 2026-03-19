@@ -483,11 +483,6 @@ void UnwindInfoTable::FlushPendingEntries()
         }
 
         unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
-
-        // Flush any entries that were buffered above so the OS can unwind this
-        // method immediately. Otherwise, we may end up with broken stack traces
-        // for recently JITed methods.
-        unwindInfo->FlushPendingEntries();
     }
 }
 
