@@ -1027,7 +1027,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (!member.CanGet)
                     {
                         // Set-only property: initialize to default since we can't read the current value.
-                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = new {effectiveMemberTypeFQN}();");
+                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = default;");
                     }
                     else if (memberType is NullableSpec)
                     {
@@ -1036,7 +1036,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine($"{memberType.TypeRef.FullyQualifiedName} {nullableTempIdentifier} = {memberAccessExpr};");
 
                         _writer.WriteLine(
-                            $"{effectiveMemberTypeFQN} {tempIdentifier} = {nullableTempIdentifier}.{Identifier.HasValue} ? {nullableTempIdentifier}.{Identifier.Value} : new {effectiveMemberTypeFQN}();");
+                            $"{effectiveMemberTypeFQN} {tempIdentifier} = {nullableTempIdentifier}.{Identifier.HasValue} ? {nullableTempIdentifier}.{Identifier.Value} : default;");
                     }
                     else
                     {
