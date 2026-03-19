@@ -10,38 +10,111 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the BuiltInCOM contract.
-/// Uses the BuiltInCOM debuggee, which creates STA-context Shell.Link COM
-/// objects on a thread with eager cleanup disabled so that g_pRCWCleanupList
-/// is populated at crash time, giving TraverseRCWCleanupList real data to walk.
+/// Uses the CCWInterfaces debuggee dump, which creates COM callable wrappers (CCWs)
+/// on Windows then crashes via FailFast.
+/// All tests are skipped on non-Windows dumps because CCWs require Windows COM support.
 /// </summary>
 public class BuiltInCOMDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "BuiltInCOM";
+    protected override string DebuggeeName => "CCWInterfaces";
+    protected override string DumpType => "full";
+
+    /// <summary>
+    /// Enumerates all strong GC handles from the dump, dereferences each one to get
+    /// the managed object address, then uses the Object contract to find objects that
+    /// have an active CCW. Returns a list of CCW pointers.
+    /// </summary>
+    private List<TargetPointer> GetCCWPointersFromHandles()
+    {
+        IGC gcContract = Target.Contracts.GC;
+        IObject objectContract = Target.Contracts.Object;
+
+        List<HandleData> strongHandles = gcContract.GetHandles([HandleType.Strong]);
+        List<TargetPointer> ccwPtrs = [];
+
+        foreach (HandleData handleData in strongHandles)
+        {
+            // Dereference the handle slot to get the object address.
+            TargetPointer objPtr = Target.ReadPointer(handleData.Handle);
+            if (objPtr == TargetPointer.Null)
+                continue;
+
+            bool hasCOM = objectContract.GetBuiltInComData(objPtr, out _, out TargetPointer ccwPtr, out _);
+            if (hasCOM && ccwPtr != TargetPointer.Null)
+                ccwPtrs.Add(ccwPtr);
+        }
+
+        return ccwPtrs;
+    }
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    [SkipOnOS(IncludeOnly = "windows", Reason = "BuiltInCOM contract is only available on Windows")]
-    public void BuiltInCOM_RCWCleanupList_HasEntries(TestConfiguration config)
+    [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
+    public void BuiltInCOM_CCW_HasInterfaces(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        IBuiltInCOM contract = Target.Contracts.BuiltInCOM;
-        Assert.NotNull(contract);
+        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
 
-        List<RCWCleanupInfo> items = contract.GetRCWCleanupList(TargetPointer.Null).ToList();
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count >= 3, "Expected at least three objects with an active CCW from strong handles");
 
-        // The STA thread created Shell.Link COM objects with eager cleanup disabled,
-        // so the cleanup list must be non-empty.
-        Assert.NotEmpty(items);
-
-        foreach (RCWCleanupInfo info in items)
+        foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            // Every cleanup entry must have a valid RCW address.
-            Assert.NotEqual(TargetPointer.Null, info.RCW);
+            List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
 
-            // Shell.Link is an STA-affiliated, non-free-threaded COM object,
-            // so the STA thread pointer must be set and IsFreeThreaded must be false.
-            Assert.False(info.IsFreeThreaded);
-            Assert.NotEqual(TargetPointer.Null, info.STAThread);
+            Assert.True(interfaces.Count > 0,
+                $"Expected at least one interface entry for CCW at 0x{ccwPtr:X}");
+
+            // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
+            Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
+    public void BuiltInCOM_CCW_InterfaceMethodTablesAreReadable(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
+
+        foreach (TargetPointer ccwPtr in ccwPtrs)
+        {
+            foreach (COMInterfacePointerData iface in builtInCOM.GetCCWInterfaces(ccwPtr))
+            {
+                if (iface.MethodTable == TargetPointer.Null)
+                    continue;
+
+                // Verify the MethodTable is readable by resolving it to a TypeHandle.
+                TypeHandle typeHandle = rts.GetTypeHandle(iface.MethodTable);
+                Assert.False(typeHandle.IsNull,
+                    $"Expected non-null TypeHandle for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
+                Assert.True(rts.GetBaseSize(typeHandle) > 0,
+                    $"Expected positive base size for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
+            }
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
+    public void BuiltInCOM_CCW_RefCountIsPositive(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
+
+        foreach (TargetPointer ccwPtr in ccwPtrs)
+        {
+            ulong refCount = builtInCOM.GetRefCount(ccwPtr);
+            Assert.True(refCount > 0,
+                $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
         }
     }
 }

@@ -5,7 +5,10 @@
        to extract the DumpTypes property. Returns the project name with DumpTypes metadata. -->
   <Target Name="GetDumpTypes" Returns="@(_DumpTypeOutput)">
     <ItemGroup>
-      <_DumpTypeOutput Include="$(MSBuildProjectName)" DumpTypes="$(DumpTypes)" />
+      <_DumpTypeOutput Include="$(MSBuildProjectName)"
+                       DumpTypes="$(DumpTypes)"
+                       WindowsOnly="$(WindowsOnly)"
+                       ProjectPath="$(MSBuildProjectFullPath)" />
     </ItemGroup>
   </Target>
 </Project>

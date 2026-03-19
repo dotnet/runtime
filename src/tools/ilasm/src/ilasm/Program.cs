@@ -234,7 +234,7 @@ internal sealed class Program
                     hasErrors = true;
                     Console.Error.WriteLine($"Error: {diagnostic.Location}: {diagnostic.Message}");
                 }
-                else if (diagnostic.Severity == DiagnosticSeverity.Warning)
+                else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
                 {
                     Console.WriteLine($"Warning: {diagnostic.Location}: {diagnostic.Message}");
                 }

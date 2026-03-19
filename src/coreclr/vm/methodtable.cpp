@@ -1761,7 +1761,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 
     if (pCurrentMethodTable == pMT)
         return true;
-        
+
     if (pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pCurrentMethodTable->HasSameTypeDefAs(pMT))
     {
         // Any matches need to use the special marker type logic
@@ -1778,7 +1778,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 #ifndef DACCESS_COMPILE
                 if (pMT->IsFullyLoaded())
                     SetInterface(pMT);
-#endif 
+#endif
                 return true;
             }
             else
@@ -3576,23 +3576,9 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
 
         // Call the code method without touching MethodDesc if possible
         PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
-
-        if (pCanonMT->IsSharedByGenericInstantiations())
-        {
-            PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCctorCode);
-            DECLARE_ARGHOLDER_ARRAY(args, 1);
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(this);
-            CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE;
-            CALL_MANAGED_METHOD_NORET(args);
-        }
-        else
-        {
-            PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCctorCode);
-            DECLARE_ARGHOLDER_ARRAY(args, 0);
-            CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE;
-            CALL_MANAGED_METHOD_NORET(args);
-        }
-
+        MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
+        UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
+        caller.InvokeThrowing(pCctorCode, instantiatingArg);
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
 
         fRet = TRUE;
@@ -4353,7 +4339,7 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
         case ELEMENT_TYPE_TYPEDBYREF:
             // Primitive types and such. Nothing to check
             break;
-        
+
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
         {
@@ -4779,7 +4765,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             for (DWORD i = 0; i < formalParams.GetNumArgs(); i++)
             {
-                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked 
+                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked
                 // via the call to GetConstraints which will eventually call EEClass::CheckVarianceInSig
                 BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth);
 

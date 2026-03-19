@@ -136,7 +136,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->GetKind())
+        else if (block->KindIs(BBJ_SWITCH))
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -313,7 +313,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // now a jump target
 
 #ifdef ENABLE_FAST_GCPOLL_HELPER
-        // Prefer the fast gc poll helepr over the double indirection
+        // Prefer the fast gc poll helper over the double indirection
         noway_assert(pAddrOfCaptureThreadGlobal == nullptr);
 #endif
 
@@ -599,11 +599,15 @@ PhaseStatus Compiler::fgImport()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-/*****************************************************************************
- * This function returns true if tree is a node with a call
- * that unconditionally throws an exception
- */
-
+//------------------------------------------------------------------------
+// fgIsThrow: Check if a tree is a helper call that unconditionally throws an exception.
+//
+// Arguments:
+//    tree - The tree to check
+//
+// Return Value:
+//    True if the tree is a helper call that always throws.
+//
 bool Compiler::fgIsThrow(GenTree* tree)
 {
     if (!tree->IsCall())
@@ -620,11 +624,17 @@ bool Compiler::fgIsThrow(GenTree* tree)
     return false;
 }
 
-/*****************************************************************************
- * This function returns true for blocks that are in different hot-cold regions.
- * It returns false when the blocks are both in the same regions
- */
-
+//------------------------------------------------------------------------
+// fgInDifferentRegions: Check if two blocks are in different hot/cold regions.
+//
+// Arguments:
+//    blk1 - First block
+//    blk2 - Second block
+//
+// Return Value:
+//    True if the blocks are in different hot/cold regions; false if both
+//    are in the same region.
+//
 bool Compiler::fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const
 {
     noway_assert(blk1 != nullptr);
@@ -639,6 +649,15 @@ bool Compiler::fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* bl
     return (blk1->HasFlag(BBF_COLD) != blk2->HasFlag(BBF_COLD));
 }
 
+//------------------------------------------------------------------------
+// fgIsBlockCold: Check if a block is in the cold section.
+//
+// Arguments:
+//    blk - The block to check
+//
+// Return Value:
+//    True if the block is in the cold section.
+//
 bool Compiler::fgIsBlockCold(BasicBlock* blk)
 {
     noway_assert(blk != nullptr);
@@ -651,11 +670,17 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
     return blk->HasFlag(BBF_COLD);
 }
 
-/*****************************************************************************
- * This function returns true if tree is a GT_COMMA node with a call
- * that unconditionally throws an exception
- */
-
+//------------------------------------------------------------------------
+// fgIsCommaThrow: Check if a tree is a GT_COMMA with a call that
+//    unconditionally throws an exception.
+//
+// Arguments:
+//    tree       - The tree to check
+//    forFolding - If true, stress mode may randomly report false
+//
+// Return Value:
+//    True if the tree is a GT_COMMA whose first operand always throws.
+//
 bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 {
     // Instead of always folding comma throws,
@@ -674,8 +699,8 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-//------------------------------------------------------------------------
-// fgGetStaticsCCtorHelper: Creates a BasicBlock from the `tree` node.
+//------------------------------------------------------------------------------
+// fgGetStaticsCCtorHelper: Get the helper call node for a static class constructor.
 //
 // Arguments:
 //    cls       - The class handle
@@ -823,6 +848,15 @@ void Compiler::fgSetPreferredInitCctor()
     }
 }
 
+//------------------------------------------------------------------------
+// fgGetSharedCCtor: Get the shared class constructor call node.
+//
+// Arguments:
+//    cls - The class handle
+//
+// Return Value:
+//    The call node corresponding to the shared class constructor helper.
+//
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
@@ -1195,6 +1229,17 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     return call;
 }
 
+//------------------------------------------------------------------------
+// fgCastNeeded: Check whether a cast is needed to convert a tree's type to
+//    the specified type.
+//
+// Arguments:
+//    tree   - The tree whose type we are converting from
+//    toType - The target type
+//
+// Return Value:
+//    True if an additional cast is necessary; false otherwise.
+//
 bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
 {
     //
@@ -1307,6 +1352,14 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
     return false;
 }
 
+//------------------------------------------------------------------------
+// fgGetCritSectOfStaticMethod: Get the critical section object for a static
+//    synchronized method, used for monitor enter/exit.
+//
+// Return Value:
+//    A tree representing the lock object (either the runtime type object
+//    or a result of a runtime lookup).
+//
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
 {
     noway_assert(!compIsForInlining());
@@ -1384,65 +1437,61 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     return tree;
 }
 
-/*****************************************************************************
- *
- *  Add monitor enter/exit calls for synchronized methods, and a try/fault
- *  to ensure the 'exit' is called if the 'enter' was successful. On x86, we
- *  generate monitor enter/exit calls and tell the VM the code location of
- *  these calls. When an exception occurs between those locations, the VM
- *  automatically releases the lock. For non-x86 platforms, the JIT is
- *  responsible for creating a try/finally to protect the monitor enter/exit,
- *  and the VM doesn't need to know anything special about the method during
- *  exception processing -- it's just a normal try/finally.
- *
- *  We generate the following code:
- *
- *      void Foo()
- *      {
- *          unsigned byte acquired = 0;
- *          try {
- *              Monitor.Enter(<lock object>, &acquired);
- *
- *              *** all the preexisting user code goes here ***
- *
- *              Monitor.ExitIfTaken(<lock object>, &acquired);
- *          } fault {
- *              Monitor.ExitIfTaken(<lock object>, &acquired);
- *         }
- *      L_return:
- *         ret
- *      }
- *
- *  If the lock is actually acquired, then the 'acquired' variable is set to 1
- *  by the helper call. During normal exit, the finally is called, 'acquired'
- *  is 1, and the lock is released. If an exception occurs before the lock is
- *  acquired, but within the 'try' (extremely unlikely, but possible), 'acquired'
- *  will be 0, and the monitor exit call will quickly return without attempting
- *  to release the lock. Otherwise, 'acquired' will be 1, and the lock will be
- *  released during exception processing.
- *
- *  For synchronized methods, we generate a single return block.
- *  We can do this without creating additional "step" blocks because "ret" blocks
- *  must occur at the top-level (of the original code), not nested within any EH
- *  constructs. From the CLI spec, 12.4.2.8.2.3 "ret": "Shall not be enclosed in any
- *  protected block, filter, or handler." Also, 3.57: "The ret instruction cannot be
- *  used to transfer control out of a try, filter, catch, or finally block. From within
- *  a try or catch, use the leave instruction with a destination of a ret instruction
- *  that is outside all enclosing exception blocks."
- *
- *  In addition, we can add a "fault" at the end of a method and be guaranteed that no
- *  control falls through. From the CLI spec, section 12.4 "Control flow": "Control is not
- *  permitted to simply fall through the end of a method. All paths shall terminate with one
- *  of these instructions: ret, throw, jmp, or (tail. followed by call, calli, or callvirt)."
- *
- *  We only need to worry about "ret" and "throw", as the CLI spec prevents any other
- *  alternatives. Section 15.4.3.3 "Implementation information" states about exiting
- *  synchronized methods: "Exiting a synchronized method using a tail. call shall be
- *  implemented as though the tail. had not been specified." Section 3.37 "jmp" states:
- *  "The jmp instruction cannot be used to transferred control out of a try, filter,
- *  catch, fault or finally block; or out of a synchronized region." And, "throw" will
- *  be handled naturally; no additional work is required.
- */
+//------------------------------------------------------------------------
+// fgAddSyncMethodEnterExit: Add monitor enter/exit calls for synchronized
+//    methods, and a try/fault to ensure the 'exit' is called if the 'enter'
+//    was successful.
+//
+// Notes:
+//    We generate the following code:
+//
+//      void Foo()
+//      {
+//          unsigned byte acquired = 0;
+//          try {
+//              Monitor.Enter(<lock object>, &acquired);
+//
+//              *** all the preexisting user code goes here ***
+//
+//              Monitor.ExitIfTaken(<lock object>, &acquired);
+//          } fault {
+//              Monitor.ExitIfTaken(<lock object>, &acquired);
+//         }
+//      L_return:
+//         ret
+//      }
+//
+//    If the lock is actually acquired, then the 'acquired' variable is set to 1
+//    by the helper call. During normal exit from the 'try' block, the exit helper
+//    is executed, 'acquired' is 1, and the lock is released. If an exception occurs
+//    before the lock is acquired, but within the 'try' (extremely unlikely, but
+//    possible), 'acquired' will be 0, and the monitor exit call will quickly return
+//    without attempting to release the lock. Otherwise, 'acquired' will be 1, and
+//    the lock will be released when the fault handler runs during exception
+//    processing.
+//
+//    For synchronized methods, we generate a single return block.
+//    We can do this without creating additional "step" blocks because "ret" blocks
+//    must occur at the top-level (of the original code), not nested within any EH
+//    constructs. From the CLI spec, 12.4.2.8.2.3 "ret": "Shall not be enclosed in any
+//    protected block, filter, or handler." Also, 3.57: "The ret instruction cannot be
+//    used to transfer control out of a try, filter, catch, or finally block. From within
+//    a try or catch, use the leave instruction with a destination of a ret instruction
+//    that is outside all enclosing exception blocks."
+//
+//    In addition, we can add a "fault" at the end of a method and be guaranteed that no
+//    control falls through. From the CLI spec, section 12.4 "Control flow": "Control is not
+//    permitted to simply fall through the end of a method. All paths shall terminate with one
+//    of these instructions: ret, throw, jmp, or (tail. followed by call, calli, or callvirt)."
+//
+//    We only need to worry about "ret" and "throw", as the CLI spec prevents any other
+//    alternatives. Section 15.4.3.3 "Implementation information" states about exiting
+//    synchronized methods: "Exiting a synchronized method using a tail. call shall be
+//    implemented as though the tail. had not been specified." Section 3.37 "jmp" states:
+//    "The jmp instruction cannot be used to transferred control out of a try, filter,
+//    catch, fault or finally block; or out of a synchronized region." And, "throw" will
+//    be handled naturally; no additional work is required.
+//
 
 void Compiler::fgAddSyncMethodEnterExit()
 {
@@ -1632,13 +1681,22 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 }
 
-// fgCreateMonitorTree: Create tree to execute a monitor enter or exit operation for synchronized methods
-//    lvaMonAcquired: lvaNum of boolean variable that tracks if monitor has been acquired.
-//    lvaThisVar: lvaNum of variable being used as 'this' pointer, may not be the original one.  Is only used for
-//    nonstatic methods
-//    block: block to insert the tree in.  It is inserted at the end or in the case of a return, immediately before the
-//    GT_RETURN
-//    enter: whether to create a monitor enter or exit
+//------------------------------------------------------------------------
+// fgCreateMonitorTree: Create tree to execute a monitor enter or exit
+//    operation for synchronized methods.
+//
+// Arguments:
+//    lvaMonAcquired - lvaNum of boolean variable that tracks if monitor
+//                     has been acquired
+//    lvaThisVar     - lvaNum of variable being used as 'this' pointer,
+//                     may not be the original one; only used for nonstatic methods
+//    block          - Block to insert the tree in; inserted at the end or,
+//                     in the case of a return, immediately before the GT_RETURN
+//    enter          - Whether to create a monitor enter or exit
+//
+// Return Value:
+//    The monitor helper call tree.
+//
 
 GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThisVar, BasicBlock* block, bool enter)
 {
@@ -1711,12 +1769,22 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     return tree;
 }
 
-// Convert a BBJ_RETURN block in a synchronized method to a BBJ_ALWAYS.
-// We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit().
-// Thus, we put BBJ_RETURN blocks inside a 'try'. In IL this is illegal. Instead, we would
-// see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_CALLFINALLYRET blocks
-// during importing, and the BBJ_CALLFINALLYRET would point at an outer block with the BBJ_RETURN.
-// Here, we mimic some of the logic of importing a LEAVE to get the same effect for synchronized methods.
+//------------------------------------------------------------------------
+// fgConvertSyncReturnToLeave: Convert a BBJ_RETURN block in a synchronized
+//    method to a BBJ_ALWAYS that jumps to the single return block.
+//
+// Arguments:
+//    block - The BBJ_RETURN block to convert
+//
+// Notes:
+//    We've previously added a 'try' block around the original program code
+//    using fgAddSyncMethodEnterExit(). Thus, we put BBJ_RETURN blocks inside
+//    a 'try'. In IL this is illegal. Instead, we would see a 'leave' inside a
+//    'try' that would get transformed into BBJ_CALLFINALLY/BBJ_CALLFINALLYRET
+//    blocks during importing, and the BBJ_CALLFINALLYRET would point at an outer
+//    block with the BBJ_RETURN. Here, we mimic some of the logic of importing a
+//    LEAVE to get the same effect for synchronized methods.
+//
 void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 {
     assert(!fgFuncletsCreated);
@@ -1836,11 +1904,12 @@ void Compiler::fgAddReversePInvokeEnterExit()
 #endif
 }
 
-/*****************************************************************************
- *
- *  Return 'true' if there is more than one BBJ_RETURN block.
- */
-
+//------------------------------------------------------------------------
+// fgMoreThanOneReturnBlock: Check if there is more than one BBJ_RETURN block.
+//
+// Return Value:
+//    True if the method has more than one return block.
+//
 bool Compiler::fgMoreThanOneReturnBlock()
 {
     unsigned retCnt = 0;
@@ -2780,7 +2849,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depents on
+// fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depend on
 // lower bits only (currently only BSWAP16).
 // Example:
 //      BSWAP16(CAST(x)) transforms to BSWAP16(x)
@@ -2802,7 +2871,7 @@ bool Compiler::fgSimpleLowerBswap16(LIR::Range& range, GenTree* op)
     if (opts.OptimizationDisabled())
         return false;
 
-    // When openrand is a integral cast
+    // When operand is an integral cast
     // When both source and target sizes are at least the operation size
     bool madeChanges = false;
 
@@ -2907,11 +2976,16 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
     return nullptr;
 }
 
-/*****************************************************************************
- * Introduce a new head block of the handler for the prolog to be put in, ahead
- * of the current handler head 'block'.
- * Note that this code has some similarities to fgCreateLoopPreHeader().
- */
+//------------------------------------------------------------------------
+// fgInsertFuncletPrologBlock: Introduce a new head block of the handler for
+//    the prolog to be put in, ahead of the current handler head 'block'.
+//
+// Arguments:
+//    block - The current handler head block
+//
+// Notes:
+//    This code has some similarities to fgCreateLoopPreHeader().
+//
 
 void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 {
@@ -3811,7 +3885,7 @@ Compiler::AddCodeDscKey::AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, 
 // AddCodeDscKey: construct from AddCodeDsc
 //
 // Arguments:
-//    add - add code dsc in querstion
+//    add - add code dsc in question
 //
 // Returns:
 //    appropriate lookup key
@@ -3853,7 +3927,7 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
 //   compiler - current compiler instance
 //
 // Returns:
-//   true if the key desinator changes
+//   true if the key designator changes
 //
 bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
 {
@@ -5580,18 +5654,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
                 Compiler::dspTreeID(info->IterTree));
     }
 
-    bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
-        if ((def->GetLclNum() != info->IterVar) || (def == info->IterTree))
-            return true;
-
-        JITDUMP("  Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
-        return false;
-    });
-
-    if (!result)
-    {
-        return false;
-    }
+    // Note: we already verified via VisitDefs above (in the exit edge loop)
+    // that info->IterVar has no extraneous definitions other than info->IterTree.
 
     if (!CheckLoopConditionBaseCase(preheader, info))
     {
@@ -6353,7 +6417,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
                 }
                 else
                 {
-                    JITDUMP("Noting that enclsoing handler EH#%02u ends at " FMT_BB "\n", region,
+                    JITDUMP("Noting that enclosing handler EH#%02u ends at " FMT_BB "\n", region,
                             ebd->ebdHndLast->bbNum);
                     regionEnds.Emplace(region, ebd->ebdHndLast, false);
                 }
@@ -6702,7 +6766,7 @@ bool NaturalLoopIterInfo::IsIncreasingLoop()
 }
 
 //------------------------------------------------------------------------
-// IsIncreasingLoop: Returns true if the loop iterator decreases from high to
+// IsDecreasingLoop: Returns true if the loop iterator decreases from high to
 // low value.
 //
 // Returns:
@@ -7035,7 +7099,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     }
 #endif
 
-    // Assign preorder/postorder nums for fast "domnates" queries.
+    // Assign preorder/postorder nums for fast "dominates" queries.
     class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor>
     {
         unsigned* m_preorderNums;
