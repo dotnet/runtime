@@ -267,6 +267,20 @@ namespace Microsoft.Interop
 
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
+            // If [RequiresUnsafe] is available, add it to the stub's attributes and set the flag.
+            // Don't add if the user's declaration already has it (to avoid duplicate attribute error).
+            var environmentFlags = environment.EnvironmentFlags;
+            if (environment.RequiresUnsafeAttrType is not null
+                && !symbol.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, environment.RequiresUnsafeAttrType)))
+            {
+                environmentFlags |= EnvironmentFlags.RequiresUnsafeAvailable;
+                signatureContext = signatureContext with
+                {
+                    AdditionalAttributes = signatureContext.AdditionalAttributes.Add(
+                        AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute))))
+                };
+            }
+
             List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute);
             return new IncrementalStubGenerationContext(
                 signatureContext,
@@ -276,7 +290,7 @@ namespace Microsoft.Interop
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
                 options,
-                environment.EnvironmentFlags);
+                environmentFlags);
         }
 
         private static MemberDeclarationSyntax GenerateSource(
@@ -360,6 +374,12 @@ namespace Microsoft.Interop
                     AttributeList(
                         SingletonSeparatedList(
                             CreateForwarderDllImport(pinvokeData))));
+
+            if (stub.EnvironmentFlags.HasFlag(EnvironmentFlags.RequiresUnsafeAvailable))
+            {
+                stubMethod = stubMethod.AddAttributeLists(
+                    AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute))));
+            }
 
             MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
 

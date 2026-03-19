@@ -12,6 +12,7 @@ namespace Microsoft.Interop
         None = 0,
         SkipLocalsInit = 0x1,
         DisableRuntimeMarshalling = 0x2,
+        RequiresUnsafeAvailable = 0x4,
     }
 
     public sealed record StubEnvironment(
@@ -99,6 +100,20 @@ namespace Microsoft.Interop
                 }
                 _stackTraceHiddenAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_StackTraceHiddenAttribute));
                 return _stackTraceHiddenAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _requiresUnsafeAttrType;
+        public INamedTypeSymbol? RequiresUnsafeAttrType
+        {
+            get
+            {
+                if (_requiresUnsafeAttrType.HasValue)
+                {
+                    return _requiresUnsafeAttrType.Value;
+                }
+                _requiresUnsafeAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute));
+                return _requiresUnsafeAttrType.Value;
             }
         }
     }
