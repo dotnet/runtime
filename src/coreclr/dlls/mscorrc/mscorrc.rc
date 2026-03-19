@@ -686,7 +686,6 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     IDS_EE_MISSING_METHOD_ALC               "Method not found: '%1'. %2."
-    IDS_EE_MISSING_FIELD_ALC                "Field not found: '%1'. %2."
 END
 
 //

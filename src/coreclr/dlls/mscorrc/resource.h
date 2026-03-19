@@ -525,4 +525,3 @@
 #define IDS_EE_NDIRECT_DISABLEDMARSHAL_VARARGS     0x2650
 
 #define IDS_EE_MISSING_METHOD_ALC                  0x2651
-#define IDS_EE_MISSING_FIELD_ALC                   0x2652

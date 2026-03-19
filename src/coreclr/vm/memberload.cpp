@@ -49,12 +49,9 @@
 
 #ifndef DACCESS_COMPILE
 
-static void GetAssemblyDetailInfoForDiagnostics(MethodTable* pMT, SString& detailInfo)
+static void FormatAssemblyContextDetail(PEAssembly* pPEAssembly, LPCUTF8 szLabel, SString& detailInfo)
 {
     WRAPPER_NO_CONTRACT;
-
-    Assembly* pAssembly = pMT->GetAssembly();
-    PEAssembly* pPEAssembly = pAssembly->GetPEAssembly();
 
     StackSString sAssemblyDisplayName;
     pPEAssembly->GetDisplayName(sAssemblyDisplayName);
@@ -62,25 +59,136 @@ static void GetAssemblyDetailInfoForDiagnostics(MethodTable* pMT, SString& detai
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
-    DefineFullyQualifiedNameForClass();
-    LPCUTF8 szClassName = GetFullyQualifiedNameForClass(pMT);
-
-    SString assemblyPath{pPEAssembly->GetPath()};
+    SString assemblyPath(pPEAssembly->GetPath());
     if (assemblyPath.IsEmpty())
     {
-        detailInfo.Printf("The type '%s' exists in '%s' loaded in the context '%s' in a byte array",
-                          szClassName,
+        detailInfo.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
+                          szLabel,
                           sAssemblyDisplayName.GetUTF8(),
                           sAlcName.GetUTF8());
     }
     else
     {
-        detailInfo.Printf("The type '%s' exists in '%s' loaded in the context '%s' at location '%s'",
-                          szClassName,
+        detailInfo.Printf("Type %s originates from '%s' in the context '%s' at location '%s'",
+                          szLabel,
                           sAssemblyDisplayName.GetUTF8(),
                           sAlcName.GetUTF8(),
                           assemblyPath.GetUTF8());
     }
+}
+
+// Attempt to detect when a method/field signature mismatch is caused by a type
+// that has the same name but was loaded into different AssemblyLoadContexts.
+// This walks through both signatures parameter by parameter, loading types from
+// each, and looks for pairs where the type name matches but the module (and thus
+// the identity) differs.
+static BOOL TryDetectAlcMismatchInMethodSignature(
+    MethodTable* pMT,
+    LPCSTR szMember,
+    PCCOR_SIGNATURE pCallerSig,
+    DWORD cCallerSig,
+    ModuleBase* pCallerModule,
+    const SigTypeContext* pTypeContext,
+    SString& detailInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pMT == NULL || pCallerSig == NULL || cCallerSig == 0 || pCallerModule == NULL || !pCallerModule->IsFullModule())
+        return FALSE;
+
+    Module* pCallerMod = static_cast<Module*>(pCallerModule);
+
+    // Iterate through methods on pMT that match by name.
+    MethodTable::MethodIterator it(pMT);
+    it.MoveToEnd();
+
+    for (; it.IsValid(); it.Prev())
+    {
+        MethodDesc* pCandidateMD = it.GetDeclMethodDesc();
+        if (pCandidateMD->IsAsyncVariantMethod())
+            continue;
+
+        LPCUTF8 pszCandidateName = pCandidateMD->GetNameThrowing();
+        if (strcmp(szMember, pszCandidateName) != 0)
+            continue;
+
+        // Found a method with the same name. Walk its signature compared to caller's.
+        PCCOR_SIGNATURE pCandidateSig;
+        DWORD cCandidateSig;
+        pCandidateMD->GetSig(&pCandidateSig, &cCandidateSig);
+
+        Module* pCandidateMod = pCandidateMD->GetModule();
+
+        // Parse both signatures using MetaSig
+        MetaSig callerSig(pCallerSig, cCallerSig, pCallerMod, pTypeContext);
+        MetaSig candidateSig(pCandidateSig, cCandidateSig, pCandidateMod, NULL);
+
+        if (callerSig.NumFixedArgs() != candidateSig.NumFixedArgs())
+            continue;
+
+        // Compare parameters one by one
+        for (UINT i = 0; i < callerSig.NumFixedArgs(); i++)
+        {
+            callerSig.NextArg();
+            candidateSig.NextArg();
+
+            // Try to load types from both signatures. Use DontLoadTypes to avoid loading
+            // new types during exception generation.
+            TypeHandle thCaller = callerSig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes, CLASS_LOAD_APPROXPARENTS);
+            TypeHandle thCandidate = candidateSig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes, CLASS_LOAD_APPROXPARENTS);
+
+            if (thCaller.IsNull() || thCandidate.IsNull())
+                continue;
+
+            // If the types are the same object, they are identical — no ALC mismatch here.
+            if (thCaller == thCandidate)
+                continue;
+
+            // Check if the types have the same name but come from different modules
+            Module* pModCaller = thCaller.GetModule();
+            Module* pModCandidate = thCandidate.GetModule();
+
+            if (pModCaller == NULL || pModCandidate == NULL)
+                continue;
+
+            if (pModCaller == pModCandidate)
+                continue;
+
+            // Types come from different modules. Check if they have the same name.
+            StackSString callerTypeName;
+            StackSString candidateTypeName;
+            thCaller.GetName(callerTypeName);
+            thCandidate.GetName(candidateTypeName);
+
+            if (!callerTypeName.Equals(candidateTypeName))
+                continue;
+
+            // Found the culprit: same type name, different module/ALC.
+            PEAssembly* pPEAssemblyCaller = pModCaller->GetAssembly()->GetPEAssembly();
+            PEAssembly* pPEAssemblyCandidate = pModCandidate->GetAssembly()->GetPEAssembly();
+
+            SString detailCaller;
+            FormatAssemblyContextDetail(pPEAssemblyCaller, "A", detailCaller);
+            SString detailCandidate;
+            FormatAssemblyContextDetail(pPEAssemblyCandidate, "B", detailCandidate);
+
+            detailInfo.Printf("Signature of the method requires the type '%s' but the type loaded in this context is from a different assembly. [A]%s != [B]%s. %s. %s",
+                              callerTypeName.GetUTF8(),
+                              callerTypeName.GetUTF8(),
+                              candidateTypeName.GetUTF8(),
+                              detailCaller.GetUTF8(),
+                              detailCandidate.GetUTF8());
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT, LPCSTR szMember)
@@ -112,14 +220,6 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT
     MAKE_FULLY_QUALIFIED_MEMBER_NAME(szFullName, NULL, szClassName, (szMember?szMember:"?"), "");
     _ASSERTE(szFullName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szwFullName, szFullName);
-
-    if (pMT)
-    {
-        SString detailInfo;
-        GetAssemblyDetailInfoForDiagnostics(pMT, detailInfo);
-        EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD_ALC, szwFullName, detailInfo.GetUnicode()));
-    }
-
     EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD, szwFullName));
 }
 
@@ -158,11 +258,28 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         SigFormat sf(tmp, szMember, szClassName, NULL);
         MAKE_WIDEPTR_FROMUTF8(szwFullName, sf.GetCString());
 
+        // Try to detect specific ALC mismatch in parameter types.
+        // This is best-effort diagnostic code; any failure falls through to the
+        // standard exception message.
         if (pMT != NULL)
         {
-            SString detailInfo;
-            GetAssemblyDetailInfoForDiagnostics(pMT, detailInfo);
-            EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD_ALC, szwFullName, detailInfo.GetUnicode()));
+            SString alcMismatchDetail;
+            BOOL fDetected = FALSE;
+            EX_TRY
+            {
+                fDetected = TryDetectAlcMismatchInMethodSignature(pMT, szMember, pSig, cSig, pModule, pTypeContext, alcMismatchDetail);
+            }
+            EX_CATCH
+            {
+                // Swallow any exception from the diagnostic code and fall through
+                // to the standard missing method exception below.
+            }
+            EX_END_CATCH
+
+            if (fDetected)
+            {
+                EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD_ALC, szwFullName, alcMismatchDetail.GetUnicode()));
+            }
         }
 
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, szwFullName));
@@ -171,13 +288,6 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
     {
         SString typeName;
         typeName.Printf("%s.%s", szClassName, szMember);
-
-        if (pMT != NULL)
-        {
-            SString detailInfo;
-            GetAssemblyDetailInfoForDiagnostics(pMT, detailInfo);
-            EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD_ALC, typeName.GetUnicode(), detailInfo.GetUnicode()));
-        }
 
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
