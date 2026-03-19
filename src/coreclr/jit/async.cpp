@@ -1872,7 +1872,7 @@ void AsyncTransformation::Transform(
     unsigned stateNum = (unsigned)m_states.size();
     JITDUMP("  Assigned state %u\n", stateNum);
 
-    BasicBlock* suspendBB = CreateSuspensionBlock(block, call, stateNum);
+    BasicBlock* suspendBB = CreateSuspensionBlock(block, stateNum);
 
     CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspendBB, remainder);
 
@@ -2576,13 +2576,12 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 //
 // Parameters:
 //   block    - The block containing the async call.
-//   call     - The async call.
 //   stateNum - State number assigned to this suspension point.
 //
 // Returns:
 //   The new basic block.
 //
-BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, GenTreeCall* call, unsigned stateNum)
+BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, unsigned stateNum)
 {
     if (m_lastSuspensionBB == nullptr)
     {
@@ -3156,17 +3155,12 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
 //
 // Parameters:
 //   remainder     - The block that contains the IR after the async call.
-//   call          - The async call.
 //   stateNum      - State number assigned to this suspension point.
-//   layoutBuilder - The continuation layout builder for this call.
 //
 // Returns:
 //   The new basic block.
 //
-BasicBlock* AsyncTransformation::CreateResumptionBlock(BasicBlock*                remainder,
-                                                       GenTreeCall*               call,
-                                                       unsigned                   stateNum,
-                                                       ContinuationLayoutBuilder* layoutBuilder)
+BasicBlock* AsyncTransformation::CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum)
 {
     if (m_lastResumptionBB == nullptr)
     {
