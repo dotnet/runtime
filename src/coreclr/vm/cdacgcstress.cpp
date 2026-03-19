@@ -229,7 +229,19 @@ bool CdacGcStress::Initialize()
         hr = s_cdacSosInterface->QueryInterface(__uuidof(ISOSDacInterface), reinterpret_cast<void**>(&s_cdacSosDac));
         if (FAILED(hr) || s_cdacSosDac == nullptr)
         {
-            LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to QI for ISOSDacInterface (hr=0x%08x)\n", hr));
+            LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Failed to QI for ISOSDacInterface (hr=0x%08x) - cannot verify\n", hr));
+            if (s_cdacProcess != nullptr)
+            {
+                s_cdacProcess->Release();
+                s_cdacProcess = nullptr;
+            }
+            auto freeFn = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(s_cdacModule, "cdac_reader_free"));
+            if (freeFn != nullptr)
+                freeFn(s_cdacHandle);
+            ::FreeLibrary(s_cdacModule);
+            s_cdacModule = NULL;
+            s_cdacHandle = 0;
+            return false;
         }
     }
 
