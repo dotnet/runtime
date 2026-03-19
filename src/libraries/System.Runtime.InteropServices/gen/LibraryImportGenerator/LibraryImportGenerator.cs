@@ -267,18 +267,13 @@ namespace Microsoft.Interop
 
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
-            // If [RequiresUnsafe] is available, add it to the stub's attributes and set the flag.
+            // If [RequiresUnsafe] is available, set the flag so it can be added to the stub later.
             // Don't add if the user's declaration already has it (to avoid duplicate attribute error).
             var environmentFlags = environment.EnvironmentFlags;
             if (environment.RequiresUnsafeAttrType is not null
                 && !symbol.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, environment.RequiresUnsafeAttrType)))
             {
                 environmentFlags |= EnvironmentFlags.RequiresUnsafeAvailable;
-                signatureContext = signatureContext with
-                {
-                    AdditionalAttributes = signatureContext.AdditionalAttributes.Add(
-                        AttributeList(SingletonSeparatedList(Attribute(NameSyntaxes.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute))))
-                };
             }
 
             List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute);
