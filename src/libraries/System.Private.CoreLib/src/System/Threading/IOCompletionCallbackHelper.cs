@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -29,6 +30,7 @@ namespace System.Threading
             helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
         }
 
+        [RequiresUnsafe]
         public static void PerformSingleIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)
         {
             Debug.Assert(pNativeOverlapped != null);

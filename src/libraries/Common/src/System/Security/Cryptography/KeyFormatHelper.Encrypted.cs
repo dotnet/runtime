@@ -212,7 +212,7 @@ namespace System.Security.Cryptography
 
         internal static ArraySegment<byte> DecryptPkcs8(
             ReadOnlySpan<char> inputPassword,
-            ReadOnlyMemory<byte> source,
+            ReadOnlySpan<byte> source,
             out int bytesRead)
         {
             return DecryptPkcs8(
@@ -224,7 +224,7 @@ namespace System.Security.Cryptography
 
         internal static ArraySegment<byte> DecryptPkcs8(
             ReadOnlySpan<byte> inputPasswordBytes,
-            ReadOnlyMemory<byte> source,
+            ReadOnlySpan<byte> source,
             out int bytesRead)
         {
             return DecryptPkcs8(
@@ -234,82 +234,70 @@ namespace System.Security.Cryptography
                 out bytesRead);
         }
 
-        internal static unsafe T DecryptPkcs8<T>(
+        internal static T DecryptPkcs8<T>(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> source,
             ReadOnlySpanFunc<byte, T> keyReader,
             out int bytesRead)
         {
-            fixed (byte* pointer = source)
-            {
-                using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                {
-                    ArraySegment<byte> decrypted = DecryptPkcs8(password, manager.Memory, out bytesRead);
+            ArraySegment<byte> decrypted = DecryptPkcs8(password, source, out bytesRead);
 
-                    try
-                    {
-                        ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
-                        reader.ReadEncodedValue();
-                        reader.ThrowIfNotEmpty();
-                        return keyReader(decrypted);
-                    }
-                    catch (AsnContentException e)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(decrypted);
-                    }
-                }
+            try
+            {
+                ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
+                reader.ReadEncodedValue();
+                reader.ThrowIfNotEmpty();
+                return keyReader(decrypted);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            finally
+            {
+                CryptoPool.Return(decrypted);
             }
         }
 
-        internal static unsafe T DecryptPkcs8<T>(
+        internal static T DecryptPkcs8<T>(
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> source,
             ReadOnlySpanFunc<byte, T> keyReader,
             out int bytesRead)
         {
-            fixed (byte* pointer = source)
-            {
-                using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                {
-                    ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(passwordBytes, manager.Memory, out bytesRead);
-                    ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
-                    reader.ReadEncodedValue();
+            ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(passwordBytes, source, out bytesRead);
 
-                    try
-                    {
-                        reader.ThrowIfNotEmpty();
-                        return keyReader(decrypted);
-                    }
-                    catch (AsnContentException e)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(decrypted);
-                    }
-                }
+            try
+            {
+                ValueAsnReader reader = new(decrypted, AsnEncodingRules.BER);
+                reader.ReadEncodedValue();
+                reader.ThrowIfNotEmpty();
+                return keyReader(decrypted);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+            finally
+            {
+                CryptoPool.Return(decrypted);
             }
         }
 
         private static ArraySegment<byte> DecryptPkcs8(
             ReadOnlySpan<char> inputPassword,
             ReadOnlySpan<byte> inputPasswordBytes,
-            ReadOnlyMemory<byte> source,
+            ReadOnlySpan<byte> source,
             out int bytesRead)
         {
             int localRead;
-            EncryptedPrivateKeyInfoAsn epki;
+            ValueEncryptedPrivateKeyInfoAsn epki;
 
             try
             {
-                ValueAsnReader reader = new ValueAsnReader(source.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
                 localRead = reader.PeekEncodedValue().Length;
-                EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out epki);
+                ValueEncryptedPrivateKeyInfoAsn.Decode(ref reader, out epki);
             }
             catch (AsnContentException e)
             {
@@ -326,7 +314,7 @@ namespace System.Security.Cryptography
                     epki.EncryptionAlgorithm,
                     inputPassword,
                     inputPasswordBytes,
-                    epki.EncryptedData.Span,
+                    epki.EncryptedData,
                     decrypted);
 
                 bytesRead = localRead;
@@ -342,7 +330,7 @@ namespace System.Security.Cryptography
 
         internal static AsnWriter ReencryptPkcs8(
             ReadOnlySpan<char> inputPassword,
-            ReadOnlyMemory<byte> current,
+            ReadOnlySpan<byte> current,
             ReadOnlySpan<char> newPassword,
             PbeParameters pbeParameters)
         {
@@ -378,7 +366,7 @@ namespace System.Security.Cryptography
 
         internal static AsnWriter ReencryptPkcs8(
             ReadOnlySpan<char> inputPassword,
-            ReadOnlyMemory<byte> current,
+            ReadOnlySpan<byte> current,
             ReadOnlySpan<byte> newPasswordBytes,
             PbeParameters pbeParameters)
         {
