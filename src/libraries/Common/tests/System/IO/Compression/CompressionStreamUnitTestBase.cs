@@ -819,7 +819,8 @@ namespace System.IO.Compression
         [InlineData(-1)]
         public void RoundTrip_WithWindowLog(int windowLog)
         {
-            byte[] input = Enumerable.Range(0, 1024).Select(i => (byte)i).ToArray();
+            byte[] input = new byte[1024];
+            Random.Shared.NextBytes(input);
 
             var options = new ZLibCompressionOptions
             {
