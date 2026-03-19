@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Tests;
 using Microsoft.CodeAnalysis;
@@ -15,17 +16,22 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     /// Verifies the exact source output of the System.Text.Json source generator against
     /// checked-in baseline files under the <c>Baselines/</c> directory.
     /// <para>
-    /// Any change to source generator output strategy must be accompanied by an update to the
-    /// baseline files. To regenerate all baselines automatically, build with:
+    /// Baselines are organized as <c>Baselines/{TestId}/{TFM}/{HintName}.cs.txt</c> where:
+    /// <list type="bullet">
+    ///   <item><c>TestId</c> — the test method name (e.g. <c>SimplePoco</c>)</item>
+    ///   <item><c>TFM</c> — <c>netcoreapp</c> or <c>net462</c></item>
+    ///   <item><c>HintName</c> — the source generator hint name (e.g. <c>MyContext.Person.g</c>)</item>
+    /// </list>
+    /// Every generated file is checked — not just the type-specific one.
+    /// </para>
+    /// <para>
+    /// To regenerate all baselines after a source generator output change:
     /// <code>
+    /// set RepoRootDir=D:\repos\runtime
     /// dotnet build /p:UpdateBaselines=true
     /// dotnet test --no-build
     /// </code>
-    /// The <c>/p:UpdateBaselines=true</c> flag defines the <c>UPDATE_BASELINES</c> compilation
-    /// constant, which causes tests to overwrite baseline files with the actual generated output
-    /// instead of asserting against them. <b>Requires</b> the <c>RepoRootDir</c> environment
-    /// variable to point at the repository root (e.g. <c>D:\repos\runtime</c>).
-    /// After updating, rebuild <em>without</em> the flag and re-run tests to confirm they pass.
+    /// Then rebuild <em>without</em> the flag and re-run tests to confirm they pass.
     /// </para>
     /// </summary>
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
@@ -34,59 +40,118 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))]
     public class SourceGeneratedOutputTests(ITestOutputHelper logger)
     {
-        private static readonly string BaselinesRelativePath = IO.Path.Combine(
+        private static readonly string s_baselinesRelativePath = IO.Path.Combine(
             "src", "libraries", "System.Text.Json", "tests",
             "System.Text.Json.SourceGeneration.Unit.Tests", "Baselines");
 
+        private static readonly string s_tfmSubFolder =
+#if NET
+            "netcoreapp";
+#else
+            "net462";
+#endif
+
         /// <summary>
-        /// Runs the source generator on <paramref name="source"/> and verifies that the generated
-        /// type-info file for <paramref name="typeInfoPropertyName"/> matches the baseline stored in
-        /// <c>Baselines/{baselineFileName}</c>.
+        /// Runs the source generator on <paramref name="source"/> and verifies that every
+        /// generated file matches the corresponding baseline in
+        /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
         /// </summary>
-        private void VerifyAgainstBaseline(
-            string source,
-            string typeInfoPropertyName,
-            string baselineFileName)
+        private void VerifyAgainstBaseline(string source, string testId)
         {
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
-            string expectedSuffix = $"MyContext.{typeInfoPropertyName}.g.cs";
-            SyntaxTree? tree = result.NewCompilation.SyntaxTrees
-                .FirstOrDefault(t => t.FilePath.EndsWith(expectedSuffix, StringComparison.Ordinal));
-            Assert.NotNull(tree);
+            var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));
+            List<SyntaxTree> generatedTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => !inputPaths.Contains(t.FilePath))
+                .ToList();
 
-            SourceText generatedSourceText = tree.GetText();
+            Assert.True(generatedTrees.Count > 0, "Source generator produced no output.");
 
-            string baselinePath = IO.Path.Combine("Baselines", baselineFileName);
-            string baseline = LineEndingsHelper.Normalize(IO.File.ReadAllText(baselinePath));
-            string[] expectedLines = baseline.Replace("%VERSION%", typeof(JsonSourceGenerator).Assembly.GetName().Version?.ToString())
-                                             .Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            string baselineDir = IO.Path.Combine("Baselines", testId, s_tfmSubFolder);
 
-            bool matches = RoslynTestUtils.CompareLines(expectedLines, generatedSourceText, out string errorMessage);
+            string[] actualFiles = generatedTrees
+                .Select(t => ToBaselineFileName(t.FilePath))
+                .OrderBy(f => f, StringComparer.Ordinal)
+                .ToArray();
 
 #if UPDATE_BASELINES
-            if (!matches)
             {
                 const string envVarName = "RepoRootDir";
                 string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
                 Assert.True(repoRootDir is not null,
-                    $"To update baselines, specify a '{envVarName}' environment variable pointing to the repo root.");
+                    $"To update baselines, set the '{envVarName}' environment variable to the repo root.");
 
-                string lines = string.Join(Environment.NewLine, generatedSourceText.Lines.Select(l => l.ToString()));
-                string fullPath = IO.Path.Combine(repoRootDir, BaselinesRelativePath, baselineFileName);
-                IO.File.WriteAllText(fullPath, lines + Environment.NewLine);
-                matches = true;
+                string absDir = IO.Path.Combine(repoRootDir, s_baselinesRelativePath, testId, s_tfmSubFolder);
+                IO.Directory.CreateDirectory(absDir);
+
+                // Remove stale baselines that are no longer generated.
+                if (IO.Directory.Exists(absDir))
+                {
+                    foreach (string existing in IO.Directory.GetFiles(absDir, "*.cs.txt"))
+                    {
+                        string name = IO.Path.GetFileName(existing);
+                        if (!actualFiles.Contains(name, StringComparer.Ordinal))
+                        {
+                            IO.File.Delete(existing);
+                        }
+                    }
+                }
+
+                foreach (SyntaxTree tree in generatedTrees)
+                {
+                    string baselineFileName = ToBaselineFileName(tree.FilePath);
+                    SourceText generatedSourceText = tree.GetText();
+                    string absPath = IO.Path.Combine(absDir, baselineFileName);
+                    IO.File.WriteAllText(absPath, generatedSourceText.ToString());
+                }
+
+                return;
+            }
+#else
+            // Collect expected baseline files from disk.
+            Assert.True(IO.Directory.Exists(baselineDir),
+                $"Baseline directory not found: {baselineDir}. Build with /p:UpdateBaselines=true to generate baselines.");
+
+            string[] expectedFiles = IO.Directory.GetFiles(baselineDir, "*.cs.txt")
+                .Select(f => IO.Path.GetFileName(f))
+                .OrderBy(f => f, StringComparer.Ordinal)
+                .ToArray();
+
+            // Verify that the set of generated files matches the set of baselines.
+            Assert.True(
+                expectedFiles.SequenceEqual(actualFiles, StringComparer.Ordinal),
+                $"Generated file set mismatch.\nExpected: [{string.Join(", ", expectedFiles)}]\nActual:   [{string.Join(", ", actualFiles)}]");
+
+            // Verify content of each generated file.
+            foreach (SyntaxTree tree in generatedTrees)
+            {
+                string baselineFileName = ToBaselineFileName(tree.FilePath);
+                string baselinePath = IO.Path.Combine(baselineDir, baselineFileName);
+                SourceText generatedSourceText = tree.GetText();
+
+                string baseline = LineEndingsHelper.Normalize(IO.File.ReadAllText(baselinePath));
+                string[] expectedLines = baseline
+                    .Replace("%VERSION%", typeof(JsonSourceGenerator).Assembly.GetName().Version?.ToString())
+                    .Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+                bool matches = RoslynTestUtils.CompareLines(expectedLines, generatedSourceText, out string errorMessage);
+                Assert.True(matches, $"Baseline mismatch for {baselineFileName}.\n{errorMessage}");
             }
 #endif
-
-            Assert.True(matches, errorMessage);
         }
+
+        /// <summary>
+        /// Converts a generated tree file path (e.g. ending in <c>MyContext.Person.g.cs</c>)
+        /// to a baseline file name (e.g. <c>MyContext.Person.g.cs.txt</c>).
+        /// </summary>
+        private static string ToBaselineFileName(string generatedFilePath)
+            => IO.Path.GetFileName(generatedFilePath) + ".txt";
 
         [Fact]
         public void SimplePoco()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -98,15 +163,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public int Age { get; set; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Person", "SimplePoco.generated.txt");
+                """, nameof(SimplePoco));
         }
 
         [Fact]
         public void ParameterizedConstructor()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -119,15 +182,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public int Y { get; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Point", "ParameterizedConstructor.generated.txt");
+                """, nameof(ParameterizedConstructor));
         }
 
         [Fact]
         public void EnumType()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -135,15 +196,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     internal partial class MyContext : JsonSerializerContext { }
                     public enum Color { Red, Green, Blue }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Color", "EnumType.generated.txt");
+                """, nameof(EnumType));
         }
 
         [Fact]
         public void ListProperty()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;
                 namespace TestApp
@@ -155,15 +214,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public List<string> Items { get; set; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Order", "ListProperty.generated.txt");
+                """, nameof(ListProperty));
         }
 
         [Fact]
         public void DictionaryProperty()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;
                 namespace TestApp
@@ -175,15 +232,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public Dictionary<string, int> Values { get; set; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Settings", "DictionaryProperty.generated.txt");
+                """, nameof(DictionaryProperty));
         }
 
         [Fact]
         public void RecordType()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -191,15 +246,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     internal partial class MyContext : JsonSerializerContext { }
                     public record Coordinate(double Latitude, double Longitude);
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Coordinate", "RecordType.generated.txt");
+                """, nameof(RecordType));
         }
 
         [Fact]
         public void JsonPropertyNameAttribute()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -213,15 +266,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public decimal Price { get; set; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Product", "JsonPropertyNameAttribute.generated.txt");
+                """, nameof(JsonPropertyNameAttribute));
         }
 
         [Fact]
         public void ConstructorWithDefaultValues()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -240,15 +291,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public bool Enabled { get; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Config", "ConstructorWithDefaultValues.generated.txt");
+                """, nameof(ConstructorWithDefaultValues));
         }
 
         [Fact]
         public void NullableProperties()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System.Text.Json.Serialization;
                 namespace TestApp
                 {
@@ -261,15 +310,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public int? Count { get; set; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "Measurement", "NullableProperties.generated.txt");
+                """, nameof(NullableProperties));
         }
 
         [Fact]
         public void ByRefConstructorParameters()
         {
-            string source = """
+            VerifyAgainstBaseline("""
                 using System;
                 using System.Text.Json.Serialization;
                 namespace TestApp
@@ -289,9 +336,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public int Result { get; set; }
                     }
                 }
-                """;
-
-            VerifyAgainstBaseline(source, "ByRefParams", "ByRefConstructorParameters.generated.txt");
+                """, nameof(ByRefConstructorParameters));
         }
     }
 }
