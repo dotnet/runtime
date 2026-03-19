@@ -1371,6 +1371,8 @@ namespace System.Diagnostics
             {
                 // We MUST close the parent copies of the child handles, otherwise the parent
                 // process will not receive EOF when the child process closes its handles.
+                // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
+                // because these handles are not owned and won't be closed by Dispose.
                 childInputPipeHandle?.Dispose();
                 childOutputPipeHandle?.Dispose();
                 childErrorPipeHandle?.Dispose();
