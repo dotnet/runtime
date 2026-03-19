@@ -5581,11 +5581,12 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
         }
     }
 
+    // declSig is for an ordinary method, we should not find an async variant.
+    _ASSERTE(declMethod.IsNull() || !declMethod.GetMethodDesc()->IsAsyncVariantMethod());
+
     if (variantLookup != AsyncVariantLookup::Ordinary && !declMethod.IsNull())
     {
         bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
-        _ASSERTE(!declRTMethod->GetMethodDesc()->IsAsyncVariantMethod());
-
         // Other variant may not exist. For example we return Task and the base is generic and returns T.
         // Then we return Null.
         declMethod = {};
