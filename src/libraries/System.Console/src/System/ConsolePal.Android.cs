@@ -31,11 +31,11 @@ namespace System
 
         public static Stream OpenStandardError() => new LogcatStream(OutputEncoding);
 
-        public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();
+        public static SafeFileHandle OpenStandardInputHandle() => new SafeFileHandle(0, ownsHandle: false);
 
-        public static SafeFileHandle OpenStandardOutputHandle() => throw new PlatformNotSupportedException();
+        public static SafeFileHandle OpenStandardOutputHandle() => new SafeFileHandle(1, ownsHandle: false);
 
-        public static SafeFileHandle OpenStandardErrorHandle() => throw new PlatformNotSupportedException();
+        public static SafeFileHandle OpenStandardErrorHandle() => new SafeFileHandle(2, ownsHandle: false);
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 

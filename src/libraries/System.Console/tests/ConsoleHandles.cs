@@ -12,7 +12,7 @@ namespace System.Tests
     public partial class ConsoleTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public void OpenStandardInputHandle_ReturnsValidHandle()
         {
             using SafeFileHandle inputHandle = Console.OpenStandardInputHandle();
@@ -22,7 +22,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public void OpenStandardOutputHandle_ReturnsValidHandle()
         {
             using SafeFileHandle outputHandle = Console.OpenStandardOutputHandle();
@@ -32,7 +32,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public void OpenStandardErrorHandle_ReturnsValidHandle()
         {
             using SafeFileHandle errorHandle = Console.OpenStandardErrorHandle();
@@ -42,7 +42,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public void OpenStandardHandles_DoNotOwnHandle()
         {
             SafeFileHandle inputHandle = Console.OpenStandardInputHandle();
@@ -87,21 +87,21 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Browser)]
         public void OpenStandardInputHandle_ThrowsOnUnsupportedPlatforms()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardInputHandle());
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void OpenStandardOutputHandle_ThrowsOnUnsupportedPlatforms()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardOutputHandle());
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void OpenStandardErrorHandle_ThrowsOnUnsupportedPlatforms()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardErrorHandle());
