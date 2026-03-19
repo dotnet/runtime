@@ -1049,8 +1049,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         // constructor call to match Activator.CreateInstance behavior, which honors
                         // user-defined parameterless constructors).
                         initKind = InitializationKind.Declaration;
-
-                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier};");
                     }
                     else if (memberType is NullableSpec)
                     {

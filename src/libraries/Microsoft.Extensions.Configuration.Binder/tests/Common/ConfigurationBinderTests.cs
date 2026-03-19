@@ -1433,6 +1433,21 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void BindsSetOnlyComplexStructProperties()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Complex:A", "Test"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<StructSetOnlyPoco>();
+            Assert.Equal("Test", options.GetComplex().A);
+        }
+
+        [Fact]
         public void CanBindRecordOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1993,6 +2008,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             IConfiguration config = configurationBuilder.Build();
 
             var test = new ClassOverridingVirtualProperty();
+
+        private struct SetOnlyComplexStruct
+        {
+            public string A { get; set; }
+        }
+
+        private sealed class StructSetOnlyPoco
+        {
+            private SetOnlyComplexStruct _complex;
+
+            public SetOnlyComplexStruct Complex
+            {
+                set => _complex = value;
+            }
+
+            public SetOnlyComplexStruct GetComplex()
+            {
+                return _complex;
+            }
+        }
 
 #if BUILDING_SOURCE_GENERATOR_TESTS
             var ex = Assert.Throws<NotSupportedException>(() => config.Bind(test, b => b.BindNonPublicProperties = true));
