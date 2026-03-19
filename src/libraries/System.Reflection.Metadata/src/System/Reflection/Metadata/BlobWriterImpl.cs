@@ -259,7 +259,7 @@ namespace System.Reflection.Metadata
             }
 
             var type = value.GetType();
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
             }
@@ -332,7 +332,7 @@ namespace System.Reflection.Metadata
             }
 
             var type = value.GetType();
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
             }
