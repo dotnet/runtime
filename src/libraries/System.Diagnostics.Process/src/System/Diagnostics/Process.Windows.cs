@@ -16,8 +16,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly object s_createProcessLock = new object();
-
         private string? _processName;
 
         /// <summary>
@@ -424,7 +422,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Starts the process using the supplied start info.</summary>
-        private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle)
         {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
@@ -449,159 +447,156 @@ namespace System.Diagnostics
             // calls. We do not want one process to inherit the handles created concurrently for another
             // process, as that will impact the ownership and lifetimes of those handles now inherited
             // into multiple child processes.
-            lock (s_createProcessLock)
+
+            ProcessUtils.s_processStartLock.EnterWriteLock();
+            try
             {
-                try
+                startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
+
+                inheritableStdinHandle = DuplicateAsInheritable(stdinHandle);
+                inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle);
+                inheritableStderrHandle = DuplicateAsInheritable(stderrHandle);
+
+                startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
+                startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
+                startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
+
+                startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+
+                if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                 {
-                    startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
+                    startupInfo.wShowWindow = (short)GetShowWindowFromWindowStyle(startInfo.WindowStyle);
+                    startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
+                }
 
-                    // set up the streams
-                    if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
+                // set up the creation flags parameter
+                int creationFlags = 0;
+                if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
+                if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
+
+                // set up the environment block parameter
+                string? environmentBlock = null;
+                if (startInfo._environmentVariables != null)
+                {
+                    creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
+                    environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
+                }
+
+                string? workingDirectory = startInfo.WorkingDirectory;
+                if (workingDirectory.Length == 0)
+                {
+                    workingDirectory = null;
+                }
+
+                bool retVal;
+                int errorCode = 0;
+
+                if (startInfo.UserName.Length != 0)
+                {
+                    if (startInfo.Password != null && startInfo.PasswordInClearText != null)
                     {
-                        inheritableStdinHandle = DuplicateAsInheritable(stdinHandle!);
-                        inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle!);
-                        inheritableStderrHandle = DuplicateAsInheritable(stderrHandle!);
-
-                        startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
-                        startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
-                        startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
-
-                        startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+                        throw new ArgumentException(SR.CantSetDuplicatePassword);
                     }
 
-                    if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
+                    Interop.Advapi32.LogonFlags logonFlags = (Interop.Advapi32.LogonFlags)0;
+                    if (startInfo.LoadUserProfile && startInfo.UseCredentialsForNetworkingOnly)
                     {
-                        startupInfo.wShowWindow = (short)GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                        startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
+                        throw new ArgumentException(SR.CantEnableConflictingLogonFlags, nameof(startInfo));
+                    }
+                    else if (startInfo.LoadUserProfile)
+                    {
+                        logonFlags = Interop.Advapi32.LogonFlags.LOGON_WITH_PROFILE;
+                    }
+                    else if (startInfo.UseCredentialsForNetworkingOnly)
+                    {
+                        logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                     }
 
-                    // set up the creation flags parameter
-                    int creationFlags = 0;
-                    if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
-                    if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
-
-                    // set up the environment block parameter
-                    string? environmentBlock = null;
-                    if (startInfo._environmentVariables != null)
+                    commandLine.NullTerminate();
+                    fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
+                    fixed (char* environmentBlockPtr = environmentBlock)
+                    fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
-                        creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
-                        environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
-                    }
+                        IntPtr passwordPtr = (startInfo.Password != null) ?
+                            Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
 
-                    string? workingDirectory = startInfo.WorkingDirectory;
-                    if (workingDirectory.Length == 0)
-                    {
-                        workingDirectory = null;
-                    }
-
-                    bool retVal;
-                    int errorCode = 0;
-
-                    if (startInfo.UserName.Length != 0)
-                    {
-                        if (startInfo.Password != null && startInfo.PasswordInClearText != null)
+                        try
                         {
-                            throw new ArgumentException(SR.CantSetDuplicatePassword);
-                        }
-
-                        Interop.Advapi32.LogonFlags logonFlags = (Interop.Advapi32.LogonFlags)0;
-                        if (startInfo.LoadUserProfile && startInfo.UseCredentialsForNetworkingOnly)
-                        {
-                            throw new ArgumentException(SR.CantEnableConflictingLogonFlags, nameof(startInfo));
-                        }
-                        else if (startInfo.LoadUserProfile)
-                        {
-                            logonFlags = Interop.Advapi32.LogonFlags.LOGON_WITH_PROFILE;
-                        }
-                        else if (startInfo.UseCredentialsForNetworkingOnly)
-                        {
-                            logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
-                        }
-
-                        commandLine.NullTerminate();
-                        fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
-                        fixed (char* environmentBlockPtr = environmentBlock)
-                        fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
-                        {
-                            IntPtr passwordPtr = (startInfo.Password != null) ?
-                                Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
-
-                            try
-                            {
-                                retVal = Interop.Advapi32.CreateProcessWithLogonW(
-                                    startInfo.UserName,
-                                    startInfo.Domain,
-                                    (passwordPtr != IntPtr.Zero) ? passwordPtr : (IntPtr)passwordInClearTextPtr,
-                                    logonFlags,
-                                    null,            // we don't need this since all the info is in commandLine
-                                    commandLinePtr,
-                                    creationFlags,
-                                    (IntPtr)environmentBlockPtr,
-                                    workingDirectory,
-                                    ref startupInfo,        // pointer to STARTUPINFO
-                                    ref processInfo         // pointer to PROCESS_INFORMATION
-                                );
-                                if (!retVal)
-                                    errorCode = Marshal.GetLastWin32Error();
-                            }
-                            finally
-                            {
-                                if (passwordPtr != IntPtr.Zero)
-                                    Marshal.ZeroFreeGlobalAllocUnicode(passwordPtr);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        commandLine.NullTerminate();
-                        fixed (char* environmentBlockPtr = environmentBlock)
-                        fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
-                        {
-                            retVal = Interop.Kernel32.CreateProcess(
-                                null,                // we don't need this since all the info is in commandLine
-                                commandLinePtr,      // pointer to the command line string
-                                ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
-                                ref unused_SecAttrs, // address to thread security attributes.
-                                true,                // handle inheritance flag
-                                creationFlags,       // creation flags
-                                (IntPtr)environmentBlockPtr, // pointer to new environment block
-                                workingDirectory,    // pointer to current directory name
-                                ref startupInfo,     // pointer to STARTUPINFO
-                                ref processInfo      // pointer to PROCESS_INFORMATION
+                            retVal = Interop.Advapi32.CreateProcessWithLogonW(
+                                startInfo.UserName,
+                                startInfo.Domain,
+                                (passwordPtr != IntPtr.Zero) ? passwordPtr : (IntPtr)passwordInClearTextPtr,
+                                logonFlags,
+                                null,            // we don't need this since all the info is in commandLine
+                                commandLinePtr,
+                                creationFlags,
+                                (IntPtr)environmentBlockPtr,
+                                workingDirectory,
+                                ref startupInfo,        // pointer to STARTUPINFO
+                                ref processInfo         // pointer to PROCESS_INFORMATION
                             );
                             if (!retVal)
                                 errorCode = Marshal.GetLastWin32Error();
                         }
+                        finally
+                        {
+                            if (passwordPtr != IntPtr.Zero)
+                                Marshal.ZeroFreeGlobalAllocUnicode(passwordPtr);
+                        }
                     }
-
-                    if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
-                        Marshal.InitHandle(procSH, processInfo.hProcess);
-                    if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
-                        Interop.Kernel32.CloseHandle(processInfo.hThread);
-
-                    if (!retVal)
+                }
+                else
+                {
+                    commandLine.NullTerminate();
+                    fixed (char* environmentBlockPtr = environmentBlock)
+                    fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
-                        string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
-                            ? SR.InvalidApplication
-                            : GetErrorMessage(errorCode);
-
-                        throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
+                        retVal = Interop.Kernel32.CreateProcess(
+                            null,                // we don't need this since all the info is in commandLine
+                            commandLinePtr,      // pointer to the command line string
+                            ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
+                            ref unused_SecAttrs, // address to thread security attributes.
+                            true,                // handle inheritance flag
+                            creationFlags,       // creation flags
+                            (IntPtr)environmentBlockPtr, // pointer to new environment block
+                            workingDirectory,    // pointer to current directory name
+                            ref startupInfo,     // pointer to STARTUPINFO
+                            ref processInfo      // pointer to PROCESS_INFORMATION
+                        );
+                        if (!retVal)
+                            errorCode = Marshal.GetLastWin32Error();
                     }
                 }
-                catch
+
+                if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
+                    Marshal.InitHandle(procSH, processInfo.hProcess);
+                if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
+                    Interop.Kernel32.CloseHandle(processInfo.hThread);
+
+                if (!retVal)
                 {
-                    procSH.Dispose();
-                    throw;
-                }
-                finally
-                {
-                    inheritableStdinHandle?.Dispose();
-                    inheritableStdoutHandle?.Dispose();
-                    inheritableStderrHandle?.Dispose();
+                    string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                        ? SR.InvalidApplication
+                        : GetErrorMessage(errorCode);
+
+                    throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
                 }
             }
+            catch
+            {
+                procSH.Dispose();
+                throw;
+            }
+            finally
+            {
+                inheritableStdinHandle?.Dispose();
+                inheritableStdoutHandle?.Dispose();
+                inheritableStderrHandle?.Dispose();
 
-            commandLine.Dispose();
+                ProcessUtils.s_processStartLock.ExitWriteLock();
+
+                commandLine.Dispose();
+            }
 
             if (procSH.IsInvalid)
             {
@@ -615,16 +610,16 @@ namespace System.Diagnostics
         }
 
         /// <summary>Duplicates a handle as inheritable so the child process can use it.</summary>
-        private static SafeFileHandle DuplicateAsInheritable(SafeFileHandle handle)
+        private static SafeFileHandle DuplicateAsInheritable(SafeFileHandle sourceHandle)
         {
             IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
             if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
-                                                 handle,
-                                                 currentProcHandle,
-                                                 out SafeFileHandle duplicatedHandle,
-                                                 0,
-                                                 bInheritHandle: true,
-                                                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
+                sourceHandle,
+                currentProcHandle,
+                out SafeFileHandle duplicatedHandle,
+                0,
+                bInheritHandle: true,
+                Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }

@@ -18,7 +18,6 @@ namespace System.Diagnostics
     {
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
-        private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a
@@ -361,6 +360,8 @@ namespace System.Diagnostics
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
+            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null);
+
             if (PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
@@ -370,14 +371,6 @@ namespace System.Diagnostics
 
             string? filename;
             string[] argv;
-
-            if (startInfo.UseShellExecute)
-            {
-                if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
-                {
-                    throw new InvalidOperationException(SR.CantRedirectStreams);
-                }
-            }
 
             string[] envp = CreateEnvp(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
@@ -395,9 +388,7 @@ namespace System.Diagnostics
             // Unix applications expect the terminal to be in an echoing state by default.
             // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
             // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            bool usesTerminal = !(startInfo.RedirectStandardInput &&
-                                  startInfo.RedirectStandardOutput &&
-                                  startInfo.RedirectStandardError);
+            bool usesTerminal = Interop.Sys.IsATty(stdinHandle) || Interop.Sys.IsATty(stdoutHandle) || Interop.Sys.IsATty(stderrHandle);
 
             if (startInfo.UseShellExecute)
             {
@@ -456,11 +447,13 @@ namespace System.Diagnostics
             return true;
         }
 
+        private static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
+
         private bool ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             string[] envp, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
-            SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
+            SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
             bool usesTerminal, bool throwOnNoExec = true)
         {
             if (string.IsNullOrEmpty(resolvedFilename))
@@ -471,7 +464,7 @@ namespace System.Diagnostics
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-            s_processStartLock.EnterReadLock();
+            ProcessUtils.s_processStartLock.EnterReadLock();
             try
             {
                 if (usesTerminal)
@@ -491,9 +484,9 @@ namespace System.Diagnostics
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
                     out childPid,
-                    stdinHandle!,
-                    stdoutHandle!,
-                    stderrHandle!);
+                    stdinHandle,
+                    stdoutHandle,
+                    stderrHandle);
 
                 if (errno == 0)
                 {
@@ -521,14 +514,14 @@ namespace System.Diagnostics
             }
             finally
             {
-                s_processStartLock.ExitReadLock();
+                ProcessUtils.s_processStartLock.ExitReadLock();
 
                 if (_waitStateHolder == null && usesTerminal)
                 {
                     // We failed to launch a child that could use the terminal.
-                    s_processStartLock.EnterWriteLock();
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
                     ConfigureTerminalForChildProcesses(-1);
-                    s_processStartLock.ExitWriteLock();
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
                 }
             }
         }
@@ -723,11 +716,18 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified file handle.</summary>
         private static AnonymousPipeClientStream OpenStream(SafeFileHandle handle, FileAccess access)
         {
             PipeDirection direction = access == FileAccess.Write ? PipeDirection.Out : PipeDirection.In;
-            return new AnonymousPipeClientStream(direction, new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: true));
+
+            // Transfer the ownership to SafePipeHandle, so that it can be properly released when the AnonymousPipeClientStream is disposed.
+            SafePipeHandle safePipeHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+            handle.Dispose();
+
+            // In contrary to Windows, we use AnonymousPipeClientStream which is internally backed by a Socket on Unix.
+            // This provides best performance and cancellation support.
+            return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
 
         /// <summary>Gets the default encoding for standard input.</summary>
@@ -990,7 +990,7 @@ namespace System.Diagnostics
             // DelayedSigChildConsoleConfiguration will be called.
 
             // Lock to avoid races with Process.Start
-            s_processStartLock.EnterWriteLock();
+            ProcessUtils.s_processStartLock.EnterWriteLock();
             try
             {
                 bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
@@ -1002,7 +1002,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                s_processStartLock.ExitWriteLock();
+                ProcessUtils.s_processStartLock.ExitWriteLock();
             }
         }
 
