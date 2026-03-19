@@ -134,7 +134,6 @@ namespace System.Threading
             FreeNativeOverlapped(nativeOverlappedPtr);
         }
 
-        [RequiresUnsafe]
         private NativeOverlapped* AllocateNativeOverlapped(object? userData)
         {
             NativeOverlapped* pNativeOverlapped = null;
