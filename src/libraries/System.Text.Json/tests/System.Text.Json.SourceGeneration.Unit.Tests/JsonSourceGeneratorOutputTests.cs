@@ -40,114 +40,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotX86Process))]
     public class SourceGeneratedOutputTests(ITestOutputHelper logger)
     {
-        private static readonly string s_baselinesRelativePath = IO.Path.Combine(
-            "src", "libraries", "System.Text.Json", "tests",
-            "System.Text.Json.SourceGeneration.Unit.Tests", "Baselines");
-
-        private static readonly string s_tfmSubFolder =
-#if NET
-            "netcoreapp";
-#else
-            "net462";
-#endif
-
-        /// <summary>
-        /// Runs the source generator on <paramref name="source"/> and verifies that every
-        /// generated file matches the corresponding baseline in
-        /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
-        /// </summary>
-        private void VerifyAgainstBaseline(string source, string testId)
-        {
-            Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
-
-            var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));
-            List<SyntaxTree> generatedTrees = result.NewCompilation.SyntaxTrees
-                .Where(t => !inputPaths.Contains(t.FilePath))
-                .ToList();
-
-            Assert.True(generatedTrees.Count > 0, "Source generator produced no output.");
-
-            string baselineDir = IO.Path.Combine("Baselines", testId, s_tfmSubFolder);
-
-            string[] actualFiles = generatedTrees
-                .Select(t => ToBaselineFileName(t.FilePath))
-                .OrderBy(f => f, StringComparer.Ordinal)
-                .ToArray();
-
-#if UPDATE_BASELINES
-            {
-                const string envVarName = "RepoRootDir";
-                string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
-                Assert.True(repoRootDir is not null,
-                    $"To update baselines, set the '{envVarName}' environment variable to the repo root.");
-
-                string absDir = IO.Path.Combine(repoRootDir, s_baselinesRelativePath, testId, s_tfmSubFolder);
-                IO.Directory.CreateDirectory(absDir);
-
-                // Remove stale baselines that are no longer generated.
-                if (IO.Directory.Exists(absDir))
-                {
-                    foreach (string existing in IO.Directory.GetFiles(absDir, "*.cs.txt"))
-                    {
-                        string name = IO.Path.GetFileName(existing);
-                        if (!actualFiles.Contains(name, StringComparer.Ordinal))
-                        {
-                            IO.File.Delete(existing);
-                        }
-                    }
-                }
-
-                foreach (SyntaxTree tree in generatedTrees)
-                {
-                    string baselineFileName = ToBaselineFileName(tree.FilePath);
-                    SourceText generatedSourceText = tree.GetText();
-                    string absPath = IO.Path.Combine(absDir, baselineFileName);
-                    IO.File.WriteAllText(absPath, generatedSourceText.ToString());
-                }
-
-                return;
-            }
-#else
-            // Collect expected baseline files from disk.
-            Assert.True(IO.Directory.Exists(baselineDir),
-                $"Baseline directory not found: {baselineDir}. Build with /p:UpdateBaselines=true to generate baselines.");
-
-            string[] expectedFiles = IO.Directory.GetFiles(baselineDir, "*.cs.txt")
-                .Select(f => IO.Path.GetFileName(f))
-                .OrderBy(f => f, StringComparer.Ordinal)
-                .ToArray();
-
-            // Verify that the set of generated files matches the set of baselines.
-            Assert.True(
-                expectedFiles.SequenceEqual(actualFiles, StringComparer.Ordinal),
-                $"Generated file set mismatch.\nExpected: [{string.Join(", ", expectedFiles)}]\nActual:   [{string.Join(", ", actualFiles)}]");
-
-            // Verify content of each generated file.
-            foreach (SyntaxTree tree in generatedTrees)
-            {
-                string baselineFileName = ToBaselineFileName(tree.FilePath);
-                string baselinePath = IO.Path.Combine(baselineDir, baselineFileName);
-                SourceText generatedSourceText = tree.GetText();
-
-                string baseline = LineEndingsHelper.Normalize(IO.File.ReadAllText(baselinePath));
-                string[] expectedLines = baseline
-                    .Replace("%VERSION%", typeof(JsonSourceGenerator).Assembly.GetName().Version?.ToString())
-                    .Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-                bool matches = RoslynTestUtils.CompareLines(expectedLines, generatedSourceText, out string errorMessage);
-                Assert.True(matches, $"Baseline mismatch for {baselineFileName}.\n{errorMessage}");
-            }
-#endif
-        }
-
-        /// <summary>
-        /// Converts a generated tree file path (e.g. ending in <c>MyContext.Person.g.cs</c>)
-        /// to a baseline file name (e.g. <c>MyContext.Person.g.cs.txt</c>).
-        /// </summary>
-        private static string ToBaselineFileName(string generatedFilePath)
-            => IO.Path.GetFileName(generatedFilePath) + ".txt";
-
         [Fact]
         public void SimplePoco()
         {
@@ -362,5 +254,117 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """, nameof(OutParameterWithUnsupportedType));
         }
+
+        #region Baseline comparison infrastructure
+
+        private static readonly string s_baselinesRelativePath = IO.Path.Combine(
+            "src", "libraries", "System.Text.Json", "tests",
+            "System.Text.Json.SourceGeneration.Unit.Tests", "Baselines");
+
+        private static readonly string s_tfmSubFolder =
+#if NET
+            "netcoreapp";
+#else
+            "net462";
+#endif
+
+        /// <summary>
+        /// Runs the source generator on <paramref name="source"/> and verifies that every
+        /// generated file matches the corresponding baseline in
+        /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
+        /// </summary>
+        private void VerifyAgainstBaseline(string source, string testId)
+        {
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));
+            List<SyntaxTree> generatedTrees = result.NewCompilation.SyntaxTrees
+                .Where(t => !inputPaths.Contains(t.FilePath))
+                .ToList();
+
+            Assert.True(generatedTrees.Count > 0, "Source generator produced no output.");
+
+            string baselineDir = IO.Path.Combine("Baselines", testId, s_tfmSubFolder);
+
+            string[] actualFiles = generatedTrees
+                .Select(t => ToBaselineFileName(t.FilePath))
+                .OrderBy(f => f, StringComparer.Ordinal)
+                .ToArray();
+
+#if UPDATE_BASELINES
+            {
+                const string envVarName = "RepoRootDir";
+                string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
+                Assert.True(repoRootDir is not null,
+                    $"To update baselines, set the '{envVarName}' environment variable to the repo root.");
+
+                string absDir = IO.Path.Combine(repoRootDir, s_baselinesRelativePath, testId, s_tfmSubFolder);
+                IO.Directory.CreateDirectory(absDir);
+
+                // Remove stale baselines that are no longer generated.
+                if (IO.Directory.Exists(absDir))
+                {
+                    foreach (string existing in IO.Directory.GetFiles(absDir, "*.cs.txt"))
+                    {
+                        string name = IO.Path.GetFileName(existing);
+                        if (!actualFiles.Contains(name, StringComparer.Ordinal))
+                        {
+                            IO.File.Delete(existing);
+                        }
+                    }
+                }
+
+                foreach (SyntaxTree tree in generatedTrees)
+                {
+                    string baselineFileName = ToBaselineFileName(tree.FilePath);
+                    SourceText generatedSourceText = tree.GetText();
+                    string absPath = IO.Path.Combine(absDir, baselineFileName);
+                    IO.File.WriteAllText(absPath, generatedSourceText.ToString());
+                }
+
+                return;
+            }
+#else
+            // Collect expected baseline files from disk.
+            Assert.True(IO.Directory.Exists(baselineDir),
+                $"Baseline directory not found: {baselineDir}. Build with /p:UpdateBaselines=true to generate baselines.");
+
+            string[] expectedFiles = IO.Directory.GetFiles(baselineDir, "*.cs.txt")
+                .Select(f => IO.Path.GetFileName(f))
+                .OrderBy(f => f, StringComparer.Ordinal)
+                .ToArray();
+
+            // Verify that the set of generated files matches the set of baselines.
+            Assert.True(
+                expectedFiles.SequenceEqual(actualFiles, StringComparer.Ordinal),
+                $"Generated file set mismatch.\nExpected: [{string.Join(", ", expectedFiles)}]\nActual:   [{string.Join(", ", actualFiles)}]");
+
+            // Verify content of each generated file.
+            foreach (SyntaxTree tree in generatedTrees)
+            {
+                string baselineFileName = ToBaselineFileName(tree.FilePath);
+                string baselinePath = IO.Path.Combine(baselineDir, baselineFileName);
+                SourceText generatedSourceText = tree.GetText();
+
+                string baseline = LineEndingsHelper.Normalize(IO.File.ReadAllText(baselinePath));
+                string[] expectedLines = baseline
+                    .Replace("%VERSION%", typeof(JsonSourceGenerator).Assembly.GetName().Version?.ToString())
+                    .Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+
+                bool matches = RoslynTestUtils.CompareLines(expectedLines, generatedSourceText, out string errorMessage);
+                Assert.True(matches, $"Baseline mismatch for {baselineFileName}.\n{errorMessage}");
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Converts a generated tree file path (e.g. ending in <c>MyContext.Person.g.cs</c>)
+        /// to a baseline file name (e.g. <c>MyContext.Person.g.cs.txt</c>).
+        /// </summary>
+        private static string ToBaselineFileName(string generatedFilePath)
+            => IO.Path.GetFileName(generatedFilePath) + ".txt";
+
+        #endregion
     }
 }
