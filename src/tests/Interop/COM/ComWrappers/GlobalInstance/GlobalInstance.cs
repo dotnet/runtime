@@ -469,7 +469,7 @@ namespace ComWrappersTests.GlobalInstance
             GlobalComWrappers.Instance.ReturnInvalid = false;
             IntPtr tracker = MockReferenceTrackerRuntime.CreateTrackerObject();
 
-            object rcw = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerSupport);
+            object rcw = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerObject);
 
             // Make sure that we keep the tracker object alive even after we notify end of reference tracking on this thread.
             Marshal.AddRef(tracker);
@@ -478,7 +478,7 @@ namespace ComWrappersTests.GlobalInstance
             Assert.Equal(S_OK, MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread());
 
             // We should get a new RCW after we've released the reference tracked objects on this thread.
-            object rcwNew = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerSupport);
+            object rcwNew = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerObject);
 
             // Release the extra ref we added above so we don't leak the object after the test.
             Marshal.Release(tracker);
