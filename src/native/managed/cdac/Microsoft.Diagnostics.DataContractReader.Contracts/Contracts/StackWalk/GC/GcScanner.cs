@@ -60,6 +60,14 @@ internal class GcScanner
                 }
                 else
                 {
+                    int spReg = context.StackPointerRegister;
+                    int reg = spBase switch
+                    {
+                        1 => spReg,                     // GC_SP_REL → SP register number
+                        2 => (int)stackBaseRegister,     // GC_FRAMEREG_REL → frame base register
+                        0 => -(spReg + 1),               // GC_CALLER_SP_REL → -(SP + 1)
+                        _ => throw new InvalidOperationException($"Unknown stack slot base: {spBase}"),
+                    };
                     TargetPointer baseAddr = spBase switch
                     {
                         1 => context.StackPointer,                                  // GC_SP_REL
@@ -69,7 +77,7 @@ internal class GcScanner
                     };
 
                     TargetPointer addr = new(baseAddr.Value + (ulong)(long)spOffset);
-                    GcScanSlotLocation loc = new((int)spBase, spOffset, true);
+                    GcScanSlotLocation loc = new(reg, spOffset, true);
                     scanContext.GCEnumCallback(addr, scanFlags, loc);
                 }
             });

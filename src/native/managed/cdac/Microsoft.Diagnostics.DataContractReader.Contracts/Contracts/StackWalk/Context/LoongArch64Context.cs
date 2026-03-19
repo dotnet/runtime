@@ -41,6 +41,8 @@ internal struct LoongArch64Context : IPlatformContext
                                                        ContextFlagsValues.CONTEXT_FLOATING_POINT |
                                                        ContextFlagsValues.CONTEXT_DEBUG_REGISTERS);
 
+    public readonly int StackPointerRegister => 3;
+
     public TargetPointer StackPointer
     {
         readonly get => new(Sp);
