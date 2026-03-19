@@ -2029,7 +2029,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     base64ClearSize = base64Written;
                     Debug.Assert(!decryptedPkcs8.HasValue);
-                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsMemory(0, base64Written), out int bytesRead);
+                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsSpan(0, base64Written), out int bytesRead);
 
                     if (bytesRead != base64Written)
                     {
