@@ -31,6 +31,7 @@ namespace System.Composition.TypedParts.Discovery
 
         // Lazily initialised among potentially many exports
         private ConstructorInfo _constructor;
+        private ParameterInfo[] _constructorParameters;
         private CompositeActivator _partActivator;
 
         private static readonly IDictionary<string, object> s_noMetadata = new Dictionary<string, object>();
@@ -112,7 +113,13 @@ namespace System.Composition.TypedParts.Discovery
                 }
             }
 
-            var cps = _constructor.GetParameters();
+            // Cache GetParameters() result to ensure the same ParameterInfo instances
+            // are used in both GetPartActivatorDependencies and GetActivator.
+            // On some runtimes (e.g. Mono on ARM), concurrent calls to GetParameters()
+            // on the same ConstructorInfo can return different ParameterInfo instances
+            // due to lazy initialization, causing lookup failures.
+            _constructorParameters = _constructor.GetParameters();
+            var cps = _constructorParameters;
 
             for (var i = 0; i < cps.Length; ++i)
             {
@@ -168,7 +175,7 @@ namespace System.Composition.TypedParts.Discovery
             var contextParam = Expression.Parameter(typeof(LifetimeContext), "cc");
             var operationParm = Expression.Parameter(typeof(CompositionOperation), "op");
 
-            var cps = _constructor.GetParameters();
+            var cps = _constructorParameters ?? _constructor.GetParameters();
             Expression[] paramActivatorCalls = new Expression[cps.Length];
 
             var partActivatorDependencies = dependencies
