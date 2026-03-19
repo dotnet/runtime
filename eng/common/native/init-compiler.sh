@@ -80,8 +80,20 @@ EOF
 
 if [ -z "$CLR_CC" ]; then
 
+    if [ "$__baseOS" = "Darwin" ] && [ "$compiler" = "clang" ] && [ -z "$majorVersion" ]; then
+        # On Darwin, prefer the Xcode toolchain clang (AppleClang) over any
+        # versioned LLVM clang that may be installed via Homebrew or other
+        # package managers. AppleClang is required for correct Apple platform
+        # linking, Swift interop, and CFI directive handling.
+        xcrun_cc="$(xcrun --find clang 2>/dev/null)"
+        if [ -n "$xcrun_cc" ]; then
+            CC="$xcrun_cc"
+            CXX="$(xcrun --find clang++ 2>/dev/null)"
+        fi
+    fi
+
     # Set default versions
-    if [ -z "$majorVersion" ]; then
+    if [ -z "$majorVersion" ] && [ -z "$CC" ]; then
         minVersion=8
         maxVersion="$((maxVersion + 1))" # +1 for headspace
         i="$maxVersion"
@@ -101,7 +113,7 @@ if [ -z "$CLR_CC" ]; then
             CXX="$(command -v "$cxxCompiler" 2> /dev/null)"
             set_compiler_version_from_CC
         fi
-    else
+    elif [ -n "$majorVersion" ] && [ -z "$CC" ]; then
         desired_version="$(check_version_exists "$majorVersion")"
         if [ "$desired_version" = "-1" ]; then
             echo "Error: Could not find specific version of $compiler: $majorVersion."
