@@ -6421,6 +6421,42 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
+bool CEEInfo::tryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool ret = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(ftn);
+
+    MethodDesc *pMD = (MethodDesc*)ftn;
+
+    if (pIsAggressiveInline != nullptr)
+    {
+        *pIsAggressiveInline = pMD->IsIL() && !pMD->IsNotInline() && IsMiAggressiveInlining(pMD->GetImplAttrs());
+    }
+
+    if (pMD->IsIL() && pMD->HasILHeader())
+    {
+        COR_ILMETHOD_DECODER header(pMD->GetILHeader());
+        if (pILSize != nullptr)
+        {
+            *pILSize = header.GetCodeSize();
+        }
+        ret = true;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return ret;
+}
+
 bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {

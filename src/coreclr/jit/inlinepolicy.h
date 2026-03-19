@@ -205,6 +205,7 @@ public:
         , m_FldAccessOverArgStruct(0)
         , m_FoldableBox(0)
         , m_Intrinsic(0)
+        , m_ForceInlineCallSize(0)
         , m_BackwardJump(0)
         , m_ThrowBlock(0)
         , m_ArgIsExactCls(0)
@@ -261,6 +262,7 @@ protected:
     unsigned m_FldAccessOverArgStruct;
     unsigned m_FoldableBox;
     unsigned m_Intrinsic;
+    unsigned m_ForceInlineCallSize;
     unsigned m_BackwardJump;
     unsigned m_ThrowBlock;
     unsigned m_ArgIsExactCls;

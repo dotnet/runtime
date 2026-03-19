@@ -1600,6 +1600,17 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 }
 
+                if (resolveTokens && !isIntrinsic && methodHnd != nullptr)
+                {
+                    uint32_t calleeILSize             = 0;
+                    bool     calleeIsAggressiveInline = false;
+                    if (eeTryGetMethodILSize(methodHnd, &calleeILSize, &calleeIsAggressiveInline) &&
+                        calleeIsAggressiveInline)
+                    {
+                        compInlineResult->NoteInt(InlineObservation::CALLEE_FORCE_INLINE_CALL, (int)calleeILSize);
+                    }
+                }
+
                 if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
                     // If the method has a call followed by a ret, assume that

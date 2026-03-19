@@ -31,6 +31,12 @@ bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
+bool MyICJI::tryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline)
+{
+    jitInstance->mc->cr->AddCall("tryGetMethodILSize");
+    return jitInstance->mc->repTryGetMethodILSize(ftn, pILSize, pIsAggressiveInline);
+}
+
 bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");

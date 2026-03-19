@@ -1084,6 +1084,19 @@ namespace Internal.JitInterface
             return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
+        private bool tryGetMethodILSize(CORINFO_METHOD_STRUCT_* ftn, ref uint pILSize, ref bool pIsAggressiveInline)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            pIsAggressiveInline = method.IsAggressiveInlining;
+            MethodIL methodIL = _compilation.GetMethodIL(method);
+            if (methodIL != null)
+            {
+                pILSize = (uint)methodIL.GetILBytes().Length;
+                return true;
+            }
+            return false;
+        }
+
         private uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;

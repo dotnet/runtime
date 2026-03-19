@@ -122,6 +122,10 @@ public:
     void dmpIsIntrinsic(DWORDLONG key, DWORD value);
     bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
+    void recTryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t ilSize, bool isAggressiveInline, bool result);
+    void dmpTryGetMethodILSize(DWORDLONG key, DD value);
+    bool repTryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline);
+
     void recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result);
     void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
     bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
@@ -1222,6 +1226,8 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_IsAggressiveInlining = 238,
+    Packet_TryGetMethodILSize = 239,
 };
 
 void SetDebugDumpVariables();
