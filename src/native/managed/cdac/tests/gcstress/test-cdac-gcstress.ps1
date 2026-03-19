@@ -221,7 +221,9 @@ $logFile = Join-Path $testDir "cdac-gcstress-results.txt"
 $env:DOTNET_GCStress = "0x24"
 $env:DOTNET_GCStressCdacFailFast = if ($FailFast) { "1" } else { "0" }
 $env:DOTNET_GCStressCdacLogFile = $logFile
-$env:DOTNET_ContinueOnAssert = "1"
+if (-not $FailFast) {
+    $env:DOTNET_ContinueOnAssert = "1"
+}
 
 & $corerunExe (Join-Path $testDir "test.dll")
 $testExitCode = $LASTEXITCODE
