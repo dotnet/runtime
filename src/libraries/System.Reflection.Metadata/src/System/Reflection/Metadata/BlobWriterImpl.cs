@@ -251,28 +251,148 @@ namespace System.Reflection.Metadata
 
         internal static void WriteConstant(ref BlobWriter writer, object? value)
         {
-            if (value is string s)
+            if (value == null)
             {
-                writer.WriteUTF16(s);
+                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
+                writer.WriteUInt32(0);
                 return;
             }
 
-            Span<byte> bytes = stackalloc byte[MaxScalarConstantSize];
-            int written = WriteScalarConstant(bytes, value);
-            writer.WriteBytes(bytes.Slice(0, written));
+            var type = value.GetType();
+            if (type.GetTypeInfo().IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type == typeof(bool))
+            {
+                writer.WriteBoolean((bool)value);
+            }
+            else if (type == typeof(int))
+            {
+                writer.WriteInt32((int)value);
+            }
+            else if (type == typeof(string))
+            {
+                writer.WriteUTF16((string)value);
+            }
+            else if (type == typeof(byte))
+            {
+                writer.WriteByte((byte)value);
+            }
+            else if (type == typeof(char))
+            {
+                writer.WriteUInt16((char)value);
+            }
+            else if (type == typeof(double))
+            {
+                writer.WriteDouble((double)value);
+            }
+            else if (type == typeof(short))
+            {
+                writer.WriteInt16((short)value);
+            }
+            else if (type == typeof(long))
+            {
+                writer.WriteInt64((long)value);
+            }
+            else if (type == typeof(sbyte))
+            {
+                writer.WriteSByte((sbyte)value);
+            }
+            else if (type == typeof(float))
+            {
+                writer.WriteSingle((float)value);
+            }
+            else if (type == typeof(ushort))
+            {
+                writer.WriteUInt16((ushort)value);
+            }
+            else if (type == typeof(uint))
+            {
+                writer.WriteUInt32((uint)value);
+            }
+            else if (type == typeof(ulong))
+            {
+                writer.WriteUInt64((ulong)value);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, type));
+            }
         }
 
         internal static void WriteConstant(BlobBuilder writer, object? value)
         {
-            if (value is string s)
+            if (value == null)
             {
-                writer.WriteUTF16(s);
+                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
+                writer.WriteUInt32(0);
                 return;
             }
 
-            Span<byte> bytes = stackalloc byte[MaxScalarConstantSize];
-            int written = WriteScalarConstant(bytes, value);
-            writer.WriteBytes(bytes.Slice(0, written));
+            var type = value.GetType();
+            if (type.GetTypeInfo().IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            if (type == typeof(bool))
+            {
+                writer.WriteBoolean((bool)value);
+            }
+            else if (type == typeof(int))
+            {
+                writer.WriteInt32((int)value);
+            }
+            else if (type == typeof(string))
+            {
+                writer.WriteUTF16((string)value);
+            }
+            else if (type == typeof(byte))
+            {
+                writer.WriteByte((byte)value);
+            }
+            else if (type == typeof(char))
+            {
+                writer.WriteUInt16((char)value);
+            }
+            else if (type == typeof(double))
+            {
+                writer.WriteDouble((double)value);
+            }
+            else if (type == typeof(short))
+            {
+                writer.WriteInt16((short)value);
+            }
+            else if (type == typeof(long))
+            {
+                writer.WriteInt64((long)value);
+            }
+            else if (type == typeof(sbyte))
+            {
+                writer.WriteSByte((sbyte)value);
+            }
+            else if (type == typeof(float))
+            {
+                writer.WriteSingle((float)value);
+            }
+            else if (type == typeof(ushort))
+            {
+                writer.WriteUInt16((ushort)value);
+            }
+            else if (type == typeof(uint))
+            {
+                writer.WriteUInt32((uint)value);
+            }
+            else if (type == typeof(ulong))
+            {
+                writer.WriteUInt64((ulong)value);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidConstantValueOfType, type));
+            }
         }
     }
 }
