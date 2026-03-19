@@ -292,9 +292,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
             string watchDir = FindDeepestExistingAncestor(filePath);
 
             // Normalize the key: remove any trailing separator so the dictionary key is stable.
-            string key = watchDir.Length > 1
+            string key = watchDir.Length > Path.GetPathRoot(watchDir)!.Length
                 ? watchDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                : watchDir; // preserve "/" or "C:\" root paths as-is
+                : watchDir; // preserve root paths (e.g., "/" or "C:\") as-is
 
             while (true)
             {
