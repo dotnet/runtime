@@ -648,6 +648,26 @@ namespace Microsoft.Extensions
             public SimplePoco Complex { set => _complex = value; }
         }
 
+        private struct SetOnlyComplexStruct
+        {
+            public string A { get; set; }
+        }
+
+        private sealed class StructSetOnlyPoco
+        {
+            private SetOnlyComplexStruct _complex;
+
+            public SetOnlyComplexStruct Complex
+            {
+                set => _complex = value;
+            }
+
+            public SetOnlyComplexStruct GetComplex()
+            {
+                return _complex;
+            }
+        }
+
         public class SetOnlyWithTypeConversionPoco
         {
             public double TimeoutSeconds { set => Timeout = TimeSpan.FromSeconds(value); }

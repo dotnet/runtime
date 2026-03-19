@@ -2009,26 +2009,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             var test = new ClassOverridingVirtualProperty();
 
-        private struct SetOnlyComplexStruct
-        {
-            public string A { get; set; }
-        }
-
-        private sealed class StructSetOnlyPoco
-        {
-            private SetOnlyComplexStruct _complex;
-
-            public SetOnlyComplexStruct Complex
-            {
-                set => _complex = value;
-            }
-
-            public SetOnlyComplexStruct GetComplex()
-            {
-                return _complex;
-            }
-        }
-
 #if BUILDING_SOURCE_GENERATOR_TESTS
             var ex = Assert.Throws<NotSupportedException>(() => config.Bind(test, b => b.BindNonPublicProperties = true));
             Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
