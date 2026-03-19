@@ -229,23 +229,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private bool HasMissingParentDirectory(string filePath)
         {
-            string currentDir = _root;
-            int start = 0;
-            int slashIdx;
-            while ((slashIdx = filePath.IndexOf('/', start)) >= 0)
+            // Directory.Exists returns false when any ancestor segment is missing, so
+            // a single check on the immediate parent is sufficient; no loop needed.
+            int lastSlash = filePath.LastIndexOf('/');
+            if (lastSlash < 0)
             {
-                int len = slashIdx - start;
-                if (len > 0)
-                {
-                    currentDir = Path.Combine(currentDir, filePath.Substring(start, len));
-                    if (!Directory.Exists(currentDir))
-                    {
-                        return true;
-                    }
-                }
-                start = slashIdx + 1;
+                return false; // file sits directly under _root, which is assumed to exist
             }
-            return false;
+            return !Directory.Exists(Path.Combine(_root, filePath.Substring(0, lastSlash)));
         }
 
         // Returns the absolute path of the deepest existing ancestor directory of filePath.
@@ -257,26 +248,19 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private string FindDeepestExistingAncestor(string filePath)
         {
-            string currentDir = _root;
-            string deepest = currentDir;
-            int start = 0;
-            int slashIdx;
-            while ((slashIdx = filePath.IndexOf('/', start)) >= 0)
+            // Walk from the deepest candidate upward; return the first one that exists.
+            // In the common case where all parents are present this succeeds in one check.
+            int slashIdx = filePath.LastIndexOf('/');
+            while (slashIdx > 0)
             {
-                int len = slashIdx - start;
-                if (len > 0)
+                string candidate = Path.Combine(_root, filePath.Substring(0, slashIdx));
+                if (Directory.Exists(candidate))
                 {
-                    string next = Path.Combine(currentDir, filePath.Substring(start, len));
-                    if (!Directory.Exists(next))
-                    {
-                        return deepest;
-                    }
-                    deepest = next;
-                    currentDir = next;
+                    return candidate;
                 }
-                start = slashIdx + 1;
+                slashIdx = filePath.LastIndexOf('/', slashIdx - 1);
             }
-            return deepest;
+            return _root;
         }
 
         // Returns a change token that fires when any item is created inside the deepest
