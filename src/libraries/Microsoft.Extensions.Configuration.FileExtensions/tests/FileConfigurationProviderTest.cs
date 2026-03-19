@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Test;
 using Microsoft.Extensions.FileProviders;
 using Moq;
@@ -110,6 +112,60 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 
             var exception = Assert.Throws<DirectoryNotFoundException>(() => provider.Load());
             Assert.Contains(physicalPath, exception.Message);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task ResolveFileProvider_WithMissingParentDirectory_WatchTokenFiresWhenDirectoryCreated()
+        {
+            // Verify the fix for https://github.com/dotnet/runtime/issues/116713:
+            // When ResolveFileProvider() resolves to an ancestor directory because the immediate
+            // parent of the config file does not yet exist, Watch() should return a change token
+            // that fires when the missing directory is created (via a non-recursive pending watcher),
+            // rather than adding recursive watches on the entire ancestor directory tree.
+            string rootDir = Path.Combine(Path.GetTempPath(), "pfp_cfg_test_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootDir);
+            try
+            {
+                string missingSubDir = Path.Combine(rootDir, "subdir");
+                string configFilePath = Path.Combine(missingSubDir, "appsettings.json");
+
+                var source = new FileConfigurationSourceImpl
+                {
+                    Path = configFilePath,
+                    Optional = true,
+                    ReloadOnChange = true,
+                    ReloadDelay = 0,
+                };
+
+                // ResolveFileProvider walks up to rootDir (first existing ancestor).
+                source.ResolveFileProvider();
+
+                Assert.NotNull(source.FileProvider);
+                var physicalProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+                Assert.Equal(rootDir + Path.DirectorySeparatorChar, physicalProvider.Root);
+
+                // The path was relativized to include the missing segment.
+                Assert.Contains("subdir", source.Path, StringComparison.OrdinalIgnoreCase);
+
+                // Watch() must return a valid (non-null) change token even though the parent dir is missing.
+                var token = source.FileProvider.Watch(source.Path!);
+                Assert.NotNull(token);
+
+                // The token should fire when the previously-missing directory is created.
+                var tcs = new TaskCompletionSource<bool>();
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                cts.Token.Register(() => tcs.TrySetCanceled());
+                token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+                Directory.CreateDirectory(missingSubDir);
+
+                Assert.True(await tcs.Task, "Change token did not fire after the missing directory was created.");
+            }
+            finally
+            {
+                Directory.Delete(rootDir, recursive: true);
+            }
         }
 
         public class FileInfoImpl : IFileInfo
