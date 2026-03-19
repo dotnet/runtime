@@ -1041,10 +1041,18 @@ namespace System.Formats.Tar.Tests
         protected static void AppendRawPaxExtendedAttributeRecord(StringBuilder sb, string key, string value)
         {
             string content = $" {key}={value}\n";
-            int totalLen = content.Length + 1;
-            while (totalLen.ToString().Length + content.Length != totalLen)
+            int contentByteCount = Encoding.UTF8.GetByteCount(content);
+            int totalLen = contentByteCount + 1;
+            while (true)
             {
-                totalLen = totalLen.ToString().Length + content.Length;
+                string lenString = totalLen.ToString(CultureInfo.InvariantCulture);
+                int newTotalLen = lenString.Length + contentByteCount;
+                if (newTotalLen == totalLen)
+                {
+                    break;
+                }
+
+                totalLen = newTotalLen;
             }
 
             sb.Append($"{totalLen}{content}");
