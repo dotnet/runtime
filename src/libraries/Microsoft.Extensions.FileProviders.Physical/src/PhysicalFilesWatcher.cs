@@ -37,10 +37,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // Tracks non-recursive watchers used when parent directories of a watched path do not yet exist.
         // Key: deepest existing ancestor directory path. Value: the watcher for that directory.
         // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so this is always empty on those platforms.
-#pragma warning disable CA1416
         private readonly ConcurrentDictionary<string, PendingCreationWatcher> _pendingCreationWatchers
             = new(StringComparer.OrdinalIgnoreCase);
-#pragma warning restore CA1416
 
         private Timer? _timer;
         private bool _timerInitialized;
@@ -179,13 +177,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
             // for a path whose parents do not exist yet.  When the next missing component is created
             // the token fires, ChangeToken.OnChange re-registers, and the process cascades downward
             // until all parent directories exist and the normal FSW can track the file.
-// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
-#pragma warning disable CA1416
             if (_fileWatcher != null && HasMissingParentDirectory(filePath))
             {
+                // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416
                 return GetOrAddPendingCreationToken(filePath);
-            }
 #pragma warning restore CA1416
+            }
 
             if (!_filePathTokenLookup.TryGetValue(filePath, out ChangeTokenInfo tokenInfo))
             {
@@ -196,6 +194,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
+
             if (PollForChanges)
             {
                 // The expiry of CancellationChangeToken is controlled by this type and consequently we can cache it.
@@ -222,43 +221,35 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         // Returns true when at least one directory component of filePath (relative to _root) does not exist.
         // filePath uses '/' separators (already normalized by NormalizePath).
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         private bool HasMissingParentDirectory(string filePath)
         {
-            // Directory.Exists returns false when any ancestor segment is missing, so
-            // a single check on the immediate parent is sufficient; no loop needed.
             int lastSlash = filePath.LastIndexOf('/');
+
             if (lastSlash < 0)
             {
                 return false; // file sits directly under _root, which is assumed to exist
             }
+
             return !Directory.Exists(Path.Combine(_root, filePath.Substring(0, lastSlash)));
         }
 
         // Returns the absolute path of the deepest existing ancestor directory of filePath.
         // filePath uses '/' separators (already normalized).
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         private string FindDeepestExistingAncestor(string filePath)
         {
             // Walk from the deepest candidate upward; return the first one that exists.
             // In the common case where all parents are present this succeeds in one check.
-            int slashIdx = filePath.LastIndexOf('/');
-            while (slashIdx > 0)
+            int slashIndex = filePath.LastIndexOf('/');
+            while (slashIndex > 0)
             {
-                string candidate = Path.Combine(_root, filePath.Substring(0, slashIdx));
+                string candidate = Path.Combine(_root, filePath.Substring(0, slashIndex));
+
                 if (Directory.Exists(candidate))
                 {
                     return candidate;
                 }
-                slashIdx = filePath.LastIndexOf('/', slashIdx - 1);
+
+                slashIndex = filePath.LastIndexOf('/', slashIndex - 1);
             }
             return _root;
         }
@@ -671,15 +662,17 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // Watches a directory non-recursively for any item creation so that file-path change tokens
         // for paths whose parent directories do not yet exist can fire when the next missing directory
         // component is created.  Only ONE inotify watch (or equivalent) is added, not a recursive tree.
-        // This class is only ever instantiated from platform-guarded code paths.
-// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
-#pragma warning disable CA1416
         private sealed class PendingCreationWatcher : IDisposable
         {
             public readonly CancellationTokenSource Cts = new();
             private FileSystemWatcher? _watcher;
             private int _disposed;
 
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             public PendingCreationWatcher(string existingDirectory)
             {
                 _watcher = new FileSystemWatcher(existingDirectory)
@@ -694,6 +687,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             private void Trigger(object sender, FileSystemEventArgs e) => Cts.Cancel();
 
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             public void Dispose()
             {
                 if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -706,6 +704,5 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 Cts.Dispose();
             }
         }
-#pragma warning restore CA1416
     }
 }
