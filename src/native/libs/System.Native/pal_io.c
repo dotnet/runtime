@@ -560,7 +560,7 @@ int32_t SystemNative_CloseDir(DIR* dir)
     return result;
 }
 
-int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported()
+int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
 {
 #if HAVE_PIPE2
     return 1;
