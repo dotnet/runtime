@@ -258,7 +258,7 @@ namespace LibraryImportGenerator.UnitTests
                         public string ToManaged() => default;
                     }
                 }
-                """ + CodeSnippets.LibraryImportAttributeDeclaration;
+                """;
             DiagnosticResult[] expectedDiags =
             [
                 VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
