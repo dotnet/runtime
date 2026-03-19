@@ -247,10 +247,9 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
                 i++;
             }
         }
-        if (i < count)
-        {
-            FlushPendingEntries();
-        }
+        // Flush any pending entries if we run out of space, or when we are at the end
+        // of the batch so the OS can unwind this method immediately.
+        FlushPendingEntries();
     }
 }
 
