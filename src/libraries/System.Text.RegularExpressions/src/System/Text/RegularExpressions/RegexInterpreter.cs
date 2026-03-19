@@ -209,40 +209,25 @@ namespace System.Text.RegularExpressions
 
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
         {
-            int c = str.Length;
-
             if (!_rightToLeft)
             {
-                if (inputSpan.Length - runtextpos < c)
+                if (runtextpos > inputSpan.Length ||
+                    !inputSpan.Slice(runtextpos).StartsWith(str.AsSpan()))
                 {
                     return false;
                 }
 
-                if (!inputSpan.Slice(runtextpos, c).SequenceEqual(str.AsSpan()))
-                {
-                    return false;
-                }
-
-                runtextpos += c;
+                runtextpos += str.Length;
                 return true;
             }
             else
             {
-                if (runtextpos < c)
+                if (!inputSpan.Slice(0, runtextpos).EndsWith(str.AsSpan()))
                 {
                     return false;
                 }
 
-                int pos = runtextpos;
-                while (c != 0)
-                {
-                    if (str[--c] != inputSpan[--pos])
-                    {
-                        return false;
-                    }
-                }
-
-                runtextpos = pos;
+                runtextpos -= str.Length;
                 return true;
             }
         }
