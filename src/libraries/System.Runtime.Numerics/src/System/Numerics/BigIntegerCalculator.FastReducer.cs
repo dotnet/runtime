@@ -28,10 +28,11 @@ namespace System.Numerics
                 Debug.Assert(q1.Length == modulus.Length * 2 + 2);
                 Debug.Assert(q2.Length == modulus.Length * 2 + 2);
 
-                // Let r = 4^k, with 2^k > m
+                // Barrett reduction: precompute mu = floor(4^k / m), where k = modulus.Length.
+                // Start by setting r = 4^k (a 1 in the highest position of a 2k+1 limb number).
                 r[r.Length - 1] = 1;
 
-                // Let mu = 4^k / m
+                // Compute mu = floor(r / m)
                 DivRem(r, modulus, mu);
                 _modulus = modulus;
 
@@ -47,7 +48,9 @@ namespace System.Numerics
 
                 // Trivial: value is shorter
                 if (value.Length < _modulus.Length)
+                {
                     return value.Length;
+                }
 
                 // Let q1 = v/2^(k-1) * mu
                 _q1.Clear();
@@ -58,7 +61,7 @@ namespace System.Numerics
                 int l2 = DivMul(_q1.Slice(0, l1), _modulus, _q2, _modulus.Length + 1);
 
                 // Let v = (v - q2) % 2^(k+1) - i*m
-                var length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
+                int length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
                 value = value.Slice(length);
                 value.Clear();
 
@@ -73,7 +76,7 @@ namespace System.Numerics
 
                 // Executes the multiplication algorithm for left and right,
                 // but skips the first k limbs of left, which is equivalent to
-                // preceding division by 2^(kcbitNuint*k). To spare memory allocations
+                // preceding division by 2^(BitsPerLimb*k). To spare memory allocations
                 // we write the result to an already allocated memory.
 
                 if (left.Length > k)
@@ -93,13 +96,18 @@ namespace System.Numerics
             {
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
-                // preceding reduction by 2^(kcbitNuint*k). Furthermore, if left is
+                // preceding reduction by 2^(BitsPerLimb*k). Furthermore, if left is
                 // still greater than modulus, further subtractions are used.
 
                 if (left.Length > k)
+                {
                     left = left.Slice(0, k);
+                }
+
                 if (right.Length > k)
+                {
                     right = right.Slice(0, k);
+                }
 
                 SubtractSelf(left, right);
                 left = left.Slice(0, ActualLength(left));

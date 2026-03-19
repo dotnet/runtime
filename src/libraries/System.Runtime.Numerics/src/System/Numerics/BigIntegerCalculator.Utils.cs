@@ -10,16 +10,16 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+        internal
 #if DEBUG
-        // Mutable for unit testing...
-        internal static
+        static // Mutable for unit testing...
 #else
-        internal const
+        const
 #endif
         int StackAllocThreshold = 64;
 
-        // Number of bits per native-width limb: 32 on 32-bit, 64 on 64-bit.
-        internal static int kcbitNuint
+        /// <summary>Number of bits per native-width limb: 32 on 32-bit, 64 on 64-bit.</summary>
+        internal static int BitsPerLimb
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => nint.Size * 8;
@@ -31,13 +31,18 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length || right.Slice(left.Length).ContainsAnyExcept((nuint)0));
 
             if (left.Length != right.Length)
+            {
                 return left.Length < right.Length ? -1 : 1;
+            }
 
             int iv = left.Length;
             while (--iv >= 0 && left[iv] == right[iv]) ;
 
             if (iv < 0)
+            {
                 return 0;
+            }
+
             return left[iv] < right[iv] ? -1 : 1;
         }
 
@@ -48,16 +53,23 @@ namespace System.Numerics
                 if (left.Length < right.Length)
                 {
                     if (ActualLength(right.Slice(left.Length)) > 0)
+                    {
                         return -1;
+                    }
+
                     right = right.Slice(0, left.Length);
                 }
                 else
                 {
                     if (ActualLength(left.Slice(right.Length)) > 0)
+                    {
                         return +1;
+                    }
+
                     left = left.Slice(0, right.Length);
                 }
             }
+
             return Compare(left, right);
         }
 
@@ -69,7 +81,10 @@ namespace System.Numerics
             int length = value.Length;
 
             while (length > 0 && value[length - 1] == 0)
+            {
                 --length;
+            }
+
             return length;
         }
 
@@ -83,6 +98,7 @@ namespace System.Numerics
 
                 return ActualLength(bits.Slice(0, modulus.Length));
             }
+
             return bits.Length;
         }
 
@@ -103,17 +119,17 @@ namespace System.Numerics
             if (nint.Size == 8)
             {
                 nuint sum1 = a + b;
-                nuint c1 = (sum1 < a) ? (nuint)1 : (nuint)0;
+                nuint c1 = (sum1 < a) ? 1 : (nuint)0;
                 nuint sum2 = sum1 + carryIn;
-                nuint c2 = (sum2 < sum1) ? (nuint)1 : (nuint)0;
+                nuint c2 = (sum2 < sum1) ? 1 : (nuint)0;
                 carryOut = c1 + c2;
                 return sum2;
             }
             else
             {
                 ulong sum = (ulong)a + b + carryIn;
-                carryOut = (nuint)(uint)(sum >> 32);
-                return (nuint)(uint)sum;
+                carryOut = (uint)(sum >> 32);
+                return (uint)sum;
             }
         }
 
@@ -128,17 +144,17 @@ namespace System.Numerics
             {
                 // Use unsigned underflow detection
                 nuint diff1 = a - b;
-                nuint b1 = (diff1 > a) ? (nuint)1 : (nuint)0;
+                nuint b1 = (diff1 > a) ? 1 : (nuint)0;
                 nuint diff2 = diff1 - borrowIn;
-                nuint b2 = (diff2 > diff1) ? (nuint)1 : (nuint)0;
+                nuint b2 = (diff2 > diff1) ? 1 : (nuint)0;
                 borrowOut = b1 + b2;
                 return diff2;
             }
             else
             {
                 long diff = (long)a - (long)b - (long)borrowIn;
-                borrowOut = (nuint)(uint)(-(int)(diff >> 32)); // 0 or 1
-                return (nuint)(uint)diff;
+                borrowOut = (uint)(-(int)(diff >> 32)); // 0 or 1
+                return (uint)diff;
             }
         }
 
@@ -151,12 +167,12 @@ namespace System.Numerics
             if (nint.Size == 8)
             {
                 // Compute (hi * 2^64 + lo) / divisor.
-                // hi < divisor is guaranteed, so quotient fits in 64 bits.
-                Debug.Assert((ulong)hi < (ulong)divisor);
+                // hi < divisor is guaranteed by callers, so quotient fits in 64 bits.
+                Debug.Assert(hi < (ulong)divisor || divisor == 0);
 
                 if (hi == 0)
                 {
-                    (ulong q, ulong r) = Math.DivRem((ulong)lo, (ulong)divisor);
+                    (ulong q, ulong r) = Math.DivRem(lo, (ulong)divisor);
                     remainder = (nuint)r;
                     return (nuint)q;
                 }
@@ -170,8 +186,8 @@ namespace System.Numerics
                     ulong lo_hi = (ulong)lo >> 32;
                     ulong lo_lo = (ulong)lo & 0xFFFFFFFF;
 
-                    (ulong q_hi, ulong r1) = Math.DivRem(((ulong)hi << 32) | lo_hi, (ulong)divisor);
-                    (ulong q_lo, ulong r2) = Math.DivRem((r1 << 32) | lo_lo, (ulong)divisor);
+                    (ulong q_hi, ulong r1) = Math.DivRem(((ulong)hi << 32) | lo_hi, divisor);
+                    (ulong q_lo, ulong r2) = Math.DivRem((r1 << 32) | lo_lo, divisor);
 
                     remainder = (nuint)r2;
                     return (nuint)((q_hi << 32) | q_lo);
@@ -181,7 +197,7 @@ namespace System.Numerics
 #pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
                     if (X86Base.X64.IsSupported)
                     {
-                        (ulong q, ulong r) = X86Base.X64.DivRem((ulong)lo, (ulong)hi, (ulong)divisor);
+                        (ulong q, ulong r) = X86Base.X64.DivRem(lo, hi, divisor);
                         remainder = (nuint)r;
                         return (nuint)q;
                     }
@@ -197,8 +213,8 @@ namespace System.Numerics
             {
                 ulong value = ((ulong)hi << 32) | lo;
                 ulong digit = value / divisor;
-                remainder = (nuint)(uint)(value - digit * divisor);
-                return (nuint)(uint)digit;
+                remainder = (uint)(value - digit * divisor);
+                return (uint)digit;
             }
         }
 
@@ -210,15 +226,15 @@ namespace System.Numerics
         {
             if (nint.Size == 8)
             {
-                ulong hi = Math.BigMul((ulong)a, (ulong)b, out ulong lo);
+                ulong hi = Math.BigMul(a, b, out ulong lo);
                 low = (nuint)lo;
                 return (nuint)hi;
             }
             else
             {
                 ulong product = (ulong)a * b;
-                low = (nuint)(uint)product;
-                return (nuint)(uint)(product >> 32);
+                low = (uint)product;
+                return (uint)(product >> 32);
             }
         }
 
@@ -266,8 +282,8 @@ namespace System.Numerics
                 for (; i < length; i++)
                 {
                     ulong product = (ulong)left[i] * multiplier + carry;
-                    result[i] = (nuint)(uint)product;
-                    carry = (nuint)(uint)(product >> 32);
+                    result[i] = (uint)product;
+                    carry = (uint)(product >> 32);
                 }
             }
 
@@ -293,20 +309,16 @@ namespace System.Numerics
                 // carry chains complete sequentially behind.
                 for (; i + 3 < length; i += 4)
                 {
-                    UInt128 p0 = (UInt128)(ulong)left[i] * (ulong)multiplier
-                                 + (ulong)result[i] + (ulong)carry;
+                    UInt128 p0 = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)result[i] + (ulong)carry;
                     result[i] = (nuint)(ulong)p0;
 
-                    UInt128 p1 = (UInt128)(ulong)left[i + 1] * (ulong)multiplier
-                                 + (ulong)result[i + 1] + (ulong)(p0 >> 64);
+                    UInt128 p1 = (UInt128)(ulong)left[i + 1] * (ulong)multiplier + (ulong)result[i + 1] + (ulong)(p0 >> 64);
                     result[i + 1] = (nuint)(ulong)p1;
 
-                    UInt128 p2 = (UInt128)(ulong)left[i + 2] * (ulong)multiplier
-                                 + (ulong)result[i + 2] + (ulong)(p1 >> 64);
+                    UInt128 p2 = (UInt128)(ulong)left[i + 2] * (ulong)multiplier + (ulong)result[i + 2] + (ulong)(p1 >> 64);
                     result[i + 2] = (nuint)(ulong)p2;
 
-                    UInt128 p3 = (UInt128)(ulong)left[i + 3] * (ulong)multiplier
-                                 + (ulong)result[i + 3] + (ulong)(p2 >> 64);
+                    UInt128 p3 = (UInt128)(ulong)left[i + 3] * (ulong)multiplier + (ulong)result[i + 3] + (ulong)(p2 >> 64);
                     result[i + 3] = (nuint)(ulong)p3;
 
                     carry = (nuint)(ulong)(p3 >> 64);
@@ -314,8 +326,7 @@ namespace System.Numerics
 
                 for (; i < length; i++)
                 {
-                    UInt128 product = (UInt128)(ulong)left[i] * (ulong)multiplier
-                                      + (ulong)result[i] + (ulong)carry;
+                    UInt128 product = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)result[i] + (ulong)carry;
                     result[i] = (nuint)(ulong)product;
                     carry = (nuint)(ulong)(product >> 64);
                 }
@@ -326,8 +337,8 @@ namespace System.Numerics
                 {
                     ulong product = (ulong)left[i] * multiplier
                                     + result[i] + carry;
-                    result[i] = (nuint)(uint)product;
-                    carry = (nuint)(uint)(product >> 32);
+                    result[i] = (uint)product;
+                    carry = (uint)(product >> 32);
                 }
             }
 
@@ -401,10 +412,10 @@ namespace System.Numerics
                     uint hi = (uint)(product >> 32);
 
                     uint orig = (uint)result[i];
-                    result[i] = (nuint)(orig - lo);
+                    result[i] = orig - lo;
                     hi += (orig < lo) ? 1u : 0;
 
-                    carry = (nuint)hi;
+                    carry = hi;
                 }
             }
 
