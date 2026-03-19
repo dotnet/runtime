@@ -32,7 +32,7 @@ if [[ "$compiler" != "default" ]]; then
     CCC_CXX="$CXX"
 fi
 
-export CCC_CC CCC_CXX
+export CCC_CC CCC_CXX CC CXX
 
 buildtype=DEBUG
 code_coverage=OFF
