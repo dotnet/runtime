@@ -289,6 +289,7 @@ void UnwindInfoTable::FlushPendingEntries()
         // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
         // RtlGrowFunctionTable with a null handle. Avoid copying to the local buffer as
         // well since it won't be published anyway.
+        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
         cPendingCount = 0;
         return;
     }
