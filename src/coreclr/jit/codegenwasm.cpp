@@ -2835,115 +2835,122 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
     assert(blkOp->OperIs(GT_STORE_BLK));
 
-    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
+    bool isCopyBlk  = blkOp->OperIsCopyBlkOp();
+    bool isNativeOp = blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindNativeOpcode;
 
-    switch (blkOp->gtBlkOpKind)
+    if (blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindLoop)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-            genCodeForCpObj(blkOp->AsBlk());
-            break;
-
-        case GenTreeBlk::BlkOpKindLoop:
-            assert(!isCopyBlk);
-            genCodeForInitBlkLoop(blkOp);
-            break;
-
-        case GenTreeBlk::BlkOpKindNativeOpcode:
-            genConsumeOperands(blkOp);
-            // Emit the size constant expected by the memory.copy and memory.fill opcodes
-            GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-            GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
-            break;
-
-        default:
-            unreached();
+        assert(!isCopyBlk);
+        genCodeForInitBlkLoop(blkOp);
+        genUpdateLife(blkOp);
+        return;
     }
 
-    genUpdateLife(blkOp);
-}
-
-//------------------------------------------------------------------------
-// genCodeForCpObj: Produce code for a GT_STORE_BLK node that represents a cpobj operation.
-//
-// Arguments:
-//    cpObjNode - the node
-//
-void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
-{
-    GenTree*  dstAddr     = cpObjNode->Addr();
-    GenTree*  source      = cpObjNode->Data();
-    var_types srcAddrType = TYP_BYREF;
-    regNumber dstReg      = GetMultiUseOperandReg(dstAddr);
-    unsigned  dstOffset   = 0;
-    regNumber srcReg;
-    unsigned  srcOffset;
-
-    // Identify the register containing our source base address, either a multi-use
-    //  reg representing the operand of a GT_IND, or the frame pointer for LCL_VAR/LCL_FLD.
-    if (source->OperIs(GT_IND))
+    struct OperandRec
     {
-        bool doNullCheck = (source->gtFlags & GTF_IND_NONFAULTING) == 0;
-        source           = source->gtGetOp1();
-        assert(!source->isContained());
-        srcAddrType = source->TypeGet();
-        srcReg      = GetMultiUseOperandReg(source);
-        srcOffset   = 0;
+        var_types AddrType;
+        unsigned  Offset;
+        regNumber Reg;
+        bool      IsContained;
+    };
 
-        if (doNullCheck)
+    auto makeOperandRec = [&](GenTree* operand, bool isSource) {
+        var_types addrType = TYP_BYREF;
+        regNumber reg;
+        unsigned  offset;
+
+        // Identify the register containing our base address, either a multi-use
+        //  reg representing the operand of a GT_IND, or the frame pointer for LCL_VAR/LCL_FLD/LCL_ADDR.
+        if (operand->OperIs(GT_IND))
         {
-            genEmitNullCheck(srcReg);
+            bool doNullCheck = (operand->gtFlags & GTF_IND_NONFAULTING) == 0;
+            operand          = operand->gtGetOp1();
+            assert(!operand->isContained());
+            addrType = operand->TypeGet();
+            reg      = GetMultiUseOperandReg(operand);
+            offset   = 0;
+
+            if (doNullCheck)
+            {
+                genEmitNullCheck(reg);
+            }
         }
-    }
-    else
-    {
-        assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
-        GenTreeLclVarCommon* lclVar = source->AsLclVarCommon();
-        bool                 fpBased;
-        srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
-        assert(fpBased);
-        srcReg = GetFramePointerReg();
-    }
+        else if (isSource && operand->OperIs(GT_CNS_INT, GT_INIT_VAL))
+        {
+            addrType = TYP_INT;
+            offset   = 0;
+            reg      = REG_NA;
+        }
+        else
+        {
+            assert(operand->OperIs(GT_LCL_FLD, GT_LCL_VAR, GT_LCL_ADDR));
+            GenTreeLclVarCommon* lclVar = operand->AsLclVarCommon();
+            bool                 fpBased;
+            reg    = GetFramePointerReg();
+            offset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+            assert(fpBased);
+        }
+
+        OperandRec result = {addrType, offset, reg, operand->isContained()};
+        return result;
+    };
+
+    OperandRec dest   = makeOperandRec(blkOp->Addr(), false);
+    OperandRec source = makeOperandRec(blkOp->Data(), true);
 
     // If the destination is on the stack we don't need the write barrier.
-    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
-    // We should have generated a memory.copy for this scenario in lowering.
-    assert(!dstOnStack);
+    bool dstOnStack = blkOp->IsAddressNotOnHeap(m_compiler);
+    // If our destination is on the stack we should be handling it with a native memory.copy/fill,
+    // lowering should only select cpobj for cases where a write barrier is potentially necessary.
+    assert(!dstOnStack || isNativeOp);
 
 #ifdef DEBUG
-    assert(!dstAddr->isContained());
-
-    // This GenTree node has data about GC pointers, this means we're dealing
-    // with CpObj.
-    assert(cpObjNode->GetLayout()->HasGCPtr());
+    // If we're not using the native memory.copy/fill opcodes and are doing cpobj, we should only
+    // see types that have GC pointers in them.
+    assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    genConsumeOperands(cpObjNode);
+    genConsumeOperands(blkOp);
 
-    emitter* emit = GetEmitter();
+    emitter* emit        = GetEmitter();
+    emitAttr attrSrcAddr = emitActualTypeSize(source.AddrType);
+    emitAttr attrDstAddr = emitActualTypeSize(dest.AddrType);
 
-    if ((cpObjNode->gtFlags & GTF_IND_NONFAULTING) == 0)
+    if (isNativeOp)
     {
-        genEmitNullCheck(dstReg);
+        // The destination should already be on the stack.
+        // The src may not be on the evaluation stack if it was contained, in which case we need to manufacture it
+        if (source.IsContained)
+        {
+            assert(isCopyBlk);
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(source.Reg));
+            emit->emitIns_I(INS_I_const, attrSrcAddr, source.Offset);
+            emit->emitIns(INS_I_add);
+        }
+        GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+        GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
+        genUpdateLife(blkOp);
+        return;
     }
 
     // TODO-WASM: Remove the need to do this somehow
     // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
+    assert(!dest.IsContained);
     emit->emitIns(INS_drop);
-    if (!source->isContained())
+    if (!source.IsContained)
+    {
         emit->emitIns(INS_drop);
+    }
 
-    if (cpObjNode->IsVolatile())
+    if (blkOp->IsVolatile())
     {
         // TODO-WASM: Memory barrier
     }
 
-    ClassLayout* layout = cpObjNode->GetLayout();
+    ClassLayout* layout = blkOp->GetLayout();
     unsigned     slots  = layout->GetSlotCount();
 
-    emitAttr attrSrcAddr = emitActualTypeSize(srcAddrType);
-    emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
-
-    unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+    unsigned gcPtrCount = blkOp->GetLayout()->GetGCPtrCount();
 
     unsigned i = 0;
     while (i < slots)
@@ -2953,19 +2960,19 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         if (!layout->IsGCPtr(i))
         {
             // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
-            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
-            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
-            emit->emitIns_I(INS_I_store, EA_PTRSIZE, dstOffset);
+            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dest.Reg));
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(source.Reg));
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, source.Offset);
+            emit->emitIns_I(INS_I_store, EA_PTRSIZE, dest.Offset);
         }
         else
         {
             // Compute the actual dest/src of the slot being copied to pass to the helper.
-            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
-            emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
+            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dest.Reg));
+            emit->emitIns_I(INS_I_const, attrDstAddr, dest.Offset);
             emit->emitIns(INS_I_add);
-            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(source.Reg));
+            emit->emitIns_I(INS_I_const, attrSrcAddr, source.Offset);
             emit->emitIns(INS_I_add);
             // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
             // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
@@ -2974,16 +2981,18 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             gcPtrCount--;
         }
         ++i;
-        srcOffset += TARGET_POINTER_SIZE;
-        dstOffset += TARGET_POINTER_SIZE;
+        dest.Offset += TARGET_POINTER_SIZE;
+        source.Offset += TARGET_POINTER_SIZE;
     }
 
     assert(gcPtrCount == 0);
 
-    if (cpObjNode->IsVolatile())
+    if (blkOp->IsVolatile())
     {
         // TODO-WASM: Memory barrier
     }
+
+    genUpdateLife(blkOp);
 }
 
 //------------------------------------------------------------------------
