@@ -92,6 +92,16 @@
         <target state="translated">'JsonConverterAttribute.Type' 包含無效或無法存取的引數。</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
+        <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
+        <target state="new">The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
+        <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
+        <target state="new">'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
         <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
         <target state="translated">類型 '{0}' 已使用 JsonSerializableAttribute 標註，但並非衍生自 JsonSerializerCoNtext。將不會產生原始程式碼。</target>

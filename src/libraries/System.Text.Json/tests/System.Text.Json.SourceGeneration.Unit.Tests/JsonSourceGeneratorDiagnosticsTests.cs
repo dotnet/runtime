@@ -758,6 +758,22 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
+        public void JsonIgnoreConditionAlwaysOnTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateTypeAnnotatedWithJsonIgnoreAlways();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location myClassLocation = compilation.GetSymbolsWithName("MyClass").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, myClassLocation, "The type 'HelloWorld.MyClass' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
         public void Diagnostic_HasPragmaSuppressibleLocation()
         {
             // SYSLIB1038: JsonInclude attribute on inaccessible member (Warning, configurable).
