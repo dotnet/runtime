@@ -468,22 +468,30 @@ namespace ComWrappersTests.GlobalInstance
             // Validate that the RCW cache gets cleared when we call NotifyEndOfReferenceTrackingOnThread
             GlobalComWrappers.Instance.ReturnInvalid = false;
             IntPtr tracker = MockReferenceTrackerRuntime.CreateTrackerObject();
+            try
+            {
+                object rcw = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerObject);
 
-            object rcw = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerObject);
+                // Make sure that we keep the tracker object alive even after we notify end of reference tracking on this thread.
+                Marshal.AddRef(tracker);
 
-            // Make sure that we keep the tracker object alive even after we notify end of reference tracking on this thread.
-            Marshal.AddRef(tracker);
+                const int S_OK = 0;
+                Assert.Equal(S_OK, MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread());
 
-            const int S_OK = 0;
-            Assert.Equal(S_OK, MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread());
+                // We should get a new RCW after we've released the reference tracked objects on this thread.
+                object rcwNew = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerObject);
 
-            // We should get a new RCW after we've released the reference tracked objects on this thread.
-            object rcwNew = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerObject);
-
-            // Release the extra ref we added above so we don't leak the object after the test.
-            Marshal.Release(tracker);
-
-            Assert.NotSame(rcw, rcwNew);
+                Assert.NotSame(rcw, rcwNew);
+            }
+            finally
+            {
+                if (tracker != IntPtr.Zero)
+                {
+                    // Release the extra ref we added above and the original ref from CreateTrackerObject.
+                    Marshal.Release(tracker);
+                    Marshal.Release(tracker);
+                }
+            }
         }
     }
 }
