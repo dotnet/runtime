@@ -18,7 +18,7 @@ public class InvalidCastGenericALC
     }
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/194", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/80526", TestRuntimes.Mono)]
+    [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
