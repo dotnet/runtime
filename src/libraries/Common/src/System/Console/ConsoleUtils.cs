@@ -6,18 +6,18 @@ namespace System
     internal static partial class ConsoleUtils
     {
         /// <summary>Whether to output ansi color strings.</summary>
-        private static volatile int s_emitAnsiColorCodes = -1;
+        private static NullableBool s_emitAnsiColorCodes;
 
         /// <summary>Get whether to emit ANSI color codes.</summary>
         public static bool EmitAnsiColorCodes
         {
             get
             {
-                // The flag starts at -1.  If it's no longer -1, it's 0 or 1 to represent false or true.
-                int emitAnsiColorCodes = s_emitAnsiColorCodes;
-                if (emitAnsiColorCodes != -1)
+                // The flag starts at Undefined.  If it's no longer Undefined, it's False or True.
+                NullableBool emitAnsiColorCodes = s_emitAnsiColorCodes;
+                if (emitAnsiColorCodes != NullableBool.Undefined)
                 {
-                    return Convert.ToBoolean(emitAnsiColorCodes);
+                    return emitAnsiColorCodes == NullableBool.True;
                 }
 
                 // We've not yet computed whether to emit codes or not.  Do so now.  We may race with
@@ -43,7 +43,7 @@ namespace System
                 }
 
                 // Store and return the computed answer.
-                s_emitAnsiColorCodes = Convert.ToInt32(enabled);
+                s_emitAnsiColorCodes = enabled ? NullableBool.True : NullableBool.False;
                 return enabled;
             }
         }

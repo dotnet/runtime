@@ -295,6 +295,8 @@ function InstallDotNet([string] $dotnetRoot,
 
   $dotnetVersionLabel = "'sdk v$version'"
 
+  # For performance this check is duplicated in src/Microsoft.DotNet.Arcade.Sdk/src/InstallDotNetCore.cs
+  # if you are making changes here, consider if you need to make changes there as well.
   if ($runtime -ne '' -and $runtime -ne 'sdk') {
     $runtimePath = $dotnetRoot
     $runtimePath = $runtimePath + "\shared"
@@ -588,6 +590,11 @@ function LocateVisualStudio([object]$vsRequirements = $null){
     return $null
   }
 
+  if ($null -eq $vsInfo -or $vsInfo.Count -eq 0) {
+    throw "No instance of Visual Studio meeting the requirements specified was found. Requirements: $($args -join ' ')"
+    return $null
+  }
+
   # use first matching instance
   return $vsInfo[0]
 }
@@ -819,6 +826,11 @@ function MSBuild-Core() {
   $buildTool = InitializeBuildTool
 
   $cmdArgs = "$($buildTool.Command) /m /nologo /clp:Summary /v:$verbosity /nr:$nodeReuse /p:ContinuousIntegrationBuild=$ci"
+
+  # Add -mt flag for MSBuild multithreaded mode if enabled via environment variable
+  if ($env:MSBUILD_MT_ENABLED -eq "1") {
+    $cmdArgs += ' -mt'
+  }
 
   if ($warnAsError) {
     $cmdArgs += ' /warnaserror /p:TreatWarningsAsErrors=true'

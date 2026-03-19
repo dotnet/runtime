@@ -449,6 +449,7 @@ namespace ILCompiler.DependencyAnalysis
 
             Debug.Assert((pcInstr & 0xFE000000) == 0x1a000000);  // Must be pcalau12i
 
+            pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
             // Assemble the pc-relative high 20 bits of 'imm' into the pcalau12i instruction
             pcInstr |= (uint)((imm >> 7) & 0x1FFFFE0);
 
@@ -456,7 +457,8 @@ namespace ILCompiler.DependencyAnalysis
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low 12 bits of 'imm' into the addid or ld instruction
+            pcInstr &= 0xFFC003FF; // keep bits 31-22, 9-0
+            // Assemble the pc-relative low 12 bits of 'imm' into the addi.d or ld instruction
             pcInstr |= (uint)((imm & 0xFFF) << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
@@ -493,6 +495,7 @@ namespace ILCompiler.DependencyAnalysis
             long imm = imm38 + relOff;
             relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
 
+            pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
             // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu18i instruction
             pcInstr |= (uint)(((imm >> 18) & 0xFFFFF) << 5);
 
@@ -500,6 +503,7 @@ namespace ILCompiler.DependencyAnalysis
 
             pcInstr = *(pCode + 1);
 
+            pcInstr &= 0xFC0003FF; // keep bits 31-26, 9-0
             // Assemble the pc-relative low 18 bits of 'imm38' into the jirl instruction
             pcInstr |= (uint)(relOff << 10);
 
@@ -637,17 +641,14 @@ namespace ILCompiler.DependencyAnalysis
                     PutRiscV64AuipcCombo((uint*)location, value, isStype);
                     break;
 
-                case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
-                    // These wasm relocs do not have offsets, just targets
-                    return;
-
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                     DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
+                case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                     DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
@@ -658,6 +659,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public static readonly int MaxSize = 8;
+        // Note: Please update the above field if the max size
+        // changes when adding a new case to this method.
         public static int GetSize(RelocType relocType)
         {
             return relocType switch
@@ -681,6 +685,14 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S => 8,
+
+                RelocType.WASM_FUNCTION_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TYPE_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+
                 _ => throw new NotSupportedException(),
             };
         }

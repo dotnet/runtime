@@ -287,6 +287,11 @@ extern "C" void Load_SwiftSelf_ByRef();
 extern "C" void Load_SwiftError();
 extern "C" void Load_SwiftIndirectResult();
 
+extern "C" void Store_SwiftSelf();
+extern "C" void Store_SwiftError();
+extern "C" void Store_SwiftIndirectResult();
+
+#if defined(TARGET_ARM64)
 extern "C" void Load_X0_AtOffset();
 extern "C" void Load_X1_AtOffset();
 extern "C" void Load_X2_AtOffset();
@@ -304,16 +309,31 @@ extern "C" void Load_D5_AtOffset();
 extern "C" void Load_D6_AtOffset();
 extern "C" void Load_D7_AtOffset();
 extern "C" void Load_Stack_AtOffset();
+extern "C" void Store_Stack_AtOffset();
+extern "C" void Store_Stack_1B_AtOffset();
+extern "C" void Store_Stack_2B_AtOffset();
+extern "C" void Store_Stack_4B_AtOffset();
 
 extern "C" void Store_X0_AtOffset();
 extern "C" void Store_X1_AtOffset();
 extern "C" void Store_X2_AtOffset();
 extern "C" void Store_X3_AtOffset();
+extern "C" void Store_X4_AtOffset();
+extern "C" void Store_X5_AtOffset();
+extern "C" void Store_X6_AtOffset();
+extern "C" void Store_X7_AtOffset();
 extern "C" void Store_D0_AtOffset();
 extern "C" void Store_D1_AtOffset();
 extern "C" void Store_D2_AtOffset();
 extern "C" void Store_D3_AtOffset();
-extern "C" void SwiftLoweredReturnTerminator();
+extern "C" void Store_D4_AtOffset();
+extern "C" void Store_D5_AtOffset();
+extern "C" void Store_D6_AtOffset();
+extern "C" void Store_D7_AtOffset();
+extern "C" void SwiftReturnLoweredTerminator();
+extern "C" void SwiftReverseReturnLoweredHandler();
+extern "C" void SwiftReverseReturnLoweredTerminator();
+#endif // TARGET_ARM64
 #endif // TARGET_APPLE
 
 extern "C" void Load_Ref_X0();
@@ -595,7 +615,7 @@ extern "C" void Store_Stack_4B();
 
 #endif // TARGET_ARM
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 extern "C" void Load_A0();
 extern "C" void Load_A0_A1();
@@ -763,7 +783,7 @@ extern "C" void Store_FA6();
 extern "C" void Store_FA6_FA7();
 extern "C" void Store_FA7();
 
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 PCODE CallStubGenerator::GetStackRoutine()
 {
@@ -859,7 +879,7 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
         (PCODE)0, (PCODE)0, (PCODE)Store_R2, (PCODE)Store_R2_R3,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R3
     };
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     static const PCODE GPRegsLoadRoutines[] = {
         (PCODE)Load_A0, (PCODE)Load_A0_A1, (PCODE)Load_A0_A1_A2, (PCODE)Load_A0_A1_A2_A3, (PCODE)Load_A0_A1_A2_A3_A4, (PCODE)Load_A0_A1_A2_A3_A4_A5, (PCODE)Load_A0_A1_A2_A3_A4_A5_A6, (PCODE)Load_A0_A1_A2_A3_A4_A5_A6_A7,
         (PCODE)0, (PCODE)Load_A1, (PCODE)Load_A1_A2, (PCODE)Load_A1_A2_A3, (PCODE)Load_A1_A2_A3_A4, (PCODE)Load_A1_A2_A3_A4_A5, (PCODE)Load_A1_A2_A3_A4_A5_A6, (PCODE)Load_A1_A2_A3_A4_A5_A6_A7,
@@ -911,7 +931,7 @@ PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
         (PCODE)Store_Ref_X0, (PCODE)Store_Ref_X1, (PCODE)Store_Ref_X2, (PCODE)Store_Ref_X3,
         (PCODE)Store_Ref_X4, (PCODE)Store_Ref_X5, (PCODE)Store_Ref_X6, (PCODE)Store_Ref_X7
     };
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     static const PCODE GPRegsRefLoadRoutines[] = {
         (PCODE)Load_Ref_A0, (PCODE)Load_Ref_A1, (PCODE)Load_Ref_A2, (PCODE)Load_Ref_A3,
         (PCODE)Load_Ref_A4, (PCODE)Load_Ref_A5, (PCODE)Load_Ref_A6, (PCODE)Load_Ref_A7
@@ -997,7 +1017,7 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D6, (PCODE)Store_D6_D7,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D7
     };
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     static const PCODE FPRegsLoadRoutines[] = {
         (PCODE)Load_FA0, (PCODE)Load_FA0_FA1, (PCODE)Load_FA0_FA1_FA2, (PCODE)Load_FA0_FA1_FA2_FA3, (PCODE)Load_FA0_FA1_FA2_FA3_FA4, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
         (PCODE)0, (PCODE)Load_FA1, (PCODE)Load_FA1_FA2, (PCODE)Load_FA1_FA2_FA3, (PCODE)Load_FA1_FA2_FA3_FA4, (PCODE)Load_FA1_FA2_FA3_FA4_FA5, (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
@@ -1129,7 +1149,7 @@ PCODE CallStubGenerator::GetSwiftSelfRoutine()
 #if LOG_COMPUTE_CALL_STUB
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfRoutine\n"));
 #endif
-    return (PCODE)Load_SwiftSelf;
+    return m_interpreterToNative ? (PCODE)Load_SwiftSelf : (PCODE)Store_SwiftSelf;
 }
 
 PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
@@ -1137,6 +1157,10 @@ PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
 #if LOG_COMPUTE_CALL_STUB
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfByRefRoutine\n"));
 #endif
+    if (!m_interpreterToNative)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, W("SwiftSelf<T> is not supported for reverse PInvoke"));
+    }
     return (PCODE)Load_SwiftSelf_ByRef;
 }
 
@@ -1145,7 +1169,7 @@ PCODE CallStubGenerator::GetSwiftErrorRoutine()
 #if LOG_COMPUTE_CALL_STUB
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftErrorRoutine\n"));
 #endif
-    return (PCODE)Load_SwiftError;
+    return m_interpreterToNative ? (PCODE)Load_SwiftError : (PCODE)Store_SwiftError;
 }
 
 PCODE CallStubGenerator::GetSwiftIndirectResultRoutine()
@@ -1153,7 +1177,7 @@ PCODE CallStubGenerator::GetSwiftIndirectResultRoutine()
 #if LOG_COMPUTE_CALL_STUB
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftIndirectResultRoutine\n"));
 #endif
-    return (PCODE)Load_SwiftIndirectResult;
+    return m_interpreterToNative ? (PCODE)Load_SwiftIndirectResult : (PCODE)Store_SwiftIndirectResult;
 }
 
 PCODE CallStubGenerator::GetSwiftLoadGPAtOffsetRoutine(int regIndex)
@@ -1179,7 +1203,8 @@ PCODE CallStubGenerator::GetSwiftLoadFPAtOffsetRoutine(int regIndex)
 PCODE CallStubGenerator::GetSwiftStoreGPAtOffsetRoutine(int regIndex)
 {
     static PCODE routines[] = {
-        (PCODE)Store_X0_AtOffset, (PCODE)Store_X1_AtOffset, (PCODE)Store_X2_AtOffset, (PCODE)Store_X3_AtOffset
+        (PCODE)Store_X0_AtOffset, (PCODE)Store_X1_AtOffset, (PCODE)Store_X2_AtOffset, (PCODE)Store_X3_AtOffset,
+        (PCODE)Store_X4_AtOffset, (PCODE)Store_X5_AtOffset, (PCODE)Store_X6_AtOffset, (PCODE)Store_X7_AtOffset
     };
     _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
     return routines[regIndex];
@@ -1188,7 +1213,8 @@ PCODE CallStubGenerator::GetSwiftStoreGPAtOffsetRoutine(int regIndex)
 PCODE CallStubGenerator::GetSwiftStoreFPAtOffsetRoutine(int regIndex)
 {
     static PCODE routines[] = {
-        (PCODE)Store_D0_AtOffset, (PCODE)Store_D1_AtOffset, (PCODE)Store_D2_AtOffset, (PCODE)Store_D3_AtOffset
+        (PCODE)Store_D0_AtOffset, (PCODE)Store_D1_AtOffset, (PCODE)Store_D2_AtOffset, (PCODE)Store_D3_AtOffset,
+        (PCODE)Store_D4_AtOffset, (PCODE)Store_D5_AtOffset, (PCODE)Store_D6_AtOffset, (PCODE)Store_D7_AtOffset
     };
     _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
     return routines[regIndex];
@@ -1289,16 +1315,20 @@ extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
 
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetFloatInt(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetIntFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetFloat();
+extern "C" void InterpreterStubRet2Float();
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRetFloatInt();
 extern "C" void InterpreterStubRetIntFloat();
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 #define INVOKE_FUNCTION_PTR(functionPtrName) LOG2((LF2_INTERPRETER, LL_INFO10000, #functionPtrName "\n")); return functionPtrName
 
@@ -1406,7 +1436,11 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetSwiftLowered);
 #endif // TARGET_APPLE
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeFloat:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
+        case ReturnType2Float:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Float);
         case ReturnType2I8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2I8);
         case ReturnType2Double:
@@ -1415,7 +1449,7 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetFloatInt);
         case ReturnTypeIntFloat:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetIntFloat);
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return NULL; // This should never happen, but just in case.
@@ -1521,7 +1555,11 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        case ReturnTypeFloat:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
+        case ReturnType2Float:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Float);
         case ReturnType2I8:
             RETURN_TYPE_HANDLER(InterpreterStubRet2I8);
         case ReturnType2Double:
@@ -1530,7 +1568,7 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRetFloatInt);
         case ReturnTypeIntFloat:
             RETURN_TYPE_HANDLER(InterpreterStubRetIntFloat);
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return 0; // This should never happen, but just in case.
@@ -1569,10 +1607,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
-    bool hasSwiftError = m_isSwiftCallConv && m_hasSwiftError && pMD->IsILStub();
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    bool hasSwiftError = m_isSwiftCallConv && m_hasSwiftError;
+    bool hasSwiftReturnLowering = m_isSwiftCallConv && m_hasSwiftReturnLowering && !m_interpreterToNative;
+#else
+    bool hasSwiftError = false;
+    bool hasSwiftReturnLowering = false;
+#endif
 
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, m_pInvokeFunction);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
 
     return pHeader;
 }
@@ -1611,9 +1655,9 @@ struct CachedCallStubKey
 
 struct CachedCallStub
 {
-    CachedCallStub(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+    CachedCallStub(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, bool hasSwiftReturnLowering, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
         HashCode(hashCode),
-        Header(numRoutines, targetSlotIndex, pRoutines, totalStackSize, hasContinuationRet, hasSwiftError, pInvokeFunction)
+        Header(numRoutines, targetSlotIndex, pRoutines, totalStackSize, hasContinuationRet, hasSwiftError, hasSwiftReturnLowering, pInvokeFunction)
     {
     }
 
@@ -1655,7 +1699,7 @@ void InitCallStubGenerator()
     s_callStubCache = new CallStubCacheHash;
 }
 
-CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1667,7 +1711,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
-    ComputeCallStub(sig, pRoutines, NULL);
+    ComputeCallStub(sig, pRoutines, pContextMD);
 
     xxHash hashState;
     for (int i = 0; i < m_routineIndex; i++)
@@ -1678,7 +1722,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
     hashState.Add(m_targetSlotIndex);
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     hashState.Add(m_hasSwiftError ? 1 : 0);
+#endif
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
@@ -1687,7 +1733,11 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         m_hasSwiftError,
+#else
+        false,
+#endif
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -1705,7 +1755,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, m_pInvokeFunction);
+        // hasSwiftReturnLowering is always false here because m_interpreterToNative = true (see line 1601's logic)
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
+#else
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
+#endif
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
@@ -1834,6 +1889,12 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         {
             PInvoke::GetCallingConvention_IgnoreErrors(pTargetMD, &unmanagedCallConv, NULL);
             hasUnmanagedCallConv = true;
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+            if (unmanagedCallConv == CorInfoCallConvExtension::Swift)
+            {
+                m_isSwiftILStub = true;
+            }
+#endif
         }
     }
     else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
@@ -2004,6 +2065,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     m_hasSwiftReturnLowering = false;
     m_swiftReturnLowering = {};
     m_swiftSelfByRefSize = 0;
+    m_hasSwiftError = false;
 
     if (isSwiftCallConv)
     {
@@ -2068,6 +2130,18 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         m_currentRoutineType = RoutineType::None;
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
+
+    // For reverse P/Invoke emit Store_SwiftError before processing regular args because it is excluded from rewritten signature
+    if (m_hasSwiftError && !m_interpreterToNative && !m_isSwiftILStub)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Emitting Store_SwiftError routine\n"));
+#endif
+        TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftError, pRoutines);
+        pRoutines[m_routineIndex++] = GetSwiftErrorRoutine();
+        m_currentRoutineType = RoutineType::None;
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+    }
 #endif
 
     int ofs;
@@ -2084,22 +2158,37 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         TypeHandle thArgTypeHandle;
         CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        if (isSwiftCallConv && m_interpreterToNative)
+        if (isSwiftCallConv && !m_isSwiftILStub)
         {
             MethodTable* pArgMT = nullptr;
 
-            if (corType == ELEMENT_TYPE_BYREF)
+            if (corType == ELEMENT_TYPE_PTR || corType == ELEMENT_TYPE_BYREF)
             {
-                sig.GetByRefType(&thArgTypeHandle);
+                SigPointer argSig = sig.GetArgProps();
+                TypeHandle thFullType = argSig.GetTypeHandleThrowing(sig.GetModule(), sig.GetSigTypeContext());
+                if (!thFullType.IsNull() && thFullType.IsTypeDesc())
+                {
+                    TypeHandle innerType = thFullType.AsTypeDesc()->GetTypeParam();
+                    if (!innerType.IsNull() && !innerType.IsTypeDesc())
+                    {
+                        pArgMT = innerType.AsMethodTable();
+                    }
+                }
             }
-
-            if (thArgTypeHandle.IsTypeDesc() && !thArgTypeHandle.AsTypeDesc()->GetTypeParam().IsNull())
+            else if (!thArgTypeHandle.IsNull())
             {
-                pArgMT = thArgTypeHandle.AsTypeDesc()->GetTypeParam().AsMethodTable();
-            }
-            else if (!thArgTypeHandle.IsTypeDesc() && !thArgTypeHandle.IsNull())
-            {
-                pArgMT = thArgTypeHandle.AsMethodTable();
+                if (thArgTypeHandle.IsTypeDesc())
+                {
+                    TypeHandle innerType = thArgTypeHandle.AsTypeDesc()->GetTypeParam();
+                    if (!innerType.IsNull() && !innerType.IsTypeDesc())
+                    {
+                        pArgMT = innerType.AsMethodTable();
+                    }
+                }
+                else
+                {
+                    pArgMT = thArgTypeHandle.AsMethodTable();
+                }
             }
 
             if (ProcessSwiftSpecialArgument(pArgMT, interpStackSlotSize, interpreterStackOffset, pRoutines))
@@ -2129,7 +2218,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         }
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        if (isSwiftCallConv && m_interpreterToNative && swiftArgIndex < (int)swiftLoweringInfo.Size())
+        if (isSwiftCallConv && !m_isSwiftILStub && swiftArgIndex < (int)swiftLoweringInfo.Size())
         {
             SwiftLoweringElement& elem = swiftLoweringInfo[swiftArgIndex];
             swiftArgIndex++;
@@ -2240,7 +2329,42 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     }
     else
     {
-        pRoutines[m_routineIndex++] = GetInterpreterReturnTypeHandler(returnType);
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        if (returnType == ReturnTypeSwiftLowered)
+        {
+            pRoutines[m_routineIndex++] = (PCODE)SwiftReverseReturnLoweredHandler;
+
+            int gpRegIndex = 0;
+            int fpRegIndex = 0;
+            for (size_t i = 0; i < m_swiftReturnLowering.numLoweredElements; i++)
+            {
+                CorInfoType elemType = m_swiftReturnLowering.loweredElements[i];
+                uint32_t offset = m_swiftReturnLowering.offsets[i];
+                bool isFloat = (elemType == CORINFO_TYPE_FLOAT || elemType == CORINFO_TYPE_DOUBLE);
+                PCODE packedData = (PCODE)offset | ((PCODE)0 << 16);
+
+                if (isFloat)
+                {
+                    _ASSERTE(fpRegIndex < 4);
+                    pRoutines[m_routineIndex++] = GetSwiftLoadFPAtOffsetRoutine(fpRegIndex);
+                    pRoutines[m_routineIndex++] = packedData;
+                    fpRegIndex++;
+                }
+                else
+                {
+                    _ASSERTE(gpRegIndex < 4);
+                    pRoutines[m_routineIndex++] = GetSwiftLoadGPAtOffsetRoutine(gpRegIndex);
+                    pRoutines[m_routineIndex++] = packedData;
+                    gpRegIndex++;
+                }
+            }
+            pRoutines[m_routineIndex++] = (PCODE)SwiftReverseReturnLoweredTerminator;
+        }
+        else
+#endif // TARGET_APPLE && TARGET_ARM64
+        {
+            pRoutines[m_routineIndex++] = GetInterpreterReturnTypeHandler(returnType);
+        }
     }
 }
 
@@ -2553,9 +2677,9 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
-#if defined(TARGET_ARM64) || defined(TARGET_32BIT)
+#if defined(TARGET_ARM64) || defined(TARGET_32BIT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                 return ReturnTypeFloat;
-#endif // TARGET_ARM64 || TARGET_32BIT
+#endif // TARGET_ARM64 || TARGET_32BIT || TARGET_RISCV64 || TARGET_LOONGARCH64
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;
@@ -2709,19 +2833,21 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                         _ASSERTE(!"The return types should be <= 8 bytes in size");
                         break;
                 }
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                 {
                     FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
-                    // RISC-V pass floating-point struct fields in FA registers
+                    // RISC-V and LoongArch64 pass floating-point struct fields in FA/F registers.
+                    // Preserve 32-bit float width where applicable to avoid reading/writing
+                    // packed 4-byte fields via 8-byte helpers.
                     if ((info.flags & FpStruct::OnlyOne) != 0)
                     {
-                        // Single field - could be float or int in single register
-                        return ReturnTypeDouble; // Use Double routine for both float and double (NaN-boxed)
+                        return (info.Size1st() == sizeof(float)) ? ReturnTypeFloat : ReturnTypeDouble;
                     }
                     else if ((info.flags & FpStruct::BothFloat) != 0)
                     {
-                        // Two float/double fields
-                        return ReturnType2Double;
+                        return (info.Size1st() == sizeof(float) && info.Size2nd() == sizeof(float))
+                            ? ReturnType2Float
+                            : ReturnType2Double;
                     }
                     else if ((info.flags & FpStruct::FloatInt) != 0)
                     {
@@ -2833,52 +2959,58 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
                 pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
                 pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)) ||
-                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)) ||
+                (pArgMT->IsIntrinsicType() && pArgMT->IsHFA()))
             {
                 COMPlusThrow(kInvalidProgramException);
             }
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
             {
-                swiftSelfCount++;
-                if (swiftSelfCount > 1)
+                if (swiftSelfCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
+                swiftSelfCount++;
                 newArgCount++;
                 continue;
             }
 
             if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SWIFT_SELF_T)))
             {
-                swiftSelfCount++;
-                if (swiftSelfCount > 1)
+                if (swiftSelfCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
+                swiftSelfCount++;
 
                 // Fall through for struct lowering
             }
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
             {
-                swiftErrorCount++;
-                m_hasSwiftError = true;
-                if (swiftErrorCount > 1)
+                if (argType == ELEMENT_TYPE_VALUETYPE || swiftErrorCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
-                newArgCount++;
+                swiftErrorCount++;
+                m_hasSwiftError = true;
+
+                // Direct P/Invoke
+                if (m_interpreterToNative || m_isSwiftILStub)
+                {
+                    newArgCount++;
+                }
                 continue;
             }
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_INDIRECT_RESULT))
             {
-                swiftIndirectResultCount++;
-                if (swiftIndirectResultCount > 1)
+                if (swiftIndirectResultCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
+                swiftIndirectResultCount++;
                 // SwiftIndirectResult goes in x8, not in argument registers
                 continue;
             }
@@ -2899,7 +3031,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
         newArgCount++;
     }
 
-    if (!m_interpreterToNative)
+    if (m_isSwiftILStub)
     {
         sig.Reset();
         return;
@@ -2920,6 +3052,28 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
     sig.Reset();
     while ((argType = sig.NextArg()) != ELEMENT_TYPE_END)
     {
+        if (!m_interpreterToNative && !m_isSwiftILStub && (argType == ELEMENT_TYPE_PTR || argType == ELEMENT_TYPE_BYREF))
+        {
+            TypeHandle thArgType = sig.GetLastTypeHandleThrowing();
+            MethodTable* pArgMT = nullptr;
+
+            // Extract the underlying MT for pointer types
+            if (thArgType.IsTypeDesc() && !thArgType.AsTypeDesc()->GetTypeParam().IsNull())
+            {
+                TypeHandle innerType = thArgType.AsTypeDesc()->GetTypeParam();
+                if (!innerType.IsNull() && !innerType.IsTypeDesc())
+                {
+                    pArgMT = innerType.AsMethodTable();
+                }
+            }
+
+            if (pArgMT != nullptr && pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
+            {
+                // SwiftError* goes in x21, not in argument registers
+                continue;
+            }
+        }
+
        if (argType == ELEMENT_TYPE_VALUETYPE)
         {
             TypeHandle thArgType = sig.GetLastTypeHandleThrowing();
@@ -2931,6 +3085,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                     // SwiftIndirectResult goes in x8, not in argument registers
                     continue;
                 }
+
                 // Don't lower Swift* types except SwiftSelf<T>
                 if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
                 {
@@ -3084,39 +3239,65 @@ void CallStubGenerator::EmitSwiftLoweredElementRoutine(SwiftLoweringElement &ele
     if (elem.isFloat && argLocDesc.m_cFloatReg > 0)
     {
         int regIndex = argLocDesc.m_idxFloatReg;
-        pRoutines[m_routineIndex++] = GetSwiftLoadFPAtOffsetRoutine(regIndex);
+        pRoutines[m_routineIndex++] = m_interpreterToNative
+            ? GetSwiftLoadFPAtOffsetRoutine(regIndex)
+            : GetSwiftStoreFPAtOffsetRoutine(regIndex);
         // Pack offset (lower 16 bits) and structSize (bits 16-31)
         PCODE packedData = (PCODE)elem.offset | ((PCODE)elem.structSize << 16);
         pRoutines[m_routineIndex++] = packedData;
 #if LOG_COMPUTE_CALL_STUB
-        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to FP reg: offset=%d, structSize=%d, reg=d%d\n",
-               elem.offset, elem.structSize, regIndex));
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element %s FP reg: offset=%d, structSize=%d, reg=d%d\n",
+               m_interpreterToNative ? "to" : "from", elem.offset, elem.structSize, regIndex));
 #endif
     }
     else if (!elem.isFloat && argLocDesc.m_cGenReg > 0)
     {
         int regIndex = argLocDesc.m_idxGenReg;
-        pRoutines[m_routineIndex++] = GetSwiftLoadGPAtOffsetRoutine(regIndex);
+        pRoutines[m_routineIndex++] = m_interpreterToNative
+            ? GetSwiftLoadGPAtOffsetRoutine(regIndex)
+            : GetSwiftStoreGPAtOffsetRoutine(regIndex);
         // Pack offset (lower 16 bits) and structSize (bits 16-31)
         PCODE packedData = (PCODE)elem.offset | ((PCODE)elem.structSize << 16);
         pRoutines[m_routineIndex++] = packedData;
 #if LOG_COMPUTE_CALL_STUB
-        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to GP reg: offset=%d, structSize=%d, reg=x%d\n",
-               elem.offset, elem.structSize, regIndex));
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element %s GP reg: offset=%d, structSize=%d, reg=x%d\n",
+               m_interpreterToNative ? "to" : "from", elem.offset, elem.structSize, regIndex));
 #endif
     }
     else
     {
         // Spilled to stack
-        pRoutines[m_routineIndex++] = (PCODE)Load_Stack_AtOffset;
+        if (m_interpreterToNative)
+        {
+            pRoutines[m_routineIndex++] = (PCODE)Load_Stack_AtOffset;
+        }
+        else
+        {
+            int stackSize = argLocDesc.m_byteStackSize;
+            switch (stackSize)
+            {
+                case 1:
+                    pRoutines[m_routineIndex++] = (PCODE)Store_Stack_1B_AtOffset;
+                    break;
+                case 2:
+                    pRoutines[m_routineIndex++] = (PCODE)Store_Stack_2B_AtOffset;
+                    break;
+                case 4:
+                    pRoutines[m_routineIndex++] = (PCODE)Store_Stack_4B_AtOffset;
+                    break;
+                default:
+                    pRoutines[m_routineIndex++] = (PCODE)Store_Stack_AtOffset;
+                    break;
+            }
+        }
         // Pack offset (lower 16 bits), structSize (bits 16-31), and stackOffset (bits 32-63)
         PCODE packedData = (PCODE)elem.offset |
                            ((PCODE)elem.structSize << 16) |
                            ((PCODE)argLocDesc.m_byteStackIndex << 32);
         pRoutines[m_routineIndex++] = packedData;
 #if LOG_COMPUTE_CALL_STUB
-        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to stack: offset=%d, structSize=%d, stackOffset=%d\n",
-               elem.offset, elem.structSize, argLocDesc.m_byteStackIndex));
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element %s stack: offset=%d, structSize=%d, stackOffset=%d, stackSize=%d\n",
+               m_interpreterToNative ? "to" : "from", elem.offset, elem.structSize, argLocDesc.m_byteStackIndex, argLocDesc.m_byteStackSize));
 #endif
     }
 }
@@ -3131,13 +3312,16 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
         CorInfoType elemType = m_swiftReturnLowering.loweredElements[i];
         uint32_t offset = m_swiftReturnLowering.offsets[i];
 
+        _ASSERTE(offset <= 0xFFFF && "Swift return offset must fit in 16 bits");
+        PCODE packedOffset = (PCODE)(offset & 0xFFFF);
+
         bool isFloat = (elemType == CORINFO_TYPE_FLOAT || elemType == CORINFO_TYPE_DOUBLE);
 
         if (isFloat)
         {
             _ASSERTE(fpRegIndex < 4);
             pRoutines[m_routineIndex++] = GetSwiftStoreFPAtOffsetRoutine(fpRegIndex);
-            pRoutines[m_routineIndex++] = (PCODE)offset;
+            pRoutines[m_routineIndex++] = packedOffset;
             fpRegIndex++;
 #if LOG_COMPUTE_CALL_STUB
             LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store FP d%d at offset %d\n", fpRegIndex - 1, offset));
@@ -3147,7 +3331,7 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
         {
             _ASSERTE(gpRegIndex < 4);
             pRoutines[m_routineIndex++] = GetSwiftStoreGPAtOffsetRoutine(gpRegIndex);
-            pRoutines[m_routineIndex++] = (PCODE)offset;
+            pRoutines[m_routineIndex++] = packedOffset;
             gpRegIndex++;
 #if LOG_COMPUTE_CALL_STUB
             LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store GP x%d at offset %d\n", gpRegIndex - 1, offset));
@@ -3155,8 +3339,8 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
         }
     }
 
-    pRoutines[m_routineIndex++] = (PCODE)SwiftLoweredReturnTerminator;
+    pRoutines[m_routineIndex++] = (PCODE)SwiftReturnLoweredTerminator;
 }
-#endif
+#endif // TARGET_APPLE && TARGET_ARM64
 
 #endif // FEATURE_INTERPRETER && !TARGET_WASM

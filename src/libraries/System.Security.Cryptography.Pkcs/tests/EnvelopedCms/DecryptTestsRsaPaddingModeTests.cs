@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(DecryptTestsRsaPaddingMode), nameof(SupportsDiffieHellman))]
         public static void CmsRecipient_RejectsNonRSACertificateWithRSAPadding()
         {
             using (X509Certificate2 keyAgreeCertificate = Certificates.DHKeyAgree1.GetCertificate())

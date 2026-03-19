@@ -312,8 +312,6 @@ public class X86Unwinder(Target target)
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
         Debug.Assert(!gcInfo.IsInEpilog);
 
-        Console.WriteLine(methodStart);
-
         uint esp = context.Esp;
 
         if (gcInfo.IsInProlog)

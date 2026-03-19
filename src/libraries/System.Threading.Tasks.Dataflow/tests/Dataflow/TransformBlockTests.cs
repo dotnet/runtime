@@ -285,7 +285,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestInputCount()
         {
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
@@ -315,7 +315,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // spins waiting for a condition to be true, though it should happen very quickly
         public async Task TestCount()
         {
@@ -640,7 +640,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task TestOrdering_Sync_OrderedDisabled()
         {
             // If ordering were enabled, this test would hang.

@@ -87,6 +87,7 @@ namespace System
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
 
+        [RequiresUnsafe]
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
             string[] commandLineArgs = new string[argc + 1];
@@ -106,7 +107,18 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         internal static partial int GetProcessorCount();
 
-        // Used by VM
-        internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = SR.GetResourceString(new string(pKey));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

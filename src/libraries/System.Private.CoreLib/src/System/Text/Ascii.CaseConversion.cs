@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -203,6 +204,7 @@ namespace System.Text
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe nuint ChangeCase<TFrom, TTo, TCasing>(TFrom* pSrc, TTo* pDest, nuint elementCount)
             where TFrom : unmanaged, IBinaryInteger<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
@@ -464,6 +466,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe void ChangeWidthAndWriteTo<TFrom, TTo>(Vector128<TFrom> vector, TTo* pDest, nuint elementOffset)
             where TFrom : unmanaged
             where TTo : unmanaged

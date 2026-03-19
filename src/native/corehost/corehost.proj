@@ -81,6 +81,7 @@
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) -cmakeargs "$(CMakeArgs)"</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
+      <BuildArgs Condition="'$(Ninja)' != 'true'">$(BuildArgs) -ninja false</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs Condition="'$(EnableNativeSanitizers)' != ''">$(BuildArgs) -fsanitize=$(EnableNativeSanitizers)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
@@ -181,7 +182,7 @@
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.dat" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libBrowserHost.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
-      <!-- <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" /> -->
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.wasm" />
     </ItemGroup>
 

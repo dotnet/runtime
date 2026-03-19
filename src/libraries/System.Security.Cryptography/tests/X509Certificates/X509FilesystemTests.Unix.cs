@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // This test is a bit too flaky to be on in the normal run, even for OuterLoop.
         // It can fail due to networking problems, and due to the filesystem interactions it doesn't
         // have strong isolation from other tests (even in different processes).
-        [ConditionalFact(nameof(RunManualTests))]
+        [ConditionalFact(typeof(X509FilesystemTests), nameof(RunManualTests))]
         public static void VerifyCrlCache()
         {
             string crlDirectory = PersistedFiles.GetUserFeatureDirectory("cryptography", "crls");

@@ -162,6 +162,7 @@ native_binaries_to_ignore = [
     "KernelTraceControl.Win61.dll",
     "llvm-mca.exe",
     "mcs.exe",
+    "Microsoft.DiaSymReader.Native.dll",
     "Microsoft.DiaSymReader.Native.amd64.dll",
     "Microsoft.DiaSymReader.Native.x86.dll",
     "mscordaccore.dll",
