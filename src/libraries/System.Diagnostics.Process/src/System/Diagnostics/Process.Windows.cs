@@ -765,16 +765,10 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Opens a stream around the specified file handle.</summary>
-        private static FileStream OpenStream(SafeFileHandle handle, FileAccess access)
-        {
-            return new FileStream(handle, access, StreamBufferSize, handle.IsAsync);
-        }
+        private static FileStream OpenStream(SafeFileHandle handle, FileAccess access) => new(handle, access, StreamBufferSize, handle.IsAsync);
 
-        /// <summary>Gets the default encoding for standard input.</summary>
         private static ConsoleEncoding GetStandardInputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleCP());
 
-        /// <summary>Gets the default encoding for standard output/error.</summary>
         private static ConsoleEncoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)

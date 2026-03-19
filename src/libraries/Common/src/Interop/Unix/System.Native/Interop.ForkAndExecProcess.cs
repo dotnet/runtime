@@ -14,7 +14,6 @@ internal static partial class Interop
     {
         internal static unsafe int ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string? cwd,
-            bool redirectStdin, bool redirectStdout, bool redirectStderr,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle stdinFd, SafeFileHandle stdoutFd, SafeFileHandle stderrFd, bool shouldThrow = true)
         {
@@ -28,7 +27,6 @@ internal static partial class Interop
                 {
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
-                        redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 : 0,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinFd, stdoutFd, stderrFd);
                 }
@@ -44,7 +42,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static unsafe partial int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string? cwd,
-            int redirectStdin, int redirectStdout, int redirectStderr,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
             out int lpChildPid, SafeFileHandle stdinFd, SafeFileHandle stdoutFd, SafeFileHandle stderrFd);
 

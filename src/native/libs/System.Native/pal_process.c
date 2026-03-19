@@ -70,18 +70,10 @@ static void CloseIfOpen(int fd)
     }
 }
 
-static int Dup2WithInterruptedRetry(int oldfd, int newfd, int removeCloExec)
+static int Dup2WithInterruptedRetry(int oldfd, int newfd)
 {
     int result;
     while (CheckInterrupted(result = dup2(oldfd, newfd)));
-    if (result != -1 && removeCloExec)
-    {
-        int flags = fcntl(newfd, F_GETFD);
-        if (flags != -1 && (flags & FD_CLOEXEC))
-        {
-            fcntl(newfd, F_SETFD, flags & ~FD_CLOEXEC);
-        }
-    }
     return result;
 }
 
@@ -217,9 +209,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
                                       const char* cwd,
-                                      int32_t redirectStdin,
-                                      int32_t redirectStdout,
-                                      int32_t redirectStderr,
                                       int32_t setCredentials,
                                       uint32_t userId,
                                       uint32_t groupId,
@@ -247,10 +236,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
-
-    assert((redirectStdin & ~1) == 0 && (redirectStdout & ~1) == 0 &&
-            (redirectStderr & ~1) == 0 && (setCredentials & ~1) == 0 &&
-            "Boolean redirect* inputs must be 0 or 1.");
 
     if (setCredentials && groupsLength > 0)
     {
@@ -370,11 +355,12 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
         pthread_sigmask(SIG_SETMASK, &old_signal_set, &junk_signal_set); // Not all architectures allow NULL here
 
-        // For any redirections that should happen, dup the provided file descriptors onto stdin/out/err.
-        // The provided file handles have CLOEXEC enabled by default, so we clear it after dup2.
-        if ((redirectStdin && Dup2WithInterruptedRetry(stdinFd, STDIN_FILENO, 1) == -1) ||
-            (redirectStdout && Dup2WithInterruptedRetry(stdoutFd, STDOUT_FILENO, 1) == -1) ||
-            (redirectStderr && Dup2WithInterruptedRetry(stderrFd, STDERR_FILENO, 1) == -1))
+        // The provided file handles might have CLOEXEC enabled,
+        // but dup2 doesn't copy the file descriptor flags,
+        // so the new file descriptors won't have CLOEXEC enabled.
+        if (Dup2WithInterruptedRetry(stdinFd, STDIN_FILENO) == -1 ||
+            Dup2WithInterruptedRetry(stdoutFd, STDOUT_FILENO) == -1 ||
+            Dup2WithInterruptedRetry(stderrFd, STDERR_FILENO) == -1)
         {
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
@@ -470,9 +456,6 @@ done:;
     (void)argv;
     (void)envp;
     (void)cwd;
-    (void)redirectStdin;
-    (void)redirectStdout;
-    (void)redirectStderr;
     (void)setCredentials;
     (void)userId;
     (void)groupId;

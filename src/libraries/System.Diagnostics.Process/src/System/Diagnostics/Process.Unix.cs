@@ -447,8 +447,6 @@ namespace System.Diagnostics
             return true;
         }
 
-        private static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
-
         private bool ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             string[] envp, string? cwd, bool setCredentials, uint userId,
@@ -481,12 +479,8 @@ namespace System.Diagnostics
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 int errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
-                    out childPid,
-                    stdinHandle,
-                    stdoutHandle,
-                    stderrHandle);
+                    out childPid, stdinHandle, stdoutHandle, stderrHandle);
 
                 if (errno == 0)
                 {
@@ -730,10 +724,10 @@ namespace System.Diagnostics
             return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
 
-        /// <summary>Gets the default encoding for standard input.</summary>
+        private static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
+
         private static Encoding GetStandardInputEncoding() => Encoding.Default;
 
-        /// <summary>Gets the default encoding for standard output/error.</summary>
         private static Encoding GetStandardOutputEncoding() => Encoding.Default;
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
