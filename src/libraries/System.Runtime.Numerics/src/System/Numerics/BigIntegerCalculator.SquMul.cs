@@ -156,10 +156,6 @@ namespace System.Numerics
                 Debug.Assert(bits.Length == value.Length + value.Length);
                 Debug.Assert(bits.Trim((nuint)0).IsEmpty);
 
-                // Switching to managed references helps eliminating
-                // index bounds check...
-                ref nuint resultPtr = ref MemoryMarshal.GetReference(bits);
-
                 // Squares the bits using the "grammar-school" method.
                 // Envisioning the "rhombus" of a pen-and-paper calculation
                 // we see that computing z_i+j += a_j * a_i can be optimized
@@ -173,41 +169,38 @@ namespace System.Numerics
                 // extra shifts.
                 if (nint.Size == 8)
                 {
-                    // On 64-bit, carry needs 65 bits (one more than the limb width),
-                    // so we use UInt128 for the carry accumulator.
                     for (int i = 0; i < value.Length; i++)
                     {
                         UInt128 carry = 0;
                         nuint v = value[i];
                         for (int j = 0; j < i; j++)
                         {
-                            UInt128 digit1 = (UInt128)(ulong)Unsafe.Add(ref resultPtr, i + j) + carry;
+                            UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
                             UInt128 digit2 = (UInt128)(ulong)value[j] * (ulong)v;
-                            Unsafe.Add(ref resultPtr, i + j) = (nuint)(ulong)(digit1 + (digit2 << 1));
+                            bits[i + j] = (nuint)(ulong)(digit1 + (digit2 << 1));
                             carry = (digit2 + (digit1 >> 1)) >> 63;
                         }
                         UInt128 digits = (UInt128)(ulong)v * (ulong)v + carry;
-                        Unsafe.Add(ref resultPtr, i + i) = (nuint)(ulong)digits;
-                        Unsafe.Add(ref resultPtr, i + i + 1) = (nuint)(ulong)(digits >> 64);
+                        bits[i + i] = (nuint)(ulong)digits;
+                        bits[i + i + 1] = (nuint)(ulong)(digits >> 64);
                     }
                 }
                 else
                 {
-                    // On 32-bit, carry needs 33 bits, so ulong suffices.
                     for (int i = 0; i < value.Length; i++)
                     {
                         ulong carry = 0;
                         nuint v = value[i];
                         for (int j = 0; j < i; j++)
                         {
-                            ulong digit1 = Unsafe.Add(ref resultPtr, i + j) + carry;
+                            ulong digit1 = bits[i + j] + carry;
                             ulong digit2 = (ulong)value[j] * v;
-                            Unsafe.Add(ref resultPtr, i + j) = (nuint)(uint)(digit1 + (digit2 << 1));
+                            bits[i + j] = (nuint)(uint)(digit1 + (digit2 << 1));
                             carry = (digit2 + (digit1 >> 1)) >> 31;
                         }
                         ulong digits = (ulong)v * v + carry;
-                        Unsafe.Add(ref resultPtr, i + i) = (nuint)(uint)digits;
-                        Unsafe.Add(ref resultPtr, i + i + 1) = (nuint)(uint)(digits >> 32);
+                        bits[i + i] = (nuint)(uint)digits;
+                        bits[i + i + 1] = (nuint)(uint)(digits >> 32);
                     }
                 }
             }
@@ -883,10 +876,11 @@ namespace System.Numerics
 
             int i = 0;
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
-            ref nuint leftPtr = ref MemoryMarshal.GetReference(left);
-            ref nuint corePtr = ref MemoryMarshal.GetReference(core);
+            if (right.Length != 0)
+            {
+                _ = left[right.Length - 1];
+                _ = core[left.Length - 1];
+            }
 
             if (nint.Size == 8)
             {
@@ -894,15 +888,15 @@ namespace System.Numerics
 
                 for (; i < right.Length; i++)
                 {
-                    Int128 digit = (Int128)(ulong)Unsafe.Add(ref corePtr, i) + carry - (ulong)Unsafe.Add(ref leftPtr, i) - (ulong)right[i];
-                    Unsafe.Add(ref corePtr, i) = (nuint)(ulong)digit;
+                    Int128 digit = (Int128)(ulong)core[i] + carry - (ulong)left[i] - (ulong)right[i];
+                    core[i] = (nuint)(ulong)digit;
                     carry = digit >> 64;
                 }
 
                 for (; i < left.Length; i++)
                 {
-                    Int128 digit = (Int128)(ulong)Unsafe.Add(ref corePtr, i) + carry - (ulong)left[i];
-                    Unsafe.Add(ref corePtr, i) = (nuint)(ulong)digit;
+                    Int128 digit = (Int128)(ulong)core[i] + carry - (ulong)left[i];
+                    core[i] = (nuint)(ulong)digit;
                     carry = digit >> 64;
                 }
 
@@ -919,15 +913,15 @@ namespace System.Numerics
 
                 for (; i < right.Length; i++)
                 {
-                    long digit = ((long)(uint)Unsafe.Add(ref corePtr, i) + carry) - (uint)Unsafe.Add(ref leftPtr, i) - (uint)right[i];
-                    Unsafe.Add(ref corePtr, i) = (nuint)(uint)digit;
+                    long digit = ((long)(uint)core[i] + carry) - (uint)left[i] - (uint)right[i];
+                    core[i] = (nuint)(uint)digit;
                     carry = digit >> 32;
                 }
 
                 for (; i < left.Length; i++)
                 {
-                    long digit = ((long)(uint)Unsafe.Add(ref corePtr, i) + carry) - (uint)left[i];
-                    Unsafe.Add(ref corePtr, i) = (nuint)(uint)digit;
+                    long digit = ((long)(uint)core[i] + carry) - (uint)left[i];
+                    core[i] = (nuint)(uint)digit;
                     carry = digit >> 32;
                 }
 
