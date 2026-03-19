@@ -420,22 +420,6 @@ void UnwindInfoTable::FlushPendingEntries()
         }
     }
 
-    // Check the pending buffer under the pending lock.
-    // Use swap-remove since the buffer doesn't need to stay sorted.
-    {
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
-        for (ULONG i = 0; i < unwindInfo->cPendingCount; i++)
-        {
-            if (unwindInfo->pendingTable[i].BeginAddress <= relativeEntryPoint &&
-                relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pendingTable[i], unwindInfo->iRangeStart))
-            {
-                unwindInfo->pendingTable[i] = unwindInfo->pendingTable[--unwindInfo->cPendingCount];
-                STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed pending entry 0x%x\n", i);
-                return;
-            }
-        }
-    }
-
     STRESS_LOG2(LF_JIT, LL_WARNING, "RemoveFromUnwindInfoTable COULD NOT FIND %p BaseAddress %p\n",
         entryPoint, baseAddress);
 }
