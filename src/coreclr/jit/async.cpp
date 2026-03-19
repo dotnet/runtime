@@ -1062,9 +1062,8 @@ bool PreservedValueAnalysis::IsResumeReachable(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // PreservedValueAnalysis::ComputeResumeReachableBlocks:
-//   Step 0: Identify blocks containing awaits, then compute the set of
-//   blocks reachable after any resumption via a forward fixpoint from
-//   the successors of await blocks.
+//   Phase 0: Identify blocks containing awaits, then compute the set of
+//   blocks reachable after any resumption via a DFS starting from await blocks.
 //
 void PreservedValueAnalysis::ComputeResumeReachableBlocks(ArrayStack<BasicBlock*>& awaitBlocks)
 {
@@ -1082,6 +1081,7 @@ void PreservedValueAnalysis::ComputeResumeReachableBlocks(ArrayStack<BasicBlock*
     JITDUMP("Preserved value analysis: blocks containing awaits\n");
     DBEXEC(m_compiler->verbose, DumpAwaitBlocks());
 
+    // DFS from those blocks.
     while (!worklist.Empty())
     {
         BasicBlock* block = worklist.Pop();
@@ -1166,8 +1166,7 @@ void PreservedValueAnalysis::ComputePerBlockMutatedVars()
 //   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
 //   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
 //
-//   At method entry all locals are considered mutated (no previous resumption
-//   to preserve from).
+//   At method entry no locals are considered mutated (not reachable from a resumption).
 //
 void PreservedValueAnalysis::ComputeInterBlockMutatedVars()
 {
@@ -1876,7 +1875,7 @@ void AsyncTransformation::Transform(
 
     CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspendBB, remainder);
 
-    BasicBlock* resumeBB = CreateResumptionBlock(*remainder, call, stateNum, layoutBuilder);
+    BasicBlock* resumeBB = CreateResumptionBlock(*remainder, stateNum);
 
     m_states.push_back(AsyncState(stateNum, layoutBuilder, block, call, callDefInfo, suspendBB, resumeBB,
                                   resumeReachable, mutatedSinceResumption));
