@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Text;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
@@ -82,7 +83,8 @@ namespace System.IO.Tests
             {
                 if (Directory.Exists(mountPoint))
                 {
-                    MountHelper.Unmount(mountPoint);
+                    try { MountHelper.Unmount(mountPoint); }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is 4390 or 3) { }
                     Directory.Delete(mountPoint);
                 }
             }
