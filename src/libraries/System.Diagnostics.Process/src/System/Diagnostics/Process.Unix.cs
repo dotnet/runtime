@@ -359,14 +359,6 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
 
-        /// <summary>
-        /// Starts the process using the supplied start info.
-        /// With UseShellExecute option, we'll try the shell tools to launch it(e.g. "open fileName")
-        /// </summary>
-        /// <param name="startInfo">The start info with which to start the process.</param>
-        /// <param name="stdinHandle">The child's stdin handle, or null if not redirecting.</param>
-        /// <param name="stdoutHandle">The child's stdout handle, or null if not redirecting.</param>
-        /// <param name="stderrHandle">The child's stderr handle, or null if not redirecting.</param>
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (PlatformDoesNotSupportProcessStartAndKill)
@@ -499,9 +491,9 @@ namespace System.Diagnostics
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
                     out childPid,
-                    stdinHandle ?? s_invalidSafeFileHandle,
-                    stdoutHandle ?? s_invalidSafeFileHandle,
-                    stderrHandle ?? s_invalidSafeFileHandle);
+                    stdinHandle!,
+                    stdoutHandle!,
+                    stderrHandle!);
 
                 if (errno == 0)
                 {
@@ -543,8 +535,6 @@ namespace System.Diagnostics
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
-
-        private static readonly SafeFileHandle s_invalidSafeFileHandle = new SafeFileHandle(new IntPtr(-1), ownsHandle: false);
 
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
@@ -734,43 +724,17 @@ namespace System.Diagnostics
         }
 
         /// <summary>Opens a stream around the specified file handle.</summary>
-        private static partial Stream OpenStream(SafeFileHandle handle, FileAccess access)
+        private static AnonymousPipeClientStream OpenStream(SafeFileHandle handle, FileAccess access)
         {
             PipeDirection direction = access == FileAccess.Write ? PipeDirection.Out : PipeDirection.In;
-            return new AnonymousPipeClientStream(direction, new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: false));
-        }
-
-        /// <summary>Creates an anonymous pipe, returning handles for the parent and child ends.</summary>
-        private static partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
-        {
-            Span<int> fds = stackalloc int[2];
-            int result;
-            unsafe
-            {
-                fixed (int* fdsPtr = fds)
-                {
-                    result = Interop.Sys.Pipe(fdsPtr, Interop.Sys.PipeFlags.O_CLOEXEC);
-                }
-            }
-            if (result != 0)
-            {
-                throw new Win32Exception();
-            }
-
-            SafeFileHandle readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
-            SafeFileHandle writeHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], ownsHandle: true);
-
-            // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
-            // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
-            parentHandle = parentInputs ? writeHandle : readHandle;
-            childHandle = parentInputs ? readHandle : writeHandle;
+            return new AnonymousPipeClientStream(direction, new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: true));
         }
 
         /// <summary>Gets the default encoding for standard input.</summary>
-        private static partial Encoding GetStandardInputEncoding() => Encoding.Default;
+        private static Encoding GetStandardInputEncoding() => Encoding.Default;
 
         /// <summary>Gets the default encoding for standard output/error.</summary>
-        private static partial Encoding GetStandardOutputEncoding() => Encoding.Default;
+        private static Encoding GetStandardOutputEncoding() => Encoding.Default;
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
         /// <param name="arguments">The argument string.</param>

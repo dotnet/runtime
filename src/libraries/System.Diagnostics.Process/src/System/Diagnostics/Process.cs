@@ -1227,21 +1227,6 @@ namespace System.Diagnostics
         /// <summary>Additional optional configuration hook after a process ID is set.</summary>
         partial void ConfigureAfterProcessIdSet();
 
-        /// <summary>Creates an anonymous pipe, returning handles for the parent and child ends.</summary>
-        /// <param name="parentHandle">The parent's end of the pipe.</param>
-        /// <param name="childHandle">The child's end of the pipe.</param>
-        /// <param name="parentInputs">true if the parent writes (stdin redirect); false if the parent reads (stdout/stderr redirect).</param>
-        private static partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs);
-
-        /// <summary>Opens a stream around the specified file handle.</summary>
-        private static partial Stream OpenStream(SafeFileHandle handle, FileAccess access);
-
-        /// <summary>Gets the default encoding for standard input.</summary>
-        private static partial Encoding GetStandardInputEncoding();
-
-        /// <summary>Gets the default encoding for standard output/error.</summary>
-        private static partial Encoding GetStandardOutputEncoding();
-
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
 
@@ -1309,21 +1294,33 @@ namespace System.Diagnostics
 
             try
             {
-                if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
+                if (!startInfo.UseShellExecute || !OperatingSystem.IsWindows())
                 {
                     if (startInfo.RedirectStandardInput)
                     {
-                        CreatePipe(out parentInputPipeHandle, out childInputPipeHandle, true);
+                        SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
+                    }
+                    else
+                    {
+                        childInputPipeHandle = Console.OpenStandardInputHandle();
                     }
 
                     if (startInfo.RedirectStandardOutput)
                     {
-                        CreatePipe(out parentOutputPipeHandle, out childOutputPipeHandle, false);
+                        SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                    }
+                    else
+                    {
+                        childOutputPipeHandle = Console.OpenStandardOutputHandle();
                     }
 
                     if (startInfo.RedirectStandardError)
                     {
-                        CreatePipe(out parentErrorPipeHandle, out childErrorPipeHandle, false);
+                        SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                    }
+                    else
+                    {
+                        childErrorPipeHandle = Console.OpenStandardErrorHandle();
                     }
                 }
 

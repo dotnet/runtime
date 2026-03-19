@@ -424,10 +424,6 @@ namespace System.Diagnostics
         }
 
         /// <summary>Starts the process using the supplied start info.</summary>
-        /// <param name="startInfo">The start info with which to start the process.</param>
-        /// <param name="stdinHandle">The child's stdin handle, or null if not redirecting.</param>
-        /// <param name="stdoutHandle">The child's stdout handle, or null if not redirecting.</param>
-        /// <param name="stderrHandle">The child's stderr handle, or null if not redirecting.</param>
         private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
@@ -462,32 +458,9 @@ namespace System.Diagnostics
                     // set up the streams
                     if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
                     {
-                        if (startInfo.RedirectStandardInput)
-                        {
-                            inheritableStdinHandle = DuplicateAsInheritable(stdinHandle!);
-                        }
-                        else
-                        {
-                            inheritableStdinHandle = Console.OpenStandardInputHandle();
-                        }
-
-                        if (startInfo.RedirectStandardOutput)
-                        {
-                            inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle!);
-                        }
-                        else
-                        {
-                            inheritableStdoutHandle = Console.OpenStandardOutputHandle();
-                        }
-
-                        if (startInfo.RedirectStandardError)
-                        {
-                            inheritableStderrHandle = DuplicateAsInheritable(stderrHandle!);
-                        }
-                        else
-                        {
-                            inheritableStderrHandle = Console.OpenStandardErrorHandle();
-                        }
+                        inheritableStdinHandle = DuplicateAsInheritable(stdinHandle!);
+                        inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle!);
+                        inheritableStderrHandle = DuplicateAsInheritable(stderrHandle!);
 
                         startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
                         startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
@@ -797,38 +770,17 @@ namespace System.Diagnostics
             }
         }
 
-        // Using synchronous Anonymous pipes for process input/output redirection means we would end up
-        // wasting a worker threadpool thread per pipe instance. Overlapped pipe IO is desirable, since
-        // it will take advantage of the NT IO completion port infrastructure. But we can't really use
-        // Overlapped I/O for process input/output as it would break Console apps (managed Console class
-        // methods such as WriteLine as well as native CRT functions like printf) which are making an
-        // assumption that the console standard handles (obtained via GetStdHandle()) are opened
-        // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
-        // We therefore only open the parent's end of the pipe for async I/O (overlapped), while the
-        // child's end is always opened for synchronous I/O so the child process can use it normally.
-        private static partial void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
-        {
-            // Only the parent's read end benefits from async I/O; stdin is always sync.
-            // asyncRead applies to the read handle; asyncWrite to the write handle.
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: !parentInputs, asyncWrite: false);
-
-            // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
-            // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
-            parentHandle = parentInputs ? writeHandle : readHandle;
-            childHandle = parentInputs ? readHandle : writeHandle;
-        }
-
         /// <summary>Opens a stream around the specified file handle.</summary>
-        private static partial Stream OpenStream(SafeFileHandle handle, FileAccess access)
+        private static FileStream OpenStream(SafeFileHandle handle, FileAccess access)
         {
             return new FileStream(handle, access, StreamBufferSize, handle.IsAsync);
         }
 
         /// <summary>Gets the default encoding for standard input.</summary>
-        private static partial Encoding GetStandardInputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleCP());
+        private static ConsoleEncoding GetStandardInputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleCP());
 
         /// <summary>Gets the default encoding for standard output/error.</summary>
-        private static partial Encoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
+        private static ConsoleEncoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
         {
