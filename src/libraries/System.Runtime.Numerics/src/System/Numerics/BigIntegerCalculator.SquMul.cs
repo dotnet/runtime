@@ -1025,9 +1025,15 @@ namespace System.Numerics
                 }
                 else
                 {
+                    // right > left: compute right - left directly
                     left = left.Slice(0, right.Length);
-                    SubtractSelf(left, right);
-                    MakeTwosComplement(left);
+                    nuint borrow = 0;
+                    for (int j = 0; j < left.Length; j++)
+                    {
+                        left[j] = SubWithBorrow(right[j], left[j], borrow, out borrow);
+                    }
+
+                    Debug.Assert(borrow == 0);
                 }
             }
         }
@@ -1063,9 +1069,15 @@ namespace System.Numerics
                 }
                 else
                 {
+                    // right > left: compute right - left directly
                     left = left.Slice(0, right.Length);
-                    SubtractSelf(left, right);
-                    MakeTwosComplement(left);
+                    nuint borrow = 0;
+                    for (int j = 0; j < left.Length; j++)
+                    {
+                        left[j] = SubWithBorrow(right[j], left[j], borrow, out borrow);
+                    }
+
+                    Debug.Assert(borrow == 0);
                 }
             }
         }
@@ -1092,20 +1104,5 @@ namespace System.Numerics
             }
         }
 
-        private static void MakeTwosComplement(Span<nuint> d)
-        {
-            int i = d.IndexOfAnyExcept((nuint)0);
-            if ((uint)i >= (uint)d.Length)
-            {
-                return;
-            }
-
-            d[i] = 0 - d[i];
-            d = d.Slice(i + 1);
-            for (int j = 0; j < d.Length; j++)
-            {
-                d[j] = ~d[j];
-            }
-        }
     }
 }

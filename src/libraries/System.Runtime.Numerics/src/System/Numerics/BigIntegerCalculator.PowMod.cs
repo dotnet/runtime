@@ -838,7 +838,15 @@ namespace System.Numerics
 
             if (overflow != 0 || Compare(upper, modulus) >= 0)
             {
-                SubtractSelf(upper, modulus);
+                // When overflow != 0, the true value is 2^(BitsPerLimb*k) + upper,
+                // which always exceeds modulus. The subtraction borrow cancels the overflow.
+                nuint borrow = 0;
+                for (int j = 0; j < k; j++)
+                {
+                    upper[j] = SubWithBorrow(upper[j], modulus[j], borrow, out borrow);
+                }
+
+                Debug.Assert(overflow >= borrow);
             }
 
             upper.CopyTo(value);

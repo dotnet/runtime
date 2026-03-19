@@ -110,9 +110,6 @@ namespace System.Numerics
         {
             Debug.Assert(left.Length >= right.Length);
 
-            // Assertion failing per https://github.com/dotnet/runtime/issues/97780
-            // Debug.Assert(CompareActual(left, right) >= 0);
-
             int i = 0;
             nuint borrow = 0;
 
@@ -133,8 +130,7 @@ namespace System.Numerics
                 borrow = (val < borrow) ? 1 : (nuint)0;
             }
 
-            // Assertion failing per https://github.com/dotnet/runtime/issues/97780
-            //Debug.Assert(borrow == 0);
+            Debug.Assert(borrow == 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
