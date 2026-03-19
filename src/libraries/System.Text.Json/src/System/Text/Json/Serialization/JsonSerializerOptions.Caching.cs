@@ -518,6 +518,7 @@ namespace System.Text.Json
 
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
+                    left._dictionaryKeyFilter == right._dictionaryKeyFilter &&
                     left._jsonPropertyNamingPolicy == right._jsonPropertyNamingPolicy &&
                     left._readCommentHandling == right._readCommentHandling &&
                     left._referenceHandler == right._referenceHandler &&
@@ -579,6 +580,7 @@ namespace System.Text.Json
                 HashCode hc = default;
 
                 AddHashCode(ref hc, options._dictionaryKeyPolicy);
+                AddHashCode(ref hc, options._dictionaryKeyFilter);
                 AddHashCode(ref hc, options._jsonPropertyNamingPolicy);
                 AddHashCode(ref hc, options._readCommentHandling);
                 AddHashCode(ref hc, options._referenceHandler);

@@ -112,6 +112,13 @@ namespace System.Text.Json.Serialization
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
+                        if (options.DictionaryKeyFilter is { } dictionaryKeyFilter &&
+                            dictionaryKeyFilter.IgnoreKey(reader.GetUnescapedSpan()))
+                        {
+                            reader.SkipWithVerify();
+                            continue;
+                        }
+
                         state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
                         TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
@@ -137,6 +144,14 @@ namespace System.Text.Json.Serialization
 
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+                        if (options.DictionaryKeyFilter is { } dictionaryKeyFilter &&
+                            dictionaryKeyFilter.IgnoreKey(reader.GetUnescapedSpan()))
+                        {
+                            reader.SkipWithVerify();
+                            continue;
+                        }
+
                         state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
                         TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
@@ -247,31 +262,56 @@ namespace System.Text.Json.Serialization
 
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
-                        if (state.Current.CanContainMetadata)
+                        if (options.DictionaryKeyFilter is { } dictionaryKeyFilter &&
+                            dictionaryKeyFilter.IgnoreKey(reader.GetUnescapedSpan()))
                         {
-                            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
-                            if (JsonSerializer.IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
+                            state.Current.SkipCurrentDictionaryKey = true;
+                            key = default!; // will not be used
+                        }
+                        else
+                        {
+                            state.Current.SkipCurrentDictionaryKey = false;
+
+                            if (state.Current.CanContainMetadata)
                             {
-                                if (options.AllowOutOfOrderMetadataProperties)
+                                ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
+                                if (JsonSerializer.IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                                 {
-                                    reader.SkipWithVerify();
-                                    state.Current.EndElement();
-                                    continue;
-                                }
-                                else
-                                {
-                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                    if (options.AllowOutOfOrderMetadataProperties)
+                                    {
+                                        reader.SkipWithVerify();
+                                        state.Current.EndElement();
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                    }
                                 }
                             }
-                        }
 
-                        state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
-                        key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
+                            state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
+                            key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
+                        }
                     }
                     else
                     {
                         // DictionaryKey is assigned before all return false cases, null value is unreachable
-                        key = (TKey)state.Current.DictionaryKey!;
+                        key = state.Current.SkipCurrentDictionaryKey ? default! : (TKey)state.Current.DictionaryKey!;
+                    }
+
+                    if (state.Current.SkipCurrentDictionaryKey)
+                    {
+                        // Skip the value resumably; the reader may be on the PropertyName or mid-skip inside a nested value.
+                        if (!reader.TrySkipPartial(state.Current.OriginalDepth + 1))
+                        {
+                            value = default;
+                            return false;
+                        }
+
+                        state.Current.SkipCurrentDictionaryKey = false;
+                        state.Current.EndElement();
+                        continue;
                     }
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)

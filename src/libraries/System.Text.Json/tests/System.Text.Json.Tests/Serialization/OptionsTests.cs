@@ -1643,6 +1643,10 @@ namespace System.Text.Json.Serialization.Tests
                     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                     options.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
                 }
+                else if (propertyType == typeof(JsonDictionaryKeyFilter))
+                {
+                    options.DictionaryKeyFilter = JsonDictionaryKeyFilter.IgnoreMetadataNames;
+                }
                 else if (propertyType == typeof(ReferenceHandler))
                 {
                     options.ReferenceHandler = ReferenceHandler.Preserve;
