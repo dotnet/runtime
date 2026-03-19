@@ -968,6 +968,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <!-- Prevent the wwwroot glob from picking up dotnet.d.ts copied by _EnsureDotnetTypeScriptDefinitions (https://github.com/dotnet/runtime/issues/124729) -->
+  <ItemGroup Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
+    <Content Remove="wwwroot\dotnet.d.ts" />
+  </ItemGroup>
+
   <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
   <Target Name="_EnsureDotnetTypeScriptDefinitions" 
           AfterTargets="_ResolveWasmConfiguration" 

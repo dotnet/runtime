@@ -7,7 +7,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static volatile int s_osArchPlusOne;
+        private static int s_osArchPlusOne;
 
         public static string OSDescription => field ??=
 #if TARGET_ANDROID

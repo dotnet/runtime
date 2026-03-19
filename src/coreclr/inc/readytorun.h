@@ -120,6 +120,9 @@ enum class ReadyToRunSectionType : uint32_t
     MethodIsGenericMap          = 121, // Added in V9.0
     EnclosingTypeMap            = 122, // Added in V9.0
     TypeGenericInfoMap          = 123, // Added in V9.0
+    ExternalTypeMaps            = 124, // Added in V18.3
+    ProxyTypeMaps               = 125, // Added in V18.3
+    TypeMapAssemblyTargets      = 126, // Added in V18.3
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

@@ -89,6 +89,34 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifySourceGeneratorAsync(source, "GenericClass`1");
         }
 
+        [Theory]
+        [InlineData("class")]
+        [InlineData("struct")]
+        [InlineData("interface")]
+        [InlineData("record")]
+        [InlineData("record class")]
+        [InlineData("record struct")]
+        public async Task NestedComClass(string containingTypeKeyword)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                partial interface INativeAPI
+                {
+                }
+
+                partial {{containingTypeKeyword}} ContainingType
+                {
+                    [GeneratedComClass]
+                    partial class C : INativeAPI {}
+                }
+                """;
+
+            await VerifySourceGeneratorAsync(source, "ContainingType+C");
+        }
+
         private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
