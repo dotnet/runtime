@@ -213,6 +213,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
+            // Ensure virtual and interface method implementations inherited from generic
+            // base types are compiled for this instantiation. AllMethodsOnType only discovers
+            // methods defined directly on the type, missing inherited implementations needed
+            // for virtual and interface dispatch on value-type instantiations.
+            // This applies to non-generic types too — e.g., a non-generic Derived extending
+            // Base<int> still needs Base<int>'s interface implementations compiled.
+            if (!_typeDesc.IsGenericDefinition &&
+                !_typeDesc.IsInterface &&
+                _typeDesc is DefType &&
+                (factory.CompilationCurrentPhase == 0) &&
+                factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
+            {
+                dependencies.Add(factory.InheritedVirtualMethods(_typeDesc), "Inherited virtual/interface methods on type");
+            }
+
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
                 AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);
