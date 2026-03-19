@@ -1047,9 +1047,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         // Truly set-only property (no getter at all): initialize to an appropriate default value
                         // since we can't read the current value. For value types, use a constructor call to match
                         // Activator.CreateInstance behavior (which honors user-defined parameterless ctors).
-                        string initializer = effectiveMemberType.IsValueType
-                            ? $"new {effectiveMemberTypeFQN}()"
-                            : "default";
+                        string initializer = $"new {effectiveMemberTypeFQN}();";
 
                         _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = {initializer};");
                     }
