@@ -1044,8 +1044,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             return;
                         }
 
-                        // Truly set-only property (no getter at all): initialize to default since we can't read the current value.
-                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = default;");
+                        // Truly set-only property (no getter at all): initialize to an appropriate default value
+                        // since we can't read the current value. For value types, use a constructor call to match
+                        // Activator.CreateInstance behavior (which honors user-defined parameterless ctors).
+                        string initializer = effectiveMemberType.IsValueType
+                            ? $"new {effectiveMemberTypeFQN}()"
+                            : "default";
+
+                        _writer.WriteLine($"{effectiveMemberTypeFQN} {tempIdentifier} = {initializer};");
                     }
                     else if (memberType is NullableSpec)
                     {
@@ -1054,7 +1060,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine($"{memberType.TypeRef.FullyQualifiedName} {nullableTempIdentifier} = {memberAccessExpr};");
 
                         _writer.WriteLine(
-                            $"{effectiveMemberTypeFQN} {tempIdentifier} = {nullableTempIdentifier}.{Identifier.HasValue} ? {nullableTempIdentifier}.{Identifier.Value} : default;");
+                            $"{effectiveMemberTypeFQN} {tempIdentifier} = {nullableTempIdentifier}.{Identifier.HasValue} ? {nullableTempIdentifier}.{Identifier.Value} : new {effectiveMemberTypeFQN}();");
                     }
                     else
                     {
