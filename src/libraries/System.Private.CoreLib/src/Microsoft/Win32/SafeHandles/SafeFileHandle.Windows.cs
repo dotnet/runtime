@@ -336,6 +336,11 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => FileHandleType.CharacterDevice,
                 Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
+                // GetFileType can return FILE_TYPE_DISK for regular files, directories and symbolic links.
+                // However, when Path is not null, it means that the handle was created by SafeFileHandle.Open
+                // which does not allow opening directories or symbolic links (it resolves them).
+                // That is why we can skip the extra check performed by GetDiskBasedType.
+                Interop.Kernel32.FileTypes.FILE_TYPE_DISK when Path is not null => FileHandleType.RegularFile,
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
                 _ => FileHandleType.Unknown
             };
