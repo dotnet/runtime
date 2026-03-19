@@ -504,12 +504,12 @@ namespace System.Text.Json.Serialization.Tests
 
         // Tests for type parameter arity mismatch
         [Fact]
-        public static void GenericConverterAttribute_ArityMismatch_ThrowsArgumentException()
+        public static void GenericConverterAttribute_ArityMismatch_ThrowsInvalidOperationException()
         {
-            // The converter has two type parameters but the type has one
-            // This throws ArgumentException because the arity doesn't match, so the converter type
-            // remains an unbound generic and Activator.CreateInstance fails.
-            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(new TypeWithArityMismatch<int>()));
+            // The converter has two type parameters but the type has one.
+            // This throws InvalidOperationException with a contextual error message
+            // because the arity doesn't match.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TypeWithArityMismatch<int>()));
         }
 
         [JsonConverter(typeof(ConverterWithTwoParams<,>))]
@@ -580,12 +580,12 @@ namespace System.Text.Json.Serialization.Tests
 
         // Tests for open generic converter on a non-generic type
         [Fact]
-        public static void GenericConverterAttribute_OpenGenericOnNonGenericType_ThrowsArgumentException()
+        public static void GenericConverterAttribute_OpenGenericOnNonGenericType_ThrowsInvalidOperationException()
         {
             // The converter is an open generic but the target type is not generic,
-            // so the converter type cannot be instantiated (Activator.CreateInstance fails
-            // because Type.ContainsGenericParameters is true).
-            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(new NonGenericTypeWithOpenGenericConverter()));
+            // so the converter type cannot be instantiated. We throw InvalidOperationException
+            // with a contextual error message.
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new NonGenericTypeWithOpenGenericConverter()));
         }
 
         [JsonConverter(typeof(OpenGenericConverterForNonGenericType<>))]
