@@ -1011,7 +1011,7 @@ namespace System.Net
                             {
                                 bytes = Convert.FromBase64String(inBlob);
 
-                                inBlob = WebHeaderEncoding.GetString(bytes, 0, bytes.Length);
+                                inBlob = Encoding.Latin1.GetString(bytes);
                                 index = inBlob.IndexOf(':');
 
                                 if (index != -1)
