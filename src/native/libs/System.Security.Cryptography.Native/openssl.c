@@ -1041,6 +1041,13 @@ int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
     return BIO_seek(bio, ofs);
 }
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc_arg, void* ptr)
+{
+    freefunc_arg(ptr);
+}
+#endif
+
 /*
 Function:
 NewX509Stack
@@ -1054,7 +1061,19 @@ A STACK_OF(X509*) with no comparator.
 STACK_OF(X509) * CryptoNative_NewX509Stack(void)
 {
     ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    OPENSSL_STACK* sk = OPENSSL_sk_new_null();
+
+    if (API_EXISTS(OPENSSL_sk_set_thunks))
+    {
+        OPENSSL_sk_set_thunks(sk, local_sk_X509_freefunc_thunk);
+    }
+
+    return (STACK_OF(X509)*)sk;
+#else
     return sk_X509_new_null();
+#endif
 }
 
 /*
