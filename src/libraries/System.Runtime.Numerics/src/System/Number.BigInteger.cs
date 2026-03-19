@@ -221,21 +221,21 @@ namespace System
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
-                if ((nint)(leading ^ signBits) >= 0)
+                nint signedLeading = unchecked((nint)leading);
+                if ((nint)(leading ^ signBits) >= 0 && int.MinValue < signedLeading && signedLeading <= int.MaxValue)
                 {
-                    // Small value that fits in nint.
-                    // Delegate to the constructor for int.MinValue handling.
-                    result = new BigInteger((nint)leading, null);
+                    // Small value that fits in int _sign.
+                    result = new BigInteger((int)signedLeading, null);
                     return ParsingStatus.OK;
                 }
                 else if (leading != 0)
                 {
-                    // The sign of result differs with leading digit.
-                    // Require to store in _bits.
+                    // The sign of result differs with leading digit, or value
+                    // doesn't fit in int _sign. Require to store in _bits.
 
                     // Positive: sign=1, bits=[leading]
                     // Negative: sign=-1, bits=[(leading ^ -1) + 1]=[-leading]
-                    result = new BigInteger((nint)signBits | 1, [(leading ^ signBits) - signBits]);
+                    result = new BigInteger(unchecked((int)signBits) | 1, [(leading ^ signBits) - signBits]);
                     return ParsingStatus.OK;
                 }
                 else

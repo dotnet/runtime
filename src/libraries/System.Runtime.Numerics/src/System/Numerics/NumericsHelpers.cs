@@ -166,11 +166,11 @@ namespace System.Numerics
             }
         }
 
-        public static nuint Abs(nint a)
+        public static nuint Abs(int a)
         {
             unchecked
             {
-                nuint mask = (nuint)(a >> (nint.Size * 8 - 1));
+                nuint mask = (nuint)(a >> 31);
                 return ((nuint)a ^ mask) - mask;
             }
         }
