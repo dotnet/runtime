@@ -11,7 +11,7 @@ namespace System.Threading
 
         [CLSCompliant(false)]
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
-            new PreAllocatedOverlapped(callback, state, pinData);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
 
         public void Dispose() { }
     }
