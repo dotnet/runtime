@@ -57,10 +57,10 @@ internal static class DumpTestHelpers
     }
 
     /// <summary>
-    /// Finds the thread that called FailFast by walking each thread's stack and looking
-    /// for a frame whose method name contains "FailFast". Asserts if no such thread is found.
+    /// Finds a thread that has a frame whose method name contains the given
+    /// <paramref name="methodNameSubstring"/>. Asserts if no such thread is found.
     /// </summary>
-    public static ThreadData FindFailFastThread(ContractDescriptorTarget target)
+    public static ThreadData FindThreadWithMethod(ContractDescriptorTarget target, string methodNameSubstring)
     {
         IThread threadContract = target.Contracts.Thread;
         IStackWalk stackWalk = target.Contracts.StackWalk;
@@ -75,14 +75,23 @@ internal static class DumpTestHelpers
             {
                 TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
                 string? name = GetMethodName(target, methodDescPtr);
-                if (name is not null && name.Contains("FailFast"))
+                if (name is not null && name.Contains(methodNameSubstring))
                     return threadData;
             }
 
             currentThreadPtr = threadData.NextThread;
         }
 
-        Assert.Fail("Could not find a thread with FailFast on the stack");
+        Assert.Fail($"Could not find a thread with '{methodNameSubstring}' on the stack");
         return default;
+    }
+
+    /// <summary>
+    /// Finds the thread that called FailFast by walking each thread's stack and looking
+    /// for a frame whose method name contains "FailFast". Asserts if no such thread is found.
+    /// </summary>
+    public static ThreadData FindFailFastThread(ContractDescriptorTarget target)
+    {
+        return FindThreadWithMethod(target, "FailFast");
     }
 }

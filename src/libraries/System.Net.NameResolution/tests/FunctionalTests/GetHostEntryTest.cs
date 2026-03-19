@@ -31,7 +31,7 @@ namespace System.Net.NameResolution.Tests
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
             !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst;
 
-        [ConditionalTheory(nameof(GetHostEntryWorks))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
@@ -79,7 +79,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(nameof(GetHostEntryWorks))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
@@ -108,7 +108,7 @@ namespace System.Net.NameResolution.Tests
 
         public static bool GetHostEntry_DisableIPv6_Condition = GetHostEntryWorks && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntry_DisableIPv6_Condition))]
         [InlineData("", false)]
         [InlineData("", true)]
         [InlineData(TestSettings.LocalHost, false)]
@@ -131,7 +131,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntry_DisableIPv6_Condition))]
         [InlineData(false)]
         [InlineData(true)]
         public void GetHostEntry_DisableIPv6_AddressFamilyInterNetworkV6_ReturnsEmpty(bool useAsyncOuter)

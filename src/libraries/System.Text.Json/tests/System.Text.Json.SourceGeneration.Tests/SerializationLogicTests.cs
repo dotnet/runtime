@@ -138,7 +138,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.False(context.FastPathCalled);
             string json = JsonSerializer.Serialize(person, context.NullablePersonStruct);
             Assert.True(context.FastPathCalled);
-            JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+            JsonTestHelper.AssertJsonEqual("""{"FirstName":"Jane","LastName":"Doe"}""", json);
         }
 
         internal partial class NullablePersonContext : JsonSerializerContext

@@ -191,9 +191,6 @@ private:
 
             // Stub is not active and will not become active, call counting complete, promoted, stub may be deleted
             Complete,
-
-            // Call counting is disabled, only used for the default code version to indicate that it is to be optimized
-            Disabled
         };
 
     private:
@@ -203,10 +200,7 @@ private:
         Stage m_stage;
 
     #ifndef DACCESS_COMPILE
-    private:
-        CallCountingInfo(NativeCodeVersion codeVersion);
     public:
-        static CallCountingInfo *CreateWithCallCountingDisabled(NativeCodeVersion codeVersion);
         CallCountingInfo(NativeCodeVersion codeVersion, CallCount callCountThreshold);
         ~CallCountingInfo();
     #endif
@@ -353,13 +347,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-public:
-    bool IsCallCountingEnabled(NativeCodeVersion codeVersion);
-
 #ifndef DACCESS_COMPILE
-public:
-    void DisableCallCounting(NativeCodeVersion codeVersion);
-
 public:
     static bool SetCodeEntryPoint(
         NativeCodeVersion activeCodeVersion,

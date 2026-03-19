@@ -45,8 +45,12 @@ namespace System.Net.Mail
             _supportedAuth = SupportedAuth.None;
             foreach (string extension in extensions)
             {
-                if (string.Compare(extension, 0, AuthExtension, 0,
-                    SizeOfAuthExtension, StringComparison.OrdinalIgnoreCase) == 0)
+                if (extension is null)
+                {
+                    continue;
+                }
+
+                if (extension.StartsWith(AuthExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     // remove the AUTH text including the following character
                     // to ensure that split only gets the modules supported
@@ -67,15 +71,15 @@ namespace System.Net.Mail
                         }
                     }
                 }
-                else if (string.Compare(extension, 0, "dsn ", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (extension.StartsWith("dsn", StringComparison.OrdinalIgnoreCase))
                 {
                     _dsnEnabled = true;
                 }
-                else if (string.Compare(extension, 0, "STARTTLS", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (extension.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase))
                 {
                     _serverSupportsStartTls = true;
                 }
-                else if (string.Compare(extension, 0, "SMTPUTF8", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (extension.StartsWith("SMTPUTF8", StringComparison.OrdinalIgnoreCase))
                 {
                     _serverSupportsEai = true;
                 }

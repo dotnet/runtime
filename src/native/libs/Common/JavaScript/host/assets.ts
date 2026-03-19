@@ -9,12 +9,25 @@ import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
-    // WASM-TODO: https://github.com/dotnet/runtime/issues/122921
+    const lastSlash = virtualPath.lastIndexOf("/");
+    let parentDirectory = lastSlash > 0
+        ? virtualPath.substring(0, lastSlash)
+        : browserVirtualAppBase;
+    let fileName = lastSlash > 0 ? virtualPath.substring(lastSlash + 1) : virtualPath;
+    if (fileName.startsWith("/")) {
+        fileName = fileName.substring(1);
+    }
+    if (!parentDirectory.startsWith("/")) {
+        parentDirectory = browserVirtualAppBase + parentDirectory;
+    }
+
+    _ems_.dotnetLogger.debug(`Registering PDB '${fileName}' in directory '${parentDirectory}'`);
+    _ems_.FS.createPath("/", parentDirectory, true, true);
+    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
 }
 
-export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
+export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
     const sp = _ems_.stackSave();
     try {
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
@@ -25,10 +38,9 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
 
-        const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
-        _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (name: '${name}') at ${ptr.toString(16)} length ${bytes.length}`);
+        _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (shortName: '${shortName}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
-        loadedAssemblies.set(name, { ptr, length: bytes.length });
+        loadedAssemblies.set(shortName, { ptr, length: bytes.length });
     } finally {
         _ems_.stackRestore(sp);
     }
@@ -69,7 +81,9 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
         const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
         getWebcilPayload(payloadPtr, payloadSize);
 
-        const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
+        const name = virtualPath.startsWith(browserVirtualAppBase)
+            ? virtualPath.substring(browserVirtualAppBase.length)
+            : virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
         _ems_.dotnetLogger.debug(`Registered Webcil assembly '${virtualPath}' (name: '${name}') at ${payloadPtr.toString(16)} length ${payloadSize}`);
         loadedAssemblies.set(virtualPath, { ptr: payloadPtr, length: payloadSize });
         loadedAssemblies.set(name, { ptr: payloadPtr, length: payloadSize });
@@ -78,7 +92,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     }
 }
 
-export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
+export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr): boolean {
     const path = _ems_.UTF8ToString(pathPtr);
     const assembly = loadedAssemblies.get(path);
     if (assembly) {

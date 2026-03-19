@@ -63,10 +63,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Init-only properties can be serialized.
             object obj = Activator.CreateInstance(type);
             property.SetValue(obj, 1);
-            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
+            Assert.Equal("""{"MyInt":1}""", await Serializer.SerializeWrapper(obj, type));
 
             // Deserialization is now supported for all access levels.
-            obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            obj = await Serializer.DeserializeWrapper("""{"MyInt":1}""", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
         }
 

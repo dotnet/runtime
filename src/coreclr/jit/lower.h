@@ -28,9 +28,6 @@ public:
 #ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_Lower))
 #endif
-#ifdef TARGET_WASM
-        , m_stackificationStack(compiler->getAllocator(CMK_Lower))
-#endif
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
         assert(m_regAlloc != nullptr);
@@ -142,7 +139,7 @@ private:
     unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
 
     void     LowerBlock(BasicBlock* block);
-    void     AfterLowerBlock();
+    void     AfterLowerBlocks();
     GenTree* LowerNode(GenTree* node);
 
     bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
@@ -463,6 +460,7 @@ private:
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    bool     TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBaseType);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
@@ -632,10 +630,6 @@ private:
     };
     ArrayStack<SavedIndir> m_blockIndirs;
     bool                   m_ffrTrashed;
-#endif
-
-#ifdef TARGET_WASM
-    ArrayStack<GenTree*> m_stackificationStack;
 #endif
 };
 

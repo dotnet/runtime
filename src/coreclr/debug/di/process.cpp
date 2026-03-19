@@ -416,7 +416,9 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     IMDInternalImport * pMDII = NULL;
 
     // First, see if the debugger can locate the exact metadata we want.
-    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath))
+    bool _metaDataFileInfoResult;
+    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath, &_metaDataFileInfoResult));
+    if (_metaDataFileInfoResult)
     {
         _ASSERTE(filePath.IsSet());
 
@@ -703,7 +705,7 @@ CordbProcess::CreateDacDbiInterface()
     m_pDacPrimitives = pInterfacePtr;
 
     // Setup DAC target consistency checking based on what we're using for DBI
-    m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency );
+    IfFailThrow(m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency ));
 }
 
 //---------------------------------------------------------------------------------------
@@ -1832,7 +1834,7 @@ HRESULT CordbProcess::Init()
             {
                 // Invoke DAC primitive.
                 _ASSERTE(m_pDacPrimitives != NULL);
-                fIsLSStarted = m_pDacPrimitives->IsLeftSideInitialized();
+                IfFailThrow(m_pDacPrimitives->IsLeftSideInitialized(&fIsLSStarted));
             }
             else
             {
@@ -1957,7 +1959,7 @@ void CordbProcess::QueueManagedAttachIfNeededWorker()
     if (m_fDoDelayedManagedAttached && GetShim()->GetAttached())
     {
         RSLockHolder lockHolder(&this->m_processMutex);
-        GetDAC()->MarkDebuggerAttachPending();
+        IfFailThrow(GetDAC()->MarkDebuggerAttachPending());
 
         hrQueue = this->QueueManagedAttach();
     }
@@ -2108,7 +2110,8 @@ CordbThread * CordbProcess::TryLookupThreadByVolatileOSId(DWORD dwThreadId)
         _ASSERTE(pThread != NULL);
 
         // Get the OS tid. This returns 0 if the thread is switched out.
-        DWORD dwThreadId2 = GetDAC()->TryGetVolatileOSThreadID(pThread->m_vmThreadToken);
+        DWORD dwThreadId2;
+        IfFailThrow(GetDAC()->TryGetVolatileOSThreadID(pThread->m_vmThreadToken, &dwThreadId2));
         if (dwThreadId2 == dwThreadId)
         {
             return pThread;
@@ -2247,7 +2250,9 @@ HRESULT CordbProcess::EnumerateHeap(ICorDebugHeapEnum **ppObjects)
 
     EX_TRY
     {
-        if (m_pDacPrimitives->AreGCStructuresValid())
+        bool gcValid;
+        IfFailThrow(m_pDacPrimitives->AreGCStructuresValid(&gcValid));
+        if (gcValid)
         {
             CordbHeapEnum *pHeapEnum = new CordbHeapEnum(this);
             GetContinueNeuterList()->Add(this, pHeapEnum);
@@ -2274,7 +2279,7 @@ HRESULT CordbProcess::GetGCHeapInformation(COR_HEAPINFO *pHeapInfo)
 
     EX_TRY
     {
-        GetDAC()->GetGCHeapInformation(pHeapInfo);
+        IfFailThrow(GetDAC()->GetGCHeapInformation(pHeapInfo));
     }
     EX_CATCH_HRESULT(hr);
 
@@ -2328,7 +2333,9 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
 
     EX_TRY
     {
-        if (!m_pDacPrimitives->IsValidObject(addr))
+        bool validObj;
+        IfFailThrow(m_pDacPrimitives->IsValidObject(addr, &validObj));
+        if (!validObj)
         {
             hr = CORDBG_E_CORRUPT_OBJECT;
         }
@@ -2351,7 +2358,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(cdbAppDomain != NULL);
 
                 DebuggerIPCE_ObjectData objData;
-                m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, cdbAppDomain->GetADToken(), &objData);
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, cdbAppDomain->GetADToken(), &objData));
 
                 NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
@@ -2448,7 +2455,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
     EX_TRY
     {
         DebuggerIPCE_ExpandedTypeData data;
-        GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data);
+        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
@@ -2594,7 +2601,9 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
     EX_TRY
     {
-        if (!m_pDacPrimitives->IsValidObject(continuationAddress))
+        bool validObj;
+        IfFailThrow(m_pDacPrimitives->IsValidObject(continuationAddress, &validObj));
+        if (!validObj)
         {
             // throw if not a valid object
             ThrowHR(E_INVALIDARG);
@@ -2628,14 +2637,16 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
     VMPTR_DomainAssembly domainAssembly;
 
     HRESULT hr = E_FAIL;
-    if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly))
+    bool _appDomainResult;
+    IfFailThrow(GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly, &_appDomainResult));
+    if (_appDomainResult)
     {
         CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
 
         DebuggerIPCE_ExpandedTypeData data;
-        GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, appDomain, addr, &data);
+        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, appDomain, addr, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
@@ -2673,7 +2684,7 @@ void CordbRefEnum::Neuter()
     {
         if (mRefHandle)
         {
-            GetProcess()->GetDAC()->DeleteRefWalk(mRefHandle);
+            IfFailThrow(GetProcess()->GetDAC()->DeleteRefWalk(mRefHandle));
             mRefHandle = 0;
         }
     }
@@ -2722,7 +2733,7 @@ HRESULT CordbRefEnum::Reset()
     {
         if (mRefHandle)
         {
-            GetProcess()->GetDAC()->DeleteRefWalk(mRefHandle);
+            IfFailThrow(GetProcess()->GetDAC()->DeleteRefWalk(mRefHandle));
             mRefHandle = 0;
         }
     }
@@ -2889,7 +2900,7 @@ void CordbHeapEnum::Clear()
     {
         if (mHeapHandle)
         {
-            GetProcess()->GetDAC()->DeleteHeapWalk(mHeapHandle);
+            IfFailThrow(GetProcess()->GetDAC()->DeleteHeapWalk(mHeapHandle));
             mHeapHandle = 0;
         }
     }
@@ -3074,7 +3085,7 @@ HRESULT CordbProcess::Detach()
             HRESULT hrIgnore = S_OK;
             EX_TRY
             {
-                GetDAC()->MarkDebuggerAttached(FALSE);
+                IfFailThrow(GetDAC()->MarkDebuggerAttached(FALSE));
             }
             EX_CATCH_HRESULT(hrIgnore);
         }
@@ -4486,10 +4497,10 @@ void CordbProcess::GetAssembliesInLoadOrder(
     ShimAssemblyCallbackData data(pAppDomainInternal, pAssemblies, countAssemblies);
 
     // Enumerate through and fill out pAssemblies table.
-    GetDAC()->EnumerateAssembliesInAppDomain(
+    IfFailThrow(GetDAC()->EnumerateAssembliesInAppDomain(
         pAppDomainInternal->GetADToken(),
         ShimAssemblyCallbackData::Callback,
-        &data); // user data
+        &data)); // user data
 
     // pAssemblies array has now been updated.
 }
@@ -4635,10 +4646,10 @@ void CordbProcess::GetModulesInLoadOrder(
     ShimModuleCallbackData data(pAssemblyInternal, pModules, countModules);
 
     // Enumerate through and fill out pModules table.
-    GetDAC()->EnumerateModulesInAssembly(
+    IfFailThrow(GetDAC()->EnumerateModulesInAssembly(
         pAssemblyInternal->GetDomainAssemblyPtr(),
         ShimModuleCallbackData::Callback,
-        &data); // user data
+        &data)); // user data
 
     // pModules array has now been updated.
 }
@@ -4858,9 +4869,9 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
     callbackData.m_pThis = this;
     callbackData.m_vmAppDomainDeleted = vmAppDomainDeleted;
 
-    GetDAC()->EnumerateAppDomains(
+    IfFailThrow(GetDAC()->EnumerateAppDomains(
         CordbProcess::DbgAssertAppDomainDeletedCallback,
-        &callbackData);
+        &callbackData));
 }
 
 #endif  // _DEBUG
@@ -5940,7 +5951,7 @@ void CordbProcess::RawDispatchEvent(
             EX_TRY
             {
                 // the left side has signaled that we should test whether pEvent->TestCrstData.vmCrst is held
-                GetDAC()->TestCrst(pEvent->TestCrstData.vmCrst);
+                IfFailThrow(GetDAC()->TestCrst(pEvent->TestCrstData.vmCrst));
             }
             EX_CATCH_HRESULT(hr);
 
@@ -5972,7 +5983,7 @@ void CordbProcess::RawDispatchEvent(
             EX_TRY
             {
                 // the left side has signaled that we should test whether pEvent->TestRWLockData.vmRWLock is held
-                GetDAC()->TestRWLock(pEvent->TestRWLockData.vmRWLock);
+                IfFailThrow(GetDAC()->TestRWLock(pEvent->TestRWLockData.vmRWLock));
             }
             EX_CATCH_HRESULT(hr);
 
@@ -6038,7 +6049,7 @@ void CordbProcess::PrepopulateThreadsOrThrow()
     if (IsDacInitialized())
     {
         STRESS_LOG0(LF_CORDB, LL_INFO1000, "PrepopulateThreadsOrThrow()\n");
-        GetDAC()->EnumerateThreads(ThreadEnumerationCallback, this);
+        IfFailThrow(GetDAC()->EnumerateThreads(ThreadEnumerationCallback, this));
     }
 }
 
@@ -6318,7 +6329,8 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
 
         // Check against DAC primitives
         {
-            BOOL fIsStub2 = GetDAC()->IsTransitionStub(address);
+            BOOL fIsStub2;
+            IfFailThrow(GetDAC()->IsTransitionStub(address, &fIsStub2));
             (void)fIsStub2; //prevent "unused variable" error from GCC
             CONSISTENCY_CHECK_MSGF(*pfTransitionStub == fIsStub2, ("IsStub2 failed, DAC2:%d, IPC:%d, addr:0x%p", (int) fIsStub2, (int) *pfTransitionStub, CORDB_ADDRESS_TO_PTR(address)));
 
@@ -7155,7 +7167,8 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
                 EX_TRY
                 {
                     // We should be able to double check w/ DAC that this really is outside of the runtime.
-                    IDacDbiInterface::AddressType addrType = GetDAC()->GetAddressType(address);
+                    IDacDbiInterface::AddressType addrType;
+                    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
                     CONSISTENCY_CHECK_MSGF(addrType == IDacDbiInterface::kAddressUnrecognized, ("Bad address type = %d", addrType));
                 }
                 EX_CATCH_HRESULT(hrDac);
@@ -7543,7 +7556,7 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
             // This is not technically necessary for Mac debugging.  The event channel doesn't rely on
             // knowing the target address of the DCB on the LS.
             CORDB_ADDRESS pLeftSideDCB = (CORDB_ADDRESS)NULL;
-            pLeftSideDCB = (GetDAC()->GetDebuggerControlBlockAddress());
+            IfFailThrow(GetDAC()->GetDebuggerControlBlockAddress(&pLeftSideDCB));
             if (pLeftSideDCB == (CORDB_ADDRESS)NULL)
             {
                 *pfBlockExists = false;
@@ -8779,7 +8792,8 @@ CordbAppDomain * CordbProcess::GetAppDomain()
         return appDomain;
     }
 
-    VMPTR_AppDomain vmAppDomain = GetDAC()->GetCurrentAppDomain();
+    VMPTR_AppDomain vmAppDomain;
+    IfFailThrow(GetDAC()->GetCurrentAppDomain(&vmAppDomain));
     appDomain = LookupOrCreateAppDomain(vmAppDomain);
     return appDomain;
 }
@@ -8886,9 +8900,9 @@ void CordbProcess::PrepopulateAppDomainsOrThrow()
     }
 
     // DD-primitive  that invokes a callback.  This may throw.
-    GetDAC()->EnumerateAppDomains(
+    IfFailThrow(GetDAC()->EnumerateAppDomains(
         CordbProcess::AppDomainEnumerationCallback,
-        this);
+        this));
 }
 
 //---------------------------------------------------------------------------------------
@@ -11154,7 +11168,7 @@ void CordbProcess::FilterClrNotification(
             InitializeDac();
 
             // @dbgtodo 'attach-bit': we don't want the debugger automatically invading the process.
-            GetDAC()->MarkDebuggerAttached(TRUE);
+            IfFailThrow(GetDAC()->MarkDebuggerAttached(TRUE));
         }
         else if (pManagedEvent->type == DB_IPCE_SYNC_COMPLETE)
         {
@@ -11914,7 +11928,7 @@ void CordbProcess::ContinueStatusChanged(DWORD dwThreadId, CORDB_CONTINUE_STATUS
 //---------------------------------------------------------------------------------------
 void CordbProcess::RequestSyncAtEvent()
 {
-    GetDAC()->RequestSyncAtEvent();
+    IfFailThrow(GetDAC()->RequestSyncAtEvent());
 }
 
 //---------------------------------------------------------------------------------------
@@ -12658,7 +12672,7 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
 
     IDacDbiInterface::AddressType addrType;
 
-    addrType = GetDAC()->GetAddressType(address);
+    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
     bool fIsCorCode =((addrType == IDacDbiInterface::kAddressManagedMethod) ||
                       (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
                       (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
@@ -14565,7 +14579,9 @@ void CordbWin32EventThread::AttachProcess()
     EX_TRY
     {
         // Don't allow attach if any metadata/IL updates have been applied
-        if (pProcess->GetDAC()->MetadataUpdatesApplied())
+        bool _metadataUpdatesApplied;
+        IfFailThrow(pProcess->GetDAC()->MetadataUpdatesApplied(&_metadataUpdatesApplied));
+        if (_metadataUpdatesApplied)
         {
             hr = CORDBG_E_ASSEMBLY_UPDATES_APPLIED;
             goto LExit;
@@ -15370,13 +15386,18 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
         }
 
         IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-        VMPTR_OBJECTHANDLE vmObjHandle = pDAC->GetVmObjectHandle(gcHandle);
-        if(!pDAC->IsVmObjectHandleValid(vmObjHandle))
+        VMPTR_OBJECTHANDLE vmObjHandle;
+        IfFailThrow(pDAC->GetVmObjectHandle(gcHandle, &vmObjHandle));
+        BOOL isValid;
+        IfFailThrow(pDAC->IsVmObjectHandleValid(vmObjHandle, &isValid));
+        if(!isValid)
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }
-        ULONG appDomainId = pDAC->GetAppDomainIdFromVmObjectHandle(vmObjHandle);
-        VMPTR_AppDomain vmAppDomain = pDAC->GetAppDomainFromId(appDomainId);
+        ULONG appDomainId;
+        IfFailThrow(pDAC->GetAppDomainIdFromVmObjectHandle(vmObjHandle, &appDomainId));
+        VMPTR_AppDomain vmAppDomain;
+        IfFailThrow(pDAC->GetAppDomainFromId(appDomainId, &vmAppDomain));
 
         RSLockHolder lockHolder(GetProcessLock());
         CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(vmAppDomain);
@@ -15519,7 +15540,7 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Do
     if (pAppDomain != NULL)
     {
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule));
         _ASSERTE(!vmModule.IsNull());
         CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)
@@ -15555,7 +15576,7 @@ CordbModule * CordbProcess::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAs
     _ASSERTE(!vmDomainAssembly.IsNull());
 
     DomainAssemblyInfo data;
-    GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &data); // throws
+    IfFailThrow(GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &data));
 
     CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(data.vmAppDomain);
     return pAppDomain->LookupOrCreateModule(vmDomainAssembly);
@@ -15654,7 +15675,7 @@ HRESULT CordbProcess::GetAttachStateFlags(CLR_DEBUGGING_PROCESS_FLAGS *pFlags)
         if(pFlags == NULL)
             hr = E_POINTER;
         else
-            *pFlags = GetDAC()->GetAttachStateFlags();
+            IfFailThrow(GetDAC()->GetAttachStateFlags(pFlags));
     }
     PUBLIC_API_END(hr);
 
@@ -15733,7 +15754,9 @@ bool CordbProcess::IsThreadSuspendedOrHijacked(ICorDebugThread * pICorDebugThrea
     PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM(this);
 
     CordbThread * pCordbThread = static_cast<CordbThread *> (pICorDebugThread);
-    return GetDAC()->IsThreadSuspendedOrHijacked(pCordbThread->m_vmThreadToken);
+    bool _isSuspendedOrHijacked;
+    IfFailThrow(GetDAC()->IsThreadSuspendedOrHijacked(pCordbThread->m_vmThreadToken, &_isSuspendedOrHijacked));
+    return _isSuspendedOrHijacked;
 }
 
 void CordbProcess::HandleControlCTrapResult(HRESULT result)

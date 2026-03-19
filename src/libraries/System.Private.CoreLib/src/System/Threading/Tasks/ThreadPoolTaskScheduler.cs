@@ -12,6 +12,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -42,7 +43,7 @@ namespace System.Threading.Tasks
         protected internal override void QueueTask(Task task)
         {
             TaskCreationOptions options = task.Options;
-            if (Thread.IsMultithreadingSupported && (options & TaskCreationOptions.LongRunning) != 0)
+            if (RuntimeFeature.IsMultithreadingSupported && (options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
                 new Thread(s_longRunningThreadWork)

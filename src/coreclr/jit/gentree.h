@@ -2513,6 +2513,9 @@ public:
     template <typename TVisitor>
     VisitResult VisitOperands(TVisitor visitor);
 
+    template <typename TVisitor>
+    VisitResult VisitOperandUses(TVisitor visitor);
+
 public:
     bool Precedes(GenTree* other);
 

@@ -47,7 +47,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Dictionary<ITypeSymbol, TypeGenerationSpec> _generatedTypes = new(SymbolEqualityComparer.Default);
 #pragma warning restore
 
-            public List<DiagnosticInfo> Diagnostics { get; } = new();
+            public List<Diagnostic> Diagnostics { get; } = new();
             private Location? _contextClassLocation;
 
             public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object?[]? messageArgs)
@@ -60,7 +60,7 @@ namespace System.Text.Json.SourceGeneration
                     location = _contextClassLocation;
                 }
 
-                Diagnostics.Add(DiagnosticInfo.Create(descriptor, location, messageArgs));
+                Diagnostics.Add(Diagnostic.Create(descriptor, location, messageArgs));
             }
 
             public Parser(KnownTypeSymbols knownSymbols)

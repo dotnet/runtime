@@ -656,7 +656,7 @@ namespace System.Net.Http.Functional.Tests
             public NetworkCredential? GetCredential(Uri uri, string authType) => null;
         }
 
-        [ConditionalTheory(nameof(SupportsSeparateHttpSpansForRedirects))]
+        [ConditionalTheory(typeof(HttpMetricsTest), nameof(SupportsSeparateHttpSpansForRedirects))]
         [InlineData(0)] // null
         [InlineData(1)] // CredentialCache
         [InlineData(2)] // CustomCredentials
@@ -1369,7 +1369,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [ConditionalFact(nameof(SupportsSeparateHttpSpansForRedirects))]
+        [ConditionalFact(typeof(HttpMetricsTest_Http20), nameof(SupportsSeparateHttpSpansForRedirects))]
         public Task RequestDuration_Redirect_RecordedForEachHttpSpan()
         {
             return GetFactoryForVersion(HttpVersion.Version11).CreateServerAsync((originalServer, originalUri) =>
@@ -1509,7 +1509,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
 
-        [ConditionalFact(nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
+        [ConditionalFact(typeof(HttpMetricsTest_DefaultMeter), nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
             await RemoteExecutor.Invoke(static async Task () =>

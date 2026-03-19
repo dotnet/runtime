@@ -1491,6 +1491,20 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
         [SupportedOSPlatform("windows")]
         internal static object GetIEnumeratorToEnumVariantMarshaler() => EnumeratorToEnumVariantMarshaler.GetInstance(string.Empty);
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = GetIEnumeratorToEnumVariantMarshaler();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
 #endif
 
         internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
