@@ -177,7 +177,10 @@ namespace ComWrappersTests.GlobalInstance
                     Assert.NotNull(o);
                 }
 
-                throw new Exception() { HResult = ReleaseObjectsCallAck };
+                if (ReturnInvalid)
+                {
+                    throw new Exception() { HResult = ReleaseObjectsCallAck };
+                }
             }
 
             private unsafe ComInterfaceEntry* ComputeVtablesForTestObject(Test obj, out int count)
@@ -461,6 +464,26 @@ namespace ComWrappersTests.GlobalInstance
             // Trigger the thread lifetime end API and verify the callback occurs.
             int hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
             Assert.Equal(GlobalComWrappers.ReleaseObjectsCallAck, hr);
+
+            // Validate that the RCW cache gets cleared when we call NotifyEndOfReferenceTrackingOnThread
+            GlobalComWrappers.Instance.ReturnInvalid = false;
+            IntPtr tracker = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            object rcw = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerSupport);
+
+            // Make sure that we keep the tracker object alive even after we notify end of reference tracking on this thread.
+            Marshal.AddRef(tracker);
+
+            const int S_OK = 0;
+            Assert.Equal(S_OK, MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread());
+
+            // We should get a new RCW after we've released the reference tracked objects on this thread.
+            object rcwNew = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(tracker, CreateObjectFlags.TrackerSupport);
+
+            // Release the extra ref we added above so we don't leak the object after the test.
+            Marshal.Release(tracker);
+
+            Assert.NotSame(rcw, rcwNew);
         }
     }
 }
