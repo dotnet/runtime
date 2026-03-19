@@ -111,17 +111,47 @@ internal partial class StackWalk_1 : IStackWalk
         StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
         FrameIterator frameIterator = new(_target, threadData);
 
-        // Skip Frames below the initial managed frame's caller SP, matching the
-        // native DAC behavior. The native's CheckForSkippedFrames uses
-        // EnsureCallerContextIsValid + GetSP(pCallerContext) to determine which
-        // Frames are "skipped" (between the managed frame and its caller).
-        // All Frames below this SP belong to the current managed frame or
-        // frames pushed more recently (e.g., RedirectedThreadFrame from GC stress,
-        // active InlinedCallFrames from P/Invoke calls within the method).
+        // if the next Frame is not valid and we are not in managed code, there is nothing to return
+        if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
+        {
+            yield break;
+        }
+
+        StackWalkData stackWalkData = new(context, state, frameIterator, threadData);
+
+        yield return stackWalkData.ToDataFrame();
+        stackWalkData.AdvanceIsFirst();
+
+        while (Next(stackWalkData))
+        {
+            yield return stackWalkData.ToDataFrame();
+            stackWalkData.AdvanceIsFirst();
+        }
+    }
+
+    /// <summary>
+    /// Wraps CreateStackWalk and pre-advances the FrameIterator past explicit Frames
+    /// below the initial managed frame's caller SP.
+    ///
+    /// This is separated from CreateStackWalk because ClrDataStackWalk must yield the
+    /// same frame sequence as the legacy DAC (including these initial skipped frames),
+    /// whereas WalkStackReferences should skip them to match the native
+    /// DacStackReferenceWalker behavior.
+    /// </summary>
+    private IEnumerable<IStackDataFrameHandle> CreateStackWalkForGCReferences(ThreadData threadData)
+    {
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+        FillContextFromThread(context, threadData);
+        StackWalkState state = IsManaged(context.InstructionPointer, out _) ? StackWalkState.SW_FRAMELESS : StackWalkState.SW_FRAME;
+        FrameIterator frameIterator = new(_target, threadData);
+
+        // Skip Frames below the initial managed frame's caller SP, matching the native
+        // DacStackReferenceWalker behavior. All Frames below this SP belong to the
+        // current managed frame or frames pushed more recently (e.g.,
+        // RedirectedThreadFrame from GC stress, active InlinedCallFrames).
         TargetPointer skipBelowSP;
         if (state == StackWalkState.SW_FRAMELESS)
         {
-            // Compute the caller SP by unwinding the initial managed frame.
             IPlatformAgnosticContext callerCtx = context.Clone();
             callerCtx.Unwind(_target);
             skipBelowSP = callerCtx.StackPointer;
@@ -135,7 +165,6 @@ internal partial class StackWalk_1 : IStackWalk
             frameIterator.Next();
         }
 
-        // if the next Frame is not valid and we are not in managed code, there is nothing to return
         if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
         {
             yield break;
@@ -157,7 +186,7 @@ internal partial class StackWalk_1 : IStackWalk
     {
         // TODO(stackref): This isn't quite right. We need to check if the FilterContext or ProfilerFilterContext
         // is set and prefer that if either is not null.
-        IEnumerable<IStackDataFrameHandle> stackFrames = ((IStackWalk)this).CreateStackWalk(threadData);
+        IEnumerable<IStackDataFrameHandle> stackFrames = CreateStackWalkForGCReferences(threadData);
         IEnumerable<StackDataFrameHandle> frames = stackFrames.Select(AssertCorrectHandle);
         IEnumerable<GCFrameData> gcFrames = Filter(frames);
 
