@@ -1570,7 +1570,11 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        TypeRef parameterTypeRef = EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
+                        // Don't enqueue out parameter types for JSON contract generation — they
+                        // aren't deserialized and may reference unsupported types (e.g. Task).
+                        TypeRef parameterTypeRef = parameterInfo.RefKind == RefKind.Out
+                            ? new TypeRef(parameterInfo.Type)
+                            : EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
 
                         // out parameters don't receive values from JSON, so they have ArgsIndex = -1.
                         int currentArgsIndex = parameterInfo.RefKind == RefKind.Out ? -1 : argsIndex++;

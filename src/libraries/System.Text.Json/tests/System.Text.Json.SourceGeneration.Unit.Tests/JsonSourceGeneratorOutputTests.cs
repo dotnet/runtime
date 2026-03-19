@@ -338,5 +338,29 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """, nameof(ByRefConstructorParameters));
         }
+
+        [Fact]
+        public void OutParameterWithUnsupportedType()
+        {
+            VerifyAgainstBaseline("""
+                using System;
+                using System.Threading.Tasks;
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(OutTask))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class OutTask
+                    {
+                        public OutTask(string name, out Task pending)
+                        {
+                            Name = name;
+                            pending = Task.CompletedTask;
+                        }
+                        public string Name { get; set; }
+                    }
+                }
+                """, nameof(OutParameterWithUnsupportedType));
+        }
     }
 }
