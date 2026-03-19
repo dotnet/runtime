@@ -249,7 +249,6 @@ void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
         }
         if (i < count)
         {
-            CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
             FlushPendingEntries();
         }
     }
@@ -265,16 +264,18 @@ void UnwindInfoTable::FlushPendingEntries()
     }
     CONTRACTL_END;
 
-    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
-
-    if (hHandle == NULL)
     {
-        // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
-        // RtlGrowFunctionTable with a null handle. Avoid copying to the local buffer as
-        // well since it won't be published anyway.
-        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
-        cPendingCount = 0;
-        return;
+        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+
+        if (hHandle == NULL)
+        {
+            // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
+            // RtlGrowFunctionTable with a null handle. Avoid copying to the local buffer as
+            // well since it won't be published anyway.
+            CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+            cPendingCount = 0;
+            return;
+        }
     }
 
     // Grab the pending entries under the pending lock, then release it so
@@ -307,81 +308,89 @@ void UnwindInfoTable::FlushPendingEntries()
         localPending[j] = key;
     }
 
-    // Fast path: if all pending entries can be appended in order with room to spare,
-    // we can just append and call RtlGrowFunctionTable.
-    if (cTableCurCount + localPendingCount <= cTableMaxCount
-        && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < localPending[0].BeginAddress))
+    T_RUNTIME_FUNCTION* oldPTable = NULL;
     {
-        memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
-        cTableCurCount += localPendingCount;
-        pRtlGrowFunctionTable(hHandle, cTableCurCount);
+        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
 
-        STRESS_LOG5(LF_JIT, LL_INFO1000, "FlushPendingEntries Handle: %p [%p, %p] APPENDED 0x%x entries, now 0x%x\n",
-            hHandle, iRangeStart, iRangeEnd, localPendingCount, cTableCurCount);
-        return;
-    }
-
-    // Merge main table and pending entries.
-    // Calculate the new table size: live entries from main table + all pending entries
-    ULONG liveCount = cTableCurCount - cDeletedEntries;
-    ULONG newCount = liveCount + localPendingCount;
-    ULONG desiredSpace = newCount * 5 / 4 + 1;  // Increase by 20%
-
-    STRESS_LOG7(LF_JIT, LL_INFO100, "FlushPendingEntries Handle: %p [%p, %p] Merging 0x%x live + 0x%x pending into 0x%x max, from 0x%x\n",
-        hHandle, iRangeStart, iRangeEnd, liveCount, localPendingCount, desiredSpace, cTableMaxCount);
-
-    NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
-
-    // Merge-sort the main table and pending buffer into newPTable.
-    ULONG mainIdx = 0;
-    ULONG pendIdx = 0;
-    ULONG toIdx = 0;
-
-    while (mainIdx < cTableCurCount && pendIdx < localPendingCount)
-    {
-        // Skip deleted entries in main table
-        if (pTable[mainIdx].UnwindData == 0)
+        // Fast path: if all pending entries can be appended in order with room to spare,
+        // we can just append and call RtlGrowFunctionTable.
+        if (cTableCurCount + localPendingCount <= cTableMaxCount
+            && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < localPending[0].BeginAddress))
         {
-            mainIdx++;
-            continue;
+            memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
+            cTableCurCount += localPendingCount;
+            pRtlGrowFunctionTable(hHandle, cTableCurCount);
+
+            STRESS_LOG5(LF_JIT, LL_INFO1000, "FlushPendingEntries Handle: %p [%p, %p] APPENDED 0x%x entries, now 0x%x\n",
+                hHandle, iRangeStart, iRangeEnd, localPendingCount, cTableCurCount);
+            return;
         }
 
-        if (localPending[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
+        // Merge main table and pending entries.
+        // Calculate the new table size: live entries from main table + all pending entries
+        ULONG liveCount = cTableCurCount - cDeletedEntries;
+        ULONG newCount = liveCount + localPendingCount;
+        ULONG desiredSpace = newCount * 5 / 4 + 1;  // Increase by 20%
+
+        STRESS_LOG7(LF_JIT, LL_INFO100, "FlushPendingEntries Handle: %p [%p, %p] Merging 0x%x live + 0x%x pending into 0x%x max, from 0x%x\n",
+            hHandle, iRangeStart, iRangeEnd, liveCount, localPendingCount, desiredSpace, cTableMaxCount);
+
+        NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
+
+        // Merge-sort the main table and pending buffer into newPTable.
+        ULONG mainIdx = 0;
+        ULONG pendIdx = 0;
+        ULONG toIdx = 0;
+
+        while (mainIdx < cTableCurCount && pendIdx < localPendingCount)
+        {
+            // Skip deleted entries in main table
+            if (pTable[mainIdx].UnwindData == 0)
+            {
+                mainIdx++;
+                continue;
+            }
+
+            if (localPending[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
+            {
+                newPTable[toIdx++] = localPending[pendIdx++];
+            }
+            else
+            {
+                newPTable[toIdx++] = pTable[mainIdx++];
+            }
+        }
+
+        while (mainIdx < cTableCurCount)
+        {
+            if (pTable[mainIdx].UnwindData != 0)
+                newPTable[toIdx++] = pTable[mainIdx];
+            mainIdx++;
+        }
+
+        while (pendIdx < localPendingCount)
         {
             newPTable[toIdx++] = localPending[pendIdx++];
         }
-        else
-        {
-            newPTable[toIdx++] = pTable[mainIdx++];
-        }
+
+        _ASSERTE(toIdx == newCount);
+        _ASSERTE(toIdx <= desiredSpace);
+
+        oldPTable = pTable;
+
+        UnRegister();
+
+        pTable = newPTable.Extract();
+        cTableCurCount = toIdx;
+        cTableMaxCount = desiredSpace;
+        cDeletedEntries = 0;
+
+        // Note that there is a short time when we are not publishing...
+        Register();
     }
 
-    while (mainIdx < cTableCurCount)
-    {
-        if (pTable[mainIdx].UnwindData != 0)
-            newPTable[toIdx++] = pTable[mainIdx];
-        mainIdx++;
-    }
-
-    while (pendIdx < localPendingCount)
-    {
-        newPTable[toIdx++] = localPending[pendIdx++];
-    }
-
-    _ASSERTE(toIdx == newCount);
-    _ASSERTE(toIdx <= desiredSpace);
-
-    NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable(pTable);
-
-    UnRegister();
-
-    pTable = newPTable.Extract();
-    cTableCurCount = toIdx;
-    cTableMaxCount = desiredSpace;
-    cDeletedEntries = 0;
-
-    // Note that there is a short time when we are not publishing...
-    Register();
+    // delete[] outside the publish lock — can be expensive for large allocations across threads.
+    delete[] oldPTable;
 }
 
 /*****************************************************************************/
@@ -479,7 +488,6 @@ void UnwindInfoTable::FlushPendingEntries()
         // Flush any entries that were buffered above so the OS can unwind this
         // method immediately. Otherwise, we may end up with broken stack traces
         // for recently JITed methods.
-        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
         unwindInfo->FlushPendingEntries();
     }
 }
