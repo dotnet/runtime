@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -21,7 +20,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 1);
             Debug.Assert(bits.Length == left.Length + 1);
 
-            Add(left, bits, ref MemoryMarshal.GetReference(bits), startIndex: 0, initialCarry: right);
+            Add(left, bits, startIndex: 0, initialCarry: right);
         }
 
         public static void Add(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
@@ -30,30 +29,19 @@ namespace System.Numerics
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(bits.Length == left.Length + 1);
 
-            // Switching to managed references helps eliminating
-            // index bounds check for all buffers.
-            ref nuint resultPtr = ref MemoryMarshal.GetReference(bits);
-            ref nuint rightPtr = ref MemoryMarshal.GetReference(right);
-            ref nuint leftPtr = ref MemoryMarshal.GetReference(left);
+            // Establish cross-span length relationships so the JIT can
+            // elide bounds checks for left[i] and bits[i] in the loop.
+            _ = left[right.Length - 1];
+            _ = bits[right.Length];
 
-            int i = 0;
             nuint carry = 0;
 
-            // Executes the "grammar-school" algorithm for computing z = a + b.
-            // While calculating z_i = a_i + b_i we take care of overflow:
-            // Since a_i + b_i + c <= 2(base - 1) + 1 = 2*base - 1, our carry c
-            // has always the value 1 or 0; hence, we're safe here.
-
-            do
+            for (int i = 0; i < right.Length; i++)
             {
-                Unsafe.Add(ref resultPtr, i) = AddWithCarry(
-                    Unsafe.Add(ref leftPtr, i),
-                    Unsafe.Add(ref rightPtr, i),
-                    carry, out carry);
-                i++;
-            } while (i < right.Length);
+                bits[i] = AddWithCarry(left[i], right[i], carry, out carry);
+            }
 
-            Add(left, bits, ref resultPtr, startIndex: i, initialCarry: carry);
+            Add(left, bits, startIndex: right.Length, initialCarry: carry);
         }
 
         public static void AddSelf(Span<nuint> left, ReadOnlySpan<nuint> right)
@@ -63,18 +51,14 @@ namespace System.Numerics
             int i = 0;
             nuint carry = 0;
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
-            ref nuint leftPtr = ref MemoryMarshal.GetReference(left);
-
-            // Executes the "grammar-school" algorithm for computing z = a + b.
-            // Same as above, but we're writing the result directly to a and
-            // stop execution, if we're out of b and c is already 0.
+            if (right.Length != 0)
+            {
+                _ = left[right.Length - 1];
+            }
 
             for (; i < right.Length; i++)
             {
-                Unsafe.Add(ref leftPtr, i) = AddWithCarry(
-                    Unsafe.Add(ref leftPtr, i), right[i], carry, out carry);
+                left[i] = AddWithCarry(left[i], right[i], carry, out carry);
             }
             for (; carry != 0 && i < left.Length; i++)
             {
@@ -92,7 +76,7 @@ namespace System.Numerics
             Debug.Assert(left[0] >= right || left.Length >= 2);
             Debug.Assert(bits.Length == left.Length);
 
-            Subtract(left, bits, ref MemoryMarshal.GetReference(bits), startIndex: 0, initialBorrow: right);
+            Subtract(left, bits, startIndex: 0, initialBorrow: right);
         }
 
         public static void Subtract(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
@@ -102,27 +86,17 @@ namespace System.Numerics
             Debug.Assert(CompareActual(left, right) >= 0);
             Debug.Assert(bits.Length == left.Length);
 
-            // Switching to managed references helps eliminating
-            // index bounds check for all buffers.
-            ref nuint resultPtr = ref MemoryMarshal.GetReference(bits);
-            ref nuint rightPtr = ref MemoryMarshal.GetReference(right);
-            ref nuint leftPtr = ref MemoryMarshal.GetReference(left);
+            _ = left[right.Length - 1];
+            _ = bits[right.Length - 1];
 
-            int i = 0;
             nuint borrow = 0;
 
-            // Executes the "grammar-school" algorithm for computing z = a - b.
-
-            do
+            for (int i = 0; i < right.Length; i++)
             {
-                Unsafe.Add(ref resultPtr, i) = SubWithBorrow(
-                    Unsafe.Add(ref leftPtr, i),
-                    Unsafe.Add(ref rightPtr, i),
-                    borrow, out borrow);
-                i++;
-            } while (i < right.Length);
+                bits[i] = SubWithBorrow(left[i], right[i], borrow, out borrow);
+            }
 
-            Subtract(left, bits, ref resultPtr, startIndex: i, initialBorrow: borrow);
+            Subtract(left, bits, startIndex: right.Length, initialBorrow: borrow);
         }
 
         public static void SubtractSelf(Span<nuint> left, ReadOnlySpan<nuint> right)
@@ -135,18 +109,14 @@ namespace System.Numerics
             int i = 0;
             nuint borrow = 0;
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
-            ref nuint leftPtr = ref MemoryMarshal.GetReference(left);
-
-            // Executes the "grammar-school" algorithm for computing z = a - b.
-            // Same as above, but we're writing the result directly to a and
-            // stop execution, if we're out of b and c is already 0.
+            if (right.Length != 0)
+            {
+                _ = left[right.Length - 1];
+            }
 
             for (; i < right.Length; i++)
             {
-                Unsafe.Add(ref leftPtr, i) = SubWithBorrow(
-                    Unsafe.Add(ref leftPtr, i), right[i], borrow, out borrow);
+                left[i] = SubWithBorrow(left[i], right[i], borrow, out borrow);
             }
             for (; borrow != 0 && i < left.Length; i++)
             {
@@ -160,12 +130,14 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Add(ReadOnlySpan<nuint> left, Span<nuint> bits, ref nuint resultPtr, int startIndex, nuint initialCarry)
+        private static void Add(ReadOnlySpan<nuint> left, Span<nuint> bits, int startIndex, nuint initialCarry)
         {
             // Executes the addition for one big and one single-limb integer.
 
             int i = startIndex;
             nuint carry = initialCarry;
+
+            _ = bits[left.Length];
 
             if (left.Length <= CopyToThreshold)
             {
@@ -173,10 +145,10 @@ namespace System.Numerics
                 {
                     nuint sum = left[i] + carry;
                     carry = (sum < carry) ? (nuint)1 : (nuint)0;
-                    Unsafe.Add(ref resultPtr, i) = sum;
+                    bits[i] = sum;
                 }
 
-                Unsafe.Add(ref resultPtr, left.Length) = carry;
+                bits[left.Length] = carry;
             }
             else
             {
@@ -184,7 +156,7 @@ namespace System.Numerics
                 {
                     nuint sum = left[i] + carry;
                     carry = (sum < carry) ? (nuint)1 : (nuint)0;
-                    Unsafe.Add(ref resultPtr, i) = sum;
+                    bits[i] = sum;
                     i++;
 
                     // Once carry is set to 0 it can not be 1 anymore.
@@ -195,7 +167,7 @@ namespace System.Numerics
                     }
                 }
 
-                Unsafe.Add(ref resultPtr, left.Length) = carry;
+                bits[left.Length] = carry;
 
                 if (i < left.Length)
                 {
@@ -205,12 +177,17 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Subtract(ReadOnlySpan<nuint> left, Span<nuint> bits, ref nuint resultPtr, int startIndex, nuint initialBorrow)
+        private static void Subtract(ReadOnlySpan<nuint> left, Span<nuint> bits, int startIndex, nuint initialBorrow)
         {
             // Executes the subtraction for one big and one single-limb integer.
 
             int i = startIndex;
             nuint borrow = initialBorrow;
+
+            if (left.Length != 0)
+            {
+                _ = bits[left.Length - 1];
+            }
 
             if (left.Length <= CopyToThreshold)
             {
@@ -219,7 +196,7 @@ namespace System.Numerics
                     nuint val = left[i];
                     nuint diff = val - borrow;
                     borrow = (diff > val) ? (nuint)1 : (nuint)0;
-                    Unsafe.Add(ref resultPtr, i) = diff;
+                    bits[i] = diff;
                 }
             }
             else
@@ -229,7 +206,7 @@ namespace System.Numerics
                     nuint val = left[i];
                     nuint diff = val - borrow;
                     borrow = (diff > val) ? (nuint)1 : (nuint)0;
-                    Unsafe.Add(ref resultPtr, i) = diff;
+                    bits[i] = diff;
                     i++;
 
                     // Once borrow is set to 0 it can not be 1 anymore.
