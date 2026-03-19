@@ -1527,7 +1527,7 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
-                    await CancelStreamReadersDueToProcessExitAsync().ConfigureAwait(false);
+                    await CancelStreamReadersDueToProcessExitAsync(cancellationToken).ConfigureAwait(false);
                     return;
                 }
 
@@ -1555,14 +1555,14 @@ namespace System.Diagnostics
                 }
 
                 // Cancel stream readers after process exit with a default timeout
-                await CancelStreamReadersDueToProcessExitAsync().ConfigureAwait(false);
+                await CancelStreamReadersDueToProcessExitAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
             }
 
-            async Task CancelStreamReadersDueToProcessExitAsync()
+            async Task CancelStreamReadersDueToProcessExitAsync(CancellationToken cancellationToken)
             {
                 if (_output is not null)
                 {
