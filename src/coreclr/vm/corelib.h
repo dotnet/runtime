@@ -185,9 +185,9 @@ DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,              
 #endif // FOR_ILLINK
 
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_PtrObj_PtrException_RetVoid)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   SM_PtrLicenseInteropProxy_PtrType_PtrBool_PtrIntPtr_PtrException_RetVoid)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, SM_PtrLicenseInteropProxy_IntPtr_PtrException_RetVoid)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   IM_RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
 
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
