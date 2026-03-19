@@ -21,9 +21,9 @@ namespace System.IO
         {
             HResult = hResult;
             FileName = fileName;
-            if (requestingAssemblyChain is not null)
-                FusionLog = FileLoadException.FormatRequestingAssemblyChain(requestingAssemblyChain);
             SetMessageField();
+            if (requestingAssemblyChain is not null)
+                _message += Environment.NewLine + FileLoadException.FormatRequestingAssemblyChain(requestingAssemblyChain);
         }
     }
 }

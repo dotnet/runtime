@@ -26,9 +26,9 @@ namespace System.IO
         {
             HResult = hResult;
             FileName = fileName;
-            if (requestingAssemblyChain is not null)
-                FusionLog = FormatRequestingAssemblyChain(requestingAssemblyChain);
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
+            if (requestingAssemblyChain is not null)
+                _message += Environment.NewLine + FormatRequestingAssemblyChain(requestingAssemblyChain);
         }
 
         internal static string FormatRequestingAssemblyChain(string requestingAssemblyChain)
@@ -47,7 +47,7 @@ namespace System.IO
                     : requestingAssemblyChain.Substring(start);
 
                 if (result.Length > 0)
-                    result.AppendLine();
+                    result.Append(Environment.NewLine);
                 result.Append(SR.Format(SR.IO_FileLoad_RequestingAssembly, name));
 
                 start = end >= 0 ? end + 1 : requestingAssemblyChain.Length;
