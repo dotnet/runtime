@@ -74,8 +74,7 @@ namespace System.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetCommandLineArgs_Fallback_Returns()
         {
-            if (PlatformDetection.IsNotMonoRuntime
-                && PlatformDetection.IsNotNativeAot
+            if (PlatformDetection.IsCoreCLR
                 && PlatformDetection.IsWindows)
             {
                 // Currently fallback command line is only implemented on Windows coreclr
@@ -106,8 +105,7 @@ namespace System.Tests
 
         public static bool IsWindowsCoreCLRJit
             => PlatformDetection.IsWindows
-            && PlatformDetection.IsNotMonoRuntime
-            && PlatformDetection.IsNotNativeAot;
+            && PlatformDetection.IsCoreCLR;
 
         [ConditionalTheory(typeof(GetCommandLineArgs), nameof(IsWindowsCoreCLRJit))]
         [InlineData(@"cmd ""abc"" d e", new[] { "cmd", "abc", "d", "e" })]
