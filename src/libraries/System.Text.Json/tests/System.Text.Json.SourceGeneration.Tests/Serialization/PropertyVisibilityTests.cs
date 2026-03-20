@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
@@ -58,16 +57,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
             // With unsafe accessors, all init-only [JsonInclude] properties are now supported in source gen.
-            PropertyInfo property = type.GetProperty("MyInt");
-
-            // Init-only properties can be serialized.
-            object obj = Activator.CreateInstance(type);
-            property.SetValue(obj, 1);
-            Assert.Equal("""{"MyInt":1}""", await Serializer.SerializeWrapper(obj, type));
-
-            // Deserialization is now supported for all access levels.
-            obj = await Serializer.DeserializeWrapper("""{"MyInt":1}""", type);
-            Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
+            await base.NonPublicInitOnlySetter_With_JsonInclude(type);
         }
 
         [Fact]
@@ -111,15 +101,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override async Task NonPublicProperty_JsonInclude_WorksAsExpected(Type type, bool _ = true)
         {
             // With unsafe accessors, all [JsonInclude] members are now supported in source gen.
-            string json = """{"MyString":"value"}""";
-            MemberInfo memberInfo = type.GetMember("MyString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
-
-            object result = await Serializer.DeserializeWrapper("""{"MyString":"value"}""", type);
-            Assert.IsType(type, result);
-            Assert.Equal(memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result), "value");
-
-            string actualJson = await Serializer.SerializeWrapper(result, type);
-            Assert.Equal(json, actualJson);
+            await base.NonPublicProperty_JsonInclude_WorksAsExpected(type, isAccessibleBySourceGen: true);
         }
 
         [Fact]
