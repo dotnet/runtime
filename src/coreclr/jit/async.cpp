@@ -1020,6 +1020,9 @@ private:
 //   resume-reachable blocks, then compute per-block and inter-block
 //   mutation sets relative to resumption points.
 //
+// Parameters:
+//   awaitblocks - Blocks containing async calls
+//
 void PreservedValueAnalysis::Run(ArrayStack<BasicBlock*>& awaitBlocks)
 {
 #ifdef DEBUG
@@ -1053,9 +1056,9 @@ void PreservedValueAnalysis::Run(ArrayStack<BasicBlock*>& awaitBlocks)
 //   block - The basic block.
 //
 // Returns:
-//   The VARSET_TP of tracked locals mutated since last resumption. A local
-//   NOT in this set has a preserved value in the continuation and does not
-//   need to be re-stored when reusing it.
+//   The VARSET_TP of tracked locals that may have been mutated since last
+//   resumption. A tracked local NOT in this set has a preserved value in the
+//   continuation and does not need to be re-stored when reusing it.
 //
 const VARSET_TP& PreservedValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 {
@@ -1063,6 +1066,19 @@ const VARSET_TP& PreservedValueAnalysis::GetMutatedVarsIn(BasicBlock* block) con
     return m_mutatedVarsIn[block->bbNum];
 }
 
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::IsResumeReachable:
+//   Check if the specified basic block is reachable after a previous resumption.
+//
+// Parameters:
+//   block - The basic block.
+//
+// Returns:
+//   True if so. Blocks that are not resume-reachable will never be able to
+//   reuse a continuation. Also, mutations of locals that are not
+//   resume-reachable do not need to be considered for preserved value
+//   analysis.
+//
 bool PreservedValueAnalysis::IsResumeReachable(BasicBlock* block)
 {
     return BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum);
@@ -1323,7 +1339,7 @@ private:
 //------------------------------------------------------------------------
 // AsyncLiveness::StartBlock:
 //   Indicate that we are now starting a new block, and do relevant liveness
-//   updates for it.
+//   and other analysis updates for it.
 //
 // Parameters:
 //   block - The block that we are starting.
