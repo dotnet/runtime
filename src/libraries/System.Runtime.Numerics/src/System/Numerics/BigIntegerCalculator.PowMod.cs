@@ -21,16 +21,9 @@ namespace System.Numerics
         {
             Debug.Assert(bits.Length == PowBound(power, value.Length));
 
-            nuint[]? tempFromPool = null;
-            Span<nuint> temp = (bits.Length <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
-            temp.Clear();
+            Span<nuint> temp = BigInteger.RentedBuffer.Create(bits.Length, out BigInteger.RentedBuffer tempBuffer);
 
-            nuint[]? valueCopyFromPool = null;
-            Span<nuint> valueCopy = (bits.Length <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+            Span<nuint> valueCopy = BigInteger.RentedBuffer.Create(bits.Length, out BigInteger.RentedBuffer valueCopyBuffer);
             value.CopyTo(valueCopy);
             valueCopy.Slice(value.Length).Clear();
 
@@ -38,15 +31,8 @@ namespace System.Numerics
             result.CopyTo(bits);
             bits.Slice(result.Length).Clear();
 
-            if (tempFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(tempFromPool);
-            }
-
-            if (valueCopyFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
-            }
+            tempBuffer.Dispose();
+            valueCopyBuffer.Dispose();
         }
 
         private static Span<nuint> PowCore(Span<nuint> value, int valueLength, Span<nuint> temp, nuint power, Span<nuint> result)
@@ -276,11 +262,8 @@ namespace System.Numerics
             // The big modulus pow method for a big integer
             // raised by a 32-bit integer...
 
-            nuint[]? valueCopyFromPool = null;
             int size = Math.Max(value.Length, bits.Length);
-            Span<nuint> valueCopy = (size <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> valueCopy = BigInteger.RentedBuffer.Create(size, out BigInteger.RentedBuffer valueCopyBuffer);
 
             // smallish optimization here:
             // subsequent operations will copy the elements to the beginning of the buffer,
@@ -296,23 +279,12 @@ namespace System.Numerics
                 value.CopyTo(valueCopy);
             }
 
-            nuint[]? tempFromPool = null;
-            Span<nuint> temp = (bits.Length <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
-            temp.Clear();
+            Span<nuint> temp = BigInteger.RentedBuffer.Create(bits.Length, out BigInteger.RentedBuffer tempBuffer);
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
-            if (valueCopyFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
-            }
-
-            if (tempFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(tempFromPool);
-            }
+            valueCopyBuffer.Dispose();
+            tempBuffer.Dispose();
         }
 
         public static void Pow(nuint value, ReadOnlySpan<nuint> power,
@@ -331,10 +303,7 @@ namespace System.Numerics
             // raised by a big integer...
 
             int size = Math.Max(value.Length, bits.Length);
-            nuint[]? valueCopyFromPool = null;
-            Span<nuint> valueCopy = (size <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : valueCopyFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
+            Span<nuint> valueCopy = BigInteger.RentedBuffer.Create(size, out BigInteger.RentedBuffer valueCopyBuffer);
 
             // smallish optimization here:
             // subsequent operations will copy the elements to the beginning of the buffer,
@@ -350,23 +319,12 @@ namespace System.Numerics
                 value.CopyTo(valueCopy);
             }
 
-            nuint[]? tempFromPool = null;
-            Span<nuint> temp = (bits.Length <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : tempFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
-            temp.Clear();
+            Span<nuint> temp = BigInteger.RentedBuffer.Create(bits.Length, out BigInteger.RentedBuffer tempBuffer);
 
             PowCore(valueCopy, ActualLength(valueCopy), power, modulus, temp, bits);
 
-            if (valueCopyFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(valueCopyFromPool);
-            }
-
-            if (tempFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(tempFromPool);
-            }
+            valueCopyBuffer.Dispose();
+            tempBuffer.Dispose();
         }
 
         internal
@@ -430,57 +388,27 @@ namespace System.Numerics
                                             Span<nuint> temp, Span<nuint> bits)
         {
             int size = modulus.Length * 2 + 1;
-            nuint[]? rFromPool = null;
-            Span<nuint> r = ((uint)size <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : rFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            r.Clear();
+            Span<nuint> r = BigInteger.RentedBuffer.Create(size, out BigInteger.RentedBuffer rBuffer);
 
             size = r.Length - modulus.Length + 1;
-            nuint[]? muFromPool = null;
-            Span<nuint> mu = ((uint)size <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : muFromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            mu.Clear();
+            Span<nuint> mu = BigInteger.RentedBuffer.Create(size, out BigInteger.RentedBuffer muBuffer);
 
             size = modulus.Length * 2 + 2;
-            nuint[]? q1FromPool = null;
-            Span<nuint> q1 = ((uint)size <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : q1FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            q1.Clear();
+            Span<nuint> q1 = BigInteger.RentedBuffer.Create(size, out BigInteger.RentedBuffer q1Buffer);
 
-            nuint[]? q2FromPool = null;
-            Span<nuint> q2 = ((uint)size <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : q2FromPool = ArrayPool<nuint>.Shared.Rent(size)).Slice(0, size);
-            q2.Clear();
+            Span<nuint> q2 = BigInteger.RentedBuffer.Create(size, out BigInteger.RentedBuffer q2Buffer);
 
             FastReducer reducer = new(modulus, r, mu, q1, q2);
 
-            if (rFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(rFromPool);
-            }
+            rBuffer.Dispose();
 
             Span<nuint> result = PowCore(value, valueLength, power, reducer, bits, 1, temp);
             result.CopyTo(bits);
             bits.Slice(result.Length).Clear();
 
-            if (muFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(muFromPool);
-            }
-
-            if (q1FromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(q1FromPool);
-            }
-
-            if (q2FromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(q2FromPool);
-            }
+            muBuffer.Dispose();
+            q1Buffer.Dispose();
+            q2Buffer.Dispose();
         }
 
         /// <summary>
@@ -572,11 +500,7 @@ namespace System.Numerics
 
             // Convert value to Montgomery form: montValue = (value << k*wordBits) mod n
             int shiftLen = k + valueLength;
-            nuint[]? shiftPool = null;
-            Span<nuint> shifted = ((uint)shiftLen <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : shiftPool = ArrayPool<nuint>.Shared.Rent(shiftLen)).Slice(0, shiftLen);
-            shifted.Clear();
+            Span<nuint> shifted = BigInteger.RentedBuffer.Create(shiftLen, out BigInteger.RentedBuffer shiftedBuffer);
             value.Slice(0, valueLength).CopyTo(shifted.Slice(k));
 
             if (shifted.Length >= modulus.Length)
@@ -588,30 +512,17 @@ namespace System.Numerics
             value.Slice(k).Clear();
             valueLength = ActualLength(value.Slice(0, k));
 
-            if (shiftPool is not null)
-            {
-                ArrayPool<nuint>.Shared.Return(shiftPool);
-            }
+            shiftedBuffer.Dispose();
 
             // Compute R mod n (Montgomery form of 1) and save for later
-            nuint[]? rModNPool = null;
-            Span<nuint> rModN = ((uint)k <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : rModNPool = ArrayPool<nuint>.Shared.Rent(k)).Slice(0, k);
+            Span<nuint> rModN = BigInteger.RentedBuffer.Create(k, out BigInteger.RentedBuffer rModNBuffer);
             {
                 int oneShiftLen = k + 1;
-                nuint[]? oneShiftPool = null;
-                Span<nuint> oneShifted = ((uint)oneShiftLen <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : oneShiftPool = ArrayPool<nuint>.Shared.Rent(oneShiftLen)).Slice(0, oneShiftLen);
-                oneShifted.Clear();
+                Span<nuint> oneShifted = BigInteger.RentedBuffer.Create(oneShiftLen, out BigInteger.RentedBuffer oneShiftedBuffer);
                 oneShifted[k] = 1;
                 DivRem(oneShifted, modulus, default);
                 oneShifted.Slice(0, k).CopyTo(rModN);
-                if (oneShiftPool is not null)
-                {
-                    ArrayPool<nuint>.Shared.Return(oneShiftPool);
-                }
+                oneShiftedBuffer.Dispose();
             }
 
             int rModNLength = ActualLength(rModN);
@@ -627,10 +538,7 @@ namespace System.Numerics
                 int resultLength = MontgomeryReduce(bits, modulus, n0inv);
                 bits.Slice(0, resultLength).CopyTo(originalBits);
                 originalBits.Slice(resultLength).Clear();
-                if (rModNPool is not null)
-                {
-                    ArrayPool<nuint>.Shared.Return(rModNPool);
-                }
+                rModNBuffer.Dispose();
 
                 return;
             }
@@ -659,19 +567,11 @@ namespace System.Numerics
             {
                 // Use a separate product buffer for precomputation to avoid
                 // corrupting bits/temp (which are needed pristine for the main loop).
-                nuint[]? prodPool = null;
-                Span<nuint> prod = ((uint)bufLen <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : prodPool = ArrayPool<nuint>.Shared.Rent(bufLen)).Slice(0, bufLen);
+                Span<nuint> prod = BigInteger.RentedBuffer.Create(bufLen, out BigInteger.RentedBuffer prodBuffer);
 
                 // Compute base^2 in Montgomery form
-                nuint[]? base2Pool = null;
-                Span<nuint> base2 = ((uint)k <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : base2Pool = ArrayPool<nuint>.Shared.Rent(k)).Slice(0, k);
-                base2.Clear();
+                Span<nuint> base2 = BigInteger.RentedBuffer.Create(k, out BigInteger.RentedBuffer base2Buffer);
 
-                prod.Clear();
                 Square(value.Slice(0, valueLength), prod.Slice(0, valueLength * 2));
                 MontgomeryReduce(prod, modulus, n0inv);
                 prod.Slice(0, k).CopyTo(base2);
@@ -690,15 +590,8 @@ namespace System.Numerics
                     prod.Slice(0, k).CopyTo(table.Slice(i * k, k));
                 }
 
-                if (base2Pool is not null)
-                {
-                    ArrayPool<nuint>.Shared.Return(base2Pool);
-                }
-
-                if (prodPool is not null)
-                {
-                    ArrayPool<nuint>.Shared.Return(prodPool);
-                }
+                base2Buffer.Dispose();
+                prodBuffer.Dispose();
             }
 
             // Initialize result to R mod n (bits and temp are untouched from caller)
@@ -706,10 +599,7 @@ namespace System.Numerics
             rModN.Slice(0, rModNLength).CopyTo(bits);
             int resultLen = rModNLength;
 
-            if (rModNPool is not null)
-            {
-                ArrayPool<nuint>.Shared.Return(rModNPool);
-            }
+            rModNBuffer.Dispose();
 
             // Left-to-right sliding window exponentiation
             int bitPos = expBitLength - 1;
@@ -717,7 +607,7 @@ namespace System.Numerics
             {
                 if (GetBit(power, bitPos) == 0)
                 {
-                    resultLen = SquareSelf(ref bits, resultLen, ref temp);
+                    SquareSelf(ref bits, resultLen, ref temp);
                     resultLen = MontgomeryReduce(bits, modulus, n0inv);
                     bitPos--;
                 }
@@ -742,7 +632,7 @@ namespace System.Numerics
                     // Square for each bit in the window
                     for (int i = 0; i < wLen; i++)
                     {
-                        resultLen = SquareSelf(ref bits, resultLen, ref temp);
+                        SquareSelf(ref bits, resultLen, ref temp);
                         resultLen = MontgomeryReduce(bits, modulus, n0inv);
                     }
 
@@ -750,7 +640,7 @@ namespace System.Numerics
                     Debug.Assert(wValue >= 1 && (wValue & 1) == 1);
                     ReadOnlySpan<nuint> entry = table.Slice(((wValue - 1) >> 1) * k, k);
                     int entryLength = ActualLength(entry);
-                    resultLen = MultiplySelf(ref bits, resultLen, entry.Slice(0, entryLength), ref temp);
+                    MultiplySelf(ref bits, resultLen, entry.Slice(0, entryLength), ref temp);
                     resultLen = MontgomeryReduce(bits, modulus, n0inv);
 
                     bitPos -= wLen;
