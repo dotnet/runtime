@@ -28,7 +28,7 @@
 
 // control flow
 //
-INST(invalid,              "INVALID",              0, IF_NONE,          BAD_CODE)
+INST2(invalid,              "INVALID",              0, IF_NONE,         0xFC, BAD_CODE)
 INST(unreachable,          "unreachable",          0, IF_OPCODE,        0x00)
 INST(label,                "label",                0, IF_RAW_ULEB128,   0x00)
 INST(catch_ref,            "catch_ref",            0, IF_CATCH_DECL,    0x00)

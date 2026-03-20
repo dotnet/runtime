@@ -625,6 +625,7 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
 
     if (prefix == 0)
     {
+        noway_assert(FitsIn<uint8_t>(opcode));
         emitOutputByte(dst, opcode);
         sz += 1;
     }
