@@ -1549,24 +1549,24 @@ DAC_INSTANCE*
 DacInstanceManager::Add(DAC_INSTANCE* inst)
 {
     _ASSERTE(inst != NULL);
-#ifdef _DEBUG
-    bool isInserted = (m_hash.find(inst->addr) == m_hash.end());
-#endif //_DEBUG
-    DAC_INSTANCE *(&target) = m_hash[inst->addr];
-    _ASSERTE(!isInserted || target == NULL);
-    if( target != NULL )
+    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
+    if (pEntry != NULL)
     {
+        DAC_INSTANCE* existing = pEntry->Value();
+
         //This is necessary to preserve the semantics of Supersede, however, it
         //is more or less dead code.
-        inst->next = target;
-        target = inst;
+        inst->next = existing;
 
         //verify descending order
-        _ASSERTE(inst->size >= target->size);
+        _ASSERTE(inst->size >= existing->size);
+
+        m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
     }
     else
     {
-        target = inst;
+        inst->next = NULL;
+        m_hash.Add(KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
     }
 
     return inst;
@@ -1808,15 +1808,13 @@ DacInstanceManager::Find(TADDR addr)
 DAC_INSTANCE*
 DacInstanceManager::Find(TADDR addr)
 {
-    DacInstanceHashIterator iter = m_hash.find(addr);
-    if( iter == m_hash.end() )
+    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(addr);
+    if (pEntry != NULL)
     {
-        return NULL;
+        return pEntry->Value();
     }
-    else
-    {
-        return iter->second;
-    }
+
+    return NULL;
 }
 #endif // if defined(DAC_HASHTABLE)
 
@@ -1892,12 +1890,11 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
     // later cleanup.
     //
 
-    DacInstanceHashIterator iter = m_hash.find(inst->addr);
-    if( iter == m_hash.end() )
+    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
+    if (pEntry == NULL)
         return;
 
-    DAC_INSTANCE** bucket = &(iter->second);
-    DAC_INSTANCE* cur = *bucket;
+    DAC_INSTANCE* cur = pEntry->Value();
     DAC_INSTANCE* prev = NULL;
     //walk through the chain looking for this particular instance
     while (cur)
@@ -1906,7 +1903,15 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
         {
             if (!prev)
             {
-                *bucket = inst->next;
+                // Removing the head of the chain.
+                if (inst->next != NULL)
+                {
+                    m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst->next));
+                }
+                else
+                {
+                    m_hash.Remove(inst->addr);
+                }
             }
             else
             {
@@ -1987,7 +1992,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
         }
     }
 #else //DAC_HASHTABLE
-    m_hash.clear();
+    m_hash.RemoveAll();
 #endif //DAC_HASHTABLE
 
     InitEmpty();
@@ -2026,18 +2031,17 @@ DacInstanceManager::ClearEnumMemMarker(void)
 void
 DacInstanceManager::ClearEnumMemMarker(void)
 {
-    ULONG i;
     DAC_INSTANCE* inst;
 
-    DacInstanceHashIterator end = m_hash.end();
+    DacInstanceHashIterator end = m_hash.End();
     /* REVISIT_TODO Fri 10/20/2006
      * This might have an issue, since it might miss chained entries off of
      * ->next.  However, ->next is going away, and for all intents and
      *  purposes, this never happens.
 */
-    for( DacInstanceHashIterator cur = m_hash.begin(); cur != end; ++cur )
+    for (DacInstanceHashIterator cur = m_hash.Begin(); cur != end; ++cur)
     {
-        cur->second->enumMem = 0;
+        cur->Value()->enumMem = 0;
     }
 
     for (inst = m_superseded; inst; inst = inst->next)
@@ -2149,10 +2153,10 @@ DacInstanceManager::DumpAllInstances(
    int numInBucket = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
 
-   DacInstanceHashIterator end = m_hash.end();
-   for (DacInstanceHashIterator cur = m_hash.begin(); end != cur; ++cur)
+   DacInstanceHashIterator end = m_hash.End();
+   for (DacInstanceHashIterator cur = m_hash.Begin(); end != cur; ++cur)
    {
-       inst = cur->second;
+       inst = cur->Value();
 
        // Only report those we intended to.
        // So far, only metadata is excluded!
