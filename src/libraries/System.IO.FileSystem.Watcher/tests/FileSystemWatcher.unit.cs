@@ -976,9 +976,9 @@ namespace System.IO.Tests
                     watcher.Filters.Add(Path.GetFileName(directoryOne));
                     watcher.Filters.Add(Path.GetFileName(directoryTwo));
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => Directory.Delete(directoryOne), expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => Directory.Delete(directoryTwo), expectedPath: directoryTwo);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: () => { if (Directory.Exists(directoryThree)) Directory.Delete(directoryThree); }, expectedPath: directoryThree);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
@@ -1000,9 +1000,9 @@ namespace System.IO.Tests
                 {
                     watcher.Filters.Add(Path.GetFileName(directoryTwo));
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => Directory.Delete(directoryOne), expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => Directory.Delete(directoryTwo), expectedPath: directoryTwo);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: () => { if (Directory.Exists(directoryThree)) Directory.Delete(directoryThree); }, expectedPath: directoryThree);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
@@ -1043,9 +1043,9 @@ namespace System.IO.Tests
                     watcher.Filters.Add(fileOne.Name);
                     watcher.Filters.Add(fileTwo.Name);
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: () => fileOne.Delete(), expectedPath: fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: () => fileTwo.Delete(), expectedPath: fileTwo.FullName);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: () => fileThree.Delete(), expectedPath: fileThree.FullName);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
@@ -1079,9 +1079,9 @@ namespace System.IO.Tests
                     thread.IsBackground = true;
                     thread.Start();
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: () => fileOne.Delete(), expectedPath: fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: () => fileTwo.Delete(), expectedPath: fileTwo.FullName);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: () => fileThree.Delete(), expectedPath: fileThree.FullName);
 
                     cts.Cancel();
                     waitForThread();
