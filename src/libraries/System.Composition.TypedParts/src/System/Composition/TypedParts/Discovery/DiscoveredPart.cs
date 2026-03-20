@@ -12,6 +12,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Numerics.Hashing;
 using System.Reflection;
+using System.Threading;
 
 namespace System.Composition.TypedParts.Discovery
 {
@@ -113,13 +114,12 @@ namespace System.Composition.TypedParts.Discovery
                 }
             }
 
-            // Cache GetParameters() result to ensure the same ParameterInfo instances
-            // are used in both GetPartActivatorDependencies and GetActivator.
+            // Use LazyInitializer to ensure GetParameters() is called at most once per
+            // DiscoveredPart instance and the result is safely published to all threads.
             // On some runtimes (e.g. Mono on ARM), concurrent calls to GetParameters()
             // on the same ConstructorInfo can return different ParameterInfo instances
-            // due to lazy initialization, causing lookup failures.
-            _constructorParameters = _constructor.GetParameters();
-            var cps = _constructorParameters;
+            // due to lazy initialization, causing lookup failures in GetActivator.
+            var cps = LazyInitializer.EnsureInitialized(ref _constructorParameters, () => _constructor.GetParameters());
 
             for (var i = 0; i < cps.Length; ++i)
             {
@@ -175,7 +175,7 @@ namespace System.Composition.TypedParts.Discovery
             var contextParam = Expression.Parameter(typeof(LifetimeContext), "cc");
             var operationParm = Expression.Parameter(typeof(CompositionOperation), "op");
 
-            var cps = _constructorParameters ?? _constructor.GetParameters();
+            var cps = LazyInitializer.EnsureInitialized(ref _constructorParameters, () => _constructor.GetParameters());
             Expression[] paramActivatorCalls = new Expression[cps.Length];
 
             var partActivatorDependencies = dependencies
