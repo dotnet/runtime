@@ -279,6 +279,31 @@ namespace System.Runtime.Loader.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
+        public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName);
+            object instance = Activator.CreateInstance(alcType);
+
+            // Cast directly to InvalidCastSharedType from the Default ALC.
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                InvalidCastSharedType _ = (InvalidCastSharedType)instance;
+            });
+
+            // The message should report both ALC contexts for the same-named type.
+            if (!ice.Message.Contains("Debugging resource strings are unavailable"))
+            {
+                Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
+                Assert.Contains("Default", ice.Message);
+                Assert.Contains("TestALC", ice.Message);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
         public static void InvalidCastException_GenericTypeArg_ShowsDifferingAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
