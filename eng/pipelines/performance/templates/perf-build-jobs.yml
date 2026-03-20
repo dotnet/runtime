@@ -5,7 +5,6 @@ jobs:
   # build coreclr and libraries
   - template: /eng/pipelines/performance/templates/perf-coreclr-build-jobs.yml
     parameters:
-      # Temporarily disabled for testing R2R interpreter job
       linux_x64: true
       windows_x64: true
       windows_x86: true
