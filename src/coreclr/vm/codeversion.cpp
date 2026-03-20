@@ -346,22 +346,28 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     }
     else
     {
-        return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
+        PTR_MethodDesc pMethodDesc = GetMethodDesc();
+        OptimizationTier tier = pMethodDesc->GetMethodDescOptimizationTier();
+        if (tier == OptimizationTier::OptimizationTierUnknown)
+        {
+            tier = TieredCompilationManager::GetInitialOptimizationTier(pMethodDesc);
+        }
+        return tier;
     }
 }
 
 #ifndef DACCESS_COMPILE
 void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 {
-    WRAPPER_NO_CONTRACT;
+    STANDARD_VM_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         AsNode()->SetOptimizationTier(tier);
     }
     else
     {
-        // State changes should have been made previously such that the initial tier is the new tier
-        _ASSERTE(TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc()) == tier);
+        GetMethodDesc()->SetMethodDescOptimizationTier(tier);
     }
 }
 #endif

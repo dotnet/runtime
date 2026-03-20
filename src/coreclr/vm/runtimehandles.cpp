@@ -1091,6 +1091,22 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     return;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle fnPtrHandle;
+
+    BEGIN_QCALL;
+    BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
+    GCX_COOP();
+    retType.Set(fnPtrHandle.GetManagedClassObject());
+    END_QCALL;
+
+    return;
+}
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;

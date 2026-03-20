@@ -239,6 +239,10 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     if (alloc == NULL)
         return E_OUTOFMEMORY;
 
+#ifdef FEATURE_CODE_VERSIONING
+    alloc->OptimizationTier = NativeCodeVersion::OptimizationTierUnknown;
+#endif
+
     // Try to set the field. Suppress clean-up if we win the race.
     if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
         amTracker.SuppressRelease();
@@ -259,6 +263,16 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
         return S_FALSE;
 
     return S_OK;
+}
+
+void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -296,6 +310,15 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
     if (codeData == NULL)
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
+}
+
+NativeCodeVersion::OptimizationTier MethodDesc::GetMethodDescOptimizationTier()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NativeCodeVersion::OptimizationTierUnknown;
+    return VolatileLoadWithoutBarrier(&codeData->OptimizationTier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -3165,7 +3188,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     backpatchTracker->AddSlotAndPatch_Locked(this, slotLoaderAllocator, slot, slotType, currentEntryPoint);
 }
 
-bool MethodDesc::TryBackpatchEntryPointSlots(
+FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE entryPoint,
     bool isPrestubEntryPoint,
     bool onlyFromPrestubEntryPoint)

@@ -557,14 +557,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -2279,7 +2271,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    GetEmitter()->emitIns_R_C(INS_bl, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA,
                               m_compiler->eeFindJitDataOffs(jmpTabBase), 0);
     genProduceReg(treeNode);
 }
@@ -2292,7 +2284,16 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
-    GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    // INS_bl/b are placeholders that is not the final instruction.
+    instruction ins  = INS_bl;
+    emitAttr    attr = EA_PTRSIZE;
+    if (m_compiler->eeDataWithCodePointersNeedsRelocs())
+    {
+        ins  = INS_b;
+        attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+    }
+
+    GetEmitter()->emitIns_R_C(ins, attr, treeNode->GetRegNum(), REG_NA,
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
 }
@@ -3341,8 +3342,17 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 }
                 else
                 {
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm + 1);
-                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    assert(!(!IsUnsigned && (imm == INT64_MAX)));
+                    if (IsUnsigned && (imm == ~0))
+                    {
+                        // unsigned (a <= ~0) is always true.
+                        emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, targetReg, REG_R0, 1);
+                    }
+                    else
+                    {
+                        emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm + 1);
+                        emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    }
                 }
             }
             else if (tree->OperIs(GT_GT))
@@ -3708,14 +3718,6 @@ int CodeGenInterface::genSPtoFPdelta() const
 
     int delta = m_compiler->compLclFrameSize;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         delta -= TARGET_POINTER_SIZE;
     }
@@ -5830,33 +5832,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             // Generate a direct call to a non-virtual user defined or helper method
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-#ifdef FEATURE_READYTORUN
-            if (call->gtEntryPoint.addr != NULL)
-            {
-                assert(call->gtEntryPoint.accessType == IAT_VALUE);
-                params.addr = call->gtEntryPoint.addr;
-            }
-            else
-#endif // FEATURE_READYTORUN
-                if (call->IsHelperCall())
-                {
-                    CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-                    CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                    params.addr                       = helperLookup.addr;
-                    assert(helperLookup.accessType == IAT_VALUE);
-                }
-                else
-                {
-                    // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
-                }
-
-            assert(params.addr != nullptr);
+            assert(call->gtDirectCallAddress != nullptr);
 
             params.callType = EC_FUNC_TOKEN;
+            params.addr     = call->gtDirectCallAddress;
             genEmitCallWithCurrentGC(params);
         }
     }
@@ -6112,41 +6091,15 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
     // Now we can actually use those slot ID's to declare live ranges.
     gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
 
+#ifdef FEATURE_REMAP_FUNCTION
     if (m_compiler->opts.compDbgEnC)
     {
-        // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
-        // which is:
-        //  -return address
-        //  -saved off RBP
-        //  -saved 'this' pointer and bool for synchronized methods
-
-        // 4 slots for RBP + return address + RSI + RDI
-        int preservedAreaSize = 4 * REGSIZE_BYTES;
-
-        if (m_compiler->info.compFlags & CORINFO_FLG_SYNCH)
-        {
-            if (!(m_compiler->info.compFlags & CORINFO_FLG_STATIC))
-            {
-                preservedAreaSize += REGSIZE_BYTES;
-            }
-
-            preservedAreaSize += 1; // bool for synchronized methods
-        }
-
-        if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
-        {
-            preservedAreaSize += TARGET_POINTER_SIZE;
-        }
-
-        if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-        {
-            preservedAreaSize += TARGET_POINTER_SIZE;
-        }
-
-        // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
-        // frame
-        gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+        // TODO: lvaMonAcquired, lvaAsyncExecutionContextVar and lvaAsyncExecutionContextVar locals are special
+        // that is necessary to allocate in the top of the stack frame and included as part of the EnC frame header
+        // for EnC to work.
+        NYI_LOONGARCH64("compDbgEnc in CodeGen::genCreateAndStoreGCInfo() ---unimplemented/unused on LA64 yet---");
     }
+#endif // FEATURE_REMAP_FUNCTION
 
     if (m_compiler->opts.IsReversePInvoke())
     {
@@ -6788,14 +6741,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
 
 #ifdef DEBUG
     if (m_compiler->opts.disAsm)
@@ -6859,14 +6804,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = m_compiler->compLclFrameSize;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }

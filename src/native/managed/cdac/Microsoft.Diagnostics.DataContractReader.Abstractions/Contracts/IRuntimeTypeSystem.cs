@@ -105,6 +105,8 @@ public interface IRuntimeTypeSystem : IContract
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable represents a continuation type used by the async continuation feature
+    bool IsContinuation(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
     ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 

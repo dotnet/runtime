@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -902,6 +903,17 @@ namespace System.Formats.Tar.Tests
             Name,
             NameAndPrefix,
             Unlimited
+        }
+
+        internal static void WriteHeaderChecksum(byte[] header)
+        {
+            int checksum = 0;
+            for (int i = 0; i < header.Length; i++)
+            {
+                checksum += (i >= 148 && i < 156) ? (byte)' ' : header[i];
+            }
+            string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
+            Encoding.UTF8.GetBytes(checksumStr).CopyTo(header.AsSpan(148, 8));
         }
 
         internal void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)

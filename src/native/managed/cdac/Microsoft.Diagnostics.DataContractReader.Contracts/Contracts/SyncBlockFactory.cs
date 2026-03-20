@@ -11,9 +11,10 @@ public sealed class SyncBlockFactory : IContractFactory<ISyncBlock>
     {
         TargetPointer syncTableEntries = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
+        ulong syncBlockLinkOffset = (ulong)target.GetTypeInfo(DataType.SyncBlock).Fields[nameof(Data.SyncBlock.LinkNext)].Offset;
         return version switch
         {
-            1 => new SyncBlock_1(target, syncTableEntries),
+            1 => new SyncBlock_1(target, syncTableEntries, syncBlockLinkOffset),
             _ => default(SyncBlock),
         };
     }

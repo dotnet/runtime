@@ -3014,6 +3014,9 @@ bool Compiler::fgCanCloneTryRegion(BasicBlock* tryEntry)
 // Arguments:
 //    traits - bbID based traits to use for the Visited set
 //
+// Notes:
+//    Initializes Traits and Visited members.
+//
 CloneTryInfo::CloneTryInfo(BitVecTraits& traits)
     : Traits(traits)
     , Visited(BitVecOps::MakeEmpty(&Traits))

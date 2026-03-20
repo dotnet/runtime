@@ -8440,12 +8440,43 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+
                 if (m_compiler->opts.compReloc)
                 {
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+#ifdef TARGET_ARM
+                    // The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
+                    // either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
+                    // to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
+                    // thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
+                    // the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
+                    // emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
+                    // (while regular method calls could not do this) because the async method and its resumption stub
+                    // are tightly coupled and effectively funclets of the same method. However, this means that
+                    // crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
+                    // unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
+                    // reloc with the addend for the thumb bit.
+                    if (m_compiler->IsReadyToRun())
+                    {
+                        emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
+                                                          CorInfoReloc::DIRECT, 1);
+                    }
+                    else
+#endif
+                    {
+                        emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+                    }
                     if (target != nullptr)
                     {
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+#ifdef TARGET_ARM
+                        if (m_compiler->IsReadyToRun())
+                        {
+                            emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, 1);
+                        }
+                        else
+#endif
+                        {
+                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+                        }
                     }
                 }
 
@@ -9765,7 +9796,8 @@ insGroup* emitter::emitAllocIG()
     ig        = (insGroup*)emitGetMem(sz);
 
 #ifdef DEBUG
-    ig->igSelf = ig;
+    ig->igSelf     = ig;
+    ig->igDataSize = 0;
 #endif
 
 #if EMITTER_STATS
@@ -9832,6 +9864,8 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
+
+    ig->igData = nullptr;
 }
 
 /*****************************************************************************

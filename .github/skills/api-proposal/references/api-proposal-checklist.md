@@ -16,7 +16,7 @@ Use this checklist to validate an API proposal before publishing. Items are orde
 
 - [ ] **DO** extract the exact API surface from `GenerateReferenceAssemblySource` output
 - [ ] **DO** use clean declaration format for new self-contained types
-- [ ] **DO** use `diff` blocks showing relevant context (sibling overloads) for additions to existing types
+- [ ] **DO** use `partial` declarations with commented-out `// EXISTING` members showing relevant context (sibling overloads) for additions to existing types
 - [ ] **DO** validate all names against the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md)
 - [ ] **DO** verify naming consistency with existing APIs in the target namespace
 - [ ] **DO NOT** include implementation code in the API surface

@@ -5662,35 +5662,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             // Generate a direct call to a non-virtual user defined or helper method
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
-
-#ifdef FEATURE_READYTORUN
-            if (call->gtEntryPoint.addr != NULL)
-            {
-                assert(call->gtEntryPoint.accessType == IAT_VALUE);
-                params.addr = call->gtEntryPoint.addr;
-            }
-            else
-#endif // FEATURE_READYTORUN
-            {
-                if (call->IsHelperCall())
-                {
-                    CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-                    CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                    params.addr                       = helperLookup.addr;
-                    assert(helperLookup.accessType == IAT_VALUE);
-                }
-                else
-                {
-                    // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
-                }
-            }
+            assert(call->gtDirectCallAddress != nullptr);
 
             params.callType = EC_FUNC_TOKEN;
+            params.addr     = call->gtDirectCallAddress;
             params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
-
             genEmitCallWithCurrentGC(params);
         }
     }

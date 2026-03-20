@@ -42,6 +42,7 @@
     <_RunInterpreter>false</_RunInterpreter>
     <_TieringTest>false</_TieringTest>
     <_HotColdSplitting>false</_HotColdSplitting>
+    <_LargeVersionBubble>false</_LargeVersionBubble>
     <_NativeAotTest>false</_NativeAotTest>
     <_TimeoutPerTestCollectionInMinutes>123</_TimeoutPerTestCollectionInMinutes>
     <_TimeoutPerTestInMinutes>234</_TimeoutPerTestInMinutes>
@@ -107,6 +108,7 @@
         RunInterpreter=$(_RunInterpreter);
         TieringTest=$(_TieringTest);
         HotColdSplitting=$(_HotColdSplitting);
+        LargeVersionBubble=$(_LargeVersionBubble);
         NativeAotTest=$(_NativeAotTest);
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
         TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
@@ -594,6 +596,7 @@
     <HelixPreCommand Include="set RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="set RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="set HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
+    <HelixPreCommand Include="set LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\runincontext.cmd" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\tieringtest.cmd" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\nativeaottest.cmd" Condition=" '$(NativeAotTest)' == 'true' " />
@@ -649,6 +652,7 @@
     <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="export HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
+    <HelixPreCommand Include="export LargeVersionBubble=1" Condition=" '$(LargeVersionBubble)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/tieringtest.sh" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' " />

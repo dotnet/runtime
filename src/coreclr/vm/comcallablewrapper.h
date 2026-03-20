@@ -373,7 +373,7 @@ enum Masks
     enum_InterfaceTypeMask              = 0x00000003,
     enum_ClassInterfaceTypeMask         = 0x00000003,
     enum_ClassVtableMask                = 0x00000004,
-    enum_LayoutComplete                 = 0x00000010,
+    enum_LayoutComplete                 = 0x00000010, // [cDAC] [BuiltInCOM]: Contract depends on this value
     enum_ComVisible                     = 0x00000040,
     // enum_unused                      = 0x00000080,
     // enum_unused                      = 0x00000100,
@@ -703,6 +703,14 @@ private:
     ITypeInfo*       m_pITypeInfo; // cached pointer to ITypeInfo
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
+    friend struct ::cdac_data<ComMethodTable>;
+};
+
+template<>
+struct cdac_data<ComMethodTable>
+{
+    static constexpr size_t Flags = offsetof(ComMethodTable, m_Flags);
+    static constexpr size_t MethodTable = offsetof(ComMethodTable, m_pMT);
 };
 
 #pragma pack(pop)
@@ -744,7 +752,7 @@ private:
 #else
         enum_ThisMask = ~0x1f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #endif
-        Slot_Basic = 0,
+        Slot_Basic = 0, // [cDAC] [BuiltInCOM]: Contract depends on this value
         Slot_IClassX = 1,
         Slot_FirstInterface = 2,
     };
@@ -1039,6 +1047,10 @@ template<>
 struct cdac_data<ComCallWrapper>
 {
     static constexpr size_t SimpleWrapper = offsetof(ComCallWrapper, m_pSimpleWrapper);
+    static constexpr size_t IPtr = offsetof(ComCallWrapper, m_rgpIPtr);
+    static constexpr size_t Next = offsetof(ComCallWrapper, m_pNext);
+    static constexpr uint32_t NumInterfaces = ComCallWrapper::NumVtablePtrs;
+    static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
 
 FORCEINLINE void CCWRelease(ComCallWrapper* p)
@@ -1613,6 +1625,8 @@ struct cdac_data<SimpleComCallWrapper>
 {
     static constexpr size_t RefCount = offsetof(SimpleComCallWrapper, m_llRefCount);
     static constexpr size_t Flags = offsetof(SimpleComCallWrapper, m_flags);
+    static constexpr size_t MainWrapper = offsetof(SimpleComCallWrapper, m_pWrap);
+    static constexpr size_t VTablePtr = offsetof(SimpleComCallWrapper, m_rgpVtable);
 };
 
 //--------------------------------------------------------------------------------
