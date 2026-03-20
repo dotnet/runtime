@@ -1546,7 +1546,7 @@ unsigned ExtendedDefaultPolicy::EstimatedTotalILSize() const
     // for this expansion so the budget reflects the true cost.
     // m_ForceInlineCallSize accumulates the IL sizes of force-inline callees.
     //
-    codeSize += (INT64)(m_ForceInlineCallSize * 0.7);
+    codeSize += (INT64)(m_ForceInlineCallSize * 0.5);
 
     // Assume we can't fold more than 70% of IL
     //
