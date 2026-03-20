@@ -2561,9 +2561,8 @@ static bool GetComIPFromCCW_HandleCustomQI(
 
         GCPROTECT_BEGIN(pObj);
 
-        INT32 result = static_cast<INT32>(CustomQueryInterfaceResult::NotHandled);
         UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__STUBHELPERS__CALL_ICUSTOM_QUERY_INTERFACE);
-        result = callICustomQueryInterface.InvokeThrowing_Ret<INT32>(&pObj, &guid, ppUnkOut);
+        INT32 result = callICustomQueryInterface.InvokeThrowing_Ret<INT32>(&pObj, &guid, ppUnkOut);
 
         retVal = static_cast<CustomQueryInterfaceResult>(result);
         GCPROTECT_END();
