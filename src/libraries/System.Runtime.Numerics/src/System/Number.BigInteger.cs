@@ -1567,7 +1567,7 @@ namespace System
 
         public static NumberStyles BlockNumberStyle => NumberStyles.AllowHexSpecifier;
 
-        /// <summary>Returns all-zero bits if <paramref name="ch"/> is a valid hex digit ('0'-'7'), or all-one bits otherwise.</summary>
+        /// <summary>Returns all-zero bits if <paramref name="ch"/> is a valid hex digit and considered positive ('0'-'7'), or all-one bits otherwise.</summary>
         public static nuint GetSignBitsIfValid(uint ch) => (nuint)(nint)((ch & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
