@@ -6425,7 +6425,7 @@ bool CEEInfo::tryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, b
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -6444,10 +6444,17 @@ bool CEEInfo::tryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, b
 
     if (pMD->IsIL() && pMD->HasILHeader())
     {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader());
+        const COR_ILMETHOD *pIlHeader = pMD->GetILHeader();
         if (pILSize != nullptr)
         {
-            *pILSize = header.GetCodeSize();
+            if (reinterpret_cast<const COR_ILMETHOD_TINY *>(pIlHeader)->IsTiny())
+            {
+                *pILSize = reinterpret_cast<const COR_ILMETHOD_TINY *>(pIlHeader)->GetCodeSize();
+            }
+            else
+            {
+                *pILSize = reinterpret_cast<const COR_ILMETHOD_FAT *>(pIlHeader)->GetCodeSize();
+            }
         }
         ret = true;
     }

@@ -1226,8 +1226,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
-    Packet_IsAggressiveInlining = 238,
-    Packet_TryGetMethodILSize = 239,
+    Packet_TryGetMethodILSize = 238,
 };
 
 void SetDebugDumpVariables();
