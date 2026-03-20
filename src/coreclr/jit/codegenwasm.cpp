@@ -2872,12 +2872,13 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     // If the destination is on the stack we don't need the write barrier.
     bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
-    // We should have generated a memory.copy for this scenario in lowering.
+    // If our destination is on the stack we should be handling it with a native memory.copy/fill,
+    // lowering should only select cpobj for cases where a write barrier is potentially necessary.
     assert(!dstOnStack || isNativeOp);
 
 #ifdef DEBUG
-    // This GenTree node has data about GC pointers, this means we're dealing
-    // with CpObj.
+    // If we're not using the native memory.copy/fill opcodes and are doing cpobj, we should only
+    // see types that have GC pointers in them.
     assert(isNativeOp || cpObjNode->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
