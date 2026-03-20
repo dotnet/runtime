@@ -1855,7 +1855,7 @@ void AsyncTransformation::Transform(
     if (resumeReachable)
     {
         JITDUMP("  Locals mutated since previous resumption: ");
-        DBEXEC(VERBOSE, PrintVarSet(m_compiler, mutatedSinceResumption));
+        JITDUMPEXEC(PrintVarSet(m_compiler, mutatedSinceResumption));
     }
 
     ContinuationLayoutBuilder* layoutBuilder = new (m_compiler, CMK_Async) ContinuationLayoutBuilder(m_compiler);
