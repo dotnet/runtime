@@ -196,14 +196,18 @@ namespace System.IO.Tests
                 }
 
                 // Use progressively longer timeouts on retries. The first attempt uses the base timeout
-                // for fast failure in normal conditions. Subsequent attempts double the timeout to tolerate
-                // transient delays (thread pool starvation, slow CI machines, etc.).
+                // for fast failure in normal conditions. Subsequent attempts increase the timeout linearly
+                // with the attempt count to tolerate transient delays (thread pool starvation, slow CI machines, etc.).
                 int effectiveTimeout = timeout * attemptsCompleted;
 
-                result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, effectiveTimeout);
-
-                if (cleanup != null)
-                    cleanup();
+                try
+                {
+                    result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, effectiveTimeout);
+                }
+                finally
+                {
+                    cleanup?.Invoke();
+                }
             }
         }
 
