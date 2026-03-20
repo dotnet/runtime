@@ -291,7 +291,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
             {
-                return new WasmImportThunkPortableEntrypoint(this, key.Import, key.Helper, key.UseVirtualCall, key.UseJumpableStub);
+                return new WasmImportThunkPortableEntrypoint(this, key.Import);
             });
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
@@ -763,24 +763,16 @@ namespace ILCompiler.DependencyAnalysis
 
         private struct WasmImportThunkPortableEntrypointKey : IEquatable<WasmImportThunkPortableEntrypointKey>
         {
-            public readonly Import Import;
-            public readonly ReadyToRunHelper Helper;
-            public readonly bool UseVirtualCall;
-            public readonly bool UseJumpableStub;
+            public readonly DelayLoadHelperImport Import;
 
-            public WasmImportThunkPortableEntrypointKey(Import import, ReadyToRunHelper helper, bool useVirtualCall, bool useJumpableStub)
+            public WasmImportThunkPortableEntrypointKey(DelayLoadHelperImport import)
             {
                 Import = import;
-                Helper = helper;
-                UseVirtualCall = useVirtualCall;
-                UseJumpableStub = useJumpableStub;
             }
 
             public bool Equals(WasmImportThunkPortableEntrypointKey other)
             {
-                return Import == other.Import && Helper == other.Helper &&
-                    UseVirtualCall == other.UseVirtualCall &&
-                    UseJumpableStub == other.UseJumpableStub;
+                return Import == other.Import;
             }
 
             public override bool Equals(object obj)
@@ -790,19 +782,16 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return unchecked(31 * Helper.GetHashCode() +
-                    31 * Import.GetHashCode() +
-                    31 * UseVirtualCall.GetHashCode() +
-                    31 * UseJumpableStub.GetHashCode());
+                return Import.GetHashCode();
             }
         }
 
 
-        private NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode> _wasmImportThunkPortableEntrypoints ;
-        public ISymbolDefinitionNode WasmImportThunkPortableEntrypoint(Import import, ReadyToRunHelper helper, bool useVirtualCall, bool useJumpableStub)
+        private NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode> _wasmImportThunkPortableEntrypoints;
+        public ISymbolDefinitionNode WasmImportThunkPortableEntrypoint(DelayLoadHelperImport import)
         {
-            WasmImportThunkPortableEntrypointKey thunkKey = new WasmImportThunkPortableEntrypointKey(import, helper, useVirtualCall, useJumpableStub);
-            return _wasmImportThunkPortableEntrypoints .GetOrAdd(thunkKey);
+            WasmImportThunkPortableEntrypointKey thunkKey = new WasmImportThunkPortableEntrypointKey(import);
+            return _wasmImportThunkPortableEntrypoints.GetOrAdd(thunkKey);
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)

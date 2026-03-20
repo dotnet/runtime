@@ -22,6 +22,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ISymbolNode _delayLoadHelper;
 
+        public bool UseVirtualCall => _useVirtualCall;
+        public bool UseJumpableStub => _useJumpableStub;
+        public ReadyToRunHelper HelperId => _helper;
+
         public DelayLoadHelperImport(
             NodeFactory factory, 
             ImportSectionNode importSectionNode, 
@@ -37,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _useJumpableStub = useJumpableStub;
             if (factory.Target.Architecture == TargetArchitecture.Wasm32)
             {
-                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this, helper, useVirtualCall, useJumpableStub);
+                _delayLoadHelper = factory.WasmImportThunkPortableEntrypoint(this);
             }
             else
             {
