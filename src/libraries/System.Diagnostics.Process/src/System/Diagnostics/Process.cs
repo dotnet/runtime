@@ -1322,6 +1322,10 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
                         }
+                        else if (OperatingSystem.IsAndroid())
+                        {
+                            childInputPipeHandle = new SafeFileHandle(0, ownsHandle: false);
+                        }
                         else
                         {
                             childInputPipeHandle = Console.OpenStandardInputHandle();
@@ -1331,6 +1335,10 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
+                        else if (OperatingSystem.IsAndroid())
+                        {
+                            childOutputPipeHandle = new SafeFileHandle(1, ownsHandle: false);
+                        }
                         else
                         {
                             childOutputPipeHandle = Console.OpenStandardOutputHandle();
@@ -1339,6 +1347,10 @@ namespace System.Diagnostics
                         if (startInfo.RedirectStandardError)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (OperatingSystem.IsAndroid())
+                        {
+                            childErrorPipeHandle = new SafeFileHandle(2, ownsHandle: false);
                         }
                         else
                         {
