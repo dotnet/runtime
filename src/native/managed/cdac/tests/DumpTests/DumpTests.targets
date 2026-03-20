@@ -62,23 +62,8 @@
     <DumpRuntimeVersion Include="$(DumpVersions)" />
   </ItemGroup>
 
-  <!--
-    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
-    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
-    MiniDumpWriteDump accepts the unsigned DAC. Windows 11+ / Server 2022+ only.
-
-    This is opt-in via /p:SetDisableAuxProviderSignatureCheck=true to avoid surprising
-    machine-wide registry changes during a normal build.
-  -->
-  <Target Name="_EnableUnsignedDacWindows"
-          BeforeTargets="GenerateAllDumps"
-          Condition="'$(HostOS)' == 'windows' AND '$(SetDisableAuxProviderSignatureCheck)' == 'true'">
-    <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
-             Importance="normal" />
-  </Target>
+  <!-- Unsigned DAC registry key for heap dumps (shared with cdac-dump-helix.proj) -->
+  <Import Project="EnableUnsignedDac.props" />
 
   <!-- Filter out Windows-only debuggees on non-Windows platforms. Debuggees opt in
        by setting <WindowsOnly>true</WindowsOnly> in their csproj. -->

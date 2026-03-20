@@ -1,0 +1,33 @@
+<Project>
+
+  <!--
+    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
+    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
+    MiniDumpWriteDump accepts the unsigned DAC. Windows 11+ / Server 2022+ only.
+
+    The key must be set in both the native (64-bit) and WoW64 (32-bit) registry views.
+    Without /reg:32, x86 processes running under WoW64 read from
+    HKLM\SOFTWARE\WOW6432Node\... and miss the key, producing degraded dumps.
+  -->
+
+  <PropertyGroup>
+    <_DacRegKey>HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings</_DacRegKey>
+    <_DacRegAdd>reg add &quot;$(_DacRegKey)&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f</_DacRegAdd>
+    <_DacRegAdd32>$(_DacRegAdd) /reg:32</_DacRegAdd32>
+  </PropertyGroup>
+
+  <!--
+    MSBuild target for local/CI builds (opt-in via /p:SetDisableAuxProviderSignatureCheck=true).
+  -->
+  <Target Name="_EnableUnsignedDacWindows"
+          BeforeTargets="GenerateAllDumps"
+          Condition="'$(HostOS)' == 'windows' AND '$(SetDisableAuxProviderSignatureCheck)' == 'true'">
+    <Exec Command="$(_DacRegAdd)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
+    <!-- WoW64 view only needed for x86 processes -->
+    <Exec Command="$(_DacRegAdd32)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
+          Condition="'$(TargetArchitecture)' == 'x86'" />
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(_DacRegAdd)"
+             Importance="normal" />
+  </Target>
+
+</Project>
