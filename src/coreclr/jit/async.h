@@ -120,6 +120,9 @@ public:
     }
 
     struct ContinuationLayout* Create();
+
+    static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
+                                                         const jitstd::vector<struct AsyncState>& states);
 };
 
 struct ContinuationLayout
@@ -140,7 +143,7 @@ struct ContinuationLayout
     {
     }
 
-    const ReturnInfo* FindReturn(GenTreeCall* call) const;
+    const ReturnInfo* FindReturn(Compiler* comp, GenTreeCall* call) const;
 #ifdef DEBUG
     void Dump(int indent = 0);
 #endif
@@ -192,6 +195,7 @@ class AsyncTransformation
     jitstd::vector<AsyncState> m_states;
     unsigned                   m_returnedContinuationVar = BAD_VAR_NUM;
     unsigned                   m_newContinuationVar      = BAD_VAR_NUM;
+    unsigned                   m_reuseContinuationVar    = BAD_VAR_NUM;
     unsigned                   m_dataArrayVar            = BAD_VAR_NUM;
     unsigned                   m_gcDataArrayVar          = BAD_VAR_NUM;
     unsigned                   m_resultBaseVar           = BAD_VAR_NUM;
@@ -246,7 +250,7 @@ class AsyncTransformation
                                         const ContinuationLayout&        layout,
                                         const ContinuationLayoutBuilder& subLayout,
                                         BasicBlock*                      suspendBB);
-    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB);
+    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
@@ -287,6 +291,7 @@ class AsyncTransformation
     unsigned    GetExceptionVar();
     BasicBlock* GetSharedReturnBB();
 
+    bool ReuseContinuations();
     void CreateResumptionsAndSuspensions();
     void CreateResumptionSwitch();
 

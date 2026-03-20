@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -161,6 +162,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/runtime/issues/7317
