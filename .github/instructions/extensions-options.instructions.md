@@ -23,7 +23,6 @@ applyTo: "src/libraries/Microsoft.Extensions.Options*/**"
 
 - `IOptionsMonitor<T>.OnChange` notifications must propagate correctly to all subscribers during configuration reload
 - Change tracking must not race with concurrent reads — use appropriate synchronization
-- Dispose change notification registrations when the subscriber is disposed to prevent memory leaks
 
 ## Source Generator Parity (D13)
 

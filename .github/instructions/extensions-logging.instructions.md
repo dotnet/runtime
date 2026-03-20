@@ -11,7 +11,6 @@ applyTo: "src/libraries/Microsoft.Extensions.Logging*/**"
 - Log exceptions via the `ILogger` overload that accepts `Exception` as a parameter — do not embed `exception.ToString()` in the template
 - Source-generated logging must produce identical behavior to the runtime logging path — test both paths for parity
 - Generated code must compile without warnings, especially nullable warnings
-- Incremental generators must handle cancellation and produce correct output on incremental changes
 
 ## Log Levels & Security
 

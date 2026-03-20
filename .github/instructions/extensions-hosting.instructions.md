@@ -23,8 +23,6 @@ applyTo: "src/libraries/Microsoft.Extensions.Hosting*/**"
 
 - Two hosts running in the same process must not interfere via static state
 - Static event handlers and registrations must be scoped to the host instance, not the process
-- Singleton services are accessed concurrently — all singleton implementations must be thread-safe
-- Async synchronization must use SemaphoreSlim — do not use Monitor/lock with async code
 
 ## Cross-Platform Correctness (D19)
 

@@ -24,7 +24,6 @@ applyTo: "src/libraries/Microsoft.Extensions.Configuration*/**"
 
 - File-based configuration providers must handle concurrent file replacement — use `FileShare.Delete` when reading
 - `IConfigurationRoot.Dispose` must dispose owned providers; document ownership for custom providers
-- `ChangeToken.OnChange` registrations must be cleaned up when the owning component is disposed to prevent leaks
 - Reload tokens must not leak event handler registrations — unsubscribe on disposal
 - Configuration providers own their data — `IConfigurationRoot` does not own `IFileProvider` instances
 

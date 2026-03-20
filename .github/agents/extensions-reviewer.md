@@ -37,11 +37,11 @@ These overarching principles govern all Extensions and Compression review decisi
 ### D1: API Surface Design & Naming
 *Weight: 4190 | 887 PRs | All 10 areas*
 
-- CHECK [major]: Every new public type, method, or property follows .NET naming conventions and matches the naming style of sibling APIs in the same namespace.
+- CHECK [major]: Extension methods follow the established naming taxonomy: `Add{Feature}`/`TryAdd{Feature}` for DI registration, `Configure{Aspect}`/`PostConfigure{Aspect}` for options setup, `Add{Provider}` on builder types for provider registration. Methods extending `IServiceCollection`, `IConfigurationBuilder`, or `ILoggingBuilder` return the builder type for chaining.
 - CHECK [major]: Method overloads provide sensible defaults — callers should not be forced to pass parameters they rarely customize.
 - CHECK [major]: Return types are chosen for maximum consumer convenience — prefer concrete types when sealed, interfaces when extensibility is expected.
 - CHECK [minor]: Parameter ordering is consistent: context/target first, options/configuration last, CancellationToken always at the end.
-- CHECK [major]: Enum values map to well-known constants in the underlying domain (e.g., compression levels match zlib values).
+- CHECK [major]: Enum values map to well-known constants in the underlying domain — compression levels match zlib values, flags enums use powers of 2, and enum changes are treated as binary-breaking.
 
 ### D2: Breaking Change & Compatibility
 *Weight: 1388 | 379 PRs | Primary: Configuration, Logging, Compression, DI, Options, Primitives*
@@ -67,13 +67,13 @@ These overarching principles govern all Extensions and Compression review decisi
 - CHECK [critical]: Every type holding unmanaged resources or IDisposable fields implements IDisposable (and IAsyncDisposable where beneficial) with correct dispose pattern.
 - CHECK [major]: Resource ownership is explicit — document whether a wrapping type owns and disposes the inner resource.
 - CHECK [major]: Error paths release resources via try/finally or using statements, not manual cleanup after success.
-- CHECK [critical]: SafeHandle-derived types are used for native compression handles — never store raw IntPtr.
+- CHECK [critical]: Resource subscriptions are tracked and disposed: `ChangeToken.OnChange` returns `IDisposable` that must be stored and disposed with the owner; `ICacheEntry.Dispose` commits the entry to cache; `PhysicalFileProvider` owns and disposes its `FileSystemWatcher`; Compression uses `SafeHandle` for native handles.
 - CHECK [minor]: `ObjectDisposedException.ThrowIf` guards operations on disposed objects.
 
 ### D5: Performance & Allocation Efficiency
 *Weight: 1530 | 346 PRs | Primary: Compression, Caching, Logging, Primitives, Http, Options, Configuration*
 
-- CHECK [major]: Hot paths avoid allocating new objects — prefer stackalloc, Span\<T>, ArrayPool\<T>, or cached delegates.
+- CHECK [major]: Library-specific hot paths avoid allocations: DI's `GetService` resolution chain uses cached delegates; Logging's `ILogger.Log` path uses `LoggerMessage.Define` or `[LoggerMessage]` source generator to avoid formatting allocations; Caching's `TryGetValue` uses `ConcurrentDictionary` with `AlternateLookup`; Compression's `ReadCore`/`WriteCore` use `ArrayPool` buffers rented once at initialization.
 - CHECK [major]: Closures that capture `this` or local state on hot paths are eliminated — use static lambdas with explicit state.
 - CHECK [major]: Expensive immutable results are cached (Task\<T> caching, ConditionalWeakTable, Lazy\<T>) rather than recomputed.
 - CHECK [major]: Buffer sizes match expected data patterns — use ArrayPool for variable-size buffers; avoid 100KB+ fixed buffers per operation.
@@ -111,7 +111,7 @@ These overarching principles govern all Extensions and Compression review decisi
 - CHECK [major]: Exceptions are the most specific applicable type (ArgumentException, InvalidOperationException, FormatException, InvalidDataException).
 - CHECK [major]: Error messages include actionable context — parameter names via `nameof`, expected vs actual values.
 - CHECK [major]: Exceptions from inner operations are properly wrapped or propagated — never swallowed silently without logging.
-- CHECK [major]: Platform-specific error codes are mapped to appropriate .NET exception types with native error code preserved.
+- CHECK [major]: Libraries throw domain-specific exceptions: Compression uses `InvalidDataException` for corrupt data and wraps native errors in `ZLibException`; Options uses `OptionsValidationException` with failure details; DI uses `InvalidOperationException` for resolution failures.
 - CHECK [major]: Async operations propagate exceptions through the returned Task/ValueTask.
 
 ### D10: Test Coverage & Quality
@@ -162,7 +162,7 @@ These overarching principles govern all Extensions and Compression review decisi
 
 - CHECK [critical]: Host.StopAsync does not throw when the cancellation token is canceled — it must allow shutdown logic to run.
 - CHECK [major]: BackgroundService.ExecuteTask is never assumed non-null — derived classes may not call base.StartAsync.
-- CHECK [major]: Services do not start listening or accepting work until health checks confirm readiness.
+- CHECK [major]: `IHostedLifecycleService` implementations respect the lifecycle ordering: `StartingAsync` (pre-work) → `StartAsync` (begin work) → `StartedAsync` (post-work). Work should begin in `StartAsync`, not `StartingAsync`. Health check gating is NOT built into the hosting layer — applications must implement readiness gates explicitly.
 - CHECK [critical]: BackgroundService.ExecuteAsync exceptions are observed and logged — unobserved task exceptions silently crash the host.
 - CHECK [major]: Shutdown signal handlers correctly dispose registrations and propagate to all hosted services on all platforms.
 
@@ -187,10 +187,10 @@ These overarching principles govern all Extensions and Compression review decisi
 ### D18: Code Quality & Deduplication
 *Weight: 8144 | 1369 PRs | All 10 areas (highest volume dimension)*
 
-- CHECK [minor]: Dead code, unused usings, commented-out code, and debug leftovers are removed.
+- CHECK [minor]: Shared code from `Common/src/` is link-included via .csproj `<Compile Include>`, not copy-pasted. Platform-specific partials (`.Windows.cs`, `.Unix.cs`) contain only platform-specific logic.
 - CHECK [major]: Sync and async code paths share logic via common helpers to prevent divergence.
 - CHECK [major]: XML documentation on public APIs is accurate and describes current behavior.
-- CHECK [major]: No accidental file inclusions — all changed files are intentional.
+- CHECK [major]: Sync and async test coverage uses parameterized helpers (e.g., `bool async` parameter with `[MemberData]`) rather than duplicated test methods.
 - CHECK [minor]: Common operations use existing shared helpers rather than re-implementing.
 
 ### D19: Cross-Platform Correctness
