@@ -1104,10 +1104,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
         targetMethodHnd = ldftnToken->m_token.hMethod;
     }
-    else
-    {
-        assert(targetMethodHnd == nullptr);
-    }
 
 #ifdef FEATURE_READYTORUN
     if (IsAot())
@@ -1158,7 +1154,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-        else if (oper == GT_FTN_ADDR)
+        else if (oper == GT_FTN_ADDR && ldftnToken != nullptr)
         {
             JITDUMP("optimized\n");
 
