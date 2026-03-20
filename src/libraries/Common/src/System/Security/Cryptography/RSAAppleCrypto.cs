@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
 
                         if (sequenceReader.PeekTag().Equals(Asn1Tag.Integer))
                         {
-                            AlgorithmIdentifierAsn ignored = default;
+                            ValueAlgorithmIdentifierAsn ignored = default;
                             RSAKeyFormatHelper.ReadRsaPublicKey(keyBlob, ignored, out key);
                         }
                         else
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
                     }
                     else
                     {
-                        AlgorithmIdentifierAsn ignored = default;
+                        ValueAlgorithmIdentifierAsn ignored = default;
                         RSAKeyFormatHelper.FromPkcs1PrivateKey(
                             keyBlob,
                             ignored,
@@ -161,24 +161,18 @@ namespace System.Security.Cryptography
             {
                 ThrowIfDisposed();
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                    {
-                        // Validate the DER value and get the number of bytes.
-                        RSAKeyFormatHelper.ReadRsaPublicKey(
-                            manager.Memory,
-                            out int localRead);
+                // Validate the DER value and get the number of bytes.
+                RSAKeyFormatHelper.ReadRsaPublicKey(
+                    source,
+                    out int localRead);
 
-                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
-                            source.Slice(0, localRead),
-                            Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
-                            isPublic: true);
-                        SetKey(SecKeyPair.PublicOnly(publicKey));
+                SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
+                    source.Slice(0, localRead),
+                    Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
+                    isPublic: true);
+                SetKey(SecKeyPair.PublicOnly(publicKey));
 
-                        bytesRead = localRead;
-                    }
-                }
+                bytesRead = localRead;
             }
 
             public override void ImportEncryptedPkcs8PrivateKey(
