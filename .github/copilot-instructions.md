@@ -84,7 +84,7 @@ Based on file paths you will modify:
 
 ### Step 2: Run the Baseline Build (from repo root)
 
-Run the appropriate build command on your working branch **before making any code changes**:
+From the repo root, on the branch you intend to modify, ensure you have a clean working tree (no uncommitted changes) at the current HEAD, then run the appropriate build command **before making any code changes**:
 
 | Component | Command |
 |-----------|---------|
