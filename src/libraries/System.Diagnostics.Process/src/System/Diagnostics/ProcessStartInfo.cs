@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -116,6 +117,89 @@ namespace System.Diagnostics
         public bool RedirectStandardInput { get; set; }
         public bool RedirectStandardOutput { get; set; }
         public bool RedirectStandardError { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The handle does not need to be inheritable; the runtime will make it inheritable as needed.
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="IO.File.OpenNullHandle"/> to discard input,
+        /// or <see cref="Console.OpenStandardInputHandle"/> to inherit the parent's standard input.
+        /// </para>
+        /// <para>
+        /// By default, <see cref="Process.Start()"/> will close this handle after starting the child process.
+        /// Set <see cref="LeaveHandlesOpen"/> to <see langword="true"/> to keep the handle open.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="RedirectStandardInput"/>
+        /// and requires <see cref="UseShellExecute"/> to be <see langword="false"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard input handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardInput { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard output of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardOutput"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The handle does not need to be inheritable; the runtime will make it inheritable as needed.
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="IO.File.OpenNullHandle"/> to discard output,
+        /// or <see cref="Console.OpenStandardOutputHandle"/> to inherit the parent's standard output.
+        /// </para>
+        /// <para>
+        /// By default, <see cref="Process.Start()"/> will close this handle after starting the child process.
+        /// Set <see cref="LeaveHandlesOpen"/> to <see langword="true"/> to keep the handle open.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="RedirectStandardOutput"/>
+        /// and requires <see cref="UseShellExecute"/> to be <see langword="false"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard output handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardOutput { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard error of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardError"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The handle does not need to be inheritable; the runtime will make it inheritable as needed.
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="IO.File.OpenNullHandle"/> to discard error output,
+        /// or <see cref="Console.OpenStandardErrorHandle"/> to inherit the parent's standard error.
+        /// </para>
+        /// <para>
+        /// By default, <see cref="Process.Start()"/> will close this handle after starting the child process.
+        /// Set <see cref="LeaveHandlesOpen"/> to <see langword="true"/> to keep the handle open.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="RedirectStandardError"/>
+        /// and requires <see cref="UseShellExecute"/> to be <see langword="false"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard error handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardError { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the <see cref="StandardInput"/>, <see cref="StandardOutput"/>,
+        /// and <see cref="StandardError"/> handles should be left open after the process is started.
+        /// </summary>
+        /// <remarks>
+        /// When <see langword="false"/> (the default), the handles are closed by <see cref="Process.Start()"/>
+        /// after starting the child process. When <see langword="true"/>, the caller is responsible for closing the handles.
+        /// </remarks>
+        /// <value><see langword="true"/> to leave the handles open; <see langword="false"/> to close them after the process starts. The default is <see langword="false"/>.</value>
+        public bool LeaveHandlesOpen { get; set; }
 
         public Encoding? StandardInputEncoding { get; set; }
 

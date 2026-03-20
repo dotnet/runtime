@@ -210,6 +210,9 @@
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
   </data>
+  <data name="CantSetHandleAndRedirect" xml:space="preserve">
+    <value>The StandardInput, StandardOutput, and StandardError handle properties cannot be used together with RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>
