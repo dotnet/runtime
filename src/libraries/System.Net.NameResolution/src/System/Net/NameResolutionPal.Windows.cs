@@ -15,7 +15,7 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
-        private static volatile NullableBool s_getAddrInfoExSupported;
+        private static NullableBool s_getAddrInfoExSupported;
 
         public static bool SupportsGetAddrInfoAsync
         {

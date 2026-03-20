@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         private readonly bool _isParentPath;
 
         /// <summary>
-        /// Initializes an instance of <see cref="DirectoryInfoWrapper" />.
+        /// Initializes a new instance of the <see cref="DirectoryInfoWrapper" /> class.
         /// </summary>
         /// <param name="directoryInfo">The <see cref="DirectoryInfo" />.</param>
         public DirectoryInfoWrapper(DirectoryInfo directoryInfo)
