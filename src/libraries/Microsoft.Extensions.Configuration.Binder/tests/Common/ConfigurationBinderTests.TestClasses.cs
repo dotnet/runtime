@@ -648,12 +648,12 @@ namespace Microsoft.Extensions
             public SimplePoco Complex { set => _complex = value; }
         }
 
-        private struct SetOnlyComplexStruct
+        public struct SetOnlyComplexStruct
         {
             public string A { get; set; }
         }
 
-        private sealed class StructSetOnlyPoco
+        public class StructSetOnlyPoco
         {
             private SetOnlyComplexStruct _complex;
 
