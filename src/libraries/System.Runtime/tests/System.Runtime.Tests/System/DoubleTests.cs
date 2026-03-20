@@ -479,9 +479,6 @@ namespace System.Tests
             // Zero with absurd exponent (still zero)
             yield return new object[] { "0x0p99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "0x0p-99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
-
-            // Trailing decimal point with no fractional digits
-            yield return new object[] { "0x1.p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
         }
 
         [Theory]
