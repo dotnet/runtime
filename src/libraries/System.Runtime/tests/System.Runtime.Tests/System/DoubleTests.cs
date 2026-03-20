@@ -365,8 +365,6 @@ namespace System.Tests
             yield return new object[] { "0x0.0p0", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "0x00p0", NumberStyles.HexFloat, invariantFormat, 0.0 };
             yield return new object[] { "0x000.000p0", NumberStyles.HexFloat, invariantFormat, 0.0 };
-            yield return new object[] { "0x0", NumberStyles.HexFloat, invariantFormat, 0.0 };
-            yield return new object[] { "-0x0", NumberStyles.HexFloat, invariantFormat, -0.0 };
 
             // Fractional-only significand (no integer part before decimal)
             yield return new object[] { "0x.8p1", NumberStyles.HexFloat, invariantFormat, 1.0 };
@@ -457,19 +455,11 @@ namespace System.Tests
             yield return new object[] { " 0x1.0p0 ", NumberStyles.HexFloat, invariantFormat, 1.0 };
             yield return new object[] { "  0x1.0p0  ", NumberStyles.HexFloat, invariantFormat, 1.0 };
 
-            // Without 0x prefix
-            yield return new object[] { "1.0p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
-            yield return new object[] { "1.8p0", NumberStyles.HexFloat, invariantFormat, 1.5 };
-            yield return new object[] { "Ap0", NumberStyles.HexFloat, invariantFormat, 10.0 };
-            yield return new object[] { "FF.8p0", NumberStyles.HexFloat, invariantFormat, 255.5 };
-
-            // Without exponent (integer-only form)
-            yield return new object[] { "0xA", NumberStyles.HexFloat, invariantFormat, 10.0 };
-            yield return new object[] { "0xFF", NumberStyles.HexFloat, invariantFormat, 255.0 };
-            yield return new object[] { "A", NumberStyles.HexFloat, invariantFormat, 10.0 };
-            yield return new object[] { "1", NumberStyles.HexFloat, invariantFormat, 1.0 };
-            yield return new object[] { "FF", NumberStyles.HexFloat, invariantFormat, 255.0 };
-            yield return new object[] { "0x100", NumberStyles.HexFloat, invariantFormat, 256.0 };
+            // Integer-only form (with p0)
+            yield return new object[] { "0xAp0", NumberStyles.HexFloat, invariantFormat, 10.0 };
+            yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0 };
+            yield return new object[] { "0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0 };
+            yield return new object[] { "0x100p0", NumberStyles.HexFloat, invariantFormat, 256.0 };
 
             // Large significand (many hex digits)
             yield return new object[] { "0xFFFFFFFFFFFFFFp0", NumberStyles.HexFloat, invariantFormat, (double)0xFFFFFFFFFFFFFF };
@@ -483,8 +473,8 @@ namespace System.Tests
             yield return new object[] { "0x1.999999999999ap-4", NumberStyles.HexFloat, invariantFormat, 0.1 };
 
             // HexFloat without AllowDecimalPoint should parse integers only
-            yield return new object[] { "0xFF", NumberStyles.AllowHexSpecifier | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, invariantFormat, 255.0 };
-            yield return new object[] { "A", NumberStyles.AllowHexSpecifier, invariantFormat, 10.0 };
+            yield return new object[] { "0xFFp0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, invariantFormat, 255.0 };
+            yield return new object[] { "0xAp0", NumberStyles.AllowHexSpecifier, invariantFormat, 10.0 };
 
             // Zero with absurd exponent (still zero)
             yield return new object[] { "0x0p99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
@@ -628,6 +618,13 @@ namespace System.Tests
             yield return new object[] { "0x1.0p", NumberStyles.HexFloat, null, typeof(FormatException) }; // Exponent marker without digits
             yield return new object[] { "0x1.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional part without exponent
             yield return new object[] { "0x.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional-only without exponent
+            yield return new object[] { "0x0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
+            yield return new object[] { "0xA", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
+            yield return new object[] { "0xFF", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
+            yield return new object[] { "0x100", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
+            yield return new object[] { "A", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without prefix or exponent
+            yield return new object[] { "1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without prefix or exponent
+            yield return new object[] { "FF", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without prefix or exponent
             yield return new object[] { "0xGp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char
             yield return new object[] { "0x1.Gp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char in fraction
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
@@ -639,6 +636,11 @@ namespace System.Tests
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
             yield return new object[] { "1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "1.8p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "Ap0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "FF.8p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "FFp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
             yield return new object[] { "0x1.0p 0", NumberStyles.HexFloat, null, typeof(FormatException) }; // internal whitespace in exponent
             yield return new object[] { "0x1pa", NumberStyles.HexFloat, null, typeof(FormatException) }; // non-digit in exponent
             yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
@@ -1114,7 +1116,6 @@ namespace System.Tests
         [Theory]
         [InlineData("-0x0p0")]
         [InlineData("-0x0.0p0")]
-        [InlineData("-0x0")]
         public static void ParseHexFloat_NegativeZero(string input)
         {
             double result = double.Parse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
