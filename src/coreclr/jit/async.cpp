@@ -659,6 +659,36 @@ static bool IsDefaultValue(GenTree* node)
 }
 
 //------------------------------------------------------------------------
+// MarkMutatedVarDsc:
+//   Mark a VarDsc (or its promoted fields) in the specified varset.
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   varDsc   - The var.
+//   mutated  - [in/out] The set to update.
+//
+static void MarkMutatedVarDsc(Compiler* compiler, LclVarDsc* varDsc, VARSET_TP& mutated)
+{
+    if (varDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+        return;
+    }
+
+    if (varDsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+            if (fieldDsc->lvTracked)
+            {
+                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // UpdateMutatedLocal:
 //   If the given node is a local store or LCL_ADDR, and the local is tracked,
 //   mark it as mutated in the provided set. Stores of a default (zero) value
@@ -696,28 +726,32 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
     }
 
     LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
-
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        return;
-    }
-
-    // For promoted structs the parent may not be tracked but the field locals
-    // are. When the parent is mutated, all tracked fields must be marked as
-    // mutated as well.
-    if (varDsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            if (fieldDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
-            }
-        }
-    }
+    MarkMutatedVarDsc(compiler, varDsc, mutated);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// PrintVarSet:
+//   Print a varset as a space separate list of locals.
+//
+// Parameters:
+//   comp - Compiler instance
+//   set  - The varset to print.
+//
+static void PrintVarSet(Compiler* comp, VARSET_VALARG_TP set)
+{
+    VarSetOps::Iter iter(comp, set);
+    unsigned        varIndex = 0;
+    const char*     sep      = "";
+    while (iter.NextElem(&varIndex))
+    {
+        unsigned lclNum = comp->lvaTrackedToVarNum[varIndex];
+        printf("%sV%02u", sep, lclNum);
+        sep = " ";
+    }
+    printf("\n");
+}
+#endif
 
 //------------------------------------------------------------------------
 // DefaultValueAnalysis::ComputePerBlockMutatedVars:
@@ -807,16 +841,7 @@ void DefaultValueAnalysis::DumpMutatedVars()
         if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
         {
             printf("  " FMT_BB " mutated: ", block->bbNum);
-            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
-            printf("\n");
+            PrintVarSet(m_compiler, m_mutatedVars[block->bbNum]);
         }
     }
 }
@@ -835,21 +860,12 @@ void DefaultValueAnalysis::DumpMutatedVarsIn()
 
         if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
         {
-            printf("<none>");
+            printf("<none>\n");
         }
         else
         {
-            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
+            PrintVarSet(m_compiler, m_mutatedVarsIn[block->bbNum]);
         }
-        printf("\n");
     }
 }
 #endif
@@ -867,29 +883,21 @@ void DefaultValueAnalysis::DumpMutatedVarsIn()
 //
 static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if (!node->OperIsLocalStore() && !node->OperIs(GT_LCL_ADDR))
+    if (node->IsCall())
+    {
+        auto visitDef = [&](GenTreeLclVarCommon* lcl) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(lcl), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLocalDefNodes(compiler, visitDef);
+    }
+    else if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
+    {
+        MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
+    }
+    else
     {
         return;
-    }
-
-    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
-
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        return;
-    }
-
-    if (varDsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            if (fieldDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
-            }
-        }
     }
 }
 
@@ -1143,8 +1151,6 @@ void PreservedValueAnalysis::ComputePerBlockMutatedVars()
                 node = node->gtNext;
                 assert(node != nullptr);
             }
-
-            node = node->gtNext;
         }
 
         while (node != nullptr)
@@ -1237,16 +1243,7 @@ void PreservedValueAnalysis::DumpMutatedVars()
         if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
         {
             printf("  " FMT_BB " mutated: ", block->bbNum);
-            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
-            printf("\n");
+            PrintVarSet(m_compiler, m_mutatedVars[block->bbNum]);
         }
     }
 }
@@ -1265,25 +1262,16 @@ void PreservedValueAnalysis::DumpMutatedVarsIn()
 
         if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
         {
-            printf("<none>");
+            printf("<none>\n");
         }
         else if (VarSetOps::Equal(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler)))
         {
-            printf("<all>");
+            printf("<all>\n");
         }
         else
         {
-            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
+            PrintVarSet(m_compiler, m_mutatedVarsIn[block->bbNum]);
         }
-        printf("\n");
     }
 }
 #endif
@@ -1360,11 +1348,14 @@ void AsyncLiveness::Update(GenTree* node)
 {
     m_updater.UpdateLife<true>(node);
     UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
+
+    // If this is an async call then we can reach defs after resumption now.
+    // Make sure defs happening as part of the call are included as mutated since resumption.
+    m_resumeReachable |= node->IsCall() && node->AsCall()->IsAsync();
     if (m_resumeReachable)
     {
         MarkMutatedLocal(m_compiler, node, m_mutatedSinceResumption);
     }
-    m_resumeReachable |= node->IsCall() && node->AsCall()->IsAsync();
 }
 
 //------------------------------------------------------------------------
@@ -1859,6 +1850,13 @@ void AsyncTransformation::Transform(
 
     bool      resumeReachable = life.IsResumeReachable();
     VARSET_TP mutatedSinceResumption(VarSetOps::MakeCopy(m_compiler, life.GetMutatedSinceResumption()));
+
+    JITDUMP("  This suspension point is%s resume-reachable\n", resumeReachable ? "" : " NOT");
+    if (resumeReachable)
+    {
+        JITDUMP("  Locals mutated since previous resumption: ");
+        DBEXEC(VERBOSE, PrintVarSet(m_compiler, mutatedSinceResumption));
+    }
 
     ContinuationLayoutBuilder* layoutBuilder = new (m_compiler, CMK_Async) ContinuationLayoutBuilder(m_compiler);
 
