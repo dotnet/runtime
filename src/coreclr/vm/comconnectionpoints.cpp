@@ -563,11 +563,11 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
             // Construct the delegate and invoke the provider method in one helper.
             invokeConnectionPointProviderMethod.InvokeThrowing(
                 &pProvider,
-                (INT_PTR)pProvMethodDesc->GetSingleCallableAddrOfCode(),
+                pProvMethodDesc->GetSingleCallableAddrOfCode(),
                 &pDelegate,
-                (INT_PTR)pDlgCtorMD->GetSingleCallableAddrOfCode(),
+                pDlgCtorMD->GetSingleCallableAddrOfCode(),
                 &pSubscriber,
-                (INT_PTR)pEventMethodDesc->GetSingleCallableAddrOfCode());
+                pEventMethodDesc->GetMultiCallableAddrOfCode());
         }
         GCPROTECT_END();
     }
