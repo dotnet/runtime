@@ -198,19 +198,59 @@ namespace System.Text.Json.Serialization.Metadata
 
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
+            // For byref parameters, we need locals because we receive values but need to pass addresses.
+            LocalBuilder?[] locals = new LocalBuilder?[parameterCount];
+            for (int index = 0; index < parameterCount; index++)
+            {
+                if (parameters[index].ParameterType.IsByRef)
+                {
+                    Type elementType = parameters[index].ParameterType.GetElementType()!;
+                    locals[index] = generator.DeclareLocal(elementType);
+
+                    if (parameters[index].IsOut)
+                    {
+                        // For out parameters, initialize to default (the caller passes placeholder values).
+                        if (elementType.IsValueType)
+                        {
+                            generator.Emit(OpCodes.Ldloca, locals[index]!);
+                            generator.Emit(OpCodes.Initobj, elementType);
+                        }
+                        else
+                        {
+                            generator.Emit(OpCodes.Ldnull);
+                            generator.Emit(OpCodes.Stloc, locals[index]!);
+                        }
+                    }
+                    else
+                    {
+                        // For in/ref parameters, copy the argument value to the local.
+                        generator.Emit(
+                            index switch
+                            {
+                                0 => OpCodes.Ldarg_0,
+                                1 => OpCodes.Ldarg_1,
+                                2 => OpCodes.Ldarg_2,
+                                3 => OpCodes.Ldarg_3,
+                                _ => throw new InvalidOperationException()
+                            });
+                        generator.Emit(OpCodes.Stloc, locals[index]!);
+                    }
+                }
+            }
+
+            // Now push all arguments onto the stack.
             for (int index = 0; index < parameterCount; index++)
             {
                 Debug.Assert(index <= JsonConstants.UnboxedParameterCountThreshold);
 
-                // For byref parameters (in/ref/out), load the address of the argument instead of the value.
-                bool isByRef = parameters[index].ParameterType.IsByRef;
-
-                if (isByRef)
+                if (parameters[index].ParameterType.IsByRef)
                 {
-                    generator.Emit(OpCodes.Ldarga_S, index);
+                    // Load address of the local variable.
+                    generator.Emit(OpCodes.Ldloca, locals[index]!);
                 }
                 else
                 {
+                    // Load the argument value directly.
                     generator.Emit(
                         index switch
                         {
