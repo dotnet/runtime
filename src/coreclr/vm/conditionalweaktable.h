@@ -44,7 +44,6 @@ public:
 #endif
 };
 
-
 class ConditionalWeakTableObject final : public Object
 {
     friend class CoreLibBinder;
