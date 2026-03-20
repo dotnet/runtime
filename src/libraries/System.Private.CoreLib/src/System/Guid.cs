@@ -1119,12 +1119,7 @@ namespace System
 
         public int CompareTo(Guid value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                return Unsafe.BitCast<Guid, UInt128>(this).CompareTo(Unsafe.BitCast<Guid, UInt128>(value));
-            }
-
-            if (_a != value._a)
+            if (value._a != _a)
             {
                 return (uint)_a < (uint)value._a ? -1 : 1;
             }
@@ -1141,8 +1136,15 @@ namespace System
                 return r;
             }
 
-            return BinaryPrimitives.ReverseEndianness(Unsafe.BitCast<Guid, UInt128>(this)._upper)
-                .CompareTo(BinaryPrimitives.ReverseEndianness(Unsafe.BitCast<Guid, UInt128>(value)._upper));
+            ulong x = Unsafe.BitCast<Guid, (ulong, ulong)>(this).Item2;
+            ulong y = Unsafe.BitCast<Guid, (ulong, ulong)>(value).Item2;
+            if (BitConverter.IsLittleEndian)
+            {
+                x = BinaryPrimitives.ReverseEndianness(x);
+                y = BinaryPrimitives.ReverseEndianness(y);
+            }
+
+            return x.CompareTo(y);
         }
 
         public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
