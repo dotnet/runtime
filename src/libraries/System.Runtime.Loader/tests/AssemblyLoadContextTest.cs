@@ -323,6 +323,7 @@ namespace System.Runtime.Loader.Tests
             // The message should identify the differing generic argument and its ALCs.
             if (!ice.Message.Contains("Debugging resource strings are unavailable"))
             {
+                Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
                 Assert.Contains("generic argument", ice.Message);
                 Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
                 Assert.Contains("Default", ice.Message);
