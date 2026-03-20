@@ -293,12 +293,9 @@ namespace System.Runtime.Loader.Tests
             });
 
             // The message should report both ALC contexts for the same-named type.
-            if (!ice.Message.Contains("Debugging resource strings are unavailable"))
-            {
-                Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
-                Assert.Contains("Default", ice.Message);
-                Assert.Contains("TestALC", ice.Message);
-            }
+            Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
@@ -318,15 +315,9 @@ namespace System.Runtime.Loader.Tests
                 StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
             });
 
-            // The message should identify the differing generic argument and its ALCs.
-            if (!ice.Message.Contains("Debugging resource strings are unavailable"))
-            {
-                Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
-                Assert.Contains("generic argument", ice.Message);
-                Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
-                Assert.Contains("Default", ice.Message);
-                Assert.Contains("TestALC", ice.Message);
-            }
+            // The message should include the full generic type names with the differing argument.
+            Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
+            Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
         }
     }
 
