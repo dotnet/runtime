@@ -10,7 +10,12 @@ namespace System.Diagnostics.CodeAnalysis
         AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property,
         Inherited = false,
         AllowMultiple = false)]
-    public sealed class RequiresUnsafeAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class RequiresUnsafeAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RequiresUnsafeAttribute"/> class.
