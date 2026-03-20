@@ -555,7 +555,7 @@ namespace System.IO.Tests
             try
             {
                 action();
-                eventsOccurred.WaitOne(new TimeSpan(0, 0, 15));
+                eventsOccurred.WaitOne(WaitForExpectedEventTimeout_NoRetry);
             }
             finally
             {

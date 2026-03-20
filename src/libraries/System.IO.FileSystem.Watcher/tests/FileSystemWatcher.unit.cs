@@ -970,8 +970,8 @@ namespace System.IO.Tests
                     watcher.Filters.Add(Path.GetFileName(directoryOne));
                     watcher.Filters.Add(Path.GetFileName(directoryTwo));
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => Directory.Delete(directoryOne), expectedPath: directoryOne);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => Directory.Delete(directoryTwo), expectedPath: directoryTwo);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => { if (Directory.Exists(directoryOne)) Directory.Delete(directoryOne); }, expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => { if (Directory.Exists(directoryTwo)) Directory.Delete(directoryTwo); }, expectedPath: directoryTwo);
                     ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: () => { if (Directory.Exists(directoryThree)) Directory.Delete(directoryThree); }, expectedPath: directoryThree);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
@@ -993,8 +993,8 @@ namespace System.IO.Tests
                 {
                     watcher.Filters.Add(Path.GetFileName(directoryTwo));
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => Directory.Delete(directoryOne), expectedPath: directoryOne);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => Directory.Delete(directoryTwo), expectedPath: directoryTwo);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => { if (Directory.Exists(directoryOne)) Directory.Delete(directoryOne); }, expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => { if (Directory.Exists(directoryTwo)) Directory.Delete(directoryTwo); }, expectedPath: directoryTwo);
                     ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: () => { if (Directory.Exists(directoryThree)) Directory.Delete(directoryThree); }, expectedPath: directoryThree);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
