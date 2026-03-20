@@ -154,21 +154,6 @@ namespace System.Diagnostics.Tests
             Assert.True(options.KillOnParentExit);
         }
 
-        [Fact]
-        public void CreateNewProcessGroup_DefaultIsFalse()
-        {
-            ProcessStartOptions options = new(GetCurrentProcessName());
-            Assert.False(options.CreateNewProcessGroup);
-        }
-
-        [Fact]
-        public void CreateNewProcessGroup_CanSet()
-        {
-            ProcessStartOptions options = new(GetCurrentProcessName());
-            options.CreateNewProcessGroup = true;
-            Assert.True(options.CreateNewProcessGroup);
-        }
-
         private string GetCurrentProcessName()
         {
             return Environment.ProcessPath ?? (OperatingSystem.IsWindows()

@@ -31,9 +31,9 @@ namespace System.Diagnostics.Tests
                 _ => throw new ArgumentOutOfRangeException(nameof(signal))
             };
 
-            if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)processId))
+            if (!Interop.Kernel32.GenerateConsoleCtrlEvent((int)dwCtrlEvent, processId))
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 if (error == Interop.Errors.ERROR_INVALID_FUNCTION && PlatformDetection.IsInContainer)
                 {
                     // Docker in CI runs without a console attached.

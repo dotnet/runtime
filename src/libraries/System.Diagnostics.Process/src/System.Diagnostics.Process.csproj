@@ -187,6 +187,8 @@
              Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_PRIVILEGE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ThreadOptions.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ThreadOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ProcessOptions.cs"
@@ -218,6 +220,14 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeThreadHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.JobObjects.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.JobObjects.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcThreadAttributeList.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ProcThreadAttributeList.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread_IntPtr.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread_IntPtr.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
