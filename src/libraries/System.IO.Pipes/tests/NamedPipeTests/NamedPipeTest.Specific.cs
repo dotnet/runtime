@@ -632,6 +632,42 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public void ClientConnect_PipeNotFound_DoesNotFloodFirstChanceExceptions()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+            int socketExceptionCount = 0;
+
+            EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> handler = (sender, args) =>
+            {
+                if (args.Exception is Net.Sockets.SocketException)
+                {
+                    Interlocked.Increment(ref socketExceptionCount);
+                }
+            };
+
+            AppDomain.CurrentDomain.FirstChanceException += handler;
+            try
+            {
+                using (NamedPipeClientStream client = new NamedPipeClientStream(pipeName))
+                {
+                    Assert.Throws<TimeoutException>(() => client.Connect(500));
+                }
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.FirstChanceException -= handler;
+            }
+
+            // Before the fix, connecting to a non-existent pipe for 500ms would
+            // throw hundreds or thousands of SocketExceptions internally.
+            // With the Stat-based guard, zero SocketExceptions should be thrown
+            // when the pipe file never exists. Allow a small margin for races.
+            Assert.InRange(socketExceptionCount, 0, 5);
+        }
+
         [Theory]
         [MemberData(nameof(GetCancellationTokens))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
