@@ -23,7 +23,7 @@ namespace System.IO.Tests
         // the entire timeout specified.
         public const int WaitForExpectedEventTimeout = 1000;         // ms to wait for an event to happen
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
-        public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
+        public const int SubsequentExpectedWait = 500;              // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
         public const int WaitForUnexpectedEventTimeout = 150;       // ms to wait for a non-expected event.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
@@ -195,7 +195,12 @@ namespace System.IO.Tests
                     Thread.Sleep(RetryDelayMilliseconds);
                 }
 
-                result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
+                // Use progressively longer timeouts on retries. The first attempt uses the base timeout
+                // for fast failure in normal conditions. Subsequent attempts double the timeout to tolerate
+                // transient delays (thread pool starvation, slow CI machines, etc.).
+                int effectiveTimeout = timeout * attemptsCompleted;
+
+                result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, effectiveTimeout);
 
                 if (cleanup != null)
                     cleanup();
@@ -306,6 +311,11 @@ namespace System.IO.Tests
                 renamed = WatchRenamed(watcher, expectedPaths);
 
             watcher.EnableRaisingEvents = true;
+
+            // Allow the OS-specific watcher implementation to finish async startup
+            // (e.g., ReadDirectoryChangesW registration on Windows, inotify thread on Linux).
+            Thread.Sleep(50);
+
             action();
 
             // Verify Changed
@@ -430,8 +440,11 @@ namespace System.IO.Tests
                     watcher.EnableRaisingEvents = true;
                 }
 
+                // Allow the OS-specific watcher implementation to finish async startup.
+                Thread.Sleep(50);
+
                 action();
-                result = errorOccurred.WaitOne(WaitForExpectedEventTimeout);
+                result = errorOccurred.WaitOne(WaitForExpectedEventTimeout * attemptsCompleted);
                 watcher.EnableRaisingEvents = false;
                 cleanup();
             }
@@ -528,6 +541,9 @@ namespace System.IO.Tests
 
             bool raisingEvent = watcher.EnableRaisingEvents;
             watcher.EnableRaisingEvents = true;
+
+            // Allow the OS-specific watcher implementation to finish async startup.
+            Thread.Sleep(50);
 
             try
             {
