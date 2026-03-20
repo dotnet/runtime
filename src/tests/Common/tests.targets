@@ -184,17 +184,18 @@
     </ItemGroup>
 
     <Warning Condition="'%(_StaleFile.CoreRootFile)' != ''"
-             Text="STALE Core_Root: %(_StaleFile.Filename)%(_StaleFile.Extension) in Core_Root is older than build output at %(Identity)" />
+             Text="STALE Core_Root: %(_StaleFile.Filename)%(_StaleFile.Extension) in Core_Root is older than build output at %(_StaleFile.Identity)" />
 
     <Warning Condition="@(_StaleFile->Count()) &gt; 0"
-             Text="Core_Root has @(_StaleFile->Count()) stale file(s). Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly — To suppress: /p:SkipCoreRootFreshnessCheck=true" />
+             Text="Core_Root has @(_StaleFile->Count()) stale file(s). Run: `src/tests/build.[cmd|sh] $(TargetArchitecture) $(Configuration) -generatelayoutonly`. To suppress, set `/p:SkipCoreRootFreshnessCheck=true`" />
   </Target>
 
   <!-- IL-CG2 R2R cache staleness (separate concern, runs independently) -->
   <Target Name="_CheckIlCg2CacheFreshness"
           Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
                      '$(ContinuousIntegrationBuild)' != 'true' and
-                     '$(RunCrossGen2)' == '1'">
+                     '$(RunCrossGen2)' == '1' and
+                     Exists('$(CORE_ROOT)')">
 
     <PropertyGroup>
       <_CoreRootDir>$([MSBuild]::NormalizeDirectory('$(CORE_ROOT)'))</_CoreRootDir>
