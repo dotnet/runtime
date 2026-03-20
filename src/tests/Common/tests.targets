@@ -210,9 +210,13 @@
       <_Crossgen2InCoreRootTime>$([System.IO.File]::GetLastWriteTime('$(_Crossgen2DstPath)').Ticks)</_Crossgen2InCoreRootTime>
     </PropertyGroup>
 
+    <ItemGroup>
+      <_StaleIlCg2DoneFile Include="@(_IlCg2DoneFiles)"
+          Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
+    </ItemGroup>
+
     <Warning Text="STALE IL-CG2: One or more IL-CG2 R2R caches may be stale (crossgen2 is newer than cached compilations)."
-             Condition="'@(_IlCg2DoneFiles)' != '' and
-                        $([System.IO.File]::GetLastWriteTime('%(_IlCg2DoneFiles.Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
+             Condition="'@(_StaleIlCg2DoneFile)' != ''" />
   </Target>
 
   <Target Name="RunTests" DependsOnTargets="CheckCoreRootFreshness;_CheckIlCg2CacheFreshness;RunMergedTests;RunStandaloneRunnerTests" Condition="'$(SkipTests)' != 'True'">
