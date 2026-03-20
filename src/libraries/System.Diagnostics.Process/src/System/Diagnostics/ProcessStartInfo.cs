@@ -124,8 +124,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The handle must be inheritable. Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of
-        /// connected pipe handles, or use <see cref="IO.File.OpenHandle"/> to open a file handle.
+        /// The handle does not need to be inheritable; the runtime will make it inheritable as needed.
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="IO.File.OpenNullHandle"/> to discard input,
+        /// or <see cref="Console.OpenStandardInputHandle"/> to inherit the parent's standard input.
         /// </para>
         /// <para>
         /// By default, <see cref="Process.Start()"/> will close this handle after starting the child process.
@@ -145,8 +148,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The handle must be inheritable. Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of
-        /// connected pipe handles, or use <see cref="IO.File.OpenHandle"/> to open a file handle.
+        /// The handle does not need to be inheritable; the runtime will make it inheritable as needed.
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="IO.File.OpenNullHandle"/> to discard output,
+        /// or <see cref="Console.OpenStandardOutputHandle"/> to inherit the parent's standard output.
         /// </para>
         /// <para>
         /// By default, <see cref="Process.Start()"/> will close this handle after starting the child process.
@@ -166,8 +172,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The handle must be inheritable. Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of
-        /// connected pipe handles, or use <see cref="IO.File.OpenHandle"/> to open a file handle.
+        /// The handle does not need to be inheritable; the runtime will make it inheritable as needed.
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="IO.File.OpenNullHandle"/> to discard error output,
+        /// or <see cref="Console.OpenStandardErrorHandle"/> to inherit the parent's standard error.
         /// </para>
         /// <para>
         /// By default, <see cref="Process.Start()"/> will close this handle after starting the child process.

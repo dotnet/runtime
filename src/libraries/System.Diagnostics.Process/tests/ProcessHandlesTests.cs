@@ -29,9 +29,6 @@ namespace System.Diagnostics.Tests
             {
                 using Process process = Process.Start(startInfo)!;
 
-                // Close the parent copy of the child handle, so the pipe will signal EOF when the child exits
-                writePipe.Close();
-
                 using FileStream fileStream = new(readPipe, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
                 using StreamReader streamReader = new(fileStream);
 
@@ -79,10 +76,6 @@ namespace System.Diagnostics.Tests
             using (errorWrite)
             {
                 using Process process = Process.Start(startInfo)!;
-
-                // Close the parent copy of the child handles, so the pipes will signal EOF when the child exits
-                outputWrite.Close();
-                errorWrite.Close();
 
                 using FileStream outputStream = new(outputRead, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
                 using FileStream errorStream = new(errorRead, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
