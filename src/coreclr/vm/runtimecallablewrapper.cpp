@@ -282,9 +282,6 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
 
     HRESULT hr = S_OK;
     NewRCWHolder pNewRCW;
-    BOOL bUseDelegate = FALSE;
-
-    MethodTable *pCallbackMT = NULL;
 
     OBJECTREF oref = NULL;
     COMOBJECTREF cref = NULL;
@@ -295,68 +292,14 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         //get wrapper for the object, this could enable GC
         CCWHolder pComWrap =  ComCallWrapper::InlineGetWrapper((OBJECTREF *)&cref);
 
-        // Make sure the ClassInitializer has run, since the user might have
-        // wanted to set up a COM object creation callback.
-        pMTClass->CheckRunClassInitThrowing();
-
-        // If the user is going to use a delegate to allocate the COM object
-        // (rather than CoCreateInstance), we need to know now, before we enable
-        // preemptive GC mode (since we touch object references in the
-        // determination).
-        // We don't just check the current class to see if it has a cllabck
-        // registered, we check up the class chain to see if any of our parents
-        // did.
-
-        pCallbackMT = pMTClass;
-        while ((pCallbackMT != NULL) &&
-               (pCallbackMT->GetObjCreateDelegate() == NULL) &&
-               !pCallbackMT->IsComImport())
-        {
-            pCallbackMT = pCallbackMT->GetParentMethodTable();
-        }
-
-        if (pCallbackMT && !pCallbackMT->IsComImport())
-            bUseDelegate = TRUE;
-
         DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);
         _ASSERTE(pOuter != NULL);
 
-        // If the user has set a delegate to allocate the COM object, use it.
-        // Otherwise we just CoCreateInstance it.
-        if (bUseDelegate)
-        {
-            ARG_SLOT args[2];
-
-            OBJECTREF orDelegate = pCallbackMT->GetObjCreateDelegate();
-            MethodDesc *pMeth = COMDelegate::GetMethodDesc(orDelegate);
-
-            GCPROTECT_BEGIN(orDelegate)
-            {
-                _ASSERTE(pMeth);
-                MethodDescCallSite  delegateMethod(pMeth, &orDelegate);
-
-                // Get the OR on which we are going to invoke the method and set it
-                //  as the first parameter in arg above.
-                args[0] = (ARG_SLOT)OBJECTREFToObject(COMDelegate::GetTargetObject(orDelegate));
-
-                // Pass the IUnknown of the aggregator as the second argument.
-                args[1] = (ARG_SLOT)(IUnknown*)pOuter;
-
-                // Call the method...
-                pUnk = (IUnknown *)delegateMethod.Call_RetArgSlot(args);
-                if (!pUnk)
-                    COMPlusThrowHR(E_FAIL);
-            }
-            GCPROTECT_END();
-        }
-        else
-        {
-            _ASSERTE(m_pClassMT);
-            pUnk = CreateInstanceInternal(pOuter, &fDidContainment);
-        }
+        _ASSERTE(m_pClassMT);
+        pUnk = CreateInstanceInternal(pOuter, &fDidContainment);
 
         __def.Pop();
 
