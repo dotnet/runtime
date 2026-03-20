@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Threading
 {
     /// <summary>
@@ -31,6 +33,7 @@ namespace System.Threading
             _nativeOverlapped->OffsetHigh = 0;
         }
 
+        [RequiresUnsafe]
         private static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
             ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Unpack(nativeOverlapped);

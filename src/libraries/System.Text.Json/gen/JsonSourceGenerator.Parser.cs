@@ -588,6 +588,7 @@ namespace System.Text.Json.SourceGeneration
                     out JsonNumberHandling? numberHandling,
                     out JsonUnmappedMemberHandling? unmappedMemberHandling,
                     out JsonObjectCreationHandling? preferredPropertyObjectCreationHandling,
+                    out JsonKnownNamingPolicy? typeNamingPolicy,
                     out JsonIgnoreCondition? typeIgnoreCondition,
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
@@ -690,7 +691,7 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
                     ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices);
                     propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
@@ -751,6 +752,7 @@ namespace System.Text.Json.SourceGeneration
                 out JsonNumberHandling? numberHandling,
                 out JsonUnmappedMemberHandling? unmappedMemberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
+                out JsonKnownNamingPolicy? namingPolicy,
                 out JsonIgnoreCondition? typeIgnoreCondition,
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
@@ -759,6 +761,7 @@ namespace System.Text.Json.SourceGeneration
                 numberHandling = null;
                 unmappedMemberHandling = null;
                 objectCreationHandling = null;
+                namingPolicy = null;
                 typeIgnoreCondition = null;
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
@@ -781,6 +784,22 @@ namespace System.Text.Json.SourceGeneration
                     else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonObjectCreationHandlingAttributeType))
                     {
                         objectCreationHandling = (JsonObjectCreationHandling)attributeData.ConstructorArguments[0].Value!;
+                        continue;
+                    }
+                    else if (_knownSymbols.JsonNamingPolicyAttributeType?.IsAssignableFrom(attributeType) == true)
+                    {
+                        if (attributeData.ConstructorArguments.Length == 1 &&
+                            attributeData.ConstructorArguments[0].Value is int knownPolicyValue)
+                        {
+                            namingPolicy = (JsonKnownNamingPolicy)knownPolicyValue;
+                        }
+                        else
+                        {
+                            // The attribute uses a custom naming policy that can't be resolved at compile time.
+                            // Use Unspecified to prevent the global naming policy from incorrectly applying.
+                            namingPolicy = JsonKnownNamingPolicy.Unspecified;
+                        }
+
                         continue;
                     }
                     else if (!foundJsonConverterAttribute && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
@@ -1006,6 +1025,7 @@ namespace System.Text.Json.SourceGeneration
                 in TypeToGenerate typeToGenerate,
                 JsonIgnoreCondition? typeIgnoreCondition,
                 SourceGenerationOptionsSpec? options,
+                JsonKnownNamingPolicy? typeNamingPolicy,
                 out bool hasExtensionDataProperty,
                 out List<int>? fastPathPropertyIndices)
             {
@@ -1090,7 +1110,8 @@ namespace System.Text.Json.SourceGeneration
                         typeIgnoreCondition,
                         ref hasExtensionDataProperty,
                         generationMode,
-                        options);
+                        options,
+                        typeNamingPolicy);
 
                     if (propertySpec is null)
                     {
@@ -1235,7 +1256,8 @@ namespace System.Text.Json.SourceGeneration
                 JsonIgnoreCondition? typeIgnoreCondition,
                 ref bool typeHasExtensionDataProperty,
                 JsonSourceGenerationMode? generationMode,
-                SourceGenerationOptionsSpec? options)
+                SourceGenerationOptionsSpec? options,
+                JsonKnownNamingPolicy? typeNamingPolicy)
             {
                 Debug.Assert(memberInfo is IFieldSymbol or IPropertySymbol);
 
@@ -1248,6 +1270,7 @@ namespace System.Text.Json.SourceGeneration
                     out JsonIgnoreCondition? ignoreCondition,
                     out JsonNumberHandling? numberHandling,
                     out JsonObjectCreationHandling? objectCreationHandling,
+                    out JsonKnownNamingPolicy? memberNamingPolicy,
                     out TypeRef? converterType,
                     out int order,
                     out bool isExtensionData,
@@ -1318,8 +1341,17 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                string effectiveJsonPropertyName = DetermineEffectiveJsonPropertyName(memberInfo.Name, jsonPropertyName, options);
+                string effectiveJsonPropertyName = DetermineEffectiveJsonPropertyName(memberInfo.Name, jsonPropertyName, memberNamingPolicy, typeNamingPolicy, options);
                 string propertyNameFieldName = DeterminePropertyNameFieldName(effectiveJsonPropertyName);
+
+                // For metadata-based serialization, embed the effective property name when a naming policy
+                // attribute is present so that the runtime DeterminePropertyName uses it instead of
+                // falling back to the global PropertyNamingPolicy. JsonPropertyNameAttribute values are
+                // already captured in jsonPropertyName and take highest precedence.
+                string? metadataJsonPropertyName = jsonPropertyName
+                    ?? (memberNamingPolicy is not null || typeNamingPolicy is not null
+                        ? effectiveJsonPropertyName
+                        : null);
 
                 // Enqueue the property type for generation, unless the member is ignored.
                 TypeRef propertyTypeRef = ignoreCondition != JsonIgnoreCondition.Always
@@ -1333,7 +1365,7 @@ namespace System.Text.Json.SourceGeneration
                     IsProperty = memberInfo is IPropertySymbol,
                     IsPublic = isAccessible,
                     IsVirtual = memberInfo.IsVirtual(),
-                    JsonPropertyName = jsonPropertyName,
+                    JsonPropertyName = metadataJsonPropertyName,
                     EffectiveJsonPropertyName = effectiveJsonPropertyName,
                     PropertyNameFieldName = propertyNameFieldName,
                     IsReadOnly = isReadOnly,
@@ -1367,6 +1399,7 @@ namespace System.Text.Json.SourceGeneration
                 out JsonIgnoreCondition? ignoreCondition,
                 out JsonNumberHandling? numberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
+                out JsonKnownNamingPolicy? memberNamingPolicy,
                 out TypeRef? converterType,
                 out int order,
                 out bool isExtensionData,
@@ -1379,6 +1412,7 @@ namespace System.Text.Json.SourceGeneration
                 ignoreCondition = default;
                 numberHandling = default;
                 objectCreationHandling = default;
+                memberNamingPolicy = default;
                 converterType = null;
                 order = 0;
                 isExtensionData = false;
@@ -1396,6 +1430,20 @@ namespace System.Text.Json.SourceGeneration
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
                         converterType = GetConverterTypeFromJsonConverterAttribute(contextType, memberInfo, attributeData, memberType);
+                    }
+                    else if (memberNamingPolicy is null && _knownSymbols.JsonNamingPolicyAttributeType?.IsAssignableFrom(attributeType) == true)
+                    {
+                        if (attributeData.ConstructorArguments.Length == 1 &&
+                            attributeData.ConstructorArguments[0].Value is int knownPolicyValue)
+                        {
+                            memberNamingPolicy = (JsonKnownNamingPolicy)knownPolicyValue;
+                        }
+                        else
+                        {
+                            // The attribute uses a custom naming policy that can't be resolved at compile time.
+                            // Use Unspecified to prevent the global naming policy from incorrectly applying.
+                            memberNamingPolicy = JsonKnownNamingPolicy.Unspecified;
+                        }
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
                     {
@@ -1846,14 +1894,23 @@ namespace System.Text.Json.SourceGeneration
                 return constructedContainingType;
             }
 
-            private static string DetermineEffectiveJsonPropertyName(string propertyName, string? jsonPropertyName, SourceGenerationOptionsSpec? options)
+            private static string DetermineEffectiveJsonPropertyName(
+                string propertyName,
+                string? jsonPropertyName,
+                JsonKnownNamingPolicy? memberNamingPolicy,
+                JsonKnownNamingPolicy? typeNamingPolicy,
+                SourceGenerationOptionsSpec? options)
             {
                 if (jsonPropertyName != null)
                 {
                     return jsonPropertyName;
                 }
 
-                JsonNamingPolicy? instance = options?.GetEffectivePropertyNamingPolicy() switch
+                JsonKnownNamingPolicy? effectiveKnownPolicy = memberNamingPolicy
+                    ?? typeNamingPolicy
+                    ?? options?.GetEffectivePropertyNamingPolicy();
+
+                JsonNamingPolicy? instance = effectiveKnownPolicy switch
                 {
                     JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
                     JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
