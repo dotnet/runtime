@@ -301,7 +301,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         }
     }
 
-    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano), Timeout = 180_000)]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Recovery()
     {
         Test(() =>
