@@ -236,7 +236,7 @@ public static partial class MockDescriptors
             helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.NumArgs)].Offset), retAndArgTypes.Length - 1);
             helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.CallConv)].Offset), callConv);
             helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.LoaderModule)].Offset), loaderModule);
-            for (int i = 0; i < retAndArgTypes.Length; i ++)
+            for (int i = 0; i < retAndArgTypes.Length; i++)
             {
                 Span<byte> span = fragment.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.RetAndArgTypes)].Offset + i * helpers.PointerSize, helpers.PointerSize);
                 helpers.WritePointer(span, retAndArgTypes[i]);

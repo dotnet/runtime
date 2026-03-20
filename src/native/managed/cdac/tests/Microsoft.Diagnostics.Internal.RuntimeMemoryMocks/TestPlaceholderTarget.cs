@@ -281,7 +281,7 @@ public class TestPlaceholderTarget : Target
         return true;
     }
 
-    internal unsafe static T ReadFromSpan<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    internal static unsafe T ReadFromSpan<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (sizeof(T) != bytes.Length)
             throw new ArgumentException(nameof(bytes));
@@ -298,7 +298,7 @@ public class TestPlaceholderTarget : Target
         return value;
     }
 
-    internal unsafe static void WriteToSpan<T>(T value, bool isLittleEndian, Span<byte> dest) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    internal static unsafe void WriteToSpan<T>(T value, bool isLittleEndian, Span<byte> dest) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (sizeof(T) != dest.Length)
             throw new ArgumentException(nameof(dest));

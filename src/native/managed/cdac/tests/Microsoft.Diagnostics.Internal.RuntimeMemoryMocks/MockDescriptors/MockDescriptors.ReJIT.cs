@@ -82,10 +82,12 @@ public static partial class MockDescriptors
                 [
                     ProfControlBlockFields
                 ]);
-            foreach(var (dataType, typeInfo) in cvTypes)
+
+            foreach (var (dataType, typeInfo) in cvTypes)
             {
                 types.Add(dataType, typeInfo);
             }
+
             return types;
         }
 

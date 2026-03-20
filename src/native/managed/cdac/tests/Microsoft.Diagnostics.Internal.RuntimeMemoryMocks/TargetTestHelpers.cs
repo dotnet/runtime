@@ -34,7 +34,7 @@ public unsafe class TargetTestHelpers
 
     internal uint StringBaseSize => ObjectBaseSize + sizeof(uint) /* length */ + sizeof(char) /* nul terminator */;
 
-    internal void Write(Span<byte> dest, byte b) => dest[0] = b;
+    internal static void Write(Span<byte> dest, byte b) => dest[0] = b;
     internal void Write(Span<byte> dest, ushort u)
     {
         if (Arch.IsLittleEndian)
@@ -199,7 +199,8 @@ public unsafe class TargetTestHelpers
 
     private LayoutResult LayoutFieldsWorker(FieldLayout style, Field[] fields, ref int offset, ref int maxAlign)
     {
-        Dictionary<string,Target.FieldInfo> fieldInfos = new ();
+        Dictionary<string, Target.FieldInfo> fieldInfos = new();
+
         for (int i = 0; i < fields.Length; i++)
         {
             var (name, type, sizeMaybe) = fields[i];

@@ -19,13 +19,13 @@ namespace Microsoft.Diagnostics.Internal.RuntimeMemoryMocks;
 /// Use MockMemorySpace.CreateContext to create a mostly empty context for reading from the target.
 /// Use MockMemorySpace.ContextBuilder to create a context with additional MockMemorySpace.HeapFragment data.
 /// </remarks>
-public unsafe static partial class MockMemorySpace
+public static unsafe partial class MockMemorySpace
 {
     public class BumpAllocator
     {
         private readonly ulong _blockStart;
         private readonly ulong _blockEnd; // exclusive
-        ulong _current;
+        private ulong _current;
 
         public int MinAlign { get; init; } = 16; // by default align to 16 bytes
         public BumpAllocator(ulong blockStart, ulong blockEnd)

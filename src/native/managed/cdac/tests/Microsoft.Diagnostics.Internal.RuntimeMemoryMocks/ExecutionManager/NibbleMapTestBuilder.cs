@@ -101,7 +101,7 @@ public class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
         uint index = (uint) (pos >>> Log2NibblesPerDword);
         uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
 
-        value = value << Pos2ShiftCount(pos);
+        value <<= Pos2ShiftCount(pos);
 
         Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
         uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
@@ -143,7 +143,7 @@ public class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
         uint index = (uint) (pos >>> Log2NibblesPerDword);
         uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
 
-        value = value << Pos2ShiftCount(pos);
+        value <<= Pos2ShiftCount(pos);
 
         Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
         uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
@@ -159,11 +159,11 @@ public class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
         ulong firstByteAfterMethod = delta + (uint)codeSize;
         uint encodedPointer = NibbleMapConstantLookup.EncodePointer((uint)delta);
         index++;
-        while((index + 1) * 256 <= firstByteAfterMethod)
+        while ((index + 1) * 256 <= firstByteAfterMethod)
         {
             entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
             oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
-            if(oldValue != 0)
+            if (oldValue != 0)
             {
                 throw new InvalidOperationException("Overwriting existing offset");
             }

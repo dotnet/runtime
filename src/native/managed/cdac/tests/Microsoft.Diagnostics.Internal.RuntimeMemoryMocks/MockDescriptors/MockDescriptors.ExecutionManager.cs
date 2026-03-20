@@ -21,7 +21,7 @@ public static partial class MockDescriptors
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
-        const int RealCodeHeaderSize = 0x30; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
+        private const int RealCodeHeaderSize = 0x30; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
         public struct AllocationRange
         {
@@ -48,9 +48,9 @@ public static partial class MockDescriptors
         };
         public class RangeSectionMapTestBuilder
         {
-            const ulong DefaultTopLevelAddress = 0x0000_1000u; // arbitrary
-            const int EntriesPerMapLevel = 256; // for now its fixed at 256, see codeman.h RangeSectionMap::entriesPerMapLevel
-            const int BitsPerLevel = 8;
+            private const ulong DefaultTopLevelAddress = 0x0000_1000u; // arbitrary
+            private const int EntriesPerMapLevel = 256; // for now its fixed at 256, see codeman.h RangeSectionMap::entriesPerMapLevel
+            private const int BitsPerLevel = 8;
 
             private readonly TargetPointer _topLevelAddress;
             private readonly MockMemorySpace.Builder _builder;
@@ -148,7 +148,7 @@ public static partial class MockDescriptors
 
             // ensures that the maps for all the levels for the given address are allocated.
             // returns the address of the slot in the last level that corresponds to the given address
-            RangeSectionMap.Cursor EnsureLevelsForAddress(TargetCodePointer address, bool collectible = false)
+            private RangeSectionMap.Cursor EnsureLevelsForAddress(TargetCodePointer address, bool collectible = false)
             {
                 int topIndex = EffectiveBitsForLevel(address, _levels);
                 RangeSectionMap.Cursor cursor = new RangeSectionMap.Cursor(TopLevel, _levels, topIndex);

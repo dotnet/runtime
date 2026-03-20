@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.Internal.RuntimeMemoryMocks;
 /// <remarks>
 /// Use MockMemorySpace.Builder to create a context with MockMemorySpace.HeapFragment data.
 /// </remarks>
-public unsafe static partial class MockMemorySpace
+public static unsafe partial class MockMemorySpace
 {
     public struct HeapFragment
     {

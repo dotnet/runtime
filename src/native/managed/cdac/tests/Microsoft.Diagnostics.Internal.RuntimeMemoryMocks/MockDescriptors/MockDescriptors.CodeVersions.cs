@@ -117,7 +117,6 @@ public static partial class MockDescriptors
 
         public TargetPointer AddNativeCodeVersionNode()
         {
-            Target.TypeInfo info = Types[DataType.NativeCodeVersionNode];
             MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)Types[DataType.NativeCodeVersionNode].Size, "NativeCodeVersionNode");
             Builder.AddHeapFragment(fragment);
             return fragment.Address;
@@ -180,7 +179,7 @@ public static partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan().Slice(info.Fields[nameof(Data.ILCodeVersionNode.Next)].Offset), TargetPointer.Null);
 
             // set the previous node next pointer to the new node
-            if(prevNodeAddress != TargetPointer.Null)
+            if (prevNodeAddress != TargetPointer.Null)
             {
                 Span<byte> prevNode = Builder.BorrowAddressRange(prevNodeAddress, fragment.Data.Length);
                 Builder.TargetTestHelpers.WritePointer(prevNode.Slice(info.Fields[nameof(Data.ILCodeVersionNode.Next)].Offset), fragment.Address);

@@ -98,7 +98,7 @@ public static partial class MockDescriptors
                 }
                 else
                 {
-                    // First 18 bits of the header are function length / (pointer size / 2) 
+                    // First 18 bits of the header are function length / (pointer size / 2)
                     uint headerBits = (uint)(functionLength / (helpers.PointerSize / 2));
                     if (headerBits > 1 << 18 - 1)
                         throw new InvalidOperationException("Function length is too long ");

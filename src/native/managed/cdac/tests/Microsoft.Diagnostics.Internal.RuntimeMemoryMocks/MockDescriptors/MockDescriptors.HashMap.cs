@@ -23,7 +23,7 @@ public static partial class MockDescriptors
             DataType = DataType.HashMap,
             Fields =
             [
-                new (nameof(Data.HashMap.Buckets), DataType.pointer),
+                new(nameof(Data.HashMap.Buckets), DataType.pointer),
             ]
         };
 
