@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
@@ -29,12 +30,16 @@ namespace System.Net
 
         private readonly SafeSslHandle _sslContext;
 
+        private readonly Lock _lock = new Lock();
+
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SslStream.JavaProxy SslStreamProxy { get; }
 
         public SafeSslHandle SslContext => _sslContext;
+
+        private volatile bool _disposed;
 
         public SafeDeleteSslContext(SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
@@ -59,13 +64,21 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            lock (_lock)
             {
-                if (_sslContext is SafeSslHandle sslContext)
+                if (!_disposed)
                 {
-                    _inputBuffer.Dispose();
-                    _outputBuffer.Dispose();
-                    sslContext.Dispose();
+                    _disposed = true;
+
+                    // First dispose the SSL context to trigger native cleanup
+                    _sslContext.Dispose();
+
+                    if (disposing)
+                    {
+                        // Then dispose the buffers
+                        _inputBuffer.Dispose();
+                        _outputBuffer.Dispose();
+                    }
                 }
             }
 
@@ -78,11 +91,19 @@ namespace System.Net
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
             Debug.Assert(context != null);
 
-            var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
+            lock (context._lock)
+            {
+                if (context._disposed)
+                {
+                    return;
+                }
 
-            context._outputBuffer.EnsureAvailableSpace(dataLength);
-            inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
-            context._outputBuffer.Commit(dataLength);
+                var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
+
+                context._outputBuffer.EnsureAvailableSpace(dataLength);
+                inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                context._outputBuffer.Commit(dataLength);
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -91,45 +112,60 @@ namespace System.Net
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
             Debug.Assert(context != null);
 
-            int toRead = *dataLength;
-            if (toRead == 0)
-                return PAL_SSLStreamStatus.OK;
-
-            if (context._inputBuffer.ActiveLength == 0)
+            lock (context._lock)
             {
-                *dataLength = 0;
-                return PAL_SSLStreamStatus.NeedData;
+                if (context._disposed)
+                {
+                    *dataLength = 0;
+                    return PAL_SSLStreamStatus.Error;
+                }
+
+                int toRead = *dataLength;
+                if (toRead == 0)
+                    return PAL_SSLStreamStatus.OK;
+
+                if (context._inputBuffer.ActiveLength == 0)
+                {
+                    *dataLength = 0;
+                    return PAL_SSLStreamStatus.NeedData;
+                }
+
+                toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
+
+                context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
+                context._inputBuffer.Discard(toRead);
+
+                *dataLength = toRead;
+                return PAL_SSLStreamStatus.OK;
             }
-
-            toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
-
-            context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
-            context._inputBuffer.Discard(toRead);
-
-            *dataLength = toRead;
-            return PAL_SSLStreamStatus.OK;
         }
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            _inputBuffer.EnsureAvailableSpace(buf.Length);
-            buf.CopyTo(_inputBuffer.AvailableSpan);
-            _inputBuffer.Commit(buf.Length);
+            lock (_lock)
+            {
+                _inputBuffer.EnsureAvailableSpace(buf.Length);
+                buf.CopyTo(_inputBuffer.AvailableSpan);
+                _inputBuffer.Commit(buf.Length);
+            }
         }
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            if (_outputBuffer.ActiveLength == 0)
+            lock (_lock)
             {
-                token.Size = 0;
-                token.Payload = null;
-                return;
-            }
+                if (_outputBuffer.ActiveLength == 0)
+                {
+                    token.Size = 0;
+                    token.Payload = null;
+                    return;
+                }
 
-            token.SetPayload(_outputBuffer.ActiveSpan);
-            _outputBuffer.Discard(_outputBuffer.ActiveLength);
+                token.SetPayload(_outputBuffer.ActiveSpan);
+                _outputBuffer.Discard(_outputBuffer.ActiveLength);
+            }
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
@@ -139,12 +175,15 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            int limit = Math.Min(count, _outputBuffer.ActiveLength);
+            lock (_lock)
+            {
+                int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
-            _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
-            _outputBuffer.Discard(limit);
+                _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
+                _outputBuffer.Discard(limit);
 
-            return limit;
+                return limit;
+            }
         }
 
         private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
