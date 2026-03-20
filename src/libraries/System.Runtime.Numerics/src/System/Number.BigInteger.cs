@@ -25,18 +25,9 @@ namespace System
 
         private static nuint[]? s_cachedPowersOf1e9;
 
-        private static ReadOnlySpan<nuint> UInt32PowersOfTen
-        {
-            get
-            {
-                if (nint.Size == 8)
-                {
-                    return MemoryMarshal.Cast<ulong, nuint>(UInt64PowersOfTen);
-                }
-
-                return MemoryMarshal.Cast<uint, nuint>(UInt32PowersOfTenCore);
-            }
-        }
+        private static ReadOnlySpan<nuint> UInt32PowersOfTen => nint.Size == 8
+            ? MemoryMarshal.Cast<ulong, nuint>(UInt64PowersOfTen)
+            : MemoryMarshal.Cast<uint, nuint>(UInt32PowersOfTenCore);
 
         private static ReadOnlySpan<uint> UInt32PowersOfTenCore => [1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000];
         private static ReadOnlySpan<ulong> UInt64PowersOfTen => [1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000];
@@ -727,13 +718,17 @@ namespace System
             Debug.Assert(digits < Array.MaxLength);
             int charsIncludeDigits = Math.Max(digits, charsForBits);
 
-            try
             {
                 scoped ValueStringBuilder<TChar> sb;
                 if (targetSpan)
                 {
                     if (charsIncludeDigits > destination.Length)
                     {
+                        if (arrayToReturnToPool is not null)
+                        {
+                            ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+                        }
+
                         charsWritten = 0;
                         spanSuccess = false;
                         return null;
@@ -765,6 +760,11 @@ namespace System
 
                 Debug.Assert(sb.Length == charsIncludeDigits);
 
+                if (arrayToReturnToPool is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+                }
+
                 if (targetSpan)
                 {
                     charsWritten = charsIncludeDigits;
@@ -775,13 +775,6 @@ namespace System
                 charsWritten = 0;
                 spanSuccess = false;
                 return sb.ToString();
-            }
-            finally
-            {
-                if (arrayToReturnToPool is not null)
-                {
-                    ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
-                }
             }
 
             static void AppendByte(ref ValueStringBuilder<TChar> sb, byte b, int startHighBit = 7)
@@ -1192,7 +1185,7 @@ namespace System
                     // 1. The array is fully initialized before being stored.
                     // 2. On ARM64, the .NET GC write barrier uses stlr (store-release),
                     //    providing release semantics for reference-type stores.
-                    // 3. Readers have a data dependency (load reference → access elements),
+                    // 3. Readers have a data dependency (load reference -> access elements),
                     //    providing natural acquire ordering on all architectures.
                     s_cachedPowersOf1e9 = buffer;
                 }

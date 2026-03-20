@@ -226,8 +226,8 @@ namespace System.Numerics
             // block of the divisor. Thus, guessing digits of the quotient
             // will be more precise. Additionally we'll get r = a % b.
 
-            nuint divHi = right[right.Length - 1];
-            nuint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
+            nuint divHi = right[^1];
+            nuint divLo = right.Length > 1 ? right[^2] : 0;
 
             // We measure the leading zeros of the divisor
             int shift = nint.Size == 8
