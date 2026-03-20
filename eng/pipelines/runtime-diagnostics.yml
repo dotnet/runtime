@@ -228,7 +228,7 @@ extends:
                   targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
                   artifactName: CdacDumps_$(osGroup)_$(archType)
                 displayName: 'Publish Dump Artifacts'
-                condition: failed()
+                condition: and(always(), ne(variables['Agent.JobStatus'], 'Succeeded'))
                 continueOnError: true
               - pwsh: |
                   if ("$(Agent.JobStatus)" -ne "Succeeded") {
