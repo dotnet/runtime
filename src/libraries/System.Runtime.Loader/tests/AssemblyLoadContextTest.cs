@@ -304,31 +304,23 @@ namespace System.Runtime.Loader.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
-        public static void InvalidCastException_GenericTypeArg_ShowsDifferingAssemblyInfo()
+        public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
             Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
 
-            // Get the same-named type from the custom ALC's copy of this assembly.
+            // The outer type (StrongBox<T>) is from CoreLib (same in all contexts),
+            // but the generic argument comes from a different ALC.
             Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName);
-
-            // StrongBox<T> is from System.Private.CoreLib - same in all contexts.
-            // The generic argument types come from different ALCs.
             Type boxType = typeof(StrongBox<>).MakeGenericType(alcType);
             object instance = Activator.CreateInstance(boxType);
 
-            // Cast to StrongBox<InvalidCastSharedType> where InvalidCastSharedType is
-            // from this assembly's Default ALC - should throw InvalidCastException.
             var ice = Assert.Throws<InvalidCastException>(() =>
             {
                 StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
             });
 
-            // The message should mention the generic argument and its differing ALCs.
-            // Before the fix, it would only report the outer type's assembly
-            // (System.Private.CoreLib from the Default context for both),
-            // making the message unhelpful.
-            // After the fix, it reports the generic argument's assembly and ALC context.
+            // The message should identify the differing generic argument and its ALCs.
             if (!ice.Message.Contains("Debugging resource strings are unavailable"))
             {
                 Assert.Contains("generic argument", ice.Message);
