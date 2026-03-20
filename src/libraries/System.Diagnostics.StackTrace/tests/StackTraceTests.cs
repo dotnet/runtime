@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Threading.Tasks;
@@ -594,9 +595,9 @@ namespace System.Diagnostics.Tests
                     }, SourceTestAssemblyPath, AssemblyName, regPattern, options).Dispose();
                     break;
                 }
-                catch (RemoteExecutionException ex) when (OperatingSystem.IsWindows() && attempt < maxAttempts && ex.Message.Contains("Timed out"))
+                catch (RemoteExecutionException ex) when (OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && attempt < maxAttempts && ex.Message.Contains("Timed out"))
                 {
-                    // AMSI hang: on some Windows CI machines, Assembly.Load(byte[]) triggers an AMSI scan
+                    // AMSI hang: on some Windows x86 CI machines, Assembly.Load(byte[]) triggers an AMSI scan
                     // whose RPC call hangs indefinitely. Retry with a fresh process.
                 }
             }
