@@ -130,10 +130,14 @@ def parse_pipelines_md(path):
 
 
 def fetch_latest_build(def_id):
-    """Fetch the latest main branch build for a pipeline definition."""
+    """Fetch the latest completed main branch build for a pipeline definition."""
     url = (f"{ADO_BASE}/build/builds"
-           f"?definitions={def_id}&branchName=refs/heads/main&$top=1&api-version=7.1")
-    resp = requests.get(url)
+           f"?definitions={def_id}&branchName=refs/heads/main"
+           f"&statusFilter=completed&$top=1&api-version=7.1")
+    try:
+        resp = requests.get(url, timeout=30)
+    except requests.RequestException:
+        return None, url
     if resp.status_code != 200:
         return None, url
     builds = resp.json().get("value", [])
