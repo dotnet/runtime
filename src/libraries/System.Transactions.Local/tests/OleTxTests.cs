@@ -335,6 +335,8 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
                 using (RemoteExecutor.Invoke(
                            EnlistAndCrash,
                            propagationTokenText, guid2.ToString(), secondEnlistmentRecoveryFilePath,
+                           // Bound the child process lifetime so that if MSDTC is unresponsive
+                           // and the process hangs, Dispose() will kill it instead of blocking indefinitely.
                            new RemoteInvokeOptions { ExpectedExitCode = 42, TimeOut = 120_000 }))
                 {
                     // Wait for the external process to enlist in the transaction, it will signal this EventWaitHandle.
