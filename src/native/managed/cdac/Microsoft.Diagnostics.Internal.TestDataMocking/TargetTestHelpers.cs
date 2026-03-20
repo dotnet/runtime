@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
-internal unsafe class TargetTestHelpers
+public unsafe class TargetTestHelpers
 {
     public MockTarget.Architecture Arch { get; init; }
 
@@ -180,7 +180,7 @@ internal unsafe class TargetTestHelpers
         public readonly uint MaxAlign { get; init; }
     }
 
-    internal record Field(string Name, DataType Type, uint? Size = null);
+    public record Field(string Name, DataType Type, uint? Size = null);
 
     // Implements a simple layout algorithm that aligns fields to their size
     // and aligns the structure to the largest field size.

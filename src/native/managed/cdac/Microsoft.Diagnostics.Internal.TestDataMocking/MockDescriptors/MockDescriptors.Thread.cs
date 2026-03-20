@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+public partial class MockDescriptors
 {
     public class Thread
     {

@@ -11,9 +11,9 @@ using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManag
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+public partial class MockDescriptors
 {
-    internal class ExecutionManager
+    public class ExecutionManager
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
@@ -42,7 +42,7 @@ internal partial class MockDescriptors
             ExecutionManagerStart = 0x0033_4000,
             ExecutionManagerEnd = 0x0033_5000,
         };
-        internal class RangeSectionMapTestBuilder
+        public class RangeSectionMapTestBuilder
         {
             const ulong DefaultTopLevelAddress = 0x0000_1000u; // arbitrary
             const int EntriesPerMapLevel = 256; // for now its fixed at 256, see codeman.h RangeSectionMap::entriesPerMapLevel
@@ -352,7 +352,7 @@ internal partial class MockDescriptors
             return nibBuilder;
         }
 
-        internal readonly struct JittedCodeRange
+        public readonly struct JittedCodeRange
         {
             public MockMemorySpace.BumpAllocator Allocator { get; init; }
             public ulong RangeStart => Allocator.RangeStart;

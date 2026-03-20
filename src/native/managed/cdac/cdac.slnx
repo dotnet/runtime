@@ -9,6 +9,7 @@
     <Project Path="Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
     <Project Path="Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
     <Project Path="Microsoft.Diagnostics.DataContractReader.Legacy/Microsoft.Diagnostics.DataContractReader.Legacy.csproj" />
+    <Project Path="Microsoft.Diagnostics.Internal.TestDataMocking/Microsoft.Diagnostics.Internal.TestDataMocking.csproj" />
     <Project Path="mscordaccore_universal/mscordaccore_universal.csproj" />
   </Folder>
   <Folder Name="/tests/">

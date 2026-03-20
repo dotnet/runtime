@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -17,9 +16,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// <remarks>
 /// Use MockMemorySpace.Builder to create a context with MockMemorySpace.HeapFragment data.
 /// </remarks>
-internal unsafe static partial class MockMemorySpace
+public unsafe static partial class MockMemorySpace
 {
-    internal struct HeapFragment
+    public struct HeapFragment
     {
         public ulong Address;
         public byte[] Data;
@@ -29,7 +28,7 @@ internal unsafe static partial class MockMemorySpace
     /// <summary>
     ///  Helper to populate a virtual memory space for reading from a target.
     /// </summary>
-    internal class Builder
+    public class Builder
     {
         private readonly List<HeapFragment> _heapFragments = new();
         private readonly List<BumpAllocator> _allocators = new();
@@ -124,7 +123,7 @@ internal unsafe static partial class MockMemorySpace
     }
 
     // Used by ReadFromTarget to return the appropriate bytes
-    internal class MemoryContext
+    public class MemoryContext
     {
         public IList<HeapFragment> HeapFragments { get; init; }
 

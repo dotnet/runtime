@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// <summary>
 /// A mock implementation of Target that has basic implementations of getting types/globals and reading data
 /// </summary>
-internal class TestPlaceholderTarget : Target
+public class TestPlaceholderTarget : Target
 {
     private ContractRegistry _contractRegistry;
     private readonly Target.IDataCache _dataCache;
@@ -22,11 +22,11 @@ internal class TestPlaceholderTarget : Target
     private readonly (string Name, ulong Value)[] _globals;
     private readonly (string Name, string Value)[] _globalStrings;
 
-    internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
+    public delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
 
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo>? types = null, (string Name, ulong Value)[]? globals = null, (string Name, string Value)[]? globalStrings = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
@@ -48,7 +48,7 @@ internal class TestPlaceholderTarget : Target
     /// globals, and contract factories from mock descriptors, then materializes the
     /// target and wires contracts in <see cref="Build"/>.
     /// </summary>
-    internal class Builder
+    public class Builder
     {
         private readonly MockTarget.Architecture _arch;
         private readonly MockMemorySpace.Builder _memBuilder;

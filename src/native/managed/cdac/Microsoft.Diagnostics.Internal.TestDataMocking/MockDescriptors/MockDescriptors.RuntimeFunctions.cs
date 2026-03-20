@@ -7,9 +7,9 @@ using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+public partial class MockDescriptors
 {
-    internal class RuntimeFunctions
+    public class RuntimeFunctions
     {
         private static TypeFields RuntimeFunctionFields(bool includeEndAddress)
         {

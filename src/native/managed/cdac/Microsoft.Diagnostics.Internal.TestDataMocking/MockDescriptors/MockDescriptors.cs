@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+public partial class MockDescriptors
 {
-    internal record TypeFields
+    public record TypeFields
     {
         public DataType DataType;
         public TargetTestHelpers.Field[] Fields;

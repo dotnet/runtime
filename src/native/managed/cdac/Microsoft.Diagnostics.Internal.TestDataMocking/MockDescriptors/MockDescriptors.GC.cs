@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// <see cref="GCHeapBuilderExtensions.AddGCHeapWks"/> and
 /// <see cref="GCHeapBuilderExtensions.AddGCHeapSvr"/>.
 /// </summary>
-internal class GCHeapBuilder
+public class GCHeapBuilder
 {
     // The native GC sizes m_FillPointers as total_generation_count + ExtraSegCount.
     private const int DefaultGenerationCount = 4;
@@ -23,14 +23,14 @@ internal class GCHeapBuilder
 
     public record struct GenerationInput
     {
-        public ulong StartSegment;
-        public ulong AllocationStart;
-        public ulong AllocContextPointer;
-        public ulong AllocContextLimit;
+        public ulong StartSegment { get; set; }
+        public ulong AllocationStart { get; set; }
+        public ulong AllocContextPointer { get; set; }
+        public ulong AllocContextLimit { get; set; }
     }
 }
 
-internal static class GCHeapBuilderExtensions
+public static class GCHeapBuilderExtensions
 {
     private const ulong DefaultAllocationRangeStart = 0x0010_0000;
     private const ulong DefaultAllocationRangeEnd = 0x0020_0000;

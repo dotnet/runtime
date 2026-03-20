@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -18,9 +17,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// Use MockMemorySpace.CreateContext to create a mostly empty context for reading from the target.
 /// Use MockMemorySpace.ContextBuilder to create a context with additional MockMemorySpace.HeapFragment data.
 /// </remarks>
-internal unsafe static partial class MockMemorySpace
+public unsafe static partial class MockMemorySpace
 {
-    internal class BumpAllocator
+    public class BumpAllocator
     {
         private readonly ulong _blockStart;
         private readonly ulong _blockEnd; // exclusive

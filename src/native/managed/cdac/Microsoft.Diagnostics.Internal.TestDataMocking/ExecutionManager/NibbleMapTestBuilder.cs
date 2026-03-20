@@ -6,7 +6,7 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
-internal abstract class NibbleMapTestBuilderBase
+public abstract class NibbleMapTestBuilderBase
 {
     // This is the base address of the memory range that the map covers.
     // The map works on code pointers as offsets from this address
@@ -72,7 +72,7 @@ internal abstract class NibbleMapTestBuilderBase
     public abstract void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize);
 }
 
-internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
+public class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
 {
     public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, mapStart, arch)
@@ -114,7 +114,7 @@ internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
     }
 }
 
-internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
+public class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
 {
     public NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, mapStart, arch)
