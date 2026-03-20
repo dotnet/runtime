@@ -77,19 +77,24 @@ namespace System.Runtime.InteropServices
                     if (nativeObjectWrapper != null &&
                         nativeObjectWrapper._contextToken == contextToken)
                     {
-                        object? target = nativeObjectWrapper.ProxyHandle.Target;
-                        if (target != null)
-                        {
-                            objects.Add(target);
-                        }
-
                         // Separate the wrapper from the tracker runtime prior to
                         // passing them.
                         nativeObjectWrapper.DisconnectTracker();
 
+                        // If this object is associated with the global instance for tracker support,
+                        // then we can request that instance to clear out the native object wrapper's state
+                        // to ensure the object gets released now.
+                        // Also, we will remove the wrappers from the cache to ensure a stale wrapper
+                        // isn't returned in the future.
                         if (nativeObjectWrapper.ComWrappers == GlobalInstanceForTrackerSupport)
                         {
                             wrappersToRemove.Add(nativeObjectWrapper);
+
+                            object? target = nativeObjectWrapper.ProxyHandle.Target;
+                            if (target != null)
+                            {
+                                objects.Add(target);
+                            }
                         }
                     }
                 }
