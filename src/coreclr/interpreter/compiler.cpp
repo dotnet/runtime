@@ -319,6 +319,13 @@ InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
     InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocateZeroed<char>(insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
+    if (m_isFirstInstForEmptyILStack)
+    {
+        // This is the first instruction we are emitting for this IL offset and the stack is empty, which
+        // implies the IL stack is empty too.
+        ins->flags |= INTERP_INST_FLAG_EMPTY_IL_STACK;
+        m_isFirstInstForEmptyILStack = false;
+    }
     m_pLastNewIns = ins;
     return ins;
 }
@@ -1069,7 +1076,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
                 m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
                 m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-                m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+                m_pILToNativeMap[m_ILToNativeMapSize].source = (ins->flags & INTERP_INST_FLAG_EMPTY_IL_STACK) ? ICorDebugInfo::STACK_EMPTY : ICorDebugInfo::SOURCE_TYPE_INVALID;
                 m_ILToNativeMapSize++;
             }
         }
@@ -4796,7 +4803,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Get cookie for unmanaged calli. For managed calli, the cookie will be NULL
+        // and the interpreter will resolve the call at runtime from the PortableEntryPoint's MethodDesc.
+        CorInfoCallConv callConv = (CorInfoCallConv)(callInfo.sig.callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isUnmanaged = (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isUnmanaged)
+        {
+            calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+        }
+#else
         calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
         m_ip += 5;
     }
     else
@@ -5445,7 +5463,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_pStackPointer--;
             int codePointerLookupResult = m_pStackPointer[0].var;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            calliCookie = NULL;
+#else
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
 
             EmitCalli(tailcall, calliCookie, codePointerLookupResult, &callInfo.sig);
 
@@ -5488,7 +5510,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pStackPointer--;
                 int synthesizedLdvirtftnPtrVar = m_pStackPointer[0].var;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                calliCookie = NULL;
+#else
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
+#endif
 
                 EmitCalli(tailcall, calliCookie, synthesizedLdvirtftnPtrVar, &callInfo.sig);
             }
@@ -5817,6 +5843,18 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     // Fill in the GC reference map
     int32_t currentOffset = 0;
     int32_t returnValueDataStartOffset = 0;
+
+    uint32_t flags = 0;
+    auto encodeIndex = [&flags](unsigned offset, unsigned firstBit, unsigned numBits) {
+        assert(numBits < 32);
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        unsigned index = 1 + offset / TARGET_POINTER_SIZE;
+        unsigned mask  = (1u << numBits) - 1;
+
+        assert((index & mask) == index);
+        flags |= index << firstBit;
+    };
+
     for (int32_t i = -3; i < liveVars.GetSize(); i++)
     {
         int32_t var;
@@ -5827,6 +5865,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
                 continue;
             INTERP_DUMP("Allocate EH at offset %d\n", currentOffset);
             SetSlotToTrue(objRefSlots, currentOffset);
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT, CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -5836,12 +5875,17 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
                 continue;
             INTERP_DUMP("Allocate ContinuationContext at offset %d\n", currentOffset);
             SetSlotToTrue(objRefSlots, currentOffset);
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
         if (i == -1)
         {
             returnValueDataStartOffset = currentOffset;
+            // Always encode the would-be result offset as it is the basis for
+            // where interpreter data is copied from, even when there is no
+            // result
+            encodeIndex(currentOffset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT, CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
             // Handle return value first
             if (returnValueVar == -1)
                 continue;
@@ -5931,25 +5975,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     AllocateIntervalMapData_ForVars(&suspendData->liveLocalsIntervals, liveVars);
     AllocateIntervalMapData_ForVars(&suspendData->zeroedLocalsIntervals, varsToZero);
 
-    int32_t flags = 0;
-    if (returnValueVar != -1)
-    {
-        flags |= CORINFO_CONTINUATION_HAS_RESULT;
-    }
-
-    if (captureContinuationContext)
-    {
-        flags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
-    }
-
     if (continuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
     {
         flags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
-    }
-
-    if (needsEHHandling)
-    {
-        flags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
     }
 
     suspendData->flags = (CorInfoContinuationFlags)flags;
@@ -8378,6 +8406,10 @@ retry_emit:
 
         if (ILOpcodePeeps.FindAndApplyPeep(this))
             continue;
+
+
+        // Empty stack at the beginning of the IL instruction implies IL stack being empty too
+        m_isFirstInstForEmptyILStack = (m_pStackPointer - m_pStackBase) == 0;
 
         uint8_t opcode = *m_ip;
         switch (opcode)

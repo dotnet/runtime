@@ -435,4 +435,10 @@
   <data name="ErrorContainerFormatRequiresComposite" xml:space="preserve">
     <value>Error: Producing ReadyToRun output in the {0} format is only supported for Composite ReadyToRun images.</value>
   </data>
+  <data name="StripInliningInfoOption" xml:space="preserve">
+    <value>Strip inlining info from the R2R image.</value>
+  </data>
+  <data name="StripDebugInfoOption" xml:space="preserve">
+    <value>Strip debug info from the R2R image.</value>
+  </data>
 </root>
