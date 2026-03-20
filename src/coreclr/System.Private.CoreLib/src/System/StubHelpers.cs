@@ -833,7 +833,6 @@ namespace System.StubHelpers
     internal static unsafe partial class MngdRefCustomMarshaler
     {
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -846,7 +845,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -860,7 +858,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -873,7 +870,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
@@ -887,7 +883,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -900,7 +895,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler marshaler, ref object _, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to CleanUpNativeData.
@@ -920,7 +914,6 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -933,7 +926,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* _)
         {
             // COMPAT: We never pass null to CleanUpManagedData.
@@ -947,7 +939,6 @@ namespace System.StubHelpers
 
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Custom marshaler GetInstance method is preserved by ILLink (see MarkCustomMarshalerGetInstance).")]
-        [RequiresUnsafe]
         internal static void GetCustomMarshalerInstance(void* pMT, byte* pCookie, int cCookieBytes, object* pResult, Exception* pException)
         {
             try
@@ -1544,85 +1535,49 @@ namespace System.StubHelpers
             }
         }
 
-        private static unsafe ulong InvokeArgSlotMethodWithOneArg(object target, RuntimeMethodHandle methodHandle, nint methodEntryPoint, object? arg0)
+        [SupportedOSPlatform("windows")]
+        private static ulong ConvertToArgSlot(object? value)
         {
-            IRuntimeMethodInfo methodInfo = methodHandle.GetMethodInfo();
-            Signature signature = new(methodInfo, RuntimeMethodHandle.GetDeclaringType(methodInfo));
-            RuntimeType returnType = signature.ReturnType;
-            Debug.Assert(methodEntryPoint != 0);
-
-            if (returnType == typeof(void))
+            return value switch
             {
-                ((delegate*<object, object?, void>)methodEntryPoint)(target, arg0);
-                return 0;
-            }
-
-            if (returnType == typeof(bool))
-            {
-                return ((delegate*<object, object?, bool>)methodEntryPoint)(target, arg0) ? 1UL : 0UL;
-            }
-
-            if (returnType == typeof(int))
-            {
-                return unchecked((ulong)((delegate*<object, object?, int>)methodEntryPoint)(target, arg0));
-            }
-
-            if (returnType == typeof(uint))
-            {
-                return ((delegate*<object, object?, uint>)methodEntryPoint)(target, arg0);
-            }
-
-            if (returnType == typeof(long))
-            {
-                return unchecked((ulong)((delegate*<object, object?, long>)methodEntryPoint)(target, arg0));
-            }
-
-            if (returnType == typeof(ulong))
-            {
-                return ((delegate*<object, object?, ulong>)methodEntryPoint)(target, arg0);
-            }
-
-            if (returnType == typeof(IntPtr))
-            {
-                return (ulong)(nuint)((delegate*<object, object?, nint>)methodEntryPoint)(target, arg0);
-            }
-
-            if (returnType == typeof(UIntPtr))
-            {
-                return (ulong)((delegate*<object, object?, nuint>)methodEntryPoint)(target, arg0);
-            }
-
-            throw new NotSupportedException();
+                null => 0,
+                IntPtr pointer => (ulong)(nuint)pointer,
+                UIntPtr pointer => (ulong)(nuint)pointer,
+                bool boolean => boolean ? 1UL : 0UL,
+                char character => character,
+                byte number => number,
+                sbyte number => unchecked((ulong)number),
+                short number => unchecked((ulong)number),
+                ushort number => number,
+                int number => unchecked((ulong)number),
+                uint number => number,
+                long number => unchecked((ulong)number),
+                ulong number => number,
+                _ => throw new NotSupportedException()
+            };
         }
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         private static unsafe void InvokeConnectionPointProviderMethod(
             object* pProvider,
-            IntPtr pProviderMethodPtr,
+            nint pProviderMethodPtr,
             object* pDelegate,
-            IntPtr pDelegateCtorMethodPtr,
+            nint pDelegateCtorMethodPtr,
             object* pSubscriber,
-            IntPtr pEventMethodCodePtr,
+            nint pEventMethodCodePtr,
             bool useUIntPtrCtor,
             Exception* pException)
         {
             try
             {
-                nint delegateCtorMethodEntryPoint = (nint)pDelegateCtorMethodPtr;
+                nint delegateCtorMethodEntryPoint = pDelegateCtorMethodPtr;
                 Debug.Assert(delegateCtorMethodEntryPoint != 0);
 
                 // Construct the delegate before invoking the provider method.
-                if (useUIntPtrCtor)
-                {
-                    ((delegate*<object, object?, nuint, void>)delegateCtorMethodEntryPoint)(*pDelegate, *pSubscriber, (nuint)pEventMethodCodePtr);
-                }
-                else
-                {
-                    ((delegate*<object, object?, nint, void>)delegateCtorMethodEntryPoint)(*pDelegate, *pSubscriber, (nint)pEventMethodCodePtr);
-                }
+                ((delegate*<object, object?, nint, void>)delegateCtorMethodEntryPoint)(*pDelegate, *pSubscriber, pEventMethodCodePtr);
 
-                nint providerMethodEntryPoint = (nint)pProviderMethodPtr;
+                nint providerMethodEntryPoint = pProviderMethodPtr;
                 Debug.Assert(providerMethodEntryPoint != 0);
                 ((delegate*<object, object?, void>)providerMethodEntryPoint)(*pProvider, *pDelegate);
             }
@@ -1637,13 +1592,15 @@ namespace System.StubHelpers
         [UnmanagedCallersOnly]
         // pResult is an unmanaged ARG_SLOT* (see vm/callhelpers.h). ARG_SLOT is always 8 bytes,
         // so we use ulong purely as a fixed-width bit container, not for numeric semantics.
-        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, IntPtr pMethodEntryPoint, Delegate* pEventHandler, ulong* pResult, Exception* pException)
+        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
         {
             try
             {
                 object eventProvider = pComObject->GetEventProvider(*pProviderType);
                 RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
-                *pResult = InvokeArgSlotMethodWithOneArg(eventProvider, methodHandle, (nint)pMethodEntryPoint, *pEventHandler);
+                MethodBase method = MethodBase.GetMethodFromHandle(methodHandle)!;
+                object? result = method.Invoke(eventProvider, [*pEventHandler]);
+                *pResult = ConvertToArgSlot(result);
             }
             catch (Exception ex)
             {
@@ -1738,11 +1695,9 @@ namespace System.StubHelpers
         // Profiler helpers
         //-------------------------------------------------------
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
-        [RequiresUnsafe]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
-        [RequiresUnsafe]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
@@ -1762,7 +1717,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
@@ -1782,7 +1736,6 @@ namespace System.StubHelpers
             }
         }
 
-        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);

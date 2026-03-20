@@ -2314,43 +2314,6 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
     RETURN ((cbRef != 0xbadf00d) ? pIntf : NULL);
 }
 
-struct InvokeICustomQueryInterfaceGetInterfaceArgs
-{
-    ComCallWrapper *pWrap;
-    GUID *pGuid;
-    IUnknown **ppUnk;
-    CustomQueryInterfaceResult *pRetVal;
-};
-
-VOID __stdcall InvokeICustomQueryInterfaceGetInterface_CallBack(LPVOID ptr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(ptr));
-    }
-    CONTRACTL_END;
-    InvokeICustomQueryInterfaceGetInterfaceArgs *pArgs = (InvokeICustomQueryInterfaceGetInterfaceArgs*)ptr;
-
-    {
-        GCX_COOP();
-        OBJECTREF pObj = pArgs->pWrap->GetObjectRef();
-
-        GCPROTECT_BEGIN(pObj);
-
-        INT_PTR queriedInterface = reinterpret_cast<INT_PTR>(*pArgs->ppUnk);
-        INT32 result = static_cast<INT32>(CustomQueryInterfaceResult::NotHandled);
-        UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__STUBHELPERS__CALL_ICUSTOM_QUERY_INTERFACE);
-        callICustomQueryInterface.InvokeThrowing(&pObj, pArgs->pGuid, &queriedInterface, &result);
-
-        *pArgs->ppUnk = reinterpret_cast<IUnknown*>(queriedInterface);
-        *(pArgs->pRetVal) = (CustomQueryInterfaceResult)result;
-        GCPROTECT_END();
-    }
-}
-
 //--------------------------------------------------------------------------
 //  check if the interface is supported, return a index into the IMap
 //  returns -1, if pIntfMT is not supported
@@ -2592,9 +2555,21 @@ static bool GetComIPFromCCW_HandleCustomQI(
         guid = riid;
     }
 
-    InvokeICustomQueryInterfaceGetInterfaceArgs args = {pWrap, &guid, ppUnkOut, &retVal};
+    {
+        GCX_COOP();
+        OBJECTREF pObj = pWrap->GetObjectRef();
 
-    InvokeICustomQueryInterfaceGetInterface_CallBack(&args);
+        GCPROTECT_BEGIN(pObj);
+
+        INT_PTR queriedInterface = reinterpret_cast<INT_PTR>(*ppUnkOut);
+        INT32 result = static_cast<INT32>(CustomQueryInterfaceResult::NotHandled);
+        UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__STUBHELPERS__CALL_ICUSTOM_QUERY_INTERFACE);
+        callICustomQueryInterface.InvokeThrowing(&pObj, &guid, &queriedInterface, &result);
+
+        *ppUnkOut = reinterpret_cast<IUnknown*>(queriedInterface);
+        retVal = static_cast<CustomQueryInterfaceResult>(result);
+        GCPROTECT_END();
+    }
 
     // return if user already handle the QI
     if (retVal == Handled)
