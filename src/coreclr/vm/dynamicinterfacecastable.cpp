@@ -24,11 +24,11 @@ namespace
         } gc;
         gc.obj = NULL;
         gc.managedType = NULL;
+        CLR_BOOL isImplemented = FALSE;
         GCPROTECT_BEGIN(gc);
         gc.obj = *objPROTECTED;
         gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
-        CLR_BOOL isImplemented = FALSE;
         UnmanagedCallersOnlyCaller isInterfaceImplemented(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
         isInterfaceImplemented.InvokeThrowing(&gc.obj, &gc.managedType, CLR_BOOL_ARG(throwIfNotImplemented), &isImplemented);
         GCPROTECT_END();
