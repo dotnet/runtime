@@ -24,6 +24,7 @@
 #include <sys/system_properties.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <setjmp.h>
 #include <signal.h>
 #include <ucontext.h>
 #include <unistd.h>
@@ -496,6 +497,7 @@ invoke_external_native_api (void (*callback)(void))
  */
 static volatile sig_atomic_t g_test_crash_chain_result = -1;
 static volatile sig_atomic_t g_test_sigabrt_received = 0;
+static sigjmp_buf g_test_jmpbuf;
 
 __attribute__((noinline))
 static void do_test_crash(void)
@@ -528,6 +530,7 @@ test_pre_mono_sigsegv_handler(int signum, siginfo_t *info, void *context)
 {
     (void)signum;
     (void)info;
+    (void)context;
 
     // By the time Mono chains to us, mono_handle_native_crash has
     // already run. Check if SIGABRT was reset to SIG_DFL.
@@ -557,16 +560,8 @@ test_pre_mono_sigsegv_handler(int signum, siginfo_t *info, void *context)
 
     g_test_crash_chain_result = g_test_sigabrt_received ? 0 : 1;
 
-    // Skip the faulting instruction so execution can continue.
-#if defined(__aarch64__)
-    ((ucontext_t *)context)->uc_mcontext.pc += 4;
-#elif defined(__x86_64__)
-    ((ucontext_t *)context)->uc_mcontext.gregs[REG_RIP] += 7;
-#elif defined(__i386__)
-    ((ucontext_t *)context)->uc_mcontext.gregs[REG_EIP] += 7;
-#elif defined(__arm__)
-    ((ucontext_t *)context)->uc_mcontext.arm_pc += 4;
-#endif
+    // Jump back to test_crash_chaining to report the result.
+    siglongjmp(g_test_jmpbuf, 1);
 }
 
 void
@@ -584,7 +579,9 @@ int
 test_crash_chaining(void)
 {
     g_test_crash_chain_result = -1;
-    do_test_crash();
+    if (sigsetjmp(g_test_jmpbuf, 1) == 0) {
+        do_test_crash();
+    }
 
     if (g_test_crash_chain_result == -1) {
         LOG_ERROR("test_crash_chaining: handler was not called");
