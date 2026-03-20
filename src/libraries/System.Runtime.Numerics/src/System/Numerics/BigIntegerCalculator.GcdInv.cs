@@ -284,9 +284,9 @@ namespace System.Numerics
                 Debug.Assert(yBuffer.Length >= 3);
                 Debug.Assert(xBuffer.Length >= yBuffer.Length);
 
-                ulong xh = xBuffer[xBuffer.Length - 1];
-                ulong xm = xBuffer[xBuffer.Length - 2];
-                ulong xl = xBuffer[xBuffer.Length - 3];
+                ulong xh = xBuffer[^1];
+                ulong xm = xBuffer[^2];
+                ulong xl = xBuffer[^3];
 
                 ulong yh, ym, yl;
 
@@ -294,21 +294,21 @@ namespace System.Numerics
                 switch (xBuffer.Length - yBuffer.Length)
                 {
                     case 0:
-                        yh = yBuffer[yBuffer.Length - 1];
-                        ym = yBuffer[yBuffer.Length - 2];
-                        yl = yBuffer[yBuffer.Length - 3];
+                        yh = yBuffer[^1];
+                        ym = yBuffer[^2];
+                        yl = yBuffer[^3];
                         break;
 
                     case 1:
                         yh = 0UL;
-                        ym = yBuffer[yBuffer.Length - 1];
-                        yl = yBuffer[yBuffer.Length - 2];
+                        ym = yBuffer[^1];
+                        yl = yBuffer[^2];
                         break;
 
                     case 2:
                         yh = 0UL;
                         ym = 0UL;
-                        yl = yBuffer[yBuffer.Length - 1];
+                        yl = yBuffer[^1];
                         break;
 
                     default:
@@ -330,8 +330,8 @@ namespace System.Numerics
                 Debug.Assert(yBuffer.Length >= 2);
                 Debug.Assert(xBuffer.Length >= yBuffer.Length);
 
-                ulong xh = xBuffer[xBuffer.Length - 1];
-                ulong xl = xBuffer[xBuffer.Length - 2];
+                ulong xh = xBuffer[^1];
+                ulong xl = xBuffer[^2];
 
                 ulong yh, yl;
 
@@ -339,13 +339,13 @@ namespace System.Numerics
                 switch (xBuffer.Length - yBuffer.Length)
                 {
                     case 0:
-                        yh = yBuffer[yBuffer.Length - 1];
-                        yl = yBuffer[yBuffer.Length - 2];
+                        yh = yBuffer[^1];
+                        yl = yBuffer[^2];
                         break;
 
                     case 1:
                         yh = 0UL;
-                        yl = yBuffer[yBuffer.Length - 1];
+                        yl = yBuffer[^1];
                         break;
 
                     default:

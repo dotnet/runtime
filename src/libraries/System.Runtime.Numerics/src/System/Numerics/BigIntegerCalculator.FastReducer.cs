@@ -30,7 +30,7 @@ namespace System.Numerics
 
                 // Barrett reduction: precompute mu = floor(4^k / m), where k = modulus.Length.
                 // Start by setting r = 4^k (a 1 in the highest position of a 2k+1 limb number).
-                r[r.Length - 1] = 1;
+                r[^1] = 1;
 
                 // Compute mu = floor(r / m)
                 DivRem(r, modulus, mu);

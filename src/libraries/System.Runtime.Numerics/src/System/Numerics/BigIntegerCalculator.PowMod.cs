@@ -214,7 +214,7 @@ namespace System.Numerics
                 }
             }
 
-            return PowCore(value, power[power.Length - 1], modulus, result);
+            return PowCore(value, power[^1], modulus, result);
         }
 
         private static nuint PowCore(nuint value, nuint power, nuint modulus, nuint result)
@@ -883,7 +883,7 @@ namespace System.Numerics
                 }
             }
 
-            return PowCore(value, valueLength, power[power.Length - 1], modulus, result, resultLength, temp);
+            return PowCore(value, valueLength, power[^1], modulus, result, resultLength, temp);
         }
 
         private static Span<nuint> PowCore(Span<nuint> value, int valueLength,
@@ -945,7 +945,7 @@ namespace System.Numerics
                 }
             }
 
-            return PowCore(value, valueLength, power[power.Length - 1], reducer, result, resultLength, temp);
+            return PowCore(value, valueLength, power[^1], reducer, result, resultLength, temp);
         }
 
         private static Span<nuint> PowCore(Span<nuint> value, int valueLength,

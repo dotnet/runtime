@@ -159,7 +159,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Widening divide: (hi:lo) / divisor → (quotient, remainder).
+        /// Widening divide: (hi:lo) / divisor -> (quotient, remainder).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static nuint DivRem(nuint hi, nuint lo, nuint divisor, out nuint remainder)
@@ -179,8 +179,8 @@ namespace System.Numerics
 
                 // When divisor fits in 32 bits, split lo into two 32-bit halves
                 // and chain two native 64-bit divisions (avoids UInt128 overhead):
-                //   (hi  * 2^32 + lo_hi) / divisor → (q_hi, r1)   [fits: hi < divisor < 2^32]
-                //   (r1  * 2^32 + lo_lo) / divisor → (q_lo, r2)   [fits: r1 < divisor < 2^32]
+                //   (hi * 2^32 + lo_hi) / divisor -> (q_hi, r1) [fits: hi < divisor < 2^32]
+                //   (r1 * 2^32 + lo_lo) / divisor -> (q_lo, r2) [fits: r1 < divisor < 2^32]
                 if ((ulong)divisor <= uint.MaxValue)
                 {
                     ulong lo_hi = (ulong)lo >> 32;
