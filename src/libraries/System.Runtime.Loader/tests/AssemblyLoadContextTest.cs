@@ -277,8 +277,7 @@ namespace System.Runtime.Loader.Tests
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
-        [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
@@ -302,8 +301,7 @@ namespace System.Runtime.Loader.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
-        [ActiveIssue("Error message format is CoreCLR-specific", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
         {
             var alc = new AssemblyLoadContext("TestALC");
