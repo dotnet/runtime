@@ -1507,7 +1507,7 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static void GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, int* pResult, Exception* pException)
+        private static unsafe void GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, int* pResult, Exception* pException)
         {
             try
             {
@@ -1534,7 +1534,7 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static void CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, int* pResult, Exception* pException)
+        private static unsafe void CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, int* pResult, Exception* pException)
         {
             try
             {
@@ -1571,7 +1571,7 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static void InvokeConnectionPointProviderMethod(
+        private static unsafe void InvokeConnectionPointProviderMethod(
             object* pProvider,
             nint pProviderMethodPtr,
             object* pDelegate,
@@ -1605,7 +1605,7 @@ namespace System.StubHelpers
         // pResult is an unmanaged ARG_SLOT* (see vm/callhelpers.h). ARG_SLOT is always 8 bytes,
         // so we use ulong purely as a fixed-width bit container, not for numeric semantics.
         [RequiresUnsafe]
-        private static void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
+        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
         {
             try
             {
@@ -1624,7 +1624,7 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
+        private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try
             {
@@ -1814,6 +1814,7 @@ namespace System.StubHelpers
     internal static class CultureInfoMarshaler
     {
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetCurrentCulture(bool bUICulture, object* pResult, Exception* pException)
         {
             try
@@ -1829,6 +1830,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void SetCurrentCulture(bool bUICulture, Globalization.CultureInfo* pValue, Exception* pException)
         {
             try
@@ -1845,6 +1847,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
         {
             try
@@ -1890,6 +1893,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
         {
             try
@@ -1903,6 +1907,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
         {
             try
