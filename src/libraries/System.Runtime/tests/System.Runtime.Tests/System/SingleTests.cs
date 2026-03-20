@@ -387,7 +387,7 @@ namespace System.Tests
             yield return new object[] { " 0x1.0p0 ", NumberStyles.HexFloat, invariantFormat, 1.0f };
 
             // Integer-only form (with prefix and exponent)
-            yield return new object[] { "0xAp0", NumberStyles.HexFloat, invariantFormat, 10.0f };
+            yield return new object[] { "0x10p0", NumberStyles.HexFloat, invariantFormat, 16.0f };
             yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0f };
 
             // Denormal
