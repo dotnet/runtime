@@ -252,7 +252,6 @@ REM ===
 REM =========================================================================================
 
 if "%__SkipNative%" == "1" goto skipnative
-if "%__GenerateLayoutOnly%" == "1" goto skipnative
 if "%__CopyNativeTestBinaries%" == "1" goto skipnative
 
 echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
