@@ -1366,9 +1366,12 @@ namespace System.Runtime.InteropServices
 
             public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
             {
-                lock (_lock)
+                try
                 {
-                    Remove_Locked(comPointer, wrapper);
+                    lock (_lock)
+                    {
+                        Remove_Locked(comPointer, wrapper);
+                    }
                 }
                 finally
                 {
@@ -1385,6 +1388,10 @@ namespace System.Runtime.InteropServices
                     {
                         Remove_Locked(wrapper.ExternalComObject, wrapper);
                     }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
                 }
             }
 
