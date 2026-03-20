@@ -108,7 +108,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
   </ItemGroup>
