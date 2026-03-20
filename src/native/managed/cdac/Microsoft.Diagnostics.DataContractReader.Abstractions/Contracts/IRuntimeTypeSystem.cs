@@ -140,6 +140,9 @@ public interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view
     CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
 
+    // return true if the TypeHandle represents an enum type.
+    bool IsEnum(TypeHandle typeHandle) => throw new NotImplementedException();
+
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     TypeHandle GetTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
