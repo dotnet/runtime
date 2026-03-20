@@ -25,18 +25,23 @@ public abstract class DumpTestBase : IDisposable
     private DumpInfo? _dumpInfo;
 
     /// <summary>
-    /// The set of runtime versions to test against.
+    /// The set of runtime versions and R2R modes to test against.
     /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
+    /// R2R modes are read from the <c>CDAC_R2R_MODES</c> environment variable
+    /// (set by Helix pre-commands); defaults to "r2r" when not set.
     /// </summary>
     public static IEnumerable<object[]> TestConfigurations
     {
         get
         {
-            if (!IsVersionSkipped("local"))
-                yield return [new TestConfiguration("local")];
+            foreach (string r2rMode in GetR2RModes())
+            {
+                if (!IsVersionSkipped("local"))
+                    yield return [new TestConfiguration("local", r2rMode)];
 
-            if (!IsVersionSkipped("net10.0"))
-                yield return [new TestConfiguration("net10.0")];
+                if (!IsVersionSkipped("net10.0"))
+                    yield return [new TestConfiguration("net10.0", r2rMode)];
+            }
         }
     }
 
@@ -83,9 +88,13 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
+        string dumpTypeDir = Path.Combine(versionDir, dumpType);
+        Assert.True(Directory.Exists(dumpTypeDir), $"Dump type directory not found: {dumpTypeDir}");
 
-        Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
+        string dumpPath = Path.Combine(dumpTypeDir, config.R2RMode, debuggeeName, $"{debuggeeName}.dmp");
+
+        if (!File.Exists(dumpPath))
+            throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
 
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
@@ -157,6 +166,24 @@ public abstract class DumpTestBase : IDisposable
             throw new InvalidOperationException("Could not locate the repository root.");
 
         return Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
+    }
+
+    /// <summary>
+    /// Returns the R2R modes to test against. Reads from the <c>CDAC_R2R_MODES</c>
+    /// environment variable (set by Helix pre-commands), defaulting to "r2r" when not set.
+    /// </summary>
+    private static IEnumerable<string> GetR2RModes()
+    {
+        string? modes = Environment.GetEnvironmentVariable("CDAC_R2R_MODES");
+        if (!string.IsNullOrEmpty(modes))
+        {
+            foreach (string mode in modes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                yield return mode;
+        }
+        else
+        {
+            yield return "r2r";
+        }
     }
 
     /// <summary>
