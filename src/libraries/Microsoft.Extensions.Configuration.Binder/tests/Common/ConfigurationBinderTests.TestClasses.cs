@@ -677,8 +677,17 @@ namespace Microsoft.Extensions
         public class SetOnlyValueTypePoco
         {
             private bool _countSet;
+            private int _count;
+            public int Count { set { _countSet = true; _count = value; } }
             public bool CountSet => _countSet;
-            public int Count { set => _countSet = true; }
+            public int GetCount() => _count;
+        }
+
+        public class SetOnlyArrayPoco
+        {
+            private string[] _items;
+            public string[] GetItems() => _items;
+            public string[] Items { set => _items = value; }
         }
 
         public interface ISomeInterface

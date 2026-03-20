@@ -1448,10 +1448,55 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void SetOnlyNonNullableValueType_WithEmptyConfig_DoesNotCallSetter()
+        public void BindsSetOnlyArrayProperty_WithElements()
         {
-            var dic = new Dictionary<string, string> { { "Count", "" } };
+            var dic = new Dictionary<string, string>
+            {
+                {"Items:0", "a"},
+                {"Items:1", "b"},
+            };
             var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyArrayPoco>();
+            Assert.Equal(new[] { "a", "b" }, options.GetItems());
+        }
+
+        [Fact]
+        public void BindsSetOnlyArrayProperty_WithEmptyString()
+        {
+            var dic = new Dictionary<string, string> { { "Items", "" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyArrayPoco>();
+            Assert.NotNull(options.GetItems());
+            Assert.Empty(options.GetItems());
+        }
+
+        [Fact]
+        public void BindsSetOnlyNonNullableValueType_WithValidConfig()
+        {
+            var dic = new Dictionary<string, string> { { "Count", "42" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyValueTypePoco>();
+            Assert.Equal(42, options.GetCount());
+        }
+
+        [Fact]
+        public void BindsSetOnlyProperties_ViaBind()
+        {
+            var dic = new Dictionary<string, string> { { "SetOnly", "hello" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var target = new SetOnlyPoco();
+            config.Bind(target);
+            Assert.True(target.SetOnlyCalled);
+        }
+
+        [Fact]
+        public void SetOnlyNonNullableValueType_WithMissingConfig_DoesNotCallSetter()
+        {
+            var config = new ConfigurationBuilder().Build();
 
             var options = config.Get<SetOnlyValueTypePoco>();
             Assert.False(options.CountSet);
