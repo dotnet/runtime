@@ -1195,9 +1195,9 @@ namespace System
                     binaryExponent = -binaryExponent;
                 }
             }
-            else if (hasFractionalPart)
+            else
             {
-                // Exponent is required when there's a fractional part
+                // Binary exponent is required
                 return false;
             }
 

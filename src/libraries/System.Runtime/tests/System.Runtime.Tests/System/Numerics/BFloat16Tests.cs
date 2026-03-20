@@ -776,7 +776,7 @@ namespace System.Numerics.Tests
             yield return new object[] { "0x0p0", NumberStyles.HexFloat, invariantFormat, 0.0f };
             yield return new object[] { "0xAp0", NumberStyles.HexFloat, invariantFormat, 10.0f };
             yield return new object[] { "0x1.4p3", NumberStyles.HexFloat, invariantFormat, 10.0f };
-            yield return new object[] { "0xFF", NumberStyles.HexFloat, invariantFormat, 255.0f };
+            yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0f };
             yield return new object[] { " 0x1p0 ", NumberStyles.HexFloat, invariantFormat, 1.0f };
             yield return new object[] { "0x.1p4", NumberStyles.HexFloat, invariantFormat, 1.0f };
             // Overflow to infinity
@@ -856,6 +856,7 @@ namespace System.Numerics.Tests
             yield return new object[] { "0x1.0p", NumberStyles.HexFloat, null, typeof(FormatException) }; // Exponent marker without digits
             yield return new object[] { "0x1.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional part without exponent
             yield return new object[] { "0x.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional-only without exponent
+            yield return new object[] { "0xFF", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
             yield return new object[] { "0xGp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char
             yield return new object[] { "0x1.Gp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char in fraction
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
@@ -1160,7 +1161,6 @@ namespace System.Numerics.Tests
         [Theory]
         [InlineData("-0x0p0")]
         [InlineData("-0x0.0p0")]
-        [InlineData("-0x0")]
         public static void ParseHexFloat_NegativeZero(string input)
         {
             BFloat16 result = BFloat16.Parse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
