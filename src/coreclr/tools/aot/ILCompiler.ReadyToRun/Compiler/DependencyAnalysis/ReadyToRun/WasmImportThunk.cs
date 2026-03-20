@@ -107,12 +107,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
-        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
+        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
             Debug.Assert(_thunkKind == ImportThunkKind.DelayLoadHelper);
             Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
+
+            // WASM-TODO! This is NOT an efficient way to implement this thunk. Currently it writes all the arguments to the stack, not just the ones which need to be saved for GC purposes.
+            // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This will require changes to code
+            // which is currently architecture neutral on the VM side, so we should wait to do this until we have a better picture of how the VM and compiler sides will interact for this thunk.
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
@@ -234,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Add);
             // i32.load 0
             expressions.Add(I32.Load(0));
-            // call_indirect (i32, i32, i32) (returns i32)
+            // call_indirect (i32, i32, i32, i32) (returns i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
             // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value it will no longer be used
