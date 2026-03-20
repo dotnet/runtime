@@ -337,7 +337,9 @@ static unsigned GetInsOpcode(instruction ins)
 static bool HasOpcodePrefix(instruction ins)
 {
     static const bool hasPrefix[] = {
-#define INST(id, nm, info, fmt, opcode) (static_cast<uint8_t>(opcode) == 0xFB || static_cast<uint8_t>(opcode) == 0xFC || static_cast<uint8_t>(opcode) == 0xFD),
+#define INST(id, nm, info, fmt, opcode)                                                                                \
+    (static_cast<uint8_t>(opcode) == 0xFB || static_cast<uint8_t>(opcode) == 0xFC ||                                   \
+     static_cast<uint8_t>(opcode) == 0xFD),
 #include "instrs.h"
     };
     return hasPrefix[ins];
