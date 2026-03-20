@@ -734,6 +734,34 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
     }
 }
 
+Assembly *AssemblySpecBindingCache::LookupParentAssemblyForAssembly(Assembly *pAssembly)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        MODE_ANY;
+        PRECONDITION(pAssembly != NULL);
+    }
+    CONTRACTL_END;
+
+    PtrHashMap::PtrIterator i = m_map.begin();
+    while (!i.end())
+    {
+        AssemblyBinding *b = (AssemblyBinding*) i.GetValue();
+        if (!b->IsError() && b->GetAssembly() == pAssembly)
+        {
+            Assembly *pParent = b->GetParentAssembly();
+            if (pParent != NULL)
+                return pParent;
+        }
+        ++i;
+    }
+
+    return NULL;
+}
+
 
 class AssemblyBindingHolder
 {

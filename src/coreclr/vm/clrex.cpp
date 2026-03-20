@@ -1697,55 +1697,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 /* static */
 
 /* static */
-// Data structure for collecting caller assemblies from the managed stack.
-struct CallerAssemblyChainData
-{
-    Assembly *pFailedParent;     // The immediate parent (requesting) assembly
-    Assembly *pFailedAssembly;   // The assembly that failed to load (may be NULL if not yet loaded)
-    StackSString chain;          // Newline-separated chain of assembly display names
-    int count;                   // Number of assemblies added to the chain
-    static const int MaxDepth = 10; // Limit to avoid excessive chain length
-};
-
-static StackWalkAction CallerAssemblyChainCallback(CrawlFrame* pCf, VOID* data)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    MethodDesc *pFunc = pCf->GetFunction();
-    if (pFunc == NULL)
-        return SWA_CONTINUE;
-
-    CallerAssemblyChainData* pData = (CallerAssemblyChainData*)data;
-    if (pData->count >= CallerAssemblyChainData::MaxDepth)
-        return SWA_ABORT;
-
-    Assembly *pAssembly = pFunc->GetModule()->GetAssembly();
-
-    // Skip the immediate parent assembly (already added) and the failed assembly
-    if (pAssembly == pData->pFailedParent || pAssembly == pData->pFailedAssembly)
-        return SWA_CONTINUE;
-
-    // Skip system/framework assemblies (System.Private.CoreLib etc.) to keep the chain relevant
-    if (pAssembly->IsSystem())
-        return SWA_CONTINUE;
-
-    // Check if this assembly is already in the chain by comparing display names.
-    // Build display name for this assembly.
-    StackSString assemblyName;
-    pAssembly->GetDisplayName(assemblyName);
-
-    // Avoid duplicates: check if this name is already in the chain
-    if (!pData->chain.IsEmpty() && wcsstr(pData->chain.GetUnicode(), assemblyName.GetUnicode()) != NULL)
-        return SWA_CONTINUE;
-
-    if (!pData->chain.IsEmpty())
-        pData->chain.Append(W("\n"));
-    pData->chain.Append(assemblyName);
-    pData->count++;
-
-    return SWA_CONTINUE;
-}
-
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
@@ -1779,36 +1730,46 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
             pParentAssembly->GetDisplayName(parentName);
 
             // Build the requesting assembly chain: start with the immediate parent,
-            // then walk the managed call stack to find additional caller assemblies.
+            // then walk up the binding cache to find transitive requesting assemblies.
             StackSString requestingChain;
             requestingChain.Set(parentName);
 
             EX_TRY
             {
-                Thread *pThread = GetThreadNULLOk();
-                if (pThread != NULL)
+                AppDomain *pDomain = pSpec->GetAppDomain();
+                if (pDomain != NULL)
                 {
-                    GCX_COOP();
+                    Assembly *pWalkAssembly = pParentAssembly;
+                    int depth = 0;
+                    const int MaxChainDepth = 10;
 
-                    CallerAssemblyChainData data;
-                    data.pFailedParent = pParentAssembly;
-                    data.pFailedAssembly = NULL; // Assembly failed to load, so no Assembly* exists
-                    data.count = 0;
-
-                    pThread->StackWalkFrames(CallerAssemblyChainCallback, &data, FUNCTIONSONLY | LIGHTUNWIND);
-
-                    if (!data.chain.IsEmpty())
+                    while (pWalkAssembly != NULL && depth < MaxChainDepth)
                     {
-                        requestingChain.Append(W("\n"));
-                        requestingChain.Append(data.chain);
+                        // Look up the current assembly in the binding cache to find
+                        // which assembly requested its load (its parent).
+                        Assembly *pGrandParent = pDomain->FindCachedParentAssembly(pWalkAssembly);
+                        if (pGrandParent == NULL || pGrandParent == pWalkAssembly)
+                            break;
+
+                        // Skip system assemblies (System.Private.CoreLib etc.)
+                        if (!pGrandParent->IsSystem())
+                        {
+                            StackSString grandParentName;
+                            pGrandParent->GetDisplayName(grandParentName);
+                            requestingChain.Append(W("\n"));
+                            requestingChain.Append(grandParentName);
+                        }
+
+                        pWalkAssembly = pGrandParent;
+                        depth++;
                     }
                 }
             }
             EX_CATCH
             {
-                // If the stack walk fails for any reason, just use the immediate parent
+                // If the chain walk fails for any reason, just use what we have so far
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
 
             pException->SetRequestingAssembly(requestingChain);
 
