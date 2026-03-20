@@ -68,55 +68,6 @@ public class ManagedToNativeGenerator : Task
         }
     }
 
-    // WASM-TODO:
-    // add missing signatures temporarily
-    // part is for runtime tests and delegates
-    // active issue https://github.com/dotnet/runtime/issues/121222
-    private static readonly string[] missingCookies =
-                    [
-                        "d",
-                        "ddid",
-                        "dii",
-                        "f",
-                        "id",
-                        "idfi",
-                        "idi",
-                        "if",
-                        "iff",
-                        "iid",
-                        "iif",
-                        "iifiif",
-                        "iiiiiiiiiiiiiiiiii",
-                        "iin",
-                        "iinini",
-                        "iinn",
-                        "il",
-                        "inn",
-                        "lii",
-                        "ld",
-                        "lf",
-                        "ll",
-                        "lli",
-                        "n",
-                        "ni",
-                        "nii",
-                        "niii",
-                        "nin",
-                        "nn",
-                        "nni",
-                        "nnn",
-                        "vd",
-                        "vf",
-                        "viiiiiii",
-                        "viin",
-                        "vid",
-                        "viil",
-                        "vil",
-                        "vin",
-                        "vinni",
-                        "iinini",
-                    ];
-
     private void ExecuteInternal(LogAdapter log)
     {
         Dictionary<string, string> _symbolNameFixups = new();
@@ -136,8 +87,7 @@ public class ManagedToNativeGenerator : Task
 
         IEnumerable<string> cookies = Enumerable.Concat(
             pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath),
-            Enumerable.Concat(icall.Generate(IcallOutputPath),
-            missingCookies));
+            icall.Generate(IcallOutputPath));
 
         var m2n = new InterpToNativeGenerator(log);
         m2n.Generate(cookies, InterpToNativeOutputPath);

@@ -13,5 +13,7 @@
     <!-- Default dump type for dump generation. Override per-debuggee csproj as needed.
          Supported values: "Heap", "Full", or "Heap;Full" for both. -->
     <DumpTypes Condition="'$(DumpTypes)' == ''">Heap</DumpTypes>
+    <!-- Set to true in a debuggee csproj to exclude it from non-Windows platforms. -->
+    <WindowsOnly Condition="'$(WindowsOnly)' == ''">false</WindowsOnly>
   </PropertyGroup>
 </Project>
