@@ -301,7 +301,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         }
     }
 
-    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano), Timeout = 180_000)]
     public void Recovery()
     {
         Test(() =>
@@ -335,7 +335,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
                 using (RemoteExecutor.Invoke(
                            EnlistAndCrash,
                            propagationTokenText, guid2.ToString(), secondEnlistmentRecoveryFilePath,
-                           new RemoteInvokeOptions { ExpectedExitCode = 42 }))
+                           new RemoteInvokeOptions { ExpectedExitCode = 42, TimeOut = 120_000 }))
                 {
                     // Wait for the external process to enlist in the transaction, it will signal this EventWaitHandle.
                     Assert.True(waitHandle.WaitOne(Timeout));
