@@ -268,7 +268,6 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string WorkingDirectory { get { throw null; } set { } }
     }
-
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : System.ComponentModel.Component
     {

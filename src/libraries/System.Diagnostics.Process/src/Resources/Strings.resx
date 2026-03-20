@@ -336,5 +336,4 @@
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>
   </data>
-
 </root>
