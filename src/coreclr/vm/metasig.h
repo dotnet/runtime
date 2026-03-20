@@ -461,8 +461,9 @@ DEFINE_METASIG_T(SM(PtrStr_IntPtr_PtrIntPtr_PtrException_RetVoid, P(s) I P(I) P(
 DEFINE_METASIG_T(SM(IntPtr_PtrObj_PtrException_RetVoid, I P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_PtrIntPtr_PtrException_RetVoid, P(j) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(IntPtr_Int_PtrObj_PtrException_RetVoid, I i P(j) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrStr_PtrAssemblyBase_CLR_BOOL_UInt_PtrIntPtr_PtrException_RetVoid, P(s) P(C(ASSEMBLYBASE)) F K P(I) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrStr_PtrAssemblyBase_IntPtr_PtrIntPtr_PtrException_RetVoid, P(s) P(C(ASSEMBLYBASE)) I P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_IntPtr_PtrIntPtr_PtrException_RetVoid, P(u) I P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrAssemblyBase_CLR_BOOL_UInt_PtrIntPtr_PtrException_RetVoid, P(u) P(C(ASSEMBLYBASE)) F K P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrAssemblyBase_IntPtr_PtrIntPtr_PtrException_RetVoid, P(u) P(C(ASSEMBLYBASE)) I P(I) P(C(EXCEPTION)), v))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrComObject_PtrException_RetVoid, P(C(COM_OBJECT)) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMINTEROP

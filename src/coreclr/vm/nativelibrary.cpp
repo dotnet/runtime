@@ -286,19 +286,12 @@ namespace
 
         GCX_COOP();
 
-        STRINGREF pUnmanagedDllName;
-        pUnmanagedDllName = StringObject::NewString(wszLibName);
-
-        GCPROTECT_BEGIN(pUnmanagedDllName);
-
         // Get the pointer to the managed assembly load context
         INT_PTR ptrAssemblyLoadContext = pCurrentBinder->GetAssemblyLoadContext();
 
         // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         UnmanagedCallersOnlyCaller resolveUnmanagedDll(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
-        resolveUnmanagedDll.InvokeThrowing(&pUnmanagedDllName, ptrAssemblyLoadContext, &hmod);
-
-        GCPROTECT_END();
+        resolveUnmanagedDll.InvokeThrowing(wszLibName, ptrAssemblyLoadContext, &hmod);
 
         return hmod;
     }
@@ -326,22 +319,18 @@ namespace
 
         GCX_COOP();
 
-        struct {
-            STRINGREF DllName;
-            OBJECTREF AssemblyRef;
-        } gc = { NULL, NULL };
+        OBJECTREF assemblyRef = NULL;
 
-        GCPROTECT_BEGIN(gc);
+        GCPROTECT_BEGIN(assemblyRef);
 
-        gc.DllName = StringObject::NewString(wszLibName);
-        gc.AssemblyRef = pAssembly->GetExposedObject();
+        assemblyRef = pAssembly->GetExposedObject();
 
         // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
         // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
         // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
         // as an additional argument.
         UnmanagedCallersOnlyCaller resolveUnmanagedDllUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
-        resolveUnmanagedDllUsingEvent.InvokeThrowing(&gc.DllName, &gc.AssemblyRef, ptrAssemblyLoadContext, &hmod);
+        resolveUnmanagedDllUsingEvent.InvokeThrowing(wszLibName, &assemblyRef, ptrAssemblyLoadContext, &hmod);
 
         GCPROTECT_END();
 
@@ -369,18 +358,14 @@ namespace
 
         GCX_COOP();
 
-        struct {
-            STRINGREF libNameRef;
-            OBJECTREF assemblyRef;
-        } gc = { NULL, NULL };
+        OBJECTREF assemblyRef = NULL;
 
-        GCPROTECT_BEGIN(gc);
+        GCPROTECT_BEGIN(assemblyRef);
 
-        gc.libNameRef = StringObject::NewString(wszLibName);
-        gc.assemblyRef = pAssembly->GetExposedObject();
+        assemblyRef = pAssembly->GetExposedObject();
 
         UnmanagedCallersOnlyCaller loadLibraryCallbackStub(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
-        loadLibraryCallbackStub.InvokeThrowing(&gc.libNameRef, &gc.assemblyRef, CLR_BOOL_ARG(hasDllImportSearchPathFlags), dllImportSearchPathFlags, (INT_PTR*)&handle);
+        loadLibraryCallbackStub.InvokeThrowing(wszLibName, &assemblyRef, CLR_BOOL_ARG(hasDllImportSearchPathFlags), dllImportSearchPathFlags, (INT_PTR*)&handle);
         GCPROTECT_END();
 
         return handle;
