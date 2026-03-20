@@ -61,9 +61,12 @@ private:
     FunctionID _targetFuncId;
     ModuleID _targetModuleId;
     mdMethodDef _targetMethodDef;
+    bool _tieredMode;
 
     const String ReJITTriggerMethodName = WCHAR("TriggerReJIT");
     const String RevertTriggerMethodName = WCHAR("TriggerRevert");
+    const String ReJITFinalTierTriggerMethodName = WCHAR("TriggerReJITFinalTier");
+    const String RevertFinalTierTriggerMethodName = WCHAR("TriggerRevertFinalTier");
     const String TargetMethodName = WCHAR("InlineeTarget");
     const String TargetModuleName = WCHAR("rejit.dll");
 };

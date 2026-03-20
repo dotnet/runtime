@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Profiler.Tests
 {
@@ -11,10 +13,12 @@ namespace Profiler.Tests
         static readonly Guid ReJitProfilerGuid = new Guid("66F7A9DF-8858-4A32-9CFF-3AD0787E0186");
 
         static System.Text.StringBuilder OutputBuilder = new ();
+        static bool SuppressOutput;
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void TestWriteLine(string s)
         {
+            if (SuppressOutput) return;
             OutputBuilder.AppendLine(s);
             Console.WriteLine(s);
         }
@@ -80,6 +84,108 @@ namespace Profiler.Tests
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static void TriggerReJITFinalTier()
+        {
+            Console.WriteLine("ReJIT (final tier) should be triggered after this method...");
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static void TriggerRevertFinalTier()
+        {
+            Console.WriteLine("Revert (final tier) should be triggered after this method...");
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static int TieredRejit()
+        {
+            string matchString = "Hello from profiler rejit method 'InlineeTarget'!";
+
+            // Phase 1: Non-final tier (Tier0) - methods are freshly compiled at quick JIT
+            Console.WriteLine("=== Phase 1: ReJIT at non-final tier (Tier0) ===");
+
+            TriggerDirectInlining();
+            CallMethodWithoutInlining();
+            TriggerInliningChain();
+
+            TriggerReJIT();
+
+            OutputBuilder.Clear();
+
+            TriggerDirectInlining();
+            CallMethodWithoutInlining();
+            TriggerInliningChain();
+
+            if (!OutputBuilder.ToString().Contains(matchString))
+            {
+                Console.WriteLine("Phase 1 FAILED: ReJIT at Tier0 did not replace function body!");
+                return 1;
+            }
+            Console.WriteLine("Phase 1 PASSED: ReJIT at Tier0 correctly replaced function body.");
+
+            TriggerRevert();
+
+            OutputBuilder.Clear();
+
+            TriggerDirectInlining();
+            CallMethodWithoutInlining();
+            TriggerInliningChain();
+
+            if (OutputBuilder.ToString().Contains(matchString))
+            {
+                Console.WriteLine("Phase 1 revert FAILED: original function body not restored!");
+                return 2;
+            }
+            Console.WriteLine("Phase 1 revert PASSED.");
+
+            // Promote methods to Tier1 via hot loop, then wait for background compilation
+            Console.WriteLine("=== Promoting methods to Tier1 via hot loop ===");
+            SuppressOutput = true;
+            for (int i = 0; i < 200; i++)
+            {
+                TriggerDirectInlining();
+                CallMethodWithoutInlining();
+                TriggerInliningChain();
+            }
+            SuppressOutput = false;
+            Thread.Sleep(500);
+
+            // Phase 2: Final tier (Tier1) - methods have been promoted
+            Console.WriteLine("=== Phase 2: ReJIT at final tier (Tier1) ===");
+
+            TriggerReJITFinalTier();
+
+            OutputBuilder.Clear();
+
+            TriggerDirectInlining();
+            CallMethodWithoutInlining();
+            TriggerInliningChain();
+
+            if (!OutputBuilder.ToString().Contains(matchString))
+            {
+                Console.WriteLine("Phase 2 FAILED: ReJIT at Tier1 did not replace function body!");
+                return 3;
+            }
+            Console.WriteLine("Phase 2 PASSED: ReJIT at Tier1 correctly replaced function body.");
+
+            TriggerRevertFinalTier();
+
+            OutputBuilder.Clear();
+
+            TriggerDirectInlining();
+            CallMethodWithoutInlining();
+            TriggerInliningChain();
+
+            if (OutputBuilder.ToString().Contains(matchString))
+            {
+                Console.WriteLine("Phase 2 revert FAILED: original function body not restored!");
+                return 4;
+            }
+            Console.WriteLine("Phase 2 revert PASSED.");
+
+            return 100;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerInliningChain()
         {
             TestWriteLine("TriggerInliningChain");
@@ -127,17 +233,41 @@ namespace Profiler.Tests
             return MaxInlining();
         }
 
+        public static int RunTieredTest(string[] args)
+        {
+            Console.WriteLine("Running tiered rejit test");
+            return TieredRejit();
+        }
+
         public static int Main(string[] args)
         {
             if (args.Length > 0 && args[0].Equals("RunTest", StringComparison.OrdinalIgnoreCase))
             {
+                if (args.Length > 1 && args[1].Equals("Tiered", StringComparison.OrdinalIgnoreCase))
+                    return RunTieredTest(args);
                 return RunTest(args);
             }
 
-            return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+            // Run the original inlining test (TC disabled)
+            int result = ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ReJITWithInlining",
                                           profilerClsid: ReJitProfilerGuid,
                                           profileeOptions: ProfileeOptions.OptimizationSensitive);
+            if (result != 100)
+                return result;
+
+            // Run the tiered rejit test (TC enabled)
+            result = ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                          testName: "ReJITWithTiering",
+                                          profilerClsid: ReJitProfilerGuid,
+                                          profileeArguments: "Tiered",
+                                          envVars: new Dictionary<string, string>
+                                          {
+                                              { "DOTNET_TieredCompilation", "1" },
+                                              { "DOTNET_REJIT_TIERED_MODE", "1" }
+                                          });
+
+            return result;
         }
     }
 

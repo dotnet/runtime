@@ -39,7 +39,8 @@ ReJITProfiler::ReJITProfiler() : Profiler(),
     _triggerFuncId(0),
     _targetFuncId(0),
     _targetModuleId(0),
-    _targetMethodDef(mdTokenNil)
+    _targetMethodDef(mdTokenNil),
+    _tieredMode(false)
 {
 
 }
@@ -82,6 +83,15 @@ HRESULT ReJITProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
+    WCHAR tieredModeBuf[16];
+    ULONG tieredModeLen;
+    hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("DOTNET_REJIT_TIERED_MODE"), 16, &tieredModeLen, tieredModeBuf);
+    if (SUCCEEDED(hr) && tieredModeLen > 0 && tieredModeBuf[0] == WCHAR('1'))
+    {
+        _tieredMode = true;
+        INFO(L"Running in tiered rejit test mode");
+    }
+
     return S_OK;
 }
 
@@ -95,30 +105,47 @@ HRESULT ReJITProfiler::Shutdown()
         _profInfo10 = nullptr;
     }
 
-    int expectedRejitCount;
-    auto it = _inlinings.find(_targetFuncId);
-    if (it != _inlinings.end())
+    if (_tieredMode)
     {
-        // The number of inliners are expected to ReJIT, plus the method itself
-        expectedRejitCount = (int)((*it).second->size() + 1);
+        INFO(L" tiered mode rejit count=" << _rejits << L" failures=" << _failures);
+
+        if (_failures == 0 && _rejits >= 1)
+        {
+            printf("PROFILER TEST PASSES\n");
+        }
+        else
+        {
+            FAIL(L"Tiered test failed number of failures=" << _failures << L" rejits=" << _rejits);
+        }
     }
     else
     {
-        // No inlinings happened, which can occur in composite R2R mode on some targets.
-        // This is fine as long as we rejitted the target method itself.
-        expectedRejitCount = 1;
+        int expectedRejitCount;
+        auto it = _inlinings.find(_targetFuncId);
+        if (it != _inlinings.end())
+        {
+            // The number of inliners are expected to ReJIT, plus the method itself
+            expectedRejitCount = (int)((*it).second->size() + 1);
+        }
+        else
+        {
+            // No inlinings happened, which can occur in composite R2R mode on some targets.
+            // This is fine as long as we rejitted the target method itself.
+            expectedRejitCount = 1;
+        }
+
+        INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);
+
+        if(_failures == 0 && _rejits == expectedRejitCount)
+        {
+            printf("PROFILER TEST PASSES\n");
+        }
+        else
+        {
+            FAIL(L"Test failed number of failures=" << _failures);
+        }
     }
 
-    INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);
-
-    if(_failures == 0 && _rejits == expectedRejitCount)
-    {
-        printf("PROFILER TEST PASSES\n");
-    }
-    else
-    {
-        FAIL(L"Test failed number of failures=" << _failures);
-    }
     fflush(stdout);
 
     return S_OK;
@@ -232,6 +259,23 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
     else if (functionName == RevertTriggerMethodName && EndsWith(moduleName, TargetModuleName))
     {
         INFO(L"Revert trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
+        INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
+        _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
+    }
+    else if (_tieredMode && functionName == ReJITFinalTierTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"ReJIT Final Tier trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting rejit with inliners for method " << GetFunctionIDName(_targetFuncId));
+        INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
+
+        _profInfo10->RequestReJITWithInliners(COR_PRF_REJIT_BLOCK_INLINING | COR_PRF_REJIT_INLINING_CALLBACKS, 1, &_targetModuleId, &_targetMethodDef);
+    }
+    else if (_tieredMode && functionName == RevertFinalTierTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Revert Final Tier trigger method jitting finished: " << functionName);
 
         INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
         INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
