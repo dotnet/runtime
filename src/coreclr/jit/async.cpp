@@ -2876,8 +2876,8 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
         // If we may reuse this continuation later then make sure we don't see the same exception again.
         GenTree* continuation    = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
         unsigned exceptionOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
-        GenTree* null    = m_compiler->gtNewNull();
-        GenTree* nullException  = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
+        GenTree* null            = m_compiler->gtNewNull();
+        GenTree* nullException   = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, nullException));
     }
 
