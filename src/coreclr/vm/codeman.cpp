@@ -361,7 +361,7 @@ void UnwindInfoTable::FlushPendingEntries()
     _ASSERTE(toIdx == newCount);
     _ASSERTE(toIdx <= desiredSpace);
 
-    NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable(pTable);
+    oldPTable = pTable;
 
     UnRegister();
 
