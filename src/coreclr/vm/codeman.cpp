@@ -178,7 +178,6 @@ void UnwindInfoTable::Register()
 {
     _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
 
-    hHandle = NULL;
     NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
     if (ret != STATUS_SUCCESS)
     {
@@ -362,6 +361,14 @@ void UnwindInfoTable::FlushPendingEntries()
     _ASSERTE(toIdx <= desiredSpace);
 
     oldPTable = pTable;
+
+    // The OS growable function table API (RtlGrowFunctionTable) only supports
+    // appending sorted entries, it cannot shrink, reorder, or remove entries.
+    // We have to tear down the old OS registration and create a new one
+    // combining the old and pending entries while skipping the deleted ones.
+    // We should keep the gap between UnRegister and Register as short as possible,
+    // as OS stack walks will have no unwind info for this range during that
+    // window. The new table is fully built before UnRegister to minimize this gap.
 
     UnRegister();
 
