@@ -71,7 +71,11 @@ def fetch_failed_tests(build_id, pipeline_name, token):
         run_name = run.get("name", "")
 
         url2 = f"{ADO_BASE}/test/runs/{run_id}/results?outcomes=Failed&$top=1000&api-version=7.1"
-        resp2 = requests.get(url2, headers=headers)
+        try:
+            resp2 = requests.get(url2, headers=headers, timeout=30)
+        except requests.RequestException as e:
+            print(f"WARNING: results request failed for run {run_id}: {e}", file=sys.stderr)
+            continue
         if resp2.status_code != 200:
             print(f"WARNING: results for run {run_id} returned HTTP {resp2.status_code}", file=sys.stderr)
             continue
