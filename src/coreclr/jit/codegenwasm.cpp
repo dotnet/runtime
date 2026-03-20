@@ -325,7 +325,7 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
         else
         {
-            // blocks bind to end
+            // blocks and trys bind to end
             match = ii->End();
         }
 
@@ -335,8 +335,18 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
     }
 
+#ifdef DEBUG
     JITDUMP("Could not find " FMT_BB "[%u]%s in active control stack\n", targetBlock->bbNum, targetIndex,
             isBackedge ? " (backedge)" : "");
+    JITDUMP("Current stack is\n");
+
+    for (int i = 0; i < h; i++)
+    {
+        WasmInterval* const ii = wasmControlFlowStack->Top(i);
+        JITDUMPEXEC(ii->Dump());
+    }
+#endif
+
     assert(!"Can't find target in control stack");
 
     return ~0;
@@ -378,9 +388,68 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
             }
+            else if (interval->IsTry())
+            {
+                // Handle try_table emission here, since there may be blocks nested inside.
+                // (that is, we can't wait until we do codegen the block IR)
+                //
+                LIR::Range&    blockRange = LIR::AsRange(block);
+                GenTree* const jTrue      = blockRange.LastNode();
+                assert(jTrue->OperIs(GT_WASM_JEXCEPT));
+
+                // Empty stack sig, one catch clause
+                //
+                GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
+
+                // Post-catch continuation dispatch block is the true target.
+                // False target should be the next block.
+                //
+                assert(block->GetFalseTarget() == block->Next());
+                BasicBlock* const target = block->GetTrueTarget();
+                unsigned          depth  = findTargetDepth(target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, depth, target);
+            }
             else
             {
-                GetEmitter()->emitIns_BlockTy(INS_block);
+                assert(interval->IsBlock());
+
+                bool isTryWrapper = false;
+
+#if FALSE
+                // TODO-WASM: block sig when we emit catch_ref
+
+                // If this interval exactly wraps a try, it represents the branch to the
+                // catch handlers. We need to emit an exnref block sig
+                //
+                // (TODO, perhaps ... detect this earlier and make it an interval property)
+                if ((wasmCursor + 1) < m_compiler->fgWasmIntervals->size())
+                {
+                    WasmInterval* nextInterval = m_compiler->fgWasmIntervals->at(wasmCursor + 1);
+                    if (nextInterval->IsTry())
+                    {
+                        // we should always see a wrapping block because of the
+                        // control flow added by fgWasmEhFlow
+                        //
+                        if ((nextInterval->Start() == interval->Start()) && (nextInterval->End() == interval->End()))
+                        {
+                            isTryWrapper = true;
+                        }
+                        else
+                        {
+                            assert(!"Expected block to wrap the try");
+                        }
+                    }
+                }
+#endif
+
+                if (isTryWrapper)
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block);
+                }
             }
 
             wasmCursor++;
@@ -642,6 +711,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_INTRINSIC:
             genIntrinsic(treeNode->AsIntrinsic());
+            break;
+
+        case GT_WASM_JEXCEPT:
+            // no codegen needed here.
+            break;
+
+        case GT_WASM_THROW_REF:
+            // TODO-WASM: enable when we emit catch_ref instead of catch_all
+            // GetEmitter()->emitIns(INS_throw_ref);
+            GetEmitter()->emitIns(INS_unreachable);
             break;
 
         case GT_PINVOKE_PROLOG:
@@ -2885,9 +2964,15 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// genEHCatchRet - Generate code for an EH catch return.
+//
+// Arguments:
+//    block -- the block with BBJ_EHCATCHRET that we need to generate code for
+//
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    NYI_WASM("genEHCatchRet");
+    // No codegen needed for Wasm
 }
 
 void CodeGen::genStructReturn(GenTree* treeNode)
