@@ -201,19 +201,29 @@ def main():
         build_number = build.get("buildNumber", "")
         result = build.get("result", "unknown")
 
-        conn.execute(
-            "INSERT INTO pipelines (name, build_id, build_number, result) VALUES (?, ?, ?, ?)",
-            (name, build_id, build_number, result)
-        )
-        conn.commit()
-
-        if result in ("failed", "partiallySucceeded"):
+        if result == "succeeded":
+            conn.execute(
+                "INSERT INTO pipelines (name, build_id, build_number, result) VALUES (?, ?, ?, ?)",
+                (name, build_id, build_number, result)
+            )
+            passed += 1
+            print(f"  PASS  {name} — build {build_id} ({result})", file=sys.stderr)
+        elif result in ("failed", "partiallySucceeded"):
+            conn.execute(
+                "INSERT INTO pipelines (name, build_id, build_number, result) VALUES (?, ?, ?, ?)",
+                (name, build_id, build_number, result)
+            )
             failed += 1
             failing_builds.append({"name": name, "build_id": build_id, "build_number": build_number})
             print(f"  FAIL  {name} — build {build_id} ({result})", file=sys.stderr)
         else:
-            passed += 1
-            print(f"  PASS  {name} — build {build_id} ({result})", file=sys.stderr)
+            conn.execute(
+                "INSERT INTO pipelines (name, build_id, build_number, result, skip_reason) VALUES (?, ?, ?, 'skipped', ?)",
+                (name, build_id, build_number, result)
+            )
+            skipped += 1
+            print(f"  SKIP  {name} — build {build_id} ({result})", file=sys.stderr)
+        conn.commit()
 
     conn.close()
 
