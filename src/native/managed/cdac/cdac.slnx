@@ -9,11 +9,11 @@
     <Project Path="Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
     <Project Path="Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
     <Project Path="Microsoft.Diagnostics.DataContractReader.Legacy/Microsoft.Diagnostics.DataContractReader.Legacy.csproj" />
-    <Project Path="Microsoft.Diagnostics.Internal.TestDataMocking/Microsoft.Diagnostics.Internal.TestDataMocking.csproj" />
     <Project Path="mscordaccore_universal/mscordaccore_universal.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
+    <Project Path="tests/Microsoft.Diagnostics.Internal.RuntimeMemoryMocks/Microsoft.Diagnostics.Internal.RuntimeMemoryMocks.csproj" />
+    <Project Path="tests/Microsoft.Diagnostics.DataContractReader.Tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
     <Project Path="tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj" />
   </Folder>
 </Solution>

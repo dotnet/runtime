@@ -520,11 +520,11 @@
     $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
 
     <!-- Transport package for added testing -->
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.Internal.TestDataMocking\Microsoft.Diagnostics.Internal.TestDataMocking.csproj" Category="tools" />
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.Internal.RuntimeMemoryMocks\Microsoft.Diagnostics.Internal.RuntimeMemoryMocks.csproj" Category="tools" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.DataContractReader.Tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">

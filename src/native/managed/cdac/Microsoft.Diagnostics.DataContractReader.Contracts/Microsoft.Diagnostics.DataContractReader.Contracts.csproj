@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
-    <InternalsVisibleTo Include="Microsoft.Diagnostics.Internal.TestDataMocking" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.Internal.RuntimeMemoryMocks" />
   </ItemGroup>
 
   <ItemGroup>
