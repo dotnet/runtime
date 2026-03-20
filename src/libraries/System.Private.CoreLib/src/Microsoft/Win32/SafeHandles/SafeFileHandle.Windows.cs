@@ -344,8 +344,8 @@ namespace Microsoft.Win32.SafeHandles
                 // However, it accepts FILE_FLAG_BACKUP_SEMANTICS as an option,
                 // which makes it possible to open a directory.
                 // So when Path is not null and options don't include FILE_FLAG_BACKUP_SEMANTICS,
-                // it's a regular file. In such case, we don't need to call GetDiskBasedType()
-                // and we can avoid performing two sys-calls and regressing performance for CanSeek.
+                // it's a regular file. In such case, we don't need to call GetDiskBasedType() which would be
+                // an extra sys-call.
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK when Path is not null && ((_fileOptions & FileStreamHelpers.BackupOrRestore) == 0) => FileHandleType.RegularFile,
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
                 _ => FileHandleType.Unknown
