@@ -592,9 +592,11 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
 OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
                   "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
+// Enable continuation reuse based on method hash range
+OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
 // Save and reuse continuation instances in runtime async functions. Also
 // implies use of shared continuation layouts for all suspension points.
-RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 0)
+RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
