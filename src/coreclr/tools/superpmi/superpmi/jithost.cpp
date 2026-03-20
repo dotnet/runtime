@@ -115,6 +115,7 @@ bool JitHost::convertStringValueToInt(const char* key, const char* stringValue, 
     }
 
     char*      endPtr;
+    errno = 0;
     unsigned long longResult = strtoul(stringValue, &endPtr, 16);
     bool          succeeded  = (errno != ERANGE) && (endPtr != stringValue) && (longResult <= UINT_MAX);
     if (!succeeded)
