@@ -308,8 +308,13 @@ namespace System.Text.RegularExpressions.Symbolic
                     return builder.CreateSingleton(setTransformer(builder, node._set));
 
                 case SymbolicRegexNodeKind.Loop:
-                    Debug.Assert(node._left is not null);
-                    return builder.CreateLoop(Transform(node._left, builder, setTransformer), node.IsLazy, node._lower, node._upper);
+                    {
+                        Debug.Assert(node._left is not null);
+                        SymbolicRegexNode<TNewSet> loopNode = Transform(node._left, builder, setTransformer);
+                        return loopNode is not null 
+                            ? builder.CreateLoop(loopNode, node.IsLazy, node._lower, node._upper) 
+                            : null;
+                    }
 
                 case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(node._left is not null && node._right is not null);
