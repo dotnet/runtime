@@ -785,7 +785,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
     }
 
     JITDUMP("Default value analysis: per-block mutated vars\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVars());
+    JITDUMPEXEC(DumpMutatedVars());
 }
 
 //------------------------------------------------------------------------
@@ -824,7 +824,7 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
     flow.ForwardAnalysis(callback);
 
     JITDUMP("Default value analysis: per-block mutated vars on entry\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
+    JITDUMPEXEC(DumpMutatedVarsIn());
 }
 
 #ifdef DEBUG
@@ -1087,7 +1087,7 @@ void PreservedValueAnalysis::ComputeResumeReachableBlocks(ArrayStack<BasicBlock*
     }
 
     JITDUMP("Preserved value analysis: blocks containing awaits\n");
-    DBEXEC(m_compiler->verbose, DumpAwaitBlocks());
+    JITDUMPEXEC(DumpAwaitBlocks());
 
     // DFS from those blocks.
     while (!worklist.Empty())
@@ -1104,7 +1104,7 @@ void PreservedValueAnalysis::ComputeResumeReachableBlocks(ArrayStack<BasicBlock*
     }
 
     JITDUMP("Preserved value analysis: blocks reachable after resuming\n");
-    DBEXEC(m_compiler->verbose, DumpResumeReachableBlocks());
+    JITDUMPEXEC(DumpResumeReachableBlocks());
 }
 
 //------------------------------------------------------------------------
@@ -1161,7 +1161,7 @@ void PreservedValueAnalysis::ComputePerBlockMutatedVars()
     }
 
     JITDUMP("Preserved value analysis: per-block mutated vars after resumption\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVars());
+    JITDUMPEXEC(DumpMutatedVars());
 }
 
 //------------------------------------------------------------------------
@@ -1188,7 +1188,7 @@ void PreservedValueAnalysis::ComputeInterBlockMutatedVars()
     flow.ForwardAnalysis(callback);
 
     JITDUMP("Preserved value analysis: per-block mutated vars on entry\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
+    JITDUMPEXEC(DumpMutatedVarsIn());
 }
 
 #ifdef DEBUG
