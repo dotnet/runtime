@@ -277,7 +277,7 @@ namespace System.IO.Tests
         /// <param name="action">The Action that will trigger events.</param>
         /// <param name="cleanup">Optional. Undoes the action and cleans up the watcher so the test may be run again if necessary.</param>
         /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
-        public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
+        public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForUnexpectedEventTimeout)
         {
             bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
             Assert.False(result, "Expected Event occurred");
