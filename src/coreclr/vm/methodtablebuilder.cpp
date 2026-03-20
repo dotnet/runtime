@@ -3397,11 +3397,6 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Extra pass, add an async variant.
 
-                ULONG cAsyncThunkMemberSignature;
-                ULONG taskTokenOffsetFromAsyncDetailsOffset;
-                ULONG taskTypePrefixSize;
-                ULONG taskTypePrefixReplacementSize;
-
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
                 if (returnsValueTask)
                 {
