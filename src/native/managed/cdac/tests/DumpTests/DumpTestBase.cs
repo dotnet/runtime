@@ -53,6 +53,14 @@ public abstract class DumpTestBase : IDisposable
     protected virtual string DumpType => "heap";
 
     /// <summary>
+    /// The R2R mode of the dump to load (e.g., "r2r", "jit"). Determines the
+    /// subdirectory under the dump type directory. "r2r" loads dumps generated with
+    /// ReadyToRun enabled; "jit" loads dumps generated with DOTNET_ReadyToRun=0.
+    /// Override in test classes to select a different R2R mode.
+    /// </summary>
+    protected virtual string R2RMode => "r2r";
+
+    /// <summary>
     /// The cDAC Target created from the dump.
     /// </summary>
     protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded.");
@@ -68,14 +76,14 @@ public abstract class DumpTestBase : IDisposable
     /// attributes on the calling test method. Call this as the first line of every test.
     /// </summary>
     protected void InitializeDumpTest(TestConfiguration config, [CallerMemberName] string callerName = "")
-        => InitializeDumpTest(config, DebuggeeName, DumpType, callerName);
+        => InitializeDumpTest(config, DebuggeeName, DumpType, R2RMode, callerName);
 
     /// <summary>
     /// Loads the dump for the given <paramref name="config"/> using an explicit
-    /// <paramref name="debuggeeName"/> and <paramref name="dumpType"/>.
+    /// <paramref name="debuggeeName"/>, <paramref name="dumpType"/>, and <paramref name="r2rMode"/>.
     /// Use this overload when individual test methods need different debuggees.
     /// </summary>
-    protected void InitializeDumpTest(TestConfiguration config, string debuggeeName, string dumpType, [CallerMemberName] string callerName = "")
+    protected void InitializeDumpTest(TestConfiguration config, string debuggeeName, string dumpType, string r2rMode, [CallerMemberName] string callerName = "")
     {
         string dumpRoot = GetDumpRoot();
         string versionDir = Path.Combine(dumpRoot, config.RuntimeVersion);
@@ -83,7 +91,7 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, r2rMode, debuggeeName, $"{debuggeeName}.dmp");
 
         Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
 
