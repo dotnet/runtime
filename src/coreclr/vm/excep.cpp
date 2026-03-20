@@ -10195,9 +10195,6 @@ VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
     sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
 }
 
-// When the outermost types of a same-name cast failure share the same module,
-// the actual difference lies in their generic type arguments. This function
-// recursively finds the first pair of differing generic type arguments.
 static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo,
                                               TypeHandle *pthArgFrom, TypeHandle *pthArgTo)
 {
@@ -10214,8 +10211,6 @@ static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo
         if (instFrom[i] == instTo[i])
             continue;
 
-        // If both arguments are from the same module, drill deeper
-        // into their own generic arguments to find the root difference.
         Module *pModFrom = instFrom[i].GetModule();
         Module *pModTo = instTo[i].GetModule();
         if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
