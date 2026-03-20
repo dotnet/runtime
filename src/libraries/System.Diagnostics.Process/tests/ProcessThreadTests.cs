@@ -148,13 +148,18 @@ namespace System.Diagnostics.Tests
                 // that there's at least one thread greater than the current time we previously grabbed.
                 await Task.Factory.StartNew(() =>
                 {
-                    p.Refresh();
-
                     int newThreadId = GetCurrentThreadId();
 
-                    ProcessThread[] processThreads = p.Threads.Cast<ProcessThread>().ToArray();
-                    ProcessThread newThread = Assert.Single(processThreads, thread => thread.Id == newThreadId);
+                    // Retry to handle the race where the new thread's /proc entry isn't visible yet.
+                    ProcessThread newThread = null;
+                    for (int i = 0; i < 10 && newThread is null; i++)
+                    {
+                        if (i > 0) Thread.Sleep(100);
+                        p.Refresh();
+                        newThread = p.Threads.Cast<ProcessThread>().FirstOrDefault(t => t.Id == newThreadId);
+                    }
 
+                    Assert.NotNull(newThread);
                     Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
