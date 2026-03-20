@@ -2853,8 +2853,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
 
         LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
 
-        if ((saveSet != SaveSet::All) &&
-            ((saveSet == SaveSet::UnmutatedLocals) != IsLocalUnmutatedSinceLastResumption(dsc, mutatedSinceResumption)))
+        if ((saveSet != SaveSet::All) && (GetLocalSaveSet(dsc, mutatedSinceResumption) != saveSet))
         {
             continue;
         }
@@ -2963,8 +2962,18 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
     }
 }
 
-bool AsyncTransformation::IsLocalUnmutatedSinceLastResumption(const LclVarDsc* dsc,
-                                                              VARSET_VALARG_TP mutatedSinceResumption)
+//------------------------------------------------------------------------
+// AsyncTransformation::GetLocalSaveSet:
+//   Get the save set that a local should be saved as part of.
+//
+// Parameters:
+//   dsc - The local
+//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//
+// Returns:
+//   The set to save the local as part of.
+//
+SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
 {
     if (dsc->lvPromoted)
     {
@@ -2973,23 +2982,23 @@ bool AsyncTransformation::IsLocalUnmutatedSinceLastResumption(const LclVarDsc* d
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
             if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
             {
-                return false;
+                return SaveSet::MutatedLocals;
             }
         }
 
-        return true;
+        return SaveSet::UnmutatedLocals;
     }
 
     // We should only see struct fields for independently promoted structs
     assert(!dsc->lvIsStructField ||
            (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
 
-    if (!dsc->lvTracked)
+    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
     {
-        return false;
+        return SaveSet::MutatedLocals;
     }
 
-    return !VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex);
+    return SaveSet::UnmutatedLocals;
 }
 
 //------------------------------------------------------------------------

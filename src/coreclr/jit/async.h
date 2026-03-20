@@ -270,7 +270,7 @@ class AsyncTransformation
                                        BasicBlock*                      suspendBB,
                                        VARSET_VALARG_TP                 mutatedSinceResumption,
                                        SaveSet                          saveSet);
-    bool        IsLocalUnmutatedSinceLastResumption(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
+    SaveSet     GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
     void        RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
     void        CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                GenTreeCall*              call,
