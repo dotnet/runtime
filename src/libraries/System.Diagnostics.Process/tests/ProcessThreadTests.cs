@@ -159,7 +159,7 @@ namespace System.Diagnostics.Tests
                         newThread = p.Threads.Cast<ProcessThread>().FirstOrDefault(t => t.Id == newThreadId);
                     }
 
-                    Assert.NotNull(newThread);
+                    Assert.True(newThread is not null, $"Thread with id {newThreadId} was not found after retrying.");
                     Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
