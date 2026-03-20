@@ -547,10 +547,7 @@ test_pre_mono_sigsegv_handler(int signum, siginfo_t *info, void *context)
 
     // SIGABRT is still handled — the fix works. Install a temporary
     // catcher and raise SIGABRT to prove it's actually catchable.
-    struct sigaction tmp_abrt;
-    memset(&tmp_abrt, 0, sizeof(tmp_abrt));
-    tmp_abrt.sa_handler = test_sigabrt_handler;
-    sigemptyset(&tmp_abrt.sa_mask);
+    struct sigaction tmp_abrt = { .sa_handler = test_sigabrt_handler };
     sigaction(SIGABRT, &tmp_abrt, NULL);
 
     g_test_sigabrt_received = 0;
