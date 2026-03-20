@@ -43,7 +43,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
             {
                 MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
                 TargetCodePointer nativeCode = rts.GetNativeCode(mdHandle);
-                CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(nativeCode);
+                CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(new TargetCodePointer(nativeCode.Value + 1UL)); // add 1 to test method-start-finding
                 Assert.NotNull(handle);
 
                 return handle.Value;

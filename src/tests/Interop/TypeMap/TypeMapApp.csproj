@@ -18,5 +18,6 @@
     </ProjectReference>
     <ProjectReference Include="TypeMapLib3.csproj" />
     <ProjectReference Include="TypeMapLib4.csproj" />
+    <ProjectReference Include="NoTypeMapEntries.csproj" />
   </ItemGroup>
 </Project>
