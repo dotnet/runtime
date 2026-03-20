@@ -118,26 +118,11 @@ internal readonly struct ComWrappers_1 : IComWrappers
         return TargetPointer.Null;
     }
 
-    private void GetSPCFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
-    {
-        ILoader loader = _target.Contracts.Loader;
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        // lookup by name
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle th = rts.GetTypeByNameAndModule(typeName, @namespace, moduleHandle);
-        fieldDescAddr = rts.GetFieldDescByName(th, fieldName);
-        uint token = rts.GetFieldDescMemberDef(fieldDescAddr);
-        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
-        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
-        fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-    }
-
     public List<TargetPointer> GetMOWs(TargetPointer obj, out bool hasMOWTable)
     {
         hasMOWTable = false;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        GetSPCFieldDescAndDef(ComWrappersNamespace, ComWrappersName, AllManagedObjectWrapperTableFieldName, out TargetPointer fieldDescAddr, out _);
+        rts.GetCoreLibFieldDescAndDef(ComWrappersNamespace, ComWrappersName, AllManagedObjectWrapperTableFieldName, out TargetPointer fieldDescAddr, out _);
         TargetPointer MOWTableAddr = _target.ReadPointer(rts.GetFieldDescStaticAddress(fieldDescAddr));
 
         List<TargetPointer> mows = new List<TargetPointer>();
@@ -147,11 +132,11 @@ internal readonly struct ComWrappers_1 : IComWrappers
         {
             hasMOWTable = true;
             Data.Object listObj = _target.ProcessedData.GetOrAdd<Data.Object>(mowListObj);
-            GetSPCFieldDescAndDef(ListNamespace, ListName, ListItemsFieldName, out TargetPointer itemsFieldDescAddr, out FieldDefinition itemsFieldDef);
+            rts.GetCoreLibFieldDescAndDef(ListNamespace, ListName, ListItemsFieldName, out TargetPointer itemsFieldDescAddr, out FieldDefinition itemsFieldDef);
             uint offset = rts.GetFieldDescOffset(itemsFieldDescAddr, itemsFieldDef);
             TargetPointer listItemsPtr = _target.ReadPointer(listObj.Data + offset);
 
-            GetSPCFieldDescAndDef(ListNamespace, ListName, ListSizeFieldName, out TargetPointer sizeFieldDescAddr, out FieldDefinition sizeFieldDef);
+            rts.GetCoreLibFieldDescAndDef(ListNamespace, ListName, ListSizeFieldName, out TargetPointer sizeFieldDescAddr, out FieldDefinition sizeFieldDef);
             uint sizeOffset = rts.GetFieldDescOffset(sizeFieldDescAddr, sizeFieldDef);
             int size = _target.Read<int>(listObj.Data + sizeOffset);
 
@@ -186,8 +171,9 @@ internal readonly struct ComWrappers_1 : IComWrappers
 
     public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
     {
-        GetSPCFieldDescAndDef(ComWrappersNamespace, ComWrappersName, NativeObjectWrapperCWTFieldName, out TargetPointer fieldDescAddr, out _);
-        TargetPointer cwtAddr = _target.ReadPointer(_target.Contracts.RuntimeTypeSystem.GetFieldDescStaticAddress(fieldDescAddr));
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        rts.GetCoreLibFieldDescAndDef(ComWrappersNamespace, ComWrappersName, NativeObjectWrapperCWTFieldName, out TargetPointer fieldDescAddr, out _);
+        TargetPointer cwtAddr = _target.ReadPointer(rts.GetFieldDescStaticAddress(fieldDescAddr));
         IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
         _ = cwt.TryGetValue(cwtAddr, obj, out TargetPointer rcw);
         return rcw;

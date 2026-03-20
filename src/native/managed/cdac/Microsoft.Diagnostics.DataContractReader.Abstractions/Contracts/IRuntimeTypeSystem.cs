@@ -215,6 +215,9 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     #endregion FieldDesc inspection APIs
+    #region Other APIs
+    void GetCoreLibFieldDescAndDef(string typeNamespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef) => throw new NotImplementedException();
+    #endregion Other APIs
 }
 
 public struct RuntimeTypeSystem : IRuntimeTypeSystem

@@ -17,7 +17,8 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 // Get built-in COM data for the object if available. Returns false if address does not represent a COM object using built-in COM.
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
 
-// Try to get the hash code for the object. Returns 0 if the object does not have a hash code.
+// Try to get the runtime-assigned hash code for the object. Returns 0 if the runtime has not
+// assigned a default hash code. This will never be 0 for objects that have been hashed.
 int TryGetHashCode(TargetPointer address);
 ```
 

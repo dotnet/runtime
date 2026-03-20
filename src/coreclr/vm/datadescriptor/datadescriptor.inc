@@ -167,24 +167,6 @@ CDAC_TYPE_SIZE(sizeof(ArrayBase))
 CDAC_TYPE_FIELD(Array, /*pointer*/, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
-CDAC_TYPE_BEGIN(ConditionalWeakTableObject)
-CDAC_TYPE_INDETERMINATE(ConditionalWeakTableObject)
-CDAC_TYPE_FIELD(ConditionalWeakTableObject, /*pointer*/, Container, cdac_data<ConditionalWeakTableObject>::Container)
-CDAC_TYPE_END(ConditionalWeakTableObject)
-
-CDAC_TYPE_BEGIN(ConditionalWeakTableContainerObject)
-CDAC_TYPE_INDETERMINATE(ConditionalWeakTableContainerObject)
-CDAC_TYPE_FIELD(ConditionalWeakTableContainerObject, /*pointer*/, Buckets, cdac_data<ConditionalWeakTableContainerObject>::Buckets)
-CDAC_TYPE_FIELD(ConditionalWeakTableContainerObject, /*pointer*/, Entries, cdac_data<ConditionalWeakTableContainerObject>::Entries)
-CDAC_TYPE_END(ConditionalWeakTableContainerObject)
-
-CDAC_TYPE_BEGIN(ConditionalWeakTableEntry)
-CDAC_TYPE_SIZE(cdac_data<ConditionalWeakTableContainerObject>::EntrySize)
-CDAC_TYPE_FIELD(ConditionalWeakTableEntry, /*int32*/, HashCode, cdac_data<ConditionalWeakTableContainerObject>::EntryHashCode)
-CDAC_TYPE_FIELD(ConditionalWeakTableEntry, /*int32*/, Next, cdac_data<ConditionalWeakTableContainerObject>::EntryNext)
-CDAC_TYPE_FIELD(ConditionalWeakTableEntry, /*pointer*/, DepHnd, cdac_data<ConditionalWeakTableContainerObject>::EntryDepHnd)
-CDAC_TYPE_END(ConditionalWeakTableEntry)
-
 CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
 CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
