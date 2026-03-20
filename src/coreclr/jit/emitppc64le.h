@@ -3,6 +3,11 @@
 
 #if defined(TARGET_POWERPC64)
 
+#define ppc_emit32(c,x) do { *((uint32_t *) (c)) = (uint32_t) (x); (c) = ((uint8_t *)(c) + sizeof (uint32_t));} while (0)
+#define   ppc_ori(c,S,A,ui) ppc_emit32 (c, (24 << 26) | ((S) << 21) | ((A) << 16) | (uint16_t)(ui))
+#define          ppc_nop(c)       ppc_ori    (c, 0, 0, 0)
+#define   ppc_blr(c)       ppc_emit32 (c, 0x4e800020)
+
 // The POWERPC64 instructions are all 32 bits in size.
 // we use an unsigned int to hold the encoded instructions.
 // This typedef defines the type that we use to hold encoded instructions.

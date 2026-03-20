@@ -25,46 +25,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "codegen.h"
 
 /*****************************************************************************/
-/* Minimal PPC64 encoding helpers                                            */
-/*****************************************************************************/
-
-
-// TODO: JK Let these be inline as of now
-static inline uint32_t ppc_bclrx(unsigned BO, unsigned BI, unsigned BH, unsigned LK)
-{
-    return (19u << 26) |
-           (BO  << 21) |
-           (BI  << 16) |
-           (0u  << 13) |   // reserved bits 16..18
-           (BH  << 11) |   // bits 19..20
-           (16u << 1 ) |   // XO for bclr
-           LK;
-}
-
-static inline uint32_t ppc_bclr(unsigned BO, unsigned BI, unsigned BH)
-{
-    return ppc_bclrx(BO, BI, BH, 0);
-}
-
-static inline uint32_t ppc_blr()
-{
-    return ppc_bclr(20, 0, 0);
-}
-
-static inline uint32_t ppc_nop()
-{
-    return 0x60000000; // ori r0, r0, 0
-}
-
-static inline void writeU32LE(BYTE* dst, uint32_t w)
-{
-    dst[0] = (BYTE)(w >> 0);
-    dst[1] = (BYTE)(w >> 8);
-    dst[2] = (BYTE)(w >> 16);
-    dst[3] = (BYTE)(w >> 24);
-}
-
-/*****************************************************************************/
 
 #if 0
 const instruction emitJumpKindInstructions[] = {
@@ -300,20 +260,9 @@ void emitter::emitIns(instruction ins)
 
     id->idIns(ins);
 
-    switch (ins)
-    {
-	case INS_nop:
-        case INS_blr:
-            break;
-
-    	default:
-           fprintf(stderr, "PPC64LE DEBUG: emitIns unsupported: ins=%d\n", (int)ins);
-	   fflush(stderr);
-           NO_WAY("Unsupported instruction in minimal PPC64 emitIns");
-    }
-
     appendToCurIG(id);
 }
+
 /*****************************************************************************
  *
  *  Add an instruction with a single immediate value.
@@ -405,22 +354,24 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE* dst = *dp;
     BYTE* dstRW = dst + writeableOffset;
-
+    
     switch (id->idIns())
     {
-	case INS_nop:
-            writeU32LE(dstRW, ppc_nop());
-            *dp = dst + 4;
-            return emitSizeOfInsDsc(id);
+       case INS_nop:
+           ppc_nop (dstRW);
+           break;
 
-        case INS_blr:
-            writeU32LE(dstRW, ppc_blr());
-            *dp = dst + 4;
-            return emitSizeOfInsDsc(id);
+       case INS_blr:
+	   ppc_blr (dstRW);
+           break;
 
-        default:
-            NO_WAY("Unsupported instruction in minimal PPC64 emitOutputInstr");
+       default:
+           _ASSERTE(!"NYI");
     }
+
+    dst = dstRW - writeableOffset;
+    *dp = dst;
+    return emitSizeOfInsDsc(id);
 }
 
 /*****************************************************************************
