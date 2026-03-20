@@ -1284,6 +1284,27 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
+            bool anyHandle = startInfo.StandardInput is not null || startInfo.StandardOutput is not null || startInfo.StandardError is not null;
+            if (anyHandle)
+            {
+                if (startInfo.UseShellExecute)
+                {
+                    throw new InvalidOperationException(SR.CantUseHandlesWithShellExecute);
+                }
+                if (startInfo.StandardInput is not null && startInfo.RedirectStandardInput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (startInfo.StandardOutput is not null && startInfo.RedirectStandardOutput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (startInfo.StandardError is not null && startInfo.RedirectStandardError)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+            }
+
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
@@ -1318,7 +1339,11 @@ namespace System.Diagnostics
 
                     try
                     {
-                        if (startInfo.RedirectStandardInput)
+                        if (startInfo.StandardInput is not null)
+                        {
+                            childInputPipeHandle = startInfo.StandardInput;
+                        }
+                        else if (startInfo.RedirectStandardInput)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
                         }
@@ -1331,7 +1356,11 @@ namespace System.Diagnostics
                             childInputPipeHandle = new SafeFileHandle(0, ownsHandle: false);
                         }
 
-                        if (startInfo.RedirectStandardOutput)
+                        if (startInfo.StandardOutput is not null)
+                        {
+                            childOutputPipeHandle = startInfo.StandardOutput;
+                        }
+                        else if (startInfo.RedirectStandardOutput)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
@@ -1344,7 +1373,11 @@ namespace System.Diagnostics
                             childOutputPipeHandle = new SafeFileHandle(1, ownsHandle: false);
                         }
 
-                        if (startInfo.RedirectStandardError)
+                        if (startInfo.StandardError is not null)
+                        {
+                            childErrorPipeHandle = startInfo.StandardError;
+                        }
+                        else if (startInfo.RedirectStandardError)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
@@ -1385,9 +1418,19 @@ namespace System.Diagnostics
                 // process will not receive EOF when the child process closes its handles.
                 // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
                 // because these handles are not owned and won't be closed by Dispose.
-                childInputPipeHandle?.Dispose();
-                childOutputPipeHandle?.Dispose();
-                childErrorPipeHandle?.Dispose();
+                // We must NOT close handles that were passed in by the caller via StartInfo.StandardInput/Output/Error.
+                if (startInfo.StandardInput is null)
+                {
+                    childInputPipeHandle?.Dispose();
+                }
+                if (startInfo.StandardOutput is null)
+                {
+                    childOutputPipeHandle?.Dispose();
+                }
+                if (startInfo.StandardError is null)
+                {
+                    childErrorPipeHandle?.Dispose();
+                }
             }
 
             if (startInfo.RedirectStandardInput)

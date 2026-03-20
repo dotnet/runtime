@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -116,6 +117,27 @@ namespace System.Diagnostics
         public bool RedirectStandardInput { get; set; }
         public bool RedirectStandardOutput { get; set; }
         public bool RedirectStandardError { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard input handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardInput { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard output of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardOutput"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard output handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardOutput { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard error of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardError"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard error handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardError { get; set; }
 
         public Encoding? StandardInputEncoding { get; set; }
 
