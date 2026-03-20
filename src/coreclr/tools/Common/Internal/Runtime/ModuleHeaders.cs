@@ -16,7 +16,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 18;
-        public const ushort CurrentMinorVersion = 2;
+        public const ushort CurrentMinorVersion = 3;
     }
 #if READYTORUN
 #pragma warning disable 0169
@@ -79,6 +79,11 @@ namespace Internal.Runtime
         MethodIsGenericMap = 121, // Added in V9.0
         EnclosingTypeMap = 122, // Added in V9.0
         TypeGenericInfoMap = 123, // Added in V9.0
+
+        // Shared ReadyToRun sections
+        ExternalTypeMaps            = 124, // Added to CoreCLR in V18.3
+        ProxyTypeMaps               = 125, // Added to CoreCLR in V18.3
+        TypeMapAssemblyTargets      = 126, // Added in V18.3
 
         //
         // NativeAOT ReadyToRun sections

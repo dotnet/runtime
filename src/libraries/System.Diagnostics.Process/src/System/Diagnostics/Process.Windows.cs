@@ -640,12 +640,12 @@ namespace System.Diagnostics
             if (startInfo.RedirectStandardOutput)
             {
                 Encoding enc = startInfo.StandardOutputEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-                _standardOutput = new StreamReader(new FileStream(parentOutputPipeHandle!, FileAccess.Read, 4096, false), enc, true, 4096);
+                _standardOutput = new StreamReader(new FileStream(parentOutputPipeHandle!, FileAccess.Read, 4096, parentOutputPipeHandle!.IsAsync), enc, true, 4096);
             }
             if (startInfo.RedirectStandardError)
             {
                 Encoding enc = startInfo.StandardErrorEncoding ?? GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-                _standardError = new StreamReader(new FileStream(parentErrorPipeHandle!, FileAccess.Read, 4096, false), enc, true, 4096);
+                _standardError = new StreamReader(new FileStream(parentErrorPipeHandle!, FileAccess.Read, 4096, parentErrorPipeHandle!.IsAsync), enc, true, 4096);
             }
 
             commandLine.Dispose();
@@ -807,9 +807,13 @@ namespace System.Diagnostics
         // methods such as WriteLine as well as native CRT functions like printf) which are making an
         // assumption that the console standard handles (obtained via GetStdHandle()) are opened
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
+        // We therefore only open the parent's end of the pipe for async I/O (overlapped), while the
+        // child's end is always opened for synchronous I/O so the child process can use it normally.
         private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+            // Only the parent's read end benefits from async I/O; stdin is always sync.
+            // asyncRead applies to the read handle; asyncWrite to the write handle.
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: !parentInputs, asyncWrite: false);
 
             // parentInputs=true: parent writes to pipe, child reads (stdin redirect).
             // parentInputs=false: parent reads from pipe, child writes (stdout/stderr redirect).
