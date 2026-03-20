@@ -33,6 +33,7 @@ internal readonly struct StackWalk_1 : IStackWalk
         // When SW_FRAME, the FrameAddress is valid
         SW_FRAME,
         SW_SKIPPED_FRAME,
+        SW_DUMMY,
     }
 
     private record StackDataFrameHandle(
