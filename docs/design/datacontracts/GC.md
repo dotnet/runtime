@@ -790,8 +790,6 @@ IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
 {
     List<GCMemoryRegionData> regions = new();
     uint handleSegmentSize = /* global value "HandleSegmentSize" */;
-    // For server GC, use TotalCpuCount (processor count) for the number of
-    // table slots per bucket, not NumHeaps (GC heap count).
     uint tableCount = isServerGC
         ? /* global value "TotalCpuCount" */
         : 1;
@@ -837,10 +835,10 @@ GetGCBookkeepingMemoryRegions
 IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
 {
     List<GCMemoryRegionData> regions = new();
-    if (!target.TryReadGlobalPointer("BookkeepingStart", out TargetPointer? bkGlobal))
-        return regions;
+    TargetPointer bkGlobal = target.ReadGlobalPointer("BookkeepingStart");
+    if (bkGlobal == TargetPointer.Null) throw E_FAIL;
     TargetPointer bookkeepingStart = target.ReadPointer(bkGlobal);
-    if (bookkeepingStart == TargetPointer.Null) return regions;
+    if (bookkeepingStart == TargetPointer.Null) throw E_FAIL;
 
     uint cardTableInfoSize = /* global value "CardTableInfoSize" */;
     uint recount = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Recount offset */);

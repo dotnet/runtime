@@ -558,12 +558,13 @@ internal readonly struct GC_1 : IGC
     {
         List<GCMemoryRegionData> regions = new();
 
-        if (!_target.TryReadGlobalPointer(Constants.Globals.BookkeepingStart, out TargetPointer? bookkeepingStartGlobal))
-            return regions;
+        TargetPointer bookkeepingStartGlobal = _target.ReadGlobalPointer(Constants.Globals.BookkeepingStart);
+        if (bookkeepingStartGlobal == TargetPointer.Null)
+            throw new InvalidOperationException("BookkeepingStart global pointer is null");
 
-        TargetPointer bookkeepingStart = _target.ReadPointer(bookkeepingStartGlobal.Value);
+        TargetPointer bookkeepingStart = _target.ReadPointer(bookkeepingStartGlobal);
         if (bookkeepingStart == TargetPointer.Null)
-            return regions;
+            throw new InvalidOperationException("bookkeeping_start is null");
 
         uint cardTableInfoSize = _target.ReadGlobal<uint>(Constants.Globals.CardTableInfoSize);
         Data.CardTableInfo cardTableInfo = _target.ProcessedData.GetOrAdd<Data.CardTableInfo>(bookkeepingStart);

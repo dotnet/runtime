@@ -300,20 +300,31 @@ public class GCMemoryRegionTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetGCBookkeepingMemoryRegions_MissingGlobal_ReturnsEmpty(MockTarget.Architecture arch)
+    public void GetGCBookkeepingMemoryRegions_NullBookkeepingStart_Throws(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
+        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(0x0010_0000, 0x0100_0000);
+        int ptrSize = helpers.PointerSize;
 
         var types = new Dictionary<DataType, Target.TypeInfo>();
-        var globals = BuildGlobals(new(), new());
+
+        // BookkeepingStart global pointer exists but the value at that address is null
+        var bkFragment = allocator.Allocate((ulong)ptrSize, "BK");
+        builder.AddHeapFragment(bkFragment);
+        Span<byte> bkSpan = builder.BorrowAddressRange(bkFragment.Address, bkFragment.Data.Length);
+        helpers.WritePointer(bkSpan.Slice(0, ptrSize), TargetPointer.Null);
+
+        var globals = BuildGlobals(
+            new() { [Constants.Globals.BookkeepingStart] = bkFragment.Address },
+            new() { [Constants.Globals.CardTableInfoSize] = 0 });
 
         var readContext = builder.GetMemoryContext();
         IGC gc = CreateGCContract(arch, types, globals,
             [(Constants.Globals.GCIdentifiers, "workstation,regions,background")],
             readContext.ReadFromTarget);
 
-        Assert.Empty(gc.GetGCBookkeepingMemoryRegions());
+        Assert.Throws<InvalidOperationException>(() => gc.GetGCBookkeepingMemoryRegions());
     }
 
     [Theory]

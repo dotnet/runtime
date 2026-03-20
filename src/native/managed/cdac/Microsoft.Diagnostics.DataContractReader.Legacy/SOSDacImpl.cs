@@ -1627,7 +1627,7 @@ public sealed unsafe partial class SOSDacImpl
                     memRegions[written++] = _regions[(int)_index++];
 
                 *pNeeded = written;
-                hr = _index < _regions.Length ? HResults.S_FALSE : HResults.S_OK;
+                hr = written < count ? HResults.S_FALSE : HResults.S_OK;
             }
             catch (System.Exception ex)
             {
