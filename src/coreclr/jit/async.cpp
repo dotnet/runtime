@@ -732,7 +732,7 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // PrintVarSet:
-//   Print a varset as a space separate list of locals.
+//   Print a varset as a space-separated list of locals.
 //
 // Parameters:
 //   comp - Compiler instance
@@ -1033,10 +1033,15 @@ void PreservedValueAnalysis::Run(ArrayStack<BasicBlock*>& awaitBlocks)
     {
         JITDUMP("Preserved value analysis disabled because of method range\n");
         m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        m_mutatedVars   = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
         for (BasicBlock* block : m_compiler->Blocks())
         {
             VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
+            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[block->bbNum], VarSetOps::MakeFull(m_compiler));
         }
+
+        m_resumeReachableBlocks = BitVecOps::MakeFull(&m_blockTraits);
+        m_awaitBlocks           = BitVecOps::MakeFull(&m_blockTraits);
 
         return;
     }
