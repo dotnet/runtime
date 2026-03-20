@@ -439,9 +439,11 @@ DEFINE_METASIG_T(SM(PtrObj_PtrObj_Int_PtrObj_PtrObj_PtrObj_PtrObj_PtrObj_PtrObj_
 DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrBool_PtrIntPtr_PtrException_RetVoid, P(j) P(j) P(F) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrInt_PtrIntPtr_PtrException_RetVoid, P(j) P(j) P(i) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_IntPtr_PtrException_RetVoid, P(j) I P(C(EXCEPTION)), v))
+#ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrObj_PtrComVariant_PtrException_RetVoid, P(j) P(g(COMVARIANT)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_Int_PtrComVariant_PtrException_RetVoid, P(j) i P(g(COMVARIANT)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrComVariant_PtrObj_PtrException_RetVoid, P(g(COMVARIANT)) P(j) P(C(EXCEPTION)), v))
+#endif // FEATURE_COMINTEROP
 DEFINE_METASIG_T(SM(PtrException_PtrException_RetVoid, P(C(EXCEPTION)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrException_PtrObj_PtrException_RetVoid, P(u) P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrStr_PtrException_RetVoid, P(u) P(s) P(C(EXCEPTION)), v))

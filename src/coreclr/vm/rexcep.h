@@ -170,11 +170,9 @@ DEFINE_EXCEPTION(g_SystemNS,           InsufficientExecutionStackException, fals
 DEFINE_EXCEPTION(g_SystemNS,           InvalidCastException,           false,  COR_E_INVALIDCAST)
 #ifdef FEATURE_COMINTEROP
 DEFINE_EXCEPTION(g_InteropNS,          InvalidComObjectException,      false,  COR_E_INVALIDCOMOBJECT)
-#endif //FEATURE_COMINTEROP
-DEFINE_EXCEPTION(g_ReflectionNS,       InvalidFilterCriteriaException, false,  COR_E_INVALIDFILTERCRITERIA)
-#if !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 DEFINE_EXCEPTION(g_InteropNS,          InvalidOleVariantTypeException, false,  COR_E_INVALIDOLEVARIANTTYPE)
-#endif // !defined(TARGET_WASM) || !defined(FOR_ILLINK)
+#endif // defined(FEATURE_COMINTEROP)
+DEFINE_EXCEPTION(g_ReflectionNS,       InvalidFilterCriteriaException, false,  COR_E_INVALIDFILTERCRITERIA)
 
 DEFINE_EXCEPTION(g_SystemNS,           InvalidOperationException,      false,  COR_E_INVALIDOPERATION)
 
@@ -182,9 +180,7 @@ DEFINE_EXCEPTION(g_SystemNS,           InvalidProgramException,        false,  C
 
 DEFINE_EXCEPTION(g_IONS,               IOException,                    false,  COR_E_IO, CTL_E_DEVICEIOERROR, STD_CTL_SCODE(31036), STD_CTL_SCODE(31037))
 
-#if !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 DEFINE_EXCEPTION(g_InteropNS,          MarshalDirectiveException,      false,  COR_E_MARSHALDIRECTIVE)
-#endif // !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 DEFINE_EXCEPTION(g_SystemNS,           MethodAccessException,          false,  COR_E_METHODACCESS, META_E_CA_FRIENDS_SN_REQUIRED)
 DEFINE_EXCEPTION(g_SystemNS,           MemberAccessException,          false,  COR_E_MEMBERACCESS)
 DEFINE_EXCEPTION(g_SystemNS,           MissingFieldException,          false,  COR_E_MISSINGFIELD)
@@ -262,13 +258,11 @@ DEFINE_EXCEPTION(g_SystemNS,           UnauthorizedAccessException,    true,   C
 DEFINE_EXCEPTION(g_SecurityNS,         VerificationException,          false,  COR_E_VERIFICATION)
 
 
-#if !defined(TARGET_WASM) || !defined(FOR_ILLINK)
-DEFINE_EXCEPTION(g_InteropNS,          COMException,                   false,  E_FAIL)
 #ifdef FEATURE_COMINTEROP
+DEFINE_EXCEPTION(g_InteropNS,          COMException,                   false,  E_FAIL)
 DEFINE_EXCEPTION(g_InteropNS,          ExternalException,              false,  E_FAIL)
-#endif //FEATURE_COMINTEROP
 DEFINE_EXCEPTION(g_InteropNS,          SEHException,                   false,  E_FAIL)
-#endif // !defined(TARGET_WASM) || !defined(FOR_ILLINK)
+#endif // defined(FEATURE_COMINTEROP)
 DEFINE_EXCEPTION(g_SystemNS,           NotImplementedException,        false,  E_NOTIMPL)
 
 DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E_OUTOFMEMORY, CTL_E_OUTOFMEMORY, STD_CTL_SCODE(31001))
