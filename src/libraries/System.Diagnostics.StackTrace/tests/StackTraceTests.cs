@@ -567,7 +567,7 @@ namespace System.Diagnostics.Tests
         }
 
         // Assembly.Load(byte[]) triggers an AMSI (Antimalware Scan Interface) scan via Windows Defender.
-        // On some CI machines the AMSI RPC call hangs indefinitely,
+        // On some Windows x86 CI machines the AMSI RPC call hangs indefinitely,
         // so we retry with a shorter timeout to work around the transient OS issue.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ToString_ShowILOffset_ByteArrayLoad()
@@ -577,7 +577,7 @@ namespace System.Diagnostics.Tests
             string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
 
             const int maxAttempts = 3;
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            for (int attempt = 1; ; attempt++)
             {
                 try
                 {
@@ -587,20 +587,17 @@ namespace System.Diagnostics.Tests
                         AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
                         var inMemBlob = File.ReadAllBytes(asmPath);
                         var asm = Assembly.Load(inMemBlob);
-                        try
-                        {
-                            asm.GetType("Program").GetMethod("Foo").Invoke(null, null);
-                        }
-                        catch (Exception e)
-                        {
-                            Assert.Contains(asmName, e.InnerException.StackTrace);
-                            Assert.Matches(p, e.InnerException.StackTrace);
-                        }
+                        TargetInvocationException ex = Assert.Throws<TargetInvocationException>(
+                            () => asm.GetType("Program").GetMethod("Foo").Invoke(null, null));
+                        Assert.Contains(asmName, ex.InnerException.StackTrace);
+                        Assert.Matches(p, ex.InnerException.StackTrace);
                     }, SourceTestAssemblyPath, AssemblyName, regPattern, options).Dispose();
                     break;
                 }
-                catch (RemoteExecutionException) when (attempt < maxAttempts)
+                catch (RemoteExecutionException ex) when (OperatingSystem.IsWindows() && attempt < maxAttempts && ex.Message.Contains("Timed out"))
                 {
+                    // AMSI hang: on some Windows CI machines, Assembly.Load(byte[]) triggers an AMSI scan
+                    // whose RPC call hangs indefinitely. Retry with a fresh process.
                 }
             }
         }
