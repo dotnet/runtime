@@ -16,7 +16,8 @@ namespace ComInterfaceGenerator.Tests
         public static bool IsSupported =>
             RemoteExecutor.IsSupported
             && PlatformDetection.IsWindows
-            && PlatformDetection.IsCoreCLR;
+            && PlatformDetection.IsNotMonoRuntime
+            && PlatformDetection.IsNotNativeAot;
 
         [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_get_and_set_int")]
         private static partial IGetAndSetInt NewNativeObject();
