@@ -541,24 +541,7 @@ namespace System.Diagnostics.Tests
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
-            // Assembly.Load(Byte[]) case
-            RemoteExecutor.Invoke((asmPath, asmName, p) =>
-            {
-                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
-                var inMemBlob = File.ReadAllBytes(asmPath);
-                var asm2 = Assembly.Load(inMemBlob);
-                try
-                {
-                    asm2.GetType("Program").GetMethod("Foo").Invoke(null, null);
-                }
-                catch (Exception e)
-                {
-                    Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.Matches(p, e.InnerException.StackTrace);
-                }
-            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
-
-            // AssmblyBuilder.DefineDynamicAssembly() case
+            // AssemblyBuilder.DefineDynamicAssembly() case
             RemoteExecutor.Invoke((p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
@@ -581,6 +564,45 @@ namespace System.Diagnostics.Tests
                     Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, regPattern).Dispose();
+        }
+
+        // Assembly.Load(byte[]) triggers an AMSI (Antimalware Scan Interface) scan via Windows Defender.
+        // On some CI machines the AMSI RPC call hangs indefinitely,
+        // so we retry with a shorter timeout to work around the transient OS issue.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ToString_ShowILOffset_ByteArrayLoad()
+        {
+            string AssemblyName = "ExceptionTestAssembly.dll";
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
+            string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
+
+            const int maxAttempts = 3;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    var options = new RemoteInvokeOptions { TimeOut = 30_000 };
+                    RemoteExecutor.Invoke((asmPath, asmName, p) =>
+                    {
+                        AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                        var inMemBlob = File.ReadAllBytes(asmPath);
+                        var asm = Assembly.Load(inMemBlob);
+                        try
+                        {
+                            asm.GetType("Program").GetMethod("Foo").Invoke(null, null);
+                        }
+                        catch (Exception e)
+                        {
+                            Assert.Contains(asmName, e.InnerException.StackTrace);
+                            Assert.Matches(p, e.InnerException.StackTrace);
+                        }
+                    }, SourceTestAssemblyPath, AssemblyName, regPattern, options).Dispose();
+                    break;
+                }
+                catch (RemoteExecutionException) when (attempt < maxAttempts)
+                {
+                }
+            }
         }
 
         // On Android, stack traces do not include file names and line numbers
