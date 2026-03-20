@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 
@@ -878,6 +879,7 @@ namespace System.Threading
 
 #if CORECLR
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void InitializeForMonitor(Lock* pLock, int managedThreadId, uint recursionCount, Exception* pException)
         {
             try

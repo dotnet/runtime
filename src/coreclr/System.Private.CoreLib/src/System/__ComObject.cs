@@ -110,6 +110,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void ReleaseAllData(__ComObject* pComObject, Exception* pException)
         {
             try
@@ -141,6 +142,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetEventProvider(__ComObject* pComObject, RuntimeType* pProviderType, object* pResult, Exception* pException)
         {
             try

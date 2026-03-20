@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -23,6 +24,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void IsInterfaceImplemented(IDynamicInterfaceCastable* pCastable, RuntimeType* pInterfaceType, bool throwIfNotImplemented, bool* pResult, Exception* pException)
         {
             try
@@ -56,6 +58,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetInterfaceImplementation(IDynamicInterfaceCastable* pCastable, RuntimeType* pInterfaceType, RuntimeType* pResult, Exception* pException)
         {
             try

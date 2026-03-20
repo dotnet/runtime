@@ -179,6 +179,7 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void CreateAssemblyName(AssemblyName* pResult, NativeAssemblyNameParts* pParts, Exception* pException)
         {
             try

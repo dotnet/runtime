@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
@@ -48,6 +49,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
         }
 
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void InternalMarshalNativeToManaged(IntPtr pNativeData, object* pResult, Exception* pException)
         {
             try

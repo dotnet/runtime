@@ -69,6 +69,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void CallICustomQueryInterface(ManagedObjectWrapperHolder* pHolder, Guid* pIid, IntPtr* ppObject, int* pResult, Exception* pException)
         {
             try
@@ -101,6 +102,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object* pObj, IntPtr* pResult, Exception* pException)
         {
             try
@@ -133,6 +135,7 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, int flags, object* pResult, Exception* pException)
         {
             try

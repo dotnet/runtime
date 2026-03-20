@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -26,6 +27,7 @@ namespace System.Runtime.InteropServices
                                                  [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void LoadLibraryCallbackStub(string* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, IntPtr* pResult, Exception* pException)
         {
             try

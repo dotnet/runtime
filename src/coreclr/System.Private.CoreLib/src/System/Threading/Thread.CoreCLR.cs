@@ -586,6 +586,7 @@ namespace System.Threading
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void OnThreadExiting(Thread* pThread, Exception* pException)
         {
             try

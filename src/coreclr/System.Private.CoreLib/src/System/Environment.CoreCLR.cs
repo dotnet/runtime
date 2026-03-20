@@ -105,6 +105,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void InitializeCommandLineArgs(char* exePath, int argc, char** argv, string[]* pResult, Exception* pException)
         {
             try
