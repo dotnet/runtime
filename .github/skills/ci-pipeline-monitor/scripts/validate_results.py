@@ -460,6 +460,7 @@ def main():
         WHERE github_issue_number IS NULL
     """).fetchall()
     missed_matches = []
+    search_failures = 0
     for r in new_failures:
         test_name = r["test_name"]
         # Search GitHub using the full test name — this is the most reliable
@@ -472,7 +473,10 @@ def main():
         )
         found_issue = None
         try:
-            req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+            req = urllib.request.Request(url, headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": "ci-pipeline-monitor-validator",
+            })
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read())
                 for item in data.get("items", []):
@@ -485,16 +489,25 @@ def main():
             time.sleep(0.5)  # rate limit courtesy
         except Exception as e:
             print(f"    [WARN] GitHub search failed for '{test_name}': {e}")
+            search_failures += 1
 
         if found_issue:
             missed_matches.append(
                 (r["id"], r["title"][:50], f"#{found_issue[0]} '{found_issue[1]}' ({found_issue[2]})")
             )
 
-    ok = check("NEW failures verified against GitHub search",
-               len(missed_matches) == 0,
-               f"found existing issues for {len(missed_matches)} 'NEW' failures: {missed_matches}"
-               if missed_matches else f"confirmed {len(new_failures)} NEW failures have no matching issue")
+    searched = len(new_failures) - search_failures
+    if search_failures > 0:
+        detail = (f"searched {searched}/{len(new_failures)} (search failed for {search_failures})")
+        if missed_matches:
+            detail += f", found existing issues for {len(missed_matches)}: {missed_matches}"
+        ok = check("NEW failures verified against GitHub search",
+                   False, detail)
+    else:
+        ok = check("NEW failures verified against GitHub search",
+                   len(missed_matches) == 0,
+                   f"found existing issues for {len(missed_matches)} 'NEW' failures: {missed_matches}"
+                   if missed_matches else f"confirmed {len(new_failures)} NEW failures have no matching issue")
     if not ok:
         failures += 1
 
