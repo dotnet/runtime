@@ -1366,38 +1366,25 @@ namespace System.Runtime.InteropServices
 
             public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
             {
-                try
+                lock (_lock)
                 {
-                    lock (_lock)
-                    {
-                        Remove_Locked(comPointer, wrapper);
-                    }
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
+                    Remove_Locked(comPointer, wrapper);
                 }
             }
 
             public void RemoveAll(IEnumerable<NativeObjectWrapper> wrappers)
             {
-                _lock.EnterWriteLock();
-                try
+                lock (_lock)
                 {
                     foreach (NativeObjectWrapper wrapper in wrappers)
                     {
                         Remove_Locked(wrapper.ExternalComObject, wrapper);
                     }
                 }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
             }
 
             private void Remove_Locked(IntPtr comPointer, NativeObjectWrapper wrapper)
             {
-                Debug.Assert(_lock.IsWriteLockHeld);
                 // This method is used in a scenario where we already have a lock on the cache, so we can skip acquiring the lock again.
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the
