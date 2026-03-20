@@ -12,6 +12,9 @@
          set UseAppHost=true and NuGet props are imported after Directory.Build.props.
          Setting it in xunit.targets (imported after NuGet targets) ensures our
          value wins. -->
+    <!-- xUnit1051 recommends TestContext.Current.CancellationToken (v3 pattern) which
+         is not yet adopted; suppress until a full v3 migration is performed. -->
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -143,6 +143,20 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+//------------------------------------------------------------------------
+// emitAddressConstant: Emit a memory address constant, like an indirection cell.
+// This will automatically make use of relocations and the module base (__r2r_start).
+void emitter::emitAddressConstant(void* address)
+{
+    // Load our module base from __r2r_start, then load our address constant, then sum them.
+    // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
+    emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
+    // emitIns_I(INS_i32_const_address, EA_PTRSIZE, address);
+    // FIXME-WASM: Just a hack for now because const_address relocations throw in crossgen2.
+    emitIns_I(INS_i32_const, EA_PTRSIZE, (int32_t)(((size_t)address) & 0xFFFFFFFFu));
+    emitIns(INS_i32_add);
+}
+
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
@@ -164,6 +178,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
+    assert(params.wasmSignature != nullptr);
+
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to
@@ -172,9 +188,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     instrDesc* id = nullptr;
 
     instruction ins;
-
-    // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
-    emitIns_I(INS_i32_const, EA_4BYTE, 0);
 
     switch (params.callType)
     {
@@ -185,23 +198,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             id->idInsFmt(IF_FUNCIDX);
             break;
         case EC_INDIR_R:
-        {
-            // Indirect load of actual ftn ptr from indirection cell (on the stack)
-            // TODO-WASM: temporary, move this into higher layers (lowering).
-            emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-
-            // TODO-WASM: Generate actual list of types and generate reloc
-            // This is here to exercise the new JIT-EE API
-            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32};
-            CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle =
-                codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 3);
-
-            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)typeHandle);
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)params.wasmSignature);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
-        }
         default:
             unreached();
     }
@@ -296,6 +297,46 @@ void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valT
     appendToCurIG(id);
 }
 
+//-----------------------------------------------------------------------------
+// emitNewInstrValTypeImm: Construct an instrDesc corresponding to an instruction
+//    with a simple type sig and immediate, like try_table
+//
+// Arguments:
+//   attr        - emit attributes
+//   type        - the simple sig type
+//   imm         - the immediate operand
+//
+emitter::instrDesc* emitter::emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int imm)
+{
+    instrDescValTypeImm* id = static_cast<instrDescValTypeImm*>(emitAllocAnyInstr(sizeof(instrDescValTypeImm), attr));
+    id->idValType(type);
+    id->idImm(imm);
+
+    return id;
+}
+
+//-----------------------------------------------------------------------------------
+// emitIns_Ty_I: Emit an instruction for encoding both a value type and a count (immediate).
+//    This is used for try_table.
+//
+// Arguments:
+//   ins      - instruction to emit
+//   valType  - sig for the try_table
+//   imm      - immediate value (case count)
+
+//
+void emitter::emitIns_Ty_I(instruction ins, WasmValueType valType, unsigned int imm)
+{
+    instrDesc* id  = emitNewInstrValTypeImm(EA_8BYTE, valType, imm);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 WasmValueType emitter::emitGetLclVarDeclType(const instrDesc* id)
 {
     assert(id->idIsLclVarDecl());
@@ -306,6 +347,18 @@ unsigned int emitter::emitGetLclVarDeclCount(const instrDesc* id)
 {
     assert(id->idIsLclVarDecl());
     return static_cast<const instrDescLclVarDecl*>(id)->lclCnt;
+}
+
+WasmValueType emitter::emitGetValTypeImmType(const instrDesc* id)
+{
+    assert(id->idIsValTypeImm());
+    return static_cast<const instrDescValTypeImm*>(id)->valType;
+}
+
+unsigned int emitter::emitGetValTypeImmImm(const instrDesc* id)
+{
+    assert(id->idIsValTypeImm());
+    return static_cast<const instrDescValTypeImm*>(id)->imm;
 }
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
@@ -333,6 +386,19 @@ static unsigned GetInsOpcode(instruction ins)
     return insOpcodes[ins];
 }
 
+static bool HasOpcodePrefix(instruction ins)
+{
+    static const bool hasPrefix[] = {
+#define INST(id, nm, info, fmt, opcode)                                                                                \
+    (static_cast<uint8_t>(opcode) == 0xFB || static_cast<uint8_t>(opcode) == 0xFC ||                                   \
+     static_cast<uint8_t>(opcode) == 0xFD),
+#include "instrs.h"
+    };
+
+    assert(ins < ArrLen(hasPrefix));
+    return hasPrefix[ins];
+}
+
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
@@ -350,6 +416,11 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     if (id->idIsLclVarDecl())
     {
         return sizeof(instrDescLclVarDecl);
+    }
+
+    if (id->idIsValTypeImm())
+    {
+        return sizeof(instrDescValTypeImm);
     }
 
     return sizeof(instrDesc);
@@ -378,7 +449,7 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
-static uint8_t GetWasmValueTypeCode(WasmValueType type)
+uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
 {
     // clang-format off
     static const uint8_t typecode_mapping[] = {
@@ -387,6 +458,8 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
         0x7E, // WasmValueType::I64 = 2,
         0x7D, // WasmValueType::F32 = 3,
         0x7C, // WasmValueType::F64 = 4,
+        0x7B, // WasmValueType::V128 = 5,
+        0x69, // WasmValueType::ExnRef = 6;
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
@@ -408,7 +481,7 @@ unsigned emitter::instrDesc::idCodeSize() const
 
     // Currently, all our instructions have 1 or 2 byte opcodes.
     assert(FitsIn<uint8_t>(opcode) || FitsIn<uint16_t>(opcode));
-    unsigned size = FitsIn<uint8_t>(opcode) ? 1 : 2;
+    unsigned size = HasOpcodePrefix(idIns()) ? 2 : 1;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -460,6 +533,22 @@ unsigned emitter::instrDesc::idCodeSize() const
         {
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            break;
+        }
+        case IF_TRY_TABLE:
+        {
+            size += 1;                                         // for the sig
+            size += SizeOfULEB128(emitGetValTypeImmImm(this)); // for the case count
+            break;
+        }
+        case IF_CATCH_DECL:
+        {
+            // no opcode, this is part of a try_table
+
+            size = 1; // catch kind
+            // TODO-WASM: tag index
+            // size += PADDED_RELOC_SIZE;                 // catch type tag
+            size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
         default:
@@ -529,7 +618,7 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
     unsigned opcode = GetInsOpcode(ins);
 
     assert(FitsIn<uint16_t>(opcode));
-    if (FitsIn<uint8_t>(opcode))
+    if (!HasOpcodePrefix(ins))
     {
         emitOutputByte(dst, opcode);
         sz += 1;
@@ -703,6 +792,35 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputULEB128(dst, (uint64_t)constant);
             dst += emitOutputULEB128(dst, (uint64_t)constant);
+            break;
+        }
+        case IF_TRY_TABLE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            assert(id->idIsValTypeImm());
+
+            // Add void as a WasmValueType?
+            //
+            WasmValueType valType = emitGetValTypeImmType(id);
+            uint8_t       sig     = GetWasmValueTypeCode(valType);
+            if (valType == WasmValueType::Invalid)
+            {
+                sig = 0x40;
+            }
+            cnsval_ssize_t caseCnt = emitGetValTypeImmImm(id);
+
+            dst += emitOutputByte(dst, sig);
+            dst += emitOutputULEB128(dst, (uint64_t)caseCnt);
+            break;
+        }
+        case IF_CATCH_DECL:
+        {
+            // TODO-WASM: this should be Kind 1: catch_ref with type tag
+            uint8_t catchKind = 2;
+            dst += emitOutputByte(dst, catchKind);
+            // TODO-WASM: figure out how to get proper tag index here
+            // dst += emitOutputPaddedReloc(dst);
+            dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;
         }
         default:
@@ -930,6 +1048,25 @@ void emitter::emitDispIns(
             cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, (uint64_t)offset);
             dispLclVarInfoIfAny();
+        }
+        break;
+
+        case IF_TRY_TABLE:
+        {
+            WasmValueType valType = emitGetValTypeImmType(id);
+
+            if (valType != WasmValueType::Invalid)
+            {
+                printf(" %s", WasmValueTypeName(valType));
+            }
+        }
+        break;
+
+        case IF_CATCH_DECL:
+        {
+            // TODO: catch type
+            // target label
+            dispJumpTargetIfAny();
         }
         break;
 

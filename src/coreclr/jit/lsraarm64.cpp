@@ -1389,6 +1389,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any additional special cases
     switch (intrin.id)
     {
+        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorNonTemporal:
+        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
         case NI_Sve2_Scatter16BitNarrowingNonTemporal:
         case NI_Sve2_Scatter32BitNarrowingNonTemporal:
         case NI_Sve2_ScatterNonTemporal:

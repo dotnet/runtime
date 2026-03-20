@@ -484,6 +484,9 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
+#ifdef TARGET_WASM
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
+#endif
 };
 
 class emitter
@@ -1306,6 +1309,11 @@ protected:
         bool idIsLclVarDecl() const
         {
             return _idInsFmt == IF_LOCAL_DECL;
+        }
+
+        bool idIsValTypeImm() const
+        {
+            return _idInsFmt == IF_TRY_TABLE;
         }
 #endif
 
@@ -2363,6 +2371,24 @@ protected:
         void idLclCnt(unsigned int cnt)
         {
             lclCnt = cnt;
+        }
+    };
+
+    struct instrDescValTypeImm : instrDesc
+    {
+        instrDescValTypeImm() = delete;
+
+        unsigned int  imm;
+        WasmValueType valType;
+
+        void idValType(WasmValueType type)
+        {
+            valType = type;
+        }
+
+        void idImm(unsigned int i)
+        {
+            imm = i;
         }
     };
 #endif // TARGET_WASM

@@ -18,6 +18,19 @@ public record struct RCWCleanupInfo(
     TargetPointer STAThread,
     bool IsFreeThreaded);
 
+public record struct RCWData(
+    TargetPointer IdentityPointer,
+    TargetPointer UnknownPointer,
+    TargetPointer ManagedObject,
+    TargetPointer VTablePtr,
+    TargetPointer CreatorThread,
+    TargetPointer CtxCookie,
+    uint RefCount,
+    bool IsAggregated,
+    bool IsContained,
+    bool IsFreeThreaded,
+    bool IsDisconnected);
+
 public interface IBuiltInCOM : IContract
 {
     static string IContract.Name { get; } = nameof(BuiltInCOM);
@@ -30,6 +43,9 @@ public interface IBuiltInCOM : IContract
     // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw) => throw new NotImplementedException();
+    TargetPointer GetRCWContext(TargetPointer rcw) => throw new NotImplementedException();
+    RCWData GetRCWData(TargetPointer rcw) => throw new NotImplementedException();
 }
 
 public readonly struct BuiltInCOM : IBuiltInCOM

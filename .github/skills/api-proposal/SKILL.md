@@ -1,15 +1,13 @@
 ---
 name: api-proposal
-description: Create prototype backed API proposals for dotnet/runtime. Use when asked to draft an API proposal or to refine a vague API idea into a complete proposal.
+description: Create prototype-backed API proposals for dotnet/runtime. Use when asked to draft an API proposal, write an api-suggestion issue, refine a vague API idea into a complete proposal, or improve a proposal marked api-needs-work. Covers the full pipeline from research through prototyping, ref source generation, and publishing. DO NOT USE FOR bug fixes, code review, performance benchmarking, or internal API changes that don't affect public surface area.
 ---
 
 # API Proposal Skill
 
 Create complete, terse, and empirically grounded API proposals for dotnet/runtime. The output should have a high chance of passing the [API review process](https://github.com/dotnet/runtime/blob/main/docs/project/api-review-process.md).
 
-> 🚨 **NEVER** submit a proposal without a working prototype. The prototype is the evidence that the API works. Proposals without prototypes are speculative.
-
-> 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed.
+> **Prototype first, proposal second.** Proposals without working prototypes are speculative — they get sent back because reviewers can't verify the design works. The prototype IS the evidence.
 
 ## When to Use This Skill
 
@@ -29,6 +27,17 @@ Use this skill when:
 3. **Claims backed by evidence**: Every motivating claim must have at least one concrete scenario. "This is useful" without showing *who* needs it and *how* they'd use it is the #1 reason proposals get sent back.
 
 4. **Context-driven depth**: The amount of supporting text should be proportional to how much **new information** the proposal introduces — not just API surface size. A small API introducing a novel concept needs more justification than a large API adding async counterparts to existing sync methods.
+
+## Common Pitfalls
+
+These are failure modes that LLM agents hit repeatedly when drafting proposals. Check your output against this list before publishing.
+
+- **Verbosity creep**: Writing 3 paragraphs of motivation when 3 sentences would suffice. Live reviewers have limited time per proposal — respect it.
+- **Invented scenarios**: Fabricating usage examples or motivation not grounded in real code patterns found during research. If you can't find real-world evidence, say so honestly rather than inventing it.
+- **Raw ref dump**: Pasting the entire `GenerateReferenceAssemblySource` output instead of curating it to show only the new/changed API surface. The proposal should be the *edited* API shape, not a build artifact.
+- **Non-compilable examples**: Usage examples that reference types, methods, or overloads that don't exist or have wrong signatures. Always verify examples against the prototype.
+- **Over-scoping risk sections**: Writing lengthy risk analyses for straightforward additions (e.g., a new overload with no ambiguity risk). Match depth to actual risk.
+- **Inventing design decisions**: Listing decisions that are obvious or self-evident just to fill the section. If the design is straightforward, say so or omit the section.
 
 ## Modular Phases
 
@@ -170,6 +179,8 @@ Write the proposal matching the spirit of the [issue template](https://github.co
 - WHAT concrete user problem are we solving? Show scenario(s).
 - Reference prior art in other ecosystems where relevant.
 - Briefly summarize existing workarounds and why they are insufficient, but do not repeat the full Phase 0 analysis. Keep this section focused on the problem and the high-level rationale for a new API.
+- Link any related/duplicate proposals found during Phase 0 research inline (e.g., "Related: #12345, #67890").
+- If the proposal could naturally extend to neighboring APIs (e.g., "should this also apply to `ToHashSet`?"), note it here or in Alternative Designs.
 
 **2. API Proposal**
 
@@ -223,22 +234,25 @@ Rules:
 - **No extensive XML docs.** Comments only as brief clarifications for the review board.
 - Naming must follow the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md).
 
+Include the prototype link at the bottom of this section: "Prototype: `https://github.com/<owner>/<repo>/commit/<sha>`"
+
 **3. API Usage**
 
 Realistic, compilable code examples demonstrating the primary scenarios. Number and depth should match the novelty of the API, not just its size. A simple new overload may need one example; a new collection type may need several showing different use patterns.
 
-**4. Design Decisions** (nontrivial only)
+**4. Alternative Designs**
 
-For any decision where reasonable alternatives exist, briefly explain the reasoning. Omit for self-evident decisions. List format works well:
+The agent has the burden of proof when claiming no viable alternatives exist. Show that alternatives were genuinely considered and explain why the proposed design is preferred. For nontrivial design decisions where reasonable alternatives exist, briefly explain the reasoning here. List format works well:
 
 - "Uses a quaternary heap instead of binary for better cache locality"
 - "Does not implement `IEnumerable` because elements cannot be efficiently enumerated in priority order"
 
-**5. Alternative Designs**
+Include any unresolved design questions with tentative answers. Surfacing uncertainty is a feature, not a weakness. Example from PriorityQueue:
+- "Should we use `KeyValuePair` instead of tuples? — We will use tuple types."
 
-The agent has the burden of proof when claiming no viable alternatives exist. Show that alternatives were genuinely considered and explain why the proposed design is preferred.
+Omit this section entirely for straightforward additions with no meaningful alternatives.
 
-**6. Risks**
+**5. Risks**
 
 The agent has the burden of proof when claiming absence of risks. Evaluate:
 - Binary breaking changes (caught by ApiCompat)
@@ -246,22 +260,7 @@ The agent has the burden of proof when claiming absence of risks. Evaluate:
 - Performance implications
 - TFM compatibility
 
-**7. Open Questions** (if any)
-
-List unresolved design questions with tentative answers. Surfacing uncertainty is a feature, not a weakness. Example from PriorityQueue:
-- "Should we use `KeyValuePair` instead of tuples?"
-
-**8. Scope considerations** (if applicable)
-
-If the proposal could naturally extend to neighboring APIs (e.g., "should this also apply to `ToHashSet`?"), flag it as an open question.
-
-**9. Related issues**
-
-Link any related/duplicate proposals found during Phase 0 research.
-
-**10. Prototype**
-
-Link to the prototype commit (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
+Write "No response" if there are genuinely no risks, matching the convention used in real `api-approved` issues. Do not inflate this section for straightforward additions.
 
 #### After Drafting
 
@@ -271,12 +270,7 @@ Present the complete draft to the user for review. Iterate based on feedback bef
 
 ### Phase 5: Publish
 
-> **Agent disclaimer:** When publishing to GitHub on behalf of a user account, prepend the following disclaimer to the proposal body:
->
-> ```markdown
-> > [!NOTE]
-> > This proposal was drafted with the help of an AI agent. Please review for accuracy and remove this notice once you're satisfied with the content.
-> ```
+> **AI-generated content disclosure:** When posting any content to GitHub (issue body, PR body, comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — prepend a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. This applies to the initial proposal, iteration updates, and any follow-up comments posted on the user's behalf. Skip this if the user explicitly asks you to omit it.
 
 #### Step 1: Push and capture commit URL
 

@@ -35,6 +35,7 @@ pr:
     include:
     - main
     - release/*.*
+    - copilot/*
   paths:
     include:
     - '*'
@@ -961,8 +962,6 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: true
-          # TODO consider shouldContinueOnError: true
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
@@ -1141,8 +1140,9 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - ios_arm64
-            - tvos_arm64
+            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
+            # - ios_arm64
+            # - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1187,8 +1187,9 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
-            - tvos_arm64
+            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
+            # - ios_arm64
+            # - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1233,8 +1234,9 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
-            - tvos_arm64
+            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
+            # - ios_arm64
+            # - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

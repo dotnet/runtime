@@ -12,6 +12,124 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class BuiltInCOMTests
 {
+    private const ulong AllocationRangeStart = 0x00000000_20000000;
+    private const ulong AllocationRangeEnd   = 0x00000000_30000000;
+
+    private const uint TestRCWInterfaceCacheSize = 8;
+
+    private static readonly MockDescriptors.TypeFields RCWFields = new MockDescriptors.TypeFields()
+    {
+        DataType = DataType.RCW,
+        Fields =
+        [
+            new(nameof(Data.RCW.NextCleanupBucket), DataType.pointer),
+            new(nameof(Data.RCW.NextRCW), DataType.pointer),
+            new(nameof(Data.RCW.Flags), DataType.uint32),
+            new(nameof(Data.RCW.CtxCookie), DataType.pointer),
+            new(nameof(Data.RCW.CtxEntry), DataType.pointer),
+            new(nameof(Data.RCW.InterfaceEntries), DataType.pointer),
+            new(nameof(Data.RCW.IdentityPointer), DataType.pointer),
+            new(nameof(Data.RCW.SyncBlockIndex), DataType.uint32),
+            new(nameof(Data.RCW.VTablePtr), DataType.pointer),
+            new(nameof(Data.RCW.CreatorThread), DataType.pointer),
+            new(nameof(Data.RCW.RefCount), DataType.uint32),
+            new(nameof(Data.RCW.UnknownPointer), DataType.pointer),
+        ]
+    };
+
+    private static readonly MockDescriptors.TypeFields InterfaceEntryFields = new MockDescriptors.TypeFields()
+    {
+        DataType = DataType.InterfaceEntry,
+        Fields =
+        [
+            new(nameof(Data.InterfaceEntry.MethodTable), DataType.pointer),
+            new(nameof(Data.InterfaceEntry.Unknown), DataType.pointer),
+        ]
+    };
+
+    private static readonly MockDescriptors.TypeFields CtxEntryFields = new MockDescriptors.TypeFields()
+    {
+        DataType = DataType.CtxEntry,
+        Fields =
+        [
+            new(nameof(Data.CtxEntry.STAThread), DataType.pointer),
+            new(nameof(Data.CtxEntry.CtxCookie), DataType.pointer),
+        ]
+    };
+
+    private static void BuiltInCOMContractHelper(
+        MockTarget.Architecture arch,
+        Action<MockMemorySpace.Builder, TargetTestHelpers, Dictionary<DataType, Target.TypeInfo>> configure,
+        Action<Target> testCase,
+        ISyncBlock? syncBlock = null)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+
+        Dictionary<DataType, Target.TypeInfo> types = MockDescriptors.GetTypesForTypeFields(
+            targetTestHelpers,
+            [RCWFields, InterfaceEntryFields, CtxEntryFields]);
+
+        configure(builder, targetTestHelpers, types);
+
+        (string Name, ulong Value)[] globals =
+        [
+            (nameof(Constants.Globals.RCWInterfaceCacheSize), TestRCWInterfaceCacheSize),
+        ];
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types, globals);
+        ISyncBlock syncBlockContract = syncBlock ?? Mock.Of<ISyncBlock>();
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 1)
+              && c.SyncBlock == syncBlockContract));
+
+        testCase(target);
+    }
+
+    /// <summary>
+    /// Allocates an RCW mock with the interface entries embedded inline (matching the real C++ layout
+    /// where m_aInterfaceEntries is an inline array within the RCW struct).
+    /// Returns the address of the RCW.
+    /// </summary>
+    private static TargetPointer AddRCWWithInlineEntries(
+        MockMemorySpace.Builder builder,
+        TargetTestHelpers targetTestHelpers,
+        Dictionary<DataType, Target.TypeInfo> types,
+        MockMemorySpace.BumpAllocator allocator,
+        (TargetPointer MethodTable, TargetPointer Unknown)[] entries,
+        TargetPointer ctxCookie = default)
+    {
+        Target.TypeInfo rcwTypeInfo = types[DataType.RCW];
+        Target.TypeInfo entryTypeInfo = types[DataType.InterfaceEntry];
+        uint entrySize = entryTypeInfo.Size!.Value;
+        uint entriesOffset = (uint)rcwTypeInfo.Fields[nameof(Data.RCW.InterfaceEntries)].Offset;
+
+        // The RCW block must be large enough to hold the RCW header plus all inline entries
+        uint totalSize = entriesOffset + entrySize * TestRCWInterfaceCacheSize;
+        MockMemorySpace.HeapFragment fragment = allocator.Allocate(totalSize, "RCW with inline entries");
+        Span<byte> data = fragment.Data;
+
+        // Write RCW header fields
+        targetTestHelpers.WritePointer(
+            data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.CtxCookie)].Offset),
+            ctxCookie);
+
+        // Write the inline interface entries starting at entriesOffset
+        for (int i = 0; i < entries.Length && i < TestRCWInterfaceCacheSize; i++)
+        {
+            Span<byte> entryData = data.Slice((int)(entriesOffset + i * entrySize));
+            targetTestHelpers.WritePointer(
+                entryData.Slice(entryTypeInfo.Fields[nameof(Data.InterfaceEntry.MethodTable)].Offset),
+                entries[i].MethodTable);
+            targetTestHelpers.WritePointer(
+                entryData.Slice(entryTypeInfo.Fields[nameof(Data.InterfaceEntry.Unknown)].Offset),
+                entries[i].Unknown);
+        }
+
+        builder.AddHeapFragment(fragment);
+        return fragment.Address;
+    }
+
     // Flag values matching the C++ runtime
     private const ulong IsLayoutCompleteFlag = 0x10;
 
@@ -475,6 +593,40 @@ public class BuiltInCOMTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWInterfaces_ReturnsFilledEntries(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        (TargetPointer MethodTable, TargetPointer Unknown)[] expectedEntries =
+        [
+            (new TargetPointer(0x1000), new TargetPointer(0x2000)),
+            (new TargetPointer(0x3000), new TargetPointer(0x4000)),
+        ];
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, expectedEntries);
+            },
+            (target) =>
+            {
+                IBuiltInCOM contract = target.Contracts.BuiltInCOM;
+                Assert.NotNull(contract);
+
+                List<(TargetPointer MethodTable, TargetPointer Unknown)> results =
+                    contract.GetRCWInterfaces(rcwAddress).ToList();
+
+                Assert.Equal(expectedEntries.Length, results.Count);
+                for (int i = 0; i < expectedEntries.Length; i++)
+                {
+                    Assert.Equal(expectedEntries[i].MethodTable, results[i].MethodTable);
+                    Assert.Equal(expectedEntries[i].Unknown, results[i].Unknown);
+                }
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetCCWInterfaces_ComIpAddress_ResolvesToCCW(MockTarget.Architecture arch)
     {
         var helpers = new TargetTestHelpers(arch);
@@ -564,6 +716,297 @@ public class BuiltInCOMTests
             Assert.Equal(ifacesDirect[i].InterfacePointerAddress.Value, ifacesFromIP[i].InterfacePointerAddress.Value);
             Assert.Equal(ifacesDirect[i].MethodTable.Value, ifacesFromIP[i].MethodTable.Value);
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWInterfaces_SkipsEntriesWithNullUnknown(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        // The IsFree() check uses only Unknown == null; entries with Unknown == null are skipped.
+        (TargetPointer MethodTable, TargetPointer Unknown)[] entries =
+        [
+            (new TargetPointer(0x1000), new TargetPointer(0x2000)),
+            (TargetPointer.Null, TargetPointer.Null),  // free entry (Unknown == null)
+            (new TargetPointer(0x5000), new TargetPointer(0x6000)),
+        ];
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, entries);
+            },
+            (target) =>
+            {
+                IBuiltInCOM contract = target.Contracts.BuiltInCOM;
+                List<(TargetPointer MethodTable, TargetPointer Unknown)> results =
+                    contract.GetRCWInterfaces(rcwAddress).ToList();
+
+                // Only the 2 entries with non-null Unknown are returned
+                Assert.Equal(2, results.Count);
+                Assert.Equal(new TargetPointer(0x1000), results[0].MethodTable);
+                Assert.Equal(new TargetPointer(0x2000), results[0].Unknown);
+                Assert.Equal(new TargetPointer(0x5000), results[1].MethodTable);
+                Assert.Equal(new TargetPointer(0x6000), results[1].Unknown);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWInterfaces_EmptyCache_ReturnsEmpty(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, []);
+            },
+            (target) =>
+            {
+                IBuiltInCOM contract = target.Contracts.BuiltInCOM;
+                List<(TargetPointer MethodTable, TargetPointer Unknown)> results =
+                    contract.GetRCWInterfaces(rcwAddress).ToList();
+
+                Assert.Empty(results);
+            });
+    }
+
+    // Bit-flag constants mirroring BuiltInCOM_1 internal constants, used to construct Flags for GetRCWData tests.
+    private const uint RCWFlagAggregated   = 0x10u;   // URTAggregatedMask
+    private const uint RCWFlagContained    = 0x20u;   // URTContainedMask
+    private const uint RCWFlagFreeThreaded = 0x100u;  // MarshalingTypeFreeThreadedValue
+
+    /// <summary>
+    /// Allocates a full RCW mock with all fields needed for <see cref="IBuiltInCOM.GetRCWData"/>.
+    /// </summary>
+    private static TargetPointer AddFullRCW(
+        MockMemorySpace.Builder builder,
+        TargetTestHelpers helpers,
+        Dictionary<DataType, Target.TypeInfo> types,
+        MockMemorySpace.BumpAllocator allocator,
+        TargetPointer identityPointer = default,
+        TargetPointer unknownPointer = default,
+        TargetPointer vtablePtr = default,
+        TargetPointer creatorThread = default,
+        TargetPointer ctxCookie = default,
+        TargetPointer ctxEntry = default,
+        uint syncBlockIndex = 0,
+        uint refCount = 0,
+        uint flags = 0)
+    {
+        Target.TypeInfo rcwTypeInfo = types[DataType.RCW];
+        Target.TypeInfo entryTypeInfo = types[DataType.InterfaceEntry];
+        uint entrySize = entryTypeInfo.Size!.Value;
+        uint entriesOffset = (uint)rcwTypeInfo.Fields[nameof(Data.RCW.InterfaceEntries)].Offset;
+        uint totalSize = entriesOffset + entrySize * TestRCWInterfaceCacheSize;
+
+        MockMemorySpace.HeapFragment fragment = allocator.Allocate(totalSize, "Full RCW");
+        Span<byte> data = fragment.Data;
+
+        helpers.WritePointer(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.IdentityPointer)].Offset), identityPointer);
+        helpers.WritePointer(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.UnknownPointer)].Offset), unknownPointer);
+        helpers.WritePointer(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.VTablePtr)].Offset), vtablePtr);
+        helpers.WritePointer(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.CreatorThread)].Offset), creatorThread);
+        helpers.WritePointer(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.CtxCookie)].Offset), ctxCookie);
+        helpers.WritePointer(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.CtxEntry)].Offset), ctxEntry);
+        helpers.Write(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.SyncBlockIndex)].Offset), syncBlockIndex);
+        helpers.Write(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.RefCount)].Offset), refCount);
+        helpers.Write(data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.Flags)].Offset), flags);
+
+        builder.AddHeapFragment(fragment);
+        return fragment.Address;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWData_ReturnsScalarFields(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        TargetPointer expectedIdentity  = new TargetPointer(0x1000_0000);
+        TargetPointer expectedVTable    = new TargetPointer(0x2000_0000);
+        TargetPointer expectedThread    = new TargetPointer(0x3000_0000);
+        TargetPointer expectedCookie    = new TargetPointer(0x4000_0000);
+        uint          expectedRefCount  = 42;
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddFullRCW(builder, targetTestHelpers, types, allocator,
+                    identityPointer: expectedIdentity,
+                    vtablePtr: expectedVTable,
+                    creatorThread: expectedThread,
+                    ctxCookie: expectedCookie,
+                    refCount: expectedRefCount);
+            },
+            (target) =>
+            {
+                RCWData result = target.Contracts.BuiltInCOM.GetRCWData(rcwAddress);
+
+                Assert.Equal(expectedIdentity, result.IdentityPointer);
+                Assert.Equal(expectedVTable, result.VTablePtr);
+                Assert.Equal(expectedThread, result.CreatorThread);
+                Assert.Equal(expectedCookie, result.CtxCookie);
+                Assert.Equal(expectedRefCount, result.RefCount);
+                Assert.Equal(TargetPointer.Null, result.ManagedObject);
+                Assert.False(result.IsAggregated);
+                Assert.False(result.IsContained);
+                Assert.False(result.IsFreeThreaded);
+                Assert.False(result.IsDisconnected);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWData_FlagsAggregatedAndContained(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddFullRCW(builder, targetTestHelpers, types, allocator,
+                    flags: RCWFlagAggregated | RCWFlagContained);
+            },
+            (target) =>
+            {
+                RCWData result = target.Contracts.BuiltInCOM.GetRCWData(rcwAddress);
+
+                Assert.True(result.IsAggregated);
+                Assert.True(result.IsContained);
+                Assert.False(result.IsFreeThreaded);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWData_FlagsFreeThreaded(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddFullRCW(builder, targetTestHelpers, types, allocator,
+                    flags: RCWFlagFreeThreaded);
+            },
+            (target) =>
+            {
+                RCWData result = target.Contracts.BuiltInCOM.GetRCWData(rcwAddress);
+
+                Assert.True(result.IsFreeThreaded);
+                Assert.False(result.IsAggregated);
+                Assert.False(result.IsContained);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWData_IsDisconnected_Sentinel(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        const ulong DisconnectedSentinel = 0xBADF00D;
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddFullRCW(builder, targetTestHelpers, types, allocator,
+                    unknownPointer: new TargetPointer(DisconnectedSentinel));
+            },
+            (target) =>
+            {
+                RCWData result = target.Contracts.BuiltInCOM.GetRCWData(rcwAddress);
+
+                Assert.True(result.IsDisconnected);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWData_IsDisconnected_CtxCookieMismatch(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+
+                // Allocate a CtxEntry whose CtxCookie differs from the RCW's CtxCookie.
+                Target.TypeInfo ctxTypeInfo = types[DataType.CtxEntry];
+                MockMemorySpace.HeapFragment ctxFragment = allocator.Allocate(ctxTypeInfo.Size!.Value, "CtxEntry");
+                TargetPointer ctxCookieInEntry = new TargetPointer(0xAAAA_0000);
+                builder.TargetTestHelpers.WritePointer(
+                    ctxFragment.Data.AsSpan().Slice(ctxTypeInfo.Fields[nameof(Data.CtxEntry.CtxCookie)].Offset),
+                    ctxCookieInEntry);
+                builder.AddHeapFragment(ctxFragment);
+
+                TargetPointer ctxCookieInRcw = new TargetPointer(0xBBBB_0000);  // different from entry
+                rcwAddress = AddFullRCW(builder, targetTestHelpers, types, allocator,
+                    ctxCookie: ctxCookieInRcw,
+                    ctxEntry: ctxFragment.Address);  // bit 0 clear → not null, not adjusted
+            },
+            (target) =>
+            {
+                RCWData result = target.Contracts.BuiltInCOM.GetRCWData(rcwAddress);
+
+                Assert.True(result.IsDisconnected);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWData_ManagedObject_ResolvedViaSyncBlockIndex(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        TargetPointer expectedManagedObject = new TargetPointer(0xDEAD_BEEF_0000UL);
+        const uint syncBlockIndex = 3;
+
+        var mockSyncBlock = new Mock<ISyncBlock>();
+        mockSyncBlock.Setup(s => s.GetSyncBlockObject(syncBlockIndex)).Returns(expectedManagedObject);
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddFullRCW(builder, targetTestHelpers, types, allocator,
+                    syncBlockIndex: syncBlockIndex);
+            },
+            (target) =>
+            {
+                RCWData result = target.Contracts.BuiltInCOM.GetRCWData(rcwAddress);
+
+                Assert.Equal(expectedManagedObject, result.ManagedObject);
+            },
+            syncBlock: mockSyncBlock.Object);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWContext_ReturnsCtxCookie(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        TargetPointer expectedCookie = new TargetPointer(0xC00C_1E00);
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, [], expectedCookie);
+            },
+            (target) =>
+            {
+                IBuiltInCOM contract = target.Contracts.BuiltInCOM;
+                TargetPointer result = contract.GetRCWContext(rcwAddress);
+
+                Assert.Equal(expectedCookie, result);
+            });
     }
 
     [Theory]

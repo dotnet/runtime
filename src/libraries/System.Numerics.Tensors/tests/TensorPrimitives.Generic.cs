@@ -2723,7 +2723,7 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!Helpers.IsEqualWithTolerance(expected, actual, tolerance))
             {
-                throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString());
+                throw EqualException.ForMismatchedValues($"{expected}", $"{actual}");
             }
         }
 

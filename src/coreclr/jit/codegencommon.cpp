@@ -4138,7 +4138,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
         //
         const var_types lclTyp  = varDsc->GetStackSlotHomeType();
         const emitAttr  size    = emitActualTypeSize(lclTyp);
-        const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+        const int       stkOffs = m_compiler->lvaOSRLocalTier0FrameOffset(lclNum) + fieldOffset;
 
 #if defined(TARGET_AMD64)
 

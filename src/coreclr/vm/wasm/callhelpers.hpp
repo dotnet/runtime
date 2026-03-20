@@ -22,8 +22,8 @@ struct ReverseThunkMapValue
 
 struct ReverseThunkMapEntry
 {
-    ULONG key;
-    ULONG fallbackKey;
+    ULONG hashCode;
+    const char* Source;
     ReverseThunkMapValue value;
 };
 

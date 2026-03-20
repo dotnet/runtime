@@ -14,7 +14,7 @@ using Xunit;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotAzureLinux3VM))]
     public sealed class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
         protected override bool UsableAfterCanceledReads => false;

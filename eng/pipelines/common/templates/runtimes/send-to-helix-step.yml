@@ -24,6 +24,7 @@ parameters:
   runInterpreter: ''
   tieringTest: ''
   hotColdSplitting: ''
+  largeVersionBubble: false
   nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
@@ -59,6 +60,7 @@ steps:
       _RunInterpreter: ${{ parameters.runInterpreter }}
       _TieringTest: ${{ parameters.tieringTest }}
       _HotColdSplitting: ${{ parameters.hotColdSplitting }}
+      _LargeVersionBubble: ${{ parameters.largeVersionBubble }}
       _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
