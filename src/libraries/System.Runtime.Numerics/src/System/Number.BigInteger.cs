@@ -339,9 +339,14 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
+            // The intermediate decimal representation uses base 10^9 stored in nuint elements.
+            // On 64-bit this wastes 32 bits per element, but switching to base 10^19 regresses
+            // ToString (UInt128 division by 10^19 is ~10x slower than JIT-optimized ulong / 10^9),
+            // and using Span<uint> would require duplicating BigIntegerCalculator arithmetic routines
+            // since the D&C algorithm reuses Multiply/Square/Divide on these spans.
             scoped Span<nuint> base1E9;
 
-            ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
+            ReadOnlySpan<byte> intDigits= number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
             int intDigitsEnd = intDigits.IndexOf<byte>(0);
             if (intDigitsEnd < 0)
             {
