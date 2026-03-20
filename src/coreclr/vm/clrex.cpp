@@ -1697,6 +1697,55 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 /* static */
 
 /* static */
+// Data structure for collecting caller assemblies from the managed stack.
+struct CallerAssemblyChainData
+{
+    Assembly *pFailedParent;     // The immediate parent (requesting) assembly
+    Assembly *pFailedAssembly;   // The assembly that failed to load (may be NULL if not yet loaded)
+    StackSString chain;          // Newline-separated chain of assembly display names
+    int count;                   // Number of assemblies added to the chain
+    static const int MaxDepth = 10; // Limit to avoid excessive chain length
+};
+
+static StackWalkAction CallerAssemblyChainCallback(CrawlFrame* pCf, VOID* data)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    MethodDesc *pFunc = pCf->GetFunction();
+    if (pFunc == NULL)
+        return SWA_CONTINUE;
+
+    CallerAssemblyChainData* pData = (CallerAssemblyChainData*)data;
+    if (pData->count >= CallerAssemblyChainData::MaxDepth)
+        return SWA_ABORT;
+
+    Assembly *pAssembly = pFunc->GetModule()->GetAssembly();
+
+    // Skip the immediate parent assembly (already added) and the failed assembly
+    if (pAssembly == pData->pFailedParent || pAssembly == pData->pFailedAssembly)
+        return SWA_CONTINUE;
+
+    // Skip system/framework assemblies (System.Private.CoreLib etc.) to keep the chain relevant
+    if (pAssembly->IsSystem())
+        return SWA_CONTINUE;
+
+    // Check if this assembly is already in the chain by comparing display names.
+    // Build display name for this assembly.
+    StackSString assemblyName;
+    pAssembly->GetDisplayName(assemblyName);
+
+    // Avoid duplicates: check if this name is already in the chain
+    if (!pData->chain.IsEmpty() && wcsstr(pData->chain.GetUnicode(), assemblyName.GetUnicode()) != NULL)
+        return SWA_CONTINUE;
+
+    if (!pData->chain.IsEmpty())
+        pData->chain.Append(W("\n"));
+    pData->chain.Append(assemblyName);
+    pData->count++;
+
+    return SWA_CONTINUE;
+}
+
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
@@ -1729,11 +1778,42 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
             StackSString parentName;
             pParentAssembly->GetDisplayName(parentName);
 
-            // Set the requesting assembly for this exception
-            pException->SetRequestingAssembly(parentName);
+            // Build the requesting assembly chain: start with the immediate parent,
+            // then walk the managed call stack to find additional caller assemblies.
+            StackSString requestingChain;
+            requestingChain.Set(parentName);
 
-            // Walk the inner exception chain and append this parent to each
-            // inner exception's chain, so that every exception in the chain
+            EX_TRY
+            {
+                Thread *pThread = GetThreadNULLOk();
+                if (pThread != NULL)
+                {
+                    GCX_COOP();
+
+                    CallerAssemblyChainData data;
+                    data.pFailedParent = pParentAssembly;
+                    data.pFailedAssembly = NULL; // Assembly failed to load, so no Assembly* exists
+                    data.count = 0;
+
+                    pThread->StackWalkFrames(CallerAssemblyChainCallback, &data, FUNCTIONSONLY | LIGHTUNWIND);
+
+                    if (!data.chain.IsEmpty())
+                    {
+                        requestingChain.Append(W("\n"));
+                        requestingChain.Append(data.chain);
+                    }
+                }
+            }
+            EX_CATCH
+            {
+                // If the stack walk fails for any reason, just use the immediate parent
+            }
+            EX_END_CATCH(SwallowAllExceptions)
+
+            pException->SetRequestingAssembly(requestingChain);
+
+            // Walk the inner exception chain and append the full chain to each
+            // inner exception, so that every exception in the chain
             // carries the full dependency path from its perspective
             EEFileLoadException *pInnerFLE = NULL;
             Exception *pWalk = inner2;
@@ -1748,7 +1828,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
                         StackSString updatedChain;
                         updatedChain.Set(pInnerFLE->m_requestingAssemblyName);
                         updatedChain.Append(W("\n"));
-                        updatedChain.Append(parentName);
+                        updatedChain.Append(requestingChain);
                         pInnerFLE->SetRequestingAssembly(updatedChain);
                     }
                     pWalk = pInnerFLE->m_innerException;

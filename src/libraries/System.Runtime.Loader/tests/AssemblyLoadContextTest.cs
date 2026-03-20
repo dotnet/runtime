@@ -282,14 +282,15 @@ namespace System.Runtime.Loader.Tests
             // MissingDependency.Root depends on MissingDependency.Mid which depends on MissingDependency.Leaf.
             // MissingDependency.Leaf.dll is not deployed (via PrivateAssets=all in Mid's project reference).
             // When Root calls Mid's method that uses Leaf types, the runtime throws FileNotFoundException
-            // for the missing Leaf assembly. The exception message should include the requesting assembly
-            // (Mid) so users can diagnose dependency loading issues.
+            // for the missing Leaf assembly. The exception message should include the full requesting
+            // assembly chain (Mid and Root) so users can diagnose dependency loading issues.
             FileNotFoundException ex = Assert.Throws<FileNotFoundException>(
                 () => MissingDependency.Root.RootClass.UseMiddle());
 
             Assert.NotNull(ex.FileName);
             Assert.Contains("MissingDependency.Leaf", ex.FileName);
             Assert.Contains("MissingDependency.Mid", ex.Message);
+            Assert.Contains("MissingDependency.Root", ex.Message);
         }
     }
 }
