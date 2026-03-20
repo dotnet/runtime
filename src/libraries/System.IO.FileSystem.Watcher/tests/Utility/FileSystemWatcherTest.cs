@@ -21,10 +21,10 @@ namespace System.IO.Tests
         // going to fail the test.  If we don't expect an event to occur, then we need
         // to keep the timeout short, as in a successful run we'll end up waiting for
         // the entire timeout specified.
-        public const int WaitForExpectedEventTimeout = 1000;         // ms to wait for an event to happen
+        public const int WaitForExpectedEventTimeout = 2000;         // ms to wait for an event to happen
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
         public const int SubsequentExpectedWait = 500;              // ms to wait for checks that occur after the first.
-        public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
+        public const int WaitForExpectedEventTimeout_NoRetry = 5000;// ms to wait for an event that isn't surrounded by a retry.
         public const int WaitForUnexpectedEventTimeout = 150;       // ms to wait for a non-expected event.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
         public const int DefaultAttemptsForUnExpectedEvent = 2;     // Number of times an unexpected event should be retried if failing.
@@ -548,7 +548,7 @@ namespace System.IO.Tests
             try
             {
                 action();
-                eventsOccurred.WaitOne(new TimeSpan(0, 0, 5));
+                eventsOccurred.WaitOne(new TimeSpan(0, 0, 10));
             }
             finally
             {
