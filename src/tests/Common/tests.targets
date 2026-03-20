@@ -103,14 +103,18 @@
        Core_Root Freshness Check
        Warns when Core_Root binaries are stale compared to build output.
        Runs before any tests execute. Two-phase design:
-         _ComputeCoreRootFileMappings: enumerates Core_Root files and resolves
-           each to its build-output source based on config and RID.
+         _ComputeCoreRootFileMappings: uses the shared CoreRootArtifacts.targets
+           to forward-map CoreCLR artifacts to Core_Root destinations, then
+           reverse-maps remaining root files to libraries source paths.
          CheckCoreRootFreshness: incremental target (Inputs/Outputs) that
            warns about stale files without failing the build.
        A separate target handles IL-CG2 R2R cache staleness.
        ========================================================================= -->
 
+  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets" />
+
   <Target Name="_ComputeCoreRootFileMappings"
+          DependsOnTargets="_ComputeCoreRootArtifactSources"
           Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
                      '$(ContinuousIntegrationBuild)' != 'true' and
                      Exists('$(CORE_ROOT)')">
@@ -119,77 +123,55 @@
       <_CoreRootDir>$([MSBuild]::NormalizeDirectory('$(CORE_ROOT)'))</_CoreRootDir>
     </PropertyGroup>
 
-    <!-- ── Root-level files ──────────────────────────────────────────── -->
+    <!-- CoreCLR artifacts: forward mapping from shared target.
+         _CoreRootArtifactSource items have Identity=source path, TargetDir=dest subdir.
+         We only include mappings whose dest file actually exists in Core_Root
+         (a missing file means Core_Root hasn't been built yet for that artifact). -->
+    <ItemGroup>
+      <_CoreRootFileMapping Include="@(_CoreRootArtifactSource)"
+          Condition="Exists('$(_CoreRootDir)%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')">
+        <CoreRootFile>$(_CoreRootDir)%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)</CoreRootFile>
+      </_CoreRootFileMapping>
+    </ItemGroup>
+
+    <!-- Libraries: reverse-map remaining root-level Core_Root files to their source.
+         These come from NuGet resolution during copy but we can check the known paths directly. -->
     <ItemGroup>
       <_CoreRootRootFile Include="$(_CoreRootDir)*" />
+      <_UnmappedRootFile Include="@(_CoreRootRootFile)"
+          Exclude="@(_CoreRootFileMapping->'%(CoreRootFile)')" />
     </ItemGroup>
 
-    <!-- Priority 1: CoreCLR build artifacts (coreclr, clrjit, SPCL, etc.) -->
-    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
-      <_CoreRootFileMapping Include="@(_CoreRootRootFile)"
-          Condition="Exists('$(CoreCLRArtifactsPath)%(Filename)%(Extension)')">
-        <SourceFile>$(CoreCLRArtifactsPath)%(Filename)%(Extension)</SourceFile>
-      </_CoreRootFileMapping>
-    </ItemGroup>
-
-    <!-- Priority 2: Libraries managed (shared framework DLLs) -->
+    <!-- Libraries managed (shared framework DLLs) -->
     <ItemGroup Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')">
-      <_CoreRootFileMapping Include="@(_CoreRootRootFile)"
-          Exclude="@(_CoreRootFileMapping)"
-          Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)%(Filename)%(Extension)')">
-        <SourceFile>$(LibrariesSharedFrameworkBinArtifactsPath)%(Filename)%(Extension)</SourceFile>
+      <_CoreRootFileMapping Include="$(LibrariesSharedFrameworkBinArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)"
+          Condition="Exists('$(LibrariesSharedFrameworkBinArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)')">
+        <CoreRootFile>%(_UnmappedRootFile.Identity)</CoreRootFile>
       </_CoreRootFileMapping>
     </ItemGroup>
 
-    <!-- Priority 3: Libraries native -->
-    <ItemGroup Condition="Exists('$(LibrariesNativeArtifactsPath)')">
-      <_CoreRootFileMapping Include="@(_CoreRootRootFile)"
-          Exclude="@(_CoreRootFileMapping)"
-          Condition="Exists('$(LibrariesNativeArtifactsPath)%(Filename)%(Extension)')">
-        <SourceFile>$(LibrariesNativeArtifactsPath)%(Filename)%(Extension)</SourceFile>
-      </_CoreRootFileMapping>
-    </ItemGroup>
-
-    <!-- ── crossgen2/ → crossgen2-published/ (only rename in the mapping) ── -->
-    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
-      <_CG2File Include="$(_CoreRootDir)crossgen2\**\*" />
-      <_CoreRootFileMapping Include="@(_CG2File)"
-          Condition="Exists('$(CoreCLRArtifactsPath)crossgen2-published\%(RecursiveDir)%(Filename)%(Extension)')">
-        <SourceFile>$(CoreCLRArtifactsPath)crossgen2-published\%(RecursiveDir)%(Filename)%(Extension)</SourceFile>
-      </_CoreRootFileMapping>
-    </ItemGroup>
-
-    <!-- ── Identity-mapped subdirectories (same name in source and dest) ── -->
-    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
-      <_IdentitySubdir Include="R2RDump;IL;PDB;R2RTest;PdbChecker;SuperFileCheck;AssemblyChecker;ilc-published;aotsdk;build;xunit;managed-ilasm" />
-    </ItemGroup>
-    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
-      <_SubdirFile Include="$(_CoreRootDir)%(_IdentitySubdir.Identity)\**\*">
-        <SourceSubdir>%(_IdentitySubdir.Identity)</SourceSubdir>
-      </_SubdirFile>
-    </ItemGroup>
-
-    <!-- Use an intermediate item to avoid SourceSubdir metadata batching conflict with _CoreRootFileMapping -->
-    <ItemGroup Condition="Exists('$(CoreCLRArtifactsPath)')">
-      <_SubdirFileMapping Include="@(_SubdirFile)"
-          Condition="Exists('$(CoreCLRArtifactsPath)%(SourceSubdir)\%(RecursiveDir)%(Filename)%(Extension)')">
-        <SourceFile>$(CoreCLRArtifactsPath)%(SourceSubdir)\%(RecursiveDir)%(Filename)%(Extension)</SourceFile>
-      </_SubdirFileMapping>
-    </ItemGroup>
+    <!-- Update unmapped list after libraries managed -->
     <ItemGroup>
-      <_CoreRootFileMapping Include="@(_SubdirFileMapping)" />
+      <_UnmappedRootFile Remove="@(_CoreRootFileMapping->'$(_CoreRootDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+
+    <!-- Libraries native -->
+    <ItemGroup Condition="Exists('$(LibrariesNativeArtifactsPath)')">
+      <_CoreRootFileMapping Include="$(LibrariesNativeArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)"
+          Condition="Exists('$(LibrariesNativeArtifactsPath)%(_UnmappedRootFile.Filename)%(_UnmappedRootFile.Extension)')">
+        <CoreRootFile>%(_UnmappedRootFile.Identity)</CoreRootFile>
+      </_CoreRootFileMapping>
     </ItemGroup>
   </Target>
 
   <!-- Incremental target: skipped entirely when all Core_Root files are up to date.
-       Condition cannot reference @(_CoreRootFileMapping) because that item group is populated
-       by _ComputeCoreRootFileMappings via DependsOnTargets; MSBuild evaluates Condition before
-       DependsOnTargets for the purpose of skipping the target, so the item would always be empty.
-       Instead, we guard with Exists('$(CORE_ROOT)') and check item count inside the body. -->
+       _CoreRootFileMapping Identity = source file path, CoreRootFile metadata = dest path.
+       Condition cannot reference @(_CoreRootFileMapping) because MSBuild evaluates Condition
+       before DependsOnTargets; we guard with Exists('$(CORE_ROOT)') instead. -->
   <Target Name="CheckCoreRootFreshness"
           DependsOnTargets="_ComputeCoreRootFileMappings"
-          Inputs="@(_CoreRootFileMapping->'%(SourceFile)')"
-          Outputs="@(_CoreRootFileMapping)"
+          Inputs="@(_CoreRootFileMapping)"
+          Outputs="@(_CoreRootFileMapping->'%(CoreRootFile)')"
           Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
                      '$(ContinuousIntegrationBuild)' != 'true' and
                      Exists('$(CORE_ROOT)')">
@@ -197,12 +179,12 @@
     <!-- Compare timestamps to find which specific files are stale -->
     <ItemGroup>
       <_StaleFile Include="@(_CoreRootFileMapping)"
-          Condition="$([System.IO.File]::GetLastWriteTime('%(SourceFile)').Ticks) &gt;
-                     $([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks)" />
+          Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &gt;
+                     $([System.IO.File]::GetLastWriteTime('%(CoreRootFile)').Ticks)" />
     </ItemGroup>
 
-    <Warning Condition="'%(_StaleFile.Identity)' != ''"
-             Text="STALE Core_Root: %(_StaleFile.Filename)%(_StaleFile.Extension) in Core_Root is older than build output at %(_StaleFile.SourceFile)" />
+    <Warning Condition="'%(_StaleFile.CoreRootFile)' != ''"
+             Text="STALE Core_Root: %(_StaleFile.Filename)%(_StaleFile.Extension) in Core_Root is older than build output at %(Identity)" />
 
     <Warning Condition="@(_StaleFile->Count()) &gt; 0"
              Text="Core_Root has @(_StaleFile->Count()) stale file(s). Run: src/tests/build.cmd $(TargetArchitecture) $(Configuration) -generatelayoutonly — To suppress: /p:SkipCoreRootFreshnessCheck=true" />
