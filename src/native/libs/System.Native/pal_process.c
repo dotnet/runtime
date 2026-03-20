@@ -358,9 +358,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // The provided file handles might have CLOEXEC enabled,
         // but dup2 doesn't copy the file descriptor flags,
         // so the new file descriptors won't have CLOEXEC enabled.
-        if (Dup2WithInterruptedRetry(stdinFd, STDIN_FILENO) == -1 ||
-            Dup2WithInterruptedRetry(stdoutFd, STDOUT_FILENO) == -1 ||
-            Dup2WithInterruptedRetry(stderrFd, STDERR_FILENO) == -1)
+        if ((stdinFd != 0 && Dup2WithInterruptedRetry(stdinFd, STDIN_FILENO) == -1) ||
+            (stdoutFd != 1 && Dup2WithInterruptedRetry(stdoutFd, STDOUT_FILENO) == -1) ||
+            (stderrFd != 2 && Dup2WithInterruptedRetry(stderrFd, STDERR_FILENO) == -1))
         {
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }

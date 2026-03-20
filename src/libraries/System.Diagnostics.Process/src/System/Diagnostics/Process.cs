@@ -1322,39 +1322,39 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
                         }
-                        else if (OperatingSystem.IsAndroid())
+                        else if (OperatingSystem.IsWindows())
                         {
-                            childInputPipeHandle = new SafeFileHandle(0, ownsHandle: false);
+                            childInputPipeHandle = Console.OpenStandardInputHandle();
                         }
                         else
                         {
-                            childInputPipeHandle = Console.OpenStandardInputHandle();
+                            childInputPipeHandle = new SafeFileHandle(0, ownsHandle: false);
                         }
 
                         if (startInfo.RedirectStandardOutput)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (OperatingSystem.IsAndroid())
+                        else if (OperatingSystem.IsWindows())
                         {
-                            childOutputPipeHandle = new SafeFileHandle(1, ownsHandle: false);
+                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
                         }
                         else
                         {
-                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
+                            childOutputPipeHandle = new SafeFileHandle(1, ownsHandle: false);
                         }
 
                         if (startInfo.RedirectStandardError)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (OperatingSystem.IsAndroid())
+                        else if (OperatingSystem.IsWindows())
                         {
-                            childErrorPipeHandle = new SafeFileHandle(2, ownsHandle: false);
+                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
                         }
                         else
                         {
-                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
+                            childErrorPipeHandle = new SafeFileHandle(2, ownsHandle: false);
                         }
                     }
                     finally
