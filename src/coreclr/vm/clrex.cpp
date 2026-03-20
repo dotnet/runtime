@@ -1695,8 +1695,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 // <TODO>@todo: ideally we would use inner exceptions with these routines</TODO>
 
 /* static */
-
-/* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
