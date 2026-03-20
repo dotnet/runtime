@@ -1917,7 +1917,10 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         var_types treeType    = treeNode->TypeGet();
         var_types operandType = treeNode->gtGetOp1()->TypeGet();
 
-        assert((operandType == TYP_INT) || (operandType == TYP_LONG));
+        if (varTypeIsSmall(operandType))
+        {
+            operandType = TYP_INT;
+        }
 
         needsTruncation = (operandType == TYP_LONG) && (treeType == TYP_INT);
         needsExtension  = (operandType == TYP_INT) && (treeType == TYP_LONG);
