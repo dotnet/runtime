@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tests
                 {
                     int newThreadId = GetCurrentThreadId();
 
-                    // Retry to handle the race where the new thread's /proc entry isn't visible yet.
+                    // Retry to handle the race where the newly started thread is not yet visible via Process.Threads.
                     ProcessThread newThread = null;
                     for (int i = 0; i < 10 && newThread is null; i++)
                     {
@@ -160,7 +160,7 @@ namespace System.Diagnostics.Tests
                     }
 
                     Assert.True(newThread is not null, $"Thread with id {newThreadId} was not found after retrying.");
-                    Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
+                    Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.UtcNow + allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
