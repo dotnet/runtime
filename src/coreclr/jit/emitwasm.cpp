@@ -342,6 +342,8 @@ static bool HasOpcodePrefix(instruction ins)
      static_cast<uint8_t>(opcode) == 0xFD),
 #include "instrs.h"
     };
+
+    assert(ins < ArrLen(hasPrefix));
     return hasPrefix[ins];
 }
 
