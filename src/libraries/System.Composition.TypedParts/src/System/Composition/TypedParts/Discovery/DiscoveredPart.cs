@@ -175,7 +175,7 @@ namespace System.Composition.TypedParts.Discovery
             var contextParam = Expression.Parameter(typeof(LifetimeContext), "cc");
             var operationParm = Expression.Parameter(typeof(CompositionOperation), "op");
 
-            var cps = LazyInitializer.EnsureInitialized(ref _constructorParameters, () => _constructor.GetParameters());
+            var cps = LazyInitializer.EnsureInitialized(ref _constructorParameters, _constructor.GetParameters);
             Expression[] paramActivatorCalls = new Expression[cps.Length];
 
             var partActivatorDependencies = dependencies
