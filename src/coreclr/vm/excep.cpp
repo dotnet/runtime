@@ -10211,22 +10211,22 @@ static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo
 
     for (DWORD i = 0; i < instFrom.GetNumArgs(); i++)
     {
-        if (instFrom[i] != instTo[i])
-        {
-            // If both arguments are from the same module, drill deeper
-            // into their own generic arguments to find the root difference.
-            Module *pModFrom = instFrom[i].GetModule();
-            Module *pModTo = instTo[i].GetModule();
-            if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
-            {
-                if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo))
-                    return TRUE;
-            }
+        if (instFrom[i] == instTo[i])
+            continue;
 
-            *pthArgFrom = instFrom[i];
-            *pthArgTo = instTo[i];
-            return TRUE;
+        // If both arguments are from the same module, drill deeper
+        // into their own generic arguments to find the root difference.
+        Module *pModFrom = instFrom[i].GetModule();
+        Module *pModTo = instTo[i].GetModule();
+        if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
+        {
+            if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo))
+                return TRUE;
         }
+
+        *pthArgFrom = instFrom[i];
+        *pthArgTo = instTo[i];
+        return TRUE;
     }
 
     return FALSE;
