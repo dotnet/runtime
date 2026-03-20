@@ -1551,25 +1551,19 @@ namespace System.StubHelpers
         [RequiresUnsafe]
         private static unsafe void InvokeConnectionPointProviderMethod(
             object* pProvider,
-            nint pProviderMethodPtr,
+            delegate *<object, object?, void> providerMethodEntryPoint,
             object* pDelegate,
-            nint pDelegateCtorMethodPtr,
+            delegate*<object, object?, IntPtr, void> delegateCtorMethodEntryPoint,
             object* pSubscriber,
-            nint pEventMethodCodePtr,
-            bool useUIntPtrCtor,
+            IntPtr pEventMethodCodePtr,
             Exception* pException)
         {
             try
             {
-                nint delegateCtorMethodEntryPoint = pDelegateCtorMethodPtr;
-                Debug.Assert(delegateCtorMethodEntryPoint != 0);
-
                 // Construct the delegate before invoking the provider method.
-                ((delegate*<object, object?, nint, void>)delegateCtorMethodEntryPoint)(*pDelegate, *pSubscriber, pEventMethodCodePtr);
+                delegateCtorMethodEntryPoint(*pDelegate, *pSubscriber, pEventMethodCodePtr);
 
-                nint providerMethodEntryPoint = pProviderMethodPtr;
-                Debug.Assert(providerMethodEntryPoint != 0);
-                ((delegate*<object, object?, void>)providerMethodEntryPoint)(*pProvider, *pDelegate);
+                providerMethodEntryPoint(*pProvider, *pDelegate);
             }
             catch (Exception ex)
             {
