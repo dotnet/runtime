@@ -39,13 +39,49 @@ def get_token():
     if token:
         return token
     try:
+        if os.name == "nt":
+            cmd = [
+                "cmd",
+                "/c",
+                "az",
+                "account",
+                "get-access-token",
+                "--resource",
+                "499b84ac-1321-427f-aa17-267ca6975798",
+                "--query",
+                "accessToken",
+                "-o",
+                "tsv",
+            ]
+        else:
+            cmd = [
+                "az",
+                "account",
+                "get-access-token",
+                "--resource",
+                "499b84ac-1321-427f-aa17-267ca6975798",
+                "--query",
+                "accessToken",
+                "-o",
+                "tsv",
+            ]
         result = subprocess.run(
-            ["cmd", "/c", "az", "account", "get-access-token",
-             "--resource", "499b84ac-1321-427f-aa17-267ca6975798",
-             "--query", "accessToken", "-o", "tsv"],
-            capture_output=True, text=True, timeout=30
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
-        return result.stdout.strip()
+        if result.returncode != 0:
+            print(
+                f"Error getting token from az cli (exit code {result.returncode}): {result.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return ""
+        token = result.stdout.strip()
+        if not token:
+            print("Error getting token from az cli: empty access token.", file=sys.stderr)
+            return ""
+        return token
     except Exception as e:
         print(f"Error getting token: {e}", file=sys.stderr)
         return ""
