@@ -674,6 +674,13 @@ namespace Microsoft.Extensions
             public TimeSpan Timeout { get; private set; }
         }
 
+        public class SetOnlyValueTypePoco
+        {
+            private bool _countSet;
+            public bool CountSet => _countSet;
+            public int Count { set => _countSet = true; }
+        }
+
         public interface ISomeInterface
         {
         }

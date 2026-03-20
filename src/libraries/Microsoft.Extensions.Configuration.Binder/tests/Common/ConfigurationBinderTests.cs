@@ -1448,6 +1448,16 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void SetOnlyNonNullableValueType_WithEmptyConfig_DoesNotCallSetter()
+        {
+            var dic = new Dictionary<string, string> { { "Count", "" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyValueTypePoco>();
+            Assert.False(options.CountSet);
+        }
+
+        [Fact]
         public void CanBindRecordOptions()
         {
             var dic = new Dictionary<string, string>
