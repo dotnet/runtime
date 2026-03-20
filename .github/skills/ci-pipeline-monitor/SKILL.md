@@ -305,19 +305,13 @@ until all checks pass.
 
 ## Banned Tools and APIs
 
-**`ado-pipelines_*` and `ado-testplan_*` MCP tools are banned:**
-- `ado-testplan_show_test_results_from_build_id` (1M+ rows, times out)
+- **`ado-pipelines_*` and `ado-testplan_*` MCP tools are banned:** 
+  - `ado-testplan_show_test_results_from_build_id` returns 1M+ rows and times out.
 - `ado-pipelines_get_builds`, `get_build_log`, `get_build_status`,
   `get_build_changes`, `get_build_log_by_id`
-
-No ADO MCP server configuration is needed. All AzDO API calls go through
-Python `requests` (direct HTTP) in the scripts.
-
-**Build Timeline API is banned** (`/_apis/build/builds/{id}/timeline`):
-reports at work-item level only, silently misses individual test failures.
-Always use the AzDO Test Results API via `extract_failed_tests.py`.
-
-Use `powershell` with `requests` for any direct API calls.
+- **Build Timeline API is banned** (`/_apis/build/builds/{id}/timeline`):
+  - reports at work-item level only, silently misses individual test failures. Always use the AzDO Test Results API via `extract_failed_tests.py`.
+- Use `powershell` with `requests` for any direct API calls.
 
 ## Allowed Tools
 

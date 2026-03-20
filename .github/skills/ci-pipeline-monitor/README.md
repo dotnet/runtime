@@ -24,7 +24,6 @@ Azure DevOps, triaging failures, and coordinating with GitHub issue tracking.
    ```bash
    az login
    ```
-4. **Node.js / npm** — for the ADO MCP server
 
 ## One-Time Setup
 
@@ -66,24 +65,17 @@ The skill runs the full pipeline end-to-end:
 3. Triages each failure (classifies, groups by root cause, searches GitHub)
 4. Generates a formatted report with action items
 
-### Running Specific Steps
-
-You can also ask for individual steps:
-- "Bisect the regression for test X in pipeline Y"
-- "File GitHub issues for the new test failures from the last run"
-- "Search GitHub for an existing issue matching this test failure: ..."
-
 ## Authentication
 
 No manual token or credential setup is needed. The skill handles authentication
 automatically:
 
-- **AzDO Builds API + Helix API** — public, no auth required. Called via
-  Python `requests` (direct HTTP), not via ADO MCP tools.
+- **AzDO Builds API + Helix API** — public, no auth required
 - **AzDO Test Results API** — uses `az account get-access-token` (requires
-  `az login` from prerequisites). Also called via Python `requests`.
-- **GitHub API** — uses your Copilot CLI login (via GitHub MCP tools
-  built into Copilot CLI; no separate MCP server configuration needed)
+  `az login` from prerequisites)
+- **GitHub API** — uses your Copilot CLI login (no separate configuration needed)
+
+GitHub API calls use the GitHub MCP tools built into Copilot CLI.
 
 ## How It Works
 
