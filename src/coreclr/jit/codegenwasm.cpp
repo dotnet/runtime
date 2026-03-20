@@ -1915,12 +1915,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     if (canHaveMixedTypes)
     {
         var_types treeType    = treeNode->TypeGet();
-        var_types operandType = treeNode->gtGetOp1()->TypeGet();
-
-        if (varTypeIsSmall(operandType))
-        {
-            operandType = TYP_INT;
-        }
+        var_types operandType = genActualType(treeNode->gtGetOp1()->TypeGet());
 
         needsTruncation = (operandType == TYP_LONG) && (treeType == TYP_INT);
         needsExtension  = (operandType == TYP_INT) && (treeType == TYP_LONG);
@@ -2776,9 +2771,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
         case GenTreeBlk::BlkOpKindNativeOpcode:
             genConsumeOperands(blkOp);
-
-            if (isCopyBlk)
-                NYI_WASM("codegenwasm.cpp 2724");
             // Emit the size constant expected by the memory.copy and memory.fill opcodes
             GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
             GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);

@@ -192,14 +192,14 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (method.IsAsyncCall())
-            {
-                result.Add(pointerType); // async continuation
-            }
-
             if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
             {
                 result.Add(pointerType); // generic context
+            }
+
+            if (method.IsAsyncCall())
+            {
+                result.Add(pointerType); // async continuation
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)

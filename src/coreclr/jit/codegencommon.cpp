@@ -1968,6 +1968,7 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     //
     static ConfigMethodRange JitR2RUnsupportedRange;
     JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
+    assert(!JitR2RUnsupportedRange.Error());
     const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
     const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
 
