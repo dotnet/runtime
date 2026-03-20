@@ -39,13 +39,49 @@ def get_token():
     if token:
         return token
     try:
+        if os.name == "nt":
+            cmd = [
+                "cmd",
+                "/c",
+                "az",
+                "account",
+                "get-access-token",
+                "--resource",
+                "499b84ac-1321-427f-aa17-267ca6975798",
+                "--query",
+                "accessToken",
+                "-o",
+                "tsv",
+            ]
+        else:
+            cmd = [
+                "az",
+                "account",
+                "get-access-token",
+                "--resource",
+                "499b84ac-1321-427f-aa17-267ca6975798",
+                "--query",
+                "accessToken",
+                "-o",
+                "tsv",
+            ]
         result = subprocess.run(
-            ["cmd", "/c", "az", "account", "get-access-token",
-             "--resource", "499b84ac-1321-427f-aa17-267ca6975798",
-             "--query", "accessToken", "-o", "tsv"],
-            capture_output=True, text=True, timeout=30
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
-        return result.stdout.strip()
+        if result.returncode != 0:
+            print(
+                f"Error getting token from az cli (exit code {result.returncode}): {result.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return ""
+        token = result.stdout.strip()
+        if not token:
+            print("Error getting token from az cli: empty access token.", file=sys.stderr)
+            return ""
+        return token
     except Exception as e:
         print(f"Error getting token: {e}", file=sys.stderr)
         return ""
@@ -70,66 +106,79 @@ def fetch_failed_tests(build_id, pipeline_name, token):
         run_id = run["id"]
         run_name = run.get("name", "")
 
-        url2 = f"{ADO_BASE}/test/runs/{run_id}/results?outcomes=Failed&$top=1000&api-version=7.1"
-        try:
-            resp2 = requests.get(url2, headers=headers, timeout=30)
-        except requests.RequestException as e:
-            print(f"WARNING: results request failed for run {run_id}: {e}", file=sys.stderr)
-            continue
-        if resp2.status_code != 200:
-            print(f"WARNING: results for run {run_id} returned HTTP {resp2.status_code}", file=sys.stderr)
-            continue
-
-        results = resp2.json().get("value", [])
-        for r in results:
-            automated_name = r.get("automatedTestName", r.get("testCaseTitle", ""))
-            # Strip .WorkItemExecution suffix
-            test_name = automated_name
-            if test_name.endswith(".WorkItemExecution"):
-                test_name = test_name[:-len(".WorkItemExecution")]
-
-            # Parse comment JSON for Helix info
-            helix_job_id = ""
-            helix_work_item = ""
-            comment = r.get("comment", "")
-            if comment:
-                try:
-                    cdata = json.loads(comment)
-                    helix_job_id = cdata.get("HelixJobId", "")
-                    helix_work_item = cdata.get("HelixWorkItemName", "")
-                except (json.JSONDecodeError, TypeError):
-                    pass
-
-            # Build console URL if we have Helix info
-            console_log_url = ""
-            if helix_job_id and helix_work_item:
-                console_log_url = HELIX_CONSOLE.format(
-                    job_id=helix_job_id, work_item=helix_work_item
+        page_size = 1000
+        skip = 0
+        while True:
+            url2 = (
+                f"{ADO_BASE}/test/runs/{run_id}/results"
+                f"?outcomes=Failed&$top={page_size}&$skip={skip}&api-version=7.1"
+            )
+            resp2 = requests.get(url2, headers=headers)
+            if resp2.status_code != 200:
+                print(
+                    f"WARNING: results for run {run_id} returned HTTP {resp2.status_code}",
+                    file=sys.stderr,
                 )
+                break
 
-            # Extract errorMessage and stackTrace from the API response.
-            # Skip generic "Helix Work Item failed" messages — these provide
-            # no diagnostic value; the LLM will extract from console logs.
-            api_error = r.get("errorMessage", "") or ""
-            api_stack = r.get("stackTrace", "") or ""
-            if api_error.startswith(GENERIC_HELIX_MSG):
-                api_error = ""
-                api_stack = ""
+            results = resp2.json().get("value", [])
+            if not results:
+                break
 
-            failures.append({
-                "pipeline_name": pipeline_name,
-                "build_id": build_id,
-                "run_id": run_id,
-                "run_name": run_name,
-                "test_name": test_name,
-                "automated_test_name": automated_name,
-                "helix_job_id": helix_job_id,
-                "helix_work_item": helix_work_item,
-                "console_log_url": console_log_url,
-                "error_message": api_error,
-                "stack_trace": api_stack,
-            })
+            for r in results:
+                automated_name = r.get("automatedTestName", r.get("testCaseTitle", ""))
+                # Strip .WorkItemExecution suffix
+                test_name = automated_name
+                if test_name.endswith(".WorkItemExecution"):
+                    test_name = test_name[:-len(".WorkItemExecution")]
 
+                # Parse comment JSON for Helix info
+                helix_job_id = ""
+                helix_work_item = ""
+                comment = r.get("comment", "")
+                if comment:
+                    try:
+                        cdata = json.loads(comment)
+                        helix_job_id = cdata.get("HelixJobId", "")
+                        helix_work_item = cdata.get("HelixWorkItemName", "")
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+                # Build console URL if we have Helix info
+                console_log_url = ""
+                if helix_job_id and helix_work_item:
+                    console_log_url = HELIX_CONSOLE.format(
+                        job_id=helix_job_id,
+                        work_item=helix_work_item,
+                    )
+
+                # Extract errorMessage and stackTrace from the API response.
+                # Skip generic "Helix Work Item failed" messages — these provide
+                # no diagnostic value; the LLM will extract from console logs.
+                api_error = r.get("errorMessage", "") or ""
+                api_stack = r.get("stackTrace", "") or ""
+                if api_error.startswith(GENERIC_HELIX_MSG):
+                    api_error = ""
+                    api_stack = ""
+
+                failures.append({
+                    "pipeline_name": pipeline_name,
+                    "build_id": build_id,
+                    "run_id": run_id,
+                    "run_name": run_name,
+                    "test_name": test_name,
+                    "automated_test_name": automated_name,
+                    "helix_job_id": helix_job_id,
+                    "helix_work_item": helix_work_item,
+                    "console_log_url": console_log_url,
+                    "error_message": api_error,
+                    "stack_trace": api_stack,
+                })
+
+            if len(results) < page_size:
+                break
+
+            skip += page_size
     return failures
 
 
