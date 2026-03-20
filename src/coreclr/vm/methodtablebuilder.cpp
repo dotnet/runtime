@@ -3398,11 +3398,6 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Second pass, add the async variant.
 
-                ULONG cAsyncThunkMemberSignature;
-                ULONG taskTokenOffsetFromAsyncDetailsOffset;
-                ULONG taskTypePrefixSize;
-                ULONG taskTypePrefixReplacementSize;
-
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
                 if (returnsValueTask)
                 {
@@ -3413,58 +3408,14 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (!IsMiAsync(dwImplFlags))
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
-                // Here we construct the signature of async call variant given its task-returning counterpart.
-                // It is basically just removing the Task/ValueTask part of the return type and keeping
-                // the token for T or inserting void instead.
-                // The rest of the signature stays exactly the same.
-                ULONG tokenLen = 0;
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
-                {
-                    // from ". . . Task . . . Method(args);"        we construct
-                    //      ". . . void . . . Method(args);"
-
-                    taskTokenOffsetFromAsyncDetailsOffset = 1;
-                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
-
-                    taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
-                    taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
-
-                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
-                }
-                else if (returnKind == MethodReturnKind::GenericTaskReturningMethod)
-                {
-                    // from ". . . Task<tk> . . . Method(args);"    we construct
-                    //      ". . .      tk  . . . Method(args);"
-
-                    taskTokenOffsetFromAsyncDetailsOffset = 2;
-                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
-
-                    taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
-                    taskTypePrefixReplacementSize = 0;
-
-                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
-                }
-                else
-                {
-                    UNREACHABLE();
-                }
+                // Construct the async variant signature by stripping the Task/ValueTask wrapper.
+                ULONG cAsyncThunkMemberSignature;
+                BuildAsyncVariantSignature(returnKind, pMemberSignature, cMemberSignature, offsetOfAsyncDetails,
+                                           nullptr, &cAsyncThunkMemberSignature);
 
                 BYTE* pNewMemberSignature = AllocateFromHighFrequencyHeap(S_SIZE_T(cAsyncThunkMemberSignature));
-                ULONG originalRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixSize;
-                ULONG newRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixReplacementSize;
-
-                ULONG initialCopyLen = offsetOfAsyncDetails;
-                // copy bytes before the original async prefix
-                memcpy(pNewMemberSignature, pMemberSignature, initialCopyLen);
-
-                // copy bytes after the original async prefix
-                _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
-                memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
-
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
-                {
-                    pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
-                }
+                BuildAsyncVariantSignature(returnKind, pMemberSignature, cMemberSignature, offsetOfAsyncDetails,
+                                           pNewMemberSignature, &cAsyncThunkMemberSignature);
 
                 MethodClassification asyncVariantType = type;
                 if (type != mcIL && type != mcInstantiated)

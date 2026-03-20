@@ -625,57 +625,15 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         // For IsMiAsync methods, the async variant has the real IL body (not a thunk).
         // The task-returning variant above is the thunk.
 
-        // Construct the async variant signature by stripping the Task/ValueTask wrapper
-        // from the return type. This follows the same logic as MethodTableBuilder.
+        // Construct the async variant signature by stripping the Task/ValueTask wrapper.
         ULONG cAsyncSig;
-        ULONG taskTokenOffsetFromAsyncDetailsOffset;
-        ULONG taskTypePrefixSize;
-        ULONG taskTypePrefixReplacementSize;
-        ULONG tokenLen = 0;
-
-        if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
-        {
-            // "... Task ... Method(args);" → "... void ... Method(args);"
-            taskTokenOffsetFromAsyncDetailsOffset = 1;
-            tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
-            taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
-            taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
-            cAsyncSig = sigLen - taskTypePrefixSize + taskTypePrefixReplacementSize;
-        }
-        else if (returnKind == MethodReturnKind::GenericTaskReturningMethod)
-        {
-            // "... Task<tk> ... Method(args);" → "... tk ... Method(args);"
-            taskTokenOffsetFromAsyncDetailsOffset = 2;
-            tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
-            taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
-            taskTypePrefixReplacementSize = 0;
-            cAsyncSig = sigLen - taskTypePrefixSize + taskTypePrefixReplacementSize;
-        }
-        else
-        {
-            _ASSERTE(!"Unexpected returnKind for async task-returning method");
-            return E_UNEXPECTED;
-        }
+        BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
+                                   nullptr, &cAsyncSig);
 
         LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
         BYTE* pNewSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncSig));
-
-        ULONG originalRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixSize;
-        ULONG newRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixReplacementSize;
-
-        // Copy bytes before the async prefix
-        memcpy(pNewSig, pMemberSignature, offsetOfAsyncDetails);
-
-        // Copy bytes after the async prefix
-        _ASSERTE((sigLen - originalRemainingSigOffset) == (cAsyncSig - newRemainingSigOffset));
-        memcpy(pNewSig + newRemainingSigOffset,
-               pMemberSignature + originalRemainingSigOffset,
-               sigLen - originalRemainingSigOffset);
-
-        if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
-        {
-            pNewSig[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
-        }
+        BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
+                                   pNewSig, &cAsyncSig);
 
         MethodDesc* pAsyncVariantMD;
         if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
