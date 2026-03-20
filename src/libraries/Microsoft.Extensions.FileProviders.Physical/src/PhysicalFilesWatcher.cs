@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -256,7 +257,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // actually created.  A non-recursive FileSystemWatcher is placed at the deepest existing
         // ancestor of filePath and automatically advances through intermediate directory levels as
         // they are created, so no recursive inotify watches are added and the token does not fire
-        // for intermediate directory creations.
+        // for intermediate directory creations.  The watcher self-recovers if a watched directory
+        // is deleted, so the token only ever fires on file creation.
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
@@ -287,14 +289,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
 
                     // Stale watcher (already fired); remove it and create a fresh one.
+#if NET
+                    _pendingCreationWatchers.TryRemove(new KeyValuePair<string, PendingCreationWatcher>(filePath, existing));
+#else
                     _pendingCreationWatchers.TryRemove(filePath, out _);
+#endif
                     // Do not dispose here – cleanup is already scheduled via Cts.Token.Register.
                 }
 
                 PendingCreationWatcher newWatcher;
                 try
                 {
-                    newWatcher = new PendingCreationWatcher(watchDir, remainingComponents);
+                    newWatcher = new PendingCreationWatcher(_root, filePath, watchDir, remainingComponents);
                 }
                 catch
                 {
@@ -314,12 +320,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         string k = tuple.Item2;
                         PendingCreationWatcher w = tuple.Item3;
 
+#if NET
+                        dict.TryRemove(new KeyValuePair<string, PendingCreationWatcher>(k, w));
+#else
                         // Only remove our specific entry, not a newer one that may have been added.
                         if (dict.TryRemove(k, out PendingCreationWatcher? removed) && removed != w)
                         {
                             // We removed a newer entry by accident; put it back (best effort).
                             dict.TryAdd(k, removed);
                         }
+#endif
 
                         Task.Factory.StartNew(
                             static watcher => ((PendingCreationWatcher)watcher!).Dispose(),
@@ -669,12 +679,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // components leading to a target file.  When an intermediate directory component is
         // created the watcher automatically advances to watch the next level, so the CTS is
         // only cancelled when the final target file is actually created.
+        // The watcher self-recovers when the watched directory is deleted (Error event), so
+        // no spurious CTS cancellation occurs for directory churn.
         // Only ONE inotify watch (or equivalent) is active at any given time.
         private sealed class PendingCreationWatcher : IDisposable
         {
             public readonly CancellationTokenSource Cts = new();
             private FileSystemWatcher? _watcher; // protected by _advanceLock
-            private string[] _remainingComponents; // protected by _advanceLock
+            private Queue<string> _remainingComponents; // protected by _advanceLock
+            private readonly string _root;
+            private readonly string _filePath;
             private readonly object _advanceLock = new();
             private int _disposed;
 
@@ -683,10 +697,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
             [SupportedOSPlatform("maccatalyst")]
-            public PendingCreationWatcher(string existingDirectory, string[] remainingComponents)
+            public PendingCreationWatcher(string root, string filePath, string existingDirectory, string[] remainingComponents)
             {
-                _remainingComponents = remainingComponents;
-                _watcher = CreateWatcher(existingDirectory);
+                _root = root;
+                _filePath = filePath;
+                _remainingComponents = new Queue<string>(remainingComponents);
+                lock (_advanceLock)
+                {
+                    SetupWatcherNoLock(existingDirectory);
+                }
             }
 
             [UnsupportedOSPlatform("browser")]
@@ -703,8 +722,99 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 };
                 fsw.Created += OnCreated;
                 fsw.Renamed += OnCreated;
+                fsw.Error += OnError;
                 fsw.EnableRaisingEvents = true;
                 return fsw;
+            }
+
+            // Must be called with _advanceLock held and _watcher == null.
+            // Creates a new watcher at startDir using the current _remainingComponents queue.
+            // Handles three concerns in a single loop:
+            //   Phase 1 – pre-start fast-forward: skip components that already exist before
+            //             registering the OS watch, to avoid a recursive watch at a high level.
+            //   Phase 2 – watcher creation at the deepest reachable level.
+            //   Phase 3 – post-start race check: re-examine the very next component once after
+            //             the OS watch is registered, to catch anything created during the window
+            //             between Phase 1's last check and when EnableRaisingEvents became true.
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            private void SetupWatcherNoLock(string startDir)
+            {
+                while (true)
+                {
+                    // Phase 1: fast-forward through components that already exist.
+                    while (_remainingComponents.Count > 1 &&
+                           Directory.Exists(Path.Combine(startDir, _remainingComponents.Peek())))
+                    {
+                        startDir = Path.Combine(startDir, _remainingComponents.Dequeue());
+                    }
+
+                    // If the final target already exists, fire immediately without starting a watcher.
+                    if (_remainingComponents.Count == 1)
+                    {
+                        string target = Path.Combine(startDir, _remainingComponents.Peek());
+                        if (File.Exists(target) || Directory.Exists(target))
+                        {
+                            Cts.Cancel();
+                            return;
+                        }
+                    }
+
+                    // Phase 2: start the OS watch at the current deepest reachable level.
+                    FileSystemWatcher newWatcher;
+                    try
+                    {
+                        newWatcher = CreateWatcher(startDir);
+                    }
+                    catch
+                    {
+                        // startDir was deleted in the narrow window since Phase 1 confirmed it.
+                        // Cancel so the caller can re-register; the error path is only a best-effort
+                        // fallback here (the Error handler handles the steady-state deleted-dir case).
+                        Cts.Cancel();
+                        return;
+                    }
+
+                    _watcher = newWatcher;
+
+                    // Phase 3: post-start race check.  The OS watch is now live; re-examine the
+                    // very next expected component once to catch anything created during setup.
+                    if (_remainingComponents.Count == 0)
+                    {
+                        return;
+                    }
+
+                    string next = _remainingComponents.Peek();
+                    string nextPath = Path.Combine(startDir, next);
+
+                    if (_remainingComponents.Count == 1)
+                    {
+                        // Target file – if it appeared during setup, fire and clean up.
+                        if (File.Exists(nextPath) || Directory.Exists(nextPath))
+                        {
+                            ScheduleDispose(_watcher);
+                            _watcher = null;
+                            Cts.Cancel();
+                        }
+                        return;
+                    }
+
+                    if (!Directory.Exists(nextPath))
+                    {
+                        return; // Nothing to do – the watcher is properly set up.
+                    }
+
+                    // The next directory appeared during setup.  Dispose the watcher we just
+                    // created and loop to advance to the next level without firing the token.
+                    ScheduleDispose(_watcher);
+                    _watcher = null;
+                    _remainingComponents.Dequeue();
+                    startDir = nextPath;
+                    // continue looping
+                }
             }
 
             [UnsupportedOSPlatform("browser")]
@@ -719,8 +829,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return;
                 }
 
-                FileSystemWatcher? toDispose = null;
-
                 lock (_advanceLock)
                 {
                     // Ignore events from stale watchers that have already been replaced.
@@ -729,90 +837,106 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return;
                     }
 
-                    string[] components = _remainingComponents;
-
                     // Only react to the creation of the expected next path component.
-                    if (!string.Equals(e.Name, components[0], StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(e.Name, _remainingComponents.Peek(), StringComparison.OrdinalIgnoreCase))
                     {
                         return;
                     }
 
-                    if (components.Length == 1)
+                    _remainingComponents.Dequeue();
+
+                    // Schedule disposal of the current watcher before replacing it, so that
+                    // Dispose() is never called on the watcher's own event thread.
+                    ScheduleDispose(_watcher);
+                    _watcher = null;
+
+                    if (_remainingComponents.Count == 0)
                     {
                         // The target file was created – fire the token.
-                        toDispose = _watcher;
-                        _watcher = null;
                         Cts.Cancel();
                     }
                     else
                     {
-                        // An intermediate directory was created – advance without firing the token.
-                        string[] remaining = new string[components.Length - 1];
-                        Array.Copy(components, 1, remaining, 0, remaining.Length);
-                        toDispose = AdvanceWatcherNoLock(e.FullPath, remaining);
+                        // An intermediate directory was created – advance the watcher.
+                        SetupWatcherNoLock(e.FullPath);
                     }
-                }
-
-                // Dispose the replaced watcher off the event thread to avoid a deadlock.
-                if (toDispose != null)
-                {
-                    Task.Factory.StartNew(
-                        static w => ((FileSystemWatcher)w!).Dispose(),
-                        toDispose,
-                        CancellationToken.None,
-                        TaskCreationOptions.DenyChildAttach,
-                        TaskScheduler.Default);
                 }
             }
 
-            // Must be called with _advanceLock held.
-            // Sets up a new FSW at nextDir for nextComponents, fast-forwarding through any
-            // directory levels that already exist.  Returns the old watcher to be disposed.
             [UnsupportedOSPlatform("browser")]
             [UnsupportedOSPlatform("wasi")]
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
             [SupportedOSPlatform("maccatalyst")]
-            private FileSystemWatcher? AdvanceWatcherNoLock(string nextDir, string[] nextComponents)
+            private void OnError(object sender, ErrorEventArgs e)
             {
-                // Fast-forward through directory components that already exist (race condition:
-                // they were created between when we received the event and now).
-                while (nextComponents.Length > 1 && Directory.Exists(Path.Combine(nextDir, nextComponents[0])))
+                // The watched directory may have been deleted or an internal buffer overflow
+                // occurred.  Reset to the deepest still-existing ancestor so that the watch
+                // can recover without cancelling the CTS prematurely.
+                lock (_advanceLock)
                 {
-                    nextDir = Path.Combine(nextDir, nextComponents[0]);
-                    string[] trimmed = new string[nextComponents.Length - 1];
-                    Array.Copy(nextComponents, 1, trimmed, 0, trimmed.Length);
-                    nextComponents = trimmed;
-                }
-
-                FileSystemWatcher? oldWatcher = _watcher;
-
-                // If the final target already exists (race condition), fire the token immediately.
-                if (nextComponents.Length == 1)
-                {
-                    string target = Path.Combine(nextDir, nextComponents[0]);
-                    if (File.Exists(target) || Directory.Exists(target))
+                    if (sender != _watcher || Cts.IsCancellationRequested)
                     {
-                        _watcher = null;
-                        Cts.Cancel();
-                        return oldWatcher;
+                        return;
                     }
-                }
 
-                _remainingComponents = nextComponents;
-                try
-                {
-                    _watcher = CreateWatcher(nextDir);
-                }
-                catch
-                {
-                    // Cannot watch the new directory (e.g. it was deleted immediately after creation).
-                    // Fire the token so the caller can re-register.
+                    ScheduleDispose(_watcher);
                     _watcher = null;
-                    Cts.Cancel();
+                    RewatchFromDeepestAncestorNoLock();
+                }
+            }
+
+            // Must be called with _advanceLock held and _watcher == null.
+            // Recomputes the deepest existing ancestor of _filePath from _root, rebuilds
+            // _remainingComponents, and restarts the watch without cancelling the CTS.
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            private void RewatchFromDeepestAncestorNoLock()
+            {
+                string[] allComponents = _filePath.Split('/');
+                // _root may end with the OS directory separator; Path.Combine handles that correctly.
+                string dir = _root;
+                int consumed = 0;
+
+                while (consumed < allComponents.Length - 1)
+                {
+                    string candidate = Path.Combine(dir, allComponents[consumed]);
+                    if (!Directory.Exists(candidate))
+                    {
+                        break;
+                    }
+
+                    dir = candidate;
+                    consumed++;
                 }
 
-                return oldWatcher;
+                _remainingComponents = new Queue<string>();
+                for (int i = consumed; i < allComponents.Length; i++)
+                {
+                    _remainingComponents.Enqueue(allComponents[i]);
+                }
+
+                SetupWatcherNoLock(dir);
+            }
+
+            // Schedules disposal of a FileSystemWatcher on a thread-pool thread so that
+            // it is never called on the watcher's own event-dispatching thread.
+            private static void ScheduleDispose(FileSystemWatcher? watcher)
+            {
+                if (watcher is null)
+                {
+                    return;
+                }
+
+                Task.Factory.StartNew(
+                    static w => ((FileSystemWatcher)w!).Dispose(),
+                    watcher,
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    TaskScheduler.Default);
             }
 
             [UnsupportedOSPlatform("browser")]
@@ -834,7 +958,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _watcher = null;
                 }
 
-                w?.Dispose();
+                // Use ScheduleDispose so that FileSystemWatcher.Dispose() is never called
+                // on the watcher's own event thread, which could cause a deadlock.
+                ScheduleDispose(w);
                 Cts.Cancel();
                 Cts.Dispose();
             }

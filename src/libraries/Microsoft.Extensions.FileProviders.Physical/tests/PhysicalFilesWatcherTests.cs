@@ -296,6 +296,50 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task GetOrAddFilePathChangeToken_FiresWhenFileCreated_AfterDirectoryDeletedAndRecreated()
+        {
+            // Verifies that the token fires exactly once – when the target file is finally created –
+            // even if the parent directory is deleted and re-created in the interim.  The watcher
+            // must recover from the deletion without cancelling the CTS prematurely.
+            using var root = new TempDirectory(GetTestFilePath());
+            string dir = Path.Combine(root.Path, "dir");
+            string targetFile = Path.Combine(dir, "file.txt");
+
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                root.Path + Path.DirectorySeparatorChar,
+                new FileSystemWatcher(root.Path),
+                pollForChanges: false);
+
+            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("dir/file.txt");
+
+            var tcs = new TaskCompletionSource<bool>();
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            // Create the directory – token must NOT fire
+            Directory.CreateDirectory(dir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is created");
+
+            // Delete the directory – token must NOT fire (watcher recovers internally)
+            Directory.Delete(dir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is deleted");
+
+            // Re-create the directory – token must NOT fire
+            Directory.CreateDirectory(dir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is re-created");
+
+            // Create the file – now the token must fire exactly once
+            File.WriteAllText(targetFile, string.Empty);
+
+            Assert.True(await tcs.Task);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotEnableMainFswWhenParentMissing()
         {
             // Verifies that the main FileSystemWatcher is NOT enabled (EnableRaisingEvents stays false)
