@@ -20,6 +20,7 @@ When --db is NOT provided:
     - Outputs JSON to stdout with file paths
 """
 import json
+import hashlib
 import os
 import re
 import sqlite3
@@ -63,8 +64,8 @@ def fetch_and_save(url, out_path):
 
 def make_log_filename(pipeline_name, run_name, test_name):
     """Create a filesystem-safe filename for a console log."""
-    # Use pipeline + short test name to make unique readable filenames
-    safe = re.sub(r'[^\w\-.]', '_', f"{pipeline_name}__{test_name}")
+    run_hash = hashlib.sha1(run_name.encode()).hexdigest()[:8]
+    safe = re.sub(r'[^\w\-.]', '_', f"{pipeline_name}__{test_name}__{run_hash}")
     # Truncate to avoid filesystem limits
     if len(safe) > 200:
         safe = safe[:200]
