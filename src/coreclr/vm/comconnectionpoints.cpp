@@ -542,6 +542,8 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         // Initialize the delegate using the arguments structure.
         // <TODO>Generics: ensure we get the right MethodDesc here and in similar places</TODO>
         MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
+        if (pDlgCtorMD == NULL)
+            pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
 
         // The loader is responsible for only accepting well-formed delegate classes.
         _ASSERTE(pDlgCtorMD);
