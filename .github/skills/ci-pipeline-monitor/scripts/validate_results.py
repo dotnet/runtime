@@ -198,15 +198,18 @@ def main():
     if not ok:
         failures += 1
 
-    # 12. No duplicate failure groups (same test_name + similar error)
+    # 12. Each unique failure should appear only once in the triage results
     total += 1
     dupes = conn.execute("""
-        SELECT test_name, COUNT(*) as cnt FROM failures
-        GROUP BY test_name HAVING cnt > 1
+        SELECT test_name,
+               SUBSTR(error_message, 1, INSTR(error_message || CHAR(10), CHAR(10)) - 1) as error_sig,
+               COUNT(*) as cnt
+        FROM failures
+        GROUP BY test_name, error_sig HAVING cnt > 1
     """).fetchall()
-    ok = check("No duplicate failure groups by test_name",
+    ok = check("Each test+error combination is triaged exactly once",
                len(dupes) == 0,
-               f"duplicates: {[(r[0], r[1]) for r in dupes]}" if dupes else "")
+               f"duplicates: {[(r[0], r[2]) for r in dupes]}" if dupes else "")
     if not ok:
         failures += 1
 
