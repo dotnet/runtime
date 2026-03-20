@@ -246,6 +246,14 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     else
     {
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+        }
 
         ClassLayout* layout  = blkNode->GetLayout();
         bool         doCpObj = layout->HasGCPtr();
@@ -255,30 +263,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (blkNode->IsAddressNotOnHeap(m_compiler))
         {
             doCpObj = false;
-        }
-
-        if (src->OperIs(GT_IND))
-        {
-            src->SetContained();
-        }
-        else if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
-            // If we are going to use the native memory opcode we need to push the address of the local onto the Wasm stack.
-            if (!doCpObj)
-            {
-                src->ChangeOper(GT_LCL_ADDR);
-            }
-            else
-            {
-                src->SetContained();
-            }
-        }
-        else if (src->OperIs(GT_LCL_FLD))
-        {
-            NYI_WASM("Not sure what to do here");
         }
 
         // CopyObj or CopyBlk
@@ -291,17 +275,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            SetMultiplyUsed(dstAddr);
-            if (src->OperIs(GT_IND))
-            {
-                SetMultiplyUsed(src->gtGetOp1());
-            }
         }
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK));
             // memory.copy
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+
+        SetMultiplyUsed(dstAddr);
+        if (src->OperIs(GT_IND))
+        {
+            SetMultiplyUsed(src->gtGetOp1());
         }
     }
 }
