@@ -2806,22 +2806,24 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCpObj: Produce code for a GT_STORE_BLK node that represents a cpobj operation.
+// genCodeForCpObj: Produce code for a GT_STORE_BLK node that represents a cpobj operation
+// or a native memory.copy or memory.fill opcode. We share this function for both types of
+// block stores because they have a lot of common logic.
 //
 // Arguments:
 //    cpObjNode - the node
 //
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
-    struct operandRec {
+    struct operandRec
+    {
         var_types addrType;
         unsigned  offset;
         regNumber reg;
         bool      isContained;
     };
 
-    auto makeOperandRec = [&](GenTree* operand, bool isSource)
-    {
+    auto makeOperandRec = [&](GenTree* operand, bool isSource) {
         var_types addrType = TYP_BYREF;
         regNumber reg;
         unsigned  offset;
@@ -2845,8 +2847,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         else if (isSource && operand->OperIs(GT_CNS_INT))
         {
             addrType = TYP_INT;
-            offset = 0;
-            reg = REG_NA;
+            offset   = 0;
+            reg      = REG_NA;
         }
         else
         {
@@ -2858,12 +2860,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             assert(fpBased);
         }
 
-        operandRec result = {
-            addrType,
-            offset,
-            reg,
-            operand->isContained()
-        };
+        operandRec result = {addrType, offset, reg, operand->isContained()};
         return result;
     };
 
