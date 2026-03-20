@@ -1547,28 +1547,6 @@ namespace System.StubHelpers
         }
 
         [SupportedOSPlatform("windows")]
-        private static ulong ConvertToArgSlot(object? value)
-        {
-            return value switch
-            {
-                null => 0,
-                IntPtr pointer => (ulong)(nuint)pointer,
-                UIntPtr pointer => (ulong)(nuint)pointer,
-                bool boolean => boolean ? 1UL : 0UL,
-                char character => character,
-                byte number => number,
-                sbyte number => unchecked((ulong)number),
-                short number => unchecked((ulong)number),
-                ushort number => number,
-                int number => unchecked((ulong)number),
-                uint number => number,
-                long number => unchecked((ulong)number),
-                ulong number => number,
-                _ => throw new NotSupportedException()
-            };
-        }
-
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void InvokeConnectionPointProviderMethod(
@@ -1592,28 +1570,6 @@ namespace System.StubHelpers
                 nint providerMethodEntryPoint = pProviderMethodPtr;
                 Debug.Assert(providerMethodEntryPoint != 0);
                 ((delegate*<object, object?, void>)providerMethodEntryPoint)(*pProvider, *pDelegate);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:Value passed to parameter cannot be statically determined", Justification = "The runtime passes a RuntimeType describing the COM event provider. The dynamic constructor access requirements are enforced by runtime callsite semantics.")]
-        [UnmanagedCallersOnly]
-        // pResult is an unmanaged ARG_SLOT* (see vm/callhelpers.h). ARG_SLOT is always 8 bytes,
-        // so we use ulong purely as a fixed-width bit container, not for numeric semantics.
-        [RequiresUnsafe]
-        private static unsafe void InvokeClrToComEventProviderMethod(__ComObject* pComObject, RuntimeType* pProviderType, IntPtr pMethodDesc, Delegate* pEventHandler, ulong* pResult, Exception* pException)
-        {
-            try
-            {
-                object eventProvider = pComObject->GetEventProvider(*pProviderType);
-                RuntimeMethodHandle methodHandle = RuntimeMethodHandle.FromIntPtr(pMethodDesc);
-                MethodBase method = MethodBase.GetMethodFromHandle(methodHandle)!;
-                object? result = method.Invoke(eventProvider, [*pEventHandler]);
-                *pResult = ConvertToArgSlot(result);
             }
             catch (Exception ex)
             {

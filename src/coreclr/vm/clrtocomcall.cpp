@@ -297,9 +297,11 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
 
     struct {
         OBJECTREF EventProviderTypeObj;
+        OBJECTREF EventProviderObj;
         OBJECTREF ThisObj;
     } gc;
     gc.EventProviderTypeObj = NULL;
+    gc.EventProviderObj = NULL;
     gc.ThisObj = NULL;
 
     LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
@@ -314,27 +316,32 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         gc.EventProviderTypeObj = pEvProvMT->GetManagedClassObject();
         gc.ThisObj = pFrame->GetThis();
 
+        UnmanagedCallersOnlyCaller getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER);
+
+        // Retrieve the event provider for the event interface type.
+        getEventProvider.InvokeThrowing(&gc.ThisObj, &gc.EventProviderTypeObj, &gc.EventProviderObj);
+
         // Set up an arg iterator to retrieve the arguments from the frame.
         MetaSig mSig(pMD);
         ArgIterator ArgItr(&mSig);
 
+        // Make the call on the event provider method desc.
+        MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
+
         // Retrieve the event handler passed in.
         OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
 
-        ARG_SLOT eventProviderResult = 0;
-        UnmanagedCallersOnlyCaller invokeClrToComEventProviderMethod(METHOD__STUBHELPERS__INVOKE_CLR_TO_COM_EVENT_PROVIDER_METHOD);
-        invokeClrToComEventProviderMethod.InvokeThrowing(
-            &gc.ThisObj,
-            &gc.EventProviderTypeObj,
-            (INT_PTR)pEvProvMD,
-            &EventHandlerObj,
-            &eventProviderResult);
+        ARG_SLOT EventMethArgs[] =
+        {
+            ObjToArgSlot(gc.EventProviderObj),
+            ObjToArgSlot(EventHandlerObj)
+        };
 
         //
         // If this can ever return something bigger than an INT64 byval
         // then this code is broken.  Currently, however, it cannot.
         //
-        *(ARG_SLOT *)(pFrame->GetReturnValuePtr()) = eventProviderResult;
+        *(ARG_SLOT *)(pFrame->GetReturnValuePtr()) = eventProvider.Call_RetArgSlot(EventMethArgs);
 
         // The COM event call worker does not support value returned in
         // floating point registers.
