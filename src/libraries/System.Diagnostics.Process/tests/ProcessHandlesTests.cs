@@ -56,7 +56,19 @@ namespace System.Diagnostics.Tests
                 : new("sh") { ArgumentList = { "-c", "echo 'Hello from stdout' && echo 'Error from stderr' >&2" } };
 
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite, asyncRead: readAsync);
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorRead, out SafeFileHandle errorWrite, asyncRead: readAsync);
+
+            SafeFileHandle errorRead;
+            SafeFileHandle errorWrite;
+            try
+            {
+                SafeFileHandle.CreateAnonymousPipe(out errorRead, out errorWrite, asyncRead: readAsync);
+            }
+            catch
+            {
+                outputRead.Dispose();
+                outputWrite.Dispose();
+                throw;
+            }
 
             startInfo.StandardOutput = outputWrite;
             startInfo.StandardError = errorWrite;
@@ -122,11 +134,13 @@ namespace System.Diagnostics.Tests
         [Fact]
         public async Task CanImplementPiping()
         {
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
+            SafeFileHandle readPipe = null!;
+            SafeFileHandle writePipe = null!;
             string? tempFile = null;
 
             try
             {
+                SafeFileHandle.CreateAnonymousPipe(out readPipe, out writePipe);
                 tempFile = Path.GetTempFileName();
 
                 ProcessStartInfo producerInfo;
