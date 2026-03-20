@@ -1289,7 +1289,7 @@ namespace System.Diagnostics
             {
                 if (startInfo.UseShellExecute)
                 {
-                    throw new InvalidOperationException(SR.CantUseHandlesWithShellExecute);
+                    throw new InvalidOperationException(SR.CantRedirectStreams);
                 }
                 if (startInfo.StandardInput is not null && startInfo.RedirectStandardInput)
                 {
@@ -1418,16 +1418,17 @@ namespace System.Diagnostics
                 // process will not receive EOF when the child process closes its handles.
                 // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
                 // because these handles are not owned and won't be closed by Dispose.
-                // We must NOT close handles that were passed in by the caller via StartInfo.StandardInput/Output/Error.
-                if (startInfo.StandardInput is null)
+                // When LeaveHandlesOpen is true, we must NOT close handles that were passed in
+                // by the caller via StartInfo.StandardInput/Output/Error.
+                if (startInfo.StandardInput is null || !startInfo.LeaveHandlesOpen)
                 {
                     childInputPipeHandle?.Dispose();
                 }
-                if (startInfo.StandardOutput is null)
+                if (startInfo.StandardOutput is null || !startInfo.LeaveHandlesOpen)
                 {
                     childOutputPipeHandle?.Dispose();
                 }
-                if (startInfo.StandardError is null)
+                if (startInfo.StandardError is null || !startInfo.LeaveHandlesOpen)
                 {
                     childErrorPipeHandle?.Dispose();
                 }

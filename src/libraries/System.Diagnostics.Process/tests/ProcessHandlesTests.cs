@@ -109,13 +109,9 @@ namespace System.Diagnostics.Tests
                 ? new("cmd") { ArgumentList = { "/c", "exit 42" } }
                 : new("sh") { ArgumentList = { "-c", "exit 42" } };
 
-            using SafeFileHandle inputHandle = Console.OpenStandardInputHandle();
-            using SafeFileHandle outputHandle = Console.OpenStandardOutputHandle();
-            using SafeFileHandle errorHandle = Console.OpenStandardErrorHandle();
-
-            startInfo.StandardInput = inputHandle;
-            startInfo.StandardOutput = outputHandle;
-            startInfo.StandardError = errorHandle;
+            startInfo.StandardInput = Console.OpenStandardInputHandle();
+            startInfo.StandardOutput = Console.OpenStandardOutputHandle();
+            startInfo.StandardError = Console.OpenStandardErrorHandle();
 
             using Process process = Process.Start(startInfo)!;
 
