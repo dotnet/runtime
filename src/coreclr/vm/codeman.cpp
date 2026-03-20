@@ -252,6 +252,9 @@ void UnwindInfoTable::FlushPendingEntries()
     }
     CONTRACTL_END;
 
+    // Free the old table outside the lock
+    NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable;
+
     CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
 
     if (hHandle == NULL)
