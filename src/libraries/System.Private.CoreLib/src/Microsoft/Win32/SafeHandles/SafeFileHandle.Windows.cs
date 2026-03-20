@@ -13,10 +13,10 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private const FileOptions UnititializedOptions = (FileOptions)(-1);
+        private const FileOptions UninitializedOptions = (FileOptions)(-1);
         private long _length = -1; // negative means that hasn't been fetched.
         private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
-        private FileOptions _fileOptions = UnititializedOptions;
+        private FileOptions _fileOptions = UninitializedOptions;
 
         public SafeFileHandle() : base(true)
         {
@@ -280,7 +280,7 @@ namespace Microsoft.Win32.SafeHandles
         internal unsafe FileOptions GetFileOptions()
         {
             FileOptions fileOptions = _fileOptions;
-            if (fileOptions != UnititializedOptions)
+            if (fileOptions != UninitializedOptions)
             {
                 return fileOptions;
             }
@@ -331,7 +331,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal FileHandleType GetFileTypeCore()
         {
-            Debug.Assert(Path is null || _fileOptions != UnititializedOptions, "When Path is set, _fileOptions are also provided");
+            Debug.Assert(Path is null || _fileOptions != UninitializedOptions, "When Path is set, _fileOptions are also provided.");
 
             int kernelFileType = Interop.Kernel32.GetFileType(this);
             return kernelFileType switch
