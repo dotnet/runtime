@@ -131,6 +131,7 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetTypeHelper(char* pTypeName, RuntimeAssembly* pRequestingAssembly, bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod, RuntimeType* pResult, Exception* pException)
         {
             try

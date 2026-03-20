@@ -46,7 +46,14 @@ namespace Microsoft.Win32.SafeHandles
             else
             {
                 // When one or both ends are async, use named pipes to support async I/O.
-                string pipeName = $@"\\.\pipe\dotnet_{Guid.NewGuid():N}";
+
+                // From https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-createnamedpipea#remarks:
+                // "Windows 10, version 1709:  Pipes are only supported within an app-container; ie,
+                // from one UWP process to another UWP process that's part of the same app.
+                // Also, named pipes must use the syntax \\.\pipe\LOCAL\ for the pipe name."
+                // That is why we use "LOCAL" namespace for the pipe name,
+                // so that it works in AppContainer and outside of it.
+                string pipeName = $@"\\.\pipe\LOCAL\dotnet_{Guid.NewGuid():N}";
 
                 // Security: we don't need to specify a security descriptor, because
                 // we allow only for 1 instance of the pipe and immediately open the write end,
@@ -64,8 +71,15 @@ namespace Microsoft.Win32.SafeHandles
 
                 const int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
 
-                // We could consider specifying a larger buffer size.
-                tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(pipeName, openMode, pipeMode, 1, 0, 0, 0, ref securityAttributes);
+                tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(
+                    pipeName,
+                    openMode,
+                    pipeMode,
+                    maxInstances: 1, // we don't want anybody else to open this pipe
+                    outBufferSize: 0, // unused (we use it only for reading)
+                    inBufferSize: 4 * 4096, // CreatePipe uses a 4096 buffer by default, we use bigger buffer for better performance
+                    defaultTimeout: (int)TimeSpan.FromSeconds(120).TotalMilliseconds, // same as the default for CreatePipe
+                    ref securityAttributes);
 
                 try
                 {
@@ -131,15 +145,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeFileHandle CreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
-            if ((share & FileShare.Inheritable) != 0)
-            {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = Interop.BOOL.TRUE
-                };
-            }
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((share & FileShare.Inheritable) != 0);
 
             int fAccess =
                 ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
@@ -203,9 +209,10 @@ namespace Microsoft.Win32.SafeHandles
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                // Only throw for errors that indicate there is not enough space.
-                // SetFileInformationByHandle fails with ERROR_DISK_FULL in certain cases when the size is disallowed by filesystem,
-                // such as >4GB on FAT32 volume. We cannot distinguish them currently.
+                // Only throw for errors that indicate there is not enough space or the file is too large.
+                // SetFileInformationByHandle fails with ERROR_DISK_FULL when the size is disallowed by filesystem,
+                // such as >4GB on a FAT32 volume, and with ERROR_INVALID_PARAMETER on NTFS when the requested
+                // allocation size exceeds the maximum file size supported by the filesystem or volume configuration.
                 if (errorCode is Interop.Errors.ERROR_DISK_FULL or
                     Interop.Errors.ERROR_FILE_TOO_LARGE or
                     Interop.Errors.ERROR_INVALID_PARAMETER)

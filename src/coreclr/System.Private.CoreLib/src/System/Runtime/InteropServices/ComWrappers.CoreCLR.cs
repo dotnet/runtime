@@ -5,6 +5,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -26,6 +27,7 @@ namespace System.Runtime.InteropServices
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
+        [RequiresUnsafe]
         internal static unsafe void GetUntrackedIUnknownImpl(out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpAddRef, out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpRelease)
         {
             fpAddRef = fpRelease = GetUntrackedAddRefRelease();
@@ -33,6 +35,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetUntrackedAddRefRelease")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static unsafe partial delegate* unmanaged[MemberFunction]<IntPtr, uint> GetUntrackedAddRefRelease();
 
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();

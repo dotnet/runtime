@@ -301,7 +301,8 @@ HRESULT DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle, OU
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
 
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                    // and System.Runtime.StackFrameIterator.*
+                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
                     {
                         continue;
                     }
@@ -517,6 +518,16 @@ HRESULT DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT
                     continue;
                 }
             }
+
+#ifdef FEATURE_INTERPRETER
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                // Skip InterpreterFrame
+                pFrame = pFrame->Next();
+                continue;
+            }
+#endif // FEATURE_INTERPRETER
+
             CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
             if (ift != STUBFRAME_NONE)
             {
@@ -573,6 +584,16 @@ HRESULT DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_I
                     continue;
                 }
             }
+
+#ifdef FEATURE_INTERPRETER
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                // Skip InterpreterFrame
+                pFrame = pFrame->Next();
+                continue;
+            }
+#endif // FEATURE_INTERPRETER
+
             // check if the internal frame is interesting
             frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
             if (frameData.stubFrame.frameType != STUBFRAME_NONE)

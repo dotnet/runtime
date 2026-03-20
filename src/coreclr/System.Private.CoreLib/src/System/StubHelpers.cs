@@ -859,6 +859,7 @@ namespace System.StubHelpers
     internal static unsafe partial class MngdRefCustomMarshaler
     {
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -871,6 +872,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -884,6 +886,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -896,6 +899,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
@@ -909,6 +913,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -921,6 +926,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler marshaler, ref object _, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to CleanUpNativeData.
@@ -940,6 +946,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -952,6 +959,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* _)
         {
             // COMPAT: We never pass null to CleanUpManagedData.
@@ -965,6 +973,7 @@ namespace System.StubHelpers
 
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Custom marshaler GetInstance method is preserved by ILLink (see MarkCustomMarshalerGetInstance).")]
+        [RequiresUnsafe]
         internal static void GetCustomMarshalerInstance(void* pMT, byte* pCookie, int cCookieBytes, object* pResult, Exception* pException)
         {
             try
@@ -1605,9 +1614,11 @@ namespace System.StubHelpers
         // Profiler helpers
         //-------------------------------------------------------
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        [RequiresUnsafe]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        [RequiresUnsafe]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
@@ -1627,6 +1638,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
@@ -1646,6 +1658,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);

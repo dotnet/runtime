@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -62,6 +63,7 @@ namespace System.Reflection
 
     public sealed partial class AssemblyName
     {
+        [RequiresUnsafe]
         internal unsafe AssemblyName(NativeAssemblyNameParts* pParts)
             : this()
         {
@@ -145,6 +147,7 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec, Exception* pException)
         {
             try
@@ -189,6 +192,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyName_InitializeAssemblySpec")]
+        [RequiresUnsafe]
         private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec);
     }
 }
