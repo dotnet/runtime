@@ -238,47 +238,6 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        [OuterLoop("Uses the network for downlevel ref packs")]
-        public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
-        {
-            string source = """
-
-                using System.Runtime.InteropServices;
-                partial class Test
-                {
-                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8)]
-                    public static partial void {|#0:Method1|}(string s);
-
-                    [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
-                    public static partial void {|#1:Method2|}(string s);
-
-                    struct Native
-                    {
-                        public Native(string s) { }
-                        public string ToManaged() => default;
-                    }
-                }
-                """;
-            DiagnosticResult[] expectedDiags =
-            [
-                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithLocation(0)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithLocation(1)
-                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}")
-            ];
-
-            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test(TestTargetFramework.Standard2_0)
-            {
-                TestCode = source,
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
-            };
-            test.ExpectedDiagnostics.AddRange(expectedDiags);
-            await test.RunAsync();
-        }
-
-        [Fact]
         public async Task InvalidStringMarshallingConfiguration_ReportsDiagnostic()
         {
             string source = $$"""

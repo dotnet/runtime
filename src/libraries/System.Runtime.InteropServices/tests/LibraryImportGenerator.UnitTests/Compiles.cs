@@ -792,9 +792,10 @@ namespace LibraryImportGenerator.UnitTests
             {
                 var originalCompilation = await project.GetCompilationAsync(cancellationToken);
                 var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
-                // The generator should inject exactly one extra syntax tree (the type definitions file),
+                // The generator should inject exactly two extra syntax trees:
+                // one for the EmbeddedAttribute definition and one for the LibraryImport interop types,
                 // but no method stubs.
-                Assert.Equal(originalCompilation!.SyntaxTrees.Count() + 1, newCompilation.SyntaxTrees.Count());
+                Assert.Equal(originalCompilation!.SyntaxTrees.Count() + 2, newCompilation.SyntaxTrees.Count());
                 return (newCompilation, diagnostics);
             }
         }

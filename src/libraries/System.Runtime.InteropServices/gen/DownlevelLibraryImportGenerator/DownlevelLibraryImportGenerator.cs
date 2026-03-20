@@ -45,19 +45,18 @@ namespace Microsoft.Interop
             namespace System.Runtime.InteropServices
             {
                 [global::System.AttributeUsage(global::System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-                internal sealed class LibraryImportAttribute : global::System.Attribute
+                [global::Microsoft.CodeAnalysis.Embedded]
+                internal sealed partial class LibraryImportAttribute : global::System.Attribute
                 {
                     public LibraryImportAttribute(string libraryName) { }
                     public string? EntryPoint { get; set; }
                     public StringMarshalling StringMarshalling { get; set; }
-                    public global::System.Type? StringMarshallingCustomType { get; set; }
                     public bool SetLastError { get; set; }
                 }
 
+                [global::Microsoft.CodeAnalysis.Embedded]
                 internal enum StringMarshalling
                 {
-                    Custom = 0,
-                    Utf8 = 1,
                     Utf16 = 2,
                 }
             }
@@ -70,7 +69,10 @@ namespace Microsoft.Interop
             // Inject internal definitions of LibraryImportAttribute and StringMarshalling into the compilation
             // so that users targeting downlevel frameworks can apply [LibraryImport] to their methods.
             context.RegisterPostInitializationOutput(static ctx =>
-                ctx.AddSource("LibraryImportInteropTypes.g.cs", GeneratedInteropTypes));
+            {
+                ctx.AddEmbeddedAttributeDefinition();
+                ctx.AddSource("LibraryImportInteropTypes.g.cs", GeneratedInteropTypes);
+            });
 
             // Collect all methods adorned with LibraryImportAttribute and filter out invalid ones
             // (diagnostics for invalid methods are reported by the analyzer)
