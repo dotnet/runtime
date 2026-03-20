@@ -25,6 +25,7 @@
 #include <sys/mman.h>
 #include <assert.h>
 #include <signal.h>
+#include <ucontext.h>
 #include <unistd.h>
 
 /********* exported symbols *********/
@@ -493,7 +494,7 @@ invoke_external_native_api (void (*callback)(void))
  *
  * Returns 0 on success, non-zero on failure.
  */
-static volatile int g_test_crash_chain_result = -1;
+static volatile sig_atomic_t g_test_crash_chain_result = -1;
 static volatile sig_atomic_t g_test_sigabrt_received = 0;
 
 __attribute__((noinline))
