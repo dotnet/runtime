@@ -362,8 +362,6 @@ namespace System.Tests
             // Zero variants
             yield return new object[] { "0x0p0", NumberStyles.HexFloat, invariantFormat, 0.0f };
             yield return new object[] { "-0x0p0", NumberStyles.HexFloat, invariantFormat, -0.0f };
-            yield return new object[] { "0x0p0", NumberStyles.HexFloat, invariantFormat, 0.0f };
-            yield return new object[] { "-0x0p0", NumberStyles.HexFloat, invariantFormat, -0.0f };
             yield return new object[] { "0x1.0p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-0x1.0p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
             yield return new object[] { "0x2p+127", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
