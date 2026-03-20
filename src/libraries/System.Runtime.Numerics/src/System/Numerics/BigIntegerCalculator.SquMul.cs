@@ -120,18 +120,10 @@ namespace System.Numerics
                 Square(valueHigh, bitsHigh);
 
                 int foldLength = valueHigh.Length + 1;
-                nuint[]? foldFromPool = null;
-                Span<nuint> fold = ((uint)foldLength <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : foldFromPool = ArrayPool<nuint>.Shared.Rent(foldLength)).Slice(0, foldLength);
-                fold.Clear();
+                Span<nuint> fold = BigInteger.RentedBuffer.Create(foldLength, out BigInteger.RentedBuffer foldBuffer);
 
                 int coreLength = foldLength + foldLength;
-                nuint[]? coreFromPool = null;
-                Span<nuint> core = ((uint)coreLength <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : coreFromPool = ArrayPool<nuint>.Shared.Rent(coreLength)).Slice(0, coreLength);
-                core.Clear();
+                Span<nuint> core = BigInteger.RentedBuffer.Create(coreLength, out BigInteger.RentedBuffer coreBuffer);
 
                 // ... compute z_a = a_1 + a_0 (call it fold...)
                 Add(valueHigh, valueLow, fold);
@@ -139,20 +131,14 @@ namespace System.Numerics
                 // ... compute z_1 = z_a * z_a - z_0 - z_2
                 Square(fold, core);
 
-                if (foldFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(foldFromPool);
-                }
+                foldBuffer.Dispose();
 
                 SubtractCore(bitsHigh, bitsLow, core);
 
                 // ... and finally merge the result! :-)
                 AddSelf(bits.Slice(n), core);
 
-                if (coreFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(coreFromPool);
-                }
+                coreBuffer.Dispose();
             }
 
             static void Naive(ReadOnlySpan<nuint> value, Span<nuint> bits)
@@ -463,17 +449,9 @@ namespace System.Numerics
                 Multiply(leftHigh, rightHigh, bitsHigh);
 
                 int foldLength = n + 1;
-                nuint[]? leftFoldFromPool = null;
-                Span<nuint> leftFold = ((uint)foldLength <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : leftFoldFromPool = ArrayPool<nuint>.Shared.Rent(foldLength)).Slice(0, foldLength);
-                leftFold.Clear();
+                Span<nuint> leftFold = BigInteger.RentedBuffer.Create(foldLength, out BigInteger.RentedBuffer leftFoldBuffer);
 
-                nuint[]? rightFoldFromPool = null;
-                Span<nuint> rightFold = ((uint)foldLength <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : rightFoldFromPool = ArrayPool<nuint>.Shared.Rent(foldLength)).Slice(0, foldLength);
-                rightFold.Clear();
+                Span<nuint> rightFold = BigInteger.RentedBuffer.Create(foldLength, out BigInteger.RentedBuffer rightFoldBuffer);
 
                 // ... compute z_a = a_1 + a_0 (call it fold...)
                 Add(leftLow, leftHigh, leftFold);
@@ -482,24 +460,14 @@ namespace System.Numerics
                 Add(rightLow, rightHigh, rightFold);
 
                 int coreLength = foldLength + foldLength;
-                nuint[]? coreFromPool = null;
-                Span<nuint> core = ((uint)coreLength <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : coreFromPool = ArrayPool<nuint>.Shared.Rent(coreLength)).Slice(0, coreLength);
-                core.Clear();
+                Span<nuint> core = BigInteger.RentedBuffer.Create(coreLength, out BigInteger.RentedBuffer coreBuffer);
 
                 // ... compute z_ab = z_a * z_b
                 Multiply(leftFold, rightFold, core);
 
-                if (leftFoldFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(leftFoldFromPool);
-                }
+                leftFoldBuffer.Dispose();
 
-                if (rightFoldFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(rightFoldFromPool);
-                }
+                rightFoldBuffer.Dispose();
 
                 // ... compute z_1 = z_a * z_b - z_0 - z_2 = a_0 * b_1 + a_1 * b_0
                 SubtractCore(bitsLow, bitsHigh, core);
@@ -509,10 +477,7 @@ namespace System.Numerics
                 // ... and finally merge the result! :-)
                 AddSelf(bits.Slice(n), core.TrimEnd((nuint)0));
 
-                if (coreFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(coreFromPool);
-                }
+                coreBuffer.Dispose();
             }
 
             static void RightSmall(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits, int n)
@@ -536,10 +501,7 @@ namespace System.Numerics
                 Multiply(leftLow, right, bitsLow);
 
                 int carryLength = right.Length;
-                nuint[]? carryFromPool = null;
-                Span<nuint> carry = ((uint)carryLength <= StackAllocThreshold
-                    ? stackalloc nuint[StackAllocThreshold]
-                    : carryFromPool = ArrayPool<nuint>.Shared.Rent(carryLength)).Slice(0, carryLength);
+                Span<nuint> carry = BigInteger.RentedBuffer.Create(carryLength, out BigInteger.RentedBuffer carryBuffer);
 
                 Span<nuint> carryOrig = bitsHigh.Slice(0, right.Length);
                 carryOrig.CopyTo(carry);
@@ -550,10 +512,7 @@ namespace System.Numerics
 
                 AddSelf(bitsHigh, carry);
 
-                if (carryFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(carryFromPool);
-                }
+                carryBuffer.Dispose();
             }
 
             static void Naive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)

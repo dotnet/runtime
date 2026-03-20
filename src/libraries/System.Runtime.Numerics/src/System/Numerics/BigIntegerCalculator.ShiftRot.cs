@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -82,10 +81,7 @@ namespace System.Numerics
             Span<nuint> lowerDst = bits.Slice(upperLength);
 
             int tmpLength = Math.Min(lowerLength, upperLength);
-            nuint[]? tmpFromPool = null;
-            Span<nuint> tmp = ((uint)tmpLength <= StackAllocThreshold
-                ? stackalloc nuint[StackAllocThreshold]
-                : tmpFromPool = ArrayPool<nuint>.Shared.Rent(tmpLength)).Slice(0, tmpLength);
+            Span<nuint> tmp = BigInteger.RentedBuffer.Create(tmpLength, out BigInteger.RentedBuffer tmpBuffer);
 
             if (upperLength < lowerLength)
             {
@@ -100,10 +96,7 @@ namespace System.Numerics
                 tmp.CopyTo(lowerDst);
             }
 
-            if (tmpFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(tmpFromPool);
-            }
+            tmpBuffer.Dispose();
         }
 
         public static void LeftShiftSelf(Span<nuint> bits, int shift, out nuint carry)

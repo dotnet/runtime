@@ -339,71 +339,60 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            nuint[]? base1E9FromPool = null;
             scoped Span<nuint> base1E9;
 
+            ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
+            int intDigitsEnd = intDigits.IndexOf<byte>(0);
+            if (intDigitsEnd < 0)
             {
-                ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
-                int intDigitsEnd = intDigits.IndexOf<byte>(0);
-                if (intDigitsEnd < 0)
+                // Check for nonzero digits after the decimal point.
+                ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
+                foreach (byte digitChar in fracDigitsSpan)
                 {
-                    // Check for nonzero digits after the decimal point.
-                    ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
-                    foreach (byte digitChar in fracDigitsSpan)
+                    if (digitChar == '\0')
                     {
-                        if (digitChar == '\0')
-                        {
-                            break;
-                        }
+                        break;
+                    }
 
-                        if (digitChar != '0')
-                        {
-                            result = default;
-                            return ParsingStatus.Failed;
-                        }
+                    if (digitChar != '0')
+                    {
+                        result = default;
+                        return ParsingStatus.Failed;
                     }
                 }
-                else
-                {
-                    intDigits = intDigits.Slice(0, intDigitsEnd);
-                }
-
-                int base1E9Length = (intDigits.Length + PowersOf1e9.MaxPartialDigits - 1) / PowersOf1e9.MaxPartialDigits;
-                base1E9 = (
-                    base1E9Length <= BigIntegerCalculator.StackAllocThreshold
-                        ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                        : base1E9FromPool = ArrayPool<nuint>.Shared.Rent(base1E9Length)).Slice(0, base1E9Length);
-
-                int di = base1E9Length;
-                ReadOnlySpan<byte> leadingDigits = intDigits[..(intDigits.Length % PowersOf1e9.MaxPartialDigits)];
-                if (leadingDigits.Length != 0)
-                {
-                    uint.TryParse(leadingDigits, out uint leadingVal);
-                    base1E9[--di] = leadingVal;
-                }
-
-                intDigits = intDigits.Slice(leadingDigits.Length);
-                Debug.Assert(intDigits.Length % PowersOf1e9.MaxPartialDigits == 0);
-
-                for (--di; di >= 0; --di)
-                {
-                    uint.TryParse(intDigits.Slice(0, PowersOf1e9.MaxPartialDigits), out uint partialVal);
-                    base1E9[di] = partialVal;
-                    intDigits = intDigits.Slice(PowersOf1e9.MaxPartialDigits);
-                }
-
-                Debug.Assert(intDigits.Length == 0);
             }
+            else
+            {
+                intDigits = intDigits.Slice(0, intDigitsEnd);
+            }
+
+            int base1E9Length = (intDigits.Length + PowersOf1e9.MaxPartialDigits - 1) / PowersOf1e9.MaxPartialDigits;
+            base1E9 = BigInteger.RentedBuffer.Create(base1E9Length, out BigInteger.RentedBuffer base1E9Rental);
+
+            int di = base1E9Length;
+            ReadOnlySpan<byte> leadingDigits = intDigits[..(intDigits.Length % PowersOf1e9.MaxPartialDigits)];
+            if (leadingDigits.Length != 0)
+            {
+                uint.TryParse(leadingDigits, out uint leadingVal);
+                base1E9[--di] = leadingVal;
+            }
+
+            intDigits = intDigits.Slice(leadingDigits.Length);
+            Debug.Assert(intDigits.Length % PowersOf1e9.MaxPartialDigits == 0);
+
+            for (--di; di >= 0; --di)
+            {
+                uint.TryParse(intDigits.Slice(0, PowersOf1e9.MaxPartialDigits), out uint partialVal);
+                base1E9[di] = partialVal;
+                intDigits = intDigits.Slice(PowersOf1e9.MaxPartialDigits);
+            }
+
+            Debug.Assert(intDigits.Length == 0);
 
             // Estimate limb count needed for the decimal value.
             double digitRatio = 0.10381025297 * 32.0 / BigIntegerCalculator.BitsPerLimb; // log_{2^BitsPerLimb}(10)
             int resultLength = checked((int)(digitRatio * number.Scale) + 1 + 2);
-            nuint[]? resultBufferFromPool = null;
-            Span<nuint> resultBuffer = (
-                resultLength <= BigIntegerCalculator.StackAllocThreshold
-                    ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                    : resultBufferFromPool = ArrayPool<nuint>.Shared.Rent(resultLength)).Slice(0, resultLength);
-            resultBuffer.Clear();
+            Span<nuint> resultBuffer = BigInteger.RentedBuffer.Create(resultLength, out BigInteger.RentedBuffer resultRental);
 
             int totalDigitCount = Math.Min(number.DigitsCount, number.Scale);
             int trailingZeroCount = number.Scale - totalDigitCount;
@@ -419,15 +408,8 @@ namespace System
 
             result = new BigInteger(resultBuffer, number.IsNegative);
 
-            if (base1E9FromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(base1E9FromPool);
-            }
-
-            if (resultBufferFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(resultBufferFromPool);
-            }
+            base1E9Rental.Dispose();
+            resultRental.Dispose();
 
             return ParsingStatus.OK;
 
@@ -442,22 +424,14 @@ namespace System
                 {
                     double digitRatio = 0.10381025297 * 32.0 / BigIntegerCalculator.BitsPerLimb;
                     int leadingLength = checked((int)(digitRatio * PowersOf1e9.MaxPartialDigits * base1E9.Length) + 3);
-                    nuint[]? leadingFromPool = null;
-                    Span<nuint> leading = (
-                        leadingLength <= BigIntegerCalculator.StackAllocThreshold
-                            ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                            : leadingFromPool = ArrayPool<nuint>.Shared.Rent(leadingLength)).Slice(0, leadingLength);
-                    leading.Clear();
+                    Span<nuint> leading = BigInteger.RentedBuffer.Create(leadingLength, out BigInteger.RentedBuffer leadingBuffer);
 
                     Recursive(powersOf1e9, maxIndex, base1E9, leading);
                     leading = leading.Slice(0, BigIntegerCalculator.ActualLength(leading));
 
                     powersOf1e9.MultiplyPowerOfTen(leading, trailingZeroCount, bits);
 
-                    if (leadingFromPool != null)
-                    {
-                        ArrayPool<nuint>.Shared.Return(leadingFromPool);
-                    }
+                    leadingBuffer.Dispose();
                 }
                 else
                 {
@@ -490,12 +464,7 @@ namespace System
 
                 double digitRatio = 0.10381025297 * 32.0 / BigIntegerCalculator.BitsPerLimb;
                 int bufferLength = checked((int)(digitRatio * PowersOf1e9.MaxPartialDigits * multiplier1E9Length) + 1 + 2);
-                nuint[]? bufferFromPool = null;
-                scoped Span<nuint> buffer = (
-                    bufferLength <= BigIntegerCalculator.StackAllocThreshold
-                        ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                        : bufferFromPool = ArrayPool<nuint>.Shared.Rent(bufferLength)).Slice(0, bufferLength);
-                buffer.Clear();
+                scoped Span<nuint> buffer = BigInteger.RentedBuffer.Create(bufferLength, out BigInteger.RentedBuffer bufferRental);
 
                 Recursive(powersOf1e9, powersOf1e9Index - 1, base1E9[multiplier1E9Length..], buffer);
 
@@ -509,10 +478,7 @@ namespace System
 
                 BigIntegerCalculator.AddSelf(bits, buffer.Slice(0, BigIntegerCalculator.ActualLength(buffer)));
 
-                if (bufferFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(bufferFromPool);
-                }
+                bufferRental.Dispose();
             }
 
             static void Naive(ReadOnlySpan<nuint> base1E9, int trailingZeroCount, scoped Span<nuint> bits)
@@ -862,11 +828,7 @@ namespace System
             Debug.Assert(BigInteger.MaxLength * digitRatio + 1 < Array.MaxLength); // won't overflow
 
             int base1E9BufferLength = (int)(value._bits.Length * digitRatio) + 1;
-            nuint[]? base1E9BufferFromPool = null;
-            Span<nuint> base1E9Buffer = ((uint)base1E9BufferLength <= BigIntegerCalculator.StackAllocThreshold ?
-                stackalloc nuint[base1E9BufferLength] :
-                (base1E9BufferFromPool = ArrayPool<nuint>.Shared.Rent(base1E9BufferLength))).Slice(0, base1E9BufferLength);
-            base1E9Buffer.Clear();
+            Span<nuint> base1E9Buffer = BigInteger.RentedBuffer.Create(base1E9BufferLength, out BigInteger.RentedBuffer base1E9Rental);
 
 
             BigIntegerToBase1E9(value._bits, base1E9Buffer, out int written);
@@ -985,10 +947,7 @@ namespace System
                 }
             }
 
-            if (base1E9BufferFromPool != null)
-            {
-                ArrayPool<nuint>.Shared.Return(base1E9BufferFromPool);
-            }
+            base1E9Rental.Dispose();
 
             return strResult;
         }
@@ -1059,16 +1018,10 @@ namespace System
                 }
 
                 int upperLength = bits.Length - powOfTen.Length - omittedLength + 1;
-                nuint[]? upperFromPool = null;
-                Span<nuint> upper = ((uint)upperLength <= BigIntegerCalculator.StackAllocThreshold
-                    ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                    : upperFromPool = ArrayPool<nuint>.Shared.Rent(upperLength)).Slice(0, upperLength);
+                Span<nuint> upper = BigInteger.RentedBuffer.Create(upperLength, out BigInteger.RentedBuffer upperBuffer);
 
                 int lowerLength = bits.Length;
-                nuint[]? lowerFromPool = null;
-                Span<nuint> lower = ((uint)lowerLength <= BigIntegerCalculator.StackAllocThreshold
-                    ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                    : lowerFromPool = ArrayPool<nuint>.Shared.Rent(lowerLength)).Slice(0, lowerLength);
+                Span<nuint> lower = BigInteger.RentedBuffer.Create(lowerLength, out BigInteger.RentedBuffer lowerBuffer);
 
                 bits.Slice(0, omittedLength).CopyTo(lower);
                 BigIntegerCalculator.Divide(bits.Slice(omittedLength), powOfTen, upper, lower.Slice(omittedLength));
@@ -1084,10 +1037,7 @@ namespace System
                     base1E9Buffer,
                     out int lowerWritten);
 
-                if (lowerFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(lowerFromPool);
-                }
+                lowerBuffer.Dispose();
 
                 Debug.Assert(lower1E9Length >= lowerWritten);
 
@@ -1098,10 +1048,7 @@ namespace System
                     base1E9Buffer.Slice(lower1E9Length),
                     out base1E9Written);
 
-                if (upperFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(upperFromPool);
-                }
+                upperBuffer.Dispose();
 
                 base1E9Written += lower1E9Length;
             }
@@ -1478,12 +1425,7 @@ namespace System
                     return;
                 }
 
-                nuint[]? powersOfTenFromPool = null;
-
-                Span<nuint> powersOfTen = (
-                    bits.Length <= BigIntegerCalculator.StackAllocThreshold
-                        ? stackalloc nuint[BigIntegerCalculator.StackAllocThreshold]
-                        : powersOfTenFromPool = ArrayPool<nuint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+                Span<nuint> powersOfTen = BigInteger.RentedBuffer.Create(bits.Length, out BigInteger.RentedBuffer powersOfTenBuffer);
                 scoped Span<nuint> powersOfTen2 = bits;
 
                 int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
@@ -1537,10 +1479,7 @@ namespace System
 
                 BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
 
-                if (powersOfTenFromPool != null)
-                {
-                    ArrayPool<nuint>.Shared.Return(powersOfTenFromPool);
-                }
+                powersOfTenBuffer.Dispose();
 
                 if (remainingTrailingZeroCount > 0)
                 {

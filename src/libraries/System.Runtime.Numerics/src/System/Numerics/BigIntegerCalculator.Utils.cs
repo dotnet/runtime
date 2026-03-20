@@ -10,14 +10,6 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        internal
-#if DEBUG
-        static // Mutable for unit testing...
-#else
-        const
-#endif
-        int StackAllocThreshold = 64;
-
         /// <summary>Number of bits per native-width limb: 32 on 32-bit, 64 on 64-bit.</summary>
         internal static int BitsPerLimb
         {
