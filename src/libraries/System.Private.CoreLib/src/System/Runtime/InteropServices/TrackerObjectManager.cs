@@ -77,10 +77,6 @@ namespace System.Runtime.InteropServices
                     if (nativeObjectWrapper != null &&
                         nativeObjectWrapper._contextToken == contextToken)
                     {
-                        // Separate the wrapper from the tracker runtime prior to
-                        // passing them.
-                        nativeObjectWrapper.DisconnectTracker();
-
                         // If this object is associated with the global instance for tracker support,
                         // then we can request that instance to clear out the native object wrapper's state
                         // to ensure the object gets released now.
@@ -96,6 +92,10 @@ namespace System.Runtime.InteropServices
                                 objects.Add(target);
                             }
                         }
+
+                        // Separate the wrapper from the tracker runtime prior to
+                        // passing them.
+                        nativeObjectWrapper.DisconnectTracker();
                     }
                 }
             }
