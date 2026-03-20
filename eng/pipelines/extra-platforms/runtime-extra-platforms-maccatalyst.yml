@@ -48,7 +48,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
+    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - maccatalyst_arm64
     variables:
@@ -216,7 +216,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
+    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - maccatalyst_arm64
     variables:
