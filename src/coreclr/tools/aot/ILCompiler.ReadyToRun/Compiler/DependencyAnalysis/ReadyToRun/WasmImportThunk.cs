@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 // Unknown helper kind, we should not be trying to produce a thunk for it
-                throw new System.Exception();
+                throw new System.ArgumentException(nameof(helperId));
             }
         }
 

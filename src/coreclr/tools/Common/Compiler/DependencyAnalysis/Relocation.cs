@@ -696,6 +696,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_U32 => 4,
+                RelocType.WASM_TABLE_INDEX_U64 => 8,
 
                 _ => throw new NotSupportedException(),
             };
