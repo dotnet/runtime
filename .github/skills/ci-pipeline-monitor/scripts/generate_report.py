@@ -171,7 +171,12 @@ class ReportGenerator:
         cur = self.conn.cursor()
 
         out.append("-" * 80)
-        out.append(f"FAILURE {fail['id']}: {fail['title']} ({fail['scope']})")
+        scope = fail["scope"]
+        if scope:
+            title_line = f"FAILURE {fail['id']}: {fail['title']} ({scope})"
+        else:
+            title_line = f"FAILURE {fail['id']}: {fail['title']}"
+        out.append(title_line)
         out.append("-" * 80)
 
         # GitHub issue line
