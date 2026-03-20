@@ -26,11 +26,11 @@ namespace System
         internal const int Size = 16;
 
 #if BIGENDIAN
-        private readonly ulong _upper;
-        private readonly ulong _lower;
+        internal readonly ulong _upper;
+        internal readonly ulong _lower;
 #else
-        private readonly ulong _lower;
-        private readonly ulong _upper;
+        internal readonly ulong _lower;
+        internal readonly ulong _upper;
 #endif
 
         /// <summary>Initializes a new instance of the <see cref="UInt128" /> struct.</summary>

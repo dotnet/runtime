@@ -1119,18 +1119,30 @@ namespace System
 
         public int CompareTo(Guid value)
         {
-            int c;
-            return (c = ((uint)_a).CompareTo((uint)value._a)) != 0 ? c :
-                (c = ((ushort)_b).CompareTo((ushort)value._b)) != 0 ? c :
-                (c = ((ushort)_c).CompareTo((ushort)value._c)) != 0 ? c :
-                (c = _d.CompareTo(value._d)) != 0 ? c :
-                (c = _e.CompareTo(value._e)) != 0 ? c :
-                (c = _f.CompareTo(value._f)) != 0 ? c :
-                (c = _g.CompareTo(value._g)) != 0 ? c :
-                (c = _h.CompareTo(value._h)) != 0 ? c :
-                (c = _i.CompareTo(value._i)) != 0 ? c :
-                (c = _j.CompareTo(value._j)) != 0 ? c :
-                _k.CompareTo(value._k);
+            if (!BitConverter.IsLittleEndian)
+            {
+                return Unsafe.BitCast<Guid, UInt128>(this).CompareTo(Unsafe.BitCast<Guid, UInt128>(value));
+            }
+
+            if (_a != value._a)
+            {
+                return (uint)_a < (uint)value._a ? -1 : 1;
+            }
+
+            int r = ((ushort)_b).CompareTo((ushort)value._b);
+            if (r != 0)
+            {
+                return r;
+            }
+
+            r = ((ushort)_c).CompareTo((ushort)value._c);
+            if (r != 0)
+            {
+                return r;
+            }
+
+            return BinaryPrimitives.ReverseEndianness(Unsafe.BitCast<Guid, UInt128>(this)._upper)
+                .CompareTo(BinaryPrimitives.ReverseEndianness(Unsafe.BitCast<Guid, UInt128>(value)._upper));
         }
 
         public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
