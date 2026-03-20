@@ -76,6 +76,8 @@ enum class AsyncMethodFlags
     IsAsyncVariantForValueTask = 8,
     // Method has synthetic body, which forwards to the other variant.
     Thunk                      = 16,
+    // A special thunk to drop return value in covariant return scenario
+    ReturnDroppingThunk        = 32,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -277,7 +279,7 @@ enum class MethodReturnKind
 };
 
 bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk);
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask);
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, ULONG* elementTypeLength, bool *isValueTask);
 
 inline bool IsTaskReturning(MethodReturnKind input)
 {
@@ -1747,7 +1749,7 @@ public:
 
     MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
     {
-        _ASSERT(!IsAsyncVariantMethod());
+        _ASSERT(!IsAsyncVariantMethod() || IsReturnDroppingThunk());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, TRUE);
     }
 
@@ -2034,11 +2036,33 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
     }
 
+    inline bool IsReturnDroppingThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
+    }
+
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return IsAsyncVariantMethod() == (lookup == AsyncVariantLookup::Async);
+        if (lookup == AsyncVariantLookup::Ordinary)
+            return !IsAsyncVariantMethod();
+
+        if (lookup == AsyncVariantLookup::Async)
+        {
+            if (!HasAsyncMethodData())
+                return false;
+
+            AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+            return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant) && !hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
+        }
+
+        return false;
     }
 
     // Is this an Async variant method for a method that
@@ -2249,7 +2273,9 @@ private:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
+    int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
